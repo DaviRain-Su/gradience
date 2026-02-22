@@ -1,0 +1,26 @@
+{
+  "name": "monad-openclaw-skill",
+  "version": "0.1.0",
+  "description": "Monad payment + execution toolset exposed as OpenClaw skills",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "dashboard:dev": "tsx apps/dashboard/server.ts"
+  },
+  "dependencies": {
+    "@lifi/sdk": "^3.9.1",
+    "@morpho-org/blue-sdk": "^1.1.0",
+    "ethers": "^6.12.1",
+    "express": "^4.19.2",
+    "sql.js": "^1.10.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.0"
+  }
+}

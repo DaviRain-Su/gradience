@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monad Strategy Dashboard</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      h1 { margin-bottom: 4px; }
+      section { margin-top: 20px; }
+      pre { background: #f7f7f7; padding: 12px; overflow: auto; }
+      input, textarea { width: 100%; margin-top: 6px; }
+      button { margin-top: 8px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+      #paramFields div { margin-bottom: 8px; }
+      .status-ok { color: #2e7d32; }
+      .status-error { color: #c62828; }
+    </style>
+  </head>
+  <body>
+    <h1>Monad Strategy Dashboard</h1>
+    <p>Minimal strategy list + execution log viewer.</p>
+
+    <section>
+      <h2>Create Strategy (NL → Template)</h2>
+      <label>Intent Text</label>
+      <textarea id="intentText" rows="3" placeholder="Swap 10 USDC to MON"></textarea>
+      <label>Template (optional)</label>
+      <select id="templateSelect" onchange="selectTemplate(this.value)"></select>
+      <input id="template" placeholder="swap-v1" />
+      <button onclick="loadLastStrategyParams()">Load Last Params</button>
+      <label>Template Parameters (auto)</label>
+      <div id="templateInfo"></div>
+      <div id="optionalInfo"></div>
+      <button onclick="toggleOptionalParams()">Toggle Optional Params</button>
+      <button onclick="clearParamFields()">Clear Params</button>
+      <div id="paramFields"></div>
+      <div id="paramHints"></div>
+      <button onclick="fillParamExamples()">Fill Example Params</button>
+      <label>Params JSON (optional)</label>
+      <textarea id="params" rows="4" placeholder='{"router":"0x...","tokenIn":"0x..."}'></textarea>
+      <button onclick="formatParamsJson()">Format Params JSON</button>
+      <button onclick="clearParamsJson()">Clear Params JSON</button>
+      <div style="font-size: 12px; color: #666;">Paste JSON then use it to override auto fields.</div>
+      <label>Risk (maxPerRunUsd, cooldownSeconds)</label>
+      <textarea id="risk" rows="2" placeholder='{"maxPerRunUsd":100,"cooldownSeconds":300}'></textarea>
+      <button onclick="formatRiskJson()">Format Risk JSON</button>
+      <button onclick="saveRiskTemplate()">Save Risk</button>
+      <button onclick="loadRiskTemplate()">Load Risk</button>
+      <label><input type="checkbox" id="autoSaveRisk" checked /> Auto-save Risk</label>
+      <button onclick="createStrategy()">Create</button>
+      <button onclick="saveFormSnapshot()">Save Snapshot</button>
+      <button onclick="loadFormSnapshot()">Load Snapshot</button>
+      <button onclick="resetCreateForm()">Reset Form</button>
+      <pre id="createResult"></pre>
+    </section>
+
+    <section>
+      <h2>Run Strategy</h2>
+      <label>Strategy ID</label>
+      <input id="runStrategyId" placeholder="strat_..." />
+      <button onclick="fillLatestStrategyId()">Use Latest Strategy</button>
+      <label>Mode (plan/simulate/execute)</label>
+      <input id="runMode" placeholder="plan" value="plan" />
+      <label>Evidence JSON (optional)</label>
+      <textarea id="runEvidence" rows="3" placeholder='{"routeId":"...","txHash":"..."}'></textarea>
+      <button onclick="fillEvidenceTemplate()">Fill Evidence Template</button>
+      <button onclick="saveRunEvidence()">Save Run Evidence</button>
+      <button onclick="loadRunEvidence()">Load Run Evidence</button>
+      <button onclick="clearEvidence()">Clear Evidence</button>
+      <span id="runEvidenceSaved" style="font-size: 12px; color: #666;"></span>
+      <label>LI.FI Result JSON (optional)</label>
+      <textarea id="runLifi" rows="3" placeholder='{"routeId":"...","tool":"...","estimateGas":"...","txHash":"..."}'></textarea>
+      <button onclick="fillLifiTemplate()">Fill LI.FI Template</button>
+      <button onclick="saveRunLifi()">Save Run LIFI</button>
+      <button onclick="loadRunLifi()">Load Run LIFI</button>
+      <button onclick="clearLifiResult()">Clear LI.FI Result</button>
+      <span id="runLifiSaved" style="font-size: 12px; color: #666;"></span>
+      <button onclick="clearRunInputs()">Clear Run Inputs</button>
+      <button onclick="clearRunInputsConfirm()">Clear Run Inputs (Confirm)</button>
+      <button onclick="saveEvidenceTemplate()">Save Evidence Template</button>
+      <button onclick="loadEvidenceTemplate()">Load Evidence Template</button>
+      <button onclick="runStrategyNow()">Run</button>
+      <pre id="runResult"></pre>
+    </section>
+
+    <section>
+      <h2>Execution Detail</h2>
+      <label>Run ID</label>
+      <input id="detailRunId" placeholder="run_..." />
+      <button onclick="loadExecutionDetail()">Load Detail</button>
+      <button onclick="copyExecutionField('runId')">Copy Run ID</button>
+      <button onclick="copyExecutionField('txHash')">Copy Tx Hash</button>
+      <button onclick="copyExecutionField('evidence')">Copy Evidence</button>
+      <button onclick="copyExecutionField('payload')">Copy Payload</button>
+      <pre id="executionDetail"></pre>
+    </section>
+
+    <div class="grid">
+      <section>
+        <h2>Strategies</h2>
+        <button onclick="loadStrategies()">Refresh</button>
+        <pre id="strategyList"></pre>
+      </section>
+
+      <section>
+        <h2>Templates</h2>
+        <button onclick="loadTemplates()">Refresh</button>
+        <pre id="templateList"></pre>
+      </section>
+
+      <section>
+        <h2>Executions</h2>
+        <button onclick="loadExecutions()">Refresh</button>
+        <pre id="executionList"></pre>
+      </section>
+
+      <section>
+        <h2>Execution Summary (click runId)</h2>
+        <label>Filter Status</label>
+        <input id="summaryStatus" placeholder="planned/simulated/execute" />
+        <button onclick="quickFilter('status','planned')">Planned</button>
+        <button onclick="quickFilter('status','simulated')">Simulated</button>
+        <button onclick="quickFilter('status','execute')">Executed</button>
+        <label>Filter Mode</label>
+        <input id="summaryMode" placeholder="plan/simulate/execute" />
+        <button onclick="quickFilter('mode','plan')">Plan</button>
+        <button onclick="quickFilter('mode','simulate')">Simulate</button>
+        <button onclick="quickFilter('mode','execute')">Execute</button>
+        <label>Search (runId/strategyId)</label>
+        <input id="summarySearch" placeholder="run_..." />
+        <label><input type="checkbox" id="summaryFields" checked /> Show extra fields</label>
+        <button onclick="loadExecutions()">Refresh</button>
+        <button onclick="clearSummaryFilters()">Clear Filters</button>
+        <button onclick="loadMoreExecutions()">Load More</button>
+        <button onclick="exportSummary()">Export JSON</button>
+        <button onclick="exportSummaryCsv()">Export CSV</button>
+        <button onclick="copySummaryJson()">Copy Summary JSON</button>
+        <button onclick="copySummaryCsv()">Copy Summary CSV</button>
+        <button onclick="toggleSummaryJson()">Toggle Summary JSON</button>
+        <button onclick="toggleSummaryList()">Toggle Summary List</button>
+        <div id="executionSummaryList"></div>
+        <pre id="executionSummary"></pre>
+      </section>
+
+      <section>
+        <h2>Execution Evidence</h2>
+        <button onclick="loadExecutions()">Refresh</button>
+        <pre id="executionEvidence"></pre>
+      </section>
+    </div>
+
+    <script>
+      let templateCache = [];
+      let summaryLimit = 10;
+
+      async function loadStrategies() {
+        const res = await fetch("/api/strategies");
+        const data = await res.json();
+        document.getElementById("strategyList").textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function loadExecutions() {
+        const res = await fetch("/api/executions");
+        const data = await res.json();
+        document.getElementById("executionList").textContent = JSON.stringify(data, null, 2);
+        const evidence = (data.executions || []).map((item) => item.evidence || null);
+        document.getElementById("executionEvidence").textContent = JSON.stringify(evidence, null, 2);
+        const showExtra = document.getElementById("summaryFields").checked;
+        const summary = (data.executions || []).map((item) => {
+          const base = {
+            runId: item.id,
+            strategyId: item.strategyId,
+            mode: item.mode,
+            status: item.status,
+            executedAt: item.evidence?.executedAt,
+            template: item.evidence?.template,
+          };
+          if (!showExtra) return base;
+          return {
+            ...base,
+            routeId: item.evidence?.routeId,
+            txHash: item.evidence?.txHash,
+            tool: item.evidence?.tool,
+            gasEstimate: item.evidence?.estimateGas,
+            templateParams: item.evidence?.templateParams,
+          };
+        });
+        const sorted = summary.sort((a, b) => String(b.executedAt || "").localeCompare(String(a.executedAt || "")));
+        const filtered = filterSummary(sorted).slice(0, summaryLimit);
+        window.latestSummary = filtered;
+        const summaryElement = document.getElementById("executionSummary");
+        summaryElement.textContent = JSON.stringify(filtered, null, 2);
+        renderSummaryList(filtered);
+      }
+
+      function renderSummaryList(summary) {
+        const list = document.getElementById("executionSummaryList");
+        list.innerHTML = "";
+        summary.forEach((item) => {
+          const row = document.createElement("div");
+          row.style.cursor = "pointer";
+          row.style.padding = "4px 0";
+          row.textContent = `${item.runId} | ${item.status} | ${item.mode} | ${item.routeId || "-"} | ${item.txHash || "-"}`;
+          row.onclick = () => loadExecutionDetail(item.runId);
+          row.oncontextmenu = (event) => {
+            event.preventDefault();
+            const payload = item.txHash
+              ? `${item.runId} | ${item.txHash} | ${item.status}`
+              : `${item.runId} | ${item.status}`;
+            navigator.clipboard.writeText(payload);
+          };
+          list.appendChild(row);
+        });
+        window.latestSummary = summary;
+      }
+
+      function filterSummary(summary) {
+        const statusFilter = document.getElementById("summaryStatus").value.trim();
+        const modeFilter = document.getElementById("summaryMode").value.trim();
+        const search = document.getElementById("summarySearch").value.trim();
+        return summary.filter((item) => {
+          if (statusFilter && item.status !== statusFilter) return false;
+          if (modeFilter && item.mode !== modeFilter) return false;
+          if (
+            search &&
+            !(
+              `${item.runId}`.includes(search) ||
+              `${item.strategyId}`.includes(search) ||
+              `${item.txHash || ""}`.includes(search)
+            )
+          ) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      function saveSummaryFilters() {
+        const payload = {
+          status: document.getElementById("summaryStatus").value.trim(),
+          mode: document.getElementById("summaryMode").value.trim(),
+          search: document.getElementById("summarySearch").value.trim(),
+        };
+        localStorage.setItem("summaryFilters", JSON.stringify(payload));
+      }
+
+      function loadSummaryFilters() {
+        const raw = localStorage.getItem("summaryFilters");
+        if (!raw) return;
+        const payload = JSON.parse(raw);
+        document.getElementById("summaryStatus").value = payload.status || "";
+        document.getElementById("summaryMode").value = payload.mode || "";
+        document.getElementById("summarySearch").value = payload.search || "";
+      }
+
+      function attachSummaryFilterListeners() {
+        ["summaryStatus", "summaryMode", "summarySearch"].forEach((id) => {
+          const input = document.getElementById(id);
+          input.addEventListener("input", () => {
+            saveSummaryFilters();
+            loadExecutions();
+          });
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              saveSummaryFilters();
+              loadExecutions();
+            }
+          });
+        });
+      }
+
+      function exportSummary() {
+        const data = window.latestSummary || [];
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "execution-summary.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function exportSummaryCsv() {
+        const data = window.latestSummary || [];
+        if (!data.length) return;
+        const headers = Object.keys(data[0]);
+        const rows = [headers.join(",")].concat(
+          data.map((row) => headers.map((key) => JSON.stringify(row[key] ?? "")).join(","))
+        );
+        const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "execution-summary.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function copySummaryCsv() {
+        const data = window.latestSummary || [];
+        if (!data.length) return;
+        const headers = Object.keys(data[0]);
+        const rows = [headers.join(",")].concat(
+          data.map((row) => headers.map((key) => JSON.stringify(row[key] ?? "")).join(","))
+        );
+        navigator.clipboard.writeText(rows.join("\n"));
+      }
+
+      function copySummaryJson() {
+        const data = window.latestSummary || [];
+        navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      }
+
+      function toggleSummaryJson() {
+        const pre = document.getElementById("executionSummary");
+        pre.style.display = pre.style.display === "none" ? "block" : "none";
+      }
+
+      function toggleSummaryList() {
+        const list = document.getElementById("executionSummaryList");
+        list.style.display = list.style.display === "none" ? "block" : "none";
+      }
+
+      function clearRunInputsConfirm() {
+        if (confirm("Clear runEvidence and runLifi?")) {
+          clearRunInputs();
+        }
+      }
+
+      function clearParamsJson() {
+        document.getElementById("params").value = "";
+      }
+
+      function formatParamsJson() {
+        const textarea = document.getElementById("params");
+        if (!textarea.value.trim()) return;
+        try {
+          textarea.value = JSON.stringify(JSON.parse(textarea.value), null, 2);
+        } catch (error) {
+          document.getElementById("createResult").textContent = `Params JSON invalid: ${error.message || error}`;
+        }
+      }
+
+      function quickFilter(kind, value) {
+        if (kind === "status") {
+          document.getElementById("summaryStatus").value = value;
+        }
+        if (kind === "mode") {
+          document.getElementById("summaryMode").value = value;
+        }
+        loadExecutions();
+      }
+
+      function clearRunInputs() {
+        document.getElementById("runEvidence").value = "";
+        document.getElementById("runLifi").value = "";
+      }
+
+      function resetCreateForm() {
+        document.getElementById("intentText").value = "";
+        document.getElementById("template").value = "";
+        document.getElementById("templateSelect").value = "";
+        document.getElementById("params").value = "";
+        document.getElementById("risk").value = "";
+        document.getElementById("paramFields").innerHTML = "";
+        document.getElementById("paramHints").innerHTML = "";
+        document.getElementById("templateInfo").innerHTML = "";
+        document.getElementById("optionalInfo").innerHTML = "";
+        document.getElementById("createResult").textContent = "";
+      }
+
+      function clearSummaryFilters() {
+        document.getElementById("summaryStatus").value = "";
+        document.getElementById("summaryMode").value = "";
+        document.getElementById("summarySearch").value = "";
+        summaryLimit = 10;
+        localStorage.removeItem("summaryFilters");
+        loadExecutions();
+      }
+
+      function renderParamFields(templateName) {
+        const container = document.getElementById("paramFields");
+        const hints = document.getElementById("paramHints");
+        const info = document.getElementById("templateInfo");
+        const optionalInfo = document.getElementById("optionalInfo");
+        container.innerHTML = "";
+        hints.innerHTML = "";
+        info.innerHTML = "";
+        optionalInfo.innerHTML = "";
+        const template = templateCache.find((item) => item.template === templateName);
+        if (!template || !template.requiredParams) return;
+        info.textContent = `${template.title}: ${template.description}`;
+        if (template.optionalParams && template.optionalParams.length) {
+          optionalInfo.textContent = `Optional params: ${template.optionalParams.join(", ")}`;
+        }
+        const hintList = document.createElement("ul");
+        template.requiredParams.forEach((param) => {
+          renderParamInput({ param, template, container, hintList, required: true });
+        });
+        (template.optionalParams || []).forEach((param) => {
+          renderParamInput({ param, template, container, hintList, required: false });
+        });
+        hints.appendChild(hintList);
+        hideOptionalParams();
+        focusFirstRequired();
+      }
+
+      function hideOptionalParams() {
+        document.querySelectorAll("input[data-param-required='false']").forEach((input) => {
+          const parent = input.parentElement;
+          if (!parent) return;
+          parent.style.display = "none";
+        });
+      }
+
+      function toggleOptionalParams() {
+        document.querySelectorAll("input[data-param-required='false']").forEach((input) => {
+          const parent = input.parentElement;
+          if (!parent) return;
+          const display = parent.style.display;
+          parent.style.display = display === "none" ? "block" : "none";
+        });
+      }
+
+      function renderParamInput({ param, template, container, hintList, required }) {
+        const wrapper = document.createElement("div");
+        const label = document.createElement("label");
+        label.textContent = required ? `${param} *` : `${param} (optional)`;
+        const input = document.createElement("input");
+        input.dataset.param = param;
+        input.dataset.paramRequired = required ? "true" : "false";
+        input.placeholder = param;
+        if (template.paramMeta && template.paramMeta[param]) {
+          input.dataset.paramType = template.paramMeta[param].type;
+        }
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        container.appendChild(wrapper);
+
+        const hint = document.createElement("li");
+        hint.textContent = `${param}: ${sampleHint(param, template)}`;
+        hintList.appendChild(hint);
+      }
+
+      function sampleHint(param, template) {
+        if (template && template.paramMeta && template.paramMeta[param]) {
+          const meta = template.paramMeta[param];
+          return `${meta.type}${meta.example ? `, e.g. ${meta.example}` : ""}`;
+        }
+        return "";
+      }
+
+      function fillParamExamples() {
+        const templateName = document.getElementById("template").value;
+        const template = templateCache.find((item) => item.template === templateName);
+        if (!template || !template.paramMeta) return;
+        document.querySelectorAll("input[data-param]").forEach((input) => {
+          const meta = template.paramMeta[input.dataset.param];
+          if (meta && meta.example) {
+            input.value = meta.example;
+          }
+        });
+      }
+
+      function clearParamFields() {
+        document.querySelectorAll("input[data-param]").forEach((input) => {
+          input.value = "";
+          input.style.borderColor = "";
+        });
+      }
+
+      async function loadTemplates() {
+        const res = await fetch("/api/templates");
+        const data = await res.json();
+        templateCache = data.templates || [];
+        document.getElementById("templateList").textContent = JSON.stringify(data, null, 2);
+        const templateInput = document.getElementById("template");
+        const templateSelect = document.getElementById("templateSelect");
+        templateSelect.innerHTML = "<option value=\"\">-- choose template --</option>";
+        templateCache.forEach((item) => {
+          const opt = document.createElement("option");
+          opt.value = item.template;
+          opt.textContent = `${item.template} (${item.title})`;
+          templateSelect.appendChild(opt);
+        });
+        const lastTemplate = localStorage.getItem("lastTemplateSelect");
+        if (lastTemplate) {
+          templateSelect.value = lastTemplate;
+          templateInput.value = lastTemplate;
+          renderParamFields(lastTemplate);
+        }
+        templateInput.addEventListener("input", () => renderParamFields(templateInput.value));
+      }
+
+      function selectTemplate(value) {
+        document.getElementById("template").value = value;
+        renderParamFields(value);
+      }
+
+      async function loadExecutionDetail(runIdInput) {
+        const runId = runIdInput || document.getElementById("detailRunId").value;
+        if (!runId) return;
+        const res = await fetch(`/api/executions/${runId}`);
+        const data = await res.json();
+        if (!data || !data.execution) {
+          document.getElementById("executionDetail").textContent = JSON.stringify(data, null, 2);
+          window.latestExecutionDetail = null;
+          return;
+        }
+        const detail = {
+          id: data.execution.id,
+          strategyId: data.execution.strategyId,
+          status: data.execution.status,
+          mode: data.execution.mode,
+          createdAt: data.execution.createdAt,
+        };
+        const evidence = data.execution.evidence || {};
+        const payload = data.execution.payload || {};
+        const templateParams = evidence.templateParams || {};
+        const detailPayload = { detail, evidence, templateParams, payload };
+        window.latestExecutionDetail = detailPayload;
+        document.getElementById("executionDetail").textContent = JSON.stringify(detailPayload, null, 2);
+      }
+
+      function copyExecutionField(field) {
+        const detail = window.latestExecutionDetail || {};
+        if (field === "runId") {
+          navigator.clipboard.writeText(detail.detail?.id || "");
+        }
+        if (field === "txHash") {
+          navigator.clipboard.writeText(detail.evidence?.txHash || "");
+        }
+        if (field === "evidence") {
+          navigator.clipboard.writeText(JSON.stringify(detail.evidence || {}, null, 2));
+        }
+        if (field === "payload") {
+          navigator.clipboard.writeText(JSON.stringify(detail.payload || {}, null, 2));
+        }
+      }
+
+      function saveEvidenceTemplate() {
+        const text = document.getElementById("runEvidence").value;
+        if (!text.trim()) return;
+        localStorage.setItem("evidenceTemplate", text);
+      }
+
+      function loadEvidenceTemplate() {
+        const text = localStorage.getItem("evidenceTemplate");
+        if (text) {
+          document.getElementById("runEvidence").value = text;
+        }
+      }
+
+      function fillLifiTemplate() {
+        const templateName = document.getElementById("template").value;
+        if (!templateName || !templateName.includes("lifi")) {
+          document.getElementById("runLifi").value = JSON.stringify({
+            routeId: "route_...",
+            tool: "lifi",
+            estimateGas: "0",
+            txHash: "0x...",
+          }, null, 2);
+          return;
+        }
+        document.getElementById("runLifi").value = JSON.stringify({
+          routeId: "route_...",
+          tool: "lifi",
+          estimateGas: "0",
+          txHash: "0x...",
+        }, null, 2);
+      }
+
+      function clearEvidence() {
+        document.getElementById("runEvidence").value = "";
+      }
+
+      function clearLifiResult() {
+        document.getElementById("runLifi").value = "";
+      }
+
+      function setStatus(id, text) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        if (text) {
+          setTimeout(() => {
+            if (el.textContent === text) el.textContent = "";
+          }, 2000);
+        }
+      }
+
+      function saveRunEvidence() {
+        const text = document.getElementById("runEvidence").value;
+        if (!text.trim()) return;
+        localStorage.setItem("runEvidence", text);
+        setStatus("runEvidenceSaved", "saved");
+      }
+
+      function loadRunEvidence() {
+        const text = localStorage.getItem("runEvidence");
+        if (text) {
+          document.getElementById("runEvidence").value = text;
+          setStatus("runEvidenceSaved", "loaded");
+        }
+      }
+
+      function autoFillRunEvidence() {
+        const text = localStorage.getItem("runEvidence");
+        if (text && !document.getElementById("runEvidence").value) {
+          document.getElementById("runEvidence").value = text;
+          setStatus("runEvidenceSaved", "auto");
+        }
+      }
+
+      function saveRunLifi() {
+        const text = document.getElementById("runLifi").value;
+        if (!text.trim()) return;
+        localStorage.setItem("runLifi", text);
+        setStatus("runLifiSaved", "saved");
+      }
+
+      function loadRunLifi() {
+        const text = localStorage.getItem("runLifi");
+        if (text) {
+          document.getElementById("runLifi").value = text;
+          setStatus("runLifiSaved", "loaded");
+        }
+      }
+
+      function autoFillRunLifi() {
+        const text = localStorage.getItem("runLifi");
+        if (text && !document.getElementById("runLifi").value) {
+          document.getElementById("runLifi").value = text;
+          setStatus("runLifiSaved", "auto");
+        }
+      }
+
+      function autoFillRunLifi() {
+        const text = localStorage.getItem("runLifi");
+        if (text && !document.getElementById("runLifi").value) {
+          document.getElementById("runLifi").value = text;
+        }
+      }
+
+      function saveRiskTemplate() {
+        const text = document.getElementById("risk").value;
+        if (!text.trim()) return;
+        localStorage.setItem("riskTemplate", text);
+      }
+
+      function loadRiskTemplate() {
+        const text = localStorage.getItem("riskTemplate");
+        if (text) {
+          document.getElementById("risk").value = text;
+        }
+      }
+
+      function formatRiskJson() {
+        const textarea = document.getElementById("risk");
+        if (!textarea.value.trim()) return;
+        try {
+          textarea.value = JSON.stringify(JSON.parse(textarea.value), null, 2);
+        } catch (error) {
+          document.getElementById("createResult").textContent = `Risk JSON invalid: ${error.message || error}`;
+        }
+      }
+
+      function collectParamFields() {
+        const container = document.getElementById("paramFields");
+        const params = {};
+        const errors = [];
+        const templateName = document.getElementById("template").value;
+        const template = templateCache.find((item) => item.template === templateName);
+        const required = template ? template.requiredParams || [] : [];
+        const optional = template ? template.optionalParams || [] : [];
+        container.querySelectorAll("input[data-param]").forEach((input) => {
+          if (!input.value) {
+            if (required.includes(input.dataset.param)) {
+              input.style.borderColor = "red";
+              errors.push(`${input.dataset.param} is required`);
+            } else if (optional.includes(input.dataset.param)) {
+              input.style.borderColor = "";
+            }
+            return;
+          }
+          const type = input.dataset.paramType || "string";
+          input.style.borderColor = "";
+          if (type === "number") {
+            const parsed = Number(input.value);
+            if (!Number.isFinite(parsed)) {
+              input.style.borderColor = "red";
+              errors.push(`${input.dataset.param} must be a number`);
+              return;
+            }
+            params[input.dataset.param] = parsed;
+            return;
+          }
+          if (type === "decimal") {
+            const parsed = Number(input.value);
+            if (!Number.isFinite(parsed)) {
+              input.style.borderColor = "red";
+              errors.push(`${input.dataset.param} must be a decimal`);
+              return;
+            }
+            params[input.dataset.param] = String(parsed);
+            return;
+          }
+          if (type === "address") {
+            if (!/^0x[a-fA-F0-9]{40}$/.test(input.value)) {
+              input.style.borderColor = "red";
+              errors.push(`${input.dataset.param} must be a 0x address`);
+              return;
+            }
+          }
+          params[input.dataset.param] = input.value;
+        });
+        if (errors.length) {
+          document.getElementById("createResult").textContent = errors.join("\n");
+          return null;
+        }
+        return params;
+      }
+
+      async function createStrategy() {
+        const intentText = document.getElementById("intentText").value;
+        const template = document.getElementById("template").value;
+        const paramsText = document.getElementById("params").value;
+        const riskText = document.getElementById("risk").value;
+        const params = collectParamFields();
+        if (!params) {
+          document.getElementById("createResult").textContent = "Param validation failed.";
+          return;
+        }
+        if (paramsText.trim()) {
+          try {
+            Object.assign(params, JSON.parse(paramsText));
+          } catch (error) {
+            document.getElementById("createResult").textContent = `Params JSON invalid: ${error.message || error}`;
+            return;
+          }
+        }
+        let risk = undefined;
+        if (riskText.trim()) {
+          try {
+            risk = JSON.parse(riskText);
+          } catch (error) {
+            document.getElementById("createResult").textContent = `Risk JSON invalid: ${error.message || error}`;
+            return;
+          }
+        }
+        const res = await fetch("/api/strategies", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ intentText, template: template || undefined, params, risk }),
+        });
+        const data = await res.json();
+        document.getElementById("createResult").textContent = JSON.stringify(data, null, 2);
+        if (data.strategy && data.strategy.id) {
+          document.getElementById("runStrategyId").value = data.strategy.id;
+          window.latestStrategyId = data.strategy.id;
+        }
+        localStorage.setItem("lastStrategyParams", JSON.stringify({ intentText, template, params, risk }));
+        localStorage.setItem("paramsTemplate", JSON.stringify(params));
+        localStorage.setItem("lastTemplateSelect", template || "");
+        if (document.getElementById("autoSaveRisk").checked && riskText.trim()) {
+          try {
+            JSON.parse(riskText);
+            localStorage.setItem("riskTemplate", riskText);
+          } catch (error) {
+            document.getElementById("createResult").textContent = `Risk auto-save failed: ${error.message || error}`;
+          }
+        }
+        await loadStrategies();
+      }
+
+      function fillLatestStrategyId() {
+        if (window.latestStrategyId) {
+          document.getElementById("runStrategyId").value = window.latestStrategyId;
+        }
+      }
+
+      function focusFirstRequired() {
+        const input = document.querySelector("input[data-param-required='true']");
+        if (input) input.focus();
+      }
+
+      function loadLastStrategyParams() {
+        const raw = localStorage.getItem("lastStrategyParams");
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        document.getElementById("intentText").value = saved.intentText || "";
+        document.getElementById("template").value = saved.template || "";
+        document.getElementById("templateSelect").value = saved.template || "";
+        document.getElementById("params").value = JSON.stringify(saved.params || {}, null, 2);
+        document.getElementById("risk").value = JSON.stringify(saved.risk || {}, null, 2);
+        renderParamFields(saved.template || "");
+      }
+
+      function saveFormSnapshot() {
+        const snapshot = {
+          intentText: document.getElementById("intentText").value,
+          template: document.getElementById("template").value,
+          params: collectParamFields() || {},
+          risk: (() => {
+            try {
+              return JSON.parse(document.getElementById("risk").value || "{}");
+            } catch {
+              return {};
+            }
+          })(),
+        };
+        localStorage.setItem("formSnapshot", JSON.stringify(snapshot));
+      }
+
+      function loadFormSnapshot() {
+        const raw = localStorage.getItem("formSnapshot");
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        document.getElementById("intentText").value = saved.intentText || "";
+        document.getElementById("template").value = saved.template || "";
+        document.getElementById("templateSelect").value = saved.template || "";
+        document.getElementById("risk").value = JSON.stringify(saved.risk || {}, null, 2);
+        renderParamFields(saved.template || "");
+        document.getElementById("params").value = JSON.stringify(saved.params || {}, null, 2);
+        const paramsTemplate = localStorage.getItem("paramsTemplate");
+        if (paramsTemplate) {
+          try {
+            const parsed = JSON.parse(paramsTemplate);
+            document.querySelectorAll("input[data-param]").forEach((input) => {
+              if (parsed[input.dataset.param]) {
+                input.value = parsed[input.dataset.param];
+              }
+            });
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      function fillEvidenceTemplate() {
+        const templateName = document.getElementById("template").value;
+        const template = templateCache.find((item) => item.template === templateName);
+        if (!template) return;
+        const evidence = {
+          template: template.template,
+          templateParams: collectParamFields() || {},
+        };
+        document.getElementById("runEvidence").value = JSON.stringify(evidence, null, 2);
+        window.latestEvidenceTemplate = evidence;
+      }
+
+      function setRunResult(message, status) {
+        const el = document.getElementById("runResult");
+        el.textContent = message;
+        el.classList.remove("status-ok", "status-error");
+        if (status === "ok") el.classList.add("status-ok");
+        if (status === "error") el.classList.add("status-error");
+      }
+
+      async function runStrategyNow() {
+        const strategyId = document.getElementById("runStrategyId").value;
+        const mode = document.getElementById("runMode").value || "plan";
+        const evidenceText = document.getElementById("runEvidence").value;
+        const lifiText = document.getElementById("runLifi").value;
+        let evidence = undefined;
+        if (evidenceText.trim()) {
+          try {
+            evidence = JSON.parse(evidenceText);
+          } catch (error) {
+            setRunResult(`Evidence JSON invalid: ${error.message || error}`, "error");
+            return;
+          }
+        }
+        let lifiResult = undefined;
+        if (lifiText.trim()) {
+          try {
+            lifiResult = JSON.parse(lifiText);
+          } catch (error) {
+            setRunResult(`LIFI JSON invalid: ${error.message || error}`, "error");
+            return;
+          }
+        }
+        const res = await fetch(`/api/strategies/${strategyId}/run`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ mode, evidence, lifiResult }),
+        });
+        const data = await res.json();
+        if (data.status && data.status !== "ok") {
+          setRunResult(`Run failed: ${JSON.stringify(data, null, 2)}`, "error");
+        } else {
+          setRunResult(JSON.stringify(data, null, 2), "ok");
+        }
+        if (lifiText.trim()) {
+          localStorage.setItem("runLifi", lifiText);
+          autoFillRunLifi();
+        }
+        if (evidenceText.trim()) {
+          localStorage.setItem("runEvidence", evidenceText);
+          autoFillRunEvidence();
+        }
+        await loadExecutions();
+      }
+
+      function loadMoreExecutions() {
+        summaryLimit += 10;
+        loadExecutions();
+      }
+
+      loadStrategies();
+      loadTemplates();
+      loadSummaryFilters();
+      loadExecutions();
+      attachSummaryFilterListeners();
+      autoFillRunEvidence();
+      autoFillRunLifi();
+    </script>
+  </body>
+</html>

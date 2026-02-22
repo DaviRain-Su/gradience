@@ -1,0 +1,17 @@
+{
+  "id": "monad-openclaw-skill",
+  "name": "Monad Pay+Exec Skill",
+  "description": "Monad payment/settlement + execution toolset for OpenClaw",
+  "version": "0.1.0",
+  "repository": "local:/Users/davirian/dev/gradience",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "rpcUrl": {
+        "type": "string",
+        "description": "Default Monad RPC endpoint"
+      }
+    }
+  }
+}
