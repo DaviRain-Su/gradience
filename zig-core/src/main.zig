@@ -16,8 +16,6 @@ const TxRequest = struct {
     chainId: ?u64,
 };
 
-const ErrorResponse = core_errors.ErrorEnvelope;
-
 pub fn main() !void {
     const allocator = std.heap.c_allocator;
     const stdin = std.fs.File.stdin();
@@ -25,24 +23,24 @@ pub fn main() !void {
     defer allocator.free(input);
 
     if (std.mem.trim(u8, input, " \r\n\t").len == 0) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "empty input" });
+        try writeJson(core_errors.usage("empty input"));
         return;
     }
 
     var parsed = std.json.parseFromSlice(std.json.Value, allocator, input, .{}) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid json" });
+        try writeJson(core_errors.usage("invalid json"));
         return;
     };
     defer parsed.deinit();
 
     const root = parsed.value;
     if (root != .object) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "root must be object" });
+        try writeJson(core_errors.usage("root must be object"));
         return;
     }
 
     const action = getString(root.object, "action") orelse {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "missing action" });
+        try writeJson(core_errors.usage("missing action"));
         return;
     };
 
@@ -52,11 +50,11 @@ pub fn main() !void {
     }
 
     const params_value = root.object.get("params") orelse {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "missing params" });
+        try writeJson(core_errors.usage("missing params"));
         return;
     };
     if (params_value != .object) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "params must be object" });
+        try writeJson(core_errors.usage("params must be object"));
         return;
     }
 
@@ -131,7 +129,7 @@ pub fn main() !void {
         return;
     }
 
-    try writeJson(ErrorResponse{ .status = "error", .@"error" = "unsupported action" });
+    try writeJson(core_errors.unsupported("unsupported action"));
 }
 
 fn handleSchema() !void {
@@ -434,7 +432,7 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !vo
     defer allocator.free(cached.result);
 
     const block_number = parseHexU64(cached.result) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid block number" });
+        try writeJson(core_errors.usage("invalid block number"));
         return;
     };
 
@@ -518,7 +516,7 @@ fn handleBuildDexSwap(allocator: std.mem.Allocator, params: RequestParams) !void
     const path_values = getArray(params, "path") orelse return writeMissing("path");
 
     if (path_values.len == 0) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "path must not be empty" });
+        try writeJson(core_errors.usage("path must not be empty"));
         return;
     }
 
