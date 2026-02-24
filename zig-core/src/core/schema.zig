@@ -14,6 +14,8 @@ pub const supported_actions = [_][]const u8{
     "yieldOpportunities",
     "bridgeQuote",
     "swapQuote",
+    "lendMarkets",
+    "lendRates",
     "normalizeAmount",
     "cachePut",
     "cacheGet",

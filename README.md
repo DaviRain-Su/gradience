@@ -84,6 +84,8 @@ Protocol details: `zig-core/PROTOCOL.md`
 - `yieldOpportunities`
 - `bridgeQuote`
 - `swapQuote`
+- `lendMarkets`
+- `lendRates`
 - `normalizeAmount`
 - `cachePut`
 - `cacheGet`
@@ -100,6 +102,10 @@ Protocol details: `zig-core/PROTOCOL.md`
 `bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider`.
 
 `swapQuote` supports `chain`, `fromAsset`, `toAsset`, `amount` with optional `provider`.
+
+`lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `limit`.
+
+`lendRates` supports `chain`, `asset`, `provider`.
 
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 

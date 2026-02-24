@@ -46,7 +46,7 @@ Error responses use:
 
 ## Action Groups
 
-- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `yieldOpportunities`, `bridgeQuote`, `swapQuote`, `normalizeAmount`
+- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `yieldOpportunities`, `bridgeQuote`, `swapQuote`, `lendMarkets`, `lendRates`, `normalizeAmount`
 - Cache admin: `cachePut`, `cacheGet`
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
@@ -94,6 +94,22 @@ Error responses use:
   - `amount` (base units)
 - Optional params:
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
+
+### lendMarkets Notes
+
+- Optional params:
+  - `chain` (alias/id/CAIP-2)
+  - `asset` (symbol)
+  - `provider` (provider name)
+  - `minTvlUsd` (numeric threshold)
+  - `limit` (default `20`)
+
+### lendRates Notes
+
+- Required params:
+  - `chain` (alias/id/CAIP-2)
+  - `asset` (symbol)
+  - `provider` (provider name)
 
 ### providersList Notes
 

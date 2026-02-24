@@ -13,6 +13,7 @@ const chains_assets_registry = @import("../core/chains_assets_registry.zig");
 const yield_registry = @import("../core/yield_registry.zig");
 const bridge_quotes_registry = @import("../core/bridge_quotes_registry.zig");
 const swap_quotes_registry = @import("../core/swap_quotes_registry.zig");
+const lend_registry = @import("../core/lend_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -479,6 +480,89 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             .feeBps = chosen.?.fee_bps,
             .priceImpactBps = chosen.?.price_impact_bps,
         });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "lendMarkets")) {
+        const chain_raw = getString(params, "chain");
+        const asset_filter = getString(params, "asset");
+        const provider_filter = getString(params, "provider");
+        const min_tvl = getF64(params, "minTvlUsd") orelse 0;
+        const limit_raw = getU64(params, "limit") orelse 20;
+        const limit: usize = @intCast(limit_raw);
+
+        const chain = if (chain_raw) |value|
+            (core_id.normalizeChain(value) orelse {
+                try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+                return true;
+            })
+        else
+            null;
+
+        var rows = std.ArrayList(lend_registry.LendMarket).empty;
+        defer rows.deinit(allocator);
+
+        for (lend_registry.markets) |entry| {
+            if (chain) |c| {
+                if (!std.mem.eql(u8, entry.chain, c)) continue;
+            }
+            if (asset_filter) |asset| {
+                if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+            }
+            if (provider_filter) |provider| {
+                if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+            }
+            if (entry.tvl_usd < min_tvl) continue;
+
+            try rows.append(allocator, entry);
+            if (rows.items.len >= limit) break;
+        }
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .markets = rows.items,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "lendRates")) {
+        const chain_raw = getString(params, "chain") orelse {
+            try writeMissing("chain");
+            return true;
+        };
+        const asset = getString(params, "asset") orelse {
+            try writeMissing("asset");
+            return true;
+        };
+        const provider = getString(params, "provider") orelse {
+            try writeMissing("provider");
+            return true;
+        };
+
+        const chain = core_id.normalizeChain(chain_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+            return true;
+        };
+
+        for (lend_registry.markets) |entry| {
+            if (!std.mem.eql(u8, entry.chain, chain)) continue;
+            if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+            if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .provider = entry.provider,
+                .chain = entry.chain,
+                .asset = entry.asset,
+                .market = entry.market,
+                .supplyApy = entry.supply_apy,
+                .borrowApy = entry.borrow_apy,
+                .tvlUsd = entry.tvl_usd,
+            });
+            return true;
+        }
+
+        try core_envelope.writeJson(core_errors.unsupported("lend rate not found for input"));
         return true;
     }
 

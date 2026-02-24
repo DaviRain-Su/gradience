@@ -62,6 +62,8 @@ def main() -> int:
     assert "yieldOpportunities" in schema.get("actions", [])
     assert "bridgeQuote" in schema.get("actions", [])
     assert "swapQuote" in schema.get("actions", [])
+    assert "lendMarkets" in schema.get("actions", [])
+    assert "lendRates" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -183,6 +185,35 @@ def main() -> int:
     assert swap.get("status") == "ok"
     assert swap.get("provider") == "1inch"
     assert swap.get("estimatedAmountOut") == "998901"
+
+    lend_markets = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "1",
+                "asset": "USDC",
+                "provider": "aave",
+                "minTvlUsd": 1000000,
+                "limit": 5,
+            },
+        },
+        env,
+    )
+    assert lend_markets.get("status") == "ok"
+    markets = lend_markets.get("markets", [])
+    assert len(markets) >= 1
+    assert markets[0].get("provider") == "aave"
+
+    lend_rates = run(
+        {
+            "action": "lendRates",
+            "params": {"chain": "base", "asset": "USDC", "provider": "morpho"},
+        },
+        env,
+    )
+    assert lend_rates.get("status") == "ok"
+    assert lend_rates.get("provider") == "morpho"
+    assert isinstance(lend_rates.get("supplyApy"), float)
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
