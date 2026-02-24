@@ -11,6 +11,7 @@ const TxRequest = struct {
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "buildTransferNative")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const to_address = getString(params, "toAddress") orelse {
             try writeMissing("toAddress");
             return true;
@@ -21,19 +22,34 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             "0";
         const chain_id = getU64(params, "chainId");
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .txRequest = TxRequest{
-                .to = to_address,
-                .value = value,
-                .data = "0x",
-                .chainId = chain_id,
-            },
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = to_address,
+                        .value = value,
+                        .data = "0x",
+                        .chainId = chain_id,
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = to_address,
+                    .value = value,
+                    .data = "0x",
+                    .chainId = chain_id,
+                },
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "buildTransferErc20")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const token_address = getString(params, "tokenAddress") orelse {
             try writeMissing("tokenAddress");
             return true;
@@ -59,19 +75,34 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const data = try encodeTwoArgTransferLike(allocator, "transfer(address,uint256)", to_hex_40, amount);
         defer allocator.free(data);
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .txRequest = TxRequest{
-                .to = token_address,
-                .value = "0",
-                .data = data,
-                .chainId = getU64(params, "chainId"),
-            },
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = token_address,
+                        .value = "0",
+                        .data = data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = token_address,
+                    .value = "0",
+                    .data = data,
+                    .chainId = getU64(params, "chainId"),
+                },
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "buildErc20Approve")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const token_address = getString(params, "tokenAddress") orelse {
             try writeMissing("tokenAddress");
             return true;
@@ -97,19 +128,34 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const data = try encodeTwoArgTransferLike(allocator, "approve(address,uint256)", spender_hex_40, amount);
         defer allocator.free(data);
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .txRequest = TxRequest{
-                .to = token_address,
-                .value = "0",
-                .data = data,
-                .chainId = getU64(params, "chainId"),
-            },
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = token_address,
+                        .value = "0",
+                        .data = data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = token_address,
+                    .value = "0",
+                    .data = data,
+                    .chainId = getU64(params, "chainId"),
+                },
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "buildDexSwap")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const router = getString(params, "router") orelse {
             try writeMissing("router");
             return true;
@@ -217,16 +263,31 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const full_data = try std.fmt.allocPrint(allocator, "{s}{s}", .{ data, dynamic });
         defer allocator.free(full_data);
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .txRequest = TxRequest{
-                .to = router,
-                .value = "0",
-                .data = full_data,
-                .chainId = getU64(params, "chainId"),
-            },
-            .notes = "Approve token spending before swap if needed.",
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = router,
+                        .value = "0",
+                        .data = full_data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                    .notes = "Approve token spending before swap if needed.",
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = router,
+                    .value = "0",
+                    .data = full_data,
+                    .chainId = getU64(params, "chainId"),
+                },
+                .notes = "Approve token spending before swap if needed.",
+            });
+        }
         return true;
     }
 
@@ -280,6 +341,19 @@ fn getU64(obj: std.json.ObjectMap, key: []const u8) ?u64 {
     return switch (value) {
         .integer => |v| if (v >= 0) @intCast(v) else null,
         .string => |s| std.fmt.parseUnsigned(u64, s, 10) catch null,
+        else => null,
+    };
+}
+
+fn getBool(obj: std.json.ObjectMap, key: []const u8) ?bool {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .bool => |v| v,
+        .string => |s| blk: {
+            if (std.ascii.eqlIgnoreCase(s, "true") or std.mem.eql(u8, s, "1")) break :blk true;
+            if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
+            break :blk null;
+        },
         else => null,
     };
 }

@@ -77,6 +77,22 @@ def main() -> int:
         },
         env,
     )
+    transfer_native_results_only = assert_ok(
+        "buildTransferNative#resultsOnly",
+        {
+            "action": "buildTransferNative",
+            "params": {
+                "toAddress": "0x1111111111111111111111111111111111111111",
+                "amountWei": "1",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert (
+        transfer_native_results_only.get("results", {}).get("txRequest", {}).get("data")
+        == "0x"
+    )
 
     assert_ok(
         "buildTransferErc20",
@@ -89,6 +105,23 @@ def main() -> int:
             },
         },
         env,
+    )
+    transfer_erc20_results_only = assert_ok(
+        "buildTransferErc20#resultsOnly",
+        {
+            "action": "buildTransferErc20",
+            "params": {
+                "tokenAddress": "0x1111111111111111111111111111111111111111",
+                "toAddress": "0x2222222222222222222222222222222222222222",
+                "amountRaw": "1000",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert (
+        transfer_erc20_results_only.get("results", {}).get("txRequest", {}).get("to")
+        == "0x1111111111111111111111111111111111111111"
     )
 
     bal1 = assert_ok(

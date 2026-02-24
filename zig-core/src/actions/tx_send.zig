@@ -13,6 +13,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const signed_tx_hex = getString(params, "signedTxHex") orelse {
         try writeMissing("signedTxHex");
@@ -32,7 +33,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     };
     defer allocator.free(tx_hash);
 
-    try core_envelope.writeJson(.{ .status = "ok", .source = "fresh", .txHash = tx_hash, .rpcUrl = rpc_url });
+    if (results_only) {
+        try core_envelope.writeJson(.{ .status = "ok", .results = .{ .source = "fresh", .txHash = tx_hash, .rpcUrl = rpc_url } });
+    } else {
+        try core_envelope.writeJson(.{ .status = "ok", .source = "fresh", .txHash = tx_hash, .rpcUrl = rpc_url });
+    }
     return true;
 }
 
@@ -40,6 +45,19 @@ fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {
     const value = obj.get(key) orelse return null;
     if (value != .string) return null;
     return value.string;
+}
+
+fn getBool(obj: std.json.ObjectMap, key: []const u8) ?bool {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .bool => |v| v,
+        .string => |s| blk: {
+            if (std.ascii.eqlIgnoreCase(s, "true") or std.mem.eql(u8, s, "1")) break :blk true;
+            if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
+            break :blk null;
+        },
+        else => null,
+    };
 }
 
 fn writeMissing(field_name: []const u8) !void {
