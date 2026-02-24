@@ -301,6 +301,22 @@ def main() -> int:
     assert lend_rates.get("provider") == "morpho"
     assert isinstance(lend_rates.get("supplyApy"), float)
 
+    lend_rates_select = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": "provider,supplyApy",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select.get("status") == "ok"
+    rates = lend_rates_select.get("rates", {})
+    assert set(rates.keys()) == {"provider", "supplyApy"}
+
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
     )

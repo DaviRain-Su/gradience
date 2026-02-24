@@ -803,6 +803,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try writeMissing("provider");
             return true;
         };
+        const select = getString(params, "select");
 
         const chain = core_id.normalizeChain(chain_raw) orelse {
             try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
@@ -813,6 +814,46 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             if (!std.mem.eql(u8, entry.chain, chain)) continue;
             if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
             if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+
+            if (select) |fields_raw| {
+                var obj = std.json.ObjectMap.init(allocator);
+                var parts = std.mem.splitScalar(u8, fields_raw, ',');
+                while (parts.next()) |part| {
+                    const field = std.mem.trim(u8, part, " \r\n\t");
+                    if (field.len == 0) continue;
+                    if (std.mem.eql(u8, field, "provider")) {
+                        try obj.put("provider", .{ .string = entry.provider });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "chain")) {
+                        try obj.put("chain", .{ .string = entry.chain });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "asset")) {
+                        try obj.put("asset", .{ .string = entry.asset });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "market")) {
+                        try obj.put("market", .{ .string = entry.market });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "supplyApy")) {
+                        try obj.put("supplyApy", .{ .float = entry.supply_apy });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "borrowApy")) {
+                        try obj.put("borrowApy", .{ .float = entry.borrow_apy });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "tvlUsd")) {
+                        try obj.put("tvlUsd", .{ .float = entry.tvl_usd });
+                        continue;
+                    }
+                }
+
+                try core_envelope.writeJson(.{ .status = "ok", .rates = std.json.Value{ .object = obj } });
+                return true;
+            }
 
             try core_envelope.writeJson(.{
                 .status = "ok",

@@ -118,6 +118,8 @@ Error responses use:
   - `chain` (alias/id/CAIP-2)
   - `asset` (symbol)
   - `provider` (provider name)
+- Optional params:
+  - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supplyApy`, `borrowApy`, `tvlUsd`)
 
 ### providersList Notes
 

@@ -105,7 +105,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 
 `lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 
-`lendRates` supports `chain`, `asset`, `provider`.
+`lendRates` supports `chain`, `asset`, `provider`, with optional `select`.
 
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 
