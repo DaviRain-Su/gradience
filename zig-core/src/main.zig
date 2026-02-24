@@ -6,8 +6,9 @@ const core_id = @import("core/id.zig");
 const core_policy = @import("core/policy.zig");
 const core_cache = @import("core/cache.zig");
 const core_runtime = @import("core/runtime.zig");
+const core_runner = @import("core/runner.zig");
 
-const RequestParams = std.json.ObjectMap;
+const RequestParams = core_runner.RequestParams;
 
 const TxRequest = struct {
     to: []const u8,
@@ -22,43 +23,22 @@ pub fn main() !void {
     const input = try stdin.readToEndAlloc(allocator, 1024 * 1024);
     defer allocator.free(input);
 
-    if (std.mem.trim(u8, input, " \r\n\t").len == 0) {
-        try writeJson(core_errors.usage("empty input"));
-        return;
-    }
-
-    var parsed = std.json.parseFromSlice(std.json.Value, allocator, input, .{}) catch {
-        try writeJson(core_errors.usage("invalid json"));
-        return;
-    };
-    defer parsed.deinit();
-
-    const root = parsed.value;
-    if (root != .object) {
-        try writeJson(core_errors.usage("root must be object"));
-        return;
-    }
-
-    const action = getString(root.object, "action") orelse {
-        try writeJson(core_errors.usage("missing action"));
+    var request = core_runner.prepare(allocator, input) catch |err| {
+        switch (err) {
+            error.EmptyInput => try writeJson(core_errors.usage("empty input")),
+            error.InvalidJson => try writeJson(core_errors.usage("invalid json")),
+            error.RootMustBeObject => try writeJson(core_errors.usage("root must be object")),
+            error.MissingAction => try writeJson(core_errors.usage("missing action")),
+            error.ActionBlockedByPolicy => try writeJson(core_errors.unsupported("action blocked by policy")),
+            error.MissingParams => try writeJson(core_errors.usage("missing params")),
+            error.ParamsMustBeObject => try writeJson(core_errors.usage("params must be object")),
+        }
         return;
     };
+    defer request.deinit();
 
-    if (!core_policy.isAllowed(allocator, action)) {
-        try writeJson(core_errors.unsupported("action blocked by policy"));
-        return;
-    }
-
-    const params_value = root.object.get("params") orelse {
-        try writeJson(core_errors.usage("missing params"));
-        return;
-    };
-    if (params_value != .object) {
-        try writeJson(core_errors.usage("params must be object"));
-        return;
-    }
-
-    const params = params_value.object;
+    const action = request.action;
+    const params = request.params;
 
     if (std.mem.eql(u8, action, "getBalance")) {
         try handleGetBalance(allocator, params);
@@ -73,7 +53,7 @@ pub fn main() !void {
         return;
     }
     if (std.mem.eql(u8, action, "policyCheck")) {
-        try handlePolicyCheck(allocator, params_value.object);
+        try handlePolicyCheck(allocator, params);
         return;
     }
     if (std.mem.eql(u8, action, "normalizeChain")) {
@@ -767,6 +747,8 @@ fn encodeTwoArgTransferLike(
 }
 
 const RpcError = error{
+    RpcRateLimited,
+    RpcUnavailable,
     RpcRequestFailed,
     RpcBadHttpStatus,
     InvalidRpcResponse,
@@ -826,6 +808,8 @@ fn rpcCallResultStringQuiet(
     };
 
     if (fetch_result.status != .ok) {
+        if (fetch_result.status == .too_many_requests) return RpcError.RpcRateLimited;
+        if (@intFromEnum(fetch_result.status) >= 500) return RpcError.RpcUnavailable;
         return RpcError.RpcBadHttpStatus;
     }
 
@@ -839,8 +823,8 @@ fn rpcCallResultStringQuiet(
         return RpcError.InvalidRpcObject;
     }
 
-    if (rpc_root.object.get("error")) |_| {
-        return RpcError.RpcReturnedError;
+    if (rpc_root.object.get("error")) |rpc_error| {
+        return classifyRpcError(rpc_error);
     }
 
     const value = rpc_root.object.get("result") orelse {
@@ -851,6 +835,41 @@ fn rpcCallResultStringQuiet(
     }
 
     return allocator.dupe(u8, value.string);
+}
+
+fn classifyRpcError(rpc_error: std.json.Value) RpcError {
+    if (rpc_error != .object) return RpcError.RpcReturnedError;
+
+    if (rpc_error.object.get("code")) |code_value| {
+        const maybe_code = switch (code_value) {
+            .integer => |v| v,
+            .string => |s| std.fmt.parseInt(i64, s, 10) catch null,
+            else => null,
+        };
+        if (maybe_code) |code| {
+            if (code == 429 or code == -32005) return RpcError.RpcRateLimited;
+            if (code == -32000 or code == -32004) return RpcError.RpcUnavailable;
+        }
+    }
+
+    if (rpc_error.object.get("message")) |msg_value| {
+        if (msg_value == .string) {
+            var buf: [512]u8 = undefined;
+            const msg = msg_value.string;
+            const n = @min(msg.len, buf.len);
+            @memcpy(buf[0..n], msg[0..n]);
+            for (buf[0..n]) |*c| c.* = std.ascii.toLower(c.*);
+            const lower = buf[0..n];
+
+            if (std.mem.indexOf(u8, lower, "rate limit") != null) return RpcError.RpcRateLimited;
+            if (std.mem.indexOf(u8, lower, "too many") != null) return RpcError.RpcRateLimited;
+            if (std.mem.indexOf(u8, lower, "temporarily unavailable") != null) return RpcError.RpcUnavailable;
+            if (std.mem.indexOf(u8, lower, "service unavailable") != null) return RpcError.RpcUnavailable;
+            if (std.mem.indexOf(u8, lower, "timeout") != null) return RpcError.RpcUnavailable;
+        }
+    }
+
+    return RpcError.RpcReturnedError;
 }
 
 fn extractCachedRpcResult(allocator: std.mem.Allocator, value_json: []const u8) RpcCallError![]u8 {
@@ -866,12 +885,26 @@ fn extractCachedRpcResult(allocator: std.mem.Allocator, value_json: []const u8) 
 }
 
 fn writeRpcError(err: RpcCallError) !void {
+    switch (err) {
+        RpcError.RpcRateLimited => {
+            try writeJson(core_errors.rateLimited("rpc rate limited"));
+            return;
+        },
+        RpcError.RpcUnavailable => {
+            try writeJson(core_errors.unavailable("rpc unavailable"));
+            return;
+        },
+        else => {},
+    }
+
     const message: []const u8 = switch (err) {
         RpcError.RpcRequestFailed => "rpc request failed",
         RpcError.RpcBadHttpStatus => "rpc http status not ok",
         RpcError.InvalidRpcResponse => "invalid rpc response",
         RpcError.InvalidRpcObject => "invalid rpc object",
         RpcError.RpcReturnedError => "rpc returned error",
+        RpcError.RpcRateLimited => "rpc rate limited",
+        RpcError.RpcUnavailable => "rpc unavailable",
         RpcError.MissingRpcResult => "missing rpc result",
         RpcError.InvalidRpcResultType => "rpc result must be string",
         RpcError.CachedValueMissingResult => "cached value missing result",

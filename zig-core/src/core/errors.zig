@@ -4,6 +4,8 @@ pub const ExitCode = enum(u8) {
     ok = 0,
     internal_error = 1,
     usage_error = 2,
+    rate_limited = 11,
+    provider_unavailable = 12,
     unsupported_input = 13,
 };
 
@@ -19,6 +21,14 @@ pub fn usage(message: []const u8) ErrorEnvelope {
 
 pub fn unsupported(message: []const u8) ErrorEnvelope {
     return .{ .status = "error", .code = @intFromEnum(ExitCode.unsupported_input), .@"error" = message };
+}
+
+pub fn rateLimited(message: []const u8) ErrorEnvelope {
+    return .{ .status = "error", .code = @intFromEnum(ExitCode.rate_limited), .@"error" = message };
+}
+
+pub fn unavailable(message: []const u8) ErrorEnvelope {
+    return .{ .status = "error", .code = @intFromEnum(ExitCode.provider_unavailable), .@"error" = message };
 }
 
 pub fn internal(message: []const u8) ErrorEnvelope {
