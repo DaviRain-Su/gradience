@@ -11,6 +11,7 @@ const core_version = @import("../core/version.zig");
 const chains_registry = @import("../core/chains_registry.zig");
 const chains_assets_registry = @import("../core/chains_assets_registry.zig");
 const yield_registry = @import("../core/yield_registry.zig");
+const bridge_quotes_registry = @import("../core/bridge_quotes_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -340,6 +341,75 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try core_envelope.writeJson(.{
             .status = "ok",
             .opportunities = rows.items,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "bridgeQuote")) {
+        const from_raw = getString(params, "from") orelse {
+            try writeMissing("from");
+            return true;
+        };
+        const to_raw = getString(params, "to") orelse {
+            try writeMissing("to");
+            return true;
+        };
+        const asset = getString(params, "asset") orelse {
+            try writeMissing("asset");
+            return true;
+        };
+        const amount_raw = getString(params, "amount") orelse {
+            try writeMissing("amount");
+            return true;
+        };
+
+        const from_chain = core_id.normalizeChain(from_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported from chain alias"));
+            return true;
+        };
+        const to_chain = core_id.normalizeChain(to_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported to chain alias"));
+            return true;
+        };
+
+        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+            try writeInvalid("amount");
+            return true;
+        };
+
+        const provider_filter = getString(params, "provider");
+        var chosen: ?bridge_quotes_registry.BridgeQuote = null;
+        for (bridge_quotes_registry.quotes) |quote| {
+            if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
+            if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
+            if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
+            if (provider_filter) |provider| {
+                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+            }
+            chosen = quote;
+            break;
+        }
+
+        if (chosen == null) {
+            try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
+            return true;
+        }
+
+        const fee_bps_u256: u256 = @intCast(chosen.?.fee_bps);
+        const base_out = amount - ((amount * fee_bps_u256) / 10_000);
+        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{base_out});
+        defer allocator.free(estimated_out);
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .provider = chosen.?.provider,
+            .fromChain = from_chain,
+            .toChain = to_chain,
+            .asset = asset,
+            .amountIn = amount_raw,
+            .estimatedAmountOut = estimated_out,
+            .feeBps = chosen.?.fee_bps,
+            .etaSeconds = chosen.?.eta_seconds,
         });
         return true;
     }

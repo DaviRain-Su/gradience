@@ -60,6 +60,7 @@ def main() -> int:
     assert "chainsTop" in schema.get("actions", [])
     assert "chainsAssets" in schema.get("actions", [])
     assert "yieldOpportunities" in schema.get("actions", [])
+    assert "bridgeQuote" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -147,6 +148,23 @@ def main() -> int:
     opportunities = yield_rows.get("opportunities", [])
     assert len(opportunities) >= 1
     assert opportunities[0].get("provider") == "morpho"
+
+    bridge = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+            },
+        },
+        env,
+    )
+    assert bridge.get("status") == "ok"
+    assert bridge.get("provider") == "lifi"
+    assert bridge.get("estimatedAmountOut") == "999300"
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
