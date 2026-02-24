@@ -52,6 +52,15 @@ Error responses use:
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
 - Tx send: `sendSignedTransaction`
 
+### providersList Notes
+
+- Returns provider metadata aligned with `defi-cli providers list` intent:
+  - `name`
+  - `categories`
+  - `auth`
+  - `capabilities`
+  - `capability_auth`
+
 ### rpcCallCached Notes
 
 - `method` is canonicalized before provider call (`ETH_GETBALANCE` -> `eth_getBalance`)

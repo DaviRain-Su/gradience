@@ -59,8 +59,18 @@ def main() -> int:
 
     providers = run({"action": "providersList", "params": {}}, env)
     assert providers.get("status") == "ok"
-    names = {p.get("name") for p in providers.get("providers", [])}
+    provider_rows = providers.get("providers", [])
+    names = {p.get("name") for p in provider_rows}
     assert "aave" in names and "lifi" in names and "jupiter" in names
+    oneinch = next((p for p in provider_rows if p.get("name") == "1inch"), None)
+    assert oneinch is not None
+    assert "swap" in oneinch.get("categories", [])
+    assert "swap.quote" in oneinch.get("capabilities", [])
+    cap_auth = oneinch.get("capability_auth", [])
+    assert any(
+        row.get("capability") == "swap.quote" and "1INCH" in row.get("auth", "")
+        for row in cap_auth
+    )
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
