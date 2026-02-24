@@ -97,7 +97,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 
 `chainsAssets` supports `chain` (required), with optional `asset` and `limit` filters.
 
-`yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `limit`.
+`yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 
 `bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider`.
 

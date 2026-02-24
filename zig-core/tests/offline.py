@@ -164,6 +164,25 @@ def main() -> int:
     assert len(opportunities) >= 1
     assert opportunities[0].get("provider") == "morpho"
 
+    yield_select = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "sortBy": "apy",
+                "order": "asc",
+                "limit": 2,
+                "select": "provider,apy",
+            },
+        },
+        env,
+    )
+    assert yield_select.get("status") == "ok"
+    sel_rows = yield_select.get("opportunities", [])
+    assert len(sel_rows) == 2
+    assert set(sel_rows[0].keys()) == {"provider", "apy"}
+    assert sel_rows[0]["apy"] <= sel_rows[1]["apy"]
+
     bridge = run(
         {
             "action": "bridgeQuote",

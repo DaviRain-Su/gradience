@@ -360,6 +360,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const min_tvl = getF64(params, "minTvlUsd") orelse 0;
         const limit_raw = getU64(params, "limit") orelse 20;
         const limit: usize = @intCast(limit_raw);
+        const sort_by = getString(params, "sortBy") orelse "tvl_usd";
+        const order = getString(params, "order") orelse "desc";
+        const select = getString(params, "select");
 
         const chain = if (chain_raw) |value|
             (core_id.normalizeChain(value) orelse {
@@ -385,7 +388,67 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             if (entry.tvl_usd < min_tvl) continue;
 
             try rows.append(allocator, entry);
-            if (rows.items.len >= limit) break;
+        }
+
+        const less_ctx = SortContext{
+            .sort_by = sort_by,
+            .ascending = std.ascii.eqlIgnoreCase(order, "asc"),
+        };
+        std.mem.sort(yield_registry.YieldEntry, rows.items, less_ctx, lessYieldEntry);
+
+        if (rows.items.len > limit) {
+            rows.items.len = limit;
+        }
+
+        if (select) |fields_raw| {
+            var projected = std.ArrayList(std.json.Value).empty;
+            defer projected.deinit(allocator);
+
+            var parts = std.mem.splitScalar(u8, fields_raw, ',');
+            var fields = std.ArrayList([]const u8).empty;
+            defer fields.deinit(allocator);
+            while (parts.next()) |part| {
+                const field = std.mem.trim(u8, part, " \r\n\t");
+                if (field.len == 0) continue;
+                try fields.append(allocator, field);
+            }
+
+            for (rows.items) |entry| {
+                var obj = std.json.ObjectMap.init(allocator);
+                for (fields.items) |field| {
+                    if (std.mem.eql(u8, field, "provider")) {
+                        try obj.put("provider", .{ .string = entry.provider });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "chain")) {
+                        try obj.put("chain", .{ .string = entry.chain });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "asset")) {
+                        try obj.put("asset", .{ .string = entry.asset });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "market")) {
+                        try obj.put("market", .{ .string = entry.market });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "apy")) {
+                        try obj.put("apy", .{ .float = entry.apy });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "tvl_usd")) {
+                        try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
+                        continue;
+                    }
+                }
+                try projected.append(allocator, .{ .object = obj });
+            }
+
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .opportunities = projected.items,
+            });
+            return true;
         }
 
         try core_envelope.writeJson(.{
@@ -615,6 +678,33 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     return false;
+}
+
+const SortContext = struct {
+    sort_by: []const u8,
+    ascending: bool,
+};
+
+fn lessYieldEntry(ctx: SortContext, a: yield_registry.YieldEntry, b: yield_registry.YieldEntry) bool {
+    if (std.ascii.eqlIgnoreCase(ctx.sort_by, "apy")) {
+        if (a.apy == b.apy) return false;
+        return if (ctx.ascending) a.apy < b.apy else a.apy > b.apy;
+    }
+
+    if (std.ascii.eqlIgnoreCase(ctx.sort_by, "provider")) {
+        const ord = std.mem.order(u8, a.provider, b.provider);
+        if (ord == .eq) return false;
+        return if (ctx.ascending) ord == .lt else ord == .gt;
+    }
+
+    if (std.ascii.eqlIgnoreCase(ctx.sort_by, "chain")) {
+        const ord = std.mem.order(u8, a.chain, b.chain);
+        if (ord == .eq) return false;
+        return if (ctx.ascending) ord == .lt else ord == .gt;
+    }
+
+    if (a.tvl_usd == b.tvl_usd) return false;
+    return if (ctx.ascending) a.tvl_usd < b.tvl_usd else a.tvl_usd > b.tvl_usd;
 }
 
 fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {

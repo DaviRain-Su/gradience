@@ -73,7 +73,10 @@ Error responses use:
   - `asset` (symbol)
   - `provider` (provider name)
   - `minTvlUsd` (numeric threshold)
+  - `sortBy` (`tvl_usd` default, or `apy`, `provider`, `chain`)
+  - `order` (`desc` default, or `asc`)
   - `limit` (default `20`)
+  - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `apy`, `tvl_usd`)
 
 ### bridgeQuote Notes
 
