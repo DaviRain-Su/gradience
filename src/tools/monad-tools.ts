@@ -124,10 +124,29 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
-      const provider = getProvider(rpcUrl);
       const tokenAddress = asString(params, "tokenAddress");
       const address = asString(params, "address");
       const blockTag = asString(params, "blockTag", "latest");
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "getErc20Balance",
+          params: { rpcUrl, tokenAddress, address, blockTag },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core getErc20Balance failed"));
+        }
+        const balanceHex = String(zig.balanceRaw || "0x0");
+        return textResult({
+          status: "ok",
+          address,
+          tokenAddress,
+          balanceRaw: BigInt(balanceHex).toString(),
+          rpcUrl,
+        });
+      }
+
+      const provider = getProvider(rpcUrl);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
       const balance = await contract.balanceOf(address, { blockTag });
       return textResult({
@@ -151,6 +170,18 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "getBlockNumber",
+          params: { rpcUrl },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core getBlockNumber failed"));
+        }
+        return textResult({ status: "ok", blockNumber: Number(zig.blockNumber || 0), rpcUrl });
+      }
+
       const provider = getProvider(rpcUrl);
       const block = await provider.getBlockNumber();
       return textResult({ status: "ok", blockNumber: block, rpcUrl });
@@ -173,6 +204,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["toAddress"],
     },
     async execute(_toolCallId, params: Params) {
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildTransferNative",
+          params: {
+            toAddress: asString(params, "toAddress"),
+            amountWei: asString(params, "amountWei"),
+            valueHex: asString(params, "valueHex"),
+            chainId: params.chainId ?? null,
+          },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core buildTransferNative failed"));
+        }
+        return textResult({ status: "ok", txRequest: zig.txRequest });
+      }
+
       const value = asString(params, "amountWei") || asString(params, "valueHex") || "0";
       return textResult({
         status: "ok",
@@ -251,6 +298,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["tokenAddress", "spender", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildErc20Approve",
+          params: {
+            tokenAddress: asString(params, "tokenAddress"),
+            spender: asString(params, "spender"),
+            amountRaw: asString(params, "amountRaw"),
+            chainId: params.chainId ?? null,
+          },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core buildErc20Approve failed"));
+        }
+        return textResult({ status: "ok", txRequest: zig.txRequest });
+      }
+
       const iface = new Interface(ERC20_ABI);
       const data = iface.encodeFunctionData("approve", [
         asString(params, "spender"),
@@ -287,6 +350,25 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["router", "amountIn", "amountOutMin", "path", "to", "deadline"],
     },
     async execute(_toolCallId, params: Params) {
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildDexSwap",
+          params: {
+            router: asString(params, "router"),
+            amountIn: asString(params, "amountIn"),
+            amountOutMin: asString(params, "amountOutMin"),
+            path: asStringArray(params, "path"),
+            to: asString(params, "to"),
+            deadline: asString(params, "deadline"),
+            chainId: params.chainId ?? null,
+          },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core buildDexSwap failed"));
+        }
+        return textResult({ status: "ok", txRequest: zig.txRequest, notes: zig.notes });
+      }
+
       const iface = new Interface(ROUTER_ABI);
       const data = iface.encodeFunctionData("swapExactTokensForTokens", [
         asString(params, "amountIn"),
@@ -897,8 +979,20 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
-      const provider = getProvider(rpcUrl);
       const signedTxHex = asString(params, "signedTxHex");
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "sendSignedTransaction",
+          params: { rpcUrl, signedTxHex },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core sendSignedTransaction failed"));
+        }
+        return textResult({ status: "ok", txHash: String(zig.txHash || ""), rpcUrl });
+      }
+
+      const provider = getProvider(rpcUrl);
       const response = await provider.broadcastTransaction(signedTxHex);
       return textResult({ status: "ok", txHash: response.hash, rpcUrl });
     },
@@ -924,13 +1018,100 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
-      const provider = getProvider(rpcUrl);
       const fromAddress = asString(params, "fromAddress");
       const toAddress = asString(params, "toAddress");
       const tokenAddress = asOptionalString(params, "tokenAddress");
       const amountRaw = asString(params, "amountRaw");
+      const runMode = asString(params, "runMode");
 
-      if (asString(params, "runMode") === "analysis") {
+      if (isZigCoreEnabled()) {
+        if (runMode === "analysis") {
+          const zig = await callZigCore({
+            action: "getBalance",
+            params: { rpcUrl, address: fromAddress, blockTag: "latest" },
+          });
+          if (zig.status !== "ok") {
+            throw new Error(String(zig.error || "zig core analysis getBalance failed"));
+          }
+          return textResult({
+            status: "analysis_ok",
+            fromAddress,
+            balanceWei: BigInt(String(zig.balanceHex || "0x0")).toString(),
+            rpcUrl,
+          });
+        }
+
+        if (runMode === "simulate") {
+          const txRequest = tokenAddress
+            ? (await callZigCore({
+                action: "buildTransferErc20",
+                params: {
+                  tokenAddress,
+                  toAddress,
+                  amountRaw,
+                },
+              }))
+            : (await callZigCore({
+                action: "buildTransferNative",
+                params: {
+                  toAddress,
+                  amountWei: amountRaw,
+                },
+              }));
+
+          if (txRequest.status !== "ok" || !txRequest.txRequest) {
+            throw new Error(String(txRequest.error || "zig core build tx failed"));
+          }
+
+          const builtTx = txRequest.txRequest as Record<string, unknown>;
+          const estimate = await callZigCore({
+            action: "estimateGas",
+            params: {
+              rpcUrl,
+              from: fromAddress,
+              to: String(builtTx.to || ""),
+              data: String(builtTx.data || "0x"),
+              value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
+            },
+          });
+
+          if (estimate.status !== "ok") {
+            throw new Error(String(estimate.error || "zig core estimateGas failed"));
+          }
+
+          return textResult({
+            status: "simulate_ok",
+            estimateGas: String(estimate.estimateGas || "0"),
+            rpcUrl,
+            tx: {
+              from: fromAddress,
+              to: String(builtTx.to || ""),
+              data: String(builtTx.data || "0x"),
+              value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
+            },
+          });
+        }
+
+        if (!asOptionalString(params, "signedTxHex")) {
+          return textResult({
+            status: "blocked",
+            reason: "execute requires signedTxHex",
+          });
+        }
+
+        const sent = await callZigCore({
+          action: "sendSignedTransaction",
+          params: { rpcUrl, signedTxHex: asString(params, "signedTxHex") },
+        });
+        if (sent.status !== "ok") {
+          throw new Error(String(sent.error || "zig core sendSignedTransaction failed"));
+        }
+        return textResult({ status: "execute_ok", txHash: String(sent.txHash || ""), rpcUrl });
+      }
+
+      const provider = getProvider(rpcUrl);
+
+      if (runMode === "analysis") {
         const balance = await provider.getBalance(fromAddress, "latest");
         return textResult({
           status: "analysis_ok",
@@ -940,7 +1121,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         });
       }
 
-      if (asString(params, "runMode") === "simulate") {
+      if (runMode === "simulate") {
         const txData = tokenAddress
           ? new Interface(ERC20_ABI).encodeFunctionData("transfer", [
               toAddress,

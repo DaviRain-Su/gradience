@@ -2,7 +2,16 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 type ZigRequest = {
-  action: "getBalance" | "buildTransferErc20";
+  action:
+    | "getBalance"
+    | "getErc20Balance"
+    | "getBlockNumber"
+    | "buildTransferNative"
+    | "buildTransferErc20"
+    | "buildErc20Approve"
+    | "buildDexSwap"
+    | "estimateGas"
+    | "sendSignedTransaction";
   params: Record<string, unknown>;
 };
 
@@ -11,7 +20,7 @@ function defaultZigBinaryPath(): string {
 }
 
 export function isZigCoreEnabled(): boolean {
-  return process.env.MONAD_USE_ZIG_CORE === "1";
+  return process.env.MONAD_USE_ZIG_CORE !== "0";
 }
 
 export async function callZigCore(request: ZigRequest): Promise<Record<string, unknown>> {

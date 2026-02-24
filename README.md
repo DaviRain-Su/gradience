@@ -35,10 +35,10 @@ cd zig-core
 zig build
 ```
 
-Enable Zig-backed execution for supported tools:
+Zig-backed execution is enabled by default. Disable it if needed:
 
 ```bash
-export MONAD_USE_ZIG_CORE=1
+export MONAD_USE_ZIG_CORE=0
 ```
 
 Optional override if binary is not in the default path (`zig-core/zig-out/bin/gradience-zig`):
@@ -50,7 +50,14 @@ export GRADIENCE_ZIG_BIN="/absolute/path/to/gradience-zig"
 Current Zig-routed tools:
 
 - `monad_getBalance`
+- `monad_getErc20Balance`
+- `monad_getBlockNumber`
+- `monad_buildTransferNative`
 - `monad_buildTransferErc20`
+- `monad_buildErc20Approve`
+- `monad_buildDexSwap`
+- `monad_sendSignedTransaction`
+- `monad_runTransferWorkflow`
 
 ## Tools
 
