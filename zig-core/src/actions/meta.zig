@@ -611,13 +611,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         defer candidates.deinit(allocator);
 
         if (candidates.items.len == 0) {
-            try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
+            try writeNoBridgeRoute();
             return true;
         }
 
         const selected = selectBridgeQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
         if (selected == null) {
-            try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
+            try writeNoBridgeRoute();
             return true;
         }
         const chosen = selected.?.quote;
@@ -668,13 +668,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         defer candidates.deinit(allocator);
 
         if (candidates.items.len == 0) {
-            try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+            try writeNoSwapRoute();
             return true;
         }
 
         const selected = selectSwapQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
         if (selected == null) {
-            try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+            try writeNoSwapRoute();
             return true;
         }
         const chosen = selected.?.quote;
@@ -1435,6 +1435,14 @@ fn writeMissing(field_name: []const u8) !void {
     const msg = try core_errors.missingField(std.heap.c_allocator, field_name);
     defer std.heap.c_allocator.free(msg);
     try core_envelope.writeJson(core_errors.usage(msg));
+}
+
+fn writeNoBridgeRoute() !void {
+    try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
+}
+
+fn writeNoSwapRoute() !void {
+    try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
 }
 
 fn writeInvalid(field_name: []const u8) !void {
