@@ -46,7 +46,7 @@ Error responses use:
 
 ## Action Groups
 
-- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `normalizeAmount`
+- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `yieldOpportunities`, `normalizeAmount`
 - Cache admin: `cachePut`, `cacheGet`
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
@@ -64,6 +64,15 @@ Error responses use:
   - `chain` (`1`, `base`, `solana`, CAIP-2, etc.)
 - Optional params:
   - `asset` (symbol or CAIP-19 exact match)
+  - `limit` (default `20`)
+
+### yieldOpportunities Notes
+
+- Optional params:
+  - `chain` (alias/id/CAIP-2)
+  - `asset` (symbol)
+  - `provider` (provider name)
+  - `minTvlUsd` (numeric threshold)
   - `limit` (default `20`)
 
 ### providersList Notes

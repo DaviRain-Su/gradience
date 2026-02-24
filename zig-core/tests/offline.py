@@ -59,6 +59,7 @@ def main() -> int:
     assert "providersList" in schema.get("actions", [])
     assert "chainsTop" in schema.get("actions", [])
     assert "chainsAssets" in schema.get("actions", [])
+    assert "yieldOpportunities" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -128,6 +129,24 @@ def main() -> int:
     assets = chain_assets.get("assets", [])
     assert len(assets) == 1
     assert assets[0].get("symbol") == "USDC"
+
+    yield_rows = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "minTvlUsd": 100000000,
+                "limit": 5,
+            },
+        },
+        env,
+    )
+    assert yield_rows.get("status") == "ok"
+    opportunities = yield_rows.get("opportunities", [])
+    assert len(opportunities) >= 1
+    assert opportunities[0].get("provider") == "morpho"
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env

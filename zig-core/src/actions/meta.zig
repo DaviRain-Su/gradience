@@ -10,6 +10,7 @@ const providers_registry = @import("../core/providers_registry.zig");
 const core_version = @import("../core/version.zig");
 const chains_registry = @import("../core/chains_registry.zig");
 const chains_assets_registry = @import("../core/chains_assets_registry.zig");
+const yield_registry = @import("../core/yield_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -301,6 +302,48 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "yieldOpportunities")) {
+        const chain_raw = getString(params, "chain");
+        const asset_filter = getString(params, "asset");
+        const provider_filter = getString(params, "provider");
+        const min_tvl = getF64(params, "minTvlUsd") orelse 0;
+        const limit_raw = getU64(params, "limit") orelse 20;
+        const limit: usize = @intCast(limit_raw);
+
+        const chain = if (chain_raw) |value|
+            (core_id.normalizeChain(value) orelse {
+                try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+                return true;
+            })
+        else
+            null;
+
+        var rows = std.ArrayList(yield_registry.YieldEntry).empty;
+        defer rows.deinit(allocator);
+
+        for (yield_registry.opportunities) |entry| {
+            if (chain) |c| {
+                if (!std.mem.eql(u8, entry.chain, c)) continue;
+            }
+            if (asset_filter) |asset| {
+                if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+            }
+            if (provider_filter) |provider| {
+                if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+            }
+            if (entry.tvl_usd < min_tvl) continue;
+
+            try rows.append(allocator, entry);
+            if (rows.items.len >= limit) break;
+        }
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .opportunities = rows.items,
+        });
+        return true;
+    }
+
     return false;
 }
 
@@ -328,6 +371,16 @@ fn getBool(obj: std.json.ObjectMap, key: []const u8) ?bool {
             if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
             break :blk null;
         },
+        else => null,
+    };
+}
+
+fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .float => |v| v,
+        .integer => |v| @floatFromInt(v),
+        .string => |s| std.fmt.parseFloat(f64, s) catch null,
         else => null,
     };
 }

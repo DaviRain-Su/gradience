@@ -81,6 +81,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 - `assetsResolve`
 - `chainsTop`
 - `chainsAssets`
+- `yieldOpportunities`
 - `normalizeAmount`
 - `cachePut`
 - `cacheGet`
@@ -91,6 +92,8 @@ Protocol details: `zig-core/PROTOCOL.md`
 `chainsTop` supports `limit` and optional `select` (for example: `chain,rank`).
 
 `chainsAssets` supports `chain` (required), with optional `asset` and `limit` filters.
+
+`yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `limit`.
 
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 
