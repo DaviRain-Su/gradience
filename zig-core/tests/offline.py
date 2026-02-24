@@ -109,6 +109,15 @@ def main() -> int:
     assert len(chains) == 3
     assert chains[0].get("chain") == "ethereum"
 
+    chains_select = run(
+        {"action": "chainsTop", "params": {"limit": 2, "select": "chain,rank"}},
+        env,
+    )
+    assert chains_select.get("status") == "ok"
+    selected_rows = chains_select.get("chains", [])
+    assert len(selected_rows) == 2
+    assert set(selected_rows[0].keys()) == {"chain", "rank"}
+
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
     )

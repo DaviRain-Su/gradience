@@ -213,9 +213,53 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const clamped = if (limit_raw > max_len) max_len else limit_raw;
         const count: usize = @intCast(clamped);
 
+        const select = getString(params, "select");
+        if (select == null) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .chains = chains_registry.chains[0..count],
+            });
+            return true;
+        }
+
+        var rows = std.ArrayList(std.json.Value).empty;
+        defer rows.deinit(allocator);
+
+        var parts = std.mem.splitScalar(u8, select.?, ',');
+        var fields = std.ArrayList([]const u8).empty;
+        defer fields.deinit(allocator);
+        while (parts.next()) |part| {
+            const field = std.mem.trim(u8, part, " \r\n\t");
+            if (field.len == 0) continue;
+            try fields.append(allocator, field);
+        }
+
+        for (chains_registry.chains[0..count]) |chain| {
+            var obj = std.json.ObjectMap.init(allocator);
+            for (fields.items) |field| {
+                if (std.mem.eql(u8, field, "rank")) {
+                    try obj.put("rank", .{ .integer = chain.rank });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "chain")) {
+                    try obj.put("chain", .{ .string = chain.chain });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "chain_id")) {
+                    try obj.put("chain_id", .{ .string = chain.chain_id });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "tvl_usd")) {
+                    try obj.put("tvl_usd", .{ .float = chain.tvl_usd });
+                    continue;
+                }
+            }
+            try rows.append(allocator, .{ .object = obj });
+        }
+
         try core_envelope.writeJson(.{
             .status = "ok",
-            .chains = chains_registry.chains[0..count],
+            .chains = rows.items,
         });
         return true;
     }

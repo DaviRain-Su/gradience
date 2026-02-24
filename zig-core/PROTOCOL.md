@@ -52,6 +52,12 @@ Error responses use:
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
 - Tx send: `sendSignedTransaction`
 
+### chainsTop Notes
+
+- Optional params:
+  - `limit` (default `10`)
+  - `select` (comma-separated fields: `rank`, `chain`, `chain_id`, `tvl_usd`)
+
 ### providersList Notes
 
 - Returns provider metadata aligned with `defi-cli providers list` intent:
