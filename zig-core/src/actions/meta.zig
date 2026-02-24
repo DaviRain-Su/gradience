@@ -615,7 +615,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const selected = selectBridgeQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
+        const selected = try selectBridgeQuote(allocator, amount, candidates.items, provider_filter, provider_priority, strategy);
         if (selected == null) {
             try writeNoBridgeRoute();
             return true;
@@ -672,7 +672,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const selected = selectSwapQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
+        const selected = try selectSwapQuote(allocator, amount, candidates.items, provider_filter, provider_priority, strategy);
         if (selected == null) {
             try writeNoSwapRoute();
             return true;
@@ -1010,12 +1010,13 @@ fn collectSwapCandidates(
 }
 
 fn selectBridgeQuote(
+    allocator: std.mem.Allocator,
     amount: u256,
     candidates: []const bridge_quotes_registry.BridgeQuote,
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
     strategy: []const u8,
-) ?BridgeQuoteSelection {
+) !?BridgeQuoteSelection {
     var selected: ?BridgeQuoteSelection = null;
 
     if (provider_filter) |provider| {
@@ -1030,15 +1031,18 @@ fn selectBridgeQuote(
     }
 
     if (provider_priority) |providers_raw| {
+        var priority_ranks = try buildProviderPriorityMap(allocator, providers_raw);
+        defer priority_ranks.deinit();
+
         var min_rank: usize = std.math.maxInt(usize);
         for (candidates) |quote| {
-            const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+            const rank = priority_ranks.get(quote.provider) orelse continue;
             if (rank < min_rank) min_rank = rank;
         }
 
         if (min_rank != std.math.maxInt(usize)) {
             for (candidates) |quote| {
-                const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                const rank = priority_ranks.get(quote.provider) orelse continue;
                 if (rank != min_rank) continue;
                 const quote_out = bridgeOutAmount(amount, quote.fee_bps);
                 if (selected == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, selected.?.out_amount, selected.?.quote.eta_seconds)) {
@@ -1059,12 +1063,13 @@ fn selectBridgeQuote(
 }
 
 fn selectSwapQuote(
+    allocator: std.mem.Allocator,
     amount: u256,
     candidates: []const swap_quotes_registry.SwapQuote,
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
     strategy: []const u8,
-) ?SwapQuoteSelection {
+) !?SwapQuoteSelection {
     var selected: ?SwapQuoteSelection = null;
 
     if (provider_filter) |provider| {
@@ -1079,15 +1084,18 @@ fn selectSwapQuote(
     }
 
     if (provider_priority) |providers_raw| {
+        var priority_ranks = try buildProviderPriorityMap(allocator, providers_raw);
+        defer priority_ranks.deinit();
+
         var min_rank: usize = std.math.maxInt(usize);
         for (candidates) |quote| {
-            const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+            const rank = priority_ranks.get(quote.provider) orelse continue;
             if (rank < min_rank) min_rank = rank;
         }
 
         if (min_rank != std.math.maxInt(usize)) {
             for (candidates) |quote| {
-                const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                const rank = priority_ranks.get(quote.provider) orelse continue;
                 if (rank != min_rank) continue;
                 const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
                 if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
@@ -1159,16 +1167,19 @@ fn swapQuoteShouldReplace(
     return candidate.price_impact_bps < current.price_impact_bps;
 }
 
-fn providerPriorityRank(priorities_raw: []const u8, provider: []const u8) ?usize {
+fn buildProviderPriorityMap(allocator: std.mem.Allocator, priorities_raw: []const u8) !std.StringHashMap(usize) {
+    var map = std.StringHashMap(usize).init(allocator);
     var parts = std.mem.splitScalar(u8, priorities_raw, ',');
     var idx: usize = 0;
     while (parts.next()) |part| {
         const value = std.mem.trim(u8, part, " \r\n\t");
         if (value.len == 0) continue;
-        if (std.ascii.eqlIgnoreCase(value, provider)) return idx;
+        if (map.get(value) == null) {
+            try map.put(value, idx);
+        }
         idx += 1;
     }
-    return null;
+    return map;
 }
 
 fn writeBridgeQuoteResponse(
