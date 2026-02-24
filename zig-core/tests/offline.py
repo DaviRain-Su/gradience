@@ -61,6 +61,7 @@ def main() -> int:
     assert "chainsAssets" in schema.get("actions", [])
     assert "yieldOpportunities" in schema.get("actions", [])
     assert "bridgeQuote" in schema.get("actions", [])
+    assert "swapQuote" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -165,6 +166,23 @@ def main() -> int:
     assert bridge.get("status") == "ok"
     assert bridge.get("provider") == "lifi"
     assert bridge.get("estimatedAmountOut") == "999300"
+
+    swap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap.get("status") == "ok"
+    assert swap.get("provider") == "1inch"
+    assert swap.get("estimatedAmountOut") == "998901"
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env

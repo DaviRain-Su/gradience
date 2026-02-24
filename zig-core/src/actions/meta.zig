@@ -12,6 +12,7 @@ const chains_registry = @import("../core/chains_registry.zig");
 const chains_assets_registry = @import("../core/chains_assets_registry.zig");
 const yield_registry = @import("../core/yield_registry.zig");
 const bridge_quotes_registry = @import("../core/bridge_quotes_registry.zig");
+const swap_quotes_registry = @import("../core/swap_quotes_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -410,6 +411,73 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             .estimatedAmountOut = estimated_out,
             .feeBps = chosen.?.fee_bps,
             .etaSeconds = chosen.?.eta_seconds,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "swapQuote")) {
+        const chain_raw = getString(params, "chain") orelse {
+            try writeMissing("chain");
+            return true;
+        };
+        const from_asset = getString(params, "fromAsset") orelse {
+            try writeMissing("fromAsset");
+            return true;
+        };
+        const to_asset = getString(params, "toAsset") orelse {
+            try writeMissing("toAsset");
+            return true;
+        };
+        const amount_raw = getString(params, "amount") orelse {
+            try writeMissing("amount");
+            return true;
+        };
+
+        const chain = core_id.normalizeChain(chain_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+            return true;
+        };
+
+        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+            try writeInvalid("amount");
+            return true;
+        };
+
+        const provider_filter = getString(params, "provider");
+        var chosen: ?swap_quotes_registry.SwapQuote = null;
+        for (swap_quotes_registry.quotes) |quote| {
+            if (!std.mem.eql(u8, quote.chain, chain)) continue;
+            if (!std.ascii.eqlIgnoreCase(quote.from_asset, from_asset)) continue;
+            if (!std.ascii.eqlIgnoreCase(quote.to_asset, to_asset)) continue;
+            if (provider_filter) |provider| {
+                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+            }
+            chosen = quote;
+            break;
+        }
+
+        if (chosen == null) {
+            try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+            return true;
+        }
+
+        const fee_bps_u256: u256 = @intCast(chosen.?.fee_bps);
+        const impact_bps_u256: u256 = @intCast(chosen.?.price_impact_bps);
+        const after_fee = amount - ((amount * fee_bps_u256) / 10_000);
+        const out_amount = after_fee - ((after_fee * impact_bps_u256) / 10_000);
+        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
+        defer allocator.free(estimated_out);
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .provider = chosen.?.provider,
+            .chain = chain,
+            .fromAsset = from_asset,
+            .toAsset = to_asset,
+            .amountIn = amount_raw,
+            .estimatedAmountOut = estimated_out,
+            .feeBps = chosen.?.fee_bps,
+            .priceImpactBps = chosen.?.price_impact_bps,
         });
         return true;
     }

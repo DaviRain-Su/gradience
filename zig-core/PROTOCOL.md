@@ -46,7 +46,7 @@ Error responses use:
 
 ## Action Groups
 
-- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `yieldOpportunities`, `bridgeQuote`, `normalizeAmount`
+- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `yieldOpportunities`, `bridgeQuote`, `swapQuote`, `normalizeAmount`
 - Cache admin: `cachePut`, `cacheGet`
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
@@ -84,6 +84,16 @@ Error responses use:
   - `amount` (base units)
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
+
+### swapQuote Notes
+
+- Required params:
+  - `chain` (chain alias/id/CAIP-2)
+  - `fromAsset` (symbol)
+  - `toAsset` (symbol)
+  - `amount` (base units)
+- Optional params:
+  - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
 
 ### providersList Notes
 
