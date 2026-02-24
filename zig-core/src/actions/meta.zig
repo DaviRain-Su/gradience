@@ -599,6 +599,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
 
         const provider_filter = getString(params, "provider");
+        const provider_priority = getString(params, "providers");
         const strategy = getString(params, "strategy") orelse "bestOut";
         if (!std.ascii.eqlIgnoreCase(strategy, "bestOut") and !std.ascii.eqlIgnoreCase(strategy, "fastest")) {
             try writeInvalid("strategy");
@@ -608,13 +609,135 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const results_only = getBool(params, "resultsOnly") orelse false;
         var chosen: ?bridge_quotes_registry.BridgeQuote = null;
         var chosen_out: u256 = 0;
+
+        if (provider_filter) |provider| {
+            for (bridge_quotes_registry.quotes) |quote| {
+                if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
+                if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
+                if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
+                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+
+                chosen = quote;
+                const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
+                chosen_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+                break;
+            }
+
+            if (chosen == null) {
+                try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
+                return true;
+            }
+        }
+
+        if (chosen == null) {
+            if (provider_priority) |providers_raw| {
+                var providers_iter = std.mem.splitScalar(u8, providers_raw, ',');
+                while (providers_iter.next()) |provider_raw| {
+                    const provider_name = std.mem.trim(u8, provider_raw, " \r\n\t");
+                    if (provider_name.len == 0) continue;
+
+                    for (bridge_quotes_registry.quotes) |quote| {
+                        if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
+                        if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
+                        if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
+                        if (!std.ascii.eqlIgnoreCase(quote.provider, provider_name)) continue;
+
+                        chosen = quote;
+                        const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
+                        chosen_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+                        break;
+                    }
+                    if (chosen != null) break;
+                }
+            }
+        }
+
+        if (chosen != null) {
+            const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
+            defer allocator.free(estimated_out);
+
+            if (select) |fields_raw| {
+                var obj = std.json.ObjectMap.init(allocator);
+                var parts = std.mem.splitScalar(u8, fields_raw, ',');
+                while (parts.next()) |part| {
+                    const field = std.mem.trim(u8, part, " \r\n\t");
+                    if (field.len == 0) continue;
+                    if (std.mem.eql(u8, field, "provider")) {
+                        try obj.put("provider", .{ .string = chosen.?.provider });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "fromChain")) {
+                        try obj.put("fromChain", .{ .string = from_chain });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "toChain")) {
+                        try obj.put("toChain", .{ .string = to_chain });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "asset")) {
+                        try obj.put("asset", .{ .string = asset });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "amountIn")) {
+                        try obj.put("amountIn", .{ .string = amount_raw });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "estimatedAmountOut")) {
+                        try obj.put("estimatedAmountOut", .{ .string = estimated_out });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "feeBps")) {
+                        try obj.put("feeBps", .{ .integer = @as(i64, @intCast(chosen.?.fee_bps)) });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "etaSeconds")) {
+                        try obj.put("etaSeconds", .{ .integer = @as(i64, @intCast(chosen.?.eta_seconds)) });
+                        continue;
+                    }
+                }
+
+                if (results_only) {
+                    try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+                } else {
+                    try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+                }
+                return true;
+            }
+
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .provider = chosen.?.provider,
+                        .fromChain = from_chain,
+                        .toChain = to_chain,
+                        .asset = asset,
+                        .amountIn = amount_raw,
+                        .estimatedAmountOut = estimated_out,
+                        .feeBps = chosen.?.fee_bps,
+                        .etaSeconds = chosen.?.eta_seconds,
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .provider = chosen.?.provider,
+                    .fromChain = from_chain,
+                    .toChain = to_chain,
+                    .asset = asset,
+                    .amountIn = amount_raw,
+                    .estimatedAmountOut = estimated_out,
+                    .feeBps = chosen.?.fee_bps,
+                    .etaSeconds = chosen.?.eta_seconds,
+                });
+            }
+            return true;
+        }
+
         for (bridge_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
             if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
             if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
-            if (provider_filter) |provider| {
-                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
-            }
 
             const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
             const quote_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
