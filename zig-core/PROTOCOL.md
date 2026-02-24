@@ -103,6 +103,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - Optional params:
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)
+  - `strategy` (`bestOut` default, or `lowestFee`)
   - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
 
 ### lendMarkets Notes

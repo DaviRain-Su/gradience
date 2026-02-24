@@ -869,6 +869,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const provider_filter = getString(params, "provider");
         const provider_priority = getString(params, "providers");
+        const strategy = getString(params, "strategy") orelse "bestOut";
+        if (!std.ascii.eqlIgnoreCase(strategy, "bestOut") and !std.ascii.eqlIgnoreCase(strategy, "lowestFee")) {
+            try writeInvalid("strategy");
+            return true;
+        }
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
 
@@ -896,6 +901,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 chosen_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
                 break;
             }
+
+            if (chosen == null) {
+                try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+                return true;
+            }
         }
 
         if (chosen == null) {
@@ -919,7 +929,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         if (chosen == null) {
             for (candidates.items) |quote| {
                 const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                if (chosen == null or quote_out > chosen_out) {
+                if (chosen == null or swapQuoteShouldReplace(strategy, quote, quote_out, chosen.?, chosen_out)) {
                     chosen = quote;
                     chosen_out = quote_out;
                 }
@@ -1311,6 +1321,28 @@ fn swapOutAmount(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
     const impact_bps_u256: u256 = @intCast(impact_bps);
     const after_fee = amount - ((amount * fee_bps_u256) / 10_000);
     return after_fee - ((after_fee * impact_bps_u256) / 10_000);
+}
+
+fn swapQuoteShouldReplace(
+    strategy: []const u8,
+    candidate: swap_quotes_registry.SwapQuote,
+    candidate_out: u256,
+    current: swap_quotes_registry.SwapQuote,
+    current_out: u256,
+) bool {
+    if (std.ascii.eqlIgnoreCase(strategy, "lowestFee")) {
+        if (candidate.fee_bps < current.fee_bps) return true;
+        if (candidate.fee_bps > current.fee_bps) return false;
+        if (candidate.price_impact_bps < current.price_impact_bps) return true;
+        if (candidate.price_impact_bps > current.price_impact_bps) return false;
+        return candidate_out > current_out;
+    }
+
+    if (candidate_out > current_out) return true;
+    if (candidate_out < current_out) return false;
+    if (candidate.fee_bps < current.fee_bps) return true;
+    if (candidate.fee_bps > current.fee_bps) return false;
+    return candidate.price_impact_bps < current.price_impact_bps;
 }
 
 fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {

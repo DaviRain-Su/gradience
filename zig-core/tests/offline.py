@@ -328,6 +328,38 @@ def main() -> int:
     assert swap_provider_priority.get("provider") == "uniswap"
     assert swap_provider_priority.get("estimatedAmountOut") == "998501"
 
+    swap_lowest_fee = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "strategy": "lowestFee",
+            },
+        },
+        env,
+    )
+    assert swap_lowest_fee.get("status") == "ok"
+    assert swap_lowest_fee.get("provider") == "1inch"
+
+    swap_unknown_provider = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "does-not-exist",
+            },
+        },
+        env,
+    )
+    assert swap_unknown_provider.get("status") == "error"
+    assert int(swap_unknown_provider.get("code", 0)) == 13
+
     swap_select = run(
         {
             "action": "swapQuote",
