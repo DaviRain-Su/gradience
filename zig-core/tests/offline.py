@@ -53,6 +53,15 @@ def main() -> int:
     assert normalize_amount.get("status") == "ok"
     assert normalize_amount.get("baseAmount") == "1250000"
 
+    schema = run({"action": "schema", "params": {}}, env)
+    assert schema.get("status") == "ok"
+    assert "providersList" in schema.get("actions", [])
+
+    providers = run({"action": "providersList", "params": {}}, env)
+    assert providers.get("status") == "ok"
+    names = {p.get("name") for p in providers.get("providers", [])}
+    assert "aave" in names and "lifi" in names and "jupiter" in names
+
     policy = run({"action": "cachePolicy", "params": {"method": "ETH_GETBALANCE"}}, env)
     assert policy.get("status") == "ok"
     assert int(policy.get("ttlSeconds", 0)) == 15

@@ -6,6 +6,7 @@ const core_id = @import("../core/id.zig");
 const core_policy = @import("../core/policy.zig");
 const core_runtime = @import("../core/runtime.zig");
 const core_cache_policy = @import("../core/cache_policy.zig");
+const providers_registry = @import("../core/providers_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -13,6 +14,14 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             .status = "ok",
             .protocolVersion = core_schema.protocol_version,
             .actions = core_schema.supported_actions,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "providersList")) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .providers = providers_registry.providers,
         });
         return true;
     }
