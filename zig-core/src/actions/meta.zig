@@ -109,6 +109,40 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "assetsResolve")) {
+        const chain_raw = getString(params, "chain") orelse {
+            try writeMissing("chain");
+            return true;
+        };
+        const asset = getString(params, "asset") orelse {
+            try writeMissing("asset");
+            return true;
+        };
+
+        const chain = core_id.normalizeChain(chain_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+            return true;
+        };
+
+        const resolved = core_id.resolveAsset(allocator, chain, asset) catch {
+            try core_envelope.writeJson(core_errors.internal("asset resolution failed"));
+            return true;
+        };
+        if (resolved == null) {
+            try core_envelope.writeJson(core_errors.unsupported("unresolved asset for chain"));
+            return true;
+        }
+        defer allocator.free(resolved.?);
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .chain = chain,
+            .asset = asset,
+            .caip19 = resolved.?,
+        });
+        return true;
+    }
+
     return false;
 }
 

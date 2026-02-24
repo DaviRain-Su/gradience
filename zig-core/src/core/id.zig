@@ -1,4 +1,5 @@
 const std = @import("std");
+const assets_registry = @import("assets_registry.zig");
 
 pub fn normalizeChain(chain: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, chain, "1") or std.mem.eql(u8, chain, "ethereum")) return "eip155:1";
@@ -35,4 +36,48 @@ pub fn decimalToBase(allocator: std.mem.Allocator, decimal: []const u8, decimals
 
     const combined = whole_value * scale + frac_value;
     return std.fmt.allocPrint(allocator, "{}", .{combined});
+}
+
+pub fn resolveAsset(allocator: std.mem.Allocator, chain_caip2: []const u8, asset: []const u8) !?[]u8 {
+    if (std.mem.indexOf(u8, asset, "/") != null and std.mem.indexOf(u8, asset, ":") != null) {
+        const dup = try allocator.dupe(u8, asset);
+        return @as(?[]u8, dup);
+    }
+
+    for (assets_registry.assets) |entry| {
+        if (std.mem.eql(u8, entry.chain_caip2, chain_caip2) and std.ascii.eqlIgnoreCase(entry.symbol, asset)) {
+            const dup = try allocator.dupe(u8, entry.caip19);
+            return @as(?[]u8, dup);
+        }
+    }
+
+    if (std.mem.startsWith(u8, chain_caip2, "eip155:")) {
+        if (isHexAddress(asset)) {
+            var lowered = try allocator.dupe(u8, asset);
+            for (lowered[2..]) |*c| c.* = std.ascii.toLower(c.*);
+            defer allocator.free(lowered);
+            const formatted = try std.fmt.allocPrint(allocator, "{s}/erc20:{s}", .{ chain_caip2, lowered });
+            return @as(?[]u8, formatted);
+        }
+        return null;
+    }
+
+    if (std.mem.startsWith(u8, chain_caip2, "solana:")) {
+        if (std.mem.indexOf(u8, asset, "token:") != null or std.mem.indexOf(u8, asset, "slip44:") != null) {
+            const formatted = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ chain_caip2, asset });
+            return @as(?[]u8, formatted);
+        }
+        return null;
+    }
+
+    return null;
+}
+
+fn isHexAddress(value: []const u8) bool {
+    if (value.len != 42) return false;
+    if (!(value[0] == '0' and (value[1] == 'x' or value[1] == 'X'))) return false;
+    for (value[2..]) |c| {
+        if (!std.ascii.isHex(c)) return false;
+    }
+    return true;
 }

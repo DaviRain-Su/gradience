@@ -62,6 +62,31 @@ def main() -> int:
     names = {p.get("name") for p in providers.get("providers", [])}
     assert "aave" in names and "lifi" in names and "jupiter" in names
 
+    resolve_symbol = run(
+        {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
+    )
+    assert resolve_symbol.get("status") == "ok"
+    assert (
+        resolve_symbol.get("caip19")
+        == "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+    )
+
+    resolve_addr = run(
+        {
+            "action": "assetsResolve",
+            "params": {
+                "chain": "1",
+                "asset": "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            },
+        },
+        env,
+    )
+    assert resolve_addr.get("status") == "ok"
+    assert (
+        resolve_addr.get("caip19")
+        == "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    )
+
     policy = run({"action": "cachePolicy", "params": {"method": "ETH_GETBALANCE"}}, env)
     assert policy.get("status") == "ok"
     assert int(policy.get("ttlSeconds", 0)) == 15
