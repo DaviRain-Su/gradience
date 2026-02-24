@@ -395,6 +395,24 @@ def main() -> int:
     bq_results = bridge_select_results_only.get("results", {})
     assert set(bq_results.keys()) == {"provider", "estimatedAmountOut"}
 
+    bridge_select_unknown_field = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "notAField",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_unknown_field.get("status") == "ok"
+    assert bridge_select_unknown_field.get("results") == {}
+
     swap = run(
         {
             "action": "swapQuote",
@@ -562,6 +580,24 @@ def main() -> int:
     assert swap_select_results_only.get("status") == "ok"
     sq_results = swap_select_results_only.get("results", {})
     assert set(sq_results.keys()) == {"provider", "feeBps"}
+
+    swap_select_unknown_field = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "notAField",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_unknown_field.get("status") == "ok"
+    assert swap_select_unknown_field.get("results") == {}
 
     lend_markets = run(
         {

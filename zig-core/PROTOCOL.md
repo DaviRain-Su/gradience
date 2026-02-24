@@ -97,6 +97,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` applies priority order; when multiple routes share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
+  - unknown `select` fields are ignored
 
 ### swapQuote Notes
 
@@ -115,6 +116,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` applies priority order; when multiple candidates share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
+  - unknown `select` fields are ignored
 
 ### lendMarkets Notes
 
