@@ -6,6 +6,7 @@ type ZigRequest = {
     | "getBalance"
     | "getErc20Balance"
     | "getBlockNumber"
+    | "runtimeInfo"
     | "buildTransferNative"
     | "buildTransferErc20"
     | "buildErc20Approve"

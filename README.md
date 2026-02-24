@@ -59,6 +59,24 @@ Current Zig-routed tools:
 - `monad_sendSignedTransaction`
 - `monad_runTransferWorkflow`
 
+Zig foundation actions (defi-cli style groundwork) are available in `zig-core` protocol:
+
+- `schema`
+- `runtimeInfo`
+- `policyCheck`
+- `normalizeChain`
+- `normalizeAmount`
+- `cachePut`
+- `cacheGet`
+- `rpcCallCached`
+
+Runtime controls (optional):
+
+- `ZIG_CORE_ALLOWLIST` (comma-separated action allowlist)
+- `ZIG_CORE_STRICT=1` (bypass fresh-cache short-circuit for `rpcCallCached`)
+- In strict mode, raw broadcast is disabled unless `ZIG_CORE_ALLOW_BROADCAST=1`
+- `ZIG_CORE_DEFAULT_CACHE_TTL` / `ZIG_CORE_DEFAULT_MAX_STALE`
+
 ## Tools
 
 Core tools + strategy compiler/runner are documented in `skills/monad-pay-exec/SKILL.md`.

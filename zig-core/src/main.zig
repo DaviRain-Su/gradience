@@ -1,5 +1,11 @@
 const std = @import("std");
-const zigeth = @import("zigeth");
+const core_errors = @import("core/errors.zig");
+const core_envelope = @import("core/envelope.zig");
+const core_schema = @import("core/schema.zig");
+const core_id = @import("core/id.zig");
+const core_policy = @import("core/policy.zig");
+const core_cache = @import("core/cache.zig");
+const core_runtime = @import("core/runtime.zig");
 
 const RequestParams = std.json.ObjectMap;
 
@@ -10,10 +16,7 @@ const TxRequest = struct {
     chainId: ?u64,
 };
 
-const ErrorResponse = struct {
-    status: []const u8,
-    @"error": []const u8,
-};
+const ErrorResponse = core_errors.ErrorEnvelope;
 
 pub fn main() !void {
     const allocator = std.heap.c_allocator;
@@ -43,6 +46,11 @@ pub fn main() !void {
         return;
     };
 
+    if (!core_policy.isAllowed(allocator, action)) {
+        try writeJson(core_errors.unsupported("action blocked by policy"));
+        return;
+    }
+
     const params_value = root.object.get("params") orelse {
         try writeJson(ErrorResponse{ .status = "error", .@"error" = "missing params" });
         return;
@@ -56,6 +64,38 @@ pub fn main() !void {
 
     if (std.mem.eql(u8, action, "getBalance")) {
         try handleGetBalance(allocator, params);
+        return;
+    }
+    if (std.mem.eql(u8, action, "schema")) {
+        try handleSchema();
+        return;
+    }
+    if (std.mem.eql(u8, action, "runtimeInfo")) {
+        try handleRuntimeInfo();
+        return;
+    }
+    if (std.mem.eql(u8, action, "policyCheck")) {
+        try handlePolicyCheck(allocator, params_value.object);
+        return;
+    }
+    if (std.mem.eql(u8, action, "normalizeChain")) {
+        try handleNormalizeChain(params);
+        return;
+    }
+    if (std.mem.eql(u8, action, "normalizeAmount")) {
+        try handleNormalizeAmount(allocator, params);
+        return;
+    }
+    if (std.mem.eql(u8, action, "cachePut")) {
+        try handleCachePut(allocator, params);
+        return;
+    }
+    if (std.mem.eql(u8, action, "cacheGet")) {
+        try handleCacheGet(allocator, params);
+        return;
+    }
+    if (std.mem.eql(u8, action, "rpcCallCached")) {
+        try handleRpcCallCached(allocator, params);
         return;
     }
     if (std.mem.eql(u8, action, "getErc20Balance")) {
@@ -94,42 +134,226 @@ pub fn main() !void {
     try writeJson(ErrorResponse{ .status = "error", .@"error" = "unsupported action" });
 }
 
+fn handleSchema() !void {
+    try writeJson(.{
+        .status = "ok",
+        .protocolVersion = core_schema.protocol_version,
+        .actions = core_schema.supported_actions,
+    });
+}
+
+fn handleRuntimeInfo() !void {
+    try writeJson(.{
+        .status = "ok",
+        .strict = core_runtime.strictMode(),
+        .allowBroadcast = core_runtime.allowBroadcast(),
+        .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
+        .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
+    });
+}
+
+fn handlePolicyCheck(allocator: std.mem.Allocator, params: RequestParams) !void {
+    const target_action = getString(params, "targetAction") orelse return writeMissing("targetAction");
+    const allowed = core_policy.isAllowed(allocator, target_action);
+    const supported = core_policy.isSupported(target_action);
+    try writeJson(.{ .status = "ok", .targetAction = target_action, .supported = supported, .allowed = allowed });
+}
+
+fn handleNormalizeChain(params: RequestParams) !void {
+    const chain = getString(params, "chain") orelse return writeMissing("chain");
+    const normalized = core_id.normalizeChain(chain) orelse {
+        try writeJson(core_errors.unsupported("unsupported chain alias"));
+        return;
+    };
+    try writeJson(.{ .status = "ok", .chain = chain, .caip2 = normalized });
+}
+
+fn handleNormalizeAmount(allocator: std.mem.Allocator, params: RequestParams) !void {
+    const decimal_amount = getString(params, "decimalAmount") orelse return writeMissing("decimalAmount");
+    const decimals_u64 = getU64(params, "decimals") orelse return writeMissing("decimals");
+    if (decimals_u64 > std.math.maxInt(u8)) return writeInvalid("decimals");
+
+    const base_amount = core_id.decimalToBase(allocator, decimal_amount, @intCast(decimals_u64)) catch {
+        return writeInvalid("decimalAmount");
+    };
+    defer allocator.free(base_amount);
+
+    try writeJson(.{
+        .status = "ok",
+        .decimalAmount = decimal_amount,
+        .decimals = decimals_u64,
+        .baseAmount = base_amount,
+    });
+}
+
+fn handleCachePut(allocator: std.mem.Allocator, params: RequestParams) !void {
+    const key = getString(params, "key") orelse return writeMissing("key");
+    const ttl_seconds = getU64(params, "ttlSeconds") orelse 60;
+    const value = params.get("value") orelse return writeMissing("value");
+
+    var value_writer = std.Io.Writer.Allocating.init(allocator);
+    defer value_writer.deinit();
+    try std.json.Stringify.value(value, .{}, &value_writer.writer);
+
+    try core_cache.put(allocator, key, ttl_seconds, value_writer.written());
+    try writeJson(.{ .status = "ok", .key = key, .ttlSeconds = ttl_seconds });
+}
+
+fn handleCacheGet(allocator: std.mem.Allocator, params: RequestParams) !void {
+    const key = getString(params, "key") orelse return writeMissing("key");
+    const now = std.time.timestamp();
+
+    const maybe_record = try core_cache.get(allocator, key);
+    if (maybe_record == null) {
+        try writeJson(.{ .status = "miss", .key = key });
+        return;
+    }
+
+    const record = maybe_record.?;
+    defer allocator.free(record.valueJson);
+
+    const stale = now > record.expiresAtUnix;
+    var parsed_value = std.json.parseFromSlice(std.json.Value, allocator, record.valueJson, .{}) catch {
+        try writeJson(core_errors.internal("cached value parse failed"));
+        return;
+    };
+    defer parsed_value.deinit();
+
+    try writeJson(.{
+        .status = if (stale) "stale" else "hit",
+        .key = key,
+        .expiresAtUnix = record.expiresAtUnix,
+        .value = parsed_value.value,
+    });
+}
+
+const CachedRpcOutcome = struct {
+    source: []const u8,
+    result: []u8,
+};
+
+fn methodDefaultTtl(method: []const u8) u64 {
+    if (std.mem.eql(u8, method, "eth_blockNumber")) return 5;
+    if (std.mem.eql(u8, method, "eth_estimateGas")) return 5;
+    if (std.mem.eql(u8, method, "eth_getBalance")) return 15;
+    if (std.mem.eql(u8, method, "eth_call")) return 15;
+    return core_runtime.defaultCacheTtlSeconds();
+}
+
+fn rpcCallCachedInternal(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    method: []const u8,
+    params_json: []const u8,
+    cache_key: []const u8,
+    ttl_seconds: u64,
+    max_stale_seconds: u64,
+    strict_mode: bool,
+) RpcCallError!CachedRpcOutcome {
+    const now = std.time.timestamp();
+    const cached = core_cache.get(allocator, cache_key) catch null;
+    defer if (cached) |record| allocator.free(record.valueJson);
+
+    if (!strict_mode and cached != null and now <= cached.?.expiresAtUnix) {
+        const cached_result = try extractCachedRpcResult(allocator, cached.?.valueJson);
+        return CachedRpcOutcome{ .source = "cache_hit", .result = cached_result };
+    }
+
+    const fresh_result = rpcCallResultStringQuiet(allocator, rpc_url, method, params_json) catch |rpc_err| {
+        if (cached) |record| {
+            const stale_budget: i64 = @intCast(max_stale_seconds);
+            const stale_deadline = record.expiresAtUnix + stale_budget;
+            if (now <= stale_deadline) {
+                const stale_result = try extractCachedRpcResult(allocator, record.valueJson);
+                return CachedRpcOutcome{ .source = "stale", .result = stale_result };
+            }
+        }
+        return rpc_err;
+    };
+
+    const cache_payload = try std.fmt.allocPrint(allocator, "{{\"result\":\"{s}\",\"fetchedAtUnix\":{}}}", .{ fresh_result, now });
+    defer allocator.free(cache_payload);
+    core_cache.put(allocator, cache_key, ttl_seconds, cache_payload) catch {};
+
+    return CachedRpcOutcome{
+        .source = if (cached != null and now <= cached.?.expiresAtUnix) "cache_refresh" else "fresh",
+        .result = fresh_result,
+    };
+}
+
+fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !void {
+    const rpc_url = getString(params, "rpcUrl") orelse return writeMissing("rpcUrl");
+    const method = getString(params, "method") orelse return writeMissing("method");
+    const params_json = getString(params, "paramsJson") orelse "[]";
+    const ttl_seconds = getU64(params, "ttlSeconds") orelse core_runtime.defaultCacheTtlSeconds();
+    const max_stale_seconds = getU64(params, "maxStaleSeconds") orelse core_runtime.defaultMaxStaleSeconds();
+
+    const provided_cache_key = getString(params, "cacheKey");
+    const generated_cache_key = if (provided_cache_key == null)
+        try std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ rpc_url, method, params_json })
+    else
+        null;
+    defer if (generated_cache_key) |value| allocator.free(value);
+    const cache_key = provided_cache_key orelse generated_cache_key.?;
+
+    const outcome = rpcCallCachedInternal(
+        allocator,
+        rpc_url,
+        method,
+        params_json,
+        cache_key,
+        ttl_seconds,
+        max_stale_seconds,
+        core_runtime.strictMode(),
+    ) catch |rpc_err| {
+        try writeRpcError(rpc_err);
+        return;
+    };
+    defer allocator.free(outcome.result);
+
+    try writeJson(.{
+        .status = "ok",
+        .source = outcome.source,
+        .method = method,
+        .result = outcome.result,
+        .cacheKey = cache_key,
+        .rpcUrl = rpc_url,
+    });
+}
+
 fn handleGetBalance(allocator: std.mem.Allocator, params: RequestParams) !void {
     const address = getString(params, "address") orelse return writeMissing("address");
     const block_tag = getString(params, "blockTag") orelse "latest";
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
 
-    if (!std.mem.eql(u8, block_tag, "latest")) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "zigeth getBalance supports only latest blockTag" });
-        return;
-    }
+    _ = normalizeHexAddress(address) catch return writeInvalid("address");
 
-    const parsed_address = zigeth.primitives.Address.fromHex(address) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid address" });
+    const rpc_params = try std.fmt.allocPrint(allocator, "[\"{s}\",\"{s}\"]", .{ address, block_tag });
+    defer allocator.free(rpc_params);
+
+    const cache_key = try std.fmt.allocPrint(allocator, "read|getBalance|{s}|{s}|{s}", .{ rpc_url, address, block_tag });
+    defer allocator.free(cache_key);
+
+    const cached = rpcCallCachedInternal(
+        allocator,
+        rpc_url,
+        "eth_getBalance",
+        rpc_params,
+        cache_key,
+        methodDefaultTtl("eth_getBalance"),
+        core_runtime.defaultMaxStaleSeconds(),
+        core_runtime.strictMode(),
+    ) catch |err| {
+        try writeRpcError(err);
         return;
     };
-
-    var provider = zigeth.providers.HttpProvider.init(allocator, rpc_url) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "failed to create zigeth provider" });
-        return;
-    };
-    defer provider.deinit();
-
-    const balance = provider.getBalance(parsed_address) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "zigeth getBalance rpc failed" });
-        return;
-    };
-
-    const balance_hex = zigeth.primitives.u256ToHex(balance, allocator) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "failed to encode balance hex" });
-        return;
-    };
-    defer allocator.free(balance_hex);
+    defer allocator.free(cached.result);
 
     try writeJson(.{
         .status = "ok",
+        .source = cached.source,
         .address = address,
-        .balanceHex = balance_hex,
+        .balanceHex = cached.result,
         .rpcUrl = rpc_url,
     });
 }
@@ -161,30 +385,62 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: RequestParams) !v
     );
     defer allocator.free(params_json);
 
-    const result_hex = try rpcCallResultString(allocator, rpc_url, "eth_call", params_json);
-    defer allocator.free(result_hex);
+    const cache_key = try std.fmt.allocPrint(allocator, "read|getErc20Balance|{s}|{s}|{s}|{s}", .{ rpc_url, token_address, address, block_tag });
+    defer allocator.free(cache_key);
+
+    const cached = rpcCallCachedInternal(
+        allocator,
+        rpc_url,
+        "eth_call",
+        params_json,
+        cache_key,
+        methodDefaultTtl("eth_call"),
+        core_runtime.defaultMaxStaleSeconds(),
+        core_runtime.strictMode(),
+    ) catch |err| {
+        try writeRpcError(err);
+        return;
+    };
+    defer allocator.free(cached.result);
 
     try writeJson(.{
         .status = "ok",
+        .source = cached.source,
         .address = address,
         .tokenAddress = token_address,
-        .balanceRaw = result_hex,
+        .balanceRaw = cached.result,
         .rpcUrl = rpc_url,
     });
 }
 
 fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !void {
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
-    const result_hex = try rpcCallResultString(allocator, rpc_url, "eth_blockNumber", "[]");
-    defer allocator.free(result_hex);
+    const cache_key = try std.fmt.allocPrint(allocator, "read|getBlockNumber|{s}", .{rpc_url});
+    defer allocator.free(cache_key);
 
-    const block_number = parseHexU64(result_hex) catch {
+    const cached = rpcCallCachedInternal(
+        allocator,
+        rpc_url,
+        "eth_blockNumber",
+        "[]",
+        cache_key,
+        methodDefaultTtl("eth_blockNumber"),
+        core_runtime.defaultMaxStaleSeconds(),
+        core_runtime.strictMode(),
+    ) catch |err| {
+        try writeRpcError(err);
+        return;
+    };
+    defer allocator.free(cached.result);
+
+    const block_number = parseHexU64(cached.result) catch {
         try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid block number" });
         return;
     };
 
     try writeJson(.{
         .status = "ok",
+        .source = cached.source,
         .blockNumber = block_number,
         .rpcUrl = rpc_url,
     });
@@ -351,14 +607,34 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: RequestParams) !void 
     );
     defer allocator.free(params_json);
 
-    const result_hex = try rpcCallResultString(allocator, rpc_url, "eth_estimateGas", params_json);
-    defer allocator.free(result_hex);
+    const cache_key = try std.fmt.allocPrint(allocator, "read|estimateGas|{s}|{s}|{s}|{s}|{s}", .{ rpc_url, from, to, data, value });
+    defer allocator.free(cache_key);
 
-    const gas = parseHexU64(result_hex) catch return writeInvalid("estimateGas result");
-    try writeJson(.{ .status = "ok", .estimateGas = gas, .estimateGasHex = result_hex, .rpcUrl = rpc_url });
+    const outcome = rpcCallCachedInternal(
+        allocator,
+        rpc_url,
+        "eth_estimateGas",
+        params_json,
+        cache_key,
+        methodDefaultTtl("eth_estimateGas"),
+        core_runtime.defaultMaxStaleSeconds(),
+        core_runtime.strictMode(),
+    ) catch |rpc_err| {
+        try writeRpcError(rpc_err);
+        return;
+    };
+    defer allocator.free(outcome.result);
+
+    const gas = parseHexU64(outcome.result) catch return writeInvalid("estimateGas result");
+    try writeJson(.{ .status = "ok", .source = outcome.source, .estimateGas = gas, .estimateGasHex = outcome.result, .rpcUrl = rpc_url });
 }
 
 fn handleSendSignedTransaction(allocator: std.mem.Allocator, params: RequestParams) !void {
+    if (!core_runtime.allowBroadcast()) {
+        try writeJson(core_errors.unsupported("broadcast disabled by runtime policy"));
+        return;
+    }
+
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const signed_tx_hex = getString(params, "signedTxHex") orelse return writeMissing("signedTxHex");
 
@@ -367,9 +643,12 @@ fn handleSendSignedTransaction(allocator: std.mem.Allocator, params: RequestPara
     const params_json = try std.fmt.allocPrint(allocator, "[\"{s}\"]", .{signed_tx_hex});
     defer allocator.free(params_json);
 
-    const tx_hash = try rpcCallResultString(allocator, rpc_url, "eth_sendRawTransaction", params_json);
+    const tx_hash = rpcCallResultStringQuiet(allocator, rpc_url, "eth_sendRawTransaction", params_json) catch |rpc_err| {
+        try writeRpcError(rpc_err);
+        return;
+    };
     defer allocator.free(tx_hash);
-    try writeJson(.{ .status = "ok", .txHash = tx_hash, .rpcUrl = rpc_url });
+    try writeJson(.{ .status = "ok", .source = "fresh", .txHash = tx_hash, .rpcUrl = rpc_url });
 }
 
 fn encodeTwoArgTransferLike(
@@ -393,12 +672,38 @@ fn encodeTwoArgTransferLike(
     });
 }
 
+const RpcError = error{
+    RpcRequestFailed,
+    RpcBadHttpStatus,
+    InvalidRpcResponse,
+    InvalidRpcObject,
+    RpcReturnedError,
+    MissingRpcResult,
+    InvalidRpcResultType,
+    CachedValueMissingResult,
+    CachedValueInvalidResult,
+};
+
+const RpcCallError = RpcError || error{OutOfMemory};
+
 fn rpcCallResultString(
     allocator: std.mem.Allocator,
     rpc_url: []const u8,
     method: []const u8,
     params_json: []const u8,
 ) ![]u8 {
+    return rpcCallResultStringQuiet(allocator, rpc_url, method, params_json) catch |rpc_err| {
+        try writeRpcError(rpc_err);
+        return rpc_err;
+    };
+}
+
+fn rpcCallResultStringQuiet(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    method: []const u8,
+    params_json: []const u8,
+) RpcCallError![]u8 {
     const request_json = try std.fmt.allocPrint(
         allocator,
         "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{s}\",\"params\":{s}}}",
@@ -423,42 +728,63 @@ fn rpcCallResultString(
         .extra_headers = &headers,
         .response_writer = &response_body.writer,
     }) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "rpc request failed" });
-        return error.RpcRequestFailed;
+        return RpcError.RpcRequestFailed;
     };
 
     if (fetch_result.status != .ok) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "rpc http status not ok" });
-        return error.RpcBadHttpStatus;
+        return RpcError.RpcBadHttpStatus;
     }
 
     var rpc_parsed = std.json.parseFromSlice(std.json.Value, allocator, response_body.written(), .{}) catch {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid rpc response" });
-        return error.InvalidRpcResponse;
+        return RpcError.InvalidRpcResponse;
     };
     defer rpc_parsed.deinit();
 
     const rpc_root = rpc_parsed.value;
     if (rpc_root != .object) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "invalid rpc object" });
-        return error.InvalidRpcObject;
+        return RpcError.InvalidRpcObject;
     }
 
     if (rpc_root.object.get("error")) |_| {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "rpc returned error" });
-        return error.RpcReturnedError;
+        return RpcError.RpcReturnedError;
     }
 
     const value = rpc_root.object.get("result") orelse {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "missing rpc result" });
-        return error.MissingRpcResult;
+        return RpcError.MissingRpcResult;
     };
     if (value != .string) {
-        try writeJson(ErrorResponse{ .status = "error", .@"error" = "rpc result must be string" });
-        return error.InvalidRpcResultType;
+        return RpcError.InvalidRpcResultType;
     }
 
     return allocator.dupe(u8, value.string);
+}
+
+fn extractCachedRpcResult(allocator: std.mem.Allocator, value_json: []const u8) RpcCallError![]u8 {
+    var parsed = std.json.parseFromSlice(std.json.Value, allocator, value_json, .{}) catch {
+        return RpcError.InvalidRpcResponse;
+    };
+    defer parsed.deinit();
+
+    if (parsed.value != .object) return RpcError.InvalidRpcObject;
+    const result_value = parsed.value.object.get("result") orelse return RpcError.CachedValueMissingResult;
+    if (result_value != .string) return RpcError.CachedValueInvalidResult;
+    return allocator.dupe(u8, result_value.string);
+}
+
+fn writeRpcError(err: RpcCallError) !void {
+    const message: []const u8 = switch (err) {
+        RpcError.RpcRequestFailed => "rpc request failed",
+        RpcError.RpcBadHttpStatus => "rpc http status not ok",
+        RpcError.InvalidRpcResponse => "invalid rpc response",
+        RpcError.InvalidRpcObject => "invalid rpc object",
+        RpcError.RpcReturnedError => "rpc returned error",
+        RpcError.MissingRpcResult => "missing rpc result",
+        RpcError.InvalidRpcResultType => "rpc result must be string",
+        RpcError.CachedValueMissingResult => "cached value missing result",
+        RpcError.CachedValueInvalidResult => "cached value invalid result",
+        error.OutOfMemory => "out of memory",
+    };
+    try writeJson(core_errors.internal(message));
 }
 
 fn parseHexU64(hex_input: []const u8) !u64 {
@@ -501,23 +827,17 @@ fn getU64(obj: RequestParams, key: []const u8) ?u64 {
 }
 
 fn writeMissing(field_name: []const u8) !void {
-    const msg = try std.fmt.allocPrint(std.heap.c_allocator, "missing {s}", .{field_name});
+    const msg = try core_errors.missingField(std.heap.c_allocator, field_name);
     defer std.heap.c_allocator.free(msg);
-    try writeJson(ErrorResponse{ .status = "error", .@"error" = msg });
+    try writeJson(core_errors.usage(msg));
 }
 
 fn writeInvalid(field_name: []const u8) !void {
-    const msg = try std.fmt.allocPrint(std.heap.c_allocator, "invalid {s}", .{field_name});
+    const msg = try core_errors.invalidField(std.heap.c_allocator, field_name);
     defer std.heap.c_allocator.free(msg);
-    try writeJson(ErrorResponse{ .status = "error", .@"error" = msg });
+    try writeJson(core_errors.usage(msg));
 }
 
 fn writeJson(value: anytype) !void {
-    const stdout = std.fs.File.stdout();
-    var buffer: [4096]u8 = undefined;
-    var file_writer = stdout.writer(&buffer);
-    const writer = &file_writer.interface;
-    try std.json.Stringify.value(value, .{}, writer);
-    try writer.writeByte('\n');
-    try writer.flush();
+    try core_envelope.writeJson(value);
 }

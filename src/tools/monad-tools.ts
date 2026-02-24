@@ -987,9 +987,23 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           params: { rpcUrl, signedTxHex },
         });
         if (zig.status !== "ok") {
+          const code = Number(zig.code || 0);
+          if (code === 13) {
+            return textResult({
+              status: "blocked",
+              reason: String(zig.error || "broadcast blocked by runtime policy"),
+              code,
+              rpcUrl,
+            });
+          }
           throw new Error(String(zig.error || "zig core sendSignedTransaction failed"));
         }
-        return textResult({ status: "ok", txHash: String(zig.txHash || ""), rpcUrl });
+        return textResult({
+          status: "ok",
+          source: String(zig.source || "fresh"),
+          txHash: String(zig.txHash || ""),
+          rpcUrl,
+        });
       }
 
       const provider = getProvider(rpcUrl);
@@ -1025,6 +1039,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const runMode = asString(params, "runMode");
 
       if (isZigCoreEnabled()) {
+        const runtime = await callZigCore({ action: "runtimeInfo", params: {} });
+        const runtimeMeta = {
+          strict: Boolean(runtime.strict),
+          allowBroadcast: Boolean(runtime.allowBroadcast),
+        };
+
         if (runMode === "analysis") {
           const zig = await callZigCore({
             action: "getBalance",
@@ -1035,6 +1055,8 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           }
           return textResult({
             status: "analysis_ok",
+            source: String(zig.source || "fresh"),
+            runtime: runtimeMeta,
             fromAddress,
             balanceWei: BigInt(String(zig.balanceHex || "0x0")).toString(),
             rpcUrl,
@@ -1081,6 +1103,8 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
 
           return textResult({
             status: "simulate_ok",
+            source: String(estimate.source || "fresh"),
+            runtime: runtimeMeta,
             estimateGas: String(estimate.estimateGas || "0"),
             rpcUrl,
             tx: {
@@ -1104,9 +1128,25 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           params: { rpcUrl, signedTxHex: asString(params, "signedTxHex") },
         });
         if (sent.status !== "ok") {
+          const code = Number(sent.code || 0);
+          if (code === 13) {
+            return textResult({
+              status: "blocked",
+              reason: String(sent.error || "broadcast blocked by runtime policy"),
+              code,
+              runtime: runtimeMeta,
+              rpcUrl,
+            });
+          }
           throw new Error(String(sent.error || "zig core sendSignedTransaction failed"));
         }
-        return textResult({ status: "execute_ok", txHash: String(sent.txHash || ""), rpcUrl });
+        return textResult({
+          status: "execute_ok",
+          source: String(sent.source || "fresh"),
+          runtime: runtimeMeta,
+          txHash: String(sent.txHash || ""),
+          rpcUrl,
+        });
       }
 
       const provider = getProvider(rpcUrl);
