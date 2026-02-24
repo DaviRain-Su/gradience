@@ -621,60 +621,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        var chosen: ?bridge_quotes_registry.BridgeQuote = null;
-        var chosen_out: u256 = 0;
-
-        if (provider_filter) |provider| {
-            for (candidates.items) |quote| {
-                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
-                const quote_out = bridgeOutAmount(amount, quote.fee_bps);
-                if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
-                    chosen = quote;
-                    chosen_out = quote_out;
-                }
-            }
-
-            if (chosen == null) {
-                try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
-                return true;
-            }
-        }
-
-        if (chosen == null and provider_priority != null) {
-            const providers_raw = provider_priority.?;
-            var min_rank: usize = std.math.maxInt(usize);
-            for (candidates.items) |quote| {
-                const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
-                if (rank < min_rank) min_rank = rank;
-            }
-
-            if (min_rank != std.math.maxInt(usize)) {
-                for (candidates.items) |quote| {
-                    const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
-                    if (rank != min_rank) continue;
-                    const quote_out = bridgeOutAmount(amount, quote.fee_bps);
-                    if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
-                        chosen = quote;
-                        chosen_out = quote_out;
-                    }
-                }
-            }
-        }
-
-        if (chosen == null) {
-            for (candidates.items) |quote| {
-                const quote_out = bridgeOutAmount(amount, quote.fee_bps);
-                if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
-                    chosen = quote;
-                    chosen_out = quote_out;
-                }
-            }
-        }
-
-        if (chosen == null) {
+        const selected = selectBridgeQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
+        if (selected == null) {
             try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
             return true;
         }
+        const chosen = selected.?.quote;
+        const chosen_out = selected.?.out_amount;
 
         const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
         defer allocator.free(estimated_out);
@@ -685,7 +638,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             while (parts.next()) |part| {
                 const field = std.mem.trim(u8, part, " \r\n\t");
                 if (field.len == 0) continue;
-                try putBridgeQuoteSelectedField(&obj, field, chosen.?, from_chain, to_chain, asset, amount_raw, estimated_out);
+                try putBridgeQuoteSelectedField(&obj, field, chosen, from_chain, to_chain, asset, amount_raw, estimated_out);
             }
 
             if (results_only) {
@@ -700,27 +653,27 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try core_envelope.writeJson(.{
                 .status = "ok",
                 .results = .{
-                    .provider = chosen.?.provider,
+                    .provider = chosen.provider,
                     .fromChain = from_chain,
                     .toChain = to_chain,
                     .asset = asset,
                     .amountIn = amount_raw,
                     .estimatedAmountOut = estimated_out,
-                    .feeBps = chosen.?.fee_bps,
-                    .etaSeconds = chosen.?.eta_seconds,
+                    .feeBps = chosen.fee_bps,
+                    .etaSeconds = chosen.eta_seconds,
                 },
             });
         } else {
             try core_envelope.writeJson(.{
                 .status = "ok",
-                .provider = chosen.?.provider,
+                .provider = chosen.provider,
                 .fromChain = from_chain,
                 .toChain = to_chain,
                 .asset = asset,
                 .amountIn = amount_raw,
                 .estimatedAmountOut = estimated_out,
-                .feeBps = chosen.?.fee_bps,
-                .etaSeconds = chosen.?.eta_seconds,
+                .feeBps = chosen.fee_bps,
+                .etaSeconds = chosen.eta_seconds,
             });
         }
         return true;
@@ -778,59 +731,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        var chosen: ?swap_quotes_registry.SwapQuote = null;
-        var chosen_out: u256 = 0;
-
-        if (provider_filter) |provider| {
-            for (candidates.items) |quote| {
-                if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
-                chosen = quote;
-                chosen_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                break;
-            }
-
-            if (chosen == null) {
-                try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
-                return true;
-            }
-        }
-
-        if (chosen == null) {
-            if (provider_priority) |providers_raw| {
-                var min_rank: usize = std.math.maxInt(usize);
-                for (candidates.items) |quote| {
-                    const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
-                    if (rank < min_rank) min_rank = rank;
-                }
-
-                if (min_rank != std.math.maxInt(usize)) {
-                    for (candidates.items) |quote| {
-                        const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
-                        if (rank != min_rank) continue;
-                        const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                        if (chosen == null or swapQuoteShouldReplace(strategy, quote, quote_out, chosen.?, chosen_out)) {
-                            chosen = quote;
-                            chosen_out = quote_out;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (chosen == null) {
-            for (candidates.items) |quote| {
-                const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                if (chosen == null or swapQuoteShouldReplace(strategy, quote, quote_out, chosen.?, chosen_out)) {
-                    chosen = quote;
-                    chosen_out = quote_out;
-                }
-            }
-        }
-
-        if (chosen == null) {
+        const selected = selectSwapQuote(amount, candidates.items, provider_filter, provider_priority, strategy);
+        if (selected == null) {
             try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
             return true;
         }
+        const chosen = selected.?.quote;
+        const chosen_out = selected.?.out_amount;
 
         const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
         defer allocator.free(estimated_out);
@@ -841,7 +748,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             while (parts.next()) |part| {
                 const field = std.mem.trim(u8, part, " \r\n\t");
                 if (field.len == 0) continue;
-                try putSwapQuoteSelectedField(&obj, field, chosen.?, chain, from_asset, to_asset, amount_raw, estimated_out);
+                try putSwapQuoteSelectedField(&obj, field, chosen, chain, from_asset, to_asset, amount_raw, estimated_out);
             }
 
             if (results_only) {
@@ -856,27 +763,27 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try core_envelope.writeJson(.{
                 .status = "ok",
                 .results = .{
-                    .provider = chosen.?.provider,
+                    .provider = chosen.provider,
                     .chain = chain,
                     .fromAsset = from_asset,
                     .toAsset = to_asset,
                     .amountIn = amount_raw,
                     .estimatedAmountOut = estimated_out,
-                    .feeBps = chosen.?.fee_bps,
-                    .priceImpactBps = chosen.?.price_impact_bps,
+                    .feeBps = chosen.fee_bps,
+                    .priceImpactBps = chosen.price_impact_bps,
                 },
             });
         } else {
             try core_envelope.writeJson(.{
                 .status = "ok",
-                .provider = chosen.?.provider,
+                .provider = chosen.provider,
                 .chain = chain,
                 .fromAsset = from_asset,
                 .toAsset = to_asset,
                 .amountIn = amount_raw,
                 .estimatedAmountOut = estimated_out,
-                .feeBps = chosen.?.fee_bps,
-                .priceImpactBps = chosen.?.price_impact_bps,
+                .feeBps = chosen.fee_bps,
+                .priceImpactBps = chosen.price_impact_bps,
             });
         }
         return true;
@@ -1156,6 +1063,114 @@ fn lessLendMarket(ctx: LendSortContext, a: lend_registry.LendMarket, b: lend_reg
 
     if (a.tvl_usd == b.tvl_usd) return false;
     return if (ctx.ascending) a.tvl_usd < b.tvl_usd else a.tvl_usd > b.tvl_usd;
+}
+
+const BridgeQuoteSelection = struct {
+    quote: bridge_quotes_registry.BridgeQuote,
+    out_amount: u256,
+};
+
+const SwapQuoteSelection = struct {
+    quote: swap_quotes_registry.SwapQuote,
+    out_amount: u256,
+};
+
+fn selectBridgeQuote(
+    amount: u256,
+    candidates: []const bridge_quotes_registry.BridgeQuote,
+    provider_filter: ?[]const u8,
+    provider_priority: ?[]const u8,
+    strategy: []const u8,
+) ?BridgeQuoteSelection {
+    var selected: ?BridgeQuoteSelection = null;
+
+    if (provider_filter) |provider| {
+        for (candidates) |quote| {
+            if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+            const quote_out = bridgeOutAmount(amount, quote.fee_bps);
+            if (selected == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, selected.?.out_amount, selected.?.quote.eta_seconds)) {
+                selected = .{ .quote = quote, .out_amount = quote_out };
+            }
+        }
+        return selected;
+    }
+
+    if (provider_priority) |providers_raw| {
+        var min_rank: usize = std.math.maxInt(usize);
+        for (candidates) |quote| {
+            const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+            if (rank < min_rank) min_rank = rank;
+        }
+
+        if (min_rank != std.math.maxInt(usize)) {
+            for (candidates) |quote| {
+                const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                if (rank != min_rank) continue;
+                const quote_out = bridgeOutAmount(amount, quote.fee_bps);
+                if (selected == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, selected.?.out_amount, selected.?.quote.eta_seconds)) {
+                    selected = .{ .quote = quote, .out_amount = quote_out };
+                }
+            }
+            if (selected != null) return selected;
+        }
+    }
+
+    for (candidates) |quote| {
+        const quote_out = bridgeOutAmount(amount, quote.fee_bps);
+        if (selected == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, selected.?.out_amount, selected.?.quote.eta_seconds)) {
+            selected = .{ .quote = quote, .out_amount = quote_out };
+        }
+    }
+    return selected;
+}
+
+fn selectSwapQuote(
+    amount: u256,
+    candidates: []const swap_quotes_registry.SwapQuote,
+    provider_filter: ?[]const u8,
+    provider_priority: ?[]const u8,
+    strategy: []const u8,
+) ?SwapQuoteSelection {
+    var selected: ?SwapQuoteSelection = null;
+
+    if (provider_filter) |provider| {
+        for (candidates) |quote| {
+            if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+            const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+            if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
+                selected = .{ .quote = quote, .out_amount = quote_out };
+            }
+        }
+        return selected;
+    }
+
+    if (provider_priority) |providers_raw| {
+        var min_rank: usize = std.math.maxInt(usize);
+        for (candidates) |quote| {
+            const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+            if (rank < min_rank) min_rank = rank;
+        }
+
+        if (min_rank != std.math.maxInt(usize)) {
+            for (candidates) |quote| {
+                const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                if (rank != min_rank) continue;
+                const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+                if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
+                    selected = .{ .quote = quote, .out_amount = quote_out };
+                }
+            }
+            if (selected != null) return selected;
+        }
+    }
+
+    for (candidates) |quote| {
+        const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+        if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
+            selected = .{ .quote = quote, .out_amount = quote_out };
+        }
+    }
+    return selected;
 }
 
 fn bridgeQuoteShouldReplace(
