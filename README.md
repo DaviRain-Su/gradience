@@ -99,9 +99,9 @@ Protocol details: `zig-core/PROTOCOL.md`
 
 `yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 
-`bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider`.
+`bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider` and `select`.
 
-`swapQuote` supports `chain`, `fromAsset`, `toAsset`, `amount` with optional `provider`.
+`swapQuote` supports `chain`, `fromAsset`, `toAsset`, `amount` with optional `provider` and `select`.
 
 `lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `limit`.
 

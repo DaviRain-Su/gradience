@@ -200,6 +200,24 @@ def main() -> int:
     assert bridge.get("provider") == "lifi"
     assert bridge.get("estimatedAmountOut") == "999300"
 
+    bridge_select = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "provider,estimatedAmountOut",
+            },
+        },
+        env,
+    )
+    assert bridge_select.get("status") == "ok"
+    bq = bridge_select.get("quote", {})
+    assert set(bq.keys()) == {"provider", "estimatedAmountOut"}
+
     swap = run(
         {
             "action": "swapQuote",
@@ -216,6 +234,24 @@ def main() -> int:
     assert swap.get("status") == "ok"
     assert swap.get("provider") == "1inch"
     assert swap.get("estimatedAmountOut") == "998901"
+
+    swap_select = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "provider,feeBps",
+            },
+        },
+        env,
+    )
+    assert swap_select.get("status") == "ok"
+    sq = swap_select.get("quote", {})
+    assert set(sq.keys()) == {"provider", "feeBps"}
 
     lend_markets = run(
         {

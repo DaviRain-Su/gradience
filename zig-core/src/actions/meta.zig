@@ -491,6 +491,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
 
         const provider_filter = getString(params, "provider");
+        const select = getString(params, "select");
         var chosen: ?bridge_quotes_registry.BridgeQuote = null;
         for (bridge_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
@@ -512,6 +513,50 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const base_out = amount - ((amount * fee_bps_u256) / 10_000);
         const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{base_out});
         defer allocator.free(estimated_out);
+
+        if (select) |fields_raw| {
+            var obj = std.json.ObjectMap.init(allocator);
+            var parts = std.mem.splitScalar(u8, fields_raw, ',');
+            while (parts.next()) |part| {
+                const field = std.mem.trim(u8, part, " \r\n\t");
+                if (field.len == 0) continue;
+                if (std.mem.eql(u8, field, "provider")) {
+                    try obj.put("provider", .{ .string = chosen.?.provider });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "fromChain")) {
+                    try obj.put("fromChain", .{ .string = from_chain });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "toChain")) {
+                    try obj.put("toChain", .{ .string = to_chain });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "asset")) {
+                    try obj.put("asset", .{ .string = asset });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "amountIn")) {
+                    try obj.put("amountIn", .{ .string = amount_raw });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "estimatedAmountOut")) {
+                    try obj.put("estimatedAmountOut", .{ .string = estimated_out });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "feeBps")) {
+                    try obj.put("feeBps", .{ .integer = @as(i64, @intCast(chosen.?.fee_bps)) });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "etaSeconds")) {
+                    try obj.put("etaSeconds", .{ .integer = @as(i64, @intCast(chosen.?.eta_seconds)) });
+                    continue;
+                }
+            }
+
+            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            return true;
+        }
 
         try core_envelope.writeJson(.{
             .status = "ok",
@@ -556,6 +601,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
 
         const provider_filter = getString(params, "provider");
+        const select = getString(params, "select");
         var chosen: ?swap_quotes_registry.SwapQuote = null;
         for (swap_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.chain, chain)) continue;
@@ -579,6 +625,50 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const out_amount = after_fee - ((after_fee * impact_bps_u256) / 10_000);
         const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
         defer allocator.free(estimated_out);
+
+        if (select) |fields_raw| {
+            var obj = std.json.ObjectMap.init(allocator);
+            var parts = std.mem.splitScalar(u8, fields_raw, ',');
+            while (parts.next()) |part| {
+                const field = std.mem.trim(u8, part, " \r\n\t");
+                if (field.len == 0) continue;
+                if (std.mem.eql(u8, field, "provider")) {
+                    try obj.put("provider", .{ .string = chosen.?.provider });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "chain")) {
+                    try obj.put("chain", .{ .string = chain });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "fromAsset")) {
+                    try obj.put("fromAsset", .{ .string = from_asset });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "toAsset")) {
+                    try obj.put("toAsset", .{ .string = to_asset });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "amountIn")) {
+                    try obj.put("amountIn", .{ .string = amount_raw });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "estimatedAmountOut")) {
+                    try obj.put("estimatedAmountOut", .{ .string = estimated_out });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "feeBps")) {
+                    try obj.put("feeBps", .{ .integer = @as(i64, @intCast(chosen.?.fee_bps)) });
+                    continue;
+                }
+                if (std.mem.eql(u8, field, "priceImpactBps")) {
+                    try obj.put("priceImpactBps", .{ .integer = @as(i64, @intCast(chosen.?.price_impact_bps)) });
+                    continue;
+                }
+            }
+
+            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            return true;
+        }
 
         try core_envelope.writeJson(.{
             .status = "ok",

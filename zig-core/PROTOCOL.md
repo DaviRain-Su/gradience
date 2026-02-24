@@ -87,6 +87,7 @@ Error responses use:
   - `amount` (base units)
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
+  - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
 
 ### swapQuote Notes
 
@@ -97,6 +98,7 @@ Error responses use:
   - `amount` (base units)
 - Optional params:
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
+  - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
 
 ### lendMarkets Notes
 
