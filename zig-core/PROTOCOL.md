@@ -89,6 +89,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `amount` (base units)
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
+  - `strategy` (`bestOut` default, or `fastest`)
   - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
 
 ### swapQuote Notes

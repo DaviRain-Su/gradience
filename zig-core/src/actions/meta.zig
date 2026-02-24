@@ -599,9 +599,15 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
 
         const provider_filter = getString(params, "provider");
+        const strategy = getString(params, "strategy") orelse "bestOut";
+        if (!std.ascii.eqlIgnoreCase(strategy, "bestOut") and !std.ascii.eqlIgnoreCase(strategy, "fastest")) {
+            try writeInvalid("strategy");
+            return true;
+        }
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
         var chosen: ?bridge_quotes_registry.BridgeQuote = null;
+        var chosen_out: u256 = 0;
         for (bridge_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
             if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
@@ -609,8 +615,19 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             if (provider_filter) |provider| {
                 if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
             }
-            chosen = quote;
-            break;
+
+            const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
+            const quote_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+            if (chosen == null) {
+                chosen = quote;
+                chosen_out = quote_out;
+                continue;
+            }
+
+            if (bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
+                chosen = quote;
+                chosen_out = quote_out;
+            }
         }
 
         if (chosen == null) {
@@ -618,9 +635,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const fee_bps_u256: u256 = @intCast(chosen.?.fee_bps);
-        const base_out = amount - ((amount * fee_bps_u256) / 10_000);
-        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{base_out});
+        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
         defer allocator.free(estimated_out);
 
         if (select) |fields_raw| {
@@ -1108,6 +1123,24 @@ fn lessLendMarket(ctx: LendSortContext, a: lend_registry.LendMarket, b: lend_reg
 
     if (a.tvl_usd == b.tvl_usd) return false;
     return if (ctx.ascending) a.tvl_usd < b.tvl_usd else a.tvl_usd > b.tvl_usd;
+}
+
+fn bridgeQuoteShouldReplace(
+    strategy: []const u8,
+    candidate_out: u256,
+    candidate_eta_seconds: u32,
+    current_out: u256,
+    current_eta_seconds: u32,
+) bool {
+    if (std.ascii.eqlIgnoreCase(strategy, "fastest")) {
+        if (candidate_eta_seconds < current_eta_seconds) return true;
+        if (candidate_eta_seconds > current_eta_seconds) return false;
+        return candidate_out > current_out;
+    }
+
+    if (candidate_out > current_out) return true;
+    if (candidate_out < current_out) return false;
+    return candidate_eta_seconds < current_eta_seconds;
 }
 
 fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {

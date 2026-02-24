@@ -242,6 +242,23 @@ def main() -> int:
     assert bridge.get("provider") == "lifi"
     assert bridge.get("estimatedAmountOut") == "999300"
 
+    bridge_fastest = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "strategy": "fastest",
+            },
+        },
+        env,
+    )
+    assert bridge_fastest.get("status") == "ok"
+    assert bridge_fastest.get("provider") == "bungee"
+    assert bridge_fastest.get("etaSeconds") == 150
+
     bridge_select = run(
         {
             "action": "bridgeQuote",
