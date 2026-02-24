@@ -276,6 +276,23 @@ def main() -> int:
     assert bridge_provider_priority.get("provider") == "lifi"
     assert bridge_provider_priority.get("estimatedAmountOut") == "999300"
 
+    bridge_provider_priority_fallback = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": "does-not-exist,still-missing",
+            },
+        },
+        env,
+    )
+    assert bridge_provider_priority_fallback.get("status") == "ok"
+    assert bridge_provider_priority_fallback.get("provider") == "across"
+    assert bridge_provider_priority_fallback.get("estimatedAmountOut") == "999600"
+
     bridge_unknown_provider = run(
         {
             "action": "bridgeQuote",
