@@ -271,6 +271,25 @@ def main() -> int:
     assert len(markets) >= 1
     assert markets[0].get("provider") == "aave"
 
+    lend_markets_select = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "sortBy": "supply_apy",
+                "order": "asc",
+                "limit": 2,
+                "select": "provider,supply_apy",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select.get("status") == "ok"
+    mrows = lend_markets_select.get("markets", [])
+    assert len(mrows) == 2
+    assert set(mrows[0].keys()) == {"provider", "supply_apy"}
+    assert mrows[0]["supply_apy"] <= mrows[1]["supply_apy"]
+
     lend_rates = run(
         {
             "action": "lendRates",

@@ -103,7 +103,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 
 `swapQuote` supports `chain`, `fromAsset`, `toAsset`, `amount` with optional `provider` and `select`.
 
-`lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `limit`.
+`lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 
 `lendRates` supports `chain`, `asset`, `provider`.
 

@@ -107,7 +107,10 @@ Error responses use:
   - `asset` (symbol)
   - `provider` (provider name)
   - `minTvlUsd` (numeric threshold)
+  - `sortBy` (`tvl_usd` default, or `supply_apy`, `borrow_apy`, `provider`, `chain`)
+  - `order` (`desc` default, or `asc`)
   - `limit` (default `20`)
+  - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supply_apy`, `borrow_apy`, `tvl_usd`)
 
 ### lendRates Notes
 
