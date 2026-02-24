@@ -65,6 +65,14 @@ def main() -> int:
     assert "lendMarkets" in schema.get("actions", [])
     assert "lendRates" in schema.get("actions", [])
 
+    schema_results_only = run(
+        {"action": "schema", "params": {"resultsOnly": True}}, env
+    )
+    assert schema_results_only.get("status") == "ok"
+    schema_results = schema_results_only.get("results", {})
+    assert isinstance(schema_results.get("protocolVersion"), str)
+    assert "version" in schema_results.get("actions", [])
+
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
     assert version_short.get("name") == "gradience-zig"
@@ -74,6 +82,30 @@ def main() -> int:
     assert version_long.get("status") == "ok"
     assert isinstance(version_long.get("protocol"), str)
     assert isinstance(version_long.get("build", {}).get("zig"), str)
+
+    version_results_only = run(
+        {"action": "version", "params": {"resultsOnly": True}}, env
+    )
+    assert version_results_only.get("status") == "ok"
+    vshort_results = version_results_only.get("results", {})
+    assert vshort_results.get("name") == "gradience-zig"
+    assert isinstance(vshort_results.get("version"), str)
+
+    version_long_results_only = run(
+        {"action": "version", "params": {"long": True, "resultsOnly": True}}, env
+    )
+    assert version_long_results_only.get("status") == "ok"
+    vlong_results = version_long_results_only.get("results", {})
+    assert isinstance(vlong_results.get("protocol"), str)
+    assert isinstance(vlong_results.get("build", {}).get("zig"), str)
+
+    runtime_info_results_only = run(
+        {"action": "runtimeInfo", "params": {"resultsOnly": True}}, env
+    )
+    assert runtime_info_results_only.get("status") == "ok"
+    runtime_results = runtime_info_results_only.get("results", {})
+    assert isinstance(runtime_results.get("strict"), bool)
+    assert isinstance(runtime_results.get("allowBroadcast"), bool)
 
     providers = run({"action": "providersList", "params": {}}, env)
     assert providers.get("status") == "ok"
@@ -352,9 +384,63 @@ def main() -> int:
         == "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     )
 
+    normalize_chain_results_only = run(
+        {"action": "normalizeChain", "params": {"chain": "monad", "resultsOnly": True}},
+        env,
+    )
+    assert normalize_chain_results_only.get("status") == "ok"
+    assert (
+        normalize_chain_results_only.get("results", {}).get("caip2") == "eip155:10143"
+    )
+
+    normalize_amount_results_only = run(
+        {
+            "action": "normalizeAmount",
+            "params": {"decimalAmount": "1.25", "decimals": 6, "resultsOnly": True},
+        },
+        env,
+    )
+    assert normalize_amount_results_only.get("status") == "ok"
+    assert (
+        normalize_amount_results_only.get("results", {}).get("baseAmount") == "1250000"
+    )
+
+    resolve_results_only = run(
+        {
+            "action": "assetsResolve",
+            "params": {"chain": "base", "asset": "USDC", "resultsOnly": True},
+        },
+        env,
+    )
+    assert resolve_results_only.get("status") == "ok"
+    assert (
+        resolve_results_only.get("results", {}).get("caip19")
+        == "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+    )
+
     policy = run({"action": "cachePolicy", "params": {"method": "ETH_GETBALANCE"}}, env)
     assert policy.get("status") == "ok"
     assert int(policy.get("ttlSeconds", 0)) == 15
+
+    policy_results_only = run(
+        {
+            "action": "cachePolicy",
+            "params": {"method": "ETH_GETBALANCE", "resultsOnly": True},
+        },
+        env,
+    )
+    assert policy_results_only.get("status") == "ok"
+    assert int(policy_results_only.get("results", {}).get("ttlSeconds", 0)) == 15
+
+    policy_check_results_only = run(
+        {
+            "action": "policyCheck",
+            "params": {"targetAction": "schema", "resultsOnly": True},
+        },
+        env,
+    )
+    assert policy_check_results_only.get("status") == "ok"
+    assert policy_check_results_only.get("results", {}).get("targetAction") == "schema"
 
     allow_env = env.copy()
     allow_env["ZIG_CORE_ALLOWLIST"] = "schema,policyCheck"

@@ -17,36 +17,74 @@ const lend_registry = @import("../core/lend_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .protocolVersion = core_schema.protocol_version,
-            .actions = core_schema.supported_actions,
-        });
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .protocolVersion = core_schema.protocol_version,
+                    .actions = core_schema.supported_actions,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .protocolVersion = core_schema.protocol_version,
+                .actions = core_schema.supported_actions,
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "version")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const long = getBool(params, "long") orelse false;
         if (long) {
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .name = core_version.name,
+                        .version = core_version.version,
+                        .protocol = core_version.protocol,
+                        .build = .{
+                            .zig = @import("builtin").zig_version_string,
+                            .os = @tagName(@import("builtin").os.tag),
+                            .arch = @tagName(@import("builtin").cpu.arch),
+                        },
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .name = core_version.name,
+                    .version = core_version.version,
+                    .protocol = core_version.protocol,
+                    .build = .{
+                        .zig = @import("builtin").zig_version_string,
+                        .os = @tagName(@import("builtin").os.tag),
+                        .arch = @tagName(@import("builtin").cpu.arch),
+                    },
+                });
+            }
+            return true;
+        }
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .name = core_version.name,
+                    .version = core_version.version,
+                },
+            });
+        } else {
             try core_envelope.writeJson(.{
                 .status = "ok",
                 .name = core_version.name,
                 .version = core_version.version,
-                .protocol = core_version.protocol,
-                .build = .{
-                    .zig = @import("builtin").zig_version_string,
-                    .os = @tagName(@import("builtin").os.tag),
-                    .arch = @tagName(@import("builtin").cpu.arch),
-                },
             });
-            return true;
         }
-
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .name = core_version.name,
-            .version = core_version.version,
-        });
         return true;
     }
 
@@ -147,47 +185,86 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     if (std.mem.eql(u8, action, "runtimeInfo")) {
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .strict = core_runtime.strictMode(),
-            .allowBroadcast = core_runtime.allowBroadcast(),
-            .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
-            .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
-        });
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .strict = core_runtime.strictMode(),
+                    .allowBroadcast = core_runtime.allowBroadcast(),
+                    .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
+                    .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .strict = core_runtime.strictMode(),
+                .allowBroadcast = core_runtime.allowBroadcast(),
+                .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
+                .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "cachePolicy")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const method = getString(params, "method") orelse {
             try writeMissing("method");
             return true;
         };
         const policy = core_cache_policy.forMethod(std.mem.trim(u8, method, " \r\n\t"));
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .method = method,
-            .ttlSeconds = policy.ttl_seconds,
-            .maxStaleSeconds = policy.max_stale_seconds,
-            .allowStaleFallback = policy.allow_stale_fallback,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .method = method,
+                    .ttlSeconds = policy.ttl_seconds,
+                    .maxStaleSeconds = policy.max_stale_seconds,
+                    .allowStaleFallback = policy.allow_stale_fallback,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .method = method,
+                .ttlSeconds = policy.ttl_seconds,
+                .maxStaleSeconds = policy.max_stale_seconds,
+                .allowStaleFallback = policy.allow_stale_fallback,
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "policyCheck")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const target_action = getString(params, "targetAction") orelse {
             try writeMissing("targetAction");
             return true;
         };
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .targetAction = target_action,
-            .supported = core_policy.isSupported(target_action),
-            .allowed = core_policy.isAllowed(allocator, target_action),
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .targetAction = target_action,
+                    .supported = core_policy.isSupported(target_action),
+                    .allowed = core_policy.isAllowed(allocator, target_action),
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .targetAction = target_action,
+                .supported = core_policy.isSupported(target_action),
+                .allowed = core_policy.isAllowed(allocator, target_action),
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "normalizeChain")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const chain = getString(params, "chain") orelse {
             try writeMissing("chain");
             return true;
@@ -196,11 +273,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
             return true;
         };
-        try core_envelope.writeJson(.{ .status = "ok", .chain = chain, .caip2 = normalized });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .chain = chain, .caip2 = normalized } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .chain = chain, .caip2 = normalized });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "normalizeAmount")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const decimal_amount = getString(params, "decimalAmount") orelse {
             try writeMissing("decimalAmount");
             return true;
@@ -220,16 +302,28 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
         defer allocator.free(base_amount);
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .decimalAmount = decimal_amount,
-            .decimals = decimals_u64,
-            .baseAmount = base_amount,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .decimalAmount = decimal_amount,
+                    .decimals = decimals_u64,
+                    .baseAmount = base_amount,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .decimalAmount = decimal_amount,
+                .decimals = decimals_u64,
+                .baseAmount = base_amount,
+            });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "assetsResolve")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const chain_raw = getString(params, "chain") orelse {
             try writeMissing("chain");
             return true;
@@ -254,12 +348,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         }
         defer allocator.free(resolved.?);
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .chain = chain,
-            .asset = asset,
-            .caip19 = resolved.?,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .chain = chain, .asset = asset, .caip19 = resolved.? } });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .chain = chain,
+                .asset = asset,
+                .caip19 = resolved.?,
+            });
+        }
         return true;
     }
 
