@@ -276,6 +276,38 @@ def main() -> int:
     assert bridge_provider_priority.get("provider") == "lifi"
     assert bridge_provider_priority.get("estimatedAmountOut") == "999300"
 
+    bridge_unknown_provider = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "does-not-exist",
+            },
+        },
+        env,
+    )
+    assert bridge_unknown_provider.get("status") == "error"
+    assert int(bridge_unknown_provider.get("code", 0)) == 13
+
+    bridge_invalid_strategy = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "strategy": "not-valid",
+            },
+        },
+        env,
+    )
+    assert bridge_invalid_strategy.get("status") == "error"
+    assert int(bridge_invalid_strategy.get("code", 0)) == 2
+
     bridge_select = run(
         {
             "action": "bridgeQuote",
@@ -359,6 +391,22 @@ def main() -> int:
     )
     assert swap_unknown_provider.get("status") == "error"
     assert int(swap_unknown_provider.get("code", 0)) == 13
+
+    swap_invalid_strategy = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "strategy": "not-valid",
+            },
+        },
+        env,
+    )
+    assert swap_invalid_strategy.get("status") == "error"
+    assert int(swap_invalid_strategy.get("code", 0)) == 2
 
     swap_select = run(
         {
