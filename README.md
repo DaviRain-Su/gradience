@@ -37,6 +37,12 @@ python3 tests/offline.py
 python3 tests/smoke.py
 ```
 
+Or from repo root:
+
+```bash
+npm run zig:test
+```
+
 Zig-backed execution is enabled by default. Disable it if needed:
 
 ```bash
