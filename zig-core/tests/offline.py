@@ -276,6 +276,23 @@ def main() -> int:
     assert bridge_provider_priority.get("provider") == "lifi"
     assert bridge_provider_priority.get("estimatedAmountOut") == "999300"
 
+    bridge_provider_priority_duplicate = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": "lifi,bungee,lifi",
+                "strategy": "fastest",
+            },
+        },
+        env,
+    )
+    assert bridge_provider_priority_duplicate.get("status") == "ok"
+    assert bridge_provider_priority_duplicate.get("provider") == "lifi"
+
     bridge_provider_priority_fallback = run(
         {
             "action": "bridgeQuote",
@@ -395,6 +412,22 @@ def main() -> int:
     assert swap_provider_priority.get("status") == "ok"
     assert swap_provider_priority.get("provider") == "uniswap"
     assert swap_provider_priority.get("estimatedAmountOut") == "998501"
+
+    swap_provider_priority_duplicate = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "uniswap,1inch,uniswap",
+            },
+        },
+        env,
+    )
+    assert swap_provider_priority_duplicate.get("status") == "ok"
+    assert swap_provider_priority_duplicate.get("provider") == "uniswap"
 
     swap_provider_priority_fallback = run(
         {
