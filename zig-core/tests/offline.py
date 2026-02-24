@@ -343,6 +343,25 @@ def main() -> int:
     bq = bridge_select.get("quote", {})
     assert set(bq.keys()) == {"provider", "estimatedAmountOut"}
 
+    bridge_select_results_only = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "provider,estimatedAmountOut",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_results_only.get("status") == "ok"
+    bq_results = bridge_select_results_only.get("results", {})
+    assert set(bq_results.keys()) == {"provider", "estimatedAmountOut"}
+
     swap = run(
         {
             "action": "swapQuote",
@@ -459,6 +478,25 @@ def main() -> int:
     assert swap_select.get("status") == "ok"
     sq = swap_select.get("quote", {})
     assert set(sq.keys()) == {"provider", "feeBps"}
+
+    swap_select_results_only = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "provider,feeBps",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_results_only.get("status") == "ok"
+    sq_results = swap_select_results_only.get("results", {})
+    assert set(sq_results.keys()) == {"provider", "feeBps"}
 
     lend_markets = run(
         {
