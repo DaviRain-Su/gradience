@@ -63,8 +63,32 @@ def main() -> int:
         },
         env,
     )
+    cache_put_results_only = assert_ok(
+        "cachePut#resultsOnly",
+        {
+            "action": "cachePut",
+            "params": {
+                "key": "smoke-results-only",
+                "ttlSeconds": 30,
+                "value": {"x": 2},
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert cache_put_results_only.get("results", {}).get("key") == "smoke-results-only"
+
     cached = run({"action": "cacheGet", "params": {"key": "smoke"}}, env)
     assert cached.get("status") in {"hit", "stale"}
+    cached_results_only = run(
+        {
+            "action": "cacheGet",
+            "params": {"key": "smoke-results-only", "resultsOnly": True},
+        },
+        env,
+    )
+    assert cached_results_only.get("status") in {"hit", "stale"}
+    assert cached_results_only.get("results", {}).get("value", {}).get("x") == 2
 
     assert_ok(
         "buildTransferNative",

@@ -5,6 +5,7 @@ const core_envelope = @import("../core/envelope.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "cachePut")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const key = getString(params, "key") orelse {
             try writeMissing("key");
             return true;
@@ -20,11 +21,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try std.json.Stringify.value(value, .{}, &value_writer.writer);
 
         try core_cache.put(allocator, key, ttl_seconds, value_writer.written());
-        try core_envelope.writeJson(.{ .status = "ok", .key = key, .ttlSeconds = ttl_seconds });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .key = key, .ttlSeconds = ttl_seconds } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .key = key, .ttlSeconds = ttl_seconds });
+        }
         return true;
     }
 
     if (std.mem.eql(u8, action, "cacheGet")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
         const key = getString(params, "key") orelse {
             try writeMissing("key");
             return true;
@@ -33,7 +39,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const maybe_record = try core_cache.get(allocator, key);
         if (maybe_record == null) {
-            try core_envelope.writeJson(.{ .status = "miss", .key = key });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "miss", .results = .{ .key = key } });
+            } else {
+                try core_envelope.writeJson(.{ .status = "miss", .key = key });
+            }
             return true;
         }
 
@@ -47,12 +57,23 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
         defer parsed_value.deinit();
 
-        try core_envelope.writeJson(.{
-            .status = if (stale) "stale" else "hit",
-            .key = key,
-            .expiresAtUnix = record.expiresAtUnix,
-            .value = parsed_value.value,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = if (stale) "stale" else "hit",
+                .results = .{
+                    .key = key,
+                    .expiresAtUnix = record.expiresAtUnix,
+                    .value = parsed_value.value,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = if (stale) "stale" else "hit",
+                .key = key,
+                .expiresAtUnix = record.expiresAtUnix,
+                .value = parsed_value.value,
+            });
+        }
         return true;
     }
 
@@ -70,6 +91,19 @@ fn getU64(obj: std.json.ObjectMap, key: []const u8) ?u64 {
     return switch (value) {
         .integer => |v| if (v >= 0) @intCast(v) else null,
         .string => |s| std.fmt.parseUnsigned(u64, s, 10) catch null,
+        else => null,
+    };
+}
+
+fn getBool(obj: std.json.ObjectMap, key: []const u8) ?bool {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .bool => |v| v,
+        .string => |s| blk: {
+            if (std.ascii.eqlIgnoreCase(s, "true") or std.mem.eql(u8, s, "1")) break :blk true;
+            if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
+            break :blk null;
+        },
         else => null,
     };
 }
