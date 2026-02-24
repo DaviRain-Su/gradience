@@ -55,6 +55,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const category_filter = getString(params, "category");
         const capability_filter = getString(params, "capability");
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
 
         var filtered = std.ArrayList(providers_registry.ProviderInfo).empty;
         defer filtered.deinit(allocator);
@@ -129,17 +130,19 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 try rows.append(allocator, .{ .object = obj });
             }
 
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .providers = rows.items,
-            });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .providers = rows.items });
+            }
             return true;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .providers = filtered.items,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = filtered.items });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .providers = filtered.items });
+        }
         return true;
     }
 
@@ -267,11 +270,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const count: usize = @intCast(clamped);
 
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
         if (select == null) {
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .chains = chains_registry.chains[0..count],
-            });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = chains_registry.chains[0..count] });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .chains = chains_registry.chains[0..count] });
+            }
             return true;
         }
 
@@ -310,10 +315,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try rows.append(allocator, .{ .object = obj });
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .chains = rows.items,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .chains = rows.items });
+        }
         return true;
     }
 
@@ -330,6 +336,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const asset_filter = getString(params, "asset");
         const limit_raw = getU64(params, "limit") orelse 20;
         const limit: usize = @intCast(limit_raw);
+        const results_only = getBool(params, "resultsOnly") orelse false;
 
         var rows = std.ArrayList(chains_assets_registry.ChainAssetEntry).empty;
         defer rows.deinit(allocator);
@@ -345,11 +352,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             if (rows.items.len >= limit) break;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .chain = chain,
-            .assets = rows.items,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .chain = chain, .assets = rows.items });
+        }
         return true;
     }
 
@@ -363,6 +370,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const sort_by = getString(params, "sortBy") orelse "tvl_usd";
         const order = getString(params, "order") orelse "desc";
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = if (chain_raw) |value|
             (core_id.normalizeChain(value) orelse {
@@ -444,17 +452,19 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 try projected.append(allocator, .{ .object = obj });
             }
 
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .opportunities = projected.items,
-            });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = projected.items });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .opportunities = projected.items });
+            }
             return true;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .opportunities = rows.items,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .opportunities = rows.items });
+        }
         return true;
     }
 
@@ -492,6 +502,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const provider_filter = getString(params, "provider");
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
         var chosen: ?bridge_quotes_registry.BridgeQuote = null;
         for (bridge_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
@@ -554,21 +565,41 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 }
             }
 
-            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            }
             return true;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .provider = chosen.?.provider,
-            .fromChain = from_chain,
-            .toChain = to_chain,
-            .asset = asset,
-            .amountIn = amount_raw,
-            .estimatedAmountOut = estimated_out,
-            .feeBps = chosen.?.fee_bps,
-            .etaSeconds = chosen.?.eta_seconds,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .provider = chosen.?.provider,
+                    .fromChain = from_chain,
+                    .toChain = to_chain,
+                    .asset = asset,
+                    .amountIn = amount_raw,
+                    .estimatedAmountOut = estimated_out,
+                    .feeBps = chosen.?.fee_bps,
+                    .etaSeconds = chosen.?.eta_seconds,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .provider = chosen.?.provider,
+                .fromChain = from_chain,
+                .toChain = to_chain,
+                .asset = asset,
+                .amountIn = amount_raw,
+                .estimatedAmountOut = estimated_out,
+                .feeBps = chosen.?.fee_bps,
+                .etaSeconds = chosen.?.eta_seconds,
+            });
+        }
         return true;
     }
 
@@ -602,6 +633,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const provider_filter = getString(params, "provider");
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
         var chosen: ?swap_quotes_registry.SwapQuote = null;
         for (swap_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.chain, chain)) continue;
@@ -666,21 +698,41 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 }
             }
 
-            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+            }
             return true;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .provider = chosen.?.provider,
-            .chain = chain,
-            .fromAsset = from_asset,
-            .toAsset = to_asset,
-            .amountIn = amount_raw,
-            .estimatedAmountOut = estimated_out,
-            .feeBps = chosen.?.fee_bps,
-            .priceImpactBps = chosen.?.price_impact_bps,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .provider = chosen.?.provider,
+                    .chain = chain,
+                    .fromAsset = from_asset,
+                    .toAsset = to_asset,
+                    .amountIn = amount_raw,
+                    .estimatedAmountOut = estimated_out,
+                    .feeBps = chosen.?.fee_bps,
+                    .priceImpactBps = chosen.?.price_impact_bps,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .provider = chosen.?.provider,
+                .chain = chain,
+                .fromAsset = from_asset,
+                .toAsset = to_asset,
+                .amountIn = amount_raw,
+                .estimatedAmountOut = estimated_out,
+                .feeBps = chosen.?.fee_bps,
+                .priceImpactBps = chosen.?.price_impact_bps,
+            });
+        }
         return true;
     }
 
@@ -694,6 +746,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const sort_by = getString(params, "sortBy") orelse "tvl_usd";
         const order = getString(params, "order") orelse "desc";
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = if (chain_raw) |value|
             (core_id.normalizeChain(value) orelse {
@@ -779,14 +832,19 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 try projected.append(allocator, .{ .object = obj });
             }
 
-            try core_envelope.writeJson(.{ .status = "ok", .markets = projected.items });
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = projected.items });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .markets = projected.items });
+            }
             return true;
         }
 
-        try core_envelope.writeJson(.{
-            .status = "ok",
-            .markets = rows.items,
-        });
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .markets = rows.items });
+        }
         return true;
     }
 
@@ -804,6 +862,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
         const select = getString(params, "select");
+        const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = core_id.normalizeChain(chain_raw) orelse {
             try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
@@ -851,20 +910,39 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     }
                 }
 
-                try core_envelope.writeJson(.{ .status = "ok", .rates = std.json.Value{ .object = obj } });
+                if (results_only) {
+                    try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+                } else {
+                    try core_envelope.writeJson(.{ .status = "ok", .rates = std.json.Value{ .object = obj } });
+                }
                 return true;
             }
 
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .provider = entry.provider,
-                .chain = entry.chain,
-                .asset = entry.asset,
-                .market = entry.market,
-                .supplyApy = entry.supply_apy,
-                .borrowApy = entry.borrow_apy,
-                .tvlUsd = entry.tvl_usd,
-            });
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .provider = entry.provider,
+                        .chain = entry.chain,
+                        .asset = entry.asset,
+                        .market = entry.market,
+                        .supplyApy = entry.supply_apy,
+                        .borrowApy = entry.borrow_apy,
+                        .tvlUsd = entry.tvl_usd,
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .provider = entry.provider,
+                    .chain = entry.chain,
+                    .asset = entry.asset,
+                    .market = entry.market,
+                    .supplyApy = entry.supply_apy,
+                    .borrowApy = entry.borrow_apy,
+                    .tvlUsd = entry.tvl_usd,
+                });
+            }
             return true;
         }
 

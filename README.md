@@ -93,6 +93,8 @@ Protocol details: `zig-core/PROTOCOL.md`
 
 `providersList` supports optional filters: `name`, `category`, `capability`, plus optional `select`.
 
+Most listing/query actions support `resultsOnly: true` to place data under a `results` field.
+
 `chainsTop` supports `limit` and optional `select` (for example: `chain,rank`).
 
 `chainsAssets` supports `chain` (required), with optional `asset` and `limit` filters.

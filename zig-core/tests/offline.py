@@ -121,6 +121,16 @@ def main() -> int:
     assert len(selected) >= 1
     assert set(selected[0].keys()) <= {"name", "auth"}
 
+    providers_results_only = run(
+        {
+            "action": "providersList",
+            "params": {"category": "swap", "resultsOnly": True},
+        },
+        env,
+    )
+    assert providers_results_only.get("status") == "ok"
+    assert isinstance(providers_results_only.get("results"), list)
+
     chains_top = run({"action": "chainsTop", "params": {"limit": 3}}, env)
     assert chains_top.get("status") == "ok"
     chains = chains_top.get("chains", [])

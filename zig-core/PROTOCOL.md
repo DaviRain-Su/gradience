@@ -52,6 +52,8 @@ Error responses use:
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
 - Tx send: `sendSignedTransaction`
 
+Many query/list actions accept `resultsOnly` (boolean) and return data under `results` while keeping `status: "ok"`.
+
 ### chainsTop Notes
 
 - Optional params:
@@ -134,6 +136,7 @@ Error responses use:
   - `category` (case-insensitive membership match)
   - `capability` (case-insensitive membership match)
   - `select` (comma-separated fields: `name`, `auth`, `categories`, `capabilities`, `capability_auth`)
+  - `resultsOnly` (boolean, return payload under `results` key)
 
 ### rpcCallCached Notes
 
