@@ -60,6 +60,10 @@ Error responses use:
   - `auth`
   - `capabilities`
   - `capability_auth`
+- Optional filters in `params`:
+  - `name` (case-insensitive exact match)
+  - `category` (case-insensitive membership match)
+  - `capability` (case-insensitive membership match)
 
 ### rpcCallCached Notes
 

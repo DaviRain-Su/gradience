@@ -83,6 +83,25 @@ def main() -> int:
         for row in cap_auth
     )
 
+    only_swap = run({"action": "providersList", "params": {"category": "swap"}}, env)
+    assert only_swap.get("status") == "ok"
+    swap_names = {p.get("name") for p in only_swap.get("providers", [])}
+    assert "1inch" in swap_names and "aave" not in swap_names
+
+    only_quote = run(
+        {"action": "providersList", "params": {"capability": "bridge.quote"}}, env
+    )
+    assert only_quote.get("status") == "ok"
+    quote_names = {p.get("name") for p in only_quote.get("providers", [])}
+    assert (
+        "lifi" in quote_names and "across" in quote_names and "aave" not in quote_names
+    )
+
+    only_name = run({"action": "providersList", "params": {"name": "JuPiTeR"}}, env)
+    assert only_name.get("status") == "ok"
+    rows = only_name.get("providers", [])
+    assert len(rows) == 1 and rows[0].get("name") == "jupiter"
+
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
     )

@@ -84,6 +84,8 @@ Protocol details: `zig-core/PROTOCOL.md`
 - `cacheGet`
 - `rpcCallCached`
 
+`providersList` supports optional filters: `name`, `category`, `capability`.
+
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 
 Runtime controls (optional):

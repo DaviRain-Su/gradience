@@ -45,9 +45,46 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     if (std.mem.eql(u8, action, "providersList")) {
+        const name_filter = getString(params, "name");
+        const category_filter = getString(params, "category");
+        const capability_filter = getString(params, "capability");
+
+        var filtered = std.ArrayList(providers_registry.ProviderInfo).empty;
+        defer filtered.deinit(allocator);
+
+        for (providers_registry.providers) |provider| {
+            if (name_filter) |name| {
+                if (!std.ascii.eqlIgnoreCase(provider.name, name)) continue;
+            }
+
+            if (category_filter) |category| {
+                var matched = false;
+                for (provider.categories) |entry| {
+                    if (std.ascii.eqlIgnoreCase(entry, category)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) continue;
+            }
+
+            if (capability_filter) |capability| {
+                var matched = false;
+                for (provider.capabilities) |entry| {
+                    if (std.ascii.eqlIgnoreCase(entry, capability)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) continue;
+            }
+
+            try filtered.append(allocator, provider);
+        }
+
         try core_envelope.writeJson(.{
             .status = "ok",
-            .providers = providers_registry.providers,
+            .providers = filtered.items,
         });
         return true;
     }
