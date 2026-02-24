@@ -91,7 +91,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 - `cacheGet`
 - `rpcCallCached`
 
-`providersList` supports optional filters: `name`, `category`, `capability`.
+`providersList` supports optional filters: `name`, `category`, `capability`, plus optional `select`.
 
 `chainsTop` supports `limit` and optional `select` (for example: `chain,rank`).
 

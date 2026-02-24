@@ -109,6 +109,18 @@ def main() -> int:
     rows = only_name.get("providers", [])
     assert len(rows) == 1 and rows[0].get("name") == "jupiter"
 
+    providers_select = run(
+        {
+            "action": "providersList",
+            "params": {"category": "swap", "select": "name,auth"},
+        },
+        env,
+    )
+    assert providers_select.get("status") == "ok"
+    selected = providers_select.get("providers", [])
+    assert len(selected) >= 1
+    assert set(selected[0].keys()) <= {"name", "auth"}
+
     chains_top = run({"action": "chainsTop", "params": {"limit": 3}}, env)
     assert chains_top.get("status") == "ok"
     chains = chains_top.get("chains", [])

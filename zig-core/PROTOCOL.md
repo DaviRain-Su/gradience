@@ -123,6 +123,7 @@ Error responses use:
   - `name` (case-insensitive exact match)
   - `category` (case-insensitive membership match)
   - `capability` (case-insensitive membership match)
+  - `select` (comma-separated fields: `name`, `auth`, `categories`, `capabilities`, `capability_auth`)
 
 ### rpcCallCached Notes
 

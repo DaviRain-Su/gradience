@@ -54,6 +54,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const name_filter = getString(params, "name");
         const category_filter = getString(params, "category");
         const capability_filter = getString(params, "capability");
+        const select = getString(params, "select");
 
         var filtered = std.ArrayList(providers_registry.ProviderInfo).empty;
         defer filtered.deinit(allocator);
@@ -86,6 +87,53 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
 
             try filtered.append(allocator, provider);
+        }
+
+        if (select) |fields_raw| {
+            var rows = std.ArrayList(std.json.Value).empty;
+            defer rows.deinit(allocator);
+
+            var parts = std.mem.splitScalar(u8, fields_raw, ',');
+            var fields = std.ArrayList([]const u8).empty;
+            defer fields.deinit(allocator);
+            while (parts.next()) |part| {
+                const field = std.mem.trim(u8, part, " \r\n\t");
+                if (field.len == 0) continue;
+                try fields.append(allocator, field);
+            }
+
+            for (filtered.items) |provider| {
+                var obj = std.json.ObjectMap.init(allocator);
+                for (fields.items) |field| {
+                    if (std.mem.eql(u8, field, "name")) {
+                        try obj.put("name", .{ .string = provider.name });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "auth")) {
+                        try obj.put("auth", .{ .string = provider.auth });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "categories")) {
+                        try obj.put("categories", try stringArrayToJson(allocator, provider.categories));
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "capabilities")) {
+                        try obj.put("capabilities", try stringArrayToJson(allocator, provider.capabilities));
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "capability_auth")) {
+                        try obj.put("capability_auth", try capabilityAuthToJson(allocator, provider.capability_auth));
+                        continue;
+                    }
+                }
+                try rows.append(allocator, .{ .object = obj });
+            }
+
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .providers = rows.items,
+            });
+            return true;
         }
 
         try core_envelope.writeJson(.{
@@ -605,6 +653,28 @@ fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
         .string => |s| std.fmt.parseFloat(f64, s) catch null,
         else => null,
     };
+}
+
+fn stringArrayToJson(allocator: std.mem.Allocator, values: []const []const u8) !std.json.Value {
+    var arr = std.json.Array.init(allocator);
+    for (values) |value| {
+        try arr.append(.{ .string = value });
+    }
+    return .{ .array = arr };
+}
+
+fn capabilityAuthToJson(
+    allocator: std.mem.Allocator,
+    values: []const providers_registry.ProviderCapabilityAuth,
+) !std.json.Value {
+    var arr = std.json.Array.init(allocator);
+    for (values) |value| {
+        var obj = std.json.ObjectMap.init(allocator);
+        try obj.put("capability", .{ .string = value.capability });
+        try obj.put("auth", .{ .string = value.auth });
+        try arr.append(.{ .object = obj });
+    }
+    return .{ .array = arr };
 }
 
 fn writeMissing(field_name: []const u8) !void {
