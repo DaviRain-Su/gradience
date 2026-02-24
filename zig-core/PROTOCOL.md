@@ -51,3 +51,9 @@ Error responses use:
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
 - Tx send: `sendSignedTransaction`
+
+### rpcCallCached Notes
+
+- `method` is canonicalized before provider call (`ETH_GETBALANCE` -> `eth_getBalance`)
+- `allowStaleFallback=false` disables stale cache fallback when upstream RPC fails
+- `allowStaleFallback=true` may return `source: "stale"` if a stale cached value is within `maxStaleSeconds`

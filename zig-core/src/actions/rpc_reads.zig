@@ -4,6 +4,7 @@ const core_envelope = @import("../core/envelope.zig");
 const core_cache = @import("../core/cache.zig");
 const core_runtime = @import("../core/runtime.zig");
 const core_cache_policy = @import("../core/cache_policy.zig");
+const rpc_errors = @import("rpc_errors.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "rpcCallCached")) {
@@ -309,21 +310,8 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: std.json.ObjectMap) !
     try core_envelope.writeJson(.{ .status = "ok", .source = outcome.source, .estimateGas = gas, .estimateGasHex = outcome.result, .rpcUrl = rpc_url });
 }
 
-pub const RpcError = error{
-    RpcRateLimited,
-    RpcUnavailable,
-    RpcRequestFailed,
-    RpcBadHttpStatus,
-    InvalidRpcResponse,
-    InvalidRpcObject,
-    RpcReturnedError,
-    MissingRpcResult,
-    InvalidRpcResultType,
-    CachedValueMissingResult,
-    CachedValueInvalidResult,
-};
-
-pub const RpcCallError = RpcError || error{OutOfMemory};
+pub const RpcCallError = rpc_errors.RpcCallError;
+pub const RpcError = rpc_errors.RpcError;
 
 pub fn rpcCallResultStringQuiet(
     allocator: std.mem.Allocator,
@@ -372,45 +360,11 @@ pub fn rpcCallResultStringQuiet(
     const rpc_root = rpc_parsed.value;
     if (rpc_root != .object) return RpcError.InvalidRpcObject;
 
-    if (rpc_root.object.get("error")) |rpc_error| return classifyRpcError(rpc_error);
+    if (rpc_root.object.get("error")) |rpc_error| return rpc_errors.classifyRpcError(rpc_error);
 
     const value = rpc_root.object.get("result") orelse return RpcError.MissingRpcResult;
     if (value != .string) return RpcError.InvalidRpcResultType;
     return allocator.dupe(u8, value.string);
-}
-
-fn classifyRpcError(rpc_error: std.json.Value) RpcError {
-    if (rpc_error != .object) return RpcError.RpcReturnedError;
-
-    if (rpc_error.object.get("code")) |code_value| {
-        const maybe_code = switch (code_value) {
-            .integer => |v| v,
-            .string => |s| std.fmt.parseInt(i64, s, 10) catch null,
-            else => null,
-        };
-        if (maybe_code) |code| {
-            if (code == 429 or code == -32005) return RpcError.RpcRateLimited;
-            if (code == -32000 or code == -32004) return RpcError.RpcUnavailable;
-        }
-    }
-
-    if (rpc_error.object.get("message")) |msg_value| {
-        if (msg_value == .string) {
-            var buf: [512]u8 = undefined;
-            const msg = msg_value.string;
-            const n = @min(msg.len, buf.len);
-            @memcpy(buf[0..n], msg[0..n]);
-            for (buf[0..n]) |*c| c.* = std.ascii.toLower(c.*);
-            const lower = buf[0..n];
-            if (std.mem.indexOf(u8, lower, "rate limit") != null) return RpcError.RpcRateLimited;
-            if (std.mem.indexOf(u8, lower, "too many") != null) return RpcError.RpcRateLimited;
-            if (std.mem.indexOf(u8, lower, "temporarily unavailable") != null) return RpcError.RpcUnavailable;
-            if (std.mem.indexOf(u8, lower, "service unavailable") != null) return RpcError.RpcUnavailable;
-            if (std.mem.indexOf(u8, lower, "timeout") != null) return RpcError.RpcUnavailable;
-        }
-    }
-
-    return RpcError.RpcReturnedError;
 }
 
 fn extractCachedRpcResult(allocator: std.mem.Allocator, value_json: []const u8) RpcCallError![]u8 {
@@ -425,33 +379,7 @@ fn extractCachedRpcResult(allocator: std.mem.Allocator, value_json: []const u8) 
 }
 
 pub fn writeRpcError(err: RpcCallError) !void {
-    switch (err) {
-        RpcError.RpcRateLimited => {
-            try core_envelope.writeJson(core_errors.rateLimited("rpc rate limited"));
-            return;
-        },
-        RpcError.RpcUnavailable => {
-            try core_envelope.writeJson(core_errors.unavailable("rpc unavailable"));
-            return;
-        },
-        else => {},
-    }
-
-    const message: []const u8 = switch (err) {
-        RpcError.RpcRequestFailed => "rpc request failed",
-        RpcError.RpcBadHttpStatus => "rpc http status not ok",
-        RpcError.InvalidRpcResponse => "invalid rpc response",
-        RpcError.InvalidRpcObject => "invalid rpc object",
-        RpcError.RpcReturnedError => "rpc returned error",
-        RpcError.RpcRateLimited => "rpc rate limited",
-        RpcError.RpcUnavailable => "rpc unavailable",
-        RpcError.MissingRpcResult => "missing rpc result",
-        RpcError.InvalidRpcResultType => "rpc result must be string",
-        RpcError.CachedValueMissingResult => "cached value missing result",
-        RpcError.CachedValueInvalidResult => "cached value invalid result",
-        error.OutOfMemory => "out of memory",
-    };
-    try core_envelope.writeJson(core_errors.internal(message));
+    try rpc_errors.writeRpcError(err);
 }
 
 fn makeRpcCacheKey(

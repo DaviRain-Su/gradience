@@ -76,6 +76,55 @@ def main() -> int:
     assert strict_blocked.get("status") == "error"
     assert int(strict_blocked.get("code", 0)) == 13
 
+    run(
+        {
+            "action": "cachePut",
+            "params": {
+                "key": "stale-probe",
+                "ttlSeconds": 0,
+                "value": {"result": "0x1", "fetchedAtUnix": 0},
+            },
+        },
+        env,
+    )
+
+    strict_cache_env = env.copy()
+    strict_cache_env["ZIG_CORE_STRICT"] = "1"
+
+    no_stale = run(
+        {
+            "action": "rpcCallCached",
+            "params": {
+                "rpcUrl": "https://no-such-host.invalid",
+                "method": "eth_blockNumber",
+                "paramsJson": "[]",
+                "cacheKey": "stale-probe",
+                "allowStaleFallback": False,
+                "maxStaleSeconds": 9999,
+            },
+        },
+        strict_cache_env,
+    )
+    assert no_stale.get("status") == "error"
+
+    with_stale = run(
+        {
+            "action": "rpcCallCached",
+            "params": {
+                "rpcUrl": "https://no-such-host.invalid",
+                "method": "eth_blockNumber",
+                "paramsJson": "[]",
+                "cacheKey": "stale-probe",
+                "allowStaleFallback": True,
+                "maxStaleSeconds": 9999,
+            },
+        },
+        strict_cache_env,
+    )
+    assert with_stale.get("status") == "ok"
+    assert with_stale.get("source") == "stale"
+    assert with_stale.get("result") == "0x1"
+
     print("offline tests passed")
     return 0
 
