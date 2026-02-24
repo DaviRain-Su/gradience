@@ -601,7 +601,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const provider_filter = getString(params, "provider");
         const provider_priority = getString(params, "providers");
         const strategy = getString(params, "strategy") orelse "bestOut";
-        if (!std.ascii.eqlIgnoreCase(strategy, "bestOut") and !std.ascii.eqlIgnoreCase(strategy, "fastest")) {
+        if (!isBridgeStrategyValid(strategy)) {
             try writeInvalid("strategy");
             return true;
         }
@@ -657,7 +657,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const provider_filter = getString(params, "provider");
         const provider_priority = getString(params, "providers");
         const strategy = getString(params, "strategy") orelse "bestOut";
-        if (!std.ascii.eqlIgnoreCase(strategy, "bestOut") and !std.ascii.eqlIgnoreCase(strategy, "lowestFee")) {
+        if (!isSwapStrategyValid(strategy)) {
             try writeInvalid("strategy");
             return true;
         }
@@ -968,6 +968,14 @@ const SwapQuoteSelection = struct {
     quote: swap_quotes_registry.SwapQuote,
     out_amount: u256,
 };
+
+fn isBridgeStrategyValid(strategy: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(strategy, "bestOut") or std.ascii.eqlIgnoreCase(strategy, "fastest");
+}
+
+fn isSwapStrategyValid(strategy: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(strategy, "bestOut") or std.ascii.eqlIgnoreCase(strategy, "lowestFee");
+}
 
 fn collectBridgeCandidates(
     allocator: std.mem.Allocator,
