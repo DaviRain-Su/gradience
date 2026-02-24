@@ -9,7 +9,7 @@ pub fn isSupported(action: []const u8) bool {
 }
 
 pub fn isAllowed(allocator: std.mem.Allocator, action: []const u8) bool {
-    if (!isSupported(action)) return false;
+    if (!isSupported(action)) return true;
 
     const allowlist = std.process.getEnvVarOwned(allocator, "ZIG_CORE_ALLOWLIST") catch |err| switch (err) {
         error.EnvironmentVariableNotFound => return true,
