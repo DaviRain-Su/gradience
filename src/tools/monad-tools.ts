@@ -36,6 +36,7 @@ const ERC4626_ABI = [
 ];
 
 type Params = Record<string, unknown>;
+type ZigResult = Record<string, unknown>;
 
 function resolveRpc(params: { rpcUrl?: string }): string {
   return (params.rpcUrl || process.env.MONAD_RPC_URL || DEFAULT_RPC_URL).trim();
@@ -63,6 +64,27 @@ function asOptionalString(params: Params, key: string): string | undefined {
   return String(value);
 }
 
+function ensureZigOk(result: ZigResult, fallback: string): void {
+  if (result.status === "ok") return;
+  throw new Error(String(result.error || fallback));
+}
+
+function blockedByZigPolicy(
+  result: ZigResult,
+  rpcUrl: string,
+  runtime?: { strict: boolean; allowBroadcast: boolean },
+) {
+  const code = Number(result.code || 0);
+  if (code !== 13) return null;
+  return textResult({
+    status: "blocked",
+    reason: String(result.error || "blocked by runtime policy"),
+    code,
+    runtime,
+    rpcUrl,
+  });
+}
+
 export function registerMonadTools(registrar: ToolRegistrar): void {
   registrar.registerTool({
     name: "monad_getBalance",
@@ -88,12 +110,16 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getBalance",
           params: { address, rpcUrl, blockTag },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core getBalance failed"));
-        }
+        ensureZigOk(zig, "zig core getBalance failed");
         const balanceHex = String(zig.balanceHex || "0x0");
         const balanceWei = BigInt(balanceHex).toString();
-        return textResult({ status: "ok", address, balanceWei, rpcUrl });
+        return textResult({
+          status: "ok",
+          source: String(zig.source || "fresh"),
+          address,
+          balanceWei,
+          rpcUrl,
+        });
       }
 
       const provider = getProvider(rpcUrl);
@@ -133,12 +159,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getErc20Balance",
           params: { rpcUrl, tokenAddress, address, blockTag },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core getErc20Balance failed"));
-        }
+        ensureZigOk(zig, "zig core getErc20Balance failed");
         const balanceHex = String(zig.balanceRaw || "0x0");
         return textResult({
           status: "ok",
+          source: String(zig.source || "fresh"),
           address,
           tokenAddress,
           balanceRaw: BigInt(balanceHex).toString(),
@@ -176,10 +201,13 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getBlockNumber",
           params: { rpcUrl },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core getBlockNumber failed"));
-        }
-        return textResult({ status: "ok", blockNumber: Number(zig.blockNumber || 0), rpcUrl });
+        ensureZigOk(zig, "zig core getBlockNumber failed");
+        return textResult({
+          status: "ok",
+          source: String(zig.source || "fresh"),
+          blockNumber: Number(zig.blockNumber || 0),
+          rpcUrl,
+        });
       }
 
       const provider = getProvider(rpcUrl);
@@ -214,9 +242,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             chainId: params.chainId ?? null,
           },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core buildTransferNative failed"));
-        }
+        ensureZigOk(zig, "zig core buildTransferNative failed");
         return textResult({ status: "ok", txRequest: zig.txRequest });
       }
 
@@ -259,8 +285,9 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             chainId: params.chainId ?? null,
           },
         });
-        if (zig.status !== "ok" || !zig.txRequest || typeof zig.txRequest !== "object") {
-          throw new Error(String(zig.error || "zig core buildTransferErc20 failed"));
+        ensureZigOk(zig, "zig core buildTransferErc20 failed");
+        if (!zig.txRequest || typeof zig.txRequest !== "object") {
+          throw new Error("zig core buildTransferErc20 missing txRequest");
         }
         return textResult({ status: "ok", txRequest: zig.txRequest });
       }
@@ -308,9 +335,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             chainId: params.chainId ?? null,
           },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core buildErc20Approve failed"));
-        }
+        ensureZigOk(zig, "zig core buildErc20Approve failed");
         return textResult({ status: "ok", txRequest: zig.txRequest });
       }
 
@@ -363,9 +388,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             chainId: params.chainId ?? null,
           },
         });
-        if (zig.status !== "ok") {
-          throw new Error(String(zig.error || "zig core buildDexSwap failed"));
-        }
+        ensureZigOk(zig, "zig core buildDexSwap failed");
         return textResult({ status: "ok", txRequest: zig.txRequest, notes: zig.notes });
       }
 
@@ -986,18 +1009,9 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "sendSignedTransaction",
           params: { rpcUrl, signedTxHex },
         });
-        if (zig.status !== "ok") {
-          const code = Number(zig.code || 0);
-          if (code === 13) {
-            return textResult({
-              status: "blocked",
-              reason: String(zig.error || "broadcast blocked by runtime policy"),
-              code,
-              rpcUrl,
-            });
-          }
-          throw new Error(String(zig.error || "zig core sendSignedTransaction failed"));
-        }
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
+        ensureZigOk(zig, "zig core sendSignedTransaction failed");
         return textResult({
           status: "ok",
           source: String(zig.source || "fresh"),
@@ -1050,9 +1064,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             action: "getBalance",
             params: { rpcUrl, address: fromAddress, blockTag: "latest" },
           });
-          if (zig.status !== "ok") {
-            throw new Error(String(zig.error || "zig core analysis getBalance failed"));
-          }
+          ensureZigOk(zig, "zig core analysis getBalance failed");
           return textResult({
             status: "analysis_ok",
             source: String(zig.source || "fresh"),
@@ -1081,9 +1093,8 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
                 },
               }));
 
-          if (txRequest.status !== "ok" || !txRequest.txRequest) {
-            throw new Error(String(txRequest.error || "zig core build tx failed"));
-          }
+          ensureZigOk(txRequest, "zig core build tx failed");
+          if (!txRequest.txRequest) throw new Error("zig core build tx missing txRequest");
 
           const builtTx = txRequest.txRequest as Record<string, unknown>;
           const estimate = await callZigCore({
@@ -1097,9 +1108,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             },
           });
 
-          if (estimate.status !== "ok") {
-            throw new Error(String(estimate.error || "zig core estimateGas failed"));
-          }
+          ensureZigOk(estimate, "zig core estimateGas failed");
 
           return textResult({
             status: "simulate_ok",
@@ -1127,19 +1136,9 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "sendSignedTransaction",
           params: { rpcUrl, signedTxHex: asString(params, "signedTxHex") },
         });
-        if (sent.status !== "ok") {
-          const code = Number(sent.code || 0);
-          if (code === 13) {
-            return textResult({
-              status: "blocked",
-              reason: String(sent.error || "broadcast blocked by runtime policy"),
-              code,
-              runtime: runtimeMeta,
-              rpcUrl,
-            });
-          }
-          throw new Error(String(sent.error || "zig core sendSignedTransaction failed"));
-        }
+        const blocked = blockedByZigPolicy(sent, rpcUrl, runtimeMeta);
+        if (blocked) return blocked;
+        ensureZigOk(sent, "zig core sendSignedTransaction failed");
         return textResult({
           status: "execute_ok",
           source: String(sent.source || "fresh"),
