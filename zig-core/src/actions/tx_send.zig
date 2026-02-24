@@ -2,7 +2,8 @@ const std = @import("std");
 const core_errors = @import("../core/errors.zig");
 const core_envelope = @import("../core/envelope.zig");
 const core_runtime = @import("../core/runtime.zig");
-const rpc_reads = @import("rpc_reads.zig");
+const rpc_client = @import("rpc_client.zig");
+const rpc_errors = @import("rpc_errors.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (!std.mem.eql(u8, action, "sendSignedTransaction")) return false;
@@ -25,8 +26,8 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     const params_json = try std.fmt.allocPrint(allocator, "[\"{s}\"]", .{signed_tx_hex});
     defer allocator.free(params_json);
 
-    const tx_hash = rpc_reads.rpcCallResultStringQuiet(allocator, rpc_url, "eth_sendRawTransaction", params_json) catch |rpc_err| {
-        try rpc_reads.writeRpcError(rpc_err);
+    const tx_hash = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_sendRawTransaction", params_json) catch |rpc_err| {
+        try rpc_errors.writeRpcError(rpc_err);
         return true;
     };
     defer allocator.free(tx_hash);
