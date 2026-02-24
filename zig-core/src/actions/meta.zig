@@ -7,6 +7,7 @@ const core_policy = @import("../core/policy.zig");
 const core_runtime = @import("../core/runtime.zig");
 const core_cache_policy = @import("../core/cache_policy.zig");
 const providers_registry = @import("../core/providers_registry.zig");
+const core_version = @import("../core/version.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -14,6 +15,31 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             .status = "ok",
             .protocolVersion = core_schema.protocol_version,
             .actions = core_schema.supported_actions,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "version")) {
+        const long = getBool(params, "long") orelse false;
+        if (long) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .name = core_version.name,
+                .version = core_version.version,
+                .protocol = core_version.protocol,
+                .build = .{
+                    .zig = @import("builtin").zig_version_string,
+                    .os = @tagName(@import("builtin").os.tag),
+                    .arch = @tagName(@import("builtin").cpu.arch),
+                },
+            });
+            return true;
+        }
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .name = core_version.name,
+            .version = core_version.version,
         });
         return true;
     }
@@ -157,6 +183,19 @@ fn getU64(obj: std.json.ObjectMap, key: []const u8) ?u64 {
     return switch (value) {
         .integer => |v| if (v >= 0) @intCast(v) else null,
         .string => |s| std.fmt.parseUnsigned(u64, s, 10) catch null,
+        else => null,
+    };
+}
+
+fn getBool(obj: std.json.ObjectMap, key: []const u8) ?bool {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .bool => |v| v,
+        .string => |s| blk: {
+            if (std.ascii.eqlIgnoreCase(s, "true") or std.mem.eql(u8, s, "1")) break :blk true;
+            if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
+            break :blk null;
+        },
         else => null,
     };
 }

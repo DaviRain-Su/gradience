@@ -72,6 +72,7 @@ Zig foundation actions (defi-cli style groundwork) are available in `zig-core` p
 Protocol details: `zig-core/PROTOCOL.md`
 
 - `schema`
+- `version`
 - `providersList`
 - `runtimeInfo`
 - `cachePolicy`

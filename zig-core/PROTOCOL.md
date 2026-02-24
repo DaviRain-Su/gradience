@@ -46,7 +46,7 @@ Error responses use:
 
 ## Action Groups
 
-- Meta: `schema`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `normalizeAmount`
+- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `normalizeAmount`
 - Cache admin: `cachePut`, `cacheGet`
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`

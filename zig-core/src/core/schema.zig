@@ -2,6 +2,7 @@ pub const protocol_version = "0.1.0";
 
 pub const supported_actions = [_][]const u8{
     "schema",
+    "version",
     "providersList",
     "runtimeInfo",
     "cachePolicy",

@@ -55,7 +55,18 @@ def main() -> int:
 
     schema = run({"action": "schema", "params": {}}, env)
     assert schema.get("status") == "ok"
+    assert "version" in schema.get("actions", [])
     assert "providersList" in schema.get("actions", [])
+
+    version_short = run({"action": "version", "params": {}}, env)
+    assert version_short.get("status") == "ok"
+    assert version_short.get("name") == "gradience-zig"
+    assert isinstance(version_short.get("version"), str)
+
+    version_long = run({"action": "version", "params": {"long": True}}, env)
+    assert version_long.get("status") == "ok"
+    assert isinstance(version_long.get("protocol"), str)
+    assert isinstance(version_long.get("build", {}).get("zig"), str)
 
     providers = run({"action": "providersList", "params": {}}, env)
     assert providers.get("status") == "ok"
