@@ -1,13 +1,12 @@
 const std = @import("std");
 const core_errors = @import("core/errors.zig");
 const core_envelope = @import("core/envelope.zig");
-const core_schema = @import("core/schema.zig");
-const core_id = @import("core/id.zig");
-const core_policy = @import("core/policy.zig");
 const core_cache = @import("core/cache.zig");
 const core_runtime = @import("core/runtime.zig");
 const core_runner = @import("core/runner.zig");
 const core_cache_policy = @import("core/cache_policy.zig");
+const actions_meta = @import("actions/meta.zig");
+const actions_cache_admin = @import("actions/cache_admin.zig");
 
 const RequestParams = core_runner.RequestParams;
 
@@ -45,38 +44,8 @@ pub fn main() !void {
         try handleGetBalance(allocator, params);
         return;
     }
-    if (std.mem.eql(u8, action, "schema")) {
-        try handleSchema();
-        return;
-    }
-    if (std.mem.eql(u8, action, "runtimeInfo")) {
-        try handleRuntimeInfo();
-        return;
-    }
-    if (std.mem.eql(u8, action, "cachePolicy")) {
-        try handleCachePolicy(params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "policyCheck")) {
-        try handlePolicyCheck(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "normalizeChain")) {
-        try handleNormalizeChain(params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "normalizeAmount")) {
-        try handleNormalizeAmount(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "cachePut")) {
-        try handleCachePut(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "cacheGet")) {
-        try handleCacheGet(allocator, params);
-        return;
-    }
+    if (try actions_meta.run(action, allocator, params)) return;
+    if (try actions_cache_admin.run(action, allocator, params)) return;
     if (std.mem.eql(u8, action, "rpcCallCached")) {
         try handleRpcCallCached(allocator, params);
         return;
@@ -115,111 +84,6 @@ pub fn main() !void {
     }
 
     try writeJson(core_errors.unsupported("unsupported action"));
-}
-
-fn handleSchema() !void {
-    try writeJson(.{
-        .status = "ok",
-        .protocolVersion = core_schema.protocol_version,
-        .actions = core_schema.supported_actions,
-    });
-}
-
-fn handleRuntimeInfo() !void {
-    try writeJson(.{
-        .status = "ok",
-        .strict = core_runtime.strictMode(),
-        .allowBroadcast = core_runtime.allowBroadcast(),
-        .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
-        .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
-    });
-}
-
-fn handleCachePolicy(params: RequestParams) !void {
-    const method = getString(params, "method") orelse return writeMissing("method");
-    const policy = core_cache_policy.forMethod(std.mem.trim(u8, method, " \r\n\t"));
-    try writeJson(.{
-        .status = "ok",
-        .method = method,
-        .ttlSeconds = policy.ttl_seconds,
-        .maxStaleSeconds = policy.max_stale_seconds,
-        .allowStaleFallback = policy.allow_stale_fallback,
-    });
-}
-
-fn handlePolicyCheck(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const target_action = getString(params, "targetAction") orelse return writeMissing("targetAction");
-    const allowed = core_policy.isAllowed(allocator, target_action);
-    const supported = core_policy.isSupported(target_action);
-    try writeJson(.{ .status = "ok", .targetAction = target_action, .supported = supported, .allowed = allowed });
-}
-
-fn handleNormalizeChain(params: RequestParams) !void {
-    const chain = getString(params, "chain") orelse return writeMissing("chain");
-    const normalized = core_id.normalizeChain(chain) orelse {
-        try writeJson(core_errors.unsupported("unsupported chain alias"));
-        return;
-    };
-    try writeJson(.{ .status = "ok", .chain = chain, .caip2 = normalized });
-}
-
-fn handleNormalizeAmount(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const decimal_amount = getString(params, "decimalAmount") orelse return writeMissing("decimalAmount");
-    const decimals_u64 = getU64(params, "decimals") orelse return writeMissing("decimals");
-    if (decimals_u64 > std.math.maxInt(u8)) return writeInvalid("decimals");
-
-    const base_amount = core_id.decimalToBase(allocator, decimal_amount, @intCast(decimals_u64)) catch {
-        return writeInvalid("decimalAmount");
-    };
-    defer allocator.free(base_amount);
-
-    try writeJson(.{
-        .status = "ok",
-        .decimalAmount = decimal_amount,
-        .decimals = decimals_u64,
-        .baseAmount = base_amount,
-    });
-}
-
-fn handleCachePut(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const key = getString(params, "key") orelse return writeMissing("key");
-    const ttl_seconds = getU64(params, "ttlSeconds") orelse 60;
-    const value = params.get("value") orelse return writeMissing("value");
-
-    var value_writer = std.Io.Writer.Allocating.init(allocator);
-    defer value_writer.deinit();
-    try std.json.Stringify.value(value, .{}, &value_writer.writer);
-
-    try core_cache.put(allocator, key, ttl_seconds, value_writer.written());
-    try writeJson(.{ .status = "ok", .key = key, .ttlSeconds = ttl_seconds });
-}
-
-fn handleCacheGet(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const key = getString(params, "key") orelse return writeMissing("key");
-    const now = std.time.timestamp();
-
-    const maybe_record = try core_cache.get(allocator, key);
-    if (maybe_record == null) {
-        try writeJson(.{ .status = "miss", .key = key });
-        return;
-    }
-
-    const record = maybe_record.?;
-    defer allocator.free(record.valueJson);
-
-    const stale = now > record.expiresAtUnix;
-    var parsed_value = std.json.parseFromSlice(std.json.Value, allocator, record.valueJson, .{}) catch {
-        try writeJson(core_errors.internal("cached value parse failed"));
-        return;
-    };
-    defer parsed_value.deinit();
-
-    try writeJson(.{
-        .status = if (stale) "stale" else "hit",
-        .key = key,
-        .expiresAtUnix = record.expiresAtUnix,
-        .value = parsed_value.value,
-    });
 }
 
 const CachedRpcOutcome = struct {
