@@ -192,7 +192,8 @@ fn makeRpcCacheKey(
 ) ![]u8 {
     const normalized_url = try normalizeRpcUrlForCacheKey(allocator, rpc_url);
     defer allocator.free(normalized_url);
-    const normalized_method = std.mem.trim(u8, method, " \r\n\t");
+    const normalized_method = try normalizeMethodForCacheKey(allocator, method);
+    defer allocator.free(normalized_method);
 
     const normalized_params = normalizeJsonForCacheKey(allocator, params_json) catch |err| switch (err) {
         error.InvalidRpcResponse,
@@ -209,6 +210,13 @@ fn makeRpcCacheKey(
     };
     defer allocator.free(normalized_params);
     return std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ normalized_url, normalized_method, normalized_params });
+}
+
+fn normalizeMethodForCacheKey(allocator: std.mem.Allocator, method: []const u8) ![]u8 {
+    const trimmed = std.mem.trim(u8, method, " \r\n\t");
+    const out = try allocator.dupe(u8, trimmed);
+    for (out) |*c| c.* = std.ascii.toLower(c.*);
+    return out;
 }
 
 fn normalizeRpcUrlForCacheKey(allocator: std.mem.Allocator, rpc_url: []const u8) ![]u8 {
@@ -241,7 +249,17 @@ fn writeCanonicalJsonValue(
     switch (value) {
         .null => try writer.writeAll("null"),
         .bool => |v| if (v) try writer.writeAll("true") else try writer.writeAll("false"),
-        .integer, .float, .number_string, .string => {
+        .string => |s| {
+            if (isHexAddressString(s)) {
+                const lowered = try allocator.dupe(u8, s);
+                defer allocator.free(lowered);
+                for (lowered[2..]) |*c| c.* = std.ascii.toLower(c.*);
+                try std.json.Stringify.value(lowered, .{}, writer);
+            } else {
+                try std.json.Stringify.value(value, .{}, writer);
+            }
+        },
+        .integer, .float, .number_string => {
             try std.json.Stringify.value(value, .{}, writer);
         },
         .array => |arr| {
@@ -273,6 +291,15 @@ fn writeCanonicalJsonValue(
             try writer.writeByte('}');
         },
     }
+}
+
+fn isHexAddressString(value: []const u8) bool {
+    if (value.len != 42) return false;
+    if (!(value[0] == '0' and (value[1] == 'x' or value[1] == 'X'))) return false;
+    for (value[2..]) |c| {
+        if (!std.ascii.isHex(c)) return false;
+    }
+    return true;
 }
 
 fn lessThanString(_: void, a: []const u8, b: []const u8) bool {
