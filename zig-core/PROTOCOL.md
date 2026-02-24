@@ -46,7 +46,7 @@ Error responses use:
 
 ## Action Groups
 
-- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `normalizeAmount`
+- Meta: `schema`, `version`, `providersList`, `runtimeInfo`, `cachePolicy`, `policyCheck`, `normalizeChain`, `assetsResolve`, `chainsTop`, `chainsAssets`, `normalizeAmount`
 - Cache admin: `cachePut`, `cacheGet`
 - RPC read/cache: `rpcCallCached`, `getBalance`, `getErc20Balance`, `getBlockNumber`, `estimateGas`
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
@@ -57,6 +57,14 @@ Error responses use:
 - Optional params:
   - `limit` (default `10`)
   - `select` (comma-separated fields: `rank`, `chain`, `chain_id`, `tvl_usd`)
+
+### chainsAssets Notes
+
+- Required params:
+  - `chain` (`1`, `base`, `solana`, CAIP-2, etc.)
+- Optional params:
+  - `asset` (symbol or CAIP-19 exact match)
+  - `limit` (default `20`)
 
 ### providersList Notes
 

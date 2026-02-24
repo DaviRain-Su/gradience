@@ -10,6 +10,7 @@ pub const supported_actions = [_][]const u8{
     "normalizeChain",
     "assetsResolve",
     "chainsTop",
+    "chainsAssets",
     "normalizeAmount",
     "cachePut",
     "cacheGet",

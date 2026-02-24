@@ -58,6 +58,7 @@ def main() -> int:
     assert "version" in schema.get("actions", [])
     assert "providersList" in schema.get("actions", [])
     assert "chainsTop" in schema.get("actions", [])
+    assert "chainsAssets" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -117,6 +118,16 @@ def main() -> int:
     selected_rows = chains_select.get("chains", [])
     assert len(selected_rows) == 2
     assert set(selected_rows[0].keys()) == {"chain", "rank"}
+
+    chain_assets = run(
+        {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
+        env,
+    )
+    assert chain_assets.get("status") == "ok"
+    assert chain_assets.get("chain") == "eip155:8453"
+    assets = chain_assets.get("assets", [])
+    assert len(assets) == 1
+    assert assets[0].get("symbol") == "USDC"
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env

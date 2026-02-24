@@ -9,6 +9,7 @@ const core_cache_policy = @import("../core/cache_policy.zig");
 const providers_registry = @import("../core/providers_registry.zig");
 const core_version = @import("../core/version.zig");
 const chains_registry = @import("../core/chains_registry.zig");
+const chains_assets_registry = @import("../core/chains_assets_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -260,6 +261,42 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try core_envelope.writeJson(.{
             .status = "ok",
             .chains = rows.items,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "chainsAssets")) {
+        const chain_raw = getString(params, "chain") orelse {
+            try writeMissing("chain");
+            return true;
+        };
+        const chain = core_id.normalizeChain(chain_raw) orelse {
+            try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+            return true;
+        };
+
+        const asset_filter = getString(params, "asset");
+        const limit_raw = getU64(params, "limit") orelse 20;
+        const limit: usize = @intCast(limit_raw);
+
+        var rows = std.ArrayList(chains_assets_registry.ChainAssetEntry).empty;
+        defer rows.deinit(allocator);
+
+        for (chains_assets_registry.assets) |entry| {
+            if (!std.mem.eql(u8, entry.chain_caip2, chain)) continue;
+            if (asset_filter) |asset| {
+                if (!std.ascii.eqlIgnoreCase(entry.symbol, asset) and !std.ascii.eqlIgnoreCase(entry.caip19, asset)) {
+                    continue;
+                }
+            }
+            try rows.append(allocator, entry);
+            if (rows.items.len >= limit) break;
+        }
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .chain = chain,
+            .assets = rows.items,
         });
         return true;
     }
