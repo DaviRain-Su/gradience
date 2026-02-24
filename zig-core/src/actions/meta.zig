@@ -8,6 +8,7 @@ const core_runtime = @import("../core/runtime.zig");
 const core_cache_policy = @import("../core/cache_policy.zig");
 const providers_registry = @import("../core/providers_registry.zig");
 const core_version = @import("../core/version.zig");
+const chains_registry = @import("../core/chains_registry.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -202,6 +203,19 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             .chain = chain,
             .asset = asset,
             .caip19 = resolved.?,
+        });
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "chainsTop")) {
+        const limit_raw = getU64(params, "limit") orelse 10;
+        const max_len: u64 = @intCast(chains_registry.chains.len);
+        const clamped = if (limit_raw > max_len) max_len else limit_raw;
+        const count: usize = @intCast(clamped);
+
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .chains = chains_registry.chains[0..count],
         });
         return true;
     }

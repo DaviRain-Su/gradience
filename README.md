@@ -79,6 +79,7 @@ Protocol details: `zig-core/PROTOCOL.md`
 - `policyCheck`
 - `normalizeChain`
 - `assetsResolve`
+- `chainsTop`
 - `normalizeAmount`
 - `cachePut`
 - `cacheGet`

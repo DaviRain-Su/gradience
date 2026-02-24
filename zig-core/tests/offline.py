@@ -57,6 +57,7 @@ def main() -> int:
     assert schema.get("status") == "ok"
     assert "version" in schema.get("actions", [])
     assert "providersList" in schema.get("actions", [])
+    assert "chainsTop" in schema.get("actions", [])
 
     version_short = run({"action": "version", "params": {}}, env)
     assert version_short.get("status") == "ok"
@@ -101,6 +102,12 @@ def main() -> int:
     assert only_name.get("status") == "ok"
     rows = only_name.get("providers", [])
     assert len(rows) == 1 and rows[0].get("name") == "jupiter"
+
+    chains_top = run({"action": "chainsTop", "params": {"limit": 3}}, env)
+    assert chains_top.get("status") == "ok"
+    chains = chains_top.get("chains", [])
+    assert len(chains) == 3
+    assert chains[0].get("chain") == "ethereum"
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
