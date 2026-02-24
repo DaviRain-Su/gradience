@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "dashboard:dev": "tsx apps/dashboard/server.ts"
+    "dashboard:dev": "tsx apps/dashboard/server.ts",
+    "export:templates": "npm run build && node apps/api/export-templates.mjs"
   },
   "dependencies": {
     "@lifi/sdk": "^3.9.1",

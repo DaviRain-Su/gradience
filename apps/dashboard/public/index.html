@@ -8,18 +8,108 @@
       body { font-family: Arial, sans-serif; margin: 24px; }
       h1 { margin-bottom: 4px; }
       section { margin-top: 20px; }
-      pre { background: #f7f7f7; padding: 12px; overflow: auto; }
+      pre { background: #f7f7f7; padding: 12px; overflow: auto; white-space: pre-wrap; }
+      #runResult { max-height: 240px; overflow: auto; }
       input, textarea { width: 100%; margin-top: 6px; }
       button { margin-top: 8px; }
       .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
       #paramFields div { margin-bottom: 8px; }
       .status-ok { color: #2e7d32; }
       .status-error { color: #c62828; }
+      .row-execute { color: #2e7d32; }
+      .row-simulated { color: #1565c0; }
+      .row-planned { color: #6a1b9a; }
+      #executionSummaryList .selected { background: #e3f2fd; border-left: 4px solid #64b5f6; padding-left: 6px; }
+      .summary-copy-hint { font-size: 11px; color: #888; margin-left: 6px; }
+      .badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 11px; color: #fff; }
+      .badge-status-execute { background: #2e7d32; }
+      .badge-status-simulated { background: #1565c0; }
+      .badge-status-planned { background: #6a1b9a; }
+      .badge-mode-execute { background: #1b5e20; }
+      .badge-mode-simulate { background: #0d47a1; }
+      .badge-mode-plan { background: #4a148c; }
+      .api-label { font-size: 12px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
+      .api-node { background: #e3f2fd; color: #0d47a1; }
+      .api-fastapi { background: #e8f5e9; color: #1b5e20; }
+      .api-custom { background: #fff3e0; color: #e65100; }
+      .refresh-active { color: #1b5e20; }
+      .refresh-paused { color: #e65100; }
+      .refresh-disabled { color: #6d6d6d; }
+      .highlight-copy { background: #fff9c4; }
+      .highlight-refresh { background: #e3f2fd; }
+      .api-divider { border-top: 1px solid #ddd; margin: 8px 0; }
+      .api-advanced-button {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .api-choice-active {
+        border: 1px solid #4caf50;
+        background: #e8f5e9;
+      }
+      #apiBaseUrl::placeholder { color: #aaa; }
     </style>
   </head>
   <body>
     <h1>Monad Strategy Dashboard</h1>
     <p>Minimal strategy list + execution log viewer.</p>
+
+    <section>
+      <h2>API Settings</h2>
+      <button id="apiSettingsToggle" onclick="toggleApiSettings()">Hide API Settings</button>
+      <span id="apiSettingsStatus" style="font-size: 12px; color: #666;" title=""></span>
+      <div id="apiBaseControls">
+      <label>API Base URL</label>
+      <input id="apiBaseUrl" placeholder="http://127.0.0.1:8000" style="max-width: 360px;" ondblclick="copyApiBaseUrl()" oninput="validateApiBaseUrl()" onchange="autoSaveApiBaseUrl()" onblur="autoSaveApiBaseUrl()" list="apiBaseHistory" />
+      <datalist id="apiBaseHistory"></datalist>
+      <button onclick="saveApiBaseUrl()">Save</button>
+      <button onclick="clearApiBaseUrl()">Clear</button>
+      <button onclick="testApiBaseUrl()">Test</button>
+      <button onclick="copyApiBaseUrl()">Copy URL</button>
+      <button id="apiUseNode" onclick="setApiBaseUrl('http://127.0.0.1:4173')" title="Alt+N">Use Node</button>
+      <button id="apiUseFast" onclick="setApiBaseUrl('http://127.0.0.1:8000')" title="Alt+F">Use FastAPI</button>
+      <button onclick="resetApiBaseUrlConfirm()">Reset Default</button>
+      <span id="apiBaseHint" style="font-size: 12px; color: #666;"></span>
+      <span id="apiBaseCurrent" style="font-size: 12px; color: #666; cursor: pointer;" onclick="copyApiBaseCurrent()" title="Click to copy"></span>
+      <button onclick="clearApiBaseHistoryConfirm()">Clear history</button>
+      <span id="apiKeyHint" style="font-size: 12px; color: #666;">Alt+N / Alt+F</span>
+      <span id="apiBaseType" class="api-label"></span>
+      </div>
+      <div class="api-divider" id="apiAdvancedDivider"></div>
+      <button id="apiAdvancedHint" class="api-advanced-button" onclick="expandApiSettings()"></button>
+      <div id="apiSettingsPanel">
+      <div id="apiRefreshControls">
+      <button onclick="refreshApiInfo()">Refresh API Info</button>
+      <button onclick="copyApiHealth()">Copy Health</button>
+      <span id="apiHealthUpdated" style="font-size: 12px; color: #666;"></span>
+      <span id="apiRefreshCountdown" style="font-size: 12px; color: #666; display: none; cursor: pointer;" title="Click to refresh now" onclick="manualApiRefresh()" onmouseenter="updateRefreshCountdownCursor()"></span>
+      <label><input type="checkbox" id="apiAutoRefresh" onchange="toggleApiAutoRefresh()" /> Auto refresh</label>
+      <label>Interval(s)</label>
+      <input id="apiRefreshInterval" type="number" min="1" value="5" onchange="persistApiRefreshInterval()" onkeydown="if(event.key==='Enter'){persistApiRefreshInterval();}" />
+      <button id="apiRefreshPause" onclick="toggleApiAutoPause()">Pause</button>
+      <span id="apiRefreshStatus" style="font-size: 12px; color: #666;"></span>
+      <span id="apiRefreshHint" style="font-size: 12px; color: #666;"></span>
+      <span id="apiRefreshIntervalDisplay" style="font-size: 12px; color: #666; display: none;"></span>
+      <span id="apiHealthErrors" style="font-size: 12px; color: #c62828;"></span>
+      <button onclick="clearApiHealthErrors()">Hide errors</button>
+      <button onclick="toggleApiHealthErrorsDetail()">Toggle error details</button>
+      <label><input type="checkbox" id="apiHealthErrorsDefault" onchange="persistApiHealthErrorsDefault()" /> Collapse by default</label>
+      <button id="apiHealthErrorsCopy" onclick="copyApiHealthErrorsDetail()" title="Copy error details">Copy error details</button>
+      <span id="apiHealthErrorsStatus" style="font-size: 12px; color: #666;"></span>
+      <pre id="apiHealthErrorsDetail" style="display: none;"></pre>
+      <span id="apiHealthLastError" style="font-size: 12px; color: #c62828;"></span>
+      <button onclick="copyApiHealthLastError()">Copy last error</button>
+      <button onclick="clearApiHealthLastError()">Clear last error</button>
+      <span id="apiVersion" style="font-size: 12px; color: #666; cursor: pointer;" onclick="copyApiVersion()"></span>
+      <span id="apiBuild" style="font-size: 12px; color: #666;"></span>
+      <span id="apiInstance" style="font-size: 12px; color: #666;"></span>
+      <span id="apiUptime" style="font-size: 12px; color: #666;" title=""></span>
+      <span id="apiStartedAt" style="font-size: 12px; color: #666;" title=""></span>
+      </div>
+      </div>
+    </section>
 
     <section>
       <h2>Create Strategy (NL → Template)</h2>
@@ -63,14 +153,14 @@
       <label>Mode (plan/simulate/execute)</label>
       <input id="runMode" placeholder="plan" value="plan" />
       <label>Evidence JSON (optional)</label>
-      <textarea id="runEvidence" rows="3" placeholder='{"routeId":"...","txHash":"..."}'></textarea>
+      <textarea id="runEvidence" rows="3" placeholder='{"routeId":"...","txHash":"..."}' onkeydown="if(event.ctrlKey && event.key==='Enter'){runStrategyNow();}"></textarea>
       <button onclick="fillEvidenceTemplate()">Fill Evidence Template</button>
       <button onclick="saveRunEvidence()">Save Run Evidence</button>
       <button onclick="loadRunEvidence()">Load Run Evidence</button>
       <button onclick="clearEvidence()">Clear Evidence</button>
       <span id="runEvidenceSaved" style="font-size: 12px; color: #666;"></span>
       <label>LI.FI Result JSON (optional)</label>
-      <textarea id="runLifi" rows="3" placeholder='{"routeId":"...","tool":"...","estimateGas":"...","txHash":"..."}'></textarea>
+      <textarea id="runLifi" rows="3" placeholder='{"routeId":"...","tool":"...","estimateGas":"...","txHash":"..."}' onkeydown="if(event.ctrlKey && event.key==='Enter'){runStrategyNow();}"></textarea>
       <button onclick="fillLifiTemplate()">Fill LI.FI Template</button>
       <button onclick="saveRunLifi()">Save Run LIFI</button>
       <button onclick="loadRunLifi()">Load Run LIFI</button>
@@ -81,6 +171,11 @@
       <button onclick="saveEvidenceTemplate()">Save Evidence Template</button>
       <button onclick="loadEvidenceTemplate()">Load Evidence Template</button>
       <button onclick="runStrategyNow()">Run</button>
+      <button onclick="copyRunResult()">Copy Run Result</button>
+      <button onclick="clearRunResultConfirm()">Clear Result</button>
+      <label><input type="checkbox" id="keepRunResult" onchange="persistKeepRunResult()" /> Keep Result</label>
+      <span style="font-size: 12px; color: #666;">Ctrl+Enter to run</span>
+      <span id="runResultCopyHint" style="font-size: 12px; color: #666;"></span>
       <pre id="runResult"></pre>
     </section>
 
@@ -93,7 +188,19 @@
       <button onclick="copyExecutionField('txHash')">Copy Tx Hash</button>
       <button onclick="copyExecutionField('evidence')">Copy Evidence</button>
       <button onclick="copyExecutionField('payload')">Copy Payload</button>
+      <button onclick="copyExecutionField('all')">Copy Full Detail</button>
+      <button onclick="copyExecutionHighlights()">Copy Highlights</button>
+      <button onclick="copyExecutionField('runId')">Copy Run ID</button>
+      <button onclick="copyExecutionField('txHash')">Copy Tx Hash</button>
+      <button onclick="copyHighlightField('routeId')">Copy Route</button>
+      <button onclick="copyHighlightField('status')">Copy Status</button>
+      <button onclick="copyHighlightField('mode')">Copy Mode</button>
+      <button id="toggleHighlightsBtn" onclick="toggleExecutionHighlights()">Toggle Highlights</button>
+      <label><input type="checkbox" id="executionHighlightsDefault" onchange="persistExecutionHighlightsDefault()" /> Collapse by default</label>
+      <span style="font-size: 12px; color: #666;">Default collapse hides highlights on load.</span>
+      <span id="highlightCopyHint" style="font-size: 12px; color: #666;"></span>
       <pre id="executionDetail"></pre>
+      <pre id="executionDetailHighlights" title="runId: execution id; txHash: transaction hash; routeId: LI.FI route id; status/mode: execution state"></pre>
     </section>
 
     <div class="grid">
@@ -130,6 +237,12 @@
         <label>Search (runId/strategyId)</label>
         <input id="summarySearch" placeholder="run_..." />
         <label><input type="checkbox" id="summaryFields" checked /> Show extra fields</label>
+        <label><input type="checkbox" id="summaryShowTime" checked /> Show time</label>
+        <label><input type="checkbox" id="summaryShortTime" checked /> Short time</label>
+        <label><input type="checkbox" id="summaryShowRoute" checked /> Show route</label>
+        <label><input type="checkbox" id="summaryShowTx" checked /> Show tx</label>
+        <label><input type="checkbox" id="summaryCompact" /> Compact view</label>
+        <label><input type="checkbox" id="summarySortTime" checked /> Sort by time</label>
         <button onclick="loadExecutions()">Refresh</button>
         <button onclick="clearSummaryFilters()">Clear Filters</button>
         <button onclick="loadMoreExecutions()">Load More</button>
@@ -137,8 +250,11 @@
         <button onclick="exportSummaryCsv()">Export CSV</button>
         <button onclick="copySummaryJson()">Copy Summary JSON</button>
         <button onclick="copySummaryCsv()">Copy Summary CSV</button>
+        <button onclick="copySelectedSummaryRow()">Copy Selected Row</button>
         <button onclick="toggleSummaryJson()">Toggle Summary JSON</button>
         <button onclick="toggleSummaryList()">Toggle Summary List</button>
+        <span id="summaryCopyHint" style="font-size: 12px; color: #666;"></span>
+      <span id="summaryRowCopyHint" style="font-size: 12px; color: #666;"></span>
         <div id="executionSummaryList"></div>
         <pre id="executionSummary"></pre>
       </section>
@@ -151,17 +267,850 @@
     </div>
 
     <script>
+      document.addEventListener("keydown", (event) => {
+        if (event.altKey && event.key.toLowerCase() === "n") {
+          setApiBaseUrl("http://127.0.0.1:4173");
+        }
+        if (event.altKey && event.key.toLowerCase() === "f") {
+          setApiBaseUrl("http://127.0.0.1:8000");
+        }
+      });
+
       let templateCache = [];
       let summaryLimit = 10;
+      let apiRefreshTimer = null;
+      let apiRefreshCountdownTimer = null;
+      let apiNextRefreshAt = null;
+      let apiRefreshPaused = false;
+      let apiRefreshPausedAt = null;
+      let apiPausedRemaining = null;
+
+      function getApiBaseUrl() {
+        return (localStorage.getItem("apiBaseUrl") || "").replace(/\/$/, "");
+      }
+
+      function buildApiUrl(path) {
+        const base = getApiBaseUrl();
+        return base ? `${base}${path}` : path;
+      }
+
+      function apiFetch(path, options) {
+        return fetch(buildApiUrl(path), options);
+      }
+
+      function saveApiBaseUrl() {
+        const input = document.getElementById("apiBaseUrl");
+        const value = input.value.trim();
+        if (value && !validateApiBaseUrl()) {
+          setHint("apiBaseHint", "Invalid URL");
+          return false;
+        }
+        if (value) {
+          const normalized = value.replace(/\/$/, "");
+          localStorage.setItem("apiBaseUrl", normalized);
+          setHint("apiBaseHint", "Saved");
+          setApiBaseTypeLabel();
+          refreshApiInfo();
+          setApiBaseCurrent(normalized);
+          updateApiBaseHistory(normalized);
+          return true;
+        }
+        return false;
+      }
+
+      function autoSaveApiBaseUrl() {
+        if (!saveApiBaseUrl()) {
+          setHint("apiBaseHint", "Auto-save failed");
+        } else {
+          setHint("apiBaseHint", "Saved");
+        }
+      }
+
+      function setApiBaseUrl(value) {
+        const normalized = value.replace(/\/$/, "");
+        const input = document.getElementById("apiBaseUrl");
+        localStorage.setItem("apiBaseUrl", normalized);
+        input.value = normalized;
+        input.focus();
+        setHint("apiBaseHint", `Using ${normalized}`);
+        setApiBaseTypeLabel();
+        refreshApiInfo();
+        setApiBaseCurrent(normalized);
+        updateApiBaseHistory(normalized);
+      }
+
+      function copyApiBaseUrl() {
+        const input = document.getElementById("apiBaseUrl");
+        const value = input.value.trim();
+        if (!value) return;
+        navigator.clipboard
+          .writeText(value)
+          .then(() => {
+            setHint("apiBaseHint", "URL copied");
+            input.select();
+            input.classList.add("highlight-copy");
+            setTimeout(() => input.classList.remove("highlight-copy"), 800);
+          })
+          .catch(() => setHint("apiBaseHint", "Copy failed"));
+      }
+
+      function resetApiBaseUrl() {
+        document.getElementById("apiBaseUrl").value = "";
+        localStorage.removeItem("apiBaseUrl");
+        setApiBaseTypeLabel();
+        setApiVersionLabel("");
+        setHint("apiBaseHint", "Reset to default (Node)");
+      }
+
+      function resetApiBaseUrlConfirm() {
+        if (confirm("Reset API base URL to default (Node)?")) {
+          resetApiBaseUrl();
+        }
+      }
+
+      function clearApiBaseUrl() {
+        localStorage.removeItem("apiBaseUrl");
+        document.getElementById("apiBaseUrl").value = "";
+        setHint("apiBaseHint", "Cleared");
+        setApiBaseTypeLabel();
+        setApiVersionLabel("");
+      }
+
+      function loadApiBaseUrl() {
+        const value = getApiBaseUrl();
+        if (value) document.getElementById("apiBaseUrl").value = value;
+        setApiBaseTypeLabel();
+      }
+
+      async function testApiBaseUrl() {
+        const base = getApiBaseUrl();
+        if (!base) {
+          setHint("apiBaseHint", "Set base URL first");
+          return;
+        }
+        try {
+          const res = await fetch(`${base}/health`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            setHint("apiBaseHint", "API ok");
+            setApiVersionLabel(data.version || "");
+          } else {
+            setHint("apiBaseHint", "API error");
+          }
+        } catch (error) {
+          setHint("apiBaseHint", "API unreachable");
+        }
+      }
+
+      function setApiVersionLabel(version) {
+        const label = document.getElementById("apiVersion");
+        label.textContent = version ? `v${version}` : "";
+      }
+
+      function setApiStartedAtLabel(value) {
+        const label = document.getElementById("apiStartedAt");
+        if (!value) {
+          label.textContent = "";
+          label.title = "";
+          return;
+        }
+        const date = new Date(value);
+        label.textContent = Number.isNaN(date.valueOf()) ? `started ${value}` : `started ${date.toLocaleTimeString()}`;
+        label.title = Number.isNaN(date.valueOf()) ? value : date.toLocaleString();
+      }
+
+      function setApiUptimeLabel(value) {
+        const label = document.getElementById("apiUptime");
+        label.textContent = typeof value === "number" ? `up ${Math.round(value)}s` : "";
+        label.title = typeof value === "number" ? `${value}s` : "";
+      }
+
+      function setApiInstanceLabel(value) {
+        const label = document.getElementById("apiInstance");
+        label.textContent = value ? `instance ${value}` : "";
+        label.title = value || "";
+      }
+
+      function setApiBuildLabel(value) {
+        const label = document.getElementById("apiBuild");
+        label.textContent = value ? `build ${value}` : "";
+        label.title = value || "";
+      }
+
+      function setApiRefreshHint(text) {
+        const label = document.getElementById("apiRefreshHint");
+        label.textContent = text;
+        if (text) {
+          setTimeout(() => {
+            if (label.textContent === text) label.textContent = "";
+          }, 2000);
+        }
+      }
+
+      function setApiHealthUpdated() {
+        const label = document.getElementById("apiHealthUpdated");
+        const now = new Date();
+        label.textContent = `updated ${now.toLocaleTimeString()}`;
+        label.title = now.toLocaleString();
+      }
+
+      function setApiHealthLastError(text) {
+        const label = document.getElementById("apiHealthLastError");
+        label.textContent = text || "";
+      }
+
+      function copyApiHealthLastError() {
+        const label = document.getElementById("apiHealthLastError");
+        const text = label.textContent || "";
+        if (!text.trim()) return;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setApiRefreshHint("Last error copied");
+            label.classList.add("highlight-copy");
+            setTimeout(() => label.classList.remove("highlight-copy"), 1200);
+          })
+          .catch(() => {
+            setApiRefreshHint("Last error copy failed");
+          });
+      }
+
+      function clearApiHealthLastError() {
+        setApiHealthLastError("");
+        setApiRefreshHint("Last error cleared");
+      }
+
+      function setApiHealthErrorsStatus(text) {
+        const label = document.getElementById("apiHealthErrorsStatus");
+        label.textContent = text;
+      }
+
+      async function copyApiHealth() {
+        const base = getApiBaseUrl();
+        if (!base) {
+          setApiRefreshHint("Set base URL first");
+          return;
+        }
+        try {
+          const res = await fetch(`${base}/health`);
+          const data = await res.json();
+          await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+          setApiRefreshHint("Health copied");
+        } catch {
+          setApiRefreshHint("Health copy failed");
+          setApiHealthLastError("copy failed");
+        }
+      }
+
+      function setApiRefreshStatus(text) {
+        const label = document.getElementById("apiRefreshStatus");
+        label.textContent = text;
+        label.classList.remove("refresh-active", "refresh-paused", "refresh-disabled");
+        if (text === "active") label.classList.add("refresh-active");
+        if (text === "paused") label.classList.add("refresh-paused");
+        if (text === "disabled") label.classList.add("refresh-disabled");
+      }
+
+      function setApiSettingsStatus(text) {
+        const label = document.getElementById("apiSettingsStatus");
+        if (text === "collapsed") {
+          label.textContent = "";
+          label.title = "";
+          return;
+        }
+        label.textContent = text;
+        label.title = `settings ${text}`;
+      }
+
+      function setApiAdvancedHint(text) {
+        const label = document.getElementById("apiAdvancedHint");
+        label.textContent = text ? "Show advanced settings" : "";
+        label.style.display = text ? "inline-block" : "none";
+      }
+
+      function expandApiSettings() {
+        if (document.getElementById("apiSettingsPanel").style.display === "none") {
+          toggleApiSettings();
+        }
+      }
+
+      function setApiRefreshIntervalDisplay() {
+        const label = document.getElementById("apiRefreshIntervalDisplay");
+        const enabled = document.getElementById("apiAutoRefresh").checked;
+        const panel = document.getElementById("apiSettingsPanel");
+        if (!enabled || panel.style.display === "none") {
+          label.style.display = "none";
+          label.textContent = "";
+          return;
+        }
+        label.style.display = "inline";
+        label.textContent = `interval ${getApiRefreshInterval()}s`;
+      }
+
+      function setApiRefreshCountdown() {
+        const label = document.getElementById("apiRefreshCountdown");
+        const enabled = document.getElementById("apiAutoRefresh").checked;
+        const panel = document.getElementById("apiSettingsPanel");
+        if (!enabled || panel.style.display === "none") {
+          label.style.display = "none";
+          label.textContent = "";
+          label.title = "";
+          label.style.cursor = "default";
+          return;
+        }
+        if (apiRefreshPaused) {
+          const remaining = apiPausedRemaining !== null ? apiPausedRemaining : "-";
+          label.style.display = "inline";
+          label.textContent = `paused ${remaining}s`;
+          label.title = "auto refresh paused";
+          label.style.cursor = "not-allowed";
+          return;
+        }
+        if (!apiNextRefreshAt) {
+          label.style.display = "none";
+          label.textContent = "";
+          label.title = "";
+          label.style.cursor = "default";
+          return;
+        }
+        const remaining = Math.max(0, Math.ceil((apiNextRefreshAt - Date.now()) / 1000));
+        const nextTime = new Date(apiNextRefreshAt);
+        label.style.display = "inline";
+        label.textContent = `next ${remaining}s`;
+        label.title = `next refresh at ${nextTime.toLocaleString()}`;
+        label.style.cursor = "pointer";
+      }
+
+      function updateRefreshCountdownCursor() {
+        setApiRefreshCountdown();
+      }
+
+      function scheduleNextRefresh() {
+        apiNextRefreshAt = Date.now() + getApiRefreshInterval() * 1000;
+        apiPausedRemaining = null;
+        setApiRefreshCountdown();
+      }
+
+      function startApiRefreshCountdown() {
+        stopApiRefreshCountdown();
+        apiRefreshCountdownTimer = setInterval(() => {
+          setApiRefreshCountdown();
+        }, 1000);
+      }
+
+      function stopApiRefreshCountdown() {
+        if (apiRefreshCountdownTimer) {
+          clearInterval(apiRefreshCountdownTimer);
+          apiRefreshCountdownTimer = null;
+        }
+        apiNextRefreshAt = null;
+        setApiRefreshCountdown();
+      }
+
+      function setApiSettingsCountdownVisibility() {
+        setApiRefreshIntervalDisplay();
+        setApiRefreshCountdown();
+      }
+
+      function setApiSettingsToggleLabel(isVisible) {
+        const button = document.getElementById("apiSettingsToggle");
+        button.textContent = isVisible ? "Hide API Settings" : "Show API Settings";
+      }
+
+      function setApiRefreshControlsVisibility(isVisible) {
+        const controls = document.getElementById("apiRefreshControls");
+        controls.style.display = isVisible ? "block" : "none";
+      }
+
+      function toggleApiSettings() {
+        const panel = document.getElementById("apiSettingsPanel");
+        const divider = document.getElementById("apiAdvancedDivider");
+        const next = panel.style.display === "none" ? "block" : "none";
+        panel.style.display = next;
+        panel.style.marginTop = next === "block" ? "" : "0";
+        panel.style.paddingTop = next === "block" ? "" : "0";
+        divider.style.display = next === "block" ? "block" : "none";
+        localStorage.setItem("apiSettingsVisible", next === "block" ? "1" : "0");
+        setApiSettingsStatus(next === "block" ? "expanded" : "collapsed");
+        setApiSettingsToggleLabel(next === "block");
+        setApiSettingsCountdownVisibility();
+        setApiRefreshControlsVisibility(next === "block");
+        setApiAdvancedHint(next === "block" ? "" : "advanced hidden");
+      }
+
+      function loadApiSettingsVisibility() {
+        const saved = localStorage.getItem("apiSettingsVisible");
+        const panel = document.getElementById("apiSettingsPanel");
+        const divider = document.getElementById("apiAdvancedDivider");
+        if (saved === "0") {
+          panel.style.display = "none";
+          panel.style.marginTop = "0";
+          panel.style.paddingTop = "0";
+          divider.style.display = "none";
+          setApiSettingsStatus("collapsed");
+          setApiSettingsToggleLabel(false);
+          setApiRefreshControlsVisibility(false);
+          setApiAdvancedHint("advanced hidden");
+        } else {
+          divider.style.display = "block";
+          setApiSettingsStatus("expanded");
+          setApiSettingsToggleLabel(true);
+          setApiRefreshControlsVisibility(true);
+          setApiAdvancedHint("");
+        }
+        setApiSettingsCountdownVisibility();
+      }
+
+      function setApiHealthErrors(errors) {
+        const label = document.getElementById("apiHealthErrors");
+        const detail = document.getElementById("apiHealthErrorsDetail");
+        const copyButton = document.getElementById("apiHealthErrorsCopy");
+        if (Array.isArray(errors) && errors.length) {
+          label.textContent = `health: ${errors.join(", ")}`;
+          detail.textContent = JSON.stringify(errors, null, 2);
+          setApiHealthErrorsStatus(`(${errors.length} errors)`);
+          copyButton.disabled = false;
+          if (detail.style.display === "none") {
+            setApiRefreshHint("errors detected (details collapsed)");
+          }
+        } else {
+          label.textContent = "";
+          detail.textContent = "";
+          detail.style.display = "none";
+          setApiHealthErrorsStatus("(no errors)");
+          copyButton.disabled = true;
+        }
+      }
+
+      function clearApiHealthErrors() {
+        setApiHealthErrors([]);
+      }
+
+      function toggleApiHealthErrorsDetail() {
+        const detail = document.getElementById("apiHealthErrorsDetail");
+        const next = detail.style.display === "none" ? "block" : "none";
+        detail.style.display = next;
+        if (next === "block") {
+          detail.scrollIntoView({ behavior: "smooth" });
+        }
+        localStorage.setItem("apiHealthErrorsVisible", next === "block" ? "1" : "0");
+      }
+
+      function copyApiHealthErrorsDetail() {
+        const detail = document.getElementById("apiHealthErrorsDetail");
+        const text = detail.textContent || "";
+        if (!text.trim()) return;
+        if (detail.style.display === "none") {
+          detail.style.display = "block";
+        }
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setApiRefreshHint("Error details copied");
+            detail.classList.add("highlight-copy");
+            setTimeout(() => detail.classList.remove("highlight-copy"), 1200);
+          })
+          .catch(() => {
+            setApiRefreshHint("Error details copy failed");
+          });
+      }
+
+      function persistApiHealthErrorsDefault() {
+        const collapsed = document.getElementById("apiHealthErrorsDefault").checked;
+        localStorage.setItem("apiHealthErrorsDefaultCollapsed", collapsed ? "1" : "0");
+        if (collapsed) {
+          document.getElementById("apiHealthErrorsDetail").style.display = "none";
+          localStorage.setItem("apiHealthErrorsVisible", "0");
+        }
+      }
+
+      function loadApiHealthErrorsVisibility() {
+        const saved = localStorage.getItem("apiHealthErrorsVisible");
+        const defaultCollapsed = localStorage.getItem("apiHealthErrorsDefaultCollapsed");
+        const defaultHidden = saved === "0" || defaultCollapsed === "1";
+        if (defaultCollapsed === "1") {
+          document.getElementById("apiHealthErrorsDefault").checked = true;
+        }
+        if (defaultHidden) {
+          document.getElementById("apiHealthErrorsDetail").style.display = "none";
+          setApiHealthErrorsStatus("collapsed");
+        } else {
+          setApiHealthErrorsStatus("expanded");
+        }
+      }
+
+      function persistApiAutoRefresh() {
+        const enabled = document.getElementById("apiAutoRefresh").checked;
+        localStorage.setItem("apiAutoRefresh", enabled ? "1" : "0");
+        updateApiPauseButton();
+      }
+
+      function persistApiRefreshInterval() {
+        const rawValue = document.getElementById("apiRefreshInterval").value;
+        const value = Number(rawValue || 5);
+        if (!Number.isFinite(value) || value <= 0) {
+          setApiRefreshHint("Invalid interval");
+          document.getElementById("apiRefreshInterval").value = "5";
+          localStorage.setItem("apiRefreshInterval", "5");
+          setApiRefreshIntervalDisplay();
+          return;
+        }
+        localStorage.setItem("apiRefreshInterval", String(Math.max(1, value)));
+        setApiRefreshHint("Interval saved");
+        setApiRefreshIntervalDisplay();
+        if (document.getElementById("apiAutoRefresh").checked && !apiRefreshPaused) {
+          startApiAutoRefresh();
+          refreshApiInfo();
+        }
+      }
+
+      function toggleApiAutoRefresh() {
+        persistApiAutoRefresh();
+        const enabled = document.getElementById("apiAutoRefresh").checked;
+        if (enabled) {
+          apiRefreshPaused = false;
+          updateApiPauseButton();
+          setApiRefreshIntervalDisplay();
+          startApiAutoRefresh();
+          refreshApiInfo();
+        } else {
+          stopApiAutoRefresh();
+          setApiRefreshIntervalDisplay();
+          setApiRefreshHint("");
+        }
+        setApiRefreshCountdown();
+      }
+
+      function toggleApiAutoPause() {
+        if (!document.getElementById("apiAutoRefresh").checked) {
+          setApiRefreshHint("Enable auto refresh first");
+          return;
+        }
+        apiRefreshPaused = !apiRefreshPaused;
+        localStorage.setItem("apiAutoRefreshPaused", apiRefreshPaused ? "1" : "0");
+        updateApiPauseButton();
+        if (apiRefreshPaused) {
+          stopApiAutoRefresh();
+          apiRefreshPausedAt = Date.now();
+        } else if (document.getElementById("apiAutoRefresh").checked) {
+          startApiAutoRefresh();
+        }
+      }
+
+      function pauseAutoRefresh(reason) {
+        if (!document.getElementById("apiAutoRefresh").checked) return;
+        apiRefreshPaused = true;
+        apiRefreshPausedAt = Date.now();
+        if (apiNextRefreshAt) {
+          apiPausedRemaining = Math.max(0, Math.ceil((apiNextRefreshAt - Date.now()) / 1000));
+        }
+        localStorage.setItem("apiAutoRefreshPaused", "1");
+        updateApiPauseButton();
+        stopApiAutoRefresh();
+        if (reason) setApiRefreshHint(reason);
+        setApiRefreshStatus("paused");
+        setApiRefreshCountdown();
+      }
+
+      function resumeAutoRefresh(reason) {
+        if (!document.getElementById("apiAutoRefresh").checked) return;
+        apiRefreshPaused = false;
+        apiPausedRemaining = null;
+        localStorage.setItem("apiAutoRefreshPaused", "0");
+        updateApiPauseButton();
+        startApiAutoRefresh();
+        if (apiRefreshPausedAt) {
+          const seconds = Math.round((Date.now() - apiRefreshPausedAt) / 1000);
+          setApiRefreshHint(`auto refresh resumed after ${seconds}s`);
+          apiRefreshPausedAt = null;
+        } else if (reason) {
+          setApiRefreshHint(reason);
+        }
+        setApiRefreshStatus("active");
+        setApiRefreshCountdown();
+      }
+
+      function updateApiPauseButton() {
+        const button = document.getElementById("apiRefreshPause");
+        const enabled = document.getElementById("apiAutoRefresh").checked;
+        button.disabled = !enabled;
+        button.textContent = apiRefreshPaused ? "Resume" : "Pause";
+        if (!enabled) {
+          setApiRefreshStatus("disabled");
+        } else if (apiRefreshPaused) {
+          setApiRefreshStatus("paused");
+        } else {
+          setApiRefreshStatus("active");
+        }
+      }
+
+      function startApiAutoRefresh() {
+        stopApiAutoRefresh();
+        const interval = getApiRefreshInterval();
+        scheduleNextRefresh();
+        startApiRefreshCountdown();
+        apiRefreshTimer = setInterval(() => {
+          refreshApiInfo();
+          scheduleNextRefresh();
+        }, interval * 1000);
+      }
+
+      function manualApiRefresh() {
+        const countdown = document.getElementById("apiRefreshCountdown");
+        if (apiRefreshPaused) {
+          setApiRefreshHint("auto refresh paused");
+          return;
+        }
+        refreshApiInfo();
+        setApiRefreshHint("refreshed");
+        countdown.classList.add("highlight-refresh");
+        setTimeout(() => countdown.classList.remove("highlight-refresh"), 800);
+        document.getElementById("apiRefreshPause").focus();
+        if (document.getElementById("apiAutoRefresh").checked && !apiRefreshPaused) {
+          scheduleNextRefresh();
+        }
+      }
+
+      function stopApiAutoRefresh() {
+        if (apiRefreshTimer) {
+          clearInterval(apiRefreshTimer);
+          apiRefreshTimer = null;
+        }
+        stopApiRefreshCountdown();
+      }
+
+      function getApiRefreshInterval() {
+        const raw = localStorage.getItem("apiRefreshInterval");
+        const value = raw ? Number(raw) : Number(document.getElementById("apiRefreshInterval").value || 5);
+        return Number.isFinite(value) && value > 0 ? value : 5;
+      }
+
+      function loadApiAutoRefresh() {
+        const saved = localStorage.getItem("apiAutoRefresh");
+        if (saved === "1") {
+          document.getElementById("apiAutoRefresh").checked = true;
+        }
+        const intervalRaw = localStorage.getItem("apiRefreshInterval");
+        if (intervalRaw) {
+          document.getElementById("apiRefreshInterval").value = intervalRaw;
+        }
+        apiRefreshPaused = localStorage.getItem("apiAutoRefreshPaused") === "1";
+        if (apiRefreshPaused) {
+          apiRefreshPausedAt = Date.now();
+        }
+        updateApiPauseButton();
+        setApiRefreshIntervalDisplay();
+        if (saved === "1" && !apiRefreshPaused) {
+          startApiAutoRefresh();
+          setApiRefreshStatus("active");
+        } else if (saved === "1" && apiRefreshPaused) {
+          setApiRefreshStatus("paused");
+        }
+        setApiRefreshCountdown();
+      }
+
+      function copyApiVersion() {
+        const text = document.getElementById("apiVersion").textContent || "";
+        if (!text.trim()) return;
+        navigator.clipboard.writeText(text);
+        setHint("apiBaseHint", "Version copied");
+      }
+
+      async function refreshApiInfo() {
+        const base = getApiBaseUrl();
+        if (!base) {
+          setApiVersionLabel("");
+          setApiStartedAtLabel("");
+          setApiUptimeLabel("");
+          setApiInstanceLabel("");
+          setApiBuildLabel("");
+          setApiHealthErrors([]);
+          setApiHealthUpdated();
+          return;
+        }
+        try {
+          const res = await fetch(`${base}/health`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            setApiVersionLabel(data.version || "");
+            setApiStartedAtLabel(data.startedAt || "");
+            setApiUptimeLabel(data.uptimeSec);
+            setApiInstanceLabel(data.instanceId || "");
+            setApiBuildLabel(data.buildCommit || "");
+            setApiHealthErrors(data.errors || []);
+            setApiHealthUpdated();
+            if (Array.isArray(data.errors) && data.errors.length) {
+              setApiRefreshHint(`health issues: ${data.errors.join(", ")}`);
+              setApiHealthLastError(data.errors.join(", "));
+            } else {
+              setApiHealthLastError("");
+            }
+            if (apiRefreshPaused && document.getElementById("apiAutoRefresh").checked) {
+              resumeAutoRefresh("auto refresh resumed");
+            }
+          } else {
+            setApiRefreshHint("health check failed");
+            setApiHealthLastError("health check failed");
+            pauseAutoRefresh("auto refresh paused");
+          }
+        } catch (error) {
+          setApiVersionLabel("");
+          setApiStartedAtLabel("");
+          setApiUptimeLabel("");
+          setApiInstanceLabel("");
+          setApiBuildLabel("");
+          setApiHealthErrors([]);
+          setApiRefreshHint("health check failed");
+          setApiHealthLastError("health check failed");
+          pauseAutoRefresh("auto refresh paused");
+        }
+      }
+
+      async function checkNodeApi() {
+        const fastApi = "http://127.0.0.1:8000";
+        try {
+          const res = await fetch(`${fastApi}/health/node`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            const latency = data.latencyMs ? ` (${data.latencyMs}ms)` : "";
+            setHint("apiBaseHint", `Node ok${latency}`);
+          } else {
+            setHint("apiBaseHint", "Node check failed");
+          }
+        } catch {
+          setHint("apiBaseHint", "Node unreachable - consider FastAPI");
+        }
+      }
+
+      function setApiBaseTypeLabel() {
+        const base = getApiBaseUrl();
+        const label = document.getElementById("apiBaseType");
+        const nodeBtn = document.getElementById("apiUseNode");
+        const fastBtn = document.getElementById("apiUseFast");
+        label.classList.remove("api-node", "api-fastapi", "api-custom");
+        nodeBtn.classList.remove("api-choice-active");
+        fastBtn.classList.remove("api-choice-active");
+        if (!base) {
+          label.textContent = "Node (default)";
+          label.classList.add("api-node");
+          nodeBtn.classList.add("api-choice-active");
+          setHint("apiBaseHint", "Using current page API");
+          setApiBaseCurrent("");
+          return;
+        }
+        if (base.includes(":8000")) {
+          label.textContent = "FastAPI";
+          label.classList.add("api-fastapi");
+          fastBtn.classList.add("api-choice-active");
+        } else if (base.includes(":4173")) {
+          label.textContent = "Node";
+          label.classList.add("api-node");
+          nodeBtn.classList.add("api-choice-active");
+        } else {
+          label.textContent = "Custom";
+          label.classList.add("api-custom");
+        }
+        setApiBaseCurrent(base);
+      }
+
+      function validateApiBaseUrl() {
+        const input = document.getElementById("apiBaseUrl");
+        const value = input.value.trim();
+        if (!value) {
+          input.style.borderColor = "";
+          return true;
+        }
+        try {
+          const url = new URL(value);
+          if (!url.protocol.startsWith("http")) throw new Error("invalid");
+          input.style.borderColor = "";
+          return true;
+        } catch {
+          input.style.borderColor = "red";
+          return false;
+        }
+      }
+
+      function setApiBaseCurrent(value) {
+        const label = document.getElementById("apiBaseCurrent");
+        label.textContent = value ? `current ${value}` : "";
+      }
+
+      function copyApiBaseCurrent() {
+        const label = document.getElementById("apiBaseCurrent");
+        const text = label.textContent.replace(/^current\s+/, "");
+        if (!text.trim()) return;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setHint("apiBaseHint", "Current URL copied");
+            label.classList.add("highlight-copy");
+            setTimeout(() => label.classList.remove("highlight-copy"), 800);
+          })
+          .catch(() => setHint("apiBaseHint", "Copy failed"));
+      }
+
+      function updateApiBaseHistory(value) {
+        if (!value) return;
+        const raw = localStorage.getItem("apiBaseHistory");
+        const history = raw ? JSON.parse(raw) : [];
+        const next = [value, ...history.filter((item) => item !== value)].slice(0, 5);
+        localStorage.setItem("apiBaseHistory", JSON.stringify(next));
+        renderApiBaseHistory(next);
+      }
+
+      function clearApiBaseHistory() {
+        localStorage.removeItem("apiBaseHistory");
+        renderApiBaseHistory([]);
+        setHint("apiBaseHint", "History cleared (max 5 stored)");
+      }
+
+      function clearApiBaseHistoryConfirm() {
+        if (confirm("Clear API base URL history?")) {
+          clearApiBaseHistory();
+        }
+      }
+
+      function renderApiBaseHistory(items) {
+        const list = document.getElementById("apiBaseHistory");
+        list.innerHTML = "";
+        items.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item;
+          list.appendChild(option);
+        });
+      }
+
+      function loadApiBaseHistory() {
+        const raw = localStorage.getItem("apiBaseHistory");
+        const items = raw ? JSON.parse(raw) : [];
+        renderApiBaseHistory(items);
+      }
+
+      async function autoDetectApiBaseUrl() {
+        const stored = getApiBaseUrl();
+        if (stored) return;
+        const fastApi = "http://127.0.0.1:8000";
+        try {
+          const res = await fetch(`${fastApi}/health`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            setApiBaseUrl(fastApi);
+            setHint("apiBaseHint", "Auto-switched to FastAPI");
+          }
+        } catch {
+          setHint("apiBaseHint", "Using Node (default)");
+        }
+      }
 
       async function loadStrategies() {
-        const res = await fetch("/api/strategies");
+        const res = await apiFetch("/api/strategies");
         const data = await res.json();
         document.getElementById("strategyList").textContent = JSON.stringify(data, null, 2);
       }
 
       async function loadExecutions() {
-        const res = await fetch("/api/executions");
+        const res = await apiFetch("/api/executions");
         const data = await res.json();
         document.getElementById("executionList").textContent = JSON.stringify(data, null, 2);
         const evidence = (data.executions || []).map((item) => item.evidence || null);
@@ -174,6 +1123,7 @@
             mode: item.mode,
             status: item.status,
             executedAt: item.evidence?.executedAt,
+            createdAt: item.createdAt,
             template: item.evidence?.template,
           };
           if (!showExtra) return base;
@@ -186,7 +1136,10 @@
             templateParams: item.evidence?.templateParams,
           };
         });
-        const sorted = summary.sort((a, b) => String(b.executedAt || "").localeCompare(String(a.executedAt || "")));
+        const sortTime = document.getElementById("summarySortTime").checked;
+        const sorted = sortTime
+          ? [...summary].sort((a, b) => String(b.executedAt || "").localeCompare(String(a.executedAt || "")))
+          : summary;
         const filtered = filterSummary(sorted).slice(0, summaryLimit);
         window.latestSummary = filtered;
         const summaryElement = document.getElementById("executionSummary");
@@ -201,18 +1154,82 @@
           const row = document.createElement("div");
           row.style.cursor = "pointer";
           row.style.padding = "4px 0";
-          row.textContent = `${item.runId} | ${item.status} | ${item.mode} | ${item.routeId || "-"} | ${item.txHash || "-"}`;
-          row.onclick = () => loadExecutionDetail(item.runId);
+          row.className = statusRowClass(item.status);
+          const compactView = document.getElementById("summaryCompact").checked;
+          const showTime = document.getElementById("summaryShowTime").checked;
+          const showRoute = document.getElementById("summaryShowRoute").checked;
+          const showTx = document.getElementById("summaryShowTx").checked;
+          const timeText = showTime ? ` | ${formatSummaryTime(item.executedAt || item.createdAt)}` : "";
+          const routeText = showRoute ? ` | ${item.routeId || "-"}` : "";
+          const txText = showTx ? ` | ${item.txHash || "-"}` : "";
+          if (compactView) {
+            row.innerHTML = `${item.runId} | <span class="badge ${statusBadgeClass(item.status)}">${item.status}</span> | <span class="badge ${modeBadgeClass(item.mode)}">${item.mode}</span>${timeText}`;
+          } else {
+            row.innerHTML = `${item.runId} | <span class="badge ${statusBadgeClass(item.status)}">${item.status}</span> | <span class="badge ${modeBadgeClass(item.mode)}">${item.mode}</span>${routeText}${txText}${timeText}`;
+          }
+          row.onclick = () => {
+            document.querySelectorAll("#executionSummaryList .selected").forEach((node) => {
+              node.classList.remove("selected");
+            });
+            row.classList.add("selected");
+            window.latestSummarySelection = item;
+            loadExecutionDetail(item.runId);
+          };
+          row.title = `strategy=${item.strategyId} route=${item.routeId || "-"} tx=${item.txHash || "-"}`;
           row.oncontextmenu = (event) => {
             event.preventDefault();
             const payload = item.txHash
               ? `${item.runId} | ${item.txHash} | ${item.status}`
               : `${item.runId} | ${item.status}`;
             navigator.clipboard.writeText(payload);
+            setHint("summaryRowCopyHint", "Copied row");
+          };
+          row.ondblclick = () => {
+            navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+            setHint("summaryCopyHint", "Copied JSON");
+          };
+          row.onmouseenter = () => {
+            row.dataset.originalTitle = row.title;
+            const baseTitle = row.dataset.originalTitle || "";
+            row.title = baseTitle
+              ? `${baseTitle} | Double-click to copy JSON`
+              : "Double-click to copy JSON";
+          };
+          row.onmouseleave = () => {
+            row.title = row.dataset.originalTitle || row.title;
           };
           list.appendChild(row);
         });
         window.latestSummary = summary;
+      }
+
+      function statusRowClass(status) {
+        if (status === "execute" || status === "executed") return "row-execute";
+        if (status === "simulated") return "row-simulated";
+        return "row-planned";
+      }
+
+      function statusBadgeClass(status) {
+        if (status === "execute" || status === "executed") return "badge-status-execute";
+        if (status === "simulated") return "badge-status-simulated";
+        return "badge-status-planned";
+      }
+
+      function modeBadgeClass(mode) {
+        if (mode === "execute") return "badge-mode-execute";
+        if (mode === "simulate") return "badge-mode-simulate";
+        return "badge-mode-plan";
+      }
+
+      function formatSummaryTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.valueOf())) return "-";
+        const shortTime = document.getElementById("summaryShortTime").checked;
+        if (shortTime) {
+          return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        }
+        return date.toISOString();
       }
 
       function filterSummary(summary) {
@@ -254,6 +1271,46 @@
         document.getElementById("summarySearch").value = payload.search || "";
       }
 
+      function saveSummaryPrefs() {
+        const payload = {
+          fields: document.getElementById("summaryFields").checked,
+          showTime: document.getElementById("summaryShowTime").checked,
+          shortTime: document.getElementById("summaryShortTime").checked,
+          showRoute: document.getElementById("summaryShowRoute").checked,
+          showTx: document.getElementById("summaryShowTx").checked,
+          compact: document.getElementById("summaryCompact").checked,
+          sortTime: document.getElementById("summarySortTime").checked,
+        };
+        localStorage.setItem("summaryPrefs", JSON.stringify(payload));
+      }
+
+      function loadSummaryPrefs() {
+        const raw = localStorage.getItem("summaryPrefs");
+        if (!raw) return;
+        const payload = JSON.parse(raw);
+        if (typeof payload.fields === "boolean") {
+          document.getElementById("summaryFields").checked = payload.fields;
+        }
+        if (typeof payload.showTime === "boolean") {
+          document.getElementById("summaryShowTime").checked = payload.showTime;
+        }
+        if (typeof payload.shortTime === "boolean") {
+          document.getElementById("summaryShortTime").checked = payload.shortTime;
+        }
+        if (typeof payload.showRoute === "boolean") {
+          document.getElementById("summaryShowRoute").checked = payload.showRoute;
+        }
+        if (typeof payload.showTx === "boolean") {
+          document.getElementById("summaryShowTx").checked = payload.showTx;
+        }
+        if (typeof payload.compact === "boolean") {
+          document.getElementById("summaryCompact").checked = payload.compact;
+        }
+        if (typeof payload.sortTime === "boolean") {
+          document.getElementById("summarySortTime").checked = payload.sortTime;
+        }
+      }
+
       function attachSummaryFilterListeners() {
         ["summaryStatus", "summaryMode", "summarySearch"].forEach((id) => {
           const input = document.getElementById(id);
@@ -266,6 +1323,21 @@
               saveSummaryFilters();
               loadExecutions();
             }
+          });
+        });
+        [
+          "summaryFields",
+          "summaryShowTime",
+          "summaryShortTime",
+          "summaryShowRoute",
+          "summaryShowTx",
+          "summaryCompact",
+          "summarySortTime",
+        ].forEach((id) => {
+          const input = document.getElementById(id);
+          input.addEventListener("change", () => {
+            saveSummaryPrefs();
+            loadExecutions();
           });
         });
       }
@@ -322,6 +1394,18 @@
         list.style.display = list.style.display === "none" ? "block" : "none";
       }
 
+      function persistKeepRunResult() {
+        const checked = document.getElementById("keepRunResult").checked;
+        localStorage.setItem("keepRunResult", checked ? "1" : "0");
+      }
+
+      function loadKeepRunResult() {
+        const saved = localStorage.getItem("keepRunResult");
+        if (saved === "1") {
+          document.getElementById("keepRunResult").checked = true;
+        }
+      }
+
       function clearRunInputsConfirm() {
         if (confirm("Clear runEvidence and runLifi?")) {
           clearRunInputs();
@@ -349,7 +1433,18 @@
         if (kind === "mode") {
           document.getElementById("summaryMode").value = value;
         }
+        saveSummaryFilters();
         loadExecutions();
+      }
+
+      function copySelectedSummaryRow() {
+        const item = window.latestSummarySelection;
+        if (!item) {
+          setHint("summaryRowCopyHint", "No row selected");
+          return;
+        }
+        navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+        setHint("summaryRowCopyHint", "Copied row");
       }
 
       function clearRunInputs() {
@@ -471,7 +1566,7 @@
       }
 
       async function loadTemplates() {
-        const res = await fetch("/api/templates");
+        const res = await apiFetch("/api/templates");
         const data = await res.json();
         templateCache = data.templates || [];
         document.getElementById("templateList").textContent = JSON.stringify(data, null, 2);
@@ -501,7 +1596,7 @@
       async function loadExecutionDetail(runIdInput) {
         const runId = runIdInput || document.getElementById("detailRunId").value;
         if (!runId) return;
-        const res = await fetch(`/api/executions/${runId}`);
+        const res = await apiFetch(`/api/executions/${runId}`);
         const data = await res.json();
         if (!data || !data.execution) {
           document.getElementById("executionDetail").textContent = JSON.stringify(data, null, 2);
@@ -521,6 +1616,15 @@
         const detailPayload = { detail, evidence, templateParams, payload };
         window.latestExecutionDetail = detailPayload;
         document.getElementById("executionDetail").textContent = JSON.stringify(detailPayload, null, 2);
+        const highlights = {
+          runId: detail.id || "-",
+          txHash: evidence.txHash || "-",
+          routeId: evidence.routeId || "-",
+          status: detail.status || "-",
+          mode: detail.mode || "-",
+        };
+        document.getElementById("executionDetailHighlights").textContent = JSON.stringify(highlights, null, 2);
+        document.getElementById("executionDetail").scrollIntoView({ behavior: "smooth" });
       }
 
       function copyExecutionField(field) {
@@ -537,6 +1641,128 @@
         if (field === "payload") {
           navigator.clipboard.writeText(JSON.stringify(detail.payload || {}, null, 2));
         }
+        if (field === "all") {
+          navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+        }
+      }
+
+      function copyExecutionHighlights() {
+        const detail = window.latestExecutionDetail || {};
+        const highlights = {
+          runId: detail.detail?.id,
+          txHash: detail.evidence?.txHash,
+          routeId: detail.evidence?.routeId,
+          status: detail.detail?.status,
+          mode: detail.detail?.mode,
+        };
+        navigator.clipboard.writeText(JSON.stringify(highlights, null, 2));
+        setHint("highlightCopyHint", "Copied");
+      }
+
+      function copyHighlightField(field) {
+        const detail = window.latestExecutionDetail || {};
+        const map = {
+          routeId: detail.evidence?.routeId || "",
+          status: detail.detail?.status || "",
+          mode: detail.detail?.mode || "",
+        };
+        navigator.clipboard.writeText(map[field] || "");
+        setHint("highlightCopyHint", `Copied ${field}`);
+      }
+
+      function updateExecutionHighlightsToggleLabel(isVisible) {
+        const button = document.getElementById("toggleHighlightsBtn");
+        button.textContent = isVisible ? "Hide Highlights" : "Show Highlights";
+      }
+
+      function toggleExecutionHighlights() {
+        const el = document.getElementById("executionDetailHighlights");
+        const next = el.style.display === "none" ? "block" : "none";
+        el.style.display = next;
+        localStorage.setItem("executionHighlightsVisible", next === "block" ? "1" : "0");
+        updateExecutionHighlightsToggleLabel(next === "block");
+      }
+
+      function persistExecutionHighlightsDefault() {
+        const collapsed = document.getElementById("executionHighlightsDefault").checked;
+        localStorage.setItem("executionHighlightsDefaultCollapsed", collapsed ? "1" : "0");
+        if (collapsed) {
+          document.getElementById("executionDetailHighlights").style.display = "none";
+          localStorage.setItem("executionHighlightsVisible", "0");
+          updateExecutionHighlightsToggleLabel(false);
+        }
+      }
+
+      function loadExecutionHighlightsVisibility() {
+        const saved = localStorage.getItem("executionHighlightsVisible");
+        const defaultCollapsed = localStorage.getItem("executionHighlightsDefaultCollapsed");
+        const defaultHidden = saved === "0" || defaultCollapsed === "1";
+        if (defaultCollapsed === "1") {
+          document.getElementById("executionHighlightsDefault").checked = true;
+        }
+        if (defaultHidden) {
+          document.getElementById("executionDetailHighlights").style.display = "none";
+        }
+        updateExecutionHighlightsToggleLabel(!defaultHidden);
+      }
+
+      function copyRunResult() {
+        const el = document.getElementById("runResult");
+        const text = el.textContent || "";
+        if (!text.trim()) return;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            selectRunResult();
+            el.scrollTop = 0;
+            setHint("runResultCopyHint", "Copied");
+          })
+          .catch(() => {
+            setHint("runResultCopyHint", "Copy failed");
+          });
+      }
+
+      function saveRunResultState(message, status) {
+        if (!message) {
+          localStorage.removeItem("runResultState");
+          return;
+        }
+        localStorage.setItem("runResultState", JSON.stringify({ message, status }));
+      }
+
+      function loadRunResultState() {
+        const raw = localStorage.getItem("runResultState");
+        if (!raw) return;
+        const payload = JSON.parse(raw);
+        const el = document.getElementById("runResult");
+        el.textContent = payload.message || "";
+        el.classList.remove("status-ok", "status-error");
+        if (payload.status === "ok") el.classList.add("status-ok");
+        if (payload.status === "error") el.classList.add("status-error");
+      }
+
+      function clearRunResult() {
+        const el = document.getElementById("runResult");
+        el.textContent = "";
+        el.classList.remove("status-ok", "status-error");
+        el.scrollTop = 0;
+        setHint("runResultCopyHint", "");
+        saveRunResultState("", "");
+      }
+
+      function clearRunResultConfirm() {
+        if (confirm("Clear run result?")) {
+          clearRunResult();
+        }
+      }
+
+      function selectRunResult() {
+        const el = document.getElementById("runResult");
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
 
       function saveEvidenceTemplate() {
@@ -586,6 +1812,16 @@
           setTimeout(() => {
             if (el.textContent === text) el.textContent = "";
           }, 2000);
+        }
+      }
+
+      function setHint(id, text) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        if (text) {
+          setTimeout(() => {
+            if (el.textContent === text) el.textContent = "";
+          }, 1500);
         }
       }
 
@@ -748,7 +1984,7 @@
             return;
           }
         }
-        const res = await fetch("/api/strategies", {
+        const res = await apiFetch("/api/strategies", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ intentText, template: template || undefined, params, risk }),
@@ -855,6 +2091,14 @@
         el.classList.remove("status-ok", "status-error");
         if (status === "ok") el.classList.add("status-ok");
         if (status === "error") el.classList.add("status-error");
+        saveRunResultState(message, status);
+        if (message && !document.getElementById("keepRunResult").checked) {
+          setTimeout(() => {
+            if (el.textContent === message) {
+              clearRunResult();
+            }
+          }, 4000);
+        }
       }
 
       async function runStrategyNow() {
@@ -880,7 +2124,7 @@
             return;
           }
         }
-        const res = await fetch(`/api/strategies/${strategyId}/run`, {
+        const res = await apiFetch(`/api/strategies/${strategyId}/run`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ mode, evidence, lifiResult }),
@@ -907,13 +2151,25 @@
         loadExecutions();
       }
 
+      loadApiBaseUrl();
+      autoDetectApiBaseUrl();
+      checkNodeApi();
+      refreshApiInfo();
       loadStrategies();
       loadTemplates();
       loadSummaryFilters();
+      loadSummaryPrefs();
       loadExecutions();
       attachSummaryFilterListeners();
       autoFillRunEvidence();
       autoFillRunLifi();
+      loadKeepRunResult();
+      loadExecutionHighlightsVisibility();
+      loadRunResultState();
+      loadApiAutoRefresh();
+      loadApiHealthErrorsVisibility();
+      loadApiSettingsVisibility();
+      loadApiBaseHistory();
     </script>
   </body>
 </html>
