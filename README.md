@@ -63,12 +63,15 @@ Zig foundation actions (defi-cli style groundwork) are available in `zig-core` p
 
 - `schema`
 - `runtimeInfo`
+- `cachePolicy`
 - `policyCheck`
 - `normalizeChain`
 - `normalizeAmount`
 - `cachePut`
 - `cacheGet`
 - `rpcCallCached`
+
+`rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 
 Runtime controls (optional):
 

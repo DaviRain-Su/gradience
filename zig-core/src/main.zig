@@ -7,6 +7,7 @@ const core_policy = @import("core/policy.zig");
 const core_cache = @import("core/cache.zig");
 const core_runtime = @import("core/runtime.zig");
 const core_runner = @import("core/runner.zig");
+const core_cache_policy = @import("core/cache_policy.zig");
 
 const RequestParams = core_runner.RequestParams;
 
@@ -50,6 +51,10 @@ pub fn main() !void {
     }
     if (std.mem.eql(u8, action, "runtimeInfo")) {
         try handleRuntimeInfo();
+        return;
+    }
+    if (std.mem.eql(u8, action, "cachePolicy")) {
+        try handleCachePolicy(params);
         return;
     }
     if (std.mem.eql(u8, action, "policyCheck")) {
@@ -127,6 +132,18 @@ fn handleRuntimeInfo() !void {
         .allowBroadcast = core_runtime.allowBroadcast(),
         .defaultCacheTtlSeconds = core_runtime.defaultCacheTtlSeconds(),
         .defaultMaxStaleSeconds = core_runtime.defaultMaxStaleSeconds(),
+    });
+}
+
+fn handleCachePolicy(params: RequestParams) !void {
+    const method = getString(params, "method") orelse return writeMissing("method");
+    const policy = core_cache_policy.forMethod(std.mem.trim(u8, method, " \r\n\t"));
+    try writeJson(.{
+        .status = "ok",
+        .method = method,
+        .ttlSeconds = policy.ttl_seconds,
+        .maxStaleSeconds = policy.max_stale_seconds,
+        .allowStaleFallback = policy.allow_stale_fallback,
     });
 }
 
@@ -210,14 +227,6 @@ const CachedRpcOutcome = struct {
     result: []u8,
 };
 
-fn methodDefaultTtl(method: []const u8) u64 {
-    if (std.mem.eql(u8, method, "eth_blockNumber")) return 5;
-    if (std.mem.eql(u8, method, "eth_estimateGas")) return 5;
-    if (std.mem.eql(u8, method, "eth_getBalance")) return 15;
-    if (std.mem.eql(u8, method, "eth_call")) return 15;
-    return core_runtime.defaultCacheTtlSeconds();
-}
-
 fn rpcCallCachedInternal(
     allocator: std.mem.Allocator,
     rpc_url: []const u8,
@@ -226,6 +235,7 @@ fn rpcCallCachedInternal(
     cache_key: []const u8,
     ttl_seconds: u64,
     max_stale_seconds: u64,
+    allow_stale_fallback: bool,
     strict_mode: bool,
 ) RpcCallError!CachedRpcOutcome {
     const now = std.time.timestamp();
@@ -238,12 +248,14 @@ fn rpcCallCachedInternal(
     }
 
     const fresh_result = rpcCallResultStringQuiet(allocator, rpc_url, method, params_json) catch |rpc_err| {
-        if (cached) |record| {
-            const stale_budget: i64 = @intCast(max_stale_seconds);
-            const stale_deadline = record.expiresAtUnix + stale_budget;
-            if (now <= stale_deadline) {
-                const stale_result = try extractCachedRpcResult(allocator, record.valueJson);
-                return CachedRpcOutcome{ .source = "stale", .result = stale_result };
+        if (allow_stale_fallback) {
+            if (cached) |record| {
+                const stale_budget: i64 = @intCast(max_stale_seconds);
+                const stale_deadline = record.expiresAtUnix + stale_budget;
+                if (now <= stale_deadline) {
+                    const stale_result = try extractCachedRpcResult(allocator, record.valueJson);
+                    return CachedRpcOutcome{ .source = "stale", .result = stale_result };
+                }
             }
         }
         return rpc_err;
@@ -264,8 +276,10 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !voi
     const method_raw = getString(params, "method") orelse return writeMissing("method");
     const method = std.mem.trim(u8, method_raw, " \r\n\t");
     const params_json = getString(params, "paramsJson") orelse "[]";
-    const ttl_seconds = getU64(params, "ttlSeconds") orelse core_runtime.defaultCacheTtlSeconds();
-    const max_stale_seconds = getU64(params, "maxStaleSeconds") orelse core_runtime.defaultMaxStaleSeconds();
+    const method_policy = core_cache_policy.forMethod(method);
+    const ttl_seconds = getU64(params, "ttlSeconds") orelse method_policy.ttl_seconds;
+    const max_stale_seconds = getU64(params, "maxStaleSeconds") orelse method_policy.max_stale_seconds;
+    const allow_stale_fallback = getBool(params, "allowStaleFallback") orelse method_policy.allow_stale_fallback;
 
     const provided_cache_key = getString(params, "cacheKey");
     const generated_cache_key = if (provided_cache_key == null)
@@ -283,6 +297,7 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !voi
         cache_key,
         ttl_seconds,
         max_stale_seconds,
+        allow_stale_fallback,
         core_runtime.strictMode(),
     ) catch |rpc_err| {
         try writeRpcError(rpc_err);
@@ -297,6 +312,11 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !voi
         .result = outcome.result,
         .cacheKey = cache_key,
         .rpcUrl = rpc_url,
+        .policy = .{
+            .ttlSeconds = ttl_seconds,
+            .maxStaleSeconds = max_stale_seconds,
+            .allowStaleFallback = allow_stale_fallback,
+        },
     });
 }
 
@@ -407,6 +427,7 @@ fn handleGetBalance(allocator: std.mem.Allocator, params: RequestParams) !void {
 
     const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_getBalance", rpc_params);
     defer allocator.free(cache_key);
+    const method_policy = core_cache_policy.forMethod("eth_getBalance");
 
     const cached = rpcCallCachedInternal(
         allocator,
@@ -414,8 +435,9 @@ fn handleGetBalance(allocator: std.mem.Allocator, params: RequestParams) !void {
         "eth_getBalance",
         rpc_params,
         cache_key,
-        methodDefaultTtl("eth_getBalance"),
-        core_runtime.defaultMaxStaleSeconds(),
+        method_policy.ttl_seconds,
+        method_policy.max_stale_seconds,
+        method_policy.allow_stale_fallback,
         core_runtime.strictMode(),
     ) catch |err| {
         try writeRpcError(err);
@@ -461,6 +483,7 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: RequestParams) !v
 
     const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_call", params_json);
     defer allocator.free(cache_key);
+    const method_policy = core_cache_policy.forMethod("eth_call");
 
     const cached = rpcCallCachedInternal(
         allocator,
@@ -468,8 +491,9 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: RequestParams) !v
         "eth_call",
         params_json,
         cache_key,
-        methodDefaultTtl("eth_call"),
-        core_runtime.defaultMaxStaleSeconds(),
+        method_policy.ttl_seconds,
+        method_policy.max_stale_seconds,
+        method_policy.allow_stale_fallback,
         core_runtime.strictMode(),
     ) catch |err| {
         try writeRpcError(err);
@@ -491,6 +515,7 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !vo
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_blockNumber", "[]");
     defer allocator.free(cache_key);
+    const method_policy = core_cache_policy.forMethod("eth_blockNumber");
 
     const cached = rpcCallCachedInternal(
         allocator,
@@ -498,8 +523,9 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !vo
         "eth_blockNumber",
         "[]",
         cache_key,
-        methodDefaultTtl("eth_blockNumber"),
-        core_runtime.defaultMaxStaleSeconds(),
+        method_policy.ttl_seconds,
+        method_policy.max_stale_seconds,
+        method_policy.allow_stale_fallback,
         core_runtime.strictMode(),
     ) catch |err| {
         try writeRpcError(err);
@@ -683,6 +709,7 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: RequestParams) !void 
 
     const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_estimateGas", params_json);
     defer allocator.free(cache_key);
+    const method_policy = core_cache_policy.forMethod("eth_estimateGas");
 
     const outcome = rpcCallCachedInternal(
         allocator,
@@ -690,8 +717,9 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: RequestParams) !void 
         "eth_estimateGas",
         params_json,
         cache_key,
-        methodDefaultTtl("eth_estimateGas"),
-        core_runtime.defaultMaxStaleSeconds(),
+        method_policy.ttl_seconds,
+        method_policy.max_stale_seconds,
+        method_policy.allow_stale_fallback,
         core_runtime.strictMode(),
     ) catch |rpc_err| {
         try writeRpcError(rpc_err);
@@ -949,6 +977,19 @@ fn getU64(obj: RequestParams, key: []const u8) ?u64 {
     return switch (value) {
         .integer => |v| if (v >= 0) @intCast(v) else null,
         .string => |s| std.fmt.parseUnsigned(u64, s, 10) catch null,
+        else => null,
+    };
+}
+
+fn getBool(obj: RequestParams, key: []const u8) ?bool {
+    const value = obj.get(key) orelse return null;
+    return switch (value) {
+        .bool => |v| v,
+        .string => |s| blk: {
+            if (std.ascii.eqlIgnoreCase(s, "true") or std.mem.eql(u8, s, "1")) break :blk true;
+            if (std.ascii.eqlIgnoreCase(s, "false") or std.mem.eql(u8, s, "0")) break :blk false;
+            break :blk null;
+        },
         else => null,
     };
 }
