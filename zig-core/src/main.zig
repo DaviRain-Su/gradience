@@ -7,15 +7,9 @@ const core_runner = @import("core/runner.zig");
 const core_cache_policy = @import("core/cache_policy.zig");
 const actions_meta = @import("actions/meta.zig");
 const actions_cache_admin = @import("actions/cache_admin.zig");
+const actions_tx_compose = @import("actions/tx_compose.zig");
 
 const RequestParams = core_runner.RequestParams;
-
-const TxRequest = struct {
-    to: []const u8,
-    value: []const u8,
-    data: []const u8,
-    chainId: ?u64,
-};
 
 pub fn main() !void {
     const allocator = std.heap.c_allocator;
@@ -46,6 +40,7 @@ pub fn main() !void {
     }
     if (try actions_meta.run(action, allocator, params)) return;
     if (try actions_cache_admin.run(action, allocator, params)) return;
+    if (try actions_tx_compose.run(action, allocator, params)) return;
     if (std.mem.eql(u8, action, "rpcCallCached")) {
         try handleRpcCallCached(allocator, params);
         return;
@@ -56,22 +51,6 @@ pub fn main() !void {
     }
     if (std.mem.eql(u8, action, "getBlockNumber")) {
         try handleGetBlockNumber(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "buildTransferNative")) {
-        try handleBuildTransferNative(params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "buildTransferErc20")) {
-        try handleBuildTransferErc20(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "buildErc20Approve")) {
-        try handleBuildErc20Approve(allocator, params);
-        return;
-    }
-    if (std.mem.eql(u8, action, "buildDexSwap")) {
-        try handleBuildDexSwap(allocator, params);
         return;
     }
     if (std.mem.eql(u8, action, "estimateGas")) {
@@ -437,153 +416,6 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !vo
     });
 }
 
-fn handleBuildTransferNative(params: RequestParams) !void {
-    const to_address = getString(params, "toAddress") orelse return writeMissing("toAddress");
-    const value =
-        getString(params, "amountWei") orelse
-        getString(params, "valueHex") orelse
-        "0";
-    const chain_id = getU64(params, "chainId");
-
-    try writeJson(.{
-        .status = "ok",
-        .txRequest = TxRequest{
-            .to = to_address,
-            .value = value,
-            .data = "0x",
-            .chainId = chain_id,
-        },
-    });
-}
-
-fn handleBuildTransferErc20(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const token_address = getString(params, "tokenAddress") orelse return writeMissing("tokenAddress");
-    const to_address = getString(params, "toAddress") orelse return writeMissing("toAddress");
-    const amount_raw = getString(params, "amountRaw") orelse return writeMissing("amountRaw");
-
-    const to_hex_40 = normalizeHexAddress(to_address) catch return writeInvalid("toAddress");
-    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch return writeInvalid("amountRaw");
-
-    const data = try encodeTwoArgTransferLike(allocator, "transfer(address,uint256)", to_hex_40, amount);
-    defer allocator.free(data);
-
-    try writeJson(.{
-        .status = "ok",
-        .txRequest = TxRequest{
-            .to = token_address,
-            .value = "0",
-            .data = data,
-            .chainId = getU64(params, "chainId"),
-        },
-    });
-}
-
-fn handleBuildErc20Approve(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const token_address = getString(params, "tokenAddress") orelse return writeMissing("tokenAddress");
-    const spender = getString(params, "spender") orelse return writeMissing("spender");
-    const amount_raw = getString(params, "amountRaw") orelse return writeMissing("amountRaw");
-
-    const spender_hex_40 = normalizeHexAddress(spender) catch return writeInvalid("spender");
-    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch return writeInvalid("amountRaw");
-
-    const data = try encodeTwoArgTransferLike(allocator, "approve(address,uint256)", spender_hex_40, amount);
-    defer allocator.free(data);
-
-    try writeJson(.{
-        .status = "ok",
-        .txRequest = TxRequest{
-            .to = token_address,
-            .value = "0",
-            .data = data,
-            .chainId = getU64(params, "chainId"),
-        },
-    });
-}
-
-fn handleBuildDexSwap(allocator: std.mem.Allocator, params: RequestParams) !void {
-    const router = getString(params, "router") orelse return writeMissing("router");
-    const amount_in_raw = getString(params, "amountIn") orelse return writeMissing("amountIn");
-    const amount_out_min_raw = getString(params, "amountOutMin") orelse return writeMissing("amountOutMin");
-    const to = getString(params, "to") orelse return writeMissing("to");
-    const deadline_raw = getString(params, "deadline") orelse return writeMissing("deadline");
-    const path_values = getArray(params, "path") orelse return writeMissing("path");
-
-    if (path_values.len == 0) {
-        try writeJson(core_errors.usage("path must not be empty"));
-        return;
-    }
-
-    const amount_in = std.fmt.parseUnsigned(u256, amount_in_raw, 10) catch return writeInvalid("amountIn");
-    const amount_out_min = std.fmt.parseUnsigned(u256, amount_out_min_raw, 10) catch return writeInvalid("amountOutMin");
-    const deadline = std.fmt.parseUnsigned(u256, deadline_raw, 10) catch return writeInvalid("deadline");
-    const to_hex_40 = normalizeHexAddress(to) catch return writeInvalid("to");
-
-    var path_hex = try allocator.alloc([]const u8, path_values.len);
-    defer allocator.free(path_hex);
-
-    for (path_values, 0..) |entry, idx| {
-        if (entry != .string) return writeInvalid("path");
-        path_hex[idx] = normalizeHexAddress(entry.string) catch return writeInvalid("path");
-    }
-
-    var selector_bytes: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash("swapExactTokensForTokens(uint256,uint256,address[],address,uint256)", &selector_bytes, .{});
-    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
-
-    var amount_in_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&amount_in_buf, "{x:0>64}", .{amount_in});
-    var amount_out_min_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&amount_out_min_buf, "{x:0>64}", .{amount_out_min});
-    var deadline_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&deadline_buf, "{x:0>64}", .{deadline});
-
-    const offset_words: u256 = 5 * 32;
-    var offset_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&offset_buf, "{x:0>64}", .{offset_words});
-
-    const path_len_u256: u256 = @intCast(path_hex.len);
-    var path_len_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&path_len_buf, "{x:0>64}", .{path_len_u256});
-
-    const dynamic_len = 64 * (1 + path_hex.len);
-    const dynamic = try allocator.alloc(u8, dynamic_len);
-    defer allocator.free(dynamic);
-
-    @memcpy(dynamic[0..64], path_len_buf[0..]);
-    var cursor: usize = 64;
-    for (path_hex) |addr| {
-        @memcpy(dynamic[cursor .. cursor + 24], "000000000000000000000000");
-        cursor += 24;
-        @memcpy(dynamic[cursor .. cursor + 40], addr);
-        cursor += 40;
-    }
-
-    const data = try std.fmt.allocPrint(allocator, "0x{s}{s}{s}{s}{s}{s}{s}", .{
-        selector_hex,
-        amount_in_buf,
-        amount_out_min_buf,
-        offset_buf,
-        "000000000000000000000000",
-        to_hex_40,
-        deadline_buf,
-    });
-    defer allocator.free(data);
-
-    const full_data = try std.fmt.allocPrint(allocator, "{s}{s}", .{ data, dynamic });
-    defer allocator.free(full_data);
-
-    try writeJson(.{
-        .status = "ok",
-        .txRequest = TxRequest{
-            .to = router,
-            .value = "0",
-            .data = full_data,
-            .chainId = getU64(params, "chainId"),
-        },
-        .notes = "Approve token spending before swap if needed.",
-    });
-}
-
 fn handleEstimateGas(allocator: std.mem.Allocator, params: RequestParams) !void {
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const from = getString(params, "from") orelse return writeMissing("from");
@@ -642,27 +474,6 @@ fn handleSendSignedTransaction(allocator: std.mem.Allocator, params: RequestPara
     };
     defer allocator.free(tx_hash);
     try writeJson(.{ .status = "ok", .source = "fresh", .txHash = tx_hash, .rpcUrl = rpc_url });
-}
-
-fn encodeTwoArgTransferLike(
-    allocator: std.mem.Allocator,
-    signature: []const u8,
-    address_40: []const u8,
-    amount: u256,
-) ![]const u8 {
-    var selector_bytes: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
-    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
-
-    var amount_hex_buf: [64]u8 = undefined;
-    _ = try std.fmt.bufPrint(&amount_hex_buf, "{x:0>64}", .{amount});
-
-    return std.fmt.allocPrint(allocator, "0x{s}{s}{s}{s}", .{
-        selector_hex,
-        "000000000000000000000000",
-        address_40,
-        amount_hex_buf,
-    });
 }
 
 const RpcError = error{
@@ -855,12 +666,6 @@ fn getString(obj: RequestParams, key: []const u8) ?[]const u8 {
     const value = obj.get(key) orelse return null;
     if (value != .string) return null;
     return value.string;
-}
-
-fn getArray(obj: RequestParams, key: []const u8) ?[]const std.json.Value {
-    const value = obj.get(key) orelse return null;
-    if (value != .array) return null;
-    return value.array.items;
 }
 
 fn getU64(obj: RequestParams, key: []const u8) ?u64 {
