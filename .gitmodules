@@ -1,0 +1,3 @@
+[submodule "zig-core/deps/zigeth"]
+	path = zig-core/deps/zigeth
+	url = https://github.com/DaviRain-Su/zigeth.git

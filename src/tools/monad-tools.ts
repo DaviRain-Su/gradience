@@ -7,6 +7,7 @@ import { validateStrategy } from "../strategy/validator.js";
 import { runStrategy } from "../strategy/runner.js";
 import { fetchLifiQuote, fetchLifiRoutes } from "../integrations/lifi.js";
 import { fetchMorphoVaultMeta } from "../integrations/morpho.js";
+import { callZigCore, isZigCoreEnabled } from "../integrations/zig-core.js";
 
 const DEFAULT_RPC_URL = "https://rpc.monad.xyz";
 
@@ -79,9 +80,23 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
-      const provider = getProvider(rpcUrl);
       const address = asString(params, "address");
       const blockTag = asString(params, "blockTag", "latest");
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "getBalance",
+          params: { address, rpcUrl, blockTag },
+        });
+        if (zig.status !== "ok") {
+          throw new Error(String(zig.error || "zig core getBalance failed"));
+        }
+        const balanceHex = String(zig.balanceHex || "0x0");
+        const balanceWei = BigInt(balanceHex).toString();
+        return textResult({ status: "ok", address, balanceWei, rpcUrl });
+      }
+
+      const provider = getProvider(rpcUrl);
       const balance = await provider.getBalance(address, blockTag);
       return textResult({
         status: "ok",
@@ -187,6 +202,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["tokenAddress", "toAddress", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildTransferErc20",
+          params: {
+            tokenAddress: asString(params, "tokenAddress"),
+            toAddress: asString(params, "toAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            chainId: params.chainId ?? null,
+          },
+        });
+        if (zig.status !== "ok" || !zig.txRequest || typeof zig.txRequest !== "object") {
+          throw new Error(String(zig.error || "zig core buildTransferErc20 failed"));
+        }
+        return textResult({ status: "ok", txRequest: zig.txRequest });
+      }
+
       const iface = new Interface(ERC20_ABI);
       const data = iface.encodeFunctionData("transfer", [
         asString(params, "toAddress"),
