@@ -628,54 +628,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         }
         const chosen = selected.?.quote;
         const chosen_out = selected.?.out_amount;
-
-        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
-        defer allocator.free(estimated_out);
-
-        if (select) |fields_raw| {
-            var obj = std.json.ObjectMap.init(allocator);
-            var parts = std.mem.splitScalar(u8, fields_raw, ',');
-            while (parts.next()) |part| {
-                const field = std.mem.trim(u8, part, " \r\n\t");
-                if (field.len == 0) continue;
-                try putBridgeQuoteSelectedField(&obj, field, chosen, from_chain, to_chain, asset, amount_raw, estimated_out);
-            }
-
-            if (results_only) {
-                try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
-            } else {
-                try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
-            }
-            return true;
-        }
-
-        if (results_only) {
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .results = .{
-                    .provider = chosen.provider,
-                    .fromChain = from_chain,
-                    .toChain = to_chain,
-                    .asset = asset,
-                    .amountIn = amount_raw,
-                    .estimatedAmountOut = estimated_out,
-                    .feeBps = chosen.fee_bps,
-                    .etaSeconds = chosen.eta_seconds,
-                },
-            });
-        } else {
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .provider = chosen.provider,
-                .fromChain = from_chain,
-                .toChain = to_chain,
-                .asset = asset,
-                .amountIn = amount_raw,
-                .estimatedAmountOut = estimated_out,
-                .feeBps = chosen.fee_bps,
-                .etaSeconds = chosen.eta_seconds,
-            });
-        }
+        try writeBridgeQuoteResponse(allocator, chosen, chosen_out, from_chain, to_chain, asset, amount_raw, select, results_only);
         return true;
     }
 
@@ -738,54 +691,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         }
         const chosen = selected.?.quote;
         const chosen_out = selected.?.out_amount;
-
-        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
-        defer allocator.free(estimated_out);
-
-        if (select) |fields_raw| {
-            var obj = std.json.ObjectMap.init(allocator);
-            var parts = std.mem.splitScalar(u8, fields_raw, ',');
-            while (parts.next()) |part| {
-                const field = std.mem.trim(u8, part, " \r\n\t");
-                if (field.len == 0) continue;
-                try putSwapQuoteSelectedField(&obj, field, chosen, chain, from_asset, to_asset, amount_raw, estimated_out);
-            }
-
-            if (results_only) {
-                try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
-            } else {
-                try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
-            }
-            return true;
-        }
-
-        if (results_only) {
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .results = .{
-                    .provider = chosen.provider,
-                    .chain = chain,
-                    .fromAsset = from_asset,
-                    .toAsset = to_asset,
-                    .amountIn = amount_raw,
-                    .estimatedAmountOut = estimated_out,
-                    .feeBps = chosen.fee_bps,
-                    .priceImpactBps = chosen.price_impact_bps,
-                },
-            });
-        } else {
-            try core_envelope.writeJson(.{
-                .status = "ok",
-                .provider = chosen.provider,
-                .chain = chain,
-                .fromAsset = from_asset,
-                .toAsset = to_asset,
-                .amountIn = amount_raw,
-                .estimatedAmountOut = estimated_out,
-                .feeBps = chosen.fee_bps,
-                .priceImpactBps = chosen.price_impact_bps,
-            });
-        }
+        try writeSwapQuoteResponse(allocator, chosen, chosen_out, chain, from_asset, to_asset, amount_raw, select, results_only);
         return true;
     }
 
@@ -1235,6 +1141,126 @@ fn providerPriorityRank(priorities_raw: []const u8, provider: []const u8) ?usize
         idx += 1;
     }
     return null;
+}
+
+fn writeBridgeQuoteResponse(
+    allocator: std.mem.Allocator,
+    quote: bridge_quotes_registry.BridgeQuote,
+    out_amount: u256,
+    from_chain: []const u8,
+    to_chain: []const u8,
+    asset: []const u8,
+    amount_in: []const u8,
+    select: ?[]const u8,
+    results_only: bool,
+) !void {
+    const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
+    defer allocator.free(estimated_out);
+
+    if (select) |fields_raw| {
+        var obj = std.json.ObjectMap.init(allocator);
+        var parts = std.mem.splitScalar(u8, fields_raw, ',');
+        while (parts.next()) |part| {
+            const field = std.mem.trim(u8, part, " \r\n\t");
+            if (field.len == 0) continue;
+            try putBridgeQuoteSelectedField(&obj, field, quote, from_chain, to_chain, asset, amount_in, estimated_out);
+        }
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+        }
+        return;
+    }
+
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .provider = quote.provider,
+                .fromChain = from_chain,
+                .toChain = to_chain,
+                .asset = asset,
+                .amountIn = amount_in,
+                .estimatedAmountOut = estimated_out,
+                .feeBps = quote.fee_bps,
+                .etaSeconds = quote.eta_seconds,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .provider = quote.provider,
+            .fromChain = from_chain,
+            .toChain = to_chain,
+            .asset = asset,
+            .amountIn = amount_in,
+            .estimatedAmountOut = estimated_out,
+            .feeBps = quote.fee_bps,
+            .etaSeconds = quote.eta_seconds,
+        });
+    }
+}
+
+fn writeSwapQuoteResponse(
+    allocator: std.mem.Allocator,
+    quote: swap_quotes_registry.SwapQuote,
+    out_amount: u256,
+    chain: []const u8,
+    from_asset: []const u8,
+    to_asset: []const u8,
+    amount_in: []const u8,
+    select: ?[]const u8,
+    results_only: bool,
+) !void {
+    const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
+    defer allocator.free(estimated_out);
+
+    if (select) |fields_raw| {
+        var obj = std.json.ObjectMap.init(allocator);
+        var parts = std.mem.splitScalar(u8, fields_raw, ',');
+        while (parts.next()) |part| {
+            const field = std.mem.trim(u8, part, " \r\n\t");
+            if (field.len == 0) continue;
+            try putSwapQuoteSelectedField(&obj, field, quote, chain, from_asset, to_asset, amount_in, estimated_out);
+        }
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
+        }
+        return;
+    }
+
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .provider = quote.provider,
+                .chain = chain,
+                .fromAsset = from_asset,
+                .toAsset = to_asset,
+                .amountIn = amount_in,
+                .estimatedAmountOut = estimated_out,
+                .feeBps = quote.fee_bps,
+                .priceImpactBps = quote.price_impact_bps,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .provider = quote.provider,
+            .chain = chain,
+            .fromAsset = from_asset,
+            .toAsset = to_asset,
+            .amountIn = amount_in,
+            .estimatedAmountOut = estimated_out,
+            .feeBps = quote.fee_bps,
+            .priceImpactBps = quote.price_impact_bps,
+        });
+    }
 }
 
 fn putBridgeQuoteSelectedField(
