@@ -9,7 +9,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "dashboard:dev": "tsx apps/dashboard/server.ts",
-    "export:templates": "npm run build && node apps/api/export-templates.mjs"
+    "export:templates": "npm run build && node apps/api/export-templates.mjs",
+    "zig:build": "zig build --prefix zig-core/zig-out --build-file zig-core/build.zig",
+    "zig:smoke": "npm run zig:build && python3 zig-core/tests/smoke.py"
   },
   "dependencies": {
     "@lifi/sdk": "^3.9.1",
