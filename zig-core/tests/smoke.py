@@ -115,15 +115,41 @@ def main() -> int:
         },
         env,
     )
+    bal_results_only = assert_ok(
+        "getBalance#resultsOnly",
+        {
+            "action": "getBalance",
+            "params": {
+                "rpcUrl": rpc_url,
+                "address": "0x0000000000000000000000000000000000000000",
+                "blockTag": "latest",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
     assert bal1.get("source") in {"fresh", "cache_refresh", "cache_hit", "stale"}
     assert bal2.get("source") in {"fresh", "cache_refresh", "cache_hit", "stale"}
+    assert isinstance(bal_results_only.get("results", {}).get("balanceHex"), str)
 
-    assert_ok(
+    block = assert_ok(
         "getBlockNumber",
         {"action": "getBlockNumber", "params": {"rpcUrl": rpc_url}},
         env,
     )
-    assert_ok(
+    assert isinstance(block.get("blockNumber"), int)
+
+    block_results_only = assert_ok(
+        "getBlockNumber#resultsOnly",
+        {
+            "action": "getBlockNumber",
+            "params": {"rpcUrl": rpc_url, "resultsOnly": True},
+        },
+        env,
+    )
+    assert isinstance(block_results_only.get("results", {}).get("blockNumber"), int)
+
+    estimate = assert_ok(
         "estimateGas",
         {
             "action": "estimateGas",
@@ -137,6 +163,24 @@ def main() -> int:
         },
         env,
     )
+    assert isinstance(estimate.get("estimateGas"), int)
+
+    estimate_results_only = assert_ok(
+        "estimateGas#resultsOnly",
+        {
+            "action": "estimateGas",
+            "params": {
+                "rpcUrl": rpc_url,
+                "from": "0x0000000000000000000000000000000000000000",
+                "to": "0x0000000000000000000000000000000000000000",
+                "data": "0x",
+                "value": "0x0",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert isinstance(estimate_results_only.get("results", {}).get("estimateGas"), int)
 
     strict_env = env.copy()
     strict_env["ZIG_CORE_STRICT"] = "1"

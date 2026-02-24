@@ -510,6 +510,25 @@ def main() -> int:
     assert with_stale.get("source") == "stale"
     assert with_stale.get("result") == "0x1"
 
+    with_stale_results_only = run(
+        {
+            "action": "rpcCallCached",
+            "params": {
+                "rpcUrl": "https://no-such-host.invalid",
+                "method": "eth_blockNumber",
+                "paramsJson": "[]",
+                "cacheKey": "stale-probe",
+                "allowStaleFallback": True,
+                "maxStaleSeconds": 9999,
+                "resultsOnly": True,
+            },
+        },
+        strict_cache_env,
+    )
+    assert with_stale_results_only.get("status") == "ok"
+    assert with_stale_results_only.get("results", {}).get("source") == "stale"
+    assert with_stale_results_only.get("results", {}).get("result") == "0x1"
+
     print("offline tests passed")
     return 0
 

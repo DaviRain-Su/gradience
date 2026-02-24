@@ -32,6 +32,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 }
 
 fn handleRpcCallCached(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse return writeMissing("rpcUrl");
     const method_raw = getString(params, "method") orelse return writeMissing("method");
     const method = rpc_client.canonicalRpcMethod(method_raw);
@@ -65,22 +66,41 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: std.json.ObjectMap)
     };
     defer allocator.free(outcome.result);
 
-    try core_envelope.writeJson(.{
-        .status = "ok",
-        .source = outcome.source,
-        .method = method,
-        .result = outcome.result,
-        .cacheKey = cache_key,
-        .rpcUrl = rpc_url,
-        .policy = .{
-            .ttlSeconds = ttl_seconds,
-            .maxStaleSeconds = max_stale_seconds,
-            .allowStaleFallback = allow_stale_fallback,
-        },
-    });
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = outcome.source,
+                .method = method,
+                .result = outcome.result,
+                .cacheKey = cache_key,
+                .rpcUrl = rpc_url,
+                .policy = .{
+                    .ttlSeconds = ttl_seconds,
+                    .maxStaleSeconds = max_stale_seconds,
+                    .allowStaleFallback = allow_stale_fallback,
+                },
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = outcome.source,
+            .method = method,
+            .result = outcome.result,
+            .cacheKey = cache_key,
+            .rpcUrl = rpc_url,
+            .policy = .{
+                .ttlSeconds = ttl_seconds,
+                .maxStaleSeconds = max_stale_seconds,
+                .allowStaleFallback = allow_stale_fallback,
+            },
+        });
+    }
 }
 
 fn handleGetBalance(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const address = getString(params, "address") orelse return writeMissing("address");
     const block_tag = getString(params, "blockTag") orelse "latest";
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
@@ -110,16 +130,29 @@ fn handleGetBalance(allocator: std.mem.Allocator, params: std.json.ObjectMap) !v
     };
     defer allocator.free(cached.result);
 
-    try core_envelope.writeJson(.{
-        .status = "ok",
-        .source = cached.source,
-        .address = address,
-        .balanceHex = cached.result,
-        .rpcUrl = rpc_url,
-    });
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = cached.source,
+                .address = address,
+                .balanceHex = cached.result,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = cached.source,
+            .address = address,
+            .balanceHex = cached.result,
+            .rpcUrl = rpc_url,
+        });
+    }
 }
 
 fn handleGetErc20Balance(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const address = getString(params, "address") orelse return writeMissing("address");
     const token_address = getString(params, "tokenAddress") orelse return writeMissing("tokenAddress");
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
@@ -166,17 +199,31 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: std.json.ObjectMa
     };
     defer allocator.free(cached.result);
 
-    try core_envelope.writeJson(.{
-        .status = "ok",
-        .source = cached.source,
-        .address = address,
-        .tokenAddress = token_address,
-        .balanceRaw = cached.result,
-        .rpcUrl = rpc_url,
-    });
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = cached.source,
+                .address = address,
+                .tokenAddress = token_address,
+                .balanceRaw = cached.result,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = cached.source,
+            .address = address,
+            .tokenAddress = token_address,
+            .balanceRaw = cached.result,
+            .rpcUrl = rpc_url,
+        });
+    }
 }
 
 fn handleGetBlockNumber(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const cache_key = try rpc_cache.makeRpcCacheKey(allocator, rpc_url, "eth_blockNumber", "[]");
     defer allocator.free(cache_key);
@@ -203,15 +250,27 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: std.json.ObjectMap
         return;
     };
 
-    try core_envelope.writeJson(.{
-        .status = "ok",
-        .source = cached.source,
-        .blockNumber = block_number,
-        .rpcUrl = rpc_url,
-    });
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = cached.source,
+                .blockNumber = block_number,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = cached.source,
+            .blockNumber = block_number,
+            .rpcUrl = rpc_url,
+        });
+    }
 }
 
 fn handleEstimateGas(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
     const from = getString(params, "from") orelse return writeMissing("from");
     const to = getString(params, "to") orelse return writeMissing("to");
@@ -249,7 +308,19 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: std.json.ObjectMap) !
         try writeInvalid("estimateGas result");
         return;
     };
-    try core_envelope.writeJson(.{ .status = "ok", .source = outcome.source, .estimateGas = gas, .estimateGasHex = outcome.result, .rpcUrl = rpc_url });
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = outcome.source,
+                .estimateGas = gas,
+                .estimateGasHex = outcome.result,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{ .status = "ok", .source = outcome.source, .estimateGas = gas, .estimateGasHex = outcome.result, .rpcUrl = rpc_url });
+    }
 }
 
 pub const RpcCallError = rpc_errors.RpcCallError;
