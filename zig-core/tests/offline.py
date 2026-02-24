@@ -442,6 +442,22 @@ def main() -> int:
     assert policy_check_results_only.get("status") == "ok"
     assert policy_check_results_only.get("results", {}).get("targetAction") == "schema"
 
+    transfer_native_results_only = run(
+        {
+            "action": "buildTransferNative",
+            "params": {
+                "toAddress": "0x1111111111111111111111111111111111111111",
+                "amountWei": "1",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert transfer_native_results_only.get("status") == "ok"
+    tx_request = transfer_native_results_only.get("results", {}).get("txRequest", {})
+    assert tx_request.get("to") == "0x1111111111111111111111111111111111111111"
+    assert tx_request.get("data") == "0x"
+
     allow_env = env.copy()
     allow_env["ZIG_CORE_ALLOWLIST"] = "schema,policyCheck"
     blocked = run({"action": "normalizeChain", "params": {"chain": "monad"}}, allow_env)
@@ -472,6 +488,21 @@ def main() -> int:
         },
         env,
     )
+
+    cache_put_results_only = run(
+        {
+            "action": "cachePut",
+            "params": {
+                "key": "results-only-probe",
+                "ttlSeconds": 60,
+                "value": {"result": "0x2"},
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert cache_put_results_only.get("status") == "ok"
+    assert cache_put_results_only.get("results", {}).get("key") == "results-only-probe"
 
     strict_cache_env = env.copy()
     strict_cache_env["ZIG_CORE_STRICT"] = "1"
@@ -528,6 +559,19 @@ def main() -> int:
     assert with_stale_results_only.get("status") == "ok"
     assert with_stale_results_only.get("results", {}).get("source") == "stale"
     assert with_stale_results_only.get("results", {}).get("result") == "0x1"
+
+    cache_get_results_only = run(
+        {
+            "action": "cacheGet",
+            "params": {"key": "results-only-probe", "resultsOnly": True},
+        },
+        env,
+    )
+    assert cache_get_results_only.get("status") in {"hit", "stale"}
+    assert (
+        cache_get_results_only.get("results", {}).get("value", {}).get("result")
+        == "0x2"
+    )
 
     print("offline tests passed")
     return 0

@@ -52,7 +52,7 @@ Error responses use:
 - Tx compose: `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`
 - Tx send: `sendSignedTransaction`
 
-Many query/list actions accept `resultsOnly` (boolean) and return data under `results` while keeping `status: "ok"`.
+Most success-path actions accept `resultsOnly` (boolean). When enabled, action payload fields are nested under `results` while preserving the top-level `status`.
 
 ### chainsTop Notes
 
@@ -143,3 +143,16 @@ Many query/list actions accept `resultsOnly` (boolean) and return data under `re
 - `method` is canonicalized before provider call (`ETH_GETBALANCE` -> `eth_getBalance`)
 - `allowStaleFallback=false` disables stale cache fallback when upstream RPC fails
 - `allowStaleFallback=true` may return `source: "stale"` if a stale cached value is within `maxStaleSeconds`
+- Optional params:
+  - `resultsOnly` (boolean, return payload under `results` key)
+
+### cachePut / cacheGet Notes
+
+- Optional params:
+  - `resultsOnly` (boolean)
+- `cacheGet` can return `status: "miss"`, `status: "hit"`, or `status: "stale"`; with `resultsOnly`, cache metadata/value are nested under `results`.
+
+### Tx compose/send Notes
+
+- `buildTransferNative`, `buildTransferErc20`, `buildErc20Approve`, `buildDexSwap`, and `sendSignedTransaction` accept `resultsOnly` (boolean).
+- With `resultsOnly`, returned transaction payload (`txRequest`, optional `notes`, `txHash`, etc.) is placed under `results`.
