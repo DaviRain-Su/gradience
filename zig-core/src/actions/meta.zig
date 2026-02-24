@@ -607,14 +607,8 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         }
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
-        var candidates = std.ArrayList(bridge_quotes_registry.BridgeQuote).empty;
+        var candidates = try collectBridgeCandidates(allocator, from_chain, to_chain, asset);
         defer candidates.deinit(allocator);
-        for (bridge_quotes_registry.quotes) |quote| {
-            if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
-            if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
-            if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
-            try candidates.append(allocator, quote);
-        }
 
         if (candidates.items.len == 0) {
             try core_envelope.writeJson(core_errors.unsupported("no bridge quote route for input"));
@@ -670,14 +664,8 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
 
-        var candidates = std.ArrayList(swap_quotes_registry.SwapQuote).empty;
+        var candidates = try collectSwapCandidates(allocator, chain, from_asset, to_asset);
         defer candidates.deinit(allocator);
-        for (swap_quotes_registry.quotes) |quote| {
-            if (!std.mem.eql(u8, quote.chain, chain)) continue;
-            if (!std.ascii.eqlIgnoreCase(quote.from_asset, from_asset)) continue;
-            if (!std.ascii.eqlIgnoreCase(quote.to_asset, to_asset)) continue;
-            try candidates.append(allocator, quote);
-        }
 
         if (candidates.items.len == 0) {
             try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
@@ -980,6 +968,38 @@ const SwapQuoteSelection = struct {
     quote: swap_quotes_registry.SwapQuote,
     out_amount: u256,
 };
+
+fn collectBridgeCandidates(
+    allocator: std.mem.Allocator,
+    from_chain: []const u8,
+    to_chain: []const u8,
+    asset: []const u8,
+) !std.ArrayList(bridge_quotes_registry.BridgeQuote) {
+    var candidates = std.ArrayList(bridge_quotes_registry.BridgeQuote).empty;
+    for (bridge_quotes_registry.quotes) |quote| {
+        if (!std.mem.eql(u8, quote.from_chain, from_chain)) continue;
+        if (!std.mem.eql(u8, quote.to_chain, to_chain)) continue;
+        if (!std.ascii.eqlIgnoreCase(quote.asset_symbol, asset)) continue;
+        try candidates.append(allocator, quote);
+    }
+    return candidates;
+}
+
+fn collectSwapCandidates(
+    allocator: std.mem.Allocator,
+    chain: []const u8,
+    from_asset: []const u8,
+    to_asset: []const u8,
+) !std.ArrayList(swap_quotes_registry.SwapQuote) {
+    var candidates = std.ArrayList(swap_quotes_registry.SwapQuote).empty;
+    for (swap_quotes_registry.quotes) |quote| {
+        if (!std.mem.eql(u8, quote.chain, chain)) continue;
+        if (!std.ascii.eqlIgnoreCase(quote.from_asset, from_asset)) continue;
+        if (!std.ascii.eqlIgnoreCase(quote.to_asset, to_asset)) continue;
+        try candidates.append(allocator, quote);
+    }
+    return candidates;
+}
 
 fn selectBridgeQuote(
     amount: u256,
