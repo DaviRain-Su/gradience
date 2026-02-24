@@ -288,7 +288,7 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !voi
 
     const provided_cache_key = getString(params, "cacheKey");
     const generated_cache_key = if (provided_cache_key == null)
-        try std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ rpc_url, method, params_json })
+        try makeRpcCacheKey(allocator, rpc_url, method, params_json)
     else
         null;
     defer if (generated_cache_key) |value| allocator.free(value);
@@ -317,6 +317,89 @@ fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !voi
         .cacheKey = cache_key,
         .rpcUrl = rpc_url,
     });
+}
+
+fn makeRpcCacheKey(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    method: []const u8,
+    params_json: []const u8,
+) ![]u8 {
+    const normalized_params = normalizeJsonForCacheKey(allocator, params_json) catch |err| switch (err) {
+        error.InvalidRpcResponse,
+        error.InvalidRpcObject,
+        error.InvalidRpcResultType,
+        error.MissingRpcResult,
+        error.CachedValueInvalidResult,
+        error.CachedValueMissingResult,
+        error.RpcRequestFailed,
+        error.RpcBadHttpStatus,
+        error.RpcReturnedError,
+        => try allocator.dupe(u8, std.mem.trim(u8, params_json, " \r\n\t")),
+        else => return err,
+    };
+    defer allocator.free(normalized_params);
+    return std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ rpc_url, method, normalized_params });
+}
+
+fn normalizeJsonForCacheKey(allocator: std.mem.Allocator, raw_json: []const u8) RpcCallError![]u8 {
+    var parsed = std.json.parseFromSlice(std.json.Value, allocator, raw_json, .{}) catch {
+        return RpcError.InvalidRpcResponse;
+    };
+    defer parsed.deinit();
+
+    var out = std.Io.Writer.Allocating.init(allocator);
+    defer out.deinit();
+    writeCanonicalJsonValue(allocator, parsed.value, &out.writer) catch {
+        return error.OutOfMemory;
+    };
+    return allocator.dupe(u8, out.written());
+}
+
+fn writeCanonicalJsonValue(
+    allocator: std.mem.Allocator,
+    value: std.json.Value,
+    writer: *std.Io.Writer,
+) anyerror!void {
+    switch (value) {
+        .null => try writer.writeAll("null"),
+        .bool => |v| if (v) try writer.writeAll("true") else try writer.writeAll("false"),
+        .integer, .float, .number_string, .string => {
+            try std.json.Stringify.value(value, .{}, writer);
+        },
+        .array => |arr| {
+            try writer.writeByte('[');
+            for (arr.items, 0..) |entry, idx| {
+                if (idx > 0) try writer.writeByte(',');
+                try writeCanonicalJsonValue(allocator, entry, writer);
+            }
+            try writer.writeByte(']');
+        },
+        .object => |obj| {
+            var keys = std.ArrayList([]const u8).empty;
+            defer keys.deinit(allocator);
+
+            var it = obj.iterator();
+            while (it.next()) |entry| {
+                try keys.append(allocator, entry.key_ptr.*);
+            }
+            std.mem.sort([]const u8, keys.items, {}, lessThanString);
+
+            try writer.writeByte('{');
+            for (keys.items, 0..) |k, idx| {
+                if (idx > 0) try writer.writeByte(',');
+                const child = obj.get(k) orelse continue;
+                try std.json.Stringify.value(k, .{}, writer);
+                try writer.writeByte(':');
+                try writeCanonicalJsonValue(allocator, child, writer);
+            }
+            try writer.writeByte('}');
+        },
+    }
+}
+
+fn lessThanString(_: void, a: []const u8, b: []const u8) bool {
+    return std.mem.order(u8, a, b) == .lt;
 }
 
 fn handleGetBalance(allocator: std.mem.Allocator, params: RequestParams) !void {
