@@ -979,6 +979,21 @@ const SwapStrategy = enum {
     lowest_fee,
 };
 
+const QuoteFieldKey = struct {
+    const provider = "provider";
+    const from_chain = "fromChain";
+    const to_chain = "toChain";
+    const chain = "chain";
+    const asset = "asset";
+    const from_asset = "fromAsset";
+    const to_asset = "toAsset";
+    const amount_in = "amountIn";
+    const estimated_out = "estimatedAmountOut";
+    const fee_bps = "feeBps";
+    const eta_seconds = "etaSeconds";
+    const price_impact_bps = "priceImpactBps";
+};
+
 fn parseBridgeStrategy(raw: []const u8) ?BridgeStrategy {
     if (std.ascii.eqlIgnoreCase(raw, "bestOut")) return .best_out;
     if (std.ascii.eqlIgnoreCase(raw, "fastest")) return .fastest;
@@ -1326,36 +1341,36 @@ fn putBridgeQuoteSelectedField(
     amount_in: []const u8,
     estimated_out: []const u8,
 ) !void {
-    if (std.mem.eql(u8, field, "provider")) {
-        try obj.put("provider", .{ .string = quote.provider });
+    if (std.mem.eql(u8, field, QuoteFieldKey.provider)) {
+        try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
         return;
     }
-    if (std.mem.eql(u8, field, "fromChain")) {
-        try obj.put("fromChain", .{ .string = from_chain });
+    if (std.mem.eql(u8, field, QuoteFieldKey.from_chain)) {
+        try obj.put(QuoteFieldKey.from_chain, .{ .string = from_chain });
         return;
     }
-    if (std.mem.eql(u8, field, "toChain")) {
-        try obj.put("toChain", .{ .string = to_chain });
+    if (std.mem.eql(u8, field, QuoteFieldKey.to_chain)) {
+        try obj.put(QuoteFieldKey.to_chain, .{ .string = to_chain });
         return;
     }
-    if (std.mem.eql(u8, field, "asset")) {
-        try obj.put("asset", .{ .string = asset });
+    if (std.mem.eql(u8, field, QuoteFieldKey.asset)) {
+        try obj.put(QuoteFieldKey.asset, .{ .string = asset });
         return;
     }
-    if (std.mem.eql(u8, field, "amountIn")) {
-        try obj.put("amountIn", .{ .string = amount_in });
+    if (std.mem.eql(u8, field, QuoteFieldKey.amount_in)) {
+        try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (std.mem.eql(u8, field, "estimatedAmountOut")) {
-        try obj.put("estimatedAmountOut", .{ .string = estimated_out });
+    if (std.mem.eql(u8, field, QuoteFieldKey.estimated_out)) {
+        try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (std.mem.eql(u8, field, "feeBps")) {
-        try obj.put("feeBps", .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
+    if (std.mem.eql(u8, field, QuoteFieldKey.fee_bps)) {
+        try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (std.mem.eql(u8, field, "etaSeconds")) {
-        try obj.put("etaSeconds", .{ .integer = @as(i64, @intCast(quote.eta_seconds)) });
+    if (std.mem.eql(u8, field, QuoteFieldKey.eta_seconds)) {
+        try obj.put(QuoteFieldKey.eta_seconds, .{ .integer = @as(i64, @intCast(quote.eta_seconds)) });
         return;
     }
 }
@@ -1370,36 +1385,36 @@ fn putSwapQuoteSelectedField(
     amount_in: []const u8,
     estimated_out: []const u8,
 ) !void {
-    if (std.mem.eql(u8, field, "provider")) {
-        try obj.put("provider", .{ .string = quote.provider });
+    if (std.mem.eql(u8, field, QuoteFieldKey.provider)) {
+        try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
         return;
     }
-    if (std.mem.eql(u8, field, "chain")) {
-        try obj.put("chain", .{ .string = chain });
+    if (std.mem.eql(u8, field, QuoteFieldKey.chain)) {
+        try obj.put(QuoteFieldKey.chain, .{ .string = chain });
         return;
     }
-    if (std.mem.eql(u8, field, "fromAsset")) {
-        try obj.put("fromAsset", .{ .string = from_asset });
+    if (std.mem.eql(u8, field, QuoteFieldKey.from_asset)) {
+        try obj.put(QuoteFieldKey.from_asset, .{ .string = from_asset });
         return;
     }
-    if (std.mem.eql(u8, field, "toAsset")) {
-        try obj.put("toAsset", .{ .string = to_asset });
+    if (std.mem.eql(u8, field, QuoteFieldKey.to_asset)) {
+        try obj.put(QuoteFieldKey.to_asset, .{ .string = to_asset });
         return;
     }
-    if (std.mem.eql(u8, field, "amountIn")) {
-        try obj.put("amountIn", .{ .string = amount_in });
+    if (std.mem.eql(u8, field, QuoteFieldKey.amount_in)) {
+        try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (std.mem.eql(u8, field, "estimatedAmountOut")) {
-        try obj.put("estimatedAmountOut", .{ .string = estimated_out });
+    if (std.mem.eql(u8, field, QuoteFieldKey.estimated_out)) {
+        try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (std.mem.eql(u8, field, "feeBps")) {
-        try obj.put("feeBps", .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
+    if (std.mem.eql(u8, field, QuoteFieldKey.fee_bps)) {
+        try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (std.mem.eql(u8, field, "priceImpactBps")) {
-        try obj.put("priceImpactBps", .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
+    if (std.mem.eql(u8, field, QuoteFieldKey.price_impact_bps)) {
+        try obj.put(QuoteFieldKey.price_impact_bps, .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
         return;
     }
 }
