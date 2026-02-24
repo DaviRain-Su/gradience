@@ -92,6 +92,10 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `fastest`)
   - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
+- Selection behavior:
+  - `provider` is strict: when set, only that provider is considered
+  - `providers` applies priority order; when multiple routes share the same top priority bucket, `strategy` breaks ties
+  - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
 
 ### swapQuote Notes
 
@@ -105,6 +109,10 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `lowestFee`)
   - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
+- Selection behavior:
+  - `provider` is strict: when set, only that provider is considered
+  - `providers` applies priority order; when multiple candidates share the same top priority bucket, `strategy` breaks ties
+  - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
 
 ### lendMarkets Notes
 
