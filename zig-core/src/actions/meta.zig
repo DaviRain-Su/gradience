@@ -831,18 +831,22 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         if (chosen == null) {
             if (provider_priority) |providers_raw| {
-                var providers_iter = std.mem.splitScalar(u8, providers_raw, ',');
-                while (providers_iter.next()) |provider_raw| {
-                    const provider_name = std.mem.trim(u8, provider_raw, " \r\n\t");
-                    if (provider_name.len == 0) continue;
+                var min_rank: usize = std.math.maxInt(usize);
+                for (candidates.items) |quote| {
+                    const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                    if (rank < min_rank) min_rank = rank;
+                }
 
+                if (min_rank != std.math.maxInt(usize)) {
                     for (candidates.items) |quote| {
-                        if (!std.ascii.eqlIgnoreCase(quote.provider, provider_name)) continue;
-                        chosen = quote;
-                        chosen_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                        break;
+                        const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
+                        if (rank != min_rank) continue;
+                        const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+                        if (chosen == null or swapQuoteShouldReplace(strategy, quote, quote_out, chosen.?, chosen_out)) {
+                            chosen = quote;
+                            chosen_out = quote_out;
+                        }
                     }
-                    if (chosen != null) break;
                 }
             }
         }

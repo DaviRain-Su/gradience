@@ -377,6 +377,23 @@ def main() -> int:
     assert swap_provider_priority.get("provider") == "uniswap"
     assert swap_provider_priority.get("estimatedAmountOut") == "998501"
 
+    swap_provider_priority_fallback = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "does-not-exist,still-missing",
+            },
+        },
+        env,
+    )
+    assert swap_provider_priority_fallback.get("status") == "ok"
+    assert swap_provider_priority_fallback.get("provider") == "1inch"
+    assert swap_provider_priority_fallback.get("estimatedAmountOut") == "998901"
+
     swap_lowest_fee = run(
         {
             "action": "swapQuote",
