@@ -600,11 +600,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const provider_filter = getString(params, "provider");
         const provider_priority = getString(params, "providers");
-        const strategy = getString(params, "strategy") orelse "bestOut";
-        if (!isBridgeStrategyValid(strategy)) {
+        const strategy_raw = getString(params, "strategy") orelse "bestOut";
+        const strategy = parseBridgeStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
             return true;
-        }
+        };
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
         var candidates = try collectBridgeCandidates(allocator, from_chain, to_chain, asset);
@@ -656,11 +656,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const provider_filter = getString(params, "provider");
         const provider_priority = getString(params, "providers");
-        const strategy = getString(params, "strategy") orelse "bestOut";
-        if (!isSwapStrategyValid(strategy)) {
+        const strategy_raw = getString(params, "strategy") orelse "bestOut";
+        const strategy = parseSwapStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
             return true;
-        }
+        };
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
 
@@ -969,12 +969,26 @@ const SwapQuoteSelection = struct {
     out_amount: u256,
 };
 
-fn isBridgeStrategyValid(strategy: []const u8) bool {
-    return std.ascii.eqlIgnoreCase(strategy, "bestOut") or std.ascii.eqlIgnoreCase(strategy, "fastest");
+const BridgeStrategy = enum {
+    best_out,
+    fastest,
+};
+
+const SwapStrategy = enum {
+    best_out,
+    lowest_fee,
+};
+
+fn parseBridgeStrategy(raw: []const u8) ?BridgeStrategy {
+    if (std.ascii.eqlIgnoreCase(raw, "bestOut")) return .best_out;
+    if (std.ascii.eqlIgnoreCase(raw, "fastest")) return .fastest;
+    return null;
 }
 
-fn isSwapStrategyValid(strategy: []const u8) bool {
-    return std.ascii.eqlIgnoreCase(strategy, "bestOut") or std.ascii.eqlIgnoreCase(strategy, "lowestFee");
+fn parseSwapStrategy(raw: []const u8) ?SwapStrategy {
+    if (std.ascii.eqlIgnoreCase(raw, "bestOut")) return .best_out;
+    if (std.ascii.eqlIgnoreCase(raw, "lowestFee")) return .lowest_fee;
+    return null;
 }
 
 fn collectBridgeCandidates(
@@ -1015,7 +1029,7 @@ fn selectBridgeQuote(
     candidates: []const bridge_quotes_registry.BridgeQuote,
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
-    strategy: []const u8,
+    strategy: BridgeStrategy,
 ) !?BridgeQuoteSelection {
     var selected: ?BridgeQuoteSelection = null;
 
@@ -1068,7 +1082,7 @@ fn selectSwapQuote(
     candidates: []const swap_quotes_registry.SwapQuote,
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
-    strategy: []const u8,
+    strategy: SwapStrategy,
 ) !?SwapQuoteSelection {
     var selected: ?SwapQuoteSelection = null;
 
@@ -1116,13 +1130,13 @@ fn selectSwapQuote(
 }
 
 fn bridgeQuoteShouldReplace(
-    strategy: []const u8,
+    strategy: BridgeStrategy,
     candidate_out: u256,
     candidate_eta_seconds: u32,
     current_out: u256,
     current_eta_seconds: u32,
 ) bool {
-    if (std.ascii.eqlIgnoreCase(strategy, "fastest")) {
+    if (strategy == .fastest) {
         if (candidate_eta_seconds < current_eta_seconds) return true;
         if (candidate_eta_seconds > current_eta_seconds) return false;
         return candidate_out > current_out;
@@ -1146,13 +1160,13 @@ fn swapOutAmount(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
 }
 
 fn swapQuoteShouldReplace(
-    strategy: []const u8,
+    strategy: SwapStrategy,
     candidate: swap_quotes_registry.SwapQuote,
     candidate_out: u256,
     current: swap_quotes_registry.SwapQuote,
     current_out: u256,
 ) bool {
-    if (std.ascii.eqlIgnoreCase(strategy, "lowestFee")) {
+    if (strategy == .lowest_fee) {
         if (candidate.fee_bps < current.fee_bps) return true;
         if (candidate.fee_bps > current.fee_bps) return false;
         if (candidate.price_impact_bps < current.price_impact_bps) return true;
