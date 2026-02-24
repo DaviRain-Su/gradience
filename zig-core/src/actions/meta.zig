@@ -627,8 +627,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         if (provider_filter) |provider| {
             for (candidates.items) |quote| {
                 if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
-                const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
-                const quote_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+                const quote_out = bridgeOutAmount(amount, quote.fee_bps);
                 if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
                     chosen = quote;
                     chosen_out = quote_out;
@@ -653,8 +652,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 for (candidates.items) |quote| {
                     const rank = providerPriorityRank(providers_raw, quote.provider) orelse continue;
                     if (rank != min_rank) continue;
-                    const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
-                    const quote_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+                    const quote_out = bridgeOutAmount(amount, quote.fee_bps);
                     if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
                         chosen = quote;
                         chosen_out = quote_out;
@@ -665,8 +663,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         if (chosen == null) {
             for (candidates.items) |quote| {
-                const quote_fee_bps_u256: u256 = @intCast(quote.fee_bps);
-                const quote_out = amount - ((amount * quote_fee_bps_u256) / 10_000);
+                const quote_out = bridgeOutAmount(amount, quote.fee_bps);
                 if (chosen == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, chosen_out, chosen.?.eta_seconds)) {
                     chosen = quote;
                     chosen_out = quote_out;
@@ -1177,6 +1174,11 @@ fn bridgeQuoteShouldReplace(
     if (candidate_out > current_out) return true;
     if (candidate_out < current_out) return false;
     return candidate_eta_seconds < current_eta_seconds;
+}
+
+fn bridgeOutAmount(amount: u256, fee_bps: u16) u256 {
+    const fee_bps_u256: u256 = @intCast(fee_bps);
+    return amount - ((amount * fee_bps_u256) / 10_000);
 }
 
 fn swapOutAmount(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
