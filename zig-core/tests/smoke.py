@@ -138,6 +138,19 @@ def main() -> int:
         env,
     )
 
+    strict_env = env.copy()
+    strict_env["ZIG_CORE_STRICT"] = "1"
+    strict_env.pop("ZIG_CORE_ALLOW_BROADCAST", None)
+    blocked = run(
+        {
+            "action": "sendSignedTransaction",
+            "params": {"rpcUrl": rpc_url, "signedTxHex": "0x1234"},
+        },
+        strict_env,
+    )
+    assert blocked.get("status") == "error", blocked
+    assert int(blocked.get("code", 0)) == 13, blocked
+
     print("smoke tests passed")
     return 0
 
