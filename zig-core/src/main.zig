@@ -281,7 +281,8 @@ fn rpcCallCachedInternal(
 
 fn handleRpcCallCached(allocator: std.mem.Allocator, params: RequestParams) !void {
     const rpc_url = getString(params, "rpcUrl") orelse return writeMissing("rpcUrl");
-    const method = getString(params, "method") orelse return writeMissing("method");
+    const method_raw = getString(params, "method") orelse return writeMissing("method");
+    const method = std.mem.trim(u8, method_raw, " \r\n\t");
     const params_json = getString(params, "paramsJson") orelse "[]";
     const ttl_seconds = getU64(params, "ttlSeconds") orelse core_runtime.defaultCacheTtlSeconds();
     const max_stale_seconds = getU64(params, "maxStaleSeconds") orelse core_runtime.defaultMaxStaleSeconds();
@@ -325,6 +326,10 @@ fn makeRpcCacheKey(
     method: []const u8,
     params_json: []const u8,
 ) ![]u8 {
+    const normalized_url = try normalizeRpcUrlForCacheKey(allocator, rpc_url);
+    defer allocator.free(normalized_url);
+    const normalized_method = std.mem.trim(u8, method, " \r\n\t");
+
     const normalized_params = normalizeJsonForCacheKey(allocator, params_json) catch |err| switch (err) {
         error.InvalidRpcResponse,
         error.InvalidRpcObject,
@@ -339,7 +344,15 @@ fn makeRpcCacheKey(
         else => return err,
     };
     defer allocator.free(normalized_params);
-    return std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ rpc_url, method, normalized_params });
+    return std.fmt.allocPrint(allocator, "{s}|{s}|{s}", .{ normalized_url, normalized_method, normalized_params });
+}
+
+fn normalizeRpcUrlForCacheKey(allocator: std.mem.Allocator, rpc_url: []const u8) ![]u8 {
+    const trimmed = std.mem.trim(u8, rpc_url, " \r\n\t");
+    if (trimmed.len == 0) return allocator.dupe(u8, trimmed);
+    var end = trimmed.len;
+    while (end > 1 and trimmed[end - 1] == '/') : (end -= 1) {}
+    return allocator.dupe(u8, trimmed[0..end]);
 }
 
 fn normalizeJsonForCacheKey(allocator: std.mem.Allocator, raw_json: []const u8) RpcCallError![]u8 {
@@ -412,7 +425,7 @@ fn handleGetBalance(allocator: std.mem.Allocator, params: RequestParams) !void {
     const rpc_params = try std.fmt.allocPrint(allocator, "[\"{s}\",\"{s}\"]", .{ address, block_tag });
     defer allocator.free(rpc_params);
 
-    const cache_key = try std.fmt.allocPrint(allocator, "read|getBalance|{s}|{s}|{s}", .{ rpc_url, address, block_tag });
+    const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_getBalance", rpc_params);
     defer allocator.free(cache_key);
 
     const cached = rpcCallCachedInternal(
@@ -466,7 +479,7 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: RequestParams) !v
     );
     defer allocator.free(params_json);
 
-    const cache_key = try std.fmt.allocPrint(allocator, "read|getErc20Balance|{s}|{s}|{s}|{s}", .{ rpc_url, token_address, address, block_tag });
+    const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_call", params_json);
     defer allocator.free(cache_key);
 
     const cached = rpcCallCachedInternal(
@@ -496,7 +509,7 @@ fn handleGetErc20Balance(allocator: std.mem.Allocator, params: RequestParams) !v
 
 fn handleGetBlockNumber(allocator: std.mem.Allocator, params: RequestParams) !void {
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
-    const cache_key = try std.fmt.allocPrint(allocator, "read|getBlockNumber|{s}", .{rpc_url});
+    const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_blockNumber", "[]");
     defer allocator.free(cache_key);
 
     const cached = rpcCallCachedInternal(
@@ -688,7 +701,7 @@ fn handleEstimateGas(allocator: std.mem.Allocator, params: RequestParams) !void 
     );
     defer allocator.free(params_json);
 
-    const cache_key = try std.fmt.allocPrint(allocator, "read|estimateGas|{s}|{s}|{s}|{s}|{s}", .{ rpc_url, from, to, data, value });
+    const cache_key = try makeRpcCacheKey(allocator, rpc_url, "eth_estimateGas", params_json);
     defer allocator.free(cache_key);
 
     const outcome = rpcCallCachedInternal(
