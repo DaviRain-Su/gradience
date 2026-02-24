@@ -33,6 +33,7 @@ This repo now includes a Zig PoC core in `zig-core/` and can route selected tool
 ```bash
 cd zig-core
 zig build
+python3 tests/smoke.py
 ```
 
 Zig-backed execution is enabled by default. Disable it if needed:
