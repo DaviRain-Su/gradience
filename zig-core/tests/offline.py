@@ -294,6 +294,23 @@ def main() -> int:
     assert swap.get("provider") == "1inch"
     assert swap.get("estimatedAmountOut") == "998901"
 
+    swap_provider_priority = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "uniswap,1inch",
+            },
+        },
+        env,
+    )
+    assert swap_provider_priority.get("status") == "ok"
+    assert swap_provider_priority.get("provider") == "uniswap"
+    assert swap_provider_priority.get("estimatedAmountOut") == "998501"
+
     swap_select = run(
         {
             "action": "swapQuote",

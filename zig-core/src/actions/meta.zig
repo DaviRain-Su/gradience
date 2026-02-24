@@ -745,18 +745,62 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         };
 
         const provider_filter = getString(params, "provider");
+        const provider_priority = getString(params, "providers");
         const select = getString(params, "select");
         const results_only = getBool(params, "resultsOnly") orelse false;
-        var chosen: ?swap_quotes_registry.SwapQuote = null;
+
+        var candidates = std.ArrayList(swap_quotes_registry.SwapQuote).empty;
+        defer candidates.deinit(allocator);
         for (swap_quotes_registry.quotes) |quote| {
             if (!std.mem.eql(u8, quote.chain, chain)) continue;
             if (!std.ascii.eqlIgnoreCase(quote.from_asset, from_asset)) continue;
             if (!std.ascii.eqlIgnoreCase(quote.to_asset, to_asset)) continue;
-            if (provider_filter) |provider| {
+            try candidates.append(allocator, quote);
+        }
+
+        if (candidates.items.len == 0) {
+            try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+            return true;
+        }
+
+        var chosen: ?swap_quotes_registry.SwapQuote = null;
+        var chosen_out: u256 = 0;
+
+        if (provider_filter) |provider| {
+            for (candidates.items) |quote| {
                 if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
+                chosen = quote;
+                chosen_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+                break;
             }
-            chosen = quote;
-            break;
+        }
+
+        if (chosen == null) {
+            if (provider_priority) |providers_raw| {
+                var providers_iter = std.mem.splitScalar(u8, providers_raw, ',');
+                while (providers_iter.next()) |provider_raw| {
+                    const provider_name = std.mem.trim(u8, provider_raw, " \r\n\t");
+                    if (provider_name.len == 0) continue;
+
+                    for (candidates.items) |quote| {
+                        if (!std.ascii.eqlIgnoreCase(quote.provider, provider_name)) continue;
+                        chosen = quote;
+                        chosen_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+                        break;
+                    }
+                    if (chosen != null) break;
+                }
+            }
+        }
+
+        if (chosen == null) {
+            for (candidates.items) |quote| {
+                const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
+                if (chosen == null or quote_out > chosen_out) {
+                    chosen = quote;
+                    chosen_out = quote_out;
+                }
+            }
         }
 
         if (chosen == null) {
@@ -764,11 +808,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const fee_bps_u256: u256 = @intCast(chosen.?.fee_bps);
-        const impact_bps_u256: u256 = @intCast(chosen.?.price_impact_bps);
-        const after_fee = amount - ((amount * fee_bps_u256) / 10_000);
-        const out_amount = after_fee - ((after_fee * impact_bps_u256) / 10_000);
-        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
+        const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{chosen_out});
         defer allocator.free(estimated_out);
 
         if (select) |fields_raw| {
@@ -1141,6 +1181,13 @@ fn bridgeQuoteShouldReplace(
     if (candidate_out > current_out) return true;
     if (candidate_out < current_out) return false;
     return candidate_eta_seconds < current_eta_seconds;
+}
+
+fn swapOutAmount(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
+    const fee_bps_u256: u256 = @intCast(fee_bps);
+    const impact_bps_u256: u256 = @intCast(impact_bps);
+    const after_fee = amount - ((amount * fee_bps_u256) / 10_000);
+    return after_fee - ((after_fee * impact_bps_u256) / 10_000);
 }
 
 fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {
