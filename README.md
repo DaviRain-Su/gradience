@@ -33,6 +33,7 @@ This repo now includes a Zig PoC core in `zig-core/` and can route selected tool
 ```bash
 cd zig-core
 zig build
+python3 tests/offline.py
 python3 tests/smoke.py
 ```
 
@@ -61,6 +62,8 @@ Current Zig-routed tools:
 - `monad_runTransferWorkflow`
 
 Zig foundation actions (defi-cli style groundwork) are available in `zig-core` protocol:
+
+Protocol details: `zig-core/PROTOCOL.md`
 
 - `schema`
 - `runtimeInfo`

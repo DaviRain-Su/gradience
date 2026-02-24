@@ -29,6 +29,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     return false;
 }
 
+fn canonicalRpcMethod(raw: []const u8) []const u8 {
+    const method = std.mem.trim(u8, raw, " \r\n\t");
+    if (std.ascii.eqlIgnoreCase(method, "eth_getBalance")) return "eth_getBalance";
+    if (std.ascii.eqlIgnoreCase(method, "eth_blockNumber")) return "eth_blockNumber";
+    if (std.ascii.eqlIgnoreCase(method, "eth_call")) return "eth_call";
+    if (std.ascii.eqlIgnoreCase(method, "eth_estimateGas")) return "eth_estimateGas";
+    if (std.ascii.eqlIgnoreCase(method, "eth_sendRawTransaction")) return "eth_sendRawTransaction";
+    return method;
+}
+
 const CachedRpcOutcome = struct {
     source: []const u8,
     result: []u8,
@@ -81,7 +91,7 @@ fn rpcCallCachedInternal(
 fn handleRpcCallCached(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
     const rpc_url = getString(params, "rpcUrl") orelse return writeMissing("rpcUrl");
     const method_raw = getString(params, "method") orelse return writeMissing("method");
-    const method = std.mem.trim(u8, method_raw, " \r\n\t");
+    const method = canonicalRpcMethod(method_raw);
     const params_json = getString(params, "paramsJson") orelse "[]";
     const method_policy = core_cache_policy.forMethod(method);
     const ttl_seconds = getU64(params, "ttlSeconds") orelse method_policy.ttl_seconds;

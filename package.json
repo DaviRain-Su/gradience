@@ -11,6 +11,7 @@
     "dashboard:dev": "tsx apps/dashboard/server.ts",
     "export:templates": "npm run build && node apps/api/export-templates.mjs",
     "zig:build": "zig build --prefix zig-core/zig-out --build-file zig-core/build.zig",
+    "zig:offline": "npm run zig:build && python3 zig-core/tests/offline.py",
     "zig:smoke": "npm run zig:build && python3 zig-core/tests/smoke.py"
   },
   "dependencies": {
