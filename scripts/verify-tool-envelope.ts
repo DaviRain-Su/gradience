@@ -640,10 +640,16 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
   await runContextStages(
     tools,
     undefined,
-    stages.map((stage) => async (stageTools: Map<string, ToolDefinition>, _context: undefined) => {
-      await stage(stageTools);
-    }),
+    adaptToolStages(stages),
   );
+}
+
+function adaptToolStages(
+  stages: ToolStage[],
+): Array<(tools: Map<string, ToolDefinition>, _context: undefined) => Promise<void>> {
+  return stages.map((stage) => async (stageTools: Map<string, ToolDefinition>, _context: undefined) => {
+    await stage(stageTools);
+  });
 }
 
 async function runContextStages<TContext>(
