@@ -464,13 +464,6 @@ function assertResultStringField(name: string, payload: Record<string, unknown>,
   }
 }
 
-function assertResultFieldNull(name: string, payload: Record<string, unknown>, field: string): void {
-  const result = getResult(name, payload);
-  if (result[field] !== null) {
-    throw new Error(fail(name, `result.${field} must be null`));
-  }
-}
-
 function assertResultFieldChecks(
   payloads: Map<string, Record<string, unknown>>,
   checks: Array<{ name: string; fields: string[] }>,
@@ -617,7 +610,10 @@ function assertResultFieldExpectation(
     assertResultStringField(name, payload, field);
     return;
   }
-  assertResultFieldNull(name, payload, field);
+  const result = getResult(name, payload);
+  if (result[field] !== null) {
+    throw new Error(fail(name, `result.${field} must be null`));
+  }
 }
 
 function assertResultObjectFieldValue(
