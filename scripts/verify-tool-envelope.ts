@@ -244,6 +244,24 @@ function assertResultObjectFieldValue(
   }
 }
 
+function assertStrategyRunPlanResult(name: string, payload: Record<string, unknown>): void {
+  const runResult = getResult(name, payload).result as Record<string, unknown> | null | undefined;
+  if (!runResult || typeof runResult !== "object") {
+    throw new Error(fail(name, "result.result must be object"));
+  }
+  if (runResult.status !== "planned") {
+    throw new Error(fail(name, "result.result.status must equal planned for mode=plan"));
+  }
+  const runId = assertStringField(runResult, "runId", fail(name, "result.result"));
+  if (!runId.startsWith("run_")) {
+    throw new Error(fail(name, "result.result.runId must start with run_"));
+  }
+  const evidence = assertObjectField(runResult, "evidence", fail(name, "result.result"));
+  if (evidence.mode !== "plan") {
+    throw new Error(fail(name, "result.result.evidence.mode must equal plan"));
+  }
+}
+
 function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
   const value = obj[key];
   if (typeof value !== "string") {
@@ -538,19 +556,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     throw new Error(fail(TOOL.strategyCompile, "result.strategy.metadata.template must equal pay-per-call-v1"));
   }
 
-  const runResult = getResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun))
-    .result as Record<string, unknown>;
-  if (runResult.status !== "planned") {
-    throw new Error(fail(TOOL.strategyRun, "result.result.status must equal planned for mode=plan"));
-  }
-  const runId = assertStringField(runResult, "runId", fail(TOOL.strategyRun, "result.result"));
-  if (!runId.startsWith("run_")) {
-    throw new Error(fail(TOOL.strategyRun, "result.result.runId must start with run_"));
-  }
-  const evidence = assertObjectField(runResult, "evidence", fail(TOOL.strategyRun, "result.result"));
-  if (evidence.mode !== "plan") {
-    throw new Error(fail(TOOL.strategyRun, "result.result.evidence.mode must equal plan"));
-  }
+  assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
 
   const txRequest = getResult(TOOL.lifiExtractTxRequest, getPayload(payloads, TOOL.lifiExtractTxRequest))
     .txRequest as Record<string, unknown>;
