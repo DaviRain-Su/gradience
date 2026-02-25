@@ -546,10 +546,8 @@ function assertOkForChecks(
 }
 
 function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>): void {
-  const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
-  if (!Array.isArray(templates) || templates.length === 0) {
-    throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
-  }
+  const result = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates));
+  assertObjectFieldNonEmptyArray(TOOL.strategyTemplates, result, "templates", "result");
 }
 
 function runPureTsCoreEnvelopeChecks(
@@ -871,8 +869,18 @@ function assertInvalidValidationPayload(name: string, payload: Record<string, un
   if (invalidValidation.ok !== false) {
     throw new Error(fail(name, "invalid strategy should set validation.ok=false"));
   }
-  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
-    throw new Error(fail(name, "invalid strategy should include validation errors"));
+  assertObjectFieldNonEmptyArray(name, invalidValidation, "errors", "result.validation");
+}
+
+function assertObjectFieldNonEmptyArray(
+  name: string,
+  obj: Record<string, unknown> | null | undefined,
+  field: string,
+  scope: string,
+): void {
+  const value = obj?.[field];
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(fail(name, `${scope}.${field} must be non-empty array`));
   }
 }
 
