@@ -389,11 +389,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     try obj.put("chain", .{ .string = chain.chain });
                     continue;
                 }
-                if (fieldMatches(field, "chain_id")) {
+                if (fieldMatchesAny(field, &.{ "chain_id", "chainId" })) {
                     try obj.put("chain_id", .{ .string = chain.chain_id });
                     continue;
                 }
-                if (fieldMatches(field, "tvl_usd")) {
+                if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
                     try obj.put("tvl_usd", .{ .float = chain.tvl_usd });
                     continue;
                 }
@@ -524,7 +524,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("apy", .{ .float = entry.apy });
                         continue;
                     }
-                    if (fieldMatches(field, "tvl_usd")) {
+                    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -715,15 +715,15 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (fieldMatches(field, "supply_apy")) {
+                    if (fieldMatchesAny(field, &.{ "supply_apy", "supplyApy" })) {
                         try obj.put("supply_apy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (fieldMatches(field, "borrow_apy")) {
+                    if (fieldMatchesAny(field, &.{ "borrow_apy", "borrowApy" })) {
                         try obj.put("borrow_apy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (fieldMatches(field, "tvl_usd")) {
+                    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -794,15 +794,15 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (fieldMatches(field, "supplyApy")) {
+                    if (fieldMatchesAny(field, &.{ "supplyApy", "supply_apy" })) {
                         try obj.put("supplyApy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (fieldMatches(field, "borrowApy")) {
+                    if (fieldMatchesAny(field, &.{ "borrowApy", "borrow_apy" })) {
                         try obj.put("borrowApy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (fieldMatches(field, "tvlUsd")) {
+                    if (fieldMatchesAny(field, &.{ "tvlUsd", "tvl_usd" })) {
                         try obj.put("tvlUsd", .{ .float = entry.tvl_usd });
                         continue;
                     }

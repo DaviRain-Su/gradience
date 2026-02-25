@@ -202,6 +202,18 @@ def main() -> int:
     assert len(selected_rows_case) == 2
     assert set(selected_rows_case[0].keys()) == {"chain", "rank"}
 
+    chains_select_alias = run(
+        {
+            "action": "chainsTop",
+            "params": {"limit": 1, "select": "chainId,tvlUsd"},
+        },
+        env,
+    )
+    assert chains_select_alias.get("status") == "ok"
+    alias_rows = chains_select_alias.get("chains", [])
+    assert len(alias_rows) == 1
+    assert set(alias_rows[0].keys()) == {"chain_id", "tvl_usd"}
+
     chain_assets = run(
         {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
         env,
@@ -266,6 +278,22 @@ def main() -> int:
     sel_rows_case = yield_select_case_dup.get("opportunities", [])
     assert len(sel_rows_case) == 2
     assert set(sel_rows_case[0].keys()) == {"provider", "apy"}
+
+    yield_select_alias = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "limit": 1,
+                "select": "provider,tvlUsd",
+            },
+        },
+        env,
+    )
+    assert yield_select_alias.get("status") == "ok"
+    yield_alias_rows = yield_select_alias.get("opportunities", [])
+    assert len(yield_alias_rows) == 1
+    assert set(yield_alias_rows[0].keys()) == {"provider", "tvl_usd"}
 
     bridge = run(
         {
@@ -1507,6 +1535,24 @@ def main() -> int:
     assert len(mrows_case) == 2
     assert set(mrows_case[0].keys()) == {"provider", "supply_apy"}
 
+    lend_markets_select_alias = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "sortBy": "supply_apy",
+                "order": "asc",
+                "limit": 1,
+                "select": "provider,supplyApy,tvlUsd",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select_alias.get("status") == "ok"
+    lma_rows = lend_markets_select_alias.get("markets", [])
+    assert len(lma_rows) == 1
+    assert set(lma_rows[0].keys()) == {"provider", "supply_apy", "tvl_usd"}
+
     lend_rates = run(
         {
             "action": "lendRates",
@@ -1549,6 +1595,22 @@ def main() -> int:
     assert lend_rates_select_case_dup.get("status") == "ok"
     rates_case = lend_rates_select_case_dup.get("rates", {})
     assert set(rates_case.keys()) == {"provider", "supplyApy"}
+
+    lend_rates_select_alias = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": "provider,supply_apy,tvl_usd",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select_alias.get("status") == "ok"
+    rates_alias = lend_rates_select_alias.get("rates", {})
+    assert set(rates_alias.keys()) == {"provider", "supplyApy", "tvlUsd"}
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env

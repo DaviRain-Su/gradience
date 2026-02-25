@@ -60,6 +60,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `limit` (default `10`)
   - `select` (comma-separated fields: `rank`, `chain`, `chain_id`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- `select` also accepts camelCase aliases (`chainId`, `tvlUsd`)
 
 ### chainsAssets Notes
 
@@ -81,6 +82,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `limit` (default `20`)
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `apy`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- `select` also accepts camelCase alias `tvlUsd`
 
 ### bridgeQuote Notes
 
@@ -146,6 +148,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `limit` (default `20`)
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supply_apy`, `borrow_apy`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- `select` also accepts camelCase aliases (`supplyApy`, `borrowApy`, `tvlUsd`)
 
 ### lendRates Notes
 
@@ -156,6 +159,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - Optional params:
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supplyApy`, `borrowApy`, `tvlUsd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- `select` also accepts snake_case aliases (`supply_apy`, `borrow_apy`, `tvl_usd`)
 
 ### providersList Notes
 
