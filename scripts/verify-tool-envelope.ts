@@ -131,6 +131,106 @@ function mkLifiQuoteWithTxRequest(extra: Params = {}): Params {
   };
 }
 
+function mkPureTsChecks(): Array<[string, Params]> {
+  return [
+    [TOOL.buildTransferNative, { toAddress: ADDR_A, amountWei: "1" }],
+    [
+      TOOL.buildTransferErc20,
+      {
+        tokenAddress: ADDR_A,
+        toAddress: ADDR_B,
+        amountRaw: "1",
+      },
+    ],
+    [
+      TOOL.buildErc20Approve,
+      {
+        tokenAddress: ADDR_A,
+        spender: ADDR_B,
+        amountRaw: "1",
+      },
+    ],
+    [
+      TOOL.buildDexSwap,
+      {
+        router: ADDR_A,
+        amountIn: "1",
+        amountOutMin: "1",
+        path: [ADDR_A, ADDR_B],
+        to: ADDR_C,
+        deadline: "9999999999",
+      },
+    ],
+    [
+      TOOL.planLendingAction,
+      { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
+    ],
+    [TOOL.paymentIntentCreate, { token: "USDC", amountRaw: "1", payee: "0xabc" }],
+    [
+      TOOL.subscriptionIntentCreate,
+      { token: "USDC", amountRaw: "1", payee: "0xabc", cadenceSeconds: 60 },
+    ],
+    [TOOL.strategyTemplates, {}],
+    [
+      TOOL.strategyCompile,
+      {
+        template: "pay-per-call-v1",
+        params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
+      },
+    ],
+    [
+      TOOL.strategyValidate,
+      mkStrategyValidateParams("pay-per-call-v1"),
+    ],
+    [
+      TOOL.strategyRun,
+      {
+        strategy: RUN_STRATEGY,
+        mode: "plan",
+      },
+    ],
+    [TOOL.lifiExtractTxRequest, mkLifiExtractTxRequestParams()],
+  ];
+}
+
+function pureTsObjectFieldChecks(): Array<{ name: string; fields: string[] }> {
+  return [
+    { name: TOOL.buildTransferNative, fields: ["txRequest"] },
+    { name: TOOL.buildTransferErc20, fields: ["txRequest"] },
+    { name: TOOL.buildErc20Approve, fields: ["txRequest"] },
+    { name: TOOL.buildDexSwap, fields: ["txRequest"] },
+    { name: TOOL.planLendingAction, fields: ["plan"] },
+    { name: TOOL.paymentIntentCreate, fields: ["paymentIntent"] },
+    { name: TOOL.subscriptionIntentCreate, fields: ["subscriptionIntent"] },
+    { name: TOOL.strategyCompile, fields: ["strategy"] },
+    { name: TOOL.strategyRun, fields: ["result"] },
+    { name: TOOL.lifiExtractTxRequest, fields: ["txRequest"] },
+  ];
+}
+
+function pureTsSemanticObjectChecks(): Array<{
+  name: string;
+  objectField: string;
+  key: string;
+  expected: unknown;
+}> {
+  return [
+    { name: TOOL.planLendingAction, objectField: "plan", key: "action", expected: "supply" },
+    {
+      name: TOOL.paymentIntentCreate,
+      objectField: "paymentIntent",
+      key: "type",
+      expected: "pay_per_call",
+    },
+    {
+      name: TOOL.subscriptionIntentCreate,
+      objectField: "subscriptionIntent",
+      key: "type",
+      expected: "subscription",
+    },
+  ];
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -592,107 +692,18 @@ async function runEnvelopeChecks(
 }
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const checks: Array<[string, Params]> = [
-    [TOOL.buildTransferNative, { toAddress: ADDR_A, amountWei: "1" }],
-    [
-      TOOL.buildTransferErc20,
-      {
-        tokenAddress: ADDR_A,
-        toAddress: ADDR_B,
-        amountRaw: "1",
-      },
-    ],
-    [
-      TOOL.buildErc20Approve,
-      {
-        tokenAddress: ADDR_A,
-        spender: ADDR_B,
-        amountRaw: "1",
-      },
-    ],
-    [
-      TOOL.buildDexSwap,
-      {
-        router: ADDR_A,
-        amountIn: "1",
-        amountOutMin: "1",
-        path: [ADDR_A, ADDR_B],
-        to: ADDR_C,
-        deadline: "9999999999",
-      },
-    ],
-    [
-      TOOL.planLendingAction,
-      { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
-    ],
-    [TOOL.paymentIntentCreate, { token: "USDC", amountRaw: "1", payee: "0xabc" }],
-    [
-      TOOL.subscriptionIntentCreate,
-      { token: "USDC", amountRaw: "1", payee: "0xabc", cadenceSeconds: 60 },
-    ],
-    [TOOL.strategyTemplates, {}],
-    [
-      TOOL.strategyCompile,
-      {
-        template: "pay-per-call-v1",
-        params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
-      },
-    ],
-    [
-      TOOL.strategyValidate,
-      mkStrategyValidateParams("pay-per-call-v1"),
-    ],
-    [
-      TOOL.strategyRun,
-      {
-        strategy: RUN_STRATEGY,
-        mode: "plan",
-      },
-    ],
-    [TOOL.lifiExtractTxRequest, mkLifiExtractTxRequestParams()],
-  ];
+  const checks = mkPureTsChecks();
   const payloads = await runEnvelopeChecks(tools, checks);
 
   const nonOkAllowed = new Set<string>([TOOL.strategyValidate]);
   assertOkForChecks(payloads, checks, nonOkAllowed);
 
-  assertResultObjectFields(payloads, [
-    { name: TOOL.buildTransferNative, fields: ["txRequest"] },
-    { name: TOOL.buildTransferErc20, fields: ["txRequest"] },
-    { name: TOOL.buildErc20Approve, fields: ["txRequest"] },
-    { name: TOOL.buildDexSwap, fields: ["txRequest"] },
-    { name: TOOL.planLendingAction, fields: ["plan"] },
-    { name: TOOL.paymentIntentCreate, fields: ["paymentIntent"] },
-    { name: TOOL.subscriptionIntentCreate, fields: ["subscriptionIntent"] },
-    { name: TOOL.strategyCompile, fields: ["strategy"] },
-    { name: TOOL.strategyRun, fields: ["result"] },
-    { name: TOOL.lifiExtractTxRequest, fields: ["txRequest"] },
-  ]);
+  assertResultObjectFields(payloads, pureTsObjectFieldChecks());
   assertResultStringFields(payloads, [{ name: TOOL.buildDexSwap, fields: ["notes"] }]);
 
   assertTemplatesNonEmpty(payloads);
 
-  const semanticObjectChecks: Array<{
-    name: string;
-    objectField: string;
-    key: string;
-    expected: unknown;
-  }> = [
-    { name: TOOL.planLendingAction, objectField: "plan", key: "action", expected: "supply" },
-    {
-      name: TOOL.paymentIntentCreate,
-      objectField: "paymentIntent",
-      key: "type",
-      expected: "pay_per_call",
-    },
-    {
-      name: TOOL.subscriptionIntentCreate,
-      objectField: "subscriptionIntent",
-      key: "type",
-      expected: "subscription",
-    },
-  ];
-  assertResultObjectValueChecks(payloads, semanticObjectChecks);
+  assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
 
   assertResultNestedObjectValueChecks(payloads, [
     {
