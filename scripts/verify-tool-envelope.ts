@@ -90,16 +90,16 @@ function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<
 
 function assertEnvelopeShape(name: string, payload: Record<string, unknown>): void {
   if (typeof payload.status !== "string") {
-    throw new Error(`${name}: status must be string`);
+    throw new Error(fail(name, "status must be string"));
   }
   if (typeof payload.code !== "number") {
-    throw new Error(`${name}: code must be number`);
+    throw new Error(fail(name, "code must be number"));
   }
   if (typeof payload.result !== "object" || payload.result === null) {
-    throw new Error(`${name}: result must be object`);
+    throw new Error(fail(name, "result must be object"));
   }
   if (typeof payload.meta !== "object" || payload.meta === null) {
-    throw new Error(`${name}: meta must be object`);
+    throw new Error(fail(name, "meta must be object"));
   }
 }
 
@@ -108,7 +108,7 @@ function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): vo
   const expected = ["status", "code", "result", "meta"];
   for (let i = 0; i < expected.length; i += 1) {
     if (keys[i] !== expected[i]) {
-      throw new Error(`${name}: envelope key order must start with status,code,result,meta`);
+      throw new Error(fail(name, "envelope key order must start with status,code,result,meta"));
     }
   }
 }
@@ -121,16 +121,20 @@ function assertBlockedWithMode(
 ): void {
   const meta = payload.meta as Record<string, unknown>;
   if (payload.status !== "blocked" || Number(payload.code) !== code) {
-    throw new Error(`${name} should return blocked code ${code}`);
+    throw new Error(fail(name, `should return blocked code ${code}`));
   }
   if (String(meta?.mode || "") !== mode) {
-    throw new Error(`${name} should include meta.mode=${mode}`);
+    throw new Error(fail(name, `should include meta.mode=${mode}`));
   }
+}
+
+function fail(name: string, message: string): string {
+  return `[envelope:${name}] ${message}`;
 }
 
 function getTool(tools: Map<string, ToolDefinition>, name: string): ToolDefinition {
   const tool = tools.get(name);
-  if (!tool) throw new Error(`missing tool: ${name}`);
+  if (!tool) throw new Error(fail(name, "missing tool registration"));
   return tool;
 }
 
@@ -219,7 +223,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   for (const [name, params] of checks) {
     const payload = await parseToolPayload(getTool(tools, name), params);
     if (payload.status !== "blocked" || Number(payload.code) !== 13) {
-      throw new Error(`${name} should return blocked code 13 when zig is disabled`);
+      throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
     }
   }
 }
@@ -232,12 +236,12 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     },
   });
   if (invalid.status !== "error" || Number(invalid.code) !== 2) {
-    throw new Error("monad_strategy_validate should return error code 2 for invalid strategy");
+    throw new Error(fail(TOOL.strategyValidate, "should return error code 2 for invalid strategy"));
   }
 
   const blocked = await parseToolPayload(getTool(tools, TOOL.lifiExtractTxRequest), { quote: {} });
   if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
-    throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
+    throw new Error(fail(TOOL.lifiExtractTxRequest, "should return blocked code 12 when missing tx"));
   }
 
   const lifiSimBlocked = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), mkLifiWorkflowSimulateParams({}));
