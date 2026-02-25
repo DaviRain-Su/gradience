@@ -285,6 +285,22 @@ function isEmptyParams(params: Params): boolean {
   return Object.keys(params).length === 0;
 }
 
+function partitionByEmptyParams<T extends { params: Params }>(cases: T[]): {
+  empty: T[];
+  nonEmpty: T[];
+} {
+  const empty: T[] = [];
+  const nonEmpty: T[] = [];
+  for (const c of cases) {
+    if (isEmptyParams(c.params)) {
+      empty.push(c);
+    } else {
+      nonEmpty.push(c);
+    }
+  }
+  return { empty, nonEmpty };
+}
+
 function mkBehaviorBlockedCases(): BlockedCase[] {
   return [
     {
@@ -861,15 +877,16 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const zigDisabledCases = mkZigDisabledCases();
-  const checks = mkZigRequiredEnvelopeChecks(zigDisabledCases);
+  const partitioned = partitionByEmptyParams(zigDisabledCases);
+  const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
   const payloads = await runEnvelopeChecks(tools, checks);
 
-  await runToolCaseList(tools, zigDisabledCases, async (caseTools, c) => {
-    if (isEmptyParams(c.params)) {
-      const payload = getPayload(payloads, c.name);
-      assertZigDisabledBlocked(c.name, payload, c.reason);
-      return;
-    }
+  await runCaseList(partitioned.empty, async (c) => {
+    const payload = getPayload(payloads, c.name);
+    assertZigDisabledBlocked(c.name, payload, c.reason);
+  });
+
+  await runToolCaseList(tools, partitioned.nonEmpty, async (caseTools, c) => {
     await assertZigDisabledCase(caseTools, c);
   });
 }
