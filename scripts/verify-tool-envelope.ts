@@ -672,20 +672,44 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   await assertInvalidStrategyCase(tools);
 
-  await assertBlockedCase(tools, {
-    name: TOOL.lifiExtractTxRequest,
-    params: { quote: {} },
-    code: 12,
-    reason: "missing transactionRequest",
-  });
-
-  await assertBlockedCase(tools, {
-    name: TOOL.lifiRunWorkflow,
-    params: mkLifiWorkflowSimulateParams({}),
-    code: 12,
-    mode: "simulate",
-    reason: "missing txRequest",
-  });
+  const blockedCases: Array<{
+    name: string;
+    params: Params;
+    code: number;
+    reason: string;
+    mode?: string;
+  }> = [
+    {
+      name: TOOL.lifiExtractTxRequest,
+      params: { quote: {} },
+      code: 12,
+      reason: "missing transactionRequest",
+    },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: mkLifiWorkflowSimulateParams({}),
+      code: 12,
+      mode: "simulate",
+      reason: "missing txRequest",
+    },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: mkLifiWorkflowExecuteParams({}),
+      code: 12,
+      mode: "execute",
+      reason: "execute requires signedTxHex",
+    },
+    {
+      name: TOOL.runTransferWorkflow,
+      params: mkTransferWorkflowExecuteParams(),
+      code: 12,
+      mode: "execute",
+      reason: "execute requires signedTxHex",
+    },
+  ];
+  for (const c of blockedCases) {
+    await assertBlockedCase(tools, c);
+  }
 
   const lifiAnalysisCases: Array<{
     quote: Params;
@@ -701,45 +725,33 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     await assertLifiAnalysisCase(tools, c.quote, c.expectation);
   }
 
-  await assertBlockedCase(tools, {
-    name: TOOL.lifiRunWorkflow,
-    params: mkLifiWorkflowExecuteParams({}),
-    code: 12,
-    mode: "execute",
-    reason: "execute requires signedTxHex",
-  });
-
-  await assertBlockedCase(tools, {
-    name: TOOL.runTransferWorkflow,
-    params: mkTransferWorkflowExecuteParams(),
-    code: 12,
-    mode: "execute",
-    reason: "execute requires signedTxHex",
-  });
-
-  await assertInvalidRunModeCase(tools, {
-    name: TOOL.lifiRunWorkflow,
-    runMode: "inspect",
-    params: {
-      fromChain: 1,
-      toChain: 1,
-      fromToken: ADDR_A,
-      toToken: ADDR_B,
-      fromAmount: "1",
-      fromAddress: ADDR_C,
-      quote: {},
+  const invalidRunModeCases: Array<{ name: string; params: Params; runMode: string }> = [
+    {
+      name: TOOL.lifiRunWorkflow,
+      runMode: "inspect",
+      params: {
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+        quote: {},
+      },
     },
-  });
-
-  await assertInvalidRunModeCase(tools, {
-    name: TOOL.runTransferWorkflow,
-    runMode: "inspect",
-    params: {
-      fromAddress: ADDR_A,
-      toAddress: ADDR_B,
-      amountRaw: "1",
+    {
+      name: TOOL.runTransferWorkflow,
+      runMode: "inspect",
+      params: {
+        fromAddress: ADDR_A,
+        toAddress: ADDR_B,
+        amountRaw: "1",
+      },
     },
-  });
+  ];
+  for (const c of invalidRunModeCases) {
+    await assertInvalidRunModeCase(tools, c);
+  }
 }
 
 async function main(): Promise<void> {
