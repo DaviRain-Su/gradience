@@ -416,6 +416,20 @@ function assertStatusCode(
   }
 }
 
+function assertStatusCodeOneOf(
+  name: string,
+  payload: Record<string, unknown>,
+  allowed: Array<{ status: "ok" | "error" | "blocked"; code: number }>,
+  label: string,
+): void {
+  for (const entry of allowed) {
+    if (payload.status === entry.status && Number(payload.code) === entry.code) {
+      return;
+    }
+  }
+  throw new Error(fail(name, label));
+}
+
 function getResult(name: string, payload: Record<string, unknown>): Record<string, unknown> {
   const result = payload.result as Record<string, unknown> | null | undefined;
   if (!result || typeof result !== "object") {
@@ -830,9 +844,15 @@ async function assertZigDisabledCase(
 }
 
 function assertStrategyValidateEnvelope(name: string, payload: Record<string, unknown>): void {
-  if (!((payload.status === "ok" && Number(payload.code) === 0) || (payload.status === "error" && Number(payload.code) === 2))) {
-    throw new Error(fail(name, "should return either ok/0 or error/2"));
-  }
+  assertStatusCodeOneOf(
+    name,
+    payload,
+    [
+      { status: "ok", code: 0 },
+      { status: "error", code: 2 },
+    ],
+    "should return either ok/0 or error/2",
+  );
   assertValidationShape(name, payload);
 }
 
