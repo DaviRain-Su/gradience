@@ -28,6 +28,24 @@ def run(payload: dict, env: dict) -> dict:
     return json.loads(out)
 
 
+def assert_select_mixed_keeps(
+    action: str,
+    params: dict,
+    container_key: str,
+    expected_keys: set[str],
+    env: dict,
+) -> None:
+    resp = run({"action": action, "params": params}, env)
+    assert resp.get("status") == "ok"
+    container = resp.get(container_key, {})
+    if isinstance(container, list):
+        assert len(container) >= 1
+        row = container[0]
+    else:
+        row = container
+    assert set(row.keys()) == expected_keys
+
+
 def main() -> int:
     if not BIN.exists():
         print(f"missing binary: {BIN}", file=sys.stderr)
@@ -177,17 +195,13 @@ def main() -> int:
     assert len(alias_selected) == 1
     assert set(alias_selected[0].keys()) == {"capability_auth"}
 
-    providers_select_mixed_unknown = run(
-        {
-            "action": "providersList",
-            "params": {"name": "1inch", "select": "name,notAField"},
-        },
+    assert_select_mixed_keeps(
+        "providersList",
+        {"name": "1inch", "select": "name,notAField"},
+        "providers",
+        {"name"},
         env,
     )
-    assert providers_select_mixed_unknown.get("status") == "ok"
-    mixed_selected = providers_select_mixed_unknown.get("providers", [])
-    assert len(mixed_selected) == 1
-    assert set(mixed_selected[0].keys()) == {"name"}
 
     providers_select_blank = run(
         {
@@ -284,17 +298,13 @@ def main() -> int:
     assert len(alias_rows_coalesced) == 1
     assert list(alias_rows_coalesced[0].keys()) == ["chain_id"]
 
-    chains_select_mixed_unknown = run(
-        {
-            "action": "chainsTop",
-            "params": {"limit": 1, "select": "chain,notAField"},
-        },
+    assert_select_mixed_keeps(
+        "chainsTop",
+        {"limit": 1, "select": "chain,notAField"},
+        "chains",
+        {"chain"},
         env,
     )
-    assert chains_select_mixed_unknown.get("status") == "ok"
-    chains_mixed_rows = chains_select_mixed_unknown.get("chains", [])
-    assert len(chains_mixed_rows) == 1
-    assert set(chains_mixed_rows[0].keys()) == {"chain"}
 
     chain_assets = run(
         {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
@@ -421,21 +431,13 @@ def main() -> int:
     assert len(yield_alias_rows_coalesced) == 1
     assert list(yield_alias_rows_coalesced[0].keys()) == ["tvl_usd"]
 
-    yield_select_mixed_unknown = run(
-        {
-            "action": "yieldOpportunities",
-            "params": {
-                "asset": "USDC",
-                "limit": 1,
-                "select": "provider,notAField",
-            },
-        },
+    assert_select_mixed_keeps(
+        "yieldOpportunities",
+        {"asset": "USDC", "limit": 1, "select": "provider,notAField"},
+        "opportunities",
+        {"provider"},
         env,
     )
-    assert yield_select_mixed_unknown.get("status") == "ok"
-    yield_mixed_rows = yield_select_mixed_unknown.get("opportunities", [])
-    assert len(yield_mixed_rows) == 1
-    assert set(yield_mixed_rows[0].keys()) == {"provider"}
 
     bridge = run(
         {
@@ -1042,23 +1044,21 @@ def main() -> int:
     assert bridge_select_unknown_field.get("status") == "ok"
     assert bridge_select_unknown_field.get("results") == {}
 
-    bridge_select_mixed_unknown = run(
+    assert_select_mixed_keeps(
+        "bridgeQuote",
         {
-            "action": "bridgeQuote",
-            "params": {
-                "from": "1",
-                "to": "8453",
-                "asset": "USDC",
-                "amount": "1000000",
-                "provider": "lifi",
-                "select": "provider,notAField",
-                "resultsOnly": True,
-            },
+            "from": "1",
+            "to": "8453",
+            "asset": "USDC",
+            "amount": "1000000",
+            "provider": "lifi",
+            "select": "provider,notAField",
+            "resultsOnly": True,
         },
+        "results",
+        {"provider"},
         env,
     )
-    assert bridge_select_mixed_unknown.get("status") == "ok"
-    assert set(bridge_select_mixed_unknown.get("results", {}).keys()) == {"provider"}
 
     bridge_select_blank = run(
         {
@@ -1680,23 +1680,21 @@ def main() -> int:
     assert swap_select_unknown_field.get("status") == "ok"
     assert swap_select_unknown_field.get("results") == {}
 
-    swap_select_mixed_unknown = run(
+    assert_select_mixed_keeps(
+        "swapQuote",
         {
-            "action": "swapQuote",
-            "params": {
-                "chain": "1",
-                "fromAsset": "USDC",
-                "toAsset": "DAI",
-                "amount": "1000000",
-                "provider": "1inch",
-                "select": "provider,notAField",
-                "resultsOnly": True,
-            },
+            "chain": "1",
+            "fromAsset": "USDC",
+            "toAsset": "DAI",
+            "amount": "1000000",
+            "provider": "1inch",
+            "select": "provider,notAField",
+            "resultsOnly": True,
         },
+        "results",
+        {"provider"},
         env,
     )
-    assert swap_select_mixed_unknown.get("status") == "ok"
-    assert set(swap_select_mixed_unknown.get("results", {}).keys()) == {"provider"}
 
     swap_select_blank = run(
         {
@@ -1833,21 +1831,13 @@ def main() -> int:
     assert len(lma_rows) == 1
     assert set(lma_rows[0].keys()) == {"provider", "supply_apy", "tvl_usd"}
 
-    lend_markets_select_mixed_unknown = run(
-        {
-            "action": "lendMarkets",
-            "params": {
-                "asset": "USDC",
-                "limit": 1,
-                "select": "provider,notAField",
-            },
-        },
+    assert_select_mixed_keeps(
+        "lendMarkets",
+        {"asset": "USDC", "limit": 1, "select": "provider,notAField"},
+        "markets",
+        {"provider"},
         env,
     )
-    assert lend_markets_select_mixed_unknown.get("status") == "ok"
-    lm_mixed_rows = lend_markets_select_mixed_unknown.get("markets", [])
-    assert len(lm_mixed_rows) == 1
-    assert set(lm_mixed_rows[0].keys()) == {"provider"}
 
     lend_rates = run(
         {
@@ -1938,21 +1928,18 @@ def main() -> int:
     rates_alias = lend_rates_select_alias.get("rates", {})
     assert set(rates_alias.keys()) == {"provider", "supplyApy", "tvlUsd"}
 
-    lend_rates_select_mixed_unknown = run(
+    assert_select_mixed_keeps(
+        "lendRates",
         {
-            "action": "lendRates",
-            "params": {
-                "chain": "base",
-                "asset": "USDC",
-                "provider": "morpho",
-                "select": "provider,notAField",
-            },
+            "chain": "base",
+            "asset": "USDC",
+            "provider": "morpho",
+            "select": "provider,notAField",
         },
+        "rates",
+        {"provider"},
         env,
     )
-    assert lend_rates_select_mixed_unknown.get("status") == "ok"
-    rates_mixed = lend_rates_select_mixed_unknown.get("rates", {})
-    assert set(rates_mixed.keys()) == {"provider"}
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
