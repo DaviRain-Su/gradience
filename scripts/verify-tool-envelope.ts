@@ -6,6 +6,8 @@ type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
 type ContextStage<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
+type ContextBuilder<TContext> = (tools: Map<string, ToolDefinition>) => Promise<TContext>;
+type ContextRunner<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: Map<string, Record<string, unknown>>;
@@ -651,6 +653,15 @@ async function runContextPipeline<TContext>(
   }
 }
 
+async function runContextCheck<TContext>(
+  tools: Map<string, ToolDefinition>,
+  buildContext: ContextBuilder<TContext>,
+  runWithContext: ContextRunner<TContext>,
+): Promise<void> {
+  const context = await buildContext(tools);
+  await runWithContext(tools, context);
+}
+
 async function runPipeline(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
   for (const stage of stages) {
     await stage(tools);
@@ -1065,13 +1076,11 @@ async function runEnvelopeChecks(
 }
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const context = await buildPureTsContext(tools);
-  await runPureTsStages(tools, context);
+  await runContextCheck(tools, buildPureTsContext, runPureTsStages);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const context = await buildZigRequiredContext(tools);
-  await runZigRequiredStages(tools, context);
+  await runContextCheck(tools, buildZigRequiredContext, runZigRequiredStages);
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
