@@ -971,6 +971,13 @@ const SwapQuoteOptions = struct {
     results_only: bool,
 };
 
+const CommonQuoteOptions = struct {
+    provider_filter: ?[]const u8,
+    provider_priority: ?[]const u8,
+    select: ?[]const u8,
+    results_only: bool,
+};
+
 const BridgeQuoteInput = struct {
     from_chain: []const u8,
     to_chain: []const u8,
@@ -1002,6 +1009,11 @@ const SwapOptionsParseResult = union(enum) {
     invalid_field: []const u8,
 };
 
+const CommonOptionsParseResult = union(enum) {
+    ok: CommonQuoteOptions,
+    invalid_field: []const u8,
+};
+
 const QuoteFieldKey = struct {
     const provider = "provider";
     const from_chain = "fromChain";
@@ -1030,31 +1042,42 @@ fn parseSwapStrategy(raw: []const u8) ?SwapStrategy {
 }
 
 fn parseBridgeQuoteOptions(params: std.json.ObjectMap) QuoteOptionsParseResult {
-    const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
-        .missing => null,
-        .value => |value| value,
-        .invalid => return .{ .invalid_field = "provider" },
-    };
-
-    const provider_priority = switch (parseOptionalProvidersParam(params)) {
-        .missing => null,
-        .value => |value| value,
-        .invalid => return .{ .invalid_field = "providers" },
+    const common = switch (parseCommonQuoteOptions(params)) {
+        .ok => |value| value,
+        .invalid_field => |field_name| return .{ .invalid_field = field_name },
     };
 
     const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
     const strategy = parseBridgeStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
 
     return .{ .ok = .{
-        .provider_filter = provider_filter,
-        .provider_priority = provider_priority,
+        .provider_filter = common.provider_filter,
+        .provider_priority = common.provider_priority,
         .strategy = strategy,
-        .select = getString(params, "select"),
-        .results_only = getBool(params, "resultsOnly") orelse false,
+        .select = common.select,
+        .results_only = common.results_only,
     } };
 }
 
 fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
+    const common = switch (parseCommonQuoteOptions(params)) {
+        .ok => |value| value,
+        .invalid_field => |field_name| return .{ .invalid_field = field_name },
+    };
+
+    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
+    const strategy = parseSwapStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
+
+    return .{ .ok = .{
+        .provider_filter = common.provider_filter,
+        .provider_priority = common.provider_priority,
+        .strategy = strategy,
+        .select = common.select,
+        .results_only = common.results_only,
+    } };
+}
+
+fn parseCommonQuoteOptions(params: std.json.ObjectMap) CommonOptionsParseResult {
     const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
         .missing => null,
         .value => |value| value,
@@ -1067,13 +1090,9 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
         .invalid => return .{ .invalid_field = "providers" },
     };
 
-    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
-    const strategy = parseSwapStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
-
     return .{ .ok = .{
         .provider_filter = provider_filter,
         .provider_priority = provider_priority,
-        .strategy = strategy,
         .select = getString(params, "select"),
         .results_only = getBool(params, "resultsOnly") orelse false,
     } };
