@@ -1575,19 +1575,7 @@ fn parseCanonicalSelectedFieldsBy(
 }
 
 fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, QuoteFieldKey.provider)) return QuoteFieldKey.provider;
-    if (fieldMatches(field, QuoteFieldKey.from_chain)) return QuoteFieldKey.from_chain;
-    if (fieldMatches(field, QuoteFieldKey.to_chain)) return QuoteFieldKey.to_chain;
-    if (fieldMatches(field, QuoteFieldKey.chain)) return QuoteFieldKey.chain;
-    if (fieldMatches(field, QuoteFieldKey.asset)) return QuoteFieldKey.asset;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.from_asset, "from_asset" })) return QuoteFieldKey.from_asset;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.to_asset, "to_asset" })) return QuoteFieldKey.to_asset;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) return QuoteFieldKey.amount_in;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) return QuoteFieldKey.estimated_out;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) return QuoteFieldKey.fee_bps;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.eta_seconds, "eta_seconds" })) return QuoteFieldKey.eta_seconds;
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" })) return QuoteFieldKey.price_impact_bps;
-    return null;
+    return canonicalFromAliasMap(field, &quote_select_aliases);
 }
 
 fn parseProvidersSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
@@ -1674,6 +1662,21 @@ const lend_rates_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "supplyApy", .aliases = &.{ "supplyApy", "supply_apy" } },
     .{ .canonical = "borrowApy", .aliases = &.{ "borrowApy", "borrow_apy" } },
     .{ .canonical = "tvlUsd", .aliases = &.{ "tvlUsd", "tvl_usd" } },
+};
+
+const quote_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = QuoteFieldKey.provider, .aliases = &.{QuoteFieldKey.provider} },
+    .{ .canonical = QuoteFieldKey.from_chain, .aliases = &.{QuoteFieldKey.from_chain} },
+    .{ .canonical = QuoteFieldKey.to_chain, .aliases = &.{QuoteFieldKey.to_chain} },
+    .{ .canonical = QuoteFieldKey.chain, .aliases = &.{QuoteFieldKey.chain} },
+    .{ .canonical = QuoteFieldKey.asset, .aliases = &.{QuoteFieldKey.asset} },
+    .{ .canonical = QuoteFieldKey.from_asset, .aliases = &.{ QuoteFieldKey.from_asset, "from_asset" } },
+    .{ .canonical = QuoteFieldKey.to_asset, .aliases = &.{ QuoteFieldKey.to_asset, "to_asset" } },
+    .{ .canonical = QuoteFieldKey.amount_in, .aliases = &.{ QuoteFieldKey.amount_in, "amount_in" } },
+    .{ .canonical = QuoteFieldKey.estimated_out, .aliases = &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" } },
+    .{ .canonical = QuoteFieldKey.fee_bps, .aliases = &.{ QuoteFieldKey.fee_bps, "fee_bps" } },
+    .{ .canonical = QuoteFieldKey.eta_seconds, .aliases = &.{ QuoteFieldKey.eta_seconds, "eta_seconds" } },
+    .{ .canonical = QuoteFieldKey.price_impact_bps, .aliases = &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" } },
 };
 
 fn canonicalProvidersSelectField(field: []const u8) ?[]const u8 {
