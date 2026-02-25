@@ -606,7 +606,14 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
             break :blk trimmed;
         } else null;
-        const provider_priority = getString(params, "providers");
+        const provider_priority = if (getString(params, "providers")) |raw| blk: {
+            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+            if (!hasNonEmptyCsvToken(trimmed)) {
+                try writeInvalid("providers");
+                return true;
+            }
+            break :blk trimmed;
+        } else null;
         const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseBridgeStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
@@ -669,7 +676,14 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
             break :blk trimmed;
         } else null;
-        const provider_priority = getString(params, "providers");
+        const provider_priority = if (getString(params, "providers")) |raw| blk: {
+            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+            if (!hasNonEmptyCsvToken(trimmed)) {
+                try writeInvalid("providers");
+                return true;
+            }
+            break :blk trimmed;
+        } else null;
         const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseSwapStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
@@ -1443,6 +1457,14 @@ fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !st
         try fields.append(allocator, field);
     }
     return fields;
+}
+
+fn hasNonEmptyCsvToken(raw: []const u8) bool {
+    var parts = std.mem.splitScalar(u8, raw, ',');
+    while (parts.next()) |part| {
+        if (std.mem.trim(u8, part, " \r\n\t").len > 0) return true;
+    }
+    return false;
 }
 
 fn writeSelectedQuoteEnvelope(results_only: bool, obj: std.json.ObjectMap) !void {

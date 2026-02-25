@@ -96,6 +96,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order; when multiple routes share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
+  - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
 
@@ -115,6 +116,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order; when multiple candidates share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
+  - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
 

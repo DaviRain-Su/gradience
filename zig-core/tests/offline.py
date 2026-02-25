@@ -374,6 +374,38 @@ def main() -> int:
     assert bridge_provider_priority_fallback.get("provider") == "across"
     assert bridge_provider_priority_fallback.get("estimatedAmountOut") == "999600"
 
+    bridge_blank_providers = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": "   ",
+            },
+        },
+        env,
+    )
+    assert bridge_blank_providers.get("status") == "error"
+    assert int(bridge_blank_providers.get("code", 0)) == 2
+
+    bridge_empty_token_providers = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": " , , ",
+            },
+        },
+        env,
+    )
+    assert bridge_empty_token_providers.get("status") == "error"
+    assert int(bridge_empty_token_providers.get("code", 0)) == 2
+
     bridge_unknown_provider = run(
         {
             "action": "bridgeQuote",
@@ -596,6 +628,38 @@ def main() -> int:
     assert swap_provider_priority_fallback.get("status") == "ok"
     assert swap_provider_priority_fallback.get("provider") == "1inch"
     assert swap_provider_priority_fallback.get("estimatedAmountOut") == "998901"
+
+    swap_blank_providers = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "   ",
+            },
+        },
+        env,
+    )
+    assert swap_blank_providers.get("status") == "error"
+    assert int(swap_blank_providers.get("code", 0)) == 2
+
+    swap_empty_token_providers = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": " , , ",
+            },
+        },
+        env,
+    )
+    assert swap_empty_token_providers.get("status") == "error"
+    assert int(swap_empty_token_providers.get("code", 0)) == 2
 
     swap_lowest_fee = run(
         {
