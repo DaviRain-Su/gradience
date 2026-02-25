@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +56,28 @@ def assert_select_rejected(
     resp = run({"action": action, "params": params}, env)
     assert resp.get("status") == "error"
     assert int(resp.get("code", 0)) == code
+
+
+def bridge_quote_params(**overrides: Any) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "from": "1",
+        "to": "8453",
+        "asset": "USDC",
+        "amount": "1000000",
+    }
+    params.update(overrides)
+    return params
+
+
+def swap_quote_params(**overrides: Any) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "chain": "1",
+        "fromAsset": "USDC",
+        "toAsset": "DAI",
+        "amount": "1000000",
+    }
+    params.update(overrides)
+    return params
 
 
 def main() -> int:
@@ -1008,15 +1031,11 @@ def main() -> int:
 
     assert_select_mixed_keeps(
         "bridgeQuote",
-        {
-            "from": "1",
-            "to": "8453",
-            "asset": "USDC",
-            "amount": "1000000",
-            "provider": "lifi",
-            "select": "provider,notAField",
-            "resultsOnly": True,
-        },
+        bridge_quote_params(
+            provider="lifi",
+            select="provider,notAField",
+            resultsOnly=True,
+        ),
         "results",
         {"provider"},
         env,
@@ -1024,26 +1043,12 @@ def main() -> int:
 
     assert_select_rejected(
         "bridgeQuote",
-        {
-            "from": "1",
-            "to": "8453",
-            "asset": "USDC",
-            "amount": "1000000",
-            "provider": "lifi",
-            "select": "   ",
-        },
+        bridge_quote_params(provider="lifi", select="   "),
         env,
     )
     assert_select_rejected(
         "bridgeQuote",
-        {
-            "from": "1",
-            "to": "8453",
-            "asset": "USDC",
-            "amount": "1000000",
-            "provider": "lifi",
-            "select": ",, ,",
-        },
+        bridge_quote_params(provider="lifi", select=",, ,"),
         env,
     )
 
@@ -1635,15 +1640,11 @@ def main() -> int:
 
     assert_select_mixed_keeps(
         "swapQuote",
-        {
-            "chain": "1",
-            "fromAsset": "USDC",
-            "toAsset": "DAI",
-            "amount": "1000000",
-            "provider": "1inch",
-            "select": "provider,notAField",
-            "resultsOnly": True,
-        },
+        swap_quote_params(
+            provider="1inch",
+            select="provider,notAField",
+            resultsOnly=True,
+        ),
         "results",
         {"provider"},
         env,
@@ -1651,26 +1652,12 @@ def main() -> int:
 
     assert_select_rejected(
         "swapQuote",
-        {
-            "chain": "1",
-            "fromAsset": "USDC",
-            "toAsset": "DAI",
-            "amount": "1000000",
-            "provider": "1inch",
-            "select": "   ",
-        },
+        swap_quote_params(provider="1inch", select="   "),
         env,
     )
     assert_select_rejected(
         "swapQuote",
-        {
-            "chain": "1",
-            "fromAsset": "USDC",
-            "toAsset": "DAI",
-            "amount": "1000000",
-            "provider": "1inch",
-            "select": ",, ,",
-        },
+        swap_quote_params(provider="1inch", select=",, ,"),
         env,
     )
 
