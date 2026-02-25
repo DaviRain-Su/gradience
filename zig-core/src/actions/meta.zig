@@ -92,14 +92,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const name_filter = getString(params, "name");
         const category_filter = getString(params, "category");
         const capability_filter = getString(params, "capability");
-        const select = switch (parseOptionalSelectParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("select");
-                return true;
-            },
-        };
+        const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
 
         var filtered = std.ArrayList(providers_registry.ProviderInfo).empty;
@@ -368,14 +361,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const clamped = if (limit_raw > max_len) max_len else limit_raw;
         const count: usize = @intCast(clamped);
 
-        const select = switch (parseOptionalSelectParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("select");
-                return true;
-            },
-        };
+        const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
         if (select == null) {
             if (results_only) {
@@ -469,14 +455,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const limit: usize = @intCast(limit_raw);
         const sort_by = getString(params, "sortBy") orelse "tvl_usd";
         const order = getString(params, "order") orelse "desc";
-        const select = switch (parseOptionalSelectParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("select");
-                return true;
-            },
-        };
+        const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = if (chain_raw) |value|
@@ -671,14 +650,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const limit: usize = @intCast(limit_raw);
         const sort_by = getString(params, "sortBy") orelse "tvl_usd";
         const order = getString(params, "order") orelse "desc";
-        const select = switch (parseOptionalSelectParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("select");
-                return true;
-            },
-        };
+        const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = if (chain_raw) |value|
@@ -788,14 +760,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try writeMissing("provider");
             return true;
         };
-        const select = switch (parseOptionalSelectParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("select");
-                return true;
-            },
-        };
+        const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
 
         const chain = core_id.normalizeChain(chain_raw) orelse {
@@ -1760,6 +1725,17 @@ fn parseOptionalSelectParam(obj: std.json.ObjectMap) OptionalStringParam {
         .missing => .missing,
         .invalid => .invalid,
         .value => |value| if (hasNonEmptyCsvToken(value)) .{ .value = value } else .invalid,
+    };
+}
+
+fn parseOptionalSelectOrWriteInvalid(obj: std.json.ObjectMap) !?[]const u8 {
+    return switch (parseOptionalSelectParam(obj)) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => {
+            try writeInvalid("select");
+            return error.InvalidSelect;
+        },
     };
 }
 
