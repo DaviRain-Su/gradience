@@ -243,6 +243,18 @@ def main() -> int:
     assert len(alias_rows) == 1
     assert set(alias_rows[0].keys()) == {"chain_id", "tvl_usd"}
 
+    chains_select_alias_coalesced = run(
+        {
+            "action": "chainsTop",
+            "params": {"limit": 1, "select": "chain_id,chainId"},
+        },
+        env,
+    )
+    assert chains_select_alias_coalesced.get("status") == "ok"
+    alias_rows_coalesced = chains_select_alias_coalesced.get("chains", [])
+    assert len(alias_rows_coalesced) == 1
+    assert list(alias_rows_coalesced[0].keys()) == ["chain_id"]
+
     chain_assets = run(
         {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
         env,
@@ -337,6 +349,22 @@ def main() -> int:
     yield_alias_rows = yield_select_alias.get("opportunities", [])
     assert len(yield_alias_rows) == 1
     assert set(yield_alias_rows[0].keys()) == {"provider", "tvl_usd"}
+
+    yield_select_alias_coalesced = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "limit": 1,
+                "select": "tvl_usd,tvlUsd",
+            },
+        },
+        env,
+    )
+    assert yield_select_alias_coalesced.get("status") == "ok"
+    yield_alias_rows_coalesced = yield_select_alias_coalesced.get("opportunities", [])
+    assert len(yield_alias_rows_coalesced) == 1
+    assert list(yield_alias_rows_coalesced[0].keys()) == ["tvl_usd"]
 
     bridge = run(
         {
