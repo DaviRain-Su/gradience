@@ -879,7 +879,7 @@ async function runEnvelopeChecks(
 ): Promise<Map<string, Record<string, unknown>>> {
   const payloads = new Map<string, Record<string, unknown>>();
   for (const [name, params] of checks) {
-    const payload = await parseToolPayload(getTool(tools, name), params);
+    const payload = await executePayload(tools, name, params);
     assertEnvelopeShape(name, payload);
     assertEnvelopeOrder(name, payload);
     payloads.set(name, payload);
