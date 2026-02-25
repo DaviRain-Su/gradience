@@ -538,6 +538,16 @@ async function runCaseList<T>(cases: T[], runner: (value: T) => Promise<void>): 
   }
 }
 
+async function runToolCaseList<T>(
+  tools: Map<string, ToolDefinition>,
+  cases: T[],
+  runner: (tools: Map<string, ToolDefinition>, value: T) => Promise<void>,
+): Promise<void> {
+  await runCaseList(cases, async (c) => {
+    await runner(tools, c);
+  });
+}
+
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldNull(name, payload, field);
@@ -724,18 +734,17 @@ async function assertInvalidRunModeCase(
 
 async function assertLifiAnalysisCase(
   tools: Map<string, ToolDefinition>,
-  quote: Params,
-  expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation },
+  input: LifiAnalysisCase,
 ): Promise<void> {
   const payload = await parseToolPayload(
     getTool(tools, TOOL.lifiRunWorkflow),
-    mkLifiWorkflowAnalysisParams(quote),
+    mkLifiWorkflowAnalysisParams(input.quote),
   );
   assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "txRequest", expectation.txRequest);
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "routeId", expectation.routeId);
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "tool", expectation.tool);
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "txRequest", input.expectation.txRequest);
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "routeId", input.expectation.routeId);
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "tool", input.expectation.tool);
 }
 
 async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -760,23 +769,17 @@ async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Pr
 
 async function runBlockedBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
   const blockedCases = mkBehaviorBlockedCases();
-  await runCaseList(blockedCases, async (c) => {
-    await assertBlockedCase(tools, c);
-  });
+  await runToolCaseList(tools, blockedCases, assertBlockedCase);
 }
 
 async function runLifiAnalysisBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
   const lifiAnalysisCases = mkLifiAnalysisCases();
-  await runCaseList(lifiAnalysisCases, async (c) => {
-    await assertLifiAnalysisCase(tools, c.quote, c.expectation);
-  });
+  await runToolCaseList(tools, lifiAnalysisCases, assertLifiAnalysisCase);
 }
 
 async function runInvalidRunModeBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
   const invalidRunModeCases = mkInvalidRunModeCases();
-  await runCaseList(invalidRunModeCases, async (c) => {
-    await assertInvalidRunModeCase(tools, c);
-  });
+  await runToolCaseList(tools, invalidRunModeCases, assertInvalidRunModeCase);
 }
 
 function assertZigDisabledBlocked(
@@ -861,13 +864,13 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   const checks = mkZigRequiredEnvelopeChecks(zigDisabledCases);
   const payloads = await runEnvelopeChecks(tools, checks);
 
-  await runCaseList(zigDisabledCases, async (c) => {
+  await runToolCaseList(tools, zigDisabledCases, async (caseTools, c) => {
     if (isEmptyParams(c.params)) {
       const payload = getPayload(payloads, c.name);
       assertZigDisabledBlocked(c.name, payload, c.reason);
       return;
     }
-    await assertZigDisabledCase(tools, c);
+    await assertZigDisabledCase(caseTools, c);
   });
 }
 
