@@ -726,6 +726,27 @@ def main() -> int:
         "estimatedAmountOut",
     }
 
+    bridge_select_duplicate_fields = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "provider,provider,estimatedAmountOut,estimatedAmountOut",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_duplicate_fields.get("status") == "ok"
+    assert set(bridge_select_duplicate_fields.get("results", {}).keys()) == {
+        "provider",
+        "estimatedAmountOut",
+    }
+
     bridge_select_unknown_field = run(
         {
             "action": "bridgeQuote",
@@ -1241,6 +1262,27 @@ def main() -> int:
     )
     assert swap_select_spaced.get("status") == "ok"
     assert set(swap_select_spaced.get("results", {}).keys()) == {"provider", "feeBps"}
+
+    swap_select_duplicate_fields = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "provider,provider,feeBps,feeBps",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_duplicate_fields.get("status") == "ok"
+    assert set(swap_select_duplicate_fields.get("results", {}).keys()) == {
+        "provider",
+        "feeBps",
+    }
 
     swap_select_unknown_field = run(
         {

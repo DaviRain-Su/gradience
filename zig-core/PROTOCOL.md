@@ -102,6 +102,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
   - blank/empty `select` values are rejected
+  - duplicate `select` fields are coalesced
 
 ### swapQuote Notes
 
@@ -125,6 +126,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
   - blank/empty `select` values are rejected
+  - duplicate `select` fields are coalesced
 
 ### lendMarkets Notes
 

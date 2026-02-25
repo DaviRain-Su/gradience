@@ -1558,9 +1558,17 @@ fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !st
     while (parts.next()) |part| {
         const field = std.mem.trim(u8, part, " \r\n\t");
         if (field.len == 0) continue;
+        if (containsField(fields.items, field)) continue;
         try fields.append(allocator, field);
     }
     return fields;
+}
+
+fn containsField(items: []const []const u8, field: []const u8) bool {
+    for (items) |item| {
+        if (std.mem.eql(u8, item, field)) return true;
+    }
+    return false;
 }
 
 fn hasNonEmptyCsvToken(raw: []const u8) bool {
