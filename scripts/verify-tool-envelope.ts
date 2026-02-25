@@ -639,10 +639,6 @@ async function runToolCaseList<T>(
   }
 }
 
-async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
-  await runPipeline(tools, stages);
-}
-
 async function runContextPipeline<TContext>(
   tools: Map<string, ToolDefinition>,
   context: TContext,
@@ -666,7 +662,7 @@ const buildVoidContext: ContextBuilder<void> = async () => undefined;
 
 function adaptToolPipeline(stages: ToolStage[]): ContextRunner<void> {
   return async (tools: Map<string, ToolDefinition>, _context: void) => {
-    await runToolStages(tools, stages);
+    await runPipeline(tools, stages);
   };
 }
 
