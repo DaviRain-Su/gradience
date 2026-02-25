@@ -724,10 +724,13 @@ function getArrayField(
 }
 
 function assertValidationShape(name: string, payload: Record<string, unknown>): void {
-  const result = getResult(name, payload);
-  const validation = getObjectField(name, result, "validation", "result");
+  const validation = getValidationObject(name, payload);
   getBooleanField(name, validation, "ok", "result.validation");
   getArrayField(name, validation, "errors", "result.validation");
+}
+
+function getValidationObject(name: string, payload: Record<string, unknown>): Record<string, unknown> {
+  return getObjectField(name, getResult(name, payload), "validation", "result");
 }
 
 function assertBlockedWithMode(
@@ -887,7 +890,7 @@ function assertStrategyValidateEnvelope(name: string, payload: Record<string, un
 function assertInvalidValidationPayload(name: string, payload: Record<string, unknown>): void {
   assertStatusCode(name, payload, "error", 2);
   assertValidationShape(name, payload);
-  const invalidValidation = getObjectField(name, getResult(name, payload), "validation", "result");
+  const invalidValidation = getValidationObject(name, payload);
   if (getBooleanField(name, invalidValidation, "ok", "result.validation") !== false) {
     throw new Error(fail(name, "invalid strategy should set validation.ok=false"));
   }
