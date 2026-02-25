@@ -724,6 +724,27 @@ async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Pr
   }
 }
 
+async function runBlockedBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+  const blockedCases = mkBehaviorBlockedCases();
+  await runCaseList(blockedCases, async (c) => {
+    await assertBlockedCase(tools, c);
+  });
+}
+
+async function runLifiAnalysisBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+  const lifiAnalysisCases = mkLifiAnalysisCases();
+  await runCaseList(lifiAnalysisCases, async (c) => {
+    await assertLifiAnalysisCase(tools, c.quote, c.expectation);
+  });
+}
+
+async function runInvalidRunModeBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+  const invalidRunModeCases = mkInvalidRunModeCases();
+  await runCaseList(invalidRunModeCases, async (c) => {
+    await assertInvalidRunModeCase(tools, c);
+  });
+}
+
 function assertZigDisabledBlocked(
   name: string,
   payload: Record<string, unknown>,
@@ -840,21 +861,9 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   await assertInvalidStrategyCase(tools);
-
-  const blockedCases = mkBehaviorBlockedCases();
-  await runCaseList(blockedCases, async (c) => {
-    await assertBlockedCase(tools, c);
-  });
-
-  const lifiAnalysisCases = mkLifiAnalysisCases();
-  await runCaseList(lifiAnalysisCases, async (c) => {
-    await assertLifiAnalysisCase(tools, c.quote, c.expectation);
-  });
-
-  const invalidRunModeCases = mkInvalidRunModeCases();
-  await runCaseList(invalidRunModeCases, async (c) => {
-    await assertInvalidRunModeCase(tools, c);
-  });
+  await runBlockedBehaviorCases(tools);
+  await runLifiAnalysisBehaviorCases(tools);
+  await runInvalidRunModeBehaviorCases(tools);
 }
 
 async function main(): Promise<void> {
