@@ -231,6 +231,93 @@ function pureTsSemanticObjectChecks(): Array<{
   ];
 }
 
+function mkZigDisabledCases(): Array<{ name: string; params: Params; reason: string }> {
+  return [
+    { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
+    { name: TOOL.version, params: {}, reason: "version discovery requires zig core" },
+    { name: TOOL.runtimeInfo, params: {}, reason: "runtime info requires zig core" },
+    { name: TOOL.version, params: { long: true }, reason: "version discovery requires zig core" },
+  ];
+}
+
+function mkBehaviorBlockedCases(): Array<{
+  name: string;
+  params: Params;
+  code: number;
+  reason: string;
+  mode?: string;
+}> {
+  return [
+    {
+      name: TOOL.lifiExtractTxRequest,
+      params: { quote: {} },
+      code: 12,
+      reason: "missing transactionRequest",
+    },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: mkLifiWorkflowSimulateParams({}),
+      code: 12,
+      mode: "simulate",
+      reason: "missing txRequest",
+    },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: mkLifiWorkflowExecuteParams({}),
+      code: 12,
+      mode: "execute",
+      reason: "execute requires signedTxHex",
+    },
+    {
+      name: TOOL.runTransferWorkflow,
+      params: mkTransferWorkflowExecuteParams(),
+      code: 12,
+      mode: "execute",
+      reason: "execute requires signedTxHex",
+    },
+  ];
+}
+
+function mkLifiAnalysisCases(): Array<{
+  quote: Params;
+  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
+}> {
+  return [
+    { quote: {}, expectation: { txRequest: "null", routeId: "null", tool: "null" } },
+    {
+      quote: mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
+      expectation: { txRequest: "object", routeId: "string", tool: "string" },
+    },
+  ];
+}
+
+function mkInvalidRunModeCases(): Array<{ name: string; params: Params; runMode: string }> {
+  return [
+    {
+      name: TOOL.lifiRunWorkflow,
+      runMode: "inspect",
+      params: {
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+        quote: {},
+      },
+    },
+    {
+      name: TOOL.runTransferWorkflow,
+      runMode: "inspect",
+      params: {
+        fromAddress: ADDR_A,
+        toAddress: ADDR_B,
+        amountRaw: "1",
+      },
+    },
+  ];
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -736,12 +823,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     [TOOL.runtimeInfo, {}],
   ];
   const payloads = await runEnvelopeChecks(tools, checks);
-  const zigDisabledCases: Array<{ name: string; params: Params; reason: string }> = [
-    { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
-    { name: TOOL.version, params: {}, reason: "version discovery requires zig core" },
-    { name: TOOL.runtimeInfo, params: {}, reason: "runtime info requires zig core" },
-    { name: TOOL.version, params: { long: true }, reason: "version discovery requires zig core" },
-  ];
+  const zigDisabledCases = mkZigDisabledCases();
 
   await runCaseList(zigDisabledCases, async (c) => {
     if (Object.keys(c.params).length === 0) {
@@ -756,83 +838,17 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   await assertInvalidStrategyCase(tools);
 
-  const blockedCases: Array<{
-    name: string;
-    params: Params;
-    code: number;
-    reason: string;
-    mode?: string;
-  }> = [
-    {
-      name: TOOL.lifiExtractTxRequest,
-      params: { quote: {} },
-      code: 12,
-      reason: "missing transactionRequest",
-    },
-    {
-      name: TOOL.lifiRunWorkflow,
-      params: mkLifiWorkflowSimulateParams({}),
-      code: 12,
-      mode: "simulate",
-      reason: "missing txRequest",
-    },
-    {
-      name: TOOL.lifiRunWorkflow,
-      params: mkLifiWorkflowExecuteParams({}),
-      code: 12,
-      mode: "execute",
-      reason: "execute requires signedTxHex",
-    },
-    {
-      name: TOOL.runTransferWorkflow,
-      params: mkTransferWorkflowExecuteParams(),
-      code: 12,
-      mode: "execute",
-      reason: "execute requires signedTxHex",
-    },
-  ];
+  const blockedCases = mkBehaviorBlockedCases();
   await runCaseList(blockedCases, async (c) => {
     await assertBlockedCase(tools, c);
   });
 
-  const lifiAnalysisCases: Array<{
-    quote: Params;
-    expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
-  }> = [
-    { quote: {}, expectation: { txRequest: "null", routeId: "null", tool: "null" } },
-    {
-      quote: mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
-      expectation: { txRequest: "object", routeId: "string", tool: "string" },
-    },
-  ];
+  const lifiAnalysisCases = mkLifiAnalysisCases();
   await runCaseList(lifiAnalysisCases, async (c) => {
     await assertLifiAnalysisCase(tools, c.quote, c.expectation);
   });
 
-  const invalidRunModeCases: Array<{ name: string; params: Params; runMode: string }> = [
-    {
-      name: TOOL.lifiRunWorkflow,
-      runMode: "inspect",
-      params: {
-        fromChain: 1,
-        toChain: 1,
-        fromToken: ADDR_A,
-        toToken: ADDR_B,
-        fromAmount: "1",
-        fromAddress: ADDR_C,
-        quote: {},
-      },
-    },
-    {
-      name: TOOL.runTransferWorkflow,
-      runMode: "inspect",
-      params: {
-        fromAddress: ADDR_A,
-        toAddress: ADDR_B,
-        amountRaw: "1",
-      },
-    },
-  ];
+  const invalidRunModeCases = mkInvalidRunModeCases();
   await runCaseList(invalidRunModeCases, async (c) => {
     await assertInvalidRunModeCase(tools, c);
   });
