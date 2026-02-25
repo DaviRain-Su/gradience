@@ -637,9 +637,13 @@ async function runToolCaseList<T>(
 }
 
 async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
-  for (const stage of stages) {
-    await stage(tools);
-  }
+  await runContextStages(
+    tools,
+    undefined,
+    stages.map((stage) => async (stageTools: Map<string, ToolDefinition>, _context: undefined) => {
+      await stage(stageTools);
+    }),
+  );
 }
 
 async function runContextStages<TContext>(
