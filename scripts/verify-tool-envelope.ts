@@ -466,9 +466,7 @@ function assertResultFieldType(
 ): void {
   const result = getResult(name, payload);
   if (expectedType === "object") {
-    if (!result[field] || typeof result[field] !== "object") {
-      throw new Error(fail(name, `result.${field} must be object`));
-    }
+    getObjectField(name, result, field, "result");
     return;
   }
   if (typeof result[field] !== "string") {
@@ -635,10 +633,7 @@ function assertResultObjectFieldValue(
   key: string,
   expected: unknown,
 ): void {
-  const resultObject = getResult(name, payload)[objectField] as Record<string, unknown> | null | undefined;
-  if (!resultObject || typeof resultObject !== "object") {
-    throw new Error(fail(name, `result.${objectField} must be object`));
-  }
+  const resultObject = getObjectField(name, getResult(name, payload), objectField, "result");
   if (resultObject[key] !== expected) {
     throw new Error(fail(name, `result.${objectField}.${key} must equal ${String(expected)}`));
   }
@@ -652,19 +647,26 @@ function assertResultNestedObjectFieldValue(
   key: string,
   expected: unknown,
 ): void {
-  const parent = getResult(name, payload)[parentField] as Record<string, unknown> | null | undefined;
-  if (!parent || typeof parent !== "object") {
-    throw new Error(fail(name, `result.${parentField} must be object`));
-  }
-  const child = parent[objectField] as Record<string, unknown> | null | undefined;
-  if (!child || typeof child !== "object") {
-    throw new Error(fail(name, `result.${parentField}.${objectField} must be object`));
-  }
+  const parent = getObjectField(name, getResult(name, payload), parentField, "result");
+  const child = getObjectField(name, parent, objectField, `result.${parentField}`);
   if (child[key] !== expected) {
     throw new Error(
       fail(name, `result.${parentField}.${objectField}.${key} must equal ${String(expected)}`),
     );
   }
+}
+
+function getObjectField(
+  name: string,
+  obj: Record<string, unknown>,
+  field: string,
+  scope: string,
+): Record<string, unknown> {
+  const value = obj[field];
+  if (!value || typeof value !== "object") {
+    throw new Error(fail(name, `${scope}.${field} must be object`));
+  }
+  return value as Record<string, unknown>;
 }
 
 function assertStrategyRunPlanResult(name: string, payload: Record<string, unknown>): void {
