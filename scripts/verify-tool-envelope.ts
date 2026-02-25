@@ -290,6 +290,12 @@ function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>)
   }
 }
 
+async function runCaseList<T>(cases: T[], runner: (value: T) => Promise<void>): Promise<void> {
+  for (const c of cases) {
+    await runner(c);
+  }
+}
+
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldNull(name, payload, field);
@@ -726,14 +732,14 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     { name: TOOL.version, params: { long: true }, reason: "version discovery requires zig core" },
   ];
 
-  for (const c of zigDisabledCases) {
+  await runCaseList(zigDisabledCases, async (c) => {
     if (Object.keys(c.params).length === 0) {
       const payload = getPayload(payloads, c.name);
       assertZigDisabledBlocked(c.name, payload, c.reason);
-      continue;
+      return;
     }
     await assertZigDisabledCase(tools, c);
-  }
+  });
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -774,9 +780,9 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
       reason: "execute requires signedTxHex",
     },
   ];
-  for (const c of blockedCases) {
+  await runCaseList(blockedCases, async (c) => {
     await assertBlockedCase(tools, c);
-  }
+  });
 
   const lifiAnalysisCases: Array<{
     quote: Params;
@@ -788,9 +794,9 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
       expectation: { txRequest: "object", routeId: "string", tool: "string" },
     },
   ];
-  for (const c of lifiAnalysisCases) {
+  await runCaseList(lifiAnalysisCases, async (c) => {
     await assertLifiAnalysisCase(tools, c.quote, c.expectation);
-  }
+  });
 
   const invalidRunModeCases: Array<{ name: string; params: Params; runMode: string }> = [
     {
@@ -816,9 +822,9 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
       },
     },
   ];
-  for (const c of invalidRunModeCases) {
+  await runCaseList(invalidRunModeCases, async (c) => {
     await assertInvalidRunModeCase(tools, c);
-  }
+  });
 }
 
 async function main(): Promise<void> {
