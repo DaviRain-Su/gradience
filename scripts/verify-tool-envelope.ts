@@ -141,12 +141,15 @@ function getTool(tools: Map<string, ToolDefinition>, name: string): ToolDefiniti
 async function runEnvelopeChecks(
   tools: Map<string, ToolDefinition>,
   checks: Array<[string, Params]>,
-): Promise<void> {
+): Promise<Map<string, Record<string, unknown>>> {
+  const payloads = new Map<string, Record<string, unknown>>();
   for (const [name, params] of checks) {
     const payload = await parseToolPayload(getTool(tools, name), params);
     assertEnvelopeShape(name, payload);
     assertEnvelopeOrder(name, payload);
+    payloads.set(name, payload);
   }
+  return payloads;
 }
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -218,10 +221,13 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     [TOOL.version, {}],
     [TOOL.runtimeInfo, {}],
   ];
-  await runEnvelopeChecks(tools, checks);
+  const payloads = await runEnvelopeChecks(tools, checks);
 
-  for (const [name, params] of checks) {
-    const payload = await parseToolPayload(getTool(tools, name), params);
+  for (const [name] of checks) {
+    const payload = payloads.get(name);
+    if (!payload) {
+      throw new Error(fail(name, "missing payload after envelope checks"));
+    }
     if (payload.status !== "blocked" || Number(payload.code) !== 13) {
       throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
     }
