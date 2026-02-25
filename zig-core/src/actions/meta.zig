@@ -1075,14 +1075,8 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
 }
 
 fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
-    const from_raw = getString(params, "from") orelse {
-        try writeMissing("from");
-        return null;
-    };
-    const to_raw = getString(params, "to") orelse {
-        try writeMissing("to");
-        return null;
-    };
+    const from_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "from")) orelse return null;
+    const to_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "to")) orelse return null;
     const asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "asset")) orelse return null;
     const amount_raw = getString(params, "amount") orelse {
         try writeMissing("amount");
@@ -1110,10 +1104,7 @@ fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
 }
 
 fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
-    const chain_raw = getString(params, "chain") orelse {
-        try writeMissing("chain");
-        return null;
-    };
+    const chain_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "chain")) orelse return null;
     const from_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "fromAsset")) orelse return null;
     const to_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "toAsset")) orelse return null;
     const amount_raw = getString(params, "amount") orelse {

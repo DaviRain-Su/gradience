@@ -83,8 +83,8 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 ### bridgeQuote Notes
 
 - Required params:
-  - `from` (chain alias/id/CAIP-2)
-  - `to` (chain alias/id/CAIP-2)
+  - `from` (chain alias/id/CAIP-2, surrounding whitespace ignored, must be non-empty)
+  - `to` (chain alias/id/CAIP-2, surrounding whitespace ignored, must be non-empty)
   - `asset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
@@ -104,7 +104,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 ### swapQuote Notes
 
 - Required params:
-  - `chain` (chain alias/id/CAIP-2)
+  - `chain` (chain alias/id/CAIP-2, surrounding whitespace ignored, must be non-empty)
   - `fromAsset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `toAsset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)

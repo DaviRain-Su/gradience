@@ -274,6 +274,22 @@ def main() -> int:
     assert bridge_spaced_asset.get("status") == "ok"
     assert bridge_spaced_asset.get("provider") == "lifi"
 
+    bridge_spaced_chains = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": " 1 ",
+                "to": " 8453 ",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+            },
+        },
+        env,
+    )
+    assert bridge_spaced_chains.get("status") == "ok"
+    assert bridge_spaced_chains.get("provider") == "lifi"
+
     bridge_missing_from = run(
         {
             "action": "bridgeQuote",
@@ -347,6 +363,36 @@ def main() -> int:
     )
     assert bridge_blank_asset.get("status") == "error"
     assert int(bridge_blank_asset.get("code", 0)) == 2
+
+    bridge_blank_from = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "   ",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert bridge_blank_from.get("status") == "error"
+    assert int(bridge_blank_from.get("code", 0)) == 2
+
+    bridge_blank_to = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "   ",
+                "asset": "USDC",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert bridge_blank_to.get("status") == "error"
+    assert int(bridge_blank_to.get("code", 0)) == 2
 
     bridge_fastest = run(
         {
@@ -717,6 +763,22 @@ def main() -> int:
     assert swap_spaced_assets.get("status") == "ok"
     assert swap_spaced_assets.get("provider") == "1inch"
 
+    swap_spaced_chain = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": " 1 ",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_spaced_chain.get("status") == "ok"
+    assert swap_spaced_chain.get("provider") == "1inch"
+
     swap_missing_chain = run(
         {
             "action": "swapQuote",
@@ -790,6 +852,21 @@ def main() -> int:
     )
     assert swap_blank_to_asset.get("status") == "error"
     assert int(swap_blank_to_asset.get("code", 0)) == 2
+
+    swap_blank_chain = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "   ",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert swap_blank_chain.get("status") == "error"
+    assert int(swap_blank_chain.get("code", 0)) == 2
 
     swap_provider_priority = run(
         {
