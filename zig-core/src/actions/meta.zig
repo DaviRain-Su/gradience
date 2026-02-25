@@ -1474,35 +1474,35 @@ fn putBridgeQuoteSelectedField(
     amount_in: []const u8,
     estimated_out: []const u8,
 ) !void {
-    if (std.mem.eql(u8, field, QuoteFieldKey.provider)) {
+    if (fieldMatches(field, QuoteFieldKey.provider)) {
         try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.from_chain)) {
+    if (fieldMatches(field, QuoteFieldKey.from_chain)) {
         try obj.put(QuoteFieldKey.from_chain, .{ .string = from_chain });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.to_chain)) {
+    if (fieldMatches(field, QuoteFieldKey.to_chain)) {
         try obj.put(QuoteFieldKey.to_chain, .{ .string = to_chain });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.asset)) {
+    if (fieldMatches(field, QuoteFieldKey.asset)) {
         try obj.put(QuoteFieldKey.asset, .{ .string = asset });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.amount_in)) {
+    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.estimated_out)) {
+    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.fee_bps)) {
+    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.eta_seconds)) {
+    if (fieldMatches(field, QuoteFieldKey.eta_seconds)) {
         try obj.put(QuoteFieldKey.eta_seconds, .{ .integer = @as(i64, @intCast(quote.eta_seconds)) });
         return;
     }
@@ -1518,35 +1518,35 @@ fn putSwapQuoteSelectedField(
     amount_in: []const u8,
     estimated_out: []const u8,
 ) !void {
-    if (std.mem.eql(u8, field, QuoteFieldKey.provider)) {
+    if (fieldMatches(field, QuoteFieldKey.provider)) {
         try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.chain)) {
+    if (fieldMatches(field, QuoteFieldKey.chain)) {
         try obj.put(QuoteFieldKey.chain, .{ .string = chain });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.from_asset)) {
+    if (fieldMatches(field, QuoteFieldKey.from_asset)) {
         try obj.put(QuoteFieldKey.from_asset, .{ .string = from_asset });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.to_asset)) {
+    if (fieldMatches(field, QuoteFieldKey.to_asset)) {
         try obj.put(QuoteFieldKey.to_asset, .{ .string = to_asset });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.amount_in)) {
+    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.estimated_out)) {
+    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.fee_bps)) {
+    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (std.mem.eql(u8, field, QuoteFieldKey.price_impact_bps)) {
+    if (fieldMatches(field, QuoteFieldKey.price_impact_bps)) {
         try obj.put(QuoteFieldKey.price_impact_bps, .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
         return;
     }
@@ -1566,9 +1566,13 @@ fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !st
 
 fn containsField(items: []const []const u8, field: []const u8) bool {
     for (items) |item| {
-        if (std.mem.eql(u8, item, field)) return true;
+        if (fieldMatches(item, field)) return true;
     }
     return false;
+}
+
+fn fieldMatches(input: []const u8, canonical: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(input, canonical);
 }
 
 fn hasNonEmptyCsvToken(raw: []const u8) bool {

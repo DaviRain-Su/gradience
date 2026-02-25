@@ -101,7 +101,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - duplicate names in `providers` keep first occurrence precedence
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
-  - unknown `select` fields are ignored
+  - `select` field names are case-insensitive; unknown fields are ignored
   - blank/empty `select` values are rejected
   - duplicate `select` fields are coalesced
 
@@ -126,7 +126,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - duplicate names in `providers` keep first occurrence precedence
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
-  - unknown `select` fields are ignored
+  - `select` field names are case-insensitive; unknown fields are ignored
   - blank/empty `select` values are rejected
   - duplicate `select` fields are coalesced
 
