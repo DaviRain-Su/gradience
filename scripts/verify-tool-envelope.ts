@@ -922,7 +922,7 @@ async function runZigRequiredExecutedStage(
 async function runZigRequiredStages(
   tools: Map<string, ToolDefinition>,
   context: ZigRequiredContext,
-  stages: ZigRequiredStage[],
+  stages: ZigRequiredStage[] = ZIG_REQUIRED_STAGES,
 ): Promise<void> {
   for (const stage of stages) {
     await stage(tools, context);
@@ -1018,7 +1018,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const context = await buildZigRequiredContext(tools);
-  await runZigRequiredStages(tools, context, ZIG_REQUIRED_STAGES);
+  await runZigRequiredStages(tools, context);
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
