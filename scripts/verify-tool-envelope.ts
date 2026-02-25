@@ -37,6 +37,41 @@ async function main(): Promise<void> {
   registerMonadTools(registrar);
 
   const checks: Array<[string, Params]> = [
+    ["monad_buildTransferNative", { toAddress: "0x1111111111111111111111111111111111111111", amountWei: "1" }],
+    [
+      "monad_buildTransferErc20",
+      {
+        tokenAddress: "0x1111111111111111111111111111111111111111",
+        toAddress: "0x2222222222222222222222222222222222222222",
+        amountRaw: "1",
+      },
+    ],
+    [
+      "monad_buildErc20Approve",
+      {
+        tokenAddress: "0x1111111111111111111111111111111111111111",
+        spender: "0x2222222222222222222222222222222222222222",
+        amountRaw: "1",
+      },
+    ],
+    [
+      "monad_buildDexSwap",
+      {
+        router: "0x1111111111111111111111111111111111111111",
+        amountIn: "1",
+        amountOutMin: "1",
+        path: [
+          "0x1111111111111111111111111111111111111111",
+          "0x2222222222222222222222222222222222222222",
+        ],
+        to: "0x3333333333333333333333333333333333333333",
+        deadline: "9999999999",
+      },
+    ],
+    [
+      "monad_planLendingAction",
+      { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
+    ],
     ["monad_paymentIntent_create", { token: "USDC", amountRaw: "1", payee: "0xabc" }],
     [
       "monad_subscriptionIntent_create",
@@ -59,6 +94,26 @@ async function main(): Promise<void> {
           metadata: { template: "pay-per-call-v1" },
           constraints: { risk: { maxPerRunUsd: 1, cooldownSeconds: 1 } },
         },
+      },
+    ],
+    [
+      "monad_strategy_run",
+      {
+        strategy: {
+          id: "s",
+          name: "x",
+          version: "1.0",
+          owner: null,
+          goal: "g",
+          constraints: {
+            allow: { chains: ["monad"] },
+            risk: { maxPerRunUsd: 1, cooldownSeconds: 1 },
+          },
+          triggers: [{ type: "manual" }],
+          plan: { steps: [] },
+          metadata: { template: "pay-per-call-v1", params: {} },
+        },
+        mode: "plan",
       },
     ],
     ["monad_lifi_extractTxRequest", { quote: {} }],
@@ -94,6 +149,15 @@ async function main(): Promise<void> {
   const blocked = await parseToolPayload(extract, { quote: {} });
   if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
     throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
+  }
+
+  for (const name of ["monad_schema", "monad_version", "monad_runtimeInfo"]) {
+    const tool = tools.get(name);
+    if (!tool) throw new Error(`missing tool: ${name}`);
+    const payload = await parseToolPayload(tool, {});
+    if (payload.status !== "blocked" || Number(payload.code) !== 13) {
+      throw new Error(`${name} should return blocked code 13 when zig is disabled`);
+    }
   }
 
   console.log("tool envelope checks passed");
