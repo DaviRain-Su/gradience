@@ -987,6 +987,11 @@ const SwapQuoteInput = struct {
     amount: u256,
 };
 
+const ParsedAmountParam = struct {
+    raw: []const u8,
+    value: u256,
+};
+
 const QuoteOptionsParseResult = union(enum) {
     ok: BridgeQuoteOptions,
     invalid_field: []const u8,
@@ -1075,56 +1080,32 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
 }
 
 fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
-    const from_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "from")) orelse return null;
-    const to_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "to")) orelse return null;
+    const from_chain = (try parseRequiredNormalizedChainParam(params, "from", "from")) orelse return null;
+    const to_chain = (try parseRequiredNormalizedChainParam(params, "to", "to")) orelse return null;
     const asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "asset")) orelse return null;
-    const amount_raw = getString(params, "amount") orelse {
-        try writeMissing("amount");
-        return null;
-    };
-
-    const from_chain = core_id.normalizeChain(from_raw) orelse {
-        try writeUnsupportedChainAlias("from");
-        return null;
-    };
-    const to_chain = core_id.normalizeChain(to_raw) orelse {
-        try writeUnsupportedChainAlias("to");
-        return null;
-    };
-
-    const amount = (try parseRequiredAmountU256(amount_raw)) orelse return null;
+    const amount = (try parseRequiredAmountParam(params, "amount")) orelse return null;
 
     return .{
         .from_chain = from_chain,
         .to_chain = to_chain,
         .asset = asset,
-        .amount_raw = amount_raw,
-        .amount = amount,
+        .amount_raw = amount.raw,
+        .amount = amount.value,
     };
 }
 
 fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
-    const chain_raw = (try parseRequiredTrimmedNonEmptyStringParam(params, "chain")) orelse return null;
+    const chain = (try parseRequiredNormalizedChainParam(params, "chain", null)) orelse return null;
     const from_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "fromAsset")) orelse return null;
     const to_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "toAsset")) orelse return null;
-    const amount_raw = getString(params, "amount") orelse {
-        try writeMissing("amount");
-        return null;
-    };
-
-    const chain = core_id.normalizeChain(chain_raw) orelse {
-        try writeUnsupportedChainAlias(null);
-        return null;
-    };
-
-    const amount = (try parseRequiredAmountU256(amount_raw)) orelse return null;
+    const amount = (try parseRequiredAmountParam(params, "amount")) orelse return null;
 
     return .{
         .chain = chain,
         .from_asset = from_asset,
         .to_asset = to_asset,
-        .amount_raw = amount_raw,
-        .amount = amount,
+        .amount_raw = amount.raw,
+        .amount = amount.value,
     };
 }
 
@@ -1682,6 +1663,27 @@ fn parseRequiredAmountU256(amount_raw: []const u8) !?u256 {
     }
     return std.fmt.parseUnsigned(u256, trimmed, 10) catch {
         try writeInvalid("amount");
+        return null;
+    };
+}
+
+fn parseRequiredAmountParam(obj: std.json.ObjectMap, key: []const u8) !?ParsedAmountParam {
+    const raw = getString(obj, key) orelse {
+        try writeMissing(key);
+        return null;
+    };
+    const value = (try parseRequiredAmountU256(raw)) orelse return null;
+    return .{ .raw = raw, .value = value };
+}
+
+fn parseRequiredNormalizedChainParam(
+    obj: std.json.ObjectMap,
+    key: []const u8,
+    chain_label: ?[]const u8,
+) !?[]const u8 {
+    const raw = (try parseRequiredTrimmedNonEmptyStringParam(obj, key)) orelse return null;
+    return core_id.normalizeChain(raw) orelse {
+        try writeUnsupportedChainAlias(chain_label);
         return null;
     };
 }
