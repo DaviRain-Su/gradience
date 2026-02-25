@@ -304,6 +304,20 @@ def main() -> int:
     assert bridge_missing_from.get("status") == "error"
     assert int(bridge_missing_from.get("code", 0)) == 2
 
+    bridge_missing_amount = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+            },
+        },
+        env,
+    )
+    assert bridge_missing_amount.get("status") == "error"
+    assert int(bridge_missing_amount.get("code", 0)) == 2
+
     bridge_unsupported_from = run(
         {
             "action": "bridgeQuote",
@@ -792,6 +806,20 @@ def main() -> int:
     )
     assert swap_missing_chain.get("status") == "error"
     assert int(swap_missing_chain.get("code", 0)) == 2
+
+    swap_missing_amount = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+            },
+        },
+        env,
+    )
+    assert swap_missing_amount.get("status") == "error"
+    assert int(swap_missing_amount.get("code", 0)) == 2
 
     swap_unsupported_chain = run(
         {
