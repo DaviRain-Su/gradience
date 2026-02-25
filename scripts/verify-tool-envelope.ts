@@ -102,13 +102,19 @@ function mkLifiWorkflowExecuteParams(quote: Params, extra: Params = {}): Params 
   };
 }
 
-function mkTransferWorkflowExecuteParams(extra: Params = {}): Params {
+function mkTransferBaseParams(extra: Params = {}): Params {
   return {
-    runMode: "execute",
     fromAddress: ADDR_A,
     toAddress: ADDR_B,
     amountRaw: "1",
     ...extra,
+  };
+}
+
+function mkTransferWorkflowExecuteParams(extra: Params = {}): Params {
+  return {
+    runMode: "execute",
+    ...mkTransferBaseParams(extra),
   };
 }
 
@@ -303,11 +309,7 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
     {
       name: TOOL.runTransferWorkflow,
       runMode: "inspect",
-      params: {
-        fromAddress: ADDR_A,
-        toAddress: ADDR_B,
-        amountRaw: "1",
-      },
+      params: mkTransferBaseParams(),
     },
   ];
 }
