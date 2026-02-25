@@ -276,6 +276,10 @@ function mkZigDisabledCases(): ZigDisabledCase[] {
   ];
 }
 
+function mkZigRequiredEnvelopeChecks(cases: ZigDisabledCase[]): Array<[string, Params]> {
+  return cases.filter((c) => isEmptyParams(c.params)).map((c) => [c.name, c.params]);
+}
+
 function isEmptyParams(params: Params): boolean {
   return Object.keys(params).length === 0;
 }
@@ -821,9 +825,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const zigDisabledCases = mkZigDisabledCases();
-  const checks: Array<[string, Params]> = zigDisabledCases
-    .filter((c) => isEmptyParams(c.params))
-    .map((c) => [c.name, c.params]);
+  const checks = mkZigRequiredEnvelopeChecks(zigDisabledCases);
   const payloads = await runEnvelopeChecks(tools, checks);
 
   await runCaseList(zigDisabledCases, async (c) => {
