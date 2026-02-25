@@ -366,6 +366,14 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     }
     assertBlockedReason(name, payload, expectedReasonByTool[name] || "");
   }
+
+  const versionLong = await parseToolPayload(getTool(tools, TOOL.version), { long: true });
+  assertEnvelopeShape(TOOL.version, versionLong);
+  assertEnvelopeOrder(TOOL.version, versionLong);
+  if (versionLong.status !== "blocked" || Number(versionLong.code) !== 13) {
+    throw new Error(fail(TOOL.version, "long=true should return blocked code 13 when zig is disabled"));
+  }
+  assertBlockedReason(TOOL.version, versionLong, "version discovery requires zig core");
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
