@@ -670,41 +670,31 @@ function getObjectField(
 }
 
 function assertStrategyRunPlanResult(name: string, payload: Record<string, unknown>): void {
-  const runResult = getResult(name, payload).result as Record<string, unknown> | null | undefined;
-  if (!runResult || typeof runResult !== "object") {
-    throw new Error(fail(name, "result.result must be object"));
-  }
+  const runResult = getObjectField(name, getResult(name, payload), "result", "result");
   if (runResult.status !== "planned") {
     throw new Error(fail(name, "result.result.status must equal planned for mode=plan"));
   }
-  const runId = assertStringField(runResult, "runId", fail(name, "result.result"));
+  const runId = getStringField(name, runResult, "runId", "result.result");
   if (!runId.startsWith("run_")) {
     throw new Error(fail(name, "result.result.runId must start with run_"));
   }
-  const evidence = assertObjectField(runResult, "evidence", fail(name, "result.result"));
+  const evidence = getObjectField(name, runResult, "evidence", "result.result");
   if (evidence.mode !== "plan") {
     throw new Error(fail(name, "result.result.evidence.mode must equal plan"));
   }
 }
 
-function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
-  const value = obj[key];
+function getStringField(
+  name: string,
+  obj: Record<string, unknown>,
+  field: string,
+  scope: string,
+): string {
+  const value = obj[field];
   if (typeof value !== "string") {
-    throw new Error(`${context}.${key} must be string`);
+    throw new Error(fail(name, `${scope}.${field} must be string`));
   }
   return value;
-}
-
-function assertObjectField(
-  obj: Record<string, unknown>,
-  key: string,
-  context: string,
-): Record<string, unknown> {
-  const value = obj[key];
-  if (!value || typeof value !== "object") {
-    throw new Error(`${context}.${key} must be object`);
-  }
-  return value as Record<string, unknown>;
 }
 
 function assertValidationShape(name: string, payload: Record<string, unknown>): void {
