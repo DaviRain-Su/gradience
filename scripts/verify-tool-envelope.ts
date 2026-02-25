@@ -3,6 +3,32 @@ import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 
 type Params = Record<string, unknown>;
 
+const ADDR_A = "0x1111111111111111111111111111111111111111";
+const ADDR_B = "0x2222222222222222222222222222222222222222";
+const ADDR_C = "0x3333333333333333333333333333333333333333";
+
+const VALID_STRATEGY = {
+  id: "s",
+  plan: { steps: [] },
+  metadata: { template: "pay-per-call-v1" },
+  constraints: { risk: { maxPerRunUsd: 1, cooldownSeconds: 1 } },
+};
+
+const RUN_STRATEGY = {
+  id: "s",
+  name: "x",
+  version: "1.0",
+  owner: null,
+  goal: "g",
+  constraints: {
+    allow: { chains: ["monad"] },
+    risk: { maxPerRunUsd: 1, cooldownSeconds: 1 },
+  },
+  triggers: [{ type: "manual" }],
+  plan: { steps: [] },
+  metadata: { template: "pay-per-call-v1", params: {} },
+};
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -69,34 +95,31 @@ async function runEnvelopeChecks(
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const checks: Array<[string, Params]> = [
-    ["monad_buildTransferNative", { toAddress: "0x1111111111111111111111111111111111111111", amountWei: "1" }],
+    ["monad_buildTransferNative", { toAddress: ADDR_A, amountWei: "1" }],
     [
       "monad_buildTransferErc20",
       {
-        tokenAddress: "0x1111111111111111111111111111111111111111",
-        toAddress: "0x2222222222222222222222222222222222222222",
+        tokenAddress: ADDR_A,
+        toAddress: ADDR_B,
         amountRaw: "1",
       },
     ],
     [
       "monad_buildErc20Approve",
       {
-        tokenAddress: "0x1111111111111111111111111111111111111111",
-        spender: "0x2222222222222222222222222222222222222222",
+        tokenAddress: ADDR_A,
+        spender: ADDR_B,
         amountRaw: "1",
       },
     ],
     [
       "monad_buildDexSwap",
       {
-        router: "0x1111111111111111111111111111111111111111",
+        router: ADDR_A,
         amountIn: "1",
         amountOutMin: "1",
-        path: [
-          "0x1111111111111111111111111111111111111111",
-          "0x2222222222222222222222222222222222222222",
-        ],
-        to: "0x3333333333333333333333333333333333333333",
+        path: [ADDR_A, ADDR_B],
+        to: ADDR_C,
         deadline: "9999999999",
       },
     ],
@@ -120,31 +143,13 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     [
       "monad_strategy_validate",
       {
-        strategy: {
-          id: "s",
-          plan: { steps: [] },
-          metadata: { template: "pay-per-call-v1" },
-          constraints: { risk: { maxPerRunUsd: 1, cooldownSeconds: 1 } },
-        },
+        strategy: VALID_STRATEGY,
       },
     ],
     [
       "monad_strategy_run",
       {
-        strategy: {
-          id: "s",
-          name: "x",
-          version: "1.0",
-          owner: null,
-          goal: "g",
-          constraints: {
-            allow: { chains: ["monad"] },
-            risk: { maxPerRunUsd: 1, cooldownSeconds: 1 },
-          },
-          triggers: [{ type: "manual" }],
-          plan: { steps: [] },
-          metadata: { template: "pay-per-call-v1", params: {} },
-        },
+        strategy: RUN_STRATEGY,
         mode: "plan",
       },
     ],
@@ -172,8 +177,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const invalid = await parseToolPayload(getTool(tools, "monad_strategy_validate"), {
     strategy: {
-      id: "s",
-      plan: { steps: [] },
+      ...VALID_STRATEGY,
       metadata: { template: "missing-template" },
       constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
     },
@@ -191,18 +195,18 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     runMode: "simulate",
     fromChain: 1,
     toChain: 1,
-    fromToken: "0x1111111111111111111111111111111111111111",
-    toToken: "0x2222222222222222222222222222222222222222",
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
     fromAmount: "1",
-    fromAddress: "0x3333333333333333333333333333333333333333",
+    fromAddress: ADDR_C,
     quote: {},
   });
   assertBlockedWithMode("monad_lifi_runWorkflow", lifiSimBlocked, 12, "simulate");
 
   const transferExecBlocked = await parseToolPayload(getTool(tools, "monad_runTransferWorkflow"), {
     runMode: "execute",
-    fromAddress: "0x1111111111111111111111111111111111111111",
-    toAddress: "0x2222222222222222222222222222222222222222",
+    fromAddress: ADDR_A,
+    toAddress: ADDR_B,
     amountRaw: "1",
   });
   assertBlockedWithMode("monad_runTransferWorkflow", transferExecBlocked, 12, "execute");
