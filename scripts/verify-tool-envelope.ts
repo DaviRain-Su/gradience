@@ -621,12 +621,12 @@ async function runPureTsSemanticStage(
 async function runPureTsStages(
   tools: Map<string, ToolDefinition>,
   context: PureTsContext,
-  stages: PureTsStage[] = PURE_TS_STAGES,
+  stages: PureTsStage[] = PURE_TS_PIPELINE,
 ): Promise<void> {
   await runContextStages(tools, context, stages);
 }
 
-const PURE_TS_STAGES: PureTsStage[] = [runPureTsPreloadedStage, runPureTsSemanticStage];
+const PURE_TS_PIPELINE = makePipeline<PureTsStage>(runPureTsPreloadedStage, runPureTsSemanticStage);
 
 async function runToolCaseList<T>(
   tools: Map<string, ToolDefinition>,
@@ -664,13 +664,17 @@ async function runContextStages<TContext>(
   }
 }
 
-const MAIN_STAGES: ToolStage[] = [runPureTsChecks, runZigRequiredChecks, runBehaviorChecks];
-const BEHAVIOR_STAGES: ToolStage[] = [
+const MAIN_PIPELINE = makePipeline<ToolStage>(runPureTsChecks, runZigRequiredChecks, runBehaviorChecks);
+const BEHAVIOR_PIPELINE = makePipeline<ToolStage>(
   assertInvalidStrategyCase,
   runBlockedBehaviorCases,
   runLifiAnalysisBehaviorCases,
   runInvalidRunModeBehaviorCases,
-];
+);
+
+function makePipeline<TStage>(...stages: TStage[]): TStage[] {
+  return stages;
+}
 
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
@@ -979,12 +983,15 @@ async function runZigRequiredExecutedStage(
 async function runZigRequiredStages(
   tools: Map<string, ToolDefinition>,
   context: ZigRequiredContext,
-  stages: ZigRequiredStage[] = ZIG_REQUIRED_STAGES,
+  stages: ZigRequiredStage[] = ZIG_REQUIRED_PIPELINE,
 ): Promise<void> {
   await runContextStages(tools, context, stages);
 }
 
-const ZIG_REQUIRED_STAGES: ZigRequiredStage[] = [runZigRequiredPreloadedStage, runZigRequiredExecutedStage];
+const ZIG_REQUIRED_PIPELINE = makePipeline<ZigRequiredStage>(
+  runZigRequiredPreloadedStage,
+  runZigRequiredExecutedStage,
+);
 
 async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
@@ -1075,7 +1082,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runToolStages(tools, BEHAVIOR_STAGES);
+  await runToolStages(tools, BEHAVIOR_PIPELINE);
 }
 
 async function main(): Promise<void> {
@@ -1089,7 +1096,7 @@ async function main(): Promise<void> {
   };
   registerMonadTools(registrar);
 
-  await runToolStages(tools, MAIN_STAGES);
+  await runToolStages(tools, MAIN_PIPELINE);
 
   console.log("tool envelope checks passed");
 }
