@@ -584,20 +584,14 @@ function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>)
   assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
 }
 
-async function runCaseList<T>(cases: T[], runner: (value: T) => Promise<void>): Promise<void> {
-  for (const c of cases) {
-    await runner(c);
-  }
-}
-
 async function runToolCaseList<T>(
   tools: Map<string, ToolDefinition>,
   cases: T[],
   runner: (tools: Map<string, ToolDefinition>, value: T) => Promise<void>,
 ): Promise<void> {
-  await runCaseList(cases, async (c) => {
+  for (const c of cases) {
     await runner(tools, c);
-  });
+  }
 }
 
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
@@ -957,9 +951,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 
   assertPreloadedZigDisabledCases(payloads, partitioned.empty);
 
-  await runToolCaseList(tools, partitioned.nonEmpty, async (caseTools, c) => {
-    await assertZigDisabledCase(caseTools, c);
-  });
+  await runToolCaseList(tools, partitioned.nonEmpty, assertZigDisabledCase);
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
