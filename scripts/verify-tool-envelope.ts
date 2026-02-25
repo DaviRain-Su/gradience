@@ -368,6 +368,14 @@ function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<
   });
 }
 
+function executePayload(
+  tools: Map<string, ToolDefinition>,
+  name: string,
+  params: Params,
+): Promise<Record<string, unknown>> {
+  return parseToolPayload(getTool(tools, name), params);
+}
+
 function assertEnvelopeShape(name: string, payload: Record<string, unknown>): void {
   if (typeof payload.status !== "string") {
     throw new Error(fail(name, "status must be string"));
@@ -726,7 +734,7 @@ async function assertBlockedCase(
   tools: Map<string, ToolDefinition>,
   input: BlockedCase,
 ): Promise<void> {
-  const payload = await parseToolPayload(getTool(tools, input.name), input.params);
+  const payload = await executePayload(tools, input.name, input.params);
   if (input.mode) {
     assertBlockedWithMode(input.name, payload, input.code, input.mode);
   } else if (payload.status !== "blocked" || Number(payload.code) !== input.code) {
@@ -739,7 +747,7 @@ async function assertInvalidRunModeCase(
   tools: Map<string, ToolDefinition>,
   input: InvalidRunModeCase,
 ): Promise<void> {
-  const payload = await parseToolPayload(getTool(tools, input.name), {
+  const payload = await executePayload(tools, input.name, {
     ...input.params,
     runMode: input.runMode,
   });
@@ -752,10 +760,7 @@ async function assertLifiAnalysisCase(
   tools: Map<string, ToolDefinition>,
   input: LifiAnalysisCase,
 ): Promise<void> {
-  const payload = await parseToolPayload(
-    getTool(tools, TOOL.lifiRunWorkflow),
-    mkLifiWorkflowAnalysisParams(input.quote),
-  );
+  const payload = await executePayload(tools, TOOL.lifiRunWorkflow, mkLifiWorkflowAnalysisParams(input.quote));
   assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
   assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "txRequest", input.expectation.txRequest);
@@ -764,7 +769,7 @@ async function assertLifiAnalysisCase(
 }
 
 async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Promise<void> {
-  const payload = await parseToolPayload(getTool(tools, TOOL.strategyValidate), {
+  const payload = await executePayload(tools, TOOL.strategyValidate, {
     strategy: {
       ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
       constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
@@ -827,7 +832,7 @@ async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
   input: ZigDisabledCase,
 ): Promise<void> {
-  const payload = await parseToolPayload(getTool(tools, input.name), input.params);
+  const payload = await executePayload(tools, input.name, input.params);
   assertEnvelopeShape(input.name, payload);
   assertEnvelopeOrder(input.name, payload);
   assertZigDisabledBlocked(input.name, payload, input.reason);
