@@ -71,6 +71,33 @@ function mkLifiWorkflowSimulateParams(quote: Params): Params {
   };
 }
 
+function mkLifiWorkflowAnalysisParams(quote: Params): Params {
+  return {
+    runMode: "analysis",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
+    fromAmount: "1",
+    fromAddress: ADDR_C,
+    quote,
+  };
+}
+
+function mkLifiWorkflowExecuteParams(quote: Params, extra: Params = {}): Params {
+  return {
+    runMode: "execute",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
+    fromAmount: "1",
+    fromAddress: ADDR_C,
+    quote,
+    ...extra,
+  };
+}
+
 function mkTransferWorkflowExecuteParams(extra: Params = {}): Params {
   return {
     runMode: "execute",
@@ -161,6 +188,13 @@ function assertResultStringField(name: string, payload: Record<string, unknown>,
   const result = getResult(name, payload);
   if (typeof result[field] !== "string") {
     throw new Error(fail(name, `result.${field} must be string`));
+  }
+}
+
+function assertResultFieldNull(name: string, payload: Record<string, unknown>, field: string): void {
+  const result = getResult(name, payload);
+  if (result[field] !== null) {
+    throw new Error(fail(name, `result.${field} must be null`));
   }
 }
 
@@ -493,18 +527,22 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiSimBlocked, 12, "simulate");
   assertBlockedReason(TOOL.lifiRunWorkflow, lifiSimBlocked, "missing txRequest");
 
-  const lifiAnalysis = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), {
-    runMode: "analysis",
-    fromChain: 1,
-    toChain: 1,
-    fromToken: ADDR_A,
-    toToken: ADDR_B,
-    fromAmount: "1",
-    fromAddress: ADDR_C,
-    quote: {},
-  });
+  const lifiAnalysis = await parseToolPayload(
+    getTool(tools, TOOL.lifiRunWorkflow),
+    mkLifiWorkflowAnalysisParams({}),
+  );
   assertOkWithMode(TOOL.lifiRunWorkflow, lifiAnalysis, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, lifiAnalysis, "quote");
+  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "txRequest");
+  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "routeId");
+  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "tool");
+
+  const lifiExecuteBlocked = await parseToolPayload(
+    getTool(tools, TOOL.lifiRunWorkflow),
+    mkLifiWorkflowExecuteParams({}),
+  );
+  assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiExecuteBlocked, 12, "execute");
+  assertBlockedReason(TOOL.lifiRunWorkflow, lifiExecuteBlocked, "execute requires signedTxHex");
 
   const transferExecBlocked = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), mkTransferWorkflowExecuteParams());
   assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
