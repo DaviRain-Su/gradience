@@ -182,6 +182,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `name`, `auth`, `categories`, `capabilities`, `capability_auth`)
   - `resultsOnly` (boolean, return payload under `results` key)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- `select` also accepts camelCase alias `capabilityAuth` (canonical output key remains `capability_auth`)
 - blank/empty `select` values are rejected
 
 ### rpcCallCached Notes

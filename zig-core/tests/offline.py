@@ -165,6 +165,18 @@ def main() -> int:
     assert len(selected_case) >= 1
     assert set(selected_case[0].keys()) <= {"name", "auth"}
 
+    providers_select_alias = run(
+        {
+            "action": "providersList",
+            "params": {"name": "1inch", "select": "capabilityAuth,capability_auth"},
+        },
+        env,
+    )
+    assert providers_select_alias.get("status") == "ok"
+    alias_selected = providers_select_alias.get("providers", [])
+    assert len(alias_selected) == 1
+    assert set(alias_selected[0].keys()) == {"capability_auth"}
+
     providers_select_blank = run(
         {
             "action": "providersList",

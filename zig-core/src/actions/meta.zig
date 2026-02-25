@@ -139,29 +139,29 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var rows = std.ArrayList(std.json.Value).empty;
             defer rows.deinit(allocator);
 
-            var fields = try parseSelectedFields(allocator, fields_raw);
+            var fields = try parseProvidersSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
 
             for (filtered.items) |provider| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (fieldMatches(field, "name")) {
+                    if (std.mem.eql(u8, field, "name")) {
                         try obj.put("name", .{ .string = provider.name });
                         continue;
                     }
-                    if (fieldMatches(field, "auth")) {
+                    if (std.mem.eql(u8, field, "auth")) {
                         try obj.put("auth", .{ .string = provider.auth });
                         continue;
                     }
-                    if (fieldMatches(field, "categories")) {
+                    if (std.mem.eql(u8, field, "categories")) {
                         try obj.put("categories", try stringArrayToJson(allocator, provider.categories));
                         continue;
                     }
-                    if (fieldMatches(field, "capabilities")) {
+                    if (std.mem.eql(u8, field, "capabilities")) {
                         try obj.put("capabilities", try stringArrayToJson(allocator, provider.capabilities));
                         continue;
                     }
-                    if (fieldMatches(field, "capability_auth")) {
+                    if (std.mem.eql(u8, field, "capability_auth")) {
                         try obj.put("capability_auth", try capabilityAuthToJson(allocator, provider.capability_auth));
                         continue;
                     }
@@ -389,25 +389,25 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         var rows = std.ArrayList(std.json.Value).empty;
         defer rows.deinit(allocator);
 
-        var fields = try parseSelectedFields(allocator, select.?);
+        var fields = try parseChainsTopSelectedFields(allocator, select.?);
         defer fields.deinit(allocator);
 
         for (chains_registry.chains[0..count]) |chain| {
             var obj = std.json.ObjectMap.init(allocator);
             for (fields.items) |field| {
-                if (fieldMatches(field, "rank")) {
+                if (std.mem.eql(u8, field, "rank")) {
                     try obj.put("rank", .{ .integer = chain.rank });
                     continue;
                 }
-                if (fieldMatches(field, "chain")) {
+                if (std.mem.eql(u8, field, "chain")) {
                     try obj.put("chain", .{ .string = chain.chain });
                     continue;
                 }
-                if (fieldMatchesAny(field, &.{ "chain_id", "chainId" })) {
+                if (std.mem.eql(u8, field, "chain_id")) {
                     try obj.put("chain_id", .{ .string = chain.chain_id });
                     continue;
                 }
-                if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
+                if (std.mem.eql(u8, field, "tvl_usd")) {
                     try obj.put("tvl_usd", .{ .float = chain.tvl_usd });
                     continue;
                 }
@@ -519,33 +519,33 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var projected = std.ArrayList(std.json.Value).empty;
             defer projected.deinit(allocator);
 
-            var fields = try parseSelectedFields(allocator, fields_raw);
+            var fields = try parseYieldSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
 
             for (rows.items) |entry| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (fieldMatches(field, "provider")) {
+                    if (std.mem.eql(u8, field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (fieldMatches(field, "chain")) {
+                    if (std.mem.eql(u8, field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (fieldMatches(field, "asset")) {
+                    if (std.mem.eql(u8, field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (fieldMatches(field, "market")) {
+                    if (std.mem.eql(u8, field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (fieldMatches(field, "apy")) {
+                    if (std.mem.eql(u8, field, "apy")) {
                         try obj.put("apy", .{ .float = entry.apy });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
+                    if (std.mem.eql(u8, field, "tvl_usd")) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -721,37 +721,37 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var projected = std.ArrayList(std.json.Value).empty;
             defer projected.deinit(allocator);
 
-            var fields = try parseSelectedFields(allocator, fields_raw);
+            var fields = try parseLendMarketsSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
 
             for (rows.items) |entry| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (fieldMatches(field, "provider")) {
+                    if (std.mem.eql(u8, field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (fieldMatches(field, "chain")) {
+                    if (std.mem.eql(u8, field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (fieldMatches(field, "asset")) {
+                    if (std.mem.eql(u8, field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (fieldMatches(field, "market")) {
+                    if (std.mem.eql(u8, field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "supply_apy", "supplyApy" })) {
+                    if (std.mem.eql(u8, field, "supply_apy")) {
                         try obj.put("supply_apy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "borrow_apy", "borrowApy" })) {
+                    if (std.mem.eql(u8, field, "borrow_apy")) {
                         try obj.put("borrow_apy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) {
+                    if (std.mem.eql(u8, field, "tvl_usd")) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -810,34 +810,34 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
             if (select) |fields_raw| {
                 var obj = std.json.ObjectMap.init(allocator);
-                var fields = try parseSelectedFields(allocator, fields_raw);
+                var fields = try parseLendRatesSelectedFields(allocator, fields_raw);
                 defer fields.deinit(allocator);
                 for (fields.items) |field| {
-                    if (fieldMatches(field, "provider")) {
+                    if (std.mem.eql(u8, field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (fieldMatches(field, "chain")) {
+                    if (std.mem.eql(u8, field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (fieldMatches(field, "asset")) {
+                    if (std.mem.eql(u8, field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (fieldMatches(field, "market")) {
+                    if (std.mem.eql(u8, field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "supplyApy", "supply_apy" })) {
+                    if (std.mem.eql(u8, field, "supplyApy")) {
                         try obj.put("supplyApy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "borrowApy", "borrow_apy" })) {
+                    if (std.mem.eql(u8, field, "borrowApy")) {
                         try obj.put("borrowApy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (fieldMatchesAny(field, &.{ "tvlUsd", "tvl_usd" })) {
+                    if (std.mem.eql(u8, field, "tvlUsd")) {
                         try obj.put("tvlUsd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -1601,6 +1601,92 @@ fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !st
         try fields.append(allocator, field);
     }
     return fields;
+}
+
+fn parseProvidersSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalProvidersSelectField);
+}
+
+fn parseChainsTopSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalChainsTopSelectField);
+}
+
+fn parseYieldSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalYieldSelectField);
+}
+
+fn parseLendMarketsSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalLendMarketsSelectField);
+}
+
+fn parseLendRatesSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalLendRatesSelectField);
+}
+
+fn parseCanonicalSelectedFields(
+    allocator: std.mem.Allocator,
+    fields_raw: []const u8,
+    comptime canonicalizer: fn ([]const u8) ?[]const u8,
+) !std.ArrayList([]const u8) {
+    var fields = std.ArrayList([]const u8).empty;
+    var parts = std.mem.splitScalar(u8, fields_raw, ',');
+    while (parts.next()) |part| {
+        const field = std.mem.trim(u8, part, " \r\n\t");
+        if (field.len == 0) continue;
+        const canonical = canonicalizer(field) orelse continue;
+        if (containsField(fields.items, canonical)) continue;
+        try fields.append(allocator, canonical);
+    }
+    return fields;
+}
+
+fn canonicalProvidersSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, "name")) return "name";
+    if (fieldMatches(field, "auth")) return "auth";
+    if (fieldMatches(field, "categories")) return "categories";
+    if (fieldMatches(field, "capabilities")) return "capabilities";
+    if (fieldMatchesAny(field, &.{ "capability_auth", "capabilityAuth" })) return "capability_auth";
+    return null;
+}
+
+fn canonicalChainsTopSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, "rank")) return "rank";
+    if (fieldMatches(field, "chain")) return "chain";
+    if (fieldMatchesAny(field, &.{ "chain_id", "chainId" })) return "chain_id";
+    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
+    return null;
+}
+
+fn canonicalYieldSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, "provider")) return "provider";
+    if (fieldMatches(field, "chain")) return "chain";
+    if (fieldMatches(field, "asset")) return "asset";
+    if (fieldMatches(field, "market")) return "market";
+    if (fieldMatches(field, "apy")) return "apy";
+    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
+    return null;
+}
+
+fn canonicalLendMarketsSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, "provider")) return "provider";
+    if (fieldMatches(field, "chain")) return "chain";
+    if (fieldMatches(field, "asset")) return "asset";
+    if (fieldMatches(field, "market")) return "market";
+    if (fieldMatchesAny(field, &.{ "supply_apy", "supplyApy" })) return "supply_apy";
+    if (fieldMatchesAny(field, &.{ "borrow_apy", "borrowApy" })) return "borrow_apy";
+    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
+    return null;
+}
+
+fn canonicalLendRatesSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, "provider")) return "provider";
+    if (fieldMatches(field, "chain")) return "chain";
+    if (fieldMatches(field, "asset")) return "asset";
+    if (fieldMatches(field, "market")) return "market";
+    if (fieldMatchesAny(field, &.{ "supplyApy", "supply_apy" })) return "supplyApy";
+    if (fieldMatchesAny(field, &.{ "borrowApy", "borrow_apy" })) return "borrowApy";
+    if (fieldMatchesAny(field, &.{ "tvlUsd", "tvl_usd" })) return "tvlUsd";
+    return null;
 }
 
 fn containsField(items: []const []const u8, field: []const u8) bool {
