@@ -1693,7 +1693,12 @@ fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
 }
 
 fn parseRequiredAmountU256(amount_raw: []const u8) !?u256 {
-    return std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+    const trimmed = std.mem.trim(u8, amount_raw, " \r\n\t");
+    if (trimmed.len == 0) {
+        try writeInvalid("amount");
+        return null;
+    }
+    return std.fmt.parseUnsigned(u256, trimmed, 10) catch {
         try writeInvalid("amount");
         return null;
     };

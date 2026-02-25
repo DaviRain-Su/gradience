@@ -87,6 +87,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `to` (chain alias/id/CAIP-2)
   - `asset` (symbol)
   - `amount` (base units)
+- `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)
@@ -107,6 +108,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `fromAsset` (symbol)
   - `toAsset` (symbol)
   - `amount` (base units)
+- `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
 - Optional params:
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)

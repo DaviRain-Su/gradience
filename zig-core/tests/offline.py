@@ -242,6 +242,22 @@ def main() -> int:
     assert bridge.get("provider") == "lifi"
     assert bridge.get("estimatedAmountOut") == "999300"
 
+    bridge_spaced_amount = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": " 1000000 ",
+                "provider": "lifi",
+            },
+        },
+        env,
+    )
+    assert bridge_spaced_amount.get("status") == "ok"
+    assert bridge_spaced_amount.get("provider") == "lifi"
+
     bridge_missing_from = run(
         {
             "action": "bridgeQuote",
@@ -637,6 +653,22 @@ def main() -> int:
     assert swap.get("status") == "ok"
     assert swap.get("provider") == "1inch"
     assert swap.get("estimatedAmountOut") == "998901"
+
+    swap_spaced_amount = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": " 1000000 ",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_spaced_amount.get("status") == "ok"
+    assert swap_spaced_amount.get("provider") == "1inch"
 
     swap_missing_chain = run(
         {
