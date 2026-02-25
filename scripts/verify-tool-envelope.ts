@@ -649,7 +649,7 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
 function adaptToolStages(
   stages: ToolStage[],
 ): VoidContextStage[] {
-  return stages.map((stage) => async (stageTools: Map<string, ToolDefinition>, _context: undefined) => {
+  return stages.map((stage): VoidContextStage => async (stageTools, _context) => {
     await stage(stageTools);
   });
 }
