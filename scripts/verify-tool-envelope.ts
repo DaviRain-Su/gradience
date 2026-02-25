@@ -2,6 +2,13 @@ import { registerMonadTools } from "../src/tools/monad-tools.js";
 import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 
 type Params = Record<string, unknown>;
+type ZigDisabledCase = { name: string; params: Params; reason: string };
+type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
+type LifiAnalysisCase = {
+  quote: Params;
+  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
+};
+type InvalidRunModeCase = { name: string; params: Params; runMode: string };
 
 const ADDR_A = "0x1111111111111111111111111111111111111111";
 const ADDR_B = "0x2222222222222222222222222222222222222222";
@@ -231,7 +238,7 @@ function pureTsSemanticObjectChecks(): Array<{
   ];
 }
 
-function mkZigDisabledCases(): Array<{ name: string; params: Params; reason: string }> {
+function mkZigDisabledCases(): ZigDisabledCase[] {
   return [
     { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
     { name: TOOL.version, params: {}, reason: "version discovery requires zig core" },
@@ -244,13 +251,7 @@ function isEmptyParams(params: Params): boolean {
   return Object.keys(params).length === 0;
 }
 
-function mkBehaviorBlockedCases(): Array<{
-  name: string;
-  params: Params;
-  code: number;
-  reason: string;
-  mode?: string;
-}> {
+function mkBehaviorBlockedCases(): BlockedCase[] {
   return [
     {
       name: TOOL.lifiExtractTxRequest,
@@ -282,10 +283,7 @@ function mkBehaviorBlockedCases(): Array<{
   ];
 }
 
-function mkLifiAnalysisCases(): Array<{
-  quote: Params;
-  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
-}> {
+function mkLifiAnalysisCases(): LifiAnalysisCase[] {
   return [
     { quote: {}, expectation: { txRequest: "null", routeId: "null", tool: "null" } },
     {
@@ -295,7 +293,7 @@ function mkLifiAnalysisCases(): Array<{
   ];
 }
 
-function mkInvalidRunModeCases(): Array<{ name: string; params: Params; runMode: string }> {
+function mkInvalidRunModeCases(): InvalidRunModeCase[] {
   return [
     {
       name: TOOL.lifiRunWorkflow,
@@ -630,13 +628,7 @@ function assertMetaFieldString(
 
 async function assertBlockedCase(
   tools: Map<string, ToolDefinition>,
-  input: {
-    name: string;
-    params: Params;
-    code: number;
-    reason: string;
-    mode?: string;
-  },
+  input: BlockedCase,
 ): Promise<void> {
   const payload = await parseToolPayload(getTool(tools, input.name), input.params);
   if (input.mode) {
@@ -649,11 +641,7 @@ async function assertBlockedCase(
 
 async function assertInvalidRunModeCase(
   tools: Map<string, ToolDefinition>,
-  input: {
-    name: string;
-    params: Params;
-    runMode: string;
-  },
+  input: InvalidRunModeCase,
 ): Promise<void> {
   const payload = await parseToolPayload(getTool(tools, input.name), {
     ...input.params,
@@ -729,7 +717,7 @@ function assertZigDisabledBlocked(
 
 async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
-  input: { name: string; params: Params; reason: string },
+  input: ZigDisabledCase,
 ): Promise<void> {
   const payload = await parseToolPayload(getTool(tools, input.name), input.params);
   assertEnvelopeShape(input.name, payload);
