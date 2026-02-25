@@ -228,6 +228,22 @@ function assertResultNullFields(name: string, payload: Record<string, unknown>, 
   }
 }
 
+function assertResultObjectFieldValue(
+  name: string,
+  payload: Record<string, unknown>,
+  objectField: string,
+  key: string,
+  expected: unknown,
+): void {
+  const resultObject = getResult(name, payload)[objectField] as Record<string, unknown> | null | undefined;
+  if (!resultObject || typeof resultObject !== "object") {
+    throw new Error(fail(name, `result.${objectField} must be object`));
+  }
+  if (resultObject[key] !== expected) {
+    throw new Error(fail(name, `result.${objectField}.${key} must equal ${String(expected)}`));
+  }
+}
+
 function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
   const value = obj[key];
   if (typeof value !== "string") {
@@ -485,23 +501,34 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
   }
 
-  const plan = getResult(TOOL.planLendingAction, getPayload(payloads, TOOL.planLendingAction)).plan as Record<string, unknown>;
-  if (String(plan.action || "") !== "supply") {
-    throw new Error(fail(TOOL.planLendingAction, "result.plan.action must equal supply"));
-  }
-
-  const paymentIntent = getResult(TOOL.paymentIntentCreate, getPayload(payloads, TOOL.paymentIntentCreate))
-    .paymentIntent as Record<string, unknown>;
-  if (paymentIntent.type !== "pay_per_call") {
-    throw new Error(fail(TOOL.paymentIntentCreate, "result.paymentIntent.type must equal pay_per_call"));
-  }
-
-  const subscriptionIntent = getResult(
-    TOOL.subscriptionIntentCreate,
-    getPayload(payloads, TOOL.subscriptionIntentCreate),
-  ).subscriptionIntent as Record<string, unknown>;
-  if (subscriptionIntent.type !== "subscription") {
-    throw new Error(fail(TOOL.subscriptionIntentCreate, "result.subscriptionIntent.type must equal subscription"));
+  const semanticObjectChecks: Array<{
+    name: string;
+    objectField: string;
+    key: string;
+    expected: unknown;
+  }> = [
+    { name: TOOL.planLendingAction, objectField: "plan", key: "action", expected: "supply" },
+    {
+      name: TOOL.paymentIntentCreate,
+      objectField: "paymentIntent",
+      key: "type",
+      expected: "pay_per_call",
+    },
+    {
+      name: TOOL.subscriptionIntentCreate,
+      objectField: "subscriptionIntent",
+      key: "type",
+      expected: "subscription",
+    },
+  ];
+  for (const check of semanticObjectChecks) {
+    assertResultObjectFieldValue(
+      check.name,
+      getPayload(payloads, check.name),
+      check.objectField,
+      check.key,
+      check.expected,
+    );
   }
 
   const strategy = getResult(TOOL.strategyCompile, getPayload(payloads, TOOL.strategyCompile))
