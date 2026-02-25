@@ -46,6 +46,17 @@ def assert_select_mixed_keeps(
     assert set(row.keys()) == expected_keys
 
 
+def assert_select_rejected(
+    action: str,
+    params: dict,
+    env: dict,
+    code: int = 2,
+) -> None:
+    resp = run({"action": action, "params": params}, env)
+    assert resp.get("status") == "error"
+    assert int(resp.get("code", 0)) == code
+
+
 def main() -> int:
     if not BIN.exists():
         print(f"missing binary: {BIN}", file=sys.stderr)
@@ -203,25 +214,8 @@ def main() -> int:
         env,
     )
 
-    providers_select_blank = run(
-        {
-            "action": "providersList",
-            "params": {"category": "swap", "select": "   "},
-        },
-        env,
-    )
-    assert providers_select_blank.get("status") == "error"
-    assert int(providers_select_blank.get("code", 0)) == 2
-
-    providers_select_empty_tokens = run(
-        {
-            "action": "providersList",
-            "params": {"category": "swap", "select": ",, ,"},
-        },
-        env,
-    )
-    assert providers_select_empty_tokens.get("status") == "error"
-    assert int(providers_select_empty_tokens.get("code", 0)) == 2
+    assert_select_rejected("providersList", {"category": "swap", "select": "   "}, env)
+    assert_select_rejected("providersList", {"category": "swap", "select": ",, ,"}, env)
 
     providers_results_only = run(
         {
@@ -260,19 +254,8 @@ def main() -> int:
     assert len(selected_rows_case) == 2
     assert set(selected_rows_case[0].keys()) == {"chain", "rank"}
 
-    chains_select_blank = run(
-        {"action": "chainsTop", "params": {"limit": 2, "select": "   "}},
-        env,
-    )
-    assert chains_select_blank.get("status") == "error"
-    assert int(chains_select_blank.get("code", 0)) == 2
-
-    chains_select_empty_tokens = run(
-        {"action": "chainsTop", "params": {"limit": 2, "select": ",, ,"}},
-        env,
-    )
-    assert chains_select_empty_tokens.get("status") == "error"
-    assert int(chains_select_empty_tokens.get("code", 0)) == 2
+    assert_select_rejected("chainsTop", {"limit": 2, "select": "   "}, env)
+    assert_select_rejected("chainsTop", {"limit": 2, "select": ",, ,"}, env)
 
     chains_select_alias = run(
         {
@@ -371,33 +354,12 @@ def main() -> int:
     assert len(sel_rows_case) == 2
     assert set(sel_rows_case[0].keys()) == {"provider", "apy"}
 
-    yield_select_blank = run(
-        {
-            "action": "yieldOpportunities",
-            "params": {
-                "asset": "USDC",
-                "limit": 2,
-                "select": "   ",
-            },
-        },
-        env,
+    assert_select_rejected(
+        "yieldOpportunities", {"asset": "USDC", "limit": 2, "select": "   "}, env
     )
-    assert yield_select_blank.get("status") == "error"
-    assert int(yield_select_blank.get("code", 0)) == 2
-
-    yield_select_empty_tokens = run(
-        {
-            "action": "yieldOpportunities",
-            "params": {
-                "asset": "USDC",
-                "limit": 2,
-                "select": ",, ,",
-            },
-        },
-        env,
+    assert_select_rejected(
+        "yieldOpportunities", {"asset": "USDC", "limit": 2, "select": ",, ,"}, env
     )
-    assert yield_select_empty_tokens.get("status") == "error"
-    assert int(yield_select_empty_tokens.get("code", 0)) == 2
 
     yield_select_alias = run(
         {
@@ -1060,39 +1022,30 @@ def main() -> int:
         env,
     )
 
-    bridge_select_blank = run(
+    assert_select_rejected(
+        "bridgeQuote",
         {
-            "action": "bridgeQuote",
-            "params": {
-                "from": "1",
-                "to": "8453",
-                "asset": "USDC",
-                "amount": "1000000",
-                "provider": "lifi",
-                "select": "   ",
-            },
+            "from": "1",
+            "to": "8453",
+            "asset": "USDC",
+            "amount": "1000000",
+            "provider": "lifi",
+            "select": "   ",
         },
         env,
     )
-    assert bridge_select_blank.get("status") == "error"
-    assert int(bridge_select_blank.get("code", 0)) == 2
-
-    bridge_select_empty_tokens = run(
+    assert_select_rejected(
+        "bridgeQuote",
         {
-            "action": "bridgeQuote",
-            "params": {
-                "from": "1",
-                "to": "8453",
-                "asset": "USDC",
-                "amount": "1000000",
-                "provider": "lifi",
-                "select": ",, ,",
-            },
+            "from": "1",
+            "to": "8453",
+            "asset": "USDC",
+            "amount": "1000000",
+            "provider": "lifi",
+            "select": ",, ,",
         },
         env,
     )
-    assert bridge_select_empty_tokens.get("status") == "error"
-    assert int(bridge_select_empty_tokens.get("code", 0)) == 2
 
     swap = run(
         {
@@ -1696,39 +1649,30 @@ def main() -> int:
         env,
     )
 
-    swap_select_blank = run(
+    assert_select_rejected(
+        "swapQuote",
         {
-            "action": "swapQuote",
-            "params": {
-                "chain": "1",
-                "fromAsset": "USDC",
-                "toAsset": "DAI",
-                "amount": "1000000",
-                "provider": "1inch",
-                "select": "   ",
-            },
+            "chain": "1",
+            "fromAsset": "USDC",
+            "toAsset": "DAI",
+            "amount": "1000000",
+            "provider": "1inch",
+            "select": "   ",
         },
         env,
     )
-    assert swap_select_blank.get("status") == "error"
-    assert int(swap_select_blank.get("code", 0)) == 2
-
-    swap_select_empty_tokens = run(
+    assert_select_rejected(
+        "swapQuote",
         {
-            "action": "swapQuote",
-            "params": {
-                "chain": "1",
-                "fromAsset": "USDC",
-                "toAsset": "DAI",
-                "amount": "1000000",
-                "provider": "1inch",
-                "select": ",, ,",
-            },
+            "chain": "1",
+            "fromAsset": "USDC",
+            "toAsset": "DAI",
+            "amount": "1000000",
+            "provider": "1inch",
+            "select": ",, ,",
         },
         env,
     )
-    assert swap_select_empty_tokens.get("status") == "error"
-    assert int(swap_select_empty_tokens.get("code", 0)) == 2
 
     lend_markets = run(
         {
@@ -1785,33 +1729,12 @@ def main() -> int:
     assert len(mrows_case) == 2
     assert set(mrows_case[0].keys()) == {"provider", "supply_apy"}
 
-    lend_markets_select_blank = run(
-        {
-            "action": "lendMarkets",
-            "params": {
-                "asset": "USDC",
-                "limit": 2,
-                "select": "   ",
-            },
-        },
-        env,
+    assert_select_rejected(
+        "lendMarkets", {"asset": "USDC", "limit": 2, "select": "   "}, env
     )
-    assert lend_markets_select_blank.get("status") == "error"
-    assert int(lend_markets_select_blank.get("code", 0)) == 2
-
-    lend_markets_select_empty_tokens = run(
-        {
-            "action": "lendMarkets",
-            "params": {
-                "asset": "USDC",
-                "limit": 2,
-                "select": ",, ,",
-            },
-        },
-        env,
+    assert_select_rejected(
+        "lendMarkets", {"asset": "USDC", "limit": 2, "select": ",, ,"}, env
     )
-    assert lend_markets_select_empty_tokens.get("status") == "error"
-    assert int(lend_markets_select_empty_tokens.get("code", 0)) == 2
 
     lend_markets_select_alias = run(
         {
@@ -1882,35 +1805,16 @@ def main() -> int:
     rates_case = lend_rates_select_case_dup.get("rates", {})
     assert set(rates_case.keys()) == {"provider", "supplyApy"}
 
-    lend_rates_select_blank = run(
-        {
-            "action": "lendRates",
-            "params": {
-                "chain": "base",
-                "asset": "USDC",
-                "provider": "morpho",
-                "select": "   ",
-            },
-        },
+    assert_select_rejected(
+        "lendRates",
+        {"chain": "base", "asset": "USDC", "provider": "morpho", "select": "   "},
         env,
     )
-    assert lend_rates_select_blank.get("status") == "error"
-    assert int(lend_rates_select_blank.get("code", 0)) == 2
-
-    lend_rates_select_empty_tokens = run(
-        {
-            "action": "lendRates",
-            "params": {
-                "chain": "base",
-                "asset": "USDC",
-                "provider": "morpho",
-                "select": ",, ,",
-            },
-        },
+    assert_select_rejected(
+        "lendRates",
+        {"chain": "base", "asset": "USDC", "provider": "morpho", "select": ",, ,"},
         env,
     )
-    assert lend_rates_select_empty_tokens.get("status") == "error"
-    assert int(lend_rates_select_empty_tokens.get("code", 0)) == 2
 
     lend_rates_select_alias = run(
         {
