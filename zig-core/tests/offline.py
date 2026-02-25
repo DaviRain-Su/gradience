@@ -153,6 +153,18 @@ def main() -> int:
     assert len(selected) >= 1
     assert set(selected[0].keys()) <= {"name", "auth"}
 
+    providers_select_case_dup = run(
+        {
+            "action": "providersList",
+            "params": {"category": "swap", "select": "NAME,name,AUTH,auth"},
+        },
+        env,
+    )
+    assert providers_select_case_dup.get("status") == "ok"
+    selected_case = providers_select_case_dup.get("providers", [])
+    assert len(selected_case) >= 1
+    assert set(selected_case[0].keys()) <= {"name", "auth"}
+
     providers_results_only = run(
         {
             "action": "providersList",
@@ -1400,6 +1412,24 @@ def main() -> int:
     assert set(mrows[0].keys()) == {"provider", "supply_apy"}
     assert mrows[0]["supply_apy"] <= mrows[1]["supply_apy"]
 
+    lend_markets_select_case_dup = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "sortBy": "supply_apy",
+                "order": "asc",
+                "limit": 2,
+                "select": "PROVIDER,provider,SUPPLY_APY,supply_apy",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select_case_dup.get("status") == "ok"
+    mrows_case = lend_markets_select_case_dup.get("markets", [])
+    assert len(mrows_case) == 2
+    assert set(mrows_case[0].keys()) == {"provider", "supply_apy"}
+
     lend_rates = run(
         {
             "action": "lendRates",
@@ -1426,6 +1456,22 @@ def main() -> int:
     assert lend_rates_select.get("status") == "ok"
     rates = lend_rates_select.get("rates", {})
     assert set(rates.keys()) == {"provider", "supplyApy"}
+
+    lend_rates_select_case_dup = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": "PROVIDER,provider,SUPPLYAPY,supplyApy",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select_case_dup.get("status") == "ok"
+    rates_case = lend_rates_select_case_dup.get("rates", {})
+    assert set(rates_case.keys()) == {"provider", "supplyApy"}
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env

@@ -132,35 +132,29 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var rows = std.ArrayList(std.json.Value).empty;
             defer rows.deinit(allocator);
 
-            var parts = std.mem.splitScalar(u8, fields_raw, ',');
-            var fields = std.ArrayList([]const u8).empty;
+            var fields = try parseSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
-            while (parts.next()) |part| {
-                const field = std.mem.trim(u8, part, " \r\n\t");
-                if (field.len == 0) continue;
-                try fields.append(allocator, field);
-            }
 
             for (filtered.items) |provider| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (std.mem.eql(u8, field, "name")) {
+                    if (fieldMatches(field, "name")) {
                         try obj.put("name", .{ .string = provider.name });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "auth")) {
+                    if (fieldMatches(field, "auth")) {
                         try obj.put("auth", .{ .string = provider.auth });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "categories")) {
+                    if (fieldMatches(field, "categories")) {
                         try obj.put("categories", try stringArrayToJson(allocator, provider.categories));
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "capabilities")) {
+                    if (fieldMatches(field, "capabilities")) {
                         try obj.put("capabilities", try stringArrayToJson(allocator, provider.capabilities));
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "capability_auth")) {
+                    if (fieldMatches(field, "capability_auth")) {
                         try obj.put("capability_auth", try capabilityAuthToJson(allocator, provider.capability_auth));
                         continue;
                     }
@@ -711,43 +705,37 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var projected = std.ArrayList(std.json.Value).empty;
             defer projected.deinit(allocator);
 
-            var parts = std.mem.splitScalar(u8, fields_raw, ',');
-            var fields = std.ArrayList([]const u8).empty;
+            var fields = try parseSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
-            while (parts.next()) |part| {
-                const field = std.mem.trim(u8, part, " \r\n\t");
-                if (field.len == 0) continue;
-                try fields.append(allocator, field);
-            }
 
             for (rows.items) |entry| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (std.mem.eql(u8, field, "provider")) {
+                    if (fieldMatches(field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "chain")) {
+                    if (fieldMatches(field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "asset")) {
+                    if (fieldMatches(field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "market")) {
+                    if (fieldMatches(field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "supply_apy")) {
+                    if (fieldMatches(field, "supply_apy")) {
                         try obj.put("supply_apy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "borrow_apy")) {
+                    if (fieldMatches(field, "borrow_apy")) {
                         try obj.put("borrow_apy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "tvl_usd")) {
+                    if (fieldMatches(field, "tvl_usd")) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
@@ -799,35 +787,34 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
             if (select) |fields_raw| {
                 var obj = std.json.ObjectMap.init(allocator);
-                var parts = std.mem.splitScalar(u8, fields_raw, ',');
-                while (parts.next()) |part| {
-                    const field = std.mem.trim(u8, part, " \r\n\t");
-                    if (field.len == 0) continue;
-                    if (std.mem.eql(u8, field, "provider")) {
+                var fields = try parseSelectedFields(allocator, fields_raw);
+                defer fields.deinit(allocator);
+                for (fields.items) |field| {
+                    if (fieldMatches(field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "chain")) {
+                    if (fieldMatches(field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "asset")) {
+                    if (fieldMatches(field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "market")) {
+                    if (fieldMatches(field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "supplyApy")) {
+                    if (fieldMatches(field, "supplyApy")) {
                         try obj.put("supplyApy", .{ .float = entry.supply_apy });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "borrowApy")) {
+                    if (fieldMatches(field, "borrowApy")) {
                         try obj.put("borrowApy", .{ .float = entry.borrow_apy });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "tvlUsd")) {
+                    if (fieldMatches(field, "tvlUsd")) {
                         try obj.put("tvlUsd", .{ .float = entry.tvl_usd });
                         continue;
                     }

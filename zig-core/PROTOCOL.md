@@ -141,6 +141,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `order` (`desc` default, or `asc`)
   - `limit` (default `20`)
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supply_apy`, `borrow_apy`, `tvl_usd`)
+- `select` field names are case-insensitive and duplicate fields are coalesced
 
 ### lendRates Notes
 
@@ -150,6 +151,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `provider` (provider name)
 - Optional params:
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supplyApy`, `borrowApy`, `tvlUsd`)
+- `select` field names are case-insensitive and duplicate fields are coalesced
 
 ### providersList Notes
 
@@ -165,6 +167,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `capability` (case-insensitive membership match)
   - `select` (comma-separated fields: `name`, `auth`, `categories`, `capabilities`, `capability_auth`)
   - `resultsOnly` (boolean, return payload under `results` key)
+- `select` field names are case-insensitive and duplicate fields are coalesced
 
 ### rpcCallCached Notes
 
