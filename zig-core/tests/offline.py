@@ -271,6 +271,21 @@ def main() -> int:
     assert bridge_unsupported_from.get("status") == "error"
     assert int(bridge_unsupported_from.get("code", 0)) == 13
 
+    bridge_unsupported_to = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "not-a-chain",
+                "asset": "USDC",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert bridge_unsupported_to.get("status") == "error"
+    assert int(bridge_unsupported_to.get("code", 0)) == 13
+
     bridge_fastest = run(
         {
             "action": "bridgeQuote",

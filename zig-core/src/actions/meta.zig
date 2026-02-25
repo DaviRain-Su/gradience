@@ -1093,11 +1093,11 @@ fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
     };
 
     const from_chain = core_id.normalizeChain(from_raw) orelse {
-        try core_envelope.writeJson(core_errors.unsupported("unsupported from chain alias"));
+        try writeUnsupportedChainAlias("from");
         return null;
     };
     const to_chain = core_id.normalizeChain(to_raw) orelse {
-        try core_envelope.writeJson(core_errors.unsupported("unsupported to chain alias"));
+        try writeUnsupportedChainAlias("to");
         return null;
     };
 
@@ -1134,7 +1134,7 @@ fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
     };
 
     const chain = core_id.normalizeChain(chain_raw) orelse {
-        try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+        try writeUnsupportedChainAlias(null);
         return null;
     };
 
@@ -1687,6 +1687,15 @@ fn writeNoBridgeRoute() !void {
 
 fn writeNoSwapRoute() !void {
     try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
+}
+
+fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
+    const msg = if (which) |value|
+        try std.fmt.allocPrint(std.heap.c_allocator, "unsupported {s} chain alias", .{value})
+    else
+        try std.heap.c_allocator.dupe(u8, "unsupported chain alias");
+    defer std.heap.c_allocator.free(msg);
+    try core_envelope.writeJson(core_errors.unsupported(msg));
 }
 
 fn writeInvalid(field_name: []const u8) !void {
