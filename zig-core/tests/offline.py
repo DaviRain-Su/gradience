@@ -231,6 +231,13 @@ def main() -> int:
     assert chains_select_blank.get("status") == "error"
     assert int(chains_select_blank.get("code", 0)) == 2
 
+    chains_select_empty_tokens = run(
+        {"action": "chainsTop", "params": {"limit": 2, "select": ",, ,"}},
+        env,
+    )
+    assert chains_select_empty_tokens.get("status") == "error"
+    assert int(chains_select_empty_tokens.get("code", 0)) == 2
+
     chains_select_alias = run(
         {
             "action": "chainsTop",
@@ -987,6 +994,23 @@ def main() -> int:
     )
     assert bridge_select_blank.get("status") == "error"
     assert int(bridge_select_blank.get("code", 0)) == 2
+
+    bridge_select_empty_tokens = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": ",, ,",
+            },
+        },
+        env,
+    )
+    assert bridge_select_empty_tokens.get("status") == "error"
+    assert int(bridge_select_empty_tokens.get("code", 0)) == 2
 
     swap = run(
         {
