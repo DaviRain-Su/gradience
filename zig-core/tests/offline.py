@@ -29,6 +29,14 @@ def run(payload: dict, env: dict) -> dict:
     return json.loads(out)
 
 
+def first_row(value: Any) -> dict:
+    if isinstance(value, list):
+        assert len(value) >= 1
+        return value[0]
+    assert isinstance(value, dict)
+    return value
+
+
 def assert_select_mixed_keeps(
     action: str,
     params: dict,
@@ -38,12 +46,7 @@ def assert_select_mixed_keeps(
 ) -> None:
     resp = run({"action": action, "params": params}, env)
     assert resp.get("status") == "ok"
-    container = resp.get(container_key, {})
-    if isinstance(container, list):
-        assert len(container) >= 1
-        row = container[0]
-    else:
-        row = container
+    row = first_row(resp.get(container_key, {}))
     assert set(row.keys()) == expected_keys
 
 
@@ -67,12 +70,7 @@ def assert_select_alias_coalesced(
 ) -> None:
     resp = run({"action": action, "params": params}, env)
     assert resp.get("status") == "ok"
-    container = resp.get(container_key, {})
-    if isinstance(container, list):
-        assert len(container) >= 1
-        row = container[0]
-    else:
-        row = container
+    row = first_row(resp.get(container_key, {}))
     assert list(row.keys()) == expected_keys_in_order
 
 
