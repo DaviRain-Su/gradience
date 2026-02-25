@@ -257,6 +257,7 @@ def main() -> int:
     )
     assert bridge_spaced_amount.get("status") == "ok"
     assert bridge_spaced_amount.get("provider") == "lifi"
+    assert bridge_spaced_amount.get("amountIn") == "1000000"
 
     bridge_spaced_asset = run(
         {
@@ -814,6 +815,7 @@ def main() -> int:
     )
     assert swap_spaced_amount.get("status") == "ok"
     assert swap_spaced_amount.get("provider") == "1inch"
+    assert swap_spaced_amount.get("amountIn") == "1000000"
 
     swap_spaced_assets = run(
         {

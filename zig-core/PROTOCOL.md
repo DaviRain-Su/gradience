@@ -88,6 +88,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `asset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
+- response `amountIn` echoes the trimmed amount text
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)
@@ -112,6 +113,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `toAsset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
+- response `amountIn` echoes the trimmed amount text
 - Optional params:
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)

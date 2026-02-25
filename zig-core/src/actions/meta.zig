@@ -1694,20 +1694,14 @@ fn writeNoSwapRoute() !void {
 
 fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
     const msg = if (which) |value|
-        try std.fmt.allocPrint(std.heap.c_allocator, "unsupported {s} chain alias", .{value})
+        if (std.mem.eql(u8, value, "from")) "unsupported from chain alias" else if (std.mem.eql(u8, value, "to")) "unsupported to chain alias" else "unsupported chain alias"
     else
-        try std.heap.c_allocator.dupe(u8, "unsupported chain alias");
-    defer std.heap.c_allocator.free(msg);
+        "unsupported chain alias";
     try core_envelope.writeJson(core_errors.unsupported(msg));
 }
 
-fn parseRequiredAmountU256(amount_raw: []const u8) !?u256 {
-    const trimmed = std.mem.trim(u8, amount_raw, " \r\n\t");
-    if (trimmed.len == 0) {
-        try writeInvalid("amount");
-        return null;
-    }
-    return std.fmt.parseUnsigned(u256, trimmed, 10) catch {
+fn parseRequiredAmountU256(amount_trimmed: []const u8) !?u256 {
+    return std.fmt.parseUnsigned(u256, amount_trimmed, 10) catch {
         try writeInvalid("amount");
         return null;
     };
@@ -1718,8 +1712,13 @@ fn parseRequiredAmountParam(obj: std.json.ObjectMap, key: []const u8) !?ParsedAm
         try writeMissing(key);
         return null;
     };
-    const value = (try parseRequiredAmountU256(raw)) orelse return null;
-    return .{ .raw = raw, .value = value };
+    const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+    if (trimmed.len == 0) {
+        try writeInvalid(key);
+        return null;
+    }
+    const value = (try parseRequiredAmountU256(trimmed)) orelse return null;
+    return .{ .raw = trimmed, .value = value };
 }
 
 fn parseRequiredNormalizedChainParam(
