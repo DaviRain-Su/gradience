@@ -709,6 +709,10 @@ function assertBlockedWithMode(
 }
 
 function assertBlockedReason(name: string, payload: Record<string, unknown>, reason: string): void {
+  assertResultReason(name, payload, reason);
+}
+
+function assertResultReason(name: string, payload: Record<string, unknown>, reason: string): void {
   const result = getResult(name, payload);
   if (String(result.reason || "") !== reason) {
     throw new Error(fail(name, `should include result.reason=${reason}`));
@@ -717,10 +721,7 @@ function assertBlockedReason(name: string, payload: Record<string, unknown>, rea
 
 function assertErrorReason(name: string, payload: Record<string, unknown>, code: number, reason: string): void {
   assertStatusCode(name, payload, "error", code);
-  const result = getResult(name, payload);
-  if (String(result.reason || "") !== reason) {
-    throw new Error(fail(name, `should include result.reason=${reason}`));
-  }
+  assertResultReason(name, payload, reason);
 }
 
 function assertMetaFieldString(
