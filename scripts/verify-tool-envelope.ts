@@ -450,6 +450,23 @@ function assertZigDisabledBlocked(
   assertBlockedReason(name, payload, reason);
 }
 
+async function assertZigDisabledCase(
+  tools: Map<string, ToolDefinition>,
+  input: { name: string; params: Params; reason: string },
+): Promise<void> {
+  const payload = await parseToolPayload(getTool(tools, input.name), input.params);
+  assertEnvelopeShape(input.name, payload);
+  assertEnvelopeOrder(input.name, payload);
+  assertZigDisabledBlocked(input.name, payload, input.reason);
+}
+
+function assertStrategyValidateEnvelope(name: string, payload: Record<string, unknown>): void {
+  if (!((payload.status === "ok" && Number(payload.code) === 0) || (payload.status === "error" && Number(payload.code) === 2))) {
+    throw new Error(fail(name, "should return either ok/0 or error/2"));
+  }
+  assertValidationShape(name, payload);
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -624,15 +641,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   }
 
   const validatePayload = getPayload(payloads, TOOL.strategyValidate);
-  if (
-    !(
-      (validatePayload.status === "ok" && Number(validatePayload.code) === 0) ||
-      (validatePayload.status === "error" && Number(validatePayload.code) === 2)
-    )
-  ) {
-    throw new Error(fail(TOOL.strategyValidate, "should return either ok/0 or error/2"));
-  }
-  assertValidationShape(TOOL.strategyValidate, validatePayload);
+  assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -653,10 +662,11 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     assertZigDisabledBlocked(name, payload, expectedReasonByTool[name] || "");
   }
 
-  const versionLong = await parseToolPayload(getTool(tools, TOOL.version), { long: true });
-  assertEnvelopeShape(TOOL.version, versionLong);
-  assertEnvelopeOrder(TOOL.version, versionLong);
-  assertZigDisabledBlocked(TOOL.version, versionLong, "version discovery requires zig core");
+  await assertZigDisabledCase(tools, {
+    name: TOOL.version,
+    params: { long: true },
+    reason: "version discovery requires zig core",
+  });
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
