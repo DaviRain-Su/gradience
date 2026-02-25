@@ -678,22 +678,21 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     [TOOL.runtimeInfo, {}],
   ];
   const payloads = await runEnvelopeChecks(tools, checks);
-  const expectedReasonByTool: Record<string, string> = {
-    [TOOL.schema]: "schema discovery requires zig core",
-    [TOOL.version]: "version discovery requires zig core",
-    [TOOL.runtimeInfo]: "runtime info requires zig core",
-  };
+  const zigDisabledCases: Array<{ name: string; params: Params; reason: string }> = [
+    { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
+    { name: TOOL.version, params: {}, reason: "version discovery requires zig core" },
+    { name: TOOL.runtimeInfo, params: {}, reason: "runtime info requires zig core" },
+    { name: TOOL.version, params: { long: true }, reason: "version discovery requires zig core" },
+  ];
 
-  for (const [name] of checks) {
-    const payload = getPayload(payloads, name);
-    assertZigDisabledBlocked(name, payload, expectedReasonByTool[name] || "");
+  for (const c of zigDisabledCases) {
+    if (Object.keys(c.params).length === 0) {
+      const payload = getPayload(payloads, c.name);
+      assertZigDisabledBlocked(c.name, payload, c.reason);
+      continue;
+    }
+    await assertZigDisabledCase(tools, c);
   }
-
-  await assertZigDisabledCase(tools, {
-    name: TOOL.version,
-    params: { long: true },
-    reason: "version discovery requires zig core",
-  });
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
