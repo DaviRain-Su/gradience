@@ -402,8 +402,17 @@ function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): vo
 }
 
 function assertOkEnvelope(name: string, payload: Record<string, unknown>): void {
-  if (payload.status !== "ok" || Number(payload.code) !== 0) {
-    throw new Error(fail(name, "should return ok code 0"));
+  assertStatusCode(name, payload, "ok", 0);
+}
+
+function assertStatusCode(
+  name: string,
+  payload: Record<string, unknown>,
+  status: "ok" | "error" | "blocked",
+  code: number,
+): void {
+  if (payload.status !== status || Number(payload.code) !== code) {
+    throw new Error(fail(name, `should return ${status} code ${code}`));
   }
 }
 
@@ -693,9 +702,7 @@ function assertBlockedWithMode(
   mode: string,
 ): void {
   const meta = payload.meta as Record<string, unknown>;
-  if (payload.status !== "blocked" || Number(payload.code) !== code) {
-    throw new Error(fail(name, `should return blocked code ${code}`));
-  }
+  assertStatusCode(name, payload, "blocked", code);
   if (String(meta?.mode || "") !== mode) {
     throw new Error(fail(name, `should include meta.mode=${mode}`));
   }
@@ -709,9 +716,7 @@ function assertBlockedReason(name: string, payload: Record<string, unknown>, rea
 }
 
 function assertErrorReason(name: string, payload: Record<string, unknown>, code: number, reason: string): void {
-  if (payload.status !== "error" || Number(payload.code) !== code) {
-    throw new Error(fail(name, `should return error code ${code}`));
-  }
+  assertStatusCode(name, payload, "error", code);
   const result = getResult(name, payload);
   if (String(result.reason || "") !== reason) {
     throw new Error(fail(name, `should include result.reason=${reason}`));
@@ -798,9 +803,7 @@ function assertZigDisabledBlocked(
   payload: Record<string, unknown>,
   reason: string,
 ): void {
-  if (payload.status !== "blocked" || Number(payload.code) !== 13) {
-    throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
-  }
+  assertStatusCode(name, payload, "blocked", 13);
   const meta = payload.meta as Record<string, unknown>;
   if (meta?.source !== "ts-tool") {
     throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
@@ -836,9 +839,7 @@ function assertStrategyValidateEnvelope(name: string, payload: Record<string, un
 }
 
 function assertInvalidValidationPayload(name: string, payload: Record<string, unknown>): void {
-  if (payload.status !== "error" || Number(payload.code) !== 2) {
-    throw new Error(fail(name, "should return error code 2 for invalid strategy"));
-  }
+  assertStatusCode(name, payload, "error", 2);
   assertValidationShape(name, payload);
   const invalidValidation = getResult(name, payload).validation as Record<string, unknown>;
   if (invalidValidation.ok !== false) {
