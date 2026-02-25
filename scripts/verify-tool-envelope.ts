@@ -664,6 +664,12 @@ async function runContextCheck<TContext>(
 
 const buildVoidContext: ContextBuilder<void> = async () => undefined;
 
+function adaptToolPipeline(stages: ToolStage[]): ContextRunner<void> {
+  return async (tools: Map<string, ToolDefinition>, _context: void) => {
+    await runToolStages(tools, stages);
+  };
+}
+
 async function runPipeline(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
   for (const stage of stages) {
     await stage(tools);
@@ -1085,15 +1091,10 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   await runContextCheck(tools, buildZigRequiredContext, runZigRequiredStages);
 }
 
-async function runBehaviorStagesWithContext(
-  tools: Map<string, ToolDefinition>,
-  _context: void,
-): Promise<void> {
-  await runToolStages(tools, BEHAVIOR_PIPELINE);
-}
+const runBehaviorPipelineWithContext = adaptToolPipeline(BEHAVIOR_PIPELINE);
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runContextCheck(tools, buildVoidContext, runBehaviorStagesWithContext);
+  await runContextCheck(tools, buildVoidContext, runBehaviorPipelineWithContext);
 }
 
 async function main(): Promise<void> {
