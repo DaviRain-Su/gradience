@@ -120,6 +120,17 @@ function mkLifiExtractTxRequestParams(): Params {
   };
 }
 
+function mkLifiQuoteWithTxRequest(extra: Params = {}): Params {
+  return {
+    transactionRequest: {
+      to: ADDR_A,
+      data: "0x",
+      value: "0x0",
+    },
+    ...extra,
+  };
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -379,6 +390,7 @@ async function assertInvalidRunModeCase(
 async function assertLifiAnalysisCase(
   tools: Map<string, ToolDefinition>,
   quote: Params,
+  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" },
 ): Promise<void> {
   const payload = await parseToolPayload(
     getTool(tools, TOOL.lifiRunWorkflow),
@@ -386,7 +398,21 @@ async function assertLifiAnalysisCase(
   );
   assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
-  assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["txRequest", "routeId", "tool"]);
+  if (expectation.txRequest === "object") {
+    assertResultObjectField(TOOL.lifiRunWorkflow, payload, "txRequest");
+  } else {
+    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["txRequest"]);
+  }
+  if (expectation.routeId === "string") {
+    assertResultStringField(TOOL.lifiRunWorkflow, payload, "routeId");
+  } else {
+    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["routeId"]);
+  }
+  if (expectation.tool === "string") {
+    assertResultStringField(TOOL.lifiRunWorkflow, payload, "tool");
+  } else {
+    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["tool"]);
+  }
 }
 
 function assertZigDisabledBlocked(
@@ -647,7 +673,12 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     reason: "missing txRequest",
   });
 
-  await assertLifiAnalysisCase(tools, {});
+  await assertLifiAnalysisCase(tools, {}, { txRequest: "null", routeId: "null", tool: "null" });
+  await assertLifiAnalysisCase(
+    tools,
+    mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
+    { txRequest: "object", routeId: "string", tool: "string" },
+  );
 
   await assertBlockedCase(tools, {
     name: TOOL.lifiRunWorkflow,
