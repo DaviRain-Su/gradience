@@ -187,6 +187,16 @@ def main() -> int:
     assert providers_select_blank.get("status") == "error"
     assert int(providers_select_blank.get("code", 0)) == 2
 
+    providers_select_empty_tokens = run(
+        {
+            "action": "providersList",
+            "params": {"category": "swap", "select": ",, ,"},
+        },
+        env,
+    )
+    assert providers_select_empty_tokens.get("status") == "error"
+    assert int(providers_select_empty_tokens.get("code", 0)) == 2
+
     providers_results_only = run(
         {
             "action": "providersList",
@@ -340,6 +350,20 @@ def main() -> int:
     )
     assert yield_select_blank.get("status") == "error"
     assert int(yield_select_blank.get("code", 0)) == 2
+
+    yield_select_empty_tokens = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "limit": 2,
+                "select": ",, ,",
+            },
+        },
+        env,
+    )
+    assert yield_select_empty_tokens.get("status") == "error"
+    assert int(yield_select_empty_tokens.get("code", 0)) == 2
 
     yield_select_alias = run(
         {
@@ -1615,6 +1639,23 @@ def main() -> int:
     assert swap_select_blank.get("status") == "error"
     assert int(swap_select_blank.get("code", 0)) == 2
 
+    swap_select_empty_tokens = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": ",, ,",
+            },
+        },
+        env,
+    )
+    assert swap_select_empty_tokens.get("status") == "error"
+    assert int(swap_select_empty_tokens.get("code", 0)) == 2
+
     lend_markets = run(
         {
             "action": "lendMarkets",
@@ -1683,6 +1724,20 @@ def main() -> int:
     )
     assert lend_markets_select_blank.get("status") == "error"
     assert int(lend_markets_select_blank.get("code", 0)) == 2
+
+    lend_markets_select_empty_tokens = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "limit": 2,
+                "select": ",, ,",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select_empty_tokens.get("status") == "error"
+    assert int(lend_markets_select_empty_tokens.get("code", 0)) == 2
 
     lend_markets_select_alias = run(
         {
@@ -1759,6 +1814,21 @@ def main() -> int:
     )
     assert lend_rates_select_blank.get("status") == "error"
     assert int(lend_rates_select_blank.get("code", 0)) == 2
+
+    lend_rates_select_empty_tokens = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": ",, ,",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select_empty_tokens.get("status") == "error"
+    assert int(lend_rates_select_empty_tokens.get("code", 0)) == 2
 
     lend_rates_select_alias = run(
         {
