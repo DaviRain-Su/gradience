@@ -3,6 +3,7 @@ import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 
 type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
+type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ZigDisabledCase = { name: string; params: Params; reason: string };
 type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
 type LifiAnalysisCase = {
@@ -419,7 +420,7 @@ function assertStatusCode(
 function assertStatusCodeOneOf(
   name: string,
   payload: Record<string, unknown>,
-  allowed: Array<{ status: "ok" | "error" | "blocked"; code: number }>,
+  allowed: StatusCode[],
   label: string,
 ): void {
   for (const entry of allowed) {
