@@ -164,6 +164,20 @@ function assertResultStringField(name: string, payload: Record<string, unknown>,
   }
 }
 
+function assertValidationShape(name: string, payload: Record<string, unknown>): void {
+  const result = getResult(name, payload);
+  const validation = result.validation as Record<string, unknown> | null | undefined;
+  if (!validation || typeof validation !== "object") {
+    throw new Error(fail(name, "result.validation must be object"));
+  }
+  if (typeof validation.ok !== "boolean") {
+    throw new Error(fail(name, "result.validation.ok must be boolean"));
+  }
+  if (!Array.isArray(validation.errors)) {
+    throw new Error(fail(name, "result.validation.errors must be array"));
+  }
+}
+
 function assertBlockedWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -325,7 +339,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   ) {
     throw new Error(fail(TOOL.strategyValidate, "should return either ok/0 or error/2"));
   }
-  assertResultObjectField(TOOL.strategyValidate, validatePayload, "validation");
+  assertValidationShape(TOOL.strategyValidate, validatePayload);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -363,6 +377,14 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   });
   if (invalid.status !== "error" || Number(invalid.code) !== 2) {
     throw new Error(fail(TOOL.strategyValidate, "should return error code 2 for invalid strategy"));
+  }
+  assertValidationShape(TOOL.strategyValidate, invalid);
+  const invalidValidation = getResult(TOOL.strategyValidate, invalid).validation as Record<string, unknown>;
+  if (invalidValidation.ok !== false) {
+    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should set validation.ok=false"));
+  }
+  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
+    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should include validation errors"));
   }
 
   const blocked = await parseToolPayload(getTool(tools, TOOL.lifiExtractTxRequest), { quote: {} });
