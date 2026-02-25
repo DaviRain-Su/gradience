@@ -1566,6 +1566,14 @@ fn parseQuoteSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8
     return parseCanonicalSelectedFields(allocator, fields_raw, canonicalQuoteSelectField);
 }
 
+fn parseCanonicalSelectOrWriteInvalid(
+    allocator: std.mem.Allocator,
+    fields_raw: []const u8,
+    comptime canonicalizer: fn ([]const u8) ?[]const u8,
+) !std.ArrayList([]const u8) {
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalizer);
+}
+
 fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
     if (fieldMatches(field, QuoteFieldKey.provider)) return QuoteFieldKey.provider;
     if (fieldMatches(field, QuoteFieldKey.from_chain)) return QuoteFieldKey.from_chain;
@@ -1583,23 +1591,23 @@ fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
 }
 
 fn parseProvidersSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalProvidersSelectField);
+    return parseCanonicalSelectOrWriteInvalid(allocator, fields_raw, canonicalProvidersSelectField);
 }
 
 fn parseChainsTopSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalChainsTopSelectField);
+    return parseCanonicalSelectOrWriteInvalid(allocator, fields_raw, canonicalChainsTopSelectField);
 }
 
 fn parseYieldSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalYieldSelectField);
+    return parseCanonicalSelectOrWriteInvalid(allocator, fields_raw, canonicalYieldSelectField);
 }
 
 fn parseLendMarketsSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalLendMarketsSelectField);
+    return parseCanonicalSelectOrWriteInvalid(allocator, fields_raw, canonicalLendMarketsSelectField);
 }
 
 fn parseLendRatesSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalLendRatesSelectField);
+    return parseCanonicalSelectOrWriteInvalid(allocator, fields_raw, canonicalLendRatesSelectField);
 }
 
 fn parseCanonicalSelectedFields(
