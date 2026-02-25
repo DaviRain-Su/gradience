@@ -221,6 +221,43 @@ function assertResultObjectFields(
   }
 }
 
+function assertResultObjectValueChecks(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<{ name: string; objectField: string; key: string; expected: unknown }>,
+): void {
+  for (const check of checks) {
+    assertResultObjectFieldValue(
+      check.name,
+      getPayload(payloads, check.name),
+      check.objectField,
+      check.key,
+      check.expected,
+    );
+  }
+}
+
+function assertResultNestedObjectValueChecks(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<{
+    name: string;
+    parentField: string;
+    objectField: string;
+    key: string;
+    expected: unknown;
+  }>,
+): void {
+  for (const check of checks) {
+    assertResultNestedObjectFieldValue(
+      check.name,
+      getPayload(payloads, check.name),
+      check.parentField,
+      check.objectField,
+      check.key,
+      check.expected,
+    );
+  }
+}
+
 function assertResultStringFields(
   payloads: Map<string, Record<string, unknown>>,
   checks: Array<{ name: string; fields: string[] }>,
@@ -243,6 +280,13 @@ function assertOkForChecks(
     if (!nonOkAllowed.has(name)) {
       assertOkEnvelope(name, payload);
     }
+  }
+}
+
+function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>): void {
+  const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
+  if (!Array.isArray(templates) || templates.length === 0) {
+    throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
   }
 }
 
@@ -620,10 +664,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   ]);
   assertResultStringFields(payloads, [{ name: TOOL.buildDexSwap, fields: ["notes"] }]);
 
-  const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
-  if (!Array.isArray(templates) || templates.length === 0) {
-    throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
-  }
+  assertTemplatesNonEmpty(payloads);
 
   const semanticObjectChecks: Array<{
     name: string;
@@ -645,24 +686,17 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
       expected: "subscription",
     },
   ];
-  for (const check of semanticObjectChecks) {
-    assertResultObjectFieldValue(
-      check.name,
-      getPayload(payloads, check.name),
-      check.objectField,
-      check.key,
-      check.expected,
-    );
-  }
+  assertResultObjectValueChecks(payloads, semanticObjectChecks);
 
-  assertResultNestedObjectFieldValue(
-    TOOL.strategyCompile,
-    getPayload(payloads, TOOL.strategyCompile),
-    "strategy",
-    "metadata",
-    "template",
-    "pay-per-call-v1",
-  );
+  assertResultNestedObjectValueChecks(payloads, [
+    {
+      name: TOOL.strategyCompile,
+      parentField: "strategy",
+      objectField: "metadata",
+      key: "template",
+      expected: "pay-per-call-v1",
+    },
+  ]);
 
   assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
 
