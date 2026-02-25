@@ -794,12 +794,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const tool = (quote?.tool as string | undefined) || null;
 
       if (runMode === "analysis") {
-        return textResult({ status: "analysis_ok", quote, txRequest, routeId, tool });
+        return toolOk({ quote, txRequest, routeId, tool }, { mode: "analysis", rpcUrl });
       }
 
       if (runMode === "simulate") {
         if (!txRequest) {
-          return textResult({ status: "blocked", reason: "missing txRequest" });
+          return toolEnvelope("blocked", 12, { reason: "missing txRequest" }, { mode: "simulate", rpcUrl });
         }
         const gas = await provider.estimateGas({
           to: String(txRequest.to || ""),
@@ -807,28 +807,32 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           value: txRequest.value ? String(txRequest.value) : "0x0",
           from: base.fromAddress,
         });
-        return textResult({
-          status: "simulate_ok",
-          estimateGas: gas.toString(),
-          txRequest,
-          routeId,
-          tool,
-        });
+        return toolOk(
+          {
+            estimateGas: gas.toString(),
+            txRequest,
+            routeId,
+            tool,
+          },
+          { mode: "simulate", rpcUrl },
+        );
       }
 
       if (!asOptionalString(params, "signedTxHex")) {
-        return textResult({ status: "blocked", reason: "execute requires signedTxHex" });
+        return toolEnvelope("blocked", 12, { reason: "execute requires signedTxHex" }, { mode: "execute", rpcUrl });
       }
       const response = await provider.broadcastTransaction(
         asString(params, "signedTxHex"),
       );
-      return textResult({
-        status: "execute_ok",
-        txHash: response.hash,
-        txRequest,
-        routeId,
-        tool,
-      });
+      return toolOk(
+        {
+          txHash: response.hash,
+          txRequest,
+          routeId,
+          tool,
+        },
+        { mode: "execute", rpcUrl },
+      );
     },
   });
 
@@ -1178,26 +1182,32 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const runMode = asString(params, "runMode");
 
       if (isZigCoreEnabled()) {
-        const runtime = await callZigCore({ action: "runtimeInfo", params: {} });
+        const runtime = await callZigCore({ action: "runtimeInfo", params: { resultsOnly: true } });
+        const runtimePayload = zigPayload(runtime);
         const runtimeMeta = {
-          strict: Boolean(runtime.strict),
-          allowBroadcast: Boolean(runtime.allowBroadcast),
+          strict: Boolean(runtimePayload.strict),
+          allowBroadcast: Boolean(runtimePayload.allowBroadcast),
         };
 
         if (runMode === "analysis") {
           const zig = await callZigCore({
             action: "getBalance",
-            params: { rpcUrl, address: fromAddress, blockTag: "latest" },
+            params: { rpcUrl, address: fromAddress, blockTag: "latest", resultsOnly: true },
           });
           ensureZigOk(zig, "zig core analysis getBalance failed");
-          return textResult({
-            status: "analysis_ok",
-            source: String(zig.source || "fresh"),
-            runtime: runtimeMeta,
-            fromAddress,
-            balanceWei: BigInt(String(zig.balanceHex || "0x0")).toString(),
-            rpcUrl,
-          });
+          const payload = zigPayload(zig);
+          return toolOk(
+            {
+              fromAddress,
+              balanceWei: BigInt(String(payload.balanceHex || "0x0")).toString(),
+            },
+            {
+              mode: "analysis",
+              source: String(payload.source || "fresh"),
+              runtime: runtimeMeta,
+              rpcUrl,
+            },
+          );
         }
 
         if (runMode === "simulate") {
@@ -1208,6 +1218,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
                   tokenAddress,
                   toAddress,
                   amountRaw,
+                  resultsOnly: true,
                 },
               }))
             : (await callZigCore({
@@ -1215,13 +1226,15 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
                 params: {
                   toAddress,
                   amountWei: amountRaw,
+                  resultsOnly: true,
                 },
               }));
 
           ensureZigOk(txRequest, "zig core build tx failed");
-          if (!txRequest.txRequest) throw new Error("zig core build tx missing txRequest");
+          const txPayload = zigPayload(txRequest);
+          if (!txPayload.txRequest) throw new Error("zig core build tx missing txRequest");
 
-          const builtTx = txRequest.txRequest as Record<string, unknown>;
+          const builtTx = txPayload.txRequest as Record<string, unknown>;
           const estimate = await callZigCore({
             action: "estimateGas",
             params: {
@@ -1230,59 +1243,71 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
               to: String(builtTx.to || ""),
               data: String(builtTx.data || "0x"),
               value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
+              resultsOnly: true,
             },
           });
 
           ensureZigOk(estimate, "zig core estimateGas failed");
+          const estimatePayload = zigPayload(estimate);
 
-          return textResult({
-            status: "simulate_ok",
-            source: String(estimate.source || "fresh"),
-            runtime: runtimeMeta,
-            estimateGas: String(estimate.estimateGas || "0"),
-            rpcUrl,
-            tx: {
-              from: fromAddress,
-              to: String(builtTx.to || ""),
-              data: String(builtTx.data || "0x"),
-              value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
+          return toolOk(
+            {
+              estimateGas: String(estimatePayload.estimateGas || "0"),
+              tx: {
+                from: fromAddress,
+                to: String(builtTx.to || ""),
+                data: String(builtTx.data || "0x"),
+                value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
+              },
             },
-          });
+            {
+              mode: "simulate",
+              source: String(estimatePayload.source || "fresh"),
+              runtime: runtimeMeta,
+              rpcUrl,
+            },
+          );
         }
 
         if (!asOptionalString(params, "signedTxHex")) {
-          return textResult({
-            status: "blocked",
-            reason: "execute requires signedTxHex",
-          });
+          return toolEnvelope(
+            "blocked",
+            12,
+            { reason: "execute requires signedTxHex" },
+            { mode: "execute", runtime: runtimeMeta, rpcUrl },
+          );
         }
 
         const sent = await callZigCore({
           action: "sendSignedTransaction",
-          params: { rpcUrl, signedTxHex: asString(params, "signedTxHex") },
+          params: { rpcUrl, signedTxHex: asString(params, "signedTxHex"), resultsOnly: true },
         });
         const blocked = blockedByZigPolicy(sent, rpcUrl, runtimeMeta);
         if (blocked) return blocked;
         ensureZigOk(sent, "zig core sendSignedTransaction failed");
-        return textResult({
-          status: "execute_ok",
-          source: String(sent.source || "fresh"),
-          runtime: runtimeMeta,
-          txHash: String(sent.txHash || ""),
-          rpcUrl,
-        });
+        const sentPayload = zigPayload(sent);
+        return toolOk(
+          { txHash: String(sentPayload.txHash || "") },
+          {
+            mode: "execute",
+            source: String(sentPayload.source || "fresh"),
+            runtime: runtimeMeta,
+            rpcUrl,
+          },
+        );
       }
 
       const provider = getProvider(rpcUrl);
 
       if (runMode === "analysis") {
         const balance = await provider.getBalance(fromAddress, "latest");
-        return textResult({
-          status: "analysis_ok",
-          fromAddress,
-          balanceWei: balance.toString(),
-          rpcUrl,
-        });
+        return toolOk(
+          {
+            fromAddress,
+            balanceWei: balance.toString(),
+          },
+          { mode: "analysis", rpcUrl },
+        );
       }
 
       if (runMode === "simulate") {
@@ -1299,25 +1324,28 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           value: tokenAddress ? "0x0" : amountRaw,
         };
         const gas = await provider.estimateGas(tx);
-        return textResult({
-          status: "simulate_ok",
-          estimateGas: gas.toString(),
-          rpcUrl,
-          tx,
-        });
+        return toolOk(
+          {
+            estimateGas: gas.toString(),
+            tx,
+          },
+          { mode: "simulate", rpcUrl },
+        );
       }
 
       if (!asOptionalString(params, "signedTxHex")) {
-        return textResult({
-          status: "blocked",
-          reason: "execute requires signedTxHex",
-        });
+        return toolEnvelope(
+          "blocked",
+          12,
+          { reason: "execute requires signedTxHex" },
+          { mode: "execute", rpcUrl },
+        );
       }
 
       const response = await provider.broadcastTransaction(
         asString(params, "signedTxHex"),
       );
-      return textResult({ status: "execute_ok", txHash: response.hash, rpcUrl });
+      return toolOk({ txHash: response.hash }, { mode: "execute", rpcUrl });
     },
   });
 
