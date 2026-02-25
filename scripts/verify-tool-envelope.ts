@@ -621,9 +621,7 @@ async function runPureTsStages(
   context: PureTsContext,
   stages: PureTsStage[] = PURE_TS_STAGES,
 ): Promise<void> {
-  for (const stage of stages) {
-    await stage(tools, context);
-  }
+  await runContextStages(tools, context, stages);
 }
 
 const PURE_TS_STAGES: PureTsStage[] = [runPureTsPreloadedStage, runPureTsSemanticStage];
@@ -641,6 +639,16 @@ async function runToolCaseList<T>(
 async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
   for (const stage of stages) {
     await stage(tools);
+  }
+}
+
+async function runContextStages<TContext>(
+  tools: Map<string, ToolDefinition>,
+  context: TContext,
+  stages: Array<(tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>>,
+): Promise<void> {
+  for (const stage of stages) {
+    await stage(tools, context);
   }
 }
 
@@ -961,9 +969,7 @@ async function runZigRequiredStages(
   context: ZigRequiredContext,
   stages: ZigRequiredStage[] = ZIG_REQUIRED_STAGES,
 ): Promise<void> {
-  for (const stage of stages) {
-    await stage(tools, context);
-  }
+  await runContextStages(tools, context, stages);
 }
 
 const ZIG_REQUIRED_STAGES: ZigRequiredStage[] = [runZigRequiredPreloadedStage, runZigRequiredExecutedStage];
