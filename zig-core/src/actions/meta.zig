@@ -1227,18 +1227,13 @@ fn writeBridgeQuoteResponse(
 
     if (select) |fields_raw| {
         var obj = std.json.ObjectMap.init(allocator);
-        var parts = std.mem.splitScalar(u8, fields_raw, ',');
-        while (parts.next()) |part| {
-            const field = std.mem.trim(u8, part, " \r\n\t");
-            if (field.len == 0) continue;
+        var fields = try parseSelectedFields(allocator, fields_raw);
+        defer fields.deinit(allocator);
+        for (fields.items) |field| {
             try putBridgeQuoteSelectedField(&obj, field, quote, from_chain, to_chain, asset, amount_in, estimated_out);
         }
 
-        if (results_only) {
-            try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
-        } else {
-            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
-        }
+        try writeSelectedQuoteEnvelope(results_only, obj);
         return;
     }
 
@@ -1287,18 +1282,13 @@ fn writeSwapQuoteResponse(
 
     if (select) |fields_raw| {
         var obj = std.json.ObjectMap.init(allocator);
-        var parts = std.mem.splitScalar(u8, fields_raw, ',');
-        while (parts.next()) |part| {
-            const field = std.mem.trim(u8, part, " \r\n\t");
-            if (field.len == 0) continue;
+        var fields = try parseSelectedFields(allocator, fields_raw);
+        defer fields.deinit(allocator);
+        for (fields.items) |field| {
             try putSwapQuoteSelectedField(&obj, field, quote, chain, from_asset, to_asset, amount_in, estimated_out);
         }
 
-        if (results_only) {
-            try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
-        } else {
-            try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
-        }
+        try writeSelectedQuoteEnvelope(results_only, obj);
         return;
     }
 
@@ -1416,6 +1406,25 @@ fn putSwapQuoteSelectedField(
     if (std.mem.eql(u8, field, QuoteFieldKey.price_impact_bps)) {
         try obj.put(QuoteFieldKey.price_impact_bps, .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
         return;
+    }
+}
+
+fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    var fields = std.ArrayList([]const u8).empty;
+    var parts = std.mem.splitScalar(u8, fields_raw, ',');
+    while (parts.next()) |part| {
+        const field = std.mem.trim(u8, part, " \r\n\t");
+        if (field.len == 0) continue;
+        try fields.append(allocator, field);
+    }
+    return fields;
+}
+
+fn writeSelectedQuoteEnvelope(results_only: bool, obj: std.json.ObjectMap) !void {
+    if (results_only) {
+        try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+    } else {
+        try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
     }
 }
 
