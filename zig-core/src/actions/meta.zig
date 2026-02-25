@@ -1380,7 +1380,7 @@ fn writeBridgeQuoteResponse(
 
     if (select) |fields_raw| {
         var obj = std.json.ObjectMap.init(allocator);
-        var fields = try parseSelectedFields(allocator, fields_raw);
+        var fields = try parseQuoteSelectedFields(allocator, fields_raw);
         defer fields.deinit(allocator);
         for (fields.items) |field| {
             try putBridgeQuoteSelectedField(&obj, field, quote, from_chain, to_chain, asset, amount_in, estimated_out);
@@ -1435,7 +1435,7 @@ fn writeSwapQuoteResponse(
 
     if (select) |fields_raw| {
         var obj = std.json.ObjectMap.init(allocator);
-        var fields = try parseSelectedFields(allocator, fields_raw);
+        var fields = try parseQuoteSelectedFields(allocator, fields_raw);
         defer fields.deinit(allocator);
         for (fields.items) |field| {
             try putSwapQuoteSelectedField(&obj, field, quote, chain, from_asset, to_asset, amount_in, estimated_out);
@@ -1500,19 +1500,19 @@ fn putBridgeQuoteSelectedField(
         try obj.put(QuoteFieldKey.asset, .{ .string = asset });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) {
+    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) {
+    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) {
+    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.eta_seconds, "eta_seconds" })) {
+    if (fieldMatches(field, QuoteFieldKey.eta_seconds)) {
         try obj.put(QuoteFieldKey.eta_seconds, .{ .integer = @as(i64, @intCast(quote.eta_seconds)) });
         return;
     }
@@ -1536,30 +1536,59 @@ fn putSwapQuoteSelectedField(
         try obj.put(QuoteFieldKey.chain, .{ .string = chain });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.from_asset, "from_asset" })) {
+    if (fieldMatches(field, QuoteFieldKey.from_asset)) {
         try obj.put(QuoteFieldKey.from_asset, .{ .string = from_asset });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.to_asset, "to_asset" })) {
+    if (fieldMatches(field, QuoteFieldKey.to_asset)) {
         try obj.put(QuoteFieldKey.to_asset, .{ .string = to_asset });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) {
+    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) {
+    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) {
+    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (fieldMatchesAny(field, &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" })) {
+    if (fieldMatches(field, QuoteFieldKey.price_impact_bps)) {
         try obj.put(QuoteFieldKey.price_impact_bps, .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
         return;
     }
+}
+
+fn parseQuoteSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
+    var fields = std.ArrayList([]const u8).empty;
+    var parts = std.mem.splitScalar(u8, fields_raw, ',');
+    while (parts.next()) |part| {
+        const field = std.mem.trim(u8, part, " \r\n\t");
+        if (field.len == 0) continue;
+        const canonical = canonicalQuoteSelectField(field) orelse continue;
+        if (containsField(fields.items, canonical)) continue;
+        try fields.append(allocator, canonical);
+    }
+    return fields;
+}
+
+fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
+    if (fieldMatches(field, QuoteFieldKey.provider)) return QuoteFieldKey.provider;
+    if (fieldMatches(field, QuoteFieldKey.from_chain)) return QuoteFieldKey.from_chain;
+    if (fieldMatches(field, QuoteFieldKey.to_chain)) return QuoteFieldKey.to_chain;
+    if (fieldMatches(field, QuoteFieldKey.chain)) return QuoteFieldKey.chain;
+    if (fieldMatches(field, QuoteFieldKey.asset)) return QuoteFieldKey.asset;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.from_asset, "from_asset" })) return QuoteFieldKey.from_asset;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.to_asset, "to_asset" })) return QuoteFieldKey.to_asset;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) return QuoteFieldKey.amount_in;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) return QuoteFieldKey.estimated_out;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) return QuoteFieldKey.fee_bps;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.eta_seconds, "eta_seconds" })) return QuoteFieldKey.eta_seconds;
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" })) return QuoteFieldKey.price_impact_bps;
+    return null;
 }
 
 fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {

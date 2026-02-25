@@ -102,6 +102,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
 - `strategy` value is trimmed; blank/unknown values are rejected
 - `select` also accepts snake_case aliases for quote fields (e.g. `estimated_amount_out`, `fee_bps`, `eta_seconds`)
+- alias/camel/snake variants are coalesced to canonical response keys
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple routes share the same top priority bucket, `strategy` breaks ties
@@ -128,6 +129,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
 - `strategy` value is trimmed; blank/unknown values are rejected
 - `select` also accepts snake_case aliases for quote fields (e.g. `from_asset`, `to_asset`, `estimated_amount_out`, `fee_bps`, `price_impact_bps`)
+- alias/camel/snake variants are coalesced to canonical response keys
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple candidates share the same top priority bucket, `strategy` breaks ties

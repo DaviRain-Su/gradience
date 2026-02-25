@@ -893,6 +893,26 @@ def main() -> int:
         "etaSeconds",
     }
 
+    bridge_select_alias_coalesced = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "estimatedAmountOut,estimated_amount_out",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_alias_coalesced.get("status") == "ok"
+    assert list(bridge_select_alias_coalesced.get("results", {}).keys()) == [
+        "estimatedAmountOut"
+    ]
+
     bridge_select_unknown_field = run(
         {
             "action": "bridgeQuote",
@@ -1475,6 +1495,26 @@ def main() -> int:
         "estimatedAmountOut",
         "priceImpactBps",
     }
+
+    swap_select_alias_coalesced = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "priceImpactBps,price_impact_bps",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_alias_coalesced.get("status") == "ok"
+    assert list(swap_select_alias_coalesced.get("results", {}).keys()) == [
+        "priceImpactBps"
+    ]
 
     swap_select_unknown_field = run(
         {
