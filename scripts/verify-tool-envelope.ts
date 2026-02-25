@@ -775,17 +775,7 @@ async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Pr
       constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
     },
   });
-  if (payload.status !== "error" || Number(payload.code) !== 2) {
-    throw new Error(fail(TOOL.strategyValidate, "should return error code 2 for invalid strategy"));
-  }
-  assertValidationShape(TOOL.strategyValidate, payload);
-  const invalidValidation = getResult(TOOL.strategyValidate, payload).validation as Record<string, unknown>;
-  if (invalidValidation.ok !== false) {
-    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should set validation.ok=false"));
-  }
-  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
-    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should include validation errors"));
-  }
+  assertInvalidValidationPayload(TOOL.strategyValidate, payload);
 }
 
 async function runBlockedBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -843,6 +833,20 @@ function assertStrategyValidateEnvelope(name: string, payload: Record<string, un
     throw new Error(fail(name, "should return either ok/0 or error/2"));
   }
   assertValidationShape(name, payload);
+}
+
+function assertInvalidValidationPayload(name: string, payload: Record<string, unknown>): void {
+  if (payload.status !== "error" || Number(payload.code) !== 2) {
+    throw new Error(fail(name, "should return error code 2 for invalid strategy"));
+  }
+  assertValidationShape(name, payload);
+  const invalidValidation = getResult(name, payload).validation as Record<string, unknown>;
+  if (invalidValidation.ok !== false) {
+    throw new Error(fail(name, "invalid strategy should set validation.ok=false"));
+  }
+  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
+    throw new Error(fail(name, "invalid strategy should include validation errors"));
+  }
 }
 
 function assertOkWithMode(
