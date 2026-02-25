@@ -598,9 +598,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = getString(params, "provider");
+        const provider_filter = if (getString(params, "provider")) |raw| blk: {
+            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+            if (trimmed.len == 0) {
+                try writeInvalid("provider");
+                return true;
+            }
+            break :blk trimmed;
+        } else null;
         const provider_priority = getString(params, "providers");
-        const strategy_raw = getString(params, "strategy") orelse "bestOut";
+        const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseBridgeStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
             return true;
@@ -654,9 +661,16 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = getString(params, "provider");
+        const provider_filter = if (getString(params, "provider")) |raw| blk: {
+            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+            if (trimmed.len == 0) {
+                try writeInvalid("provider");
+                return true;
+            }
+            break :blk trimmed;
+        } else null;
         const provider_priority = getString(params, "providers");
-        const strategy_raw = getString(params, "strategy") orelse "bestOut";
+        const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseSwapStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
             return true;

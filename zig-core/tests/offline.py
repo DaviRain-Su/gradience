@@ -275,6 +275,22 @@ def main() -> int:
     assert bridge_fastest_case_insensitive.get("status") == "ok"
     assert bridge_fastest_case_insensitive.get("provider") == "bungee"
 
+    bridge_provider_spaced = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": " lifi ",
+            },
+        },
+        env,
+    )
+    assert bridge_provider_spaced.get("status") == "ok"
+    assert bridge_provider_spaced.get("provider") == "lifi"
+
     bridge_provider_priority = run(
         {
             "action": "bridgeQuote",
@@ -373,6 +389,22 @@ def main() -> int:
     )
     assert bridge_unknown_provider.get("status") == "error"
     assert int(bridge_unknown_provider.get("code", 0)) == 13
+
+    bridge_blank_provider = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "   ",
+            },
+        },
+        env,
+    )
+    assert bridge_blank_provider.get("status") == "error"
+    assert int(bridge_blank_provider.get("code", 0)) == 2
 
     bridge_invalid_strategy = run(
         {
@@ -597,6 +629,22 @@ def main() -> int:
     assert swap_lowest_fee_case_insensitive.get("status") == "ok"
     assert swap_lowest_fee_case_insensitive.get("provider") == "1inch"
 
+    swap_provider_spaced = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": " 1inch ",
+            },
+        },
+        env,
+    )
+    assert swap_provider_spaced.get("status") == "ok"
+    assert swap_provider_spaced.get("provider") == "1inch"
+
     swap_unknown_provider = run(
         {
             "action": "swapQuote",
@@ -612,6 +660,22 @@ def main() -> int:
     )
     assert swap_unknown_provider.get("status") == "error"
     assert int(swap_unknown_provider.get("code", 0)) == 13
+
+    swap_blank_provider = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "   ",
+            },
+        },
+        env,
+    )
+    assert swap_blank_provider.get("status") == "error"
+    assert int(swap_blank_provider.get("code", 0)) == 2
 
     swap_invalid_strategy = run(
         {
