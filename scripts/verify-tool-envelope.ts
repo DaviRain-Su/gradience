@@ -1083,8 +1083,19 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   await runContextCheck(tools, buildZigRequiredContext, runZigRequiredStages);
 }
 
-async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+async function buildBehaviorContext(_tools: Map<string, ToolDefinition>): Promise<void> {
+  return;
+}
+
+async function runBehaviorStagesWithContext(
+  tools: Map<string, ToolDefinition>,
+  _context: void,
+): Promise<void> {
   await runToolStages(tools, BEHAVIOR_PIPELINE);
+}
+
+async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+  await runContextCheck(tools, buildBehaviorContext, runBehaviorStagesWithContext);
 }
 
 async function main(): Promise<void> {
