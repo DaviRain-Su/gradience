@@ -286,6 +286,21 @@ def main() -> int:
     assert bridge_unsupported_to.get("status") == "error"
     assert int(bridge_unsupported_to.get("code", 0)) == 13
 
+    bridge_invalid_amount = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "not-a-number",
+            },
+        },
+        env,
+    )
+    assert bridge_invalid_amount.get("status") == "error"
+    assert int(bridge_invalid_amount.get("code", 0)) == 2
+
     bridge_fastest = run(
         {
             "action": "bridgeQuote",
@@ -651,6 +666,21 @@ def main() -> int:
     )
     assert swap_unsupported_chain.get("status") == "error"
     assert int(swap_unsupported_chain.get("code", 0)) == 13
+
+    swap_invalid_amount = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "not-a-number",
+            },
+        },
+        env,
+    )
+    assert swap_invalid_amount.get("status") == "error"
+    assert int(swap_invalid_amount.get("code", 0)) == 2
 
     swap_provider_priority = run(
         {

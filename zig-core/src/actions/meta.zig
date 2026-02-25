@@ -1101,10 +1101,7 @@ fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
         return null;
     };
 
-    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
-        try writeInvalid("amount");
-        return null;
-    };
+    const amount = (try parseRequiredAmountU256(amount_raw)) orelse return null;
 
     return .{
         .from_chain = from_chain,
@@ -1138,10 +1135,7 @@ fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
         return null;
     };
 
-    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
-        try writeInvalid("amount");
-        return null;
-    };
+    const amount = (try parseRequiredAmountU256(amount_raw)) orelse return null;
 
     return .{
         .chain = chain,
@@ -1696,6 +1690,13 @@ fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
         try std.heap.c_allocator.dupe(u8, "unsupported chain alias");
     defer std.heap.c_allocator.free(msg);
     try core_envelope.writeJson(core_errors.unsupported(msg));
+}
+
+fn parseRequiredAmountU256(amount_raw: []const u8) !?u256 {
+    return std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+        try writeInvalid("amount");
+        return null;
+    };
 }
 
 fn writeInvalid(field_name: []const u8) !void {
