@@ -6,7 +6,6 @@ type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
 type ContextStage<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
-type VoidContextStage = ContextStage<undefined>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: Map<string, Record<string, unknown>>;
@@ -639,19 +638,7 @@ async function runToolCaseList<T>(
 }
 
 async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
-  await runContextStages(
-    tools,
-    undefined,
-    adaptToolStages(stages),
-  );
-}
-
-function adaptToolStages(
-  stages: ToolStage[],
-): VoidContextStage[] {
-  return stages.map((stage): VoidContextStage => async (stageTools, _context) => {
-    await stage(stageTools);
-  });
+  await runPipeline(tools, stages);
 }
 
 async function runContextStages<TContext>(
@@ -661,6 +648,12 @@ async function runContextStages<TContext>(
 ): Promise<void> {
   for (const stage of stages) {
     await stage(tools, context);
+  }
+}
+
+async function runPipeline(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
+  for (const stage of stages) {
+    await stage(tools);
   }
 }
 
