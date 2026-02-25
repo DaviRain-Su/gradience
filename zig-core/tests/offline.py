@@ -744,6 +744,23 @@ def main() -> int:
     assert bridge_select_unknown_field.get("status") == "ok"
     assert bridge_select_unknown_field.get("results") == {}
 
+    bridge_select_blank = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "   ",
+            },
+        },
+        env,
+    )
+    assert bridge_select_blank.get("status") == "error"
+    assert int(bridge_select_blank.get("code", 0)) == 2
+
     swap = run(
         {
             "action": "swapQuote",
@@ -1242,6 +1259,23 @@ def main() -> int:
     )
     assert swap_select_unknown_field.get("status") == "ok"
     assert swap_select_unknown_field.get("results") == {}
+
+    swap_select_blank = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "   ",
+            },
+        },
+        env,
+    )
+    assert swap_select_blank.get("status") == "error"
+    assert int(swap_select_blank.get("code", 0)) == 2
 
     lend_markets = run(
         {

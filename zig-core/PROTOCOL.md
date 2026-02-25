@@ -101,6 +101,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
+  - blank/empty `select` values are rejected
 
 ### swapQuote Notes
 
@@ -123,6 +124,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
   - unknown `select` fields are ignored
+  - blank/empty `select` values are rejected
 
 ### lendMarkets Notes
 

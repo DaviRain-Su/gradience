@@ -1090,10 +1090,16 @@ fn parseCommonQuoteOptions(params: std.json.ObjectMap) CommonOptionsParseResult 
         .invalid => return .{ .invalid_field = "providers" },
     };
 
+    const select = switch (parseOptionalSelectParam(params)) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "select" },
+    };
+
     return .{ .ok = .{
         .provider_filter = provider_filter,
         .provider_priority = provider_priority,
-        .select = getString(params, "select"),
+        .select = select,
         .results_only = getBool(params, "resultsOnly") orelse false,
     } };
 }
@@ -1588,6 +1594,15 @@ fn parseOptionalTrimmedStringParam(obj: std.json.ObjectMap, key: []const u8) Opt
 
 fn parseOptionalProvidersParam(obj: std.json.ObjectMap) OptionalStringParam {
     const parsed = parseOptionalTrimmedStringParam(obj, "providers");
+    return switch (parsed) {
+        .missing => .missing,
+        .invalid => .invalid,
+        .value => |value| if (hasNonEmptyCsvToken(value)) .{ .value = value } else .invalid,
+    };
+}
+
+fn parseOptionalSelectParam(obj: std.json.ObjectMap) OptionalStringParam {
+    const parsed = parseOptionalTrimmedStringParam(obj, "select");
     return switch (parsed) {
         .missing => .missing,
         .invalid => .invalid,
