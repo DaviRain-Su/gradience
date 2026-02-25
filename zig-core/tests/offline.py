@@ -165,6 +165,16 @@ def main() -> int:
     assert len(selected_case) >= 1
     assert set(selected_case[0].keys()) <= {"name", "auth"}
 
+    providers_select_blank = run(
+        {
+            "action": "providersList",
+            "params": {"category": "swap", "select": "   "},
+        },
+        env,
+    )
+    assert providers_select_blank.get("status") == "error"
+    assert int(providers_select_blank.get("code", 0)) == 2
+
     providers_results_only = run(
         {
             "action": "providersList",
@@ -201,6 +211,13 @@ def main() -> int:
     selected_rows_case = chains_select_case_dup.get("chains", [])
     assert len(selected_rows_case) == 2
     assert set(selected_rows_case[0].keys()) == {"chain", "rank"}
+
+    chains_select_blank = run(
+        {"action": "chainsTop", "params": {"limit": 2, "select": "   "}},
+        env,
+    )
+    assert chains_select_blank.get("status") == "error"
+    assert int(chains_select_blank.get("code", 0)) == 2
 
     chains_select_alias = run(
         {
@@ -278,6 +295,20 @@ def main() -> int:
     sel_rows_case = yield_select_case_dup.get("opportunities", [])
     assert len(sel_rows_case) == 2
     assert set(sel_rows_case[0].keys()) == {"provider", "apy"}
+
+    yield_select_blank = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "limit": 2,
+                "select": "   ",
+            },
+        },
+        env,
+    )
+    assert yield_select_blank.get("status") == "error"
+    assert int(yield_select_blank.get("code", 0)) == 2
 
     yield_select_alias = run(
         {
@@ -1535,6 +1566,20 @@ def main() -> int:
     assert len(mrows_case) == 2
     assert set(mrows_case[0].keys()) == {"provider", "supply_apy"}
 
+    lend_markets_select_blank = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "limit": 2,
+                "select": "   ",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select_blank.get("status") == "error"
+    assert int(lend_markets_select_blank.get("code", 0)) == 2
+
     lend_markets_select_alias = run(
         {
             "action": "lendMarkets",
@@ -1595,6 +1640,21 @@ def main() -> int:
     assert lend_rates_select_case_dup.get("status") == "ok"
     rates_case = lend_rates_select_case_dup.get("rates", {})
     assert set(rates_case.keys()) == {"provider", "supplyApy"}
+
+    lend_rates_select_blank = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": "   ",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select_blank.get("status") == "error"
+    assert int(lend_rates_select_blank.get("code", 0)) == 2
 
     lend_rates_select_alias = run(
         {

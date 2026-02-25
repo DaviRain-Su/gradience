@@ -61,6 +61,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `rank`, `chain`, `chain_id`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts camelCase aliases (`chainId`, `tvlUsd`)
+- blank/empty `select` values are rejected
 
 ### chainsAssets Notes
 
@@ -83,6 +84,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `apy`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts camelCase alias `tvlUsd`
+- blank/empty `select` values are rejected
 
 ### bridgeQuote Notes
 
@@ -149,6 +151,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supply_apy`, `borrow_apy`, `tvl_usd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts camelCase aliases (`supplyApy`, `borrowApy`, `tvlUsd`)
+- blank/empty `select` values are rejected
 
 ### lendRates Notes
 
@@ -160,6 +163,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supplyApy`, `borrowApy`, `tvlUsd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts snake_case aliases (`supply_apy`, `borrow_apy`, `tvl_usd`)
+- blank/empty `select` values are rejected
 
 ### providersList Notes
 
@@ -176,6 +180,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `name`, `auth`, `categories`, `capabilities`, `capability_auth`)
   - `resultsOnly` (boolean, return payload under `results` key)
 - `select` field names are case-insensitive and duplicate fields are coalesced
+- blank/empty `select` values are rejected
 
 ### rpcCallCached Notes
 
