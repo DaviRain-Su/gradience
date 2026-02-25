@@ -176,6 +176,42 @@ async function main(): Promise<void> {
     throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
   }
 
+  const lifiWorkflow = tools.get("monad_lifi_runWorkflow");
+  if (!lifiWorkflow) throw new Error("missing tool: monad_lifi_runWorkflow");
+  const lifiSimBlocked = await parseToolPayload(lifiWorkflow, {
+    runMode: "simulate",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: "0x1111111111111111111111111111111111111111",
+    toToken: "0x2222222222222222222222222222222222222222",
+    fromAmount: "1",
+    fromAddress: "0x3333333333333333333333333333333333333333",
+    quote: {},
+  });
+  if (
+    lifiSimBlocked.status !== "blocked" ||
+    Number(lifiSimBlocked.code) !== 12 ||
+    ((lifiSimBlocked.meta as Record<string, unknown>)?.mode as string) !== "simulate"
+  ) {
+    throw new Error("monad_lifi_runWorkflow simulate should return blocked code 12 with meta.mode");
+  }
+
+  const transferWorkflow = tools.get("monad_runTransferWorkflow");
+  if (!transferWorkflow) throw new Error("missing tool: monad_runTransferWorkflow");
+  const transferExecBlocked = await parseToolPayload(transferWorkflow, {
+    runMode: "execute",
+    fromAddress: "0x1111111111111111111111111111111111111111",
+    toAddress: "0x2222222222222222222222222222222222222222",
+    amountRaw: "1",
+  });
+  if (
+    transferExecBlocked.status !== "blocked" ||
+    Number(transferExecBlocked.code) !== 12 ||
+    ((transferExecBlocked.meta as Record<string, unknown>)?.mode as string) !== "execute"
+  ) {
+    throw new Error("monad_runTransferWorkflow execute should return blocked code 12 with meta.mode");
+  }
+
   console.log("tool envelope checks passed");
 }
 
