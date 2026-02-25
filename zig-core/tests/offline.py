@@ -325,6 +325,22 @@ def main() -> int:
     assert bridge_provider_priority_case.get("status") == "ok"
     assert bridge_provider_priority_case.get("provider") == "lifi"
 
+    bridge_provider_priority_duplicate_case = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": "LIFI,lifi,bungee",
+            },
+        },
+        env,
+    )
+    assert bridge_provider_priority_duplicate_case.get("status") == "ok"
+    assert bridge_provider_priority_duplicate_case.get("provider") == "lifi"
+
     bridge_provider_priority_fallback = run(
         {
             "action": "bridgeQuote",
@@ -515,6 +531,22 @@ def main() -> int:
     )
     assert swap_provider_priority_case.get("status") == "ok"
     assert swap_provider_priority_case.get("provider") == "uniswap"
+
+    swap_provider_priority_duplicate_case = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "UNISWAP,uniswap,1inch",
+            },
+        },
+        env,
+    )
+    assert swap_provider_priority_duplicate_case.get("status") == "ok"
+    assert swap_provider_priority_duplicate_case.get("provider") == "uniswap"
 
     swap_provider_priority_fallback = run(
         {
