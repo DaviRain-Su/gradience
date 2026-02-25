@@ -233,6 +233,19 @@ function assertResultStringFields(
   }
 }
 
+function assertOkForChecks(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<[string, Params]>,
+  nonOkAllowed: Set<string>,
+): void {
+  for (const [name] of checks) {
+    const payload = getPayload(payloads, name);
+    if (!nonOkAllowed.has(name)) {
+      assertOkEnvelope(name, payload);
+    }
+  }
+}
+
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldNull(name, payload, field);
@@ -591,13 +604,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   const payloads = await runEnvelopeChecks(tools, checks);
 
   const nonOkAllowed = new Set<string>([TOOL.strategyValidate]);
-
-  for (const [name] of checks) {
-    const payload = getPayload(payloads, name);
-    if (!nonOkAllowed.has(name)) {
-      assertOkEnvelope(name, payload);
-    }
-  }
+  assertOkForChecks(payloads, checks, nonOkAllowed);
 
   assertResultObjectFields(payloads, [
     { name: TOOL.buildTransferNative, fields: ["txRequest"] },
