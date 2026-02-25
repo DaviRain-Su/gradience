@@ -376,6 +376,19 @@ async function assertInvalidRunModeCase(
   assertMetaFieldString(input.name, payload, "runMode", input.runMode);
 }
 
+async function assertLifiAnalysisCase(
+  tools: Map<string, ToolDefinition>,
+  quote: Params,
+): Promise<void> {
+  const payload = await parseToolPayload(
+    getTool(tools, TOOL.lifiRunWorkflow),
+    mkLifiWorkflowAnalysisParams(quote),
+  );
+  assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
+  assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
+  assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["txRequest", "routeId", "tool"]);
+}
+
 function assertZigDisabledBlocked(
   name: string,
   payload: Record<string, unknown>,
@@ -634,13 +647,7 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     reason: "missing txRequest",
   });
 
-  const lifiAnalysis = await parseToolPayload(
-    getTool(tools, TOOL.lifiRunWorkflow),
-    mkLifiWorkflowAnalysisParams({}),
-  );
-  assertOkWithMode(TOOL.lifiRunWorkflow, lifiAnalysis, "analysis");
-  assertResultObjectField(TOOL.lifiRunWorkflow, lifiAnalysis, "quote");
-  assertResultNullFields(TOOL.lifiRunWorkflow, lifiAnalysis, ["txRequest", "routeId", "tool"]);
+  await assertLifiAnalysisCase(tools, {});
 
   await assertBlockedCase(tools, {
     name: TOOL.lifiRunWorkflow,
