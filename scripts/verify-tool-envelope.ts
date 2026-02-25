@@ -29,6 +29,38 @@ const RUN_STRATEGY = {
   metadata: { template: "pay-per-call-v1", params: {} },
 };
 
+function mkStrategyValidateParams(template: string): Params {
+  return {
+    strategy: {
+      ...VALID_STRATEGY,
+      metadata: { template },
+    },
+  };
+}
+
+function mkLifiWorkflowSimulateParams(quote: Params): Params {
+  return {
+    runMode: "simulate",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
+    fromAmount: "1",
+    fromAddress: ADDR_C,
+    quote,
+  };
+}
+
+function mkTransferWorkflowExecuteParams(extra: Params = {}): Params {
+  return {
+    runMode: "execute",
+    fromAddress: ADDR_A,
+    toAddress: ADDR_B,
+    amountRaw: "1",
+    ...extra,
+  };
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -142,9 +174,7 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     ],
     [
       "monad_strategy_validate",
-      {
-        strategy: VALID_STRATEGY,
-      },
+      mkStrategyValidateParams("pay-per-call-v1"),
     ],
     [
       "monad_strategy_run",
@@ -177,8 +207,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const invalid = await parseToolPayload(getTool(tools, "monad_strategy_validate"), {
     strategy: {
-      ...VALID_STRATEGY,
-      metadata: { template: "missing-template" },
+      ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
       constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
     },
   });
@@ -191,24 +220,16 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
   }
 
-  const lifiSimBlocked = await parseToolPayload(getTool(tools, "monad_lifi_runWorkflow"), {
-    runMode: "simulate",
-    fromChain: 1,
-    toChain: 1,
-    fromToken: ADDR_A,
-    toToken: ADDR_B,
-    fromAmount: "1",
-    fromAddress: ADDR_C,
-    quote: {},
-  });
+  const lifiSimBlocked = await parseToolPayload(
+    getTool(tools, "monad_lifi_runWorkflow"),
+    mkLifiWorkflowSimulateParams({}),
+  );
   assertBlockedWithMode("monad_lifi_runWorkflow", lifiSimBlocked, 12, "simulate");
 
-  const transferExecBlocked = await parseToolPayload(getTool(tools, "monad_runTransferWorkflow"), {
-    runMode: "execute",
-    fromAddress: ADDR_A,
-    toAddress: ADDR_B,
-    amountRaw: "1",
-  });
+  const transferExecBlocked = await parseToolPayload(
+    getTool(tools, "monad_runTransferWorkflow"),
+    mkTransferWorkflowExecuteParams(),
+  );
   assertBlockedWithMode("monad_runTransferWorkflow", transferExecBlocked, 12, "execute");
 }
 
