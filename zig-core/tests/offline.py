@@ -242,6 +242,35 @@ def main() -> int:
     assert bridge.get("provider") == "lifi"
     assert bridge.get("estimatedAmountOut") == "999300"
 
+    bridge_missing_from = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert bridge_missing_from.get("status") == "error"
+    assert int(bridge_missing_from.get("code", 0)) == 2
+
+    bridge_unsupported_from = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "not-a-chain",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert bridge_unsupported_from.get("status") == "error"
+    assert int(bridge_unsupported_from.get("code", 0)) == 13
+
     bridge_fastest = run(
         {
             "action": "bridgeQuote",
@@ -578,6 +607,35 @@ def main() -> int:
     assert swap.get("status") == "ok"
     assert swap.get("provider") == "1inch"
     assert swap.get("estimatedAmountOut") == "998901"
+
+    swap_missing_chain = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert swap_missing_chain.get("status") == "error"
+    assert int(swap_missing_chain.get("code", 0)) == 2
+
+    swap_unsupported_chain = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "not-a-chain",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert swap_unsupported_chain.get("status") == "error"
+    assert int(swap_unsupported_chain.get("code", 0)) == 13
 
     swap_provider_priority = run(
         {
