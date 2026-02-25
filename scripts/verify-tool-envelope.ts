@@ -35,6 +35,21 @@ function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): vo
   }
 }
 
+function assertBlockedWithMode(
+  name: string,
+  payload: Record<string, unknown>,
+  code: number,
+  mode: string,
+): void {
+  const meta = payload.meta as Record<string, unknown>;
+  if (payload.status !== "blocked" || Number(payload.code) !== code) {
+    throw new Error(`${name} should return blocked code ${code}`);
+  }
+  if (String(meta?.mode || "") !== mode) {
+    throw new Error(`${name} should include meta.mode=${mode}`);
+  }
+}
+
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
@@ -188,13 +203,7 @@ async function main(): Promise<void> {
     fromAddress: "0x3333333333333333333333333333333333333333",
     quote: {},
   });
-  if (
-    lifiSimBlocked.status !== "blocked" ||
-    Number(lifiSimBlocked.code) !== 12 ||
-    ((lifiSimBlocked.meta as Record<string, unknown>)?.mode as string) !== "simulate"
-  ) {
-    throw new Error("monad_lifi_runWorkflow simulate should return blocked code 12 with meta.mode");
-  }
+  assertBlockedWithMode("monad_lifi_runWorkflow", lifiSimBlocked, 12, "simulate");
 
   const transferWorkflow = tools.get("monad_runTransferWorkflow");
   if (!transferWorkflow) throw new Error("missing tool: monad_runTransferWorkflow");
@@ -204,13 +213,7 @@ async function main(): Promise<void> {
     toAddress: "0x2222222222222222222222222222222222222222",
     amountRaw: "1",
   });
-  if (
-    transferExecBlocked.status !== "blocked" ||
-    Number(transferExecBlocked.code) !== 12 ||
-    ((transferExecBlocked.meta as Record<string, unknown>)?.mode as string) !== "execute"
-  ) {
-    throw new Error("monad_runTransferWorkflow execute should return blocked code 12 with meta.mode");
-  }
+  assertBlockedWithMode("monad_runTransferWorkflow", transferExecBlocked, 12, "execute");
 
   console.log("tool envelope checks passed");
 }
