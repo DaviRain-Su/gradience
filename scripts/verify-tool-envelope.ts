@@ -5,6 +5,7 @@ type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
+type VoidContextStage = (tools: Map<string, ToolDefinition>, _context: undefined) => Promise<void>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: Map<string, Record<string, unknown>>;
@@ -646,7 +647,7 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
 
 function adaptToolStages(
   stages: ToolStage[],
-): Array<(tools: Map<string, ToolDefinition>, _context: undefined) => Promise<void>> {
+): VoidContextStage[] {
   return stages.map((stage) => async (stageTools: Map<string, ToolDefinition>, _context: undefined) => {
     await stage(stageTools);
   });
