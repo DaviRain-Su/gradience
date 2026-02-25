@@ -598,29 +598,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("provider");
+        const bridge_options = switch (parseBridgeQuoteOptions(params)) {
+            .ok => |value| value,
+            .invalid_field => |field_name| {
+                try writeInvalid(field_name);
                 return true;
             },
         };
-        const provider_priority = switch (parseOptionalProvidersParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("providers");
-                return true;
-            },
-        };
-        const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
-        const strategy = parseBridgeStrategy(strategy_raw) orelse {
-            try writeInvalid("strategy");
-            return true;
-        };
-        const select = getString(params, "select");
-        const results_only = getBool(params, "resultsOnly") orelse false;
         var candidates = try collectBridgeCandidates(allocator, from_chain, to_chain, asset);
         defer candidates.deinit(allocator);
 
@@ -629,14 +613,31 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const selected = try selectBridgeQuote(allocator, amount, candidates.items, provider_filter, provider_priority, strategy);
+        const selected = try selectBridgeQuote(
+            allocator,
+            amount,
+            candidates.items,
+            bridge_options.provider_filter,
+            bridge_options.provider_priority,
+            bridge_options.strategy,
+        );
         if (selected == null) {
             try writeNoBridgeRoute();
             return true;
         }
         const chosen = selected.?.quote;
         const chosen_out = selected.?.out_amount;
-        try writeBridgeQuoteResponse(allocator, chosen, chosen_out, from_chain, to_chain, asset, amount_raw, select, results_only);
+        try writeBridgeQuoteResponse(
+            allocator,
+            chosen,
+            chosen_out,
+            from_chain,
+            to_chain,
+            asset,
+            amount_raw,
+            bridge_options.select,
+            bridge_options.results_only,
+        );
         return true;
     }
 
@@ -668,29 +669,13 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("provider");
+        const swap_options = switch (parseSwapQuoteOptions(params)) {
+            .ok => |value| value,
+            .invalid_field => |field_name| {
+                try writeInvalid(field_name);
                 return true;
             },
         };
-        const provider_priority = switch (parseOptionalProvidersParam(params)) {
-            .missing => null,
-            .value => |value| value,
-            .invalid => {
-                try writeInvalid("providers");
-                return true;
-            },
-        };
-        const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
-        const strategy = parseSwapStrategy(strategy_raw) orelse {
-            try writeInvalid("strategy");
-            return true;
-        };
-        const select = getString(params, "select");
-        const results_only = getBool(params, "resultsOnly") orelse false;
 
         var candidates = try collectSwapCandidates(allocator, chain, from_asset, to_asset);
         defer candidates.deinit(allocator);
@@ -700,14 +685,31 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         }
 
-        const selected = try selectSwapQuote(allocator, amount, candidates.items, provider_filter, provider_priority, strategy);
+        const selected = try selectSwapQuote(
+            allocator,
+            amount,
+            candidates.items,
+            swap_options.provider_filter,
+            swap_options.provider_priority,
+            swap_options.strategy,
+        );
         if (selected == null) {
             try writeNoSwapRoute();
             return true;
         }
         const chosen = selected.?.quote;
         const chosen_out = selected.?.out_amount;
-        try writeSwapQuoteResponse(allocator, chosen, chosen_out, chain, from_asset, to_asset, amount_raw, select, results_only);
+        try writeSwapQuoteResponse(
+            allocator,
+            chosen,
+            chosen_out,
+            chain,
+            from_asset,
+            to_asset,
+            amount_raw,
+            swap_options.select,
+            swap_options.results_only,
+        );
         return true;
     }
 
@@ -1007,6 +1009,32 @@ const SwapStrategy = enum {
     lowest_fee,
 };
 
+const BridgeQuoteOptions = struct {
+    provider_filter: ?[]const u8,
+    provider_priority: ?[]const u8,
+    strategy: BridgeStrategy,
+    select: ?[]const u8,
+    results_only: bool,
+};
+
+const SwapQuoteOptions = struct {
+    provider_filter: ?[]const u8,
+    provider_priority: ?[]const u8,
+    strategy: SwapStrategy,
+    select: ?[]const u8,
+    results_only: bool,
+};
+
+const QuoteOptionsParseResult = union(enum) {
+    ok: BridgeQuoteOptions,
+    invalid_field: []const u8,
+};
+
+const SwapOptionsParseResult = union(enum) {
+    ok: SwapQuoteOptions,
+    invalid_field: []const u8,
+};
+
 const QuoteFieldKey = struct {
     const provider = "provider";
     const from_chain = "fromChain";
@@ -1032,6 +1060,56 @@ fn parseSwapStrategy(raw: []const u8) ?SwapStrategy {
     if (std.ascii.eqlIgnoreCase(raw, "bestOut")) return .best_out;
     if (std.ascii.eqlIgnoreCase(raw, "lowestFee")) return .lowest_fee;
     return null;
+}
+
+fn parseBridgeQuoteOptions(params: std.json.ObjectMap) QuoteOptionsParseResult {
+    const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "provider" },
+    };
+
+    const provider_priority = switch (parseOptionalProvidersParam(params)) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "providers" },
+    };
+
+    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
+    const strategy = parseBridgeStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
+
+    return .{ .ok = .{
+        .provider_filter = provider_filter,
+        .provider_priority = provider_priority,
+        .strategy = strategy,
+        .select = getString(params, "select"),
+        .results_only = getBool(params, "resultsOnly") orelse false,
+    } };
+}
+
+fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
+    const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "provider" },
+    };
+
+    const provider_priority = switch (parseOptionalProvidersParam(params)) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "providers" },
+    };
+
+    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
+    const strategy = parseSwapStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
+
+    return .{ .ok = .{
+        .provider_filter = provider_filter,
+        .provider_priority = provider_priority,
+        .strategy = strategy,
+        .select = getString(params, "select"),
+        .results_only = getBool(params, "resultsOnly") orelse false,
+    } };
 }
 
 fn collectBridgeCandidates(
