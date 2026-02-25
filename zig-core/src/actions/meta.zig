@@ -1563,16 +1563,7 @@ fn putSwapQuoteSelectedField(
 }
 
 fn parseQuoteSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    var fields = std.ArrayList([]const u8).empty;
-    var parts = std.mem.splitScalar(u8, fields_raw, ',');
-    while (parts.next()) |part| {
-        const field = std.mem.trim(u8, part, " \r\n\t");
-        if (field.len == 0) continue;
-        const canonical = canonicalQuoteSelectField(field) orelse continue;
-        if (containsField(fields.items, canonical)) continue;
-        try fields.append(allocator, canonical);
-    }
-    return fields;
+    return parseCanonicalSelectedFields(allocator, fields_raw, canonicalQuoteSelectField);
 }
 
 fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
@@ -1589,18 +1580,6 @@ fn canonicalQuoteSelectField(field: []const u8) ?[]const u8 {
     if (fieldMatchesAny(field, &.{ QuoteFieldKey.eta_seconds, "eta_seconds" })) return QuoteFieldKey.eta_seconds;
     if (fieldMatchesAny(field, &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" })) return QuoteFieldKey.price_impact_bps;
     return null;
-}
-
-fn parseSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
-    var fields = std.ArrayList([]const u8).empty;
-    var parts = std.mem.splitScalar(u8, fields_raw, ',');
-    while (parts.next()) |part| {
-        const field = std.mem.trim(u8, part, " \r\n\t");
-        if (field.len == 0) continue;
-        if (containsField(fields.items, field)) continue;
-        try fields.append(allocator, field);
-    }
-    return fields;
 }
 
 fn parseProvidersSelectedFields(allocator: std.mem.Allocator, fields_raw: []const u8) !std.ArrayList([]const u8) {
