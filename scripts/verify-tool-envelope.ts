@@ -240,6 +240,10 @@ function mkZigDisabledCases(): Array<{ name: string; params: Params; reason: str
   ];
 }
 
+function isEmptyParams(params: Params): boolean {
+  return Object.keys(params).length === 0;
+}
+
 function mkBehaviorBlockedCases(): Array<{
   name: string;
   params: Params;
@@ -817,16 +821,14 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const checks: Array<[string, Params]> = [
-    [TOOL.schema, {}],
-    [TOOL.version, {}],
-    [TOOL.runtimeInfo, {}],
-  ];
-  const payloads = await runEnvelopeChecks(tools, checks);
   const zigDisabledCases = mkZigDisabledCases();
+  const checks: Array<[string, Params]> = zigDisabledCases
+    .filter((c) => isEmptyParams(c.params))
+    .map((c) => [c.name, c.params]);
+  const payloads = await runEnvelopeChecks(tools, checks);
 
   await runCaseList(zigDisabledCases, async (c) => {
-    if (Object.keys(c.params).length === 0) {
+    if (isEmptyParams(c.params)) {
       const payload = getPayload(payloads, c.name);
       assertZigDisabledBlocked(c.name, payload, c.reason);
       return;
