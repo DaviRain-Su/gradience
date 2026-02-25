@@ -81,6 +81,18 @@ function mkTransferWorkflowExecuteParams(extra: Params = {}): Params {
   };
 }
 
+function mkLifiExtractTxRequestParams(): Params {
+  return {
+    quote: {
+      transactionRequest: {
+        to: ADDR_A,
+        data: "0x",
+        value: "0x0",
+      },
+    },
+  };
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -110,6 +122,34 @@ function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): vo
     if (keys[i] !== expected[i]) {
       throw new Error(fail(name, "envelope key order must start with status,code,result,meta"));
     }
+  }
+}
+
+function assertOkEnvelope(name: string, payload: Record<string, unknown>): void {
+  if (payload.status !== "ok" || Number(payload.code) !== 0) {
+    throw new Error(fail(name, "should return ok code 0"));
+  }
+}
+
+function getResult(name: string, payload: Record<string, unknown>): Record<string, unknown> {
+  const result = payload.result as Record<string, unknown> | null | undefined;
+  if (!result || typeof result !== "object") {
+    throw new Error(fail(name, "result must be object"));
+  }
+  return result;
+}
+
+function assertResultObjectField(name: string, payload: Record<string, unknown>, field: string): void {
+  const result = getResult(name, payload);
+  if (!result[field] || typeof result[field] !== "object") {
+    throw new Error(fail(name, `result.${field} must be object`));
+  }
+}
+
+function assertResultStringField(name: string, payload: Record<string, unknown>, field: string): void {
+  const result = getResult(name, payload);
+  if (typeof result[field] !== "string") {
+    throw new Error(fail(name, `result.${field} must be string`));
   }
 }
 
@@ -210,9 +250,53 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
         mode: "plan",
       },
     ],
-    [TOOL.lifiExtractTxRequest, { quote: {} }],
+    [TOOL.lifiExtractTxRequest, mkLifiExtractTxRequestParams()],
   ];
-  await runEnvelopeChecks(tools, checks);
+  const payloads = await runEnvelopeChecks(tools, checks);
+
+  const nonOkAllowed = new Set<string>([TOOL.strategyValidate]);
+
+  for (const [name] of checks) {
+    const payload = payloads.get(name);
+    if (!payload) {
+      throw new Error(fail(name, "missing payload after envelope checks"));
+    }
+    if (!nonOkAllowed.has(name)) {
+      assertOkEnvelope(name, payload);
+    }
+  }
+
+  assertResultObjectField(TOOL.buildTransferNative, payloads.get(TOOL.buildTransferNative)!, "txRequest");
+  assertResultObjectField(TOOL.buildTransferErc20, payloads.get(TOOL.buildTransferErc20)!, "txRequest");
+  assertResultObjectField(TOOL.buildErc20Approve, payloads.get(TOOL.buildErc20Approve)!, "txRequest");
+  assertResultObjectField(TOOL.buildDexSwap, payloads.get(TOOL.buildDexSwap)!, "txRequest");
+  assertResultStringField(TOOL.buildDexSwap, payloads.get(TOOL.buildDexSwap)!, "notes");
+  assertResultObjectField(TOOL.planLendingAction, payloads.get(TOOL.planLendingAction)!, "plan");
+  assertResultObjectField(TOOL.paymentIntentCreate, payloads.get(TOOL.paymentIntentCreate)!, "paymentIntent");
+  assertResultObjectField(
+    TOOL.subscriptionIntentCreate,
+    payloads.get(TOOL.subscriptionIntentCreate)!,
+    "subscriptionIntent",
+  );
+  assertResultObjectField(TOOL.strategyCompile, payloads.get(TOOL.strategyCompile)!, "strategy");
+  assertResultObjectField(TOOL.strategyRun, payloads.get(TOOL.strategyRun)!, "result");
+  assertResultObjectField(TOOL.lifiExtractTxRequest, payloads.get(TOOL.lifiExtractTxRequest)!, "txRequest");
+
+  const templates = getResult(TOOL.strategyTemplates, payloads.get(TOOL.strategyTemplates)!).templates;
+  if (!Array.isArray(templates) || templates.length === 0) {
+    throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
+  }
+
+  const validatePayload = payloads.get(TOOL.strategyValidate)!;
+  if (
+    !(
+      (validatePayload.status === "ok" && Number(validatePayload.code) === 0) ||
+      (validatePayload.status === "error" && Number(validatePayload.code) === 2)
+    )
+  ) {
+    throw new Error(fail(TOOL.strategyValidate, "should return either ok/0 or error/2"));
+  }
+  assertResultObjectField(TOOL.strategyValidate, validatePayload, "validation");
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
@@ -230,6 +314,10 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     }
     if (payload.status !== "blocked" || Number(payload.code) !== 13) {
       throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
+    }
+    const meta = payload.meta as Record<string, unknown>;
+    if (meta?.source !== "ts-tool") {
+      throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
     }
   }
 }
