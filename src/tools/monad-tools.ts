@@ -309,6 +309,34 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
   });
 
   registrar.registerTool({
+    name: "monad_runtimeInfo",
+    label: "Monad Runtime Info",
+    description: "Return zig-core runtime policy info (strict, broadcast, cache defaults).",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {},
+    },
+    async execute() {
+      if (!isZigCoreEnabled()) {
+        return toolEnvelope(
+          "blocked",
+          13,
+          { reason: "runtime info requires zig core" },
+          { source: "ts-tool" },
+        );
+      }
+
+      const zig = await callZigCore({
+        action: "runtimeInfo",
+        params: { resultsOnly: true },
+      });
+      ensureZigOk(zig, "zig core runtimeInfo failed");
+      return toolOk(zigPayload(zig), { source: "zig-core" });
+    },
+  });
+
+  registrar.registerTool({
     name: "monad_buildTransferNative",
     label: "Monad Build Native Transfer",
     description: "Compose a native transfer transaction request.",
