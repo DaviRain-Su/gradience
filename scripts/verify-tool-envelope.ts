@@ -701,11 +701,8 @@ function assertBlockedWithMode(
   code: number,
   mode: string,
 ): void {
-  const meta = payload.meta as Record<string, unknown>;
   assertStatusCode(name, payload, "blocked", code);
-  if (String(meta?.mode || "") !== mode) {
-    throw new Error(fail(name, `should include meta.mode=${mode}`));
-  }
+  assertMetaFieldString(name, payload, "mode", mode);
 }
 
 function assertBlockedReason(name: string, payload: Record<string, unknown>, reason: string): void {
@@ -856,11 +853,8 @@ function assertOkWithMode(
   payload: Record<string, unknown>,
   mode: string,
 ): void {
-  const meta = payload.meta as Record<string, unknown>;
   assertStatusCode(name, payload, "ok", 0);
-  if (String(meta?.mode || "") !== mode) {
-    throw new Error(fail(name, `should include meta.mode=${mode}`));
-  }
+  assertMetaFieldString(name, payload, "mode", mode);
 }
 
 function fail(name: string, message: string): string {
