@@ -198,6 +198,30 @@ function assertResultFieldNull(name: string, payload: Record<string, unknown>, f
   }
 }
 
+function assertResultObjectFields(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<{ name: string; fields: string[] }>,
+): void {
+  for (const check of checks) {
+    const payload = getPayload(payloads, check.name);
+    for (const field of check.fields) {
+      assertResultObjectField(check.name, payload, field);
+    }
+  }
+}
+
+function assertResultStringFields(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<{ name: string; fields: string[] }>,
+): void {
+  for (const check of checks) {
+    const payload = getPayload(payloads, check.name);
+    for (const field of check.fields) {
+      assertResultStringField(check.name, payload, field);
+    }
+  }
+}
+
 function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
   const value = obj[key];
   if (typeof value !== "string") {
@@ -436,21 +460,19 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     }
   }
 
-  assertResultObjectField(TOOL.buildTransferNative, getPayload(payloads, TOOL.buildTransferNative), "txRequest");
-  assertResultObjectField(TOOL.buildTransferErc20, getPayload(payloads, TOOL.buildTransferErc20), "txRequest");
-  assertResultObjectField(TOOL.buildErc20Approve, getPayload(payloads, TOOL.buildErc20Approve), "txRequest");
-  assertResultObjectField(TOOL.buildDexSwap, getPayload(payloads, TOOL.buildDexSwap), "txRequest");
-  assertResultStringField(TOOL.buildDexSwap, getPayload(payloads, TOOL.buildDexSwap), "notes");
-  assertResultObjectField(TOOL.planLendingAction, getPayload(payloads, TOOL.planLendingAction), "plan");
-  assertResultObjectField(TOOL.paymentIntentCreate, getPayload(payloads, TOOL.paymentIntentCreate), "paymentIntent");
-  assertResultObjectField(
-    TOOL.subscriptionIntentCreate,
-    getPayload(payloads, TOOL.subscriptionIntentCreate),
-    "subscriptionIntent",
-  );
-  assertResultObjectField(TOOL.strategyCompile, getPayload(payloads, TOOL.strategyCompile), "strategy");
-  assertResultObjectField(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun), "result");
-  assertResultObjectField(TOOL.lifiExtractTxRequest, getPayload(payloads, TOOL.lifiExtractTxRequest), "txRequest");
+  assertResultObjectFields(payloads, [
+    { name: TOOL.buildTransferNative, fields: ["txRequest"] },
+    { name: TOOL.buildTransferErc20, fields: ["txRequest"] },
+    { name: TOOL.buildErc20Approve, fields: ["txRequest"] },
+    { name: TOOL.buildDexSwap, fields: ["txRequest"] },
+    { name: TOOL.planLendingAction, fields: ["plan"] },
+    { name: TOOL.paymentIntentCreate, fields: ["paymentIntent"] },
+    { name: TOOL.subscriptionIntentCreate, fields: ["subscriptionIntent"] },
+    { name: TOOL.strategyCompile, fields: ["strategy"] },
+    { name: TOOL.strategyRun, fields: ["result"] },
+    { name: TOOL.lifiExtractTxRequest, fields: ["txRequest"] },
+  ]);
+  assertResultStringFields(payloads, [{ name: TOOL.buildDexSwap, fields: ["notes"] }]);
 
   const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
   if (!Array.isArray(templates) || templates.length === 0) {
