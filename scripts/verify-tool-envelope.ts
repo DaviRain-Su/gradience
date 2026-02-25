@@ -471,16 +471,24 @@ function assertResultFieldNull(name: string, payload: Record<string, unknown>, f
   }
 }
 
-function assertResultObjectFields(
+function assertResultFieldChecks(
   payloads: Map<string, Record<string, unknown>>,
   checks: Array<{ name: string; fields: string[] }>,
+  expectation: ResultFieldExpectation,
 ): void {
   for (const check of checks) {
     const payload = getPayload(payloads, check.name);
     for (const field of check.fields) {
-      assertResultObjectField(check.name, payload, field);
+      assertResultFieldExpectation(check.name, payload, field, expectation);
     }
   }
+}
+
+function assertResultObjectFields(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<{ name: string; fields: string[] }>,
+): void {
+  assertResultFieldChecks(payloads, checks, "object");
 }
 
 function assertResultObjectValueChecks(
@@ -524,12 +532,7 @@ function assertResultStringFields(
   payloads: Map<string, Record<string, unknown>>,
   checks: Array<{ name: string; fields: string[] }>,
 ): void {
-  for (const check of checks) {
-    const payload = getPayload(payloads, check.name);
-    for (const field of check.fields) {
-      assertResultStringField(check.name, payload, field);
-    }
-  }
+  assertResultFieldChecks(payloads, checks, "string");
 }
 
 function assertOkForChecks(
@@ -596,7 +599,7 @@ async function runToolCaseList<T>(
 
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
-    assertResultFieldNull(name, payload, field);
+    assertResultFieldExpectation(name, payload, field, "null");
   }
 }
 
