@@ -850,7 +850,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const meta = await fetchMorphoVaultMeta(asString(params, "vaultAddress"));
-      return textResult({ status: "ok", meta });
+      return toolOk({ meta });
     },
   });
 
@@ -875,12 +875,13 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         contract.totalAssets(),
         contract.totalSupply(),
       ]);
-      return textResult({
-        status: "ok",
-        totalAssets: totalAssets.toString(),
-        totalSupply: totalSupply.toString(),
-        rpcUrl,
-      });
+      return toolOk(
+        {
+          totalAssets: totalAssets.toString(),
+          totalSupply: totalSupply.toString(),
+        },
+        { rpcUrl },
+      );
     },
   });
 
@@ -903,7 +904,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const balance = await contract.balanceOf(asString(params, "owner"));
-      return textResult({ status: "ok", balanceShares: balance.toString(), rpcUrl });
+      return toolOk({ balanceShares: balance.toString() }, { rpcUrl });
     },
   });
 
@@ -926,7 +927,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewDeposit(asString(params, "amountRaw"));
-      return textResult({ status: "ok", shares: shares.toString(), rpcUrl });
+      return toolOk({ shares: shares.toString() }, { rpcUrl });
     },
   });
 
@@ -949,7 +950,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewWithdraw(asString(params, "amountRaw"));
-      return textResult({ status: "ok", shares: shares.toString(), rpcUrl });
+      return toolOk({ shares: shares.toString() }, { rpcUrl });
     },
   });
 
@@ -972,7 +973,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const assets = await contract.previewRedeem(asString(params, "sharesRaw"));
-      return textResult({ status: "ok", assets: assets.toString(), rpcUrl });
+      return toolOk({ assets: assets.toString() }, { rpcUrl });
     },
   });
 
@@ -1001,7 +1002,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         mode === "toShares"
           ? await contract.convertToShares(amount)
           : await contract.convertToAssets(amount);
-      return textResult({ status: "ok", result: result.toString(), rpcUrl });
+      return toolOk({ result: result.toString() }, { rpcUrl });
     },
   });
 
@@ -1028,8 +1029,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "amountRaw"),
         asString(params, "receiver"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "vaultAddress"),
           value: "0",
@@ -1065,8 +1065,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "receiver"),
         asString(params, "owner"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "vaultAddress"),
           value: "0",
@@ -1102,8 +1101,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "receiver"),
         asString(params, "owner"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "vaultAddress"),
           value: "0",
@@ -1355,7 +1353,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     description: "List available strategy templates.",
     parameters: { type: "object", additionalProperties: false, properties: {} },
     async execute() {
-      return textResult({ status: "ok", templates: STRATEGY_TEMPLATES });
+      return toolOk({ templates: STRATEGY_TEMPLATES });
     },
   });
 
@@ -1384,7 +1382,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         chain: asOptionalString(params, "chain"),
         risk: (params.risk as { maxPerRunUsd?: number; cooldownSeconds?: number }) || undefined,
       });
-      return textResult({ status: "ok", strategy: spec });
+      return toolOk({ strategy: spec });
     },
   });
 
@@ -1402,7 +1400,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const validation = validateStrategy(params.strategy as any);
-      return textResult({ status: validation.ok ? "ok" : "invalid", validation });
+      if (!validation.ok) {
+        return toolEnvelope("error", 2, { validation });
+      }
+      return toolOk({ validation });
     },
   });
 
@@ -1421,7 +1422,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const result = runStrategy(params.strategy as any, asString(params, "mode") as "plan" | "execute");
-      return textResult({ status: "ok", result });
+      return toolOk({ result });
     },
   });
 }
