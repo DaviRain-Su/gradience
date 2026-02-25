@@ -415,6 +415,26 @@ async function assertLifiAnalysisCase(
   }
 }
 
+async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Promise<void> {
+  const payload = await parseToolPayload(getTool(tools, TOOL.strategyValidate), {
+    strategy: {
+      ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
+      constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
+    },
+  });
+  if (payload.status !== "error" || Number(payload.code) !== 2) {
+    throw new Error(fail(TOOL.strategyValidate, "should return error code 2 for invalid strategy"));
+  }
+  assertValidationShape(TOOL.strategyValidate, payload);
+  const invalidValidation = getResult(TOOL.strategyValidate, payload).validation as Record<string, unknown>;
+  if (invalidValidation.ok !== false) {
+    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should set validation.ok=false"));
+  }
+  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
+    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should include validation errors"));
+  }
+}
+
 function assertZigDisabledBlocked(
   name: string,
   payload: Record<string, unknown>,
@@ -640,23 +660,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const invalid = await parseToolPayload(getTool(tools, TOOL.strategyValidate), {
-    strategy: {
-      ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
-      constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
-    },
-  });
-  if (invalid.status !== "error" || Number(invalid.code) !== 2) {
-    throw new Error(fail(TOOL.strategyValidate, "should return error code 2 for invalid strategy"));
-  }
-  assertValidationShape(TOOL.strategyValidate, invalid);
-  const invalidValidation = getResult(TOOL.strategyValidate, invalid).validation as Record<string, unknown>;
-  if (invalidValidation.ok !== false) {
-    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should set validation.ok=false"));
-  }
-  if (!Array.isArray(invalidValidation.errors) || invalidValidation.errors.length === 0) {
-    throw new Error(fail(TOOL.strategyValidate, "invalid strategy should include validation errors"));
-  }
+  await assertInvalidStrategyCase(tools);
 
   await assertBlockedCase(tools, {
     name: TOOL.lifiExtractTxRequest,
@@ -673,12 +677,19 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     reason: "missing txRequest",
   });
 
-  await assertLifiAnalysisCase(tools, {}, { txRequest: "null", routeId: "null", tool: "null" });
-  await assertLifiAnalysisCase(
-    tools,
-    mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
-    { txRequest: "object", routeId: "string", tool: "string" },
-  );
+  const lifiAnalysisCases: Array<{
+    quote: Params;
+    expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
+  }> = [
+    { quote: {}, expectation: { txRequest: "null", routeId: "null", tool: "null" } },
+    {
+      quote: mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
+      expectation: { txRequest: "object", routeId: "string", tool: "string" },
+    },
+  ];
+  for (const c of lifiAnalysisCases) {
+    await assertLifiAnalysisCase(tools, c.quote, c.expectation);
+  }
 
   await assertBlockedCase(tools, {
     name: TOOL.lifiRunWorkflow,
