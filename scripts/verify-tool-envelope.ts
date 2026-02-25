@@ -602,6 +602,12 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
 }
 
 const MAIN_STAGES: ToolStage[] = [runPureTsChecks, runZigRequiredChecks, runBehaviorChecks];
+const BEHAVIOR_STAGES: ToolStage[] = [
+  assertInvalidStrategyCase,
+  runBlockedBehaviorCases,
+  runLifiAnalysisBehaviorCases,
+  runInvalidRunModeBehaviorCases,
+];
 
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
@@ -964,12 +970,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runToolStages(tools, [
-    assertInvalidStrategyCase,
-    runBlockedBehaviorCases,
-    runLifiAnalysisBehaviorCases,
-    runInvalidRunModeBehaviorCases,
-  ]);
+  await runToolStages(tools, BEHAVIOR_STAGES);
 }
 
 async function main(): Promise<void> {
