@@ -222,6 +222,12 @@ function assertResultStringFields(
   }
 }
 
+function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
+  for (const field of fields) {
+    assertResultFieldNull(name, payload, field);
+  }
+}
+
 function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
   const value = obj[key];
   if (typeof value !== "string") {
@@ -601,9 +607,7 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   );
   assertOkWithMode(TOOL.lifiRunWorkflow, lifiAnalysis, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, lifiAnalysis, "quote");
-  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "txRequest");
-  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "routeId");
-  assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "tool");
+  assertResultNullFields(TOOL.lifiRunWorkflow, lifiAnalysis, ["txRequest", "routeId", "tool"]);
 
   await assertBlockedCase(tools, {
     name: TOOL.lifiRunWorkflow,
