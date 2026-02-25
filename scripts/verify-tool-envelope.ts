@@ -5,6 +5,12 @@ type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
+type ZigRequiredContext = {
+  preloadedCases: ZigDisabledCase[];
+  executedCases: ZigDisabledCase[];
+  preloadedPayloads: Map<string, Record<string, unknown>>;
+};
+type ZigRequiredStage = (tools: Map<string, ToolDefinition>, context: ZigRequiredContext) => Promise<void>;
 type ZigDisabledCase = { name: string; params: Params; reason: string };
 type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
 type LifiAnalysisCase = {
@@ -887,6 +893,44 @@ async function runZigRequiredExecutedCases(
   await runToolCaseList(tools, cases, assertZigDisabledCase);
 }
 
+async function buildZigRequiredContext(tools: Map<string, ToolDefinition>): Promise<ZigRequiredContext> {
+  const zigDisabledCases = mkZigDisabledCases();
+  const partitioned = partitionByEmptyParams(zigDisabledCases);
+  const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
+  const preloadedPayloads = await runEnvelopeChecks(tools, checks);
+  return {
+    preloadedCases: partitioned.empty,
+    executedCases: partitioned.nonEmpty,
+    preloadedPayloads,
+  };
+}
+
+async function runZigRequiredPreloadedStage(
+  _tools: Map<string, ToolDefinition>,
+  context: ZigRequiredContext,
+): Promise<void> {
+  runZigRequiredPreloadedCases(context.preloadedPayloads, context.preloadedCases);
+}
+
+async function runZigRequiredExecutedStage(
+  tools: Map<string, ToolDefinition>,
+  context: ZigRequiredContext,
+): Promise<void> {
+  await runZigRequiredExecutedCases(tools, context.executedCases);
+}
+
+async function runZigRequiredStages(
+  tools: Map<string, ToolDefinition>,
+  context: ZigRequiredContext,
+  stages: ZigRequiredStage[],
+): Promise<void> {
+  for (const stage of stages) {
+    await stage(tools, context);
+  }
+}
+
+const ZIG_REQUIRED_STAGES: ZigRequiredStage[] = [runZigRequiredPreloadedStage, runZigRequiredExecutedStage];
+
 async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
   input: ZigDisabledCase,
@@ -973,13 +1017,8 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const zigDisabledCases = mkZigDisabledCases();
-  const partitioned = partitionByEmptyParams(zigDisabledCases);
-  const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
-  const payloads = await runEnvelopeChecks(tools, checks);
-
-  runZigRequiredPreloadedCases(payloads, partitioned.empty);
-  await runZigRequiredExecutedCases(tools, partitioned.nonEmpty);
+  const context = await buildZigRequiredContext(tools);
+  await runZigRequiredStages(tools, context, ZIG_REQUIRED_STAGES);
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
