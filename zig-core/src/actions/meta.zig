@@ -1047,7 +1047,7 @@ fn parseBridgeQuoteOptions(params: std.json.ObjectMap) QuoteOptionsParseResult {
         .invalid_field => |field_name| return .{ .invalid_field = field_name },
     };
 
-    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
+    const strategy_raw = parseStrategyRawParam(params);
     const strategy = parseBridgeStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
 
     return .{ .ok = .{
@@ -1065,7 +1065,7 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
         .invalid_field => |field_name| return .{ .invalid_field = field_name },
     };
 
-    const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
+    const strategy_raw = parseStrategyRawParam(params);
     const strategy = parseSwapStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
 
     return .{ .ok = .{
@@ -1096,6 +1096,10 @@ fn parseCommonQuoteOptions(params: std.json.ObjectMap) CommonOptionsParseResult 
         .select = getString(params, "select"),
         .results_only = getBool(params, "resultsOnly") orelse false,
     } };
+}
+
+fn parseStrategyRawParam(params: std.json.ObjectMap) []const u8 {
+    return std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
 }
 
 fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
