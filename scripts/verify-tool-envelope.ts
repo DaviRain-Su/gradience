@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   };
   registerMonadTools(registrar);
 
-  const checks: Array<[string, Params]> = [
+  const pureTsChecks: Array<[string, Params]> = [
     ["monad_buildTransferNative", { toAddress: "0x1111111111111111111111111111111111111111", amountWei: "1" }],
     [
       "monad_buildTransferErc20",
@@ -127,17 +127,31 @@ async function main(): Promise<void> {
       },
     ],
     ["monad_lifi_extractTxRequest", { quote: {} }],
+  ];
+
+  const zigRequiredChecks: Array<[string, Params]> = [
     ["monad_schema", {}],
     ["monad_version", {}],
     ["monad_runtimeInfo", {}],
   ];
 
-  for (const [name, params] of checks) {
+  for (const [name, params] of pureTsChecks) {
     const tool = tools.get(name);
     if (!tool) throw new Error(`missing tool: ${name}`);
     const payload = await parseToolPayload(tool, params);
     assertEnvelopeShape(name, payload);
     assertEnvelopeOrder(name, payload);
+  }
+
+  for (const [name, params] of zigRequiredChecks) {
+    const tool = tools.get(name);
+    if (!tool) throw new Error(`missing tool: ${name}`);
+    const payload = await parseToolPayload(tool, params);
+    assertEnvelopeShape(name, payload);
+    assertEnvelopeOrder(name, payload);
+    if (payload.status !== "blocked" || Number(payload.code) !== 13) {
+      throw new Error(`${name} should return blocked code 13 when zig is disabled`);
+    }
   }
 
   // behavioral spot checks
@@ -160,15 +174,6 @@ async function main(): Promise<void> {
   const blocked = await parseToolPayload(extract, { quote: {} });
   if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
     throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
-  }
-
-  for (const name of ["monad_schema", "monad_version", "monad_runtimeInfo"]) {
-    const tool = tools.get(name);
-    if (!tool) throw new Error(`missing tool: ${name}`);
-    const payload = await parseToolPayload(tool, {});
-    if (payload.status !== "blocked" || Number(payload.code) !== 13) {
-      throw new Error(`${name} should return blocked code 13 when zig is disabled`);
-    }
   }
 
   console.log("tool envelope checks passed");
