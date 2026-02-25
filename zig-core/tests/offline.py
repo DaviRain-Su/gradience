@@ -275,6 +275,22 @@ def main() -> int:
     assert bridge_fastest_case_insensitive.get("status") == "ok"
     assert bridge_fastest_case_insensitive.get("provider") == "bungee"
 
+    bridge_fastest_spaced = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "strategy": "  FASTEST  ",
+            },
+        },
+        env,
+    )
+    assert bridge_fastest_spaced.get("status") == "ok"
+    assert bridge_fastest_spaced.get("provider") == "bungee"
+
     bridge_provider_spaced = run(
         {
             "action": "bridgeQuote",
@@ -724,6 +740,22 @@ def main() -> int:
     )
     assert swap_lowest_fee_case_insensitive.get("status") == "ok"
     assert swap_lowest_fee_case_insensitive.get("provider") == "1inch"
+
+    swap_lowest_fee_spaced = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "strategy": "  LOWESTFEE  ",
+            },
+        },
+        env,
+    )
+    assert swap_lowest_fee_spaced.get("status") == "ok"
+    assert swap_lowest_fee_spaced.get("provider") == "1inch"
 
     swap_provider_spaced = run(
         {
