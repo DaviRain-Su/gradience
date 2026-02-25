@@ -255,6 +255,29 @@ function assertResultObjectFieldValue(
   }
 }
 
+function assertResultNestedObjectFieldValue(
+  name: string,
+  payload: Record<string, unknown>,
+  parentField: string,
+  objectField: string,
+  key: string,
+  expected: unknown,
+): void {
+  const parent = getResult(name, payload)[parentField] as Record<string, unknown> | null | undefined;
+  if (!parent || typeof parent !== "object") {
+    throw new Error(fail(name, `result.${parentField} must be object`));
+  }
+  const child = parent[objectField] as Record<string, unknown> | null | undefined;
+  if (!child || typeof child !== "object") {
+    throw new Error(fail(name, `result.${parentField}.${objectField} must be object`));
+  }
+  if (child[key] !== expected) {
+    throw new Error(
+      fail(name, `result.${parentField}.${objectField}.${key} must equal ${String(expected)}`),
+    );
+  }
+}
+
 function assertStrategyRunPlanResult(name: string, payload: Record<string, unknown>): void {
   const runResult = getResult(name, payload).result as Record<string, unknown> | null | undefined;
   if (!runResult || typeof runResult !== "object") {
@@ -625,20 +648,24 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
     );
   }
 
-  const strategy = getResult(TOOL.strategyCompile, getPayload(payloads, TOOL.strategyCompile))
-    .strategy as Record<string, unknown>;
-  const metadata = assertObjectField(strategy, "metadata", fail(TOOL.strategyCompile, "result.strategy"));
-  if (metadata.template !== "pay-per-call-v1") {
-    throw new Error(fail(TOOL.strategyCompile, "result.strategy.metadata.template must equal pay-per-call-v1"));
-  }
+  assertResultNestedObjectFieldValue(
+    TOOL.strategyCompile,
+    getPayload(payloads, TOOL.strategyCompile),
+    "strategy",
+    "metadata",
+    "template",
+    "pay-per-call-v1",
+  );
 
   assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
 
-  const txRequest = getResult(TOOL.lifiExtractTxRequest, getPayload(payloads, TOOL.lifiExtractTxRequest))
-    .txRequest as Record<string, unknown>;
-  if (txRequest.to !== ADDR_A) {
-    throw new Error(fail(TOOL.lifiExtractTxRequest, "result.txRequest.to must match fixture"));
-  }
+  assertResultObjectFieldValue(
+    TOOL.lifiExtractTxRequest,
+    getPayload(payloads, TOOL.lifiExtractTxRequest),
+    "txRequest",
+    "to",
+    ADDR_A,
+  );
 
   const validatePayload = getPayload(payloads, TOOL.strategyValidate);
   assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
