@@ -25,6 +25,16 @@ function assertEnvelopeShape(name: string, payload: Record<string, unknown>): vo
   }
 }
 
+function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): void {
+  const keys = Object.keys(payload);
+  const expected = ["status", "code", "result", "meta"];
+  for (let i = 0; i < expected.length; i += 1) {
+    if (keys[i] !== expected[i]) {
+      throw new Error(`${name}: envelope key order must start with status,code,result,meta`);
+    }
+  }
+}
+
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
@@ -127,6 +137,7 @@ async function main(): Promise<void> {
     if (!tool) throw new Error(`missing tool: ${name}`);
     const payload = await parseToolPayload(tool, params);
     assertEnvelopeShape(name, payload);
+    assertEnvelopeOrder(name, payload);
   }
 
   // behavioral spot checks
