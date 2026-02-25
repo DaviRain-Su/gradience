@@ -725,10 +725,7 @@ function assertBlockedReason(name: string, payload: Record<string, unknown>, rea
 }
 
 function assertResultReason(name: string, payload: Record<string, unknown>, reason: string): void {
-  const result = getResult(name, payload);
-  if (String(result.reason || "") !== reason) {
-    throw new Error(fail(name, `should include result.reason=${reason}`));
-  }
+  assertObjectFieldStringEquals(name, getResult(name, payload), "reason", reason, "result");
 }
 
 function assertErrorReason(name: string, payload: Record<string, unknown>, code: number, reason: string): void {
@@ -743,8 +740,18 @@ function assertMetaFieldString(
   expected: string,
 ): void {
   const meta = payload.meta as Record<string, unknown>;
-  if (String(meta?.[field] || "") !== expected) {
-    throw new Error(fail(name, `should include meta.${field}=${expected}`));
+  assertObjectFieldStringEquals(name, meta, field, expected, "meta");
+}
+
+function assertObjectFieldStringEquals(
+  name: string,
+  obj: Record<string, unknown> | null | undefined,
+  field: string,
+  expected: string,
+  scope: string,
+): void {
+  if (String(obj?.[field] || "") !== expected) {
+    throw new Error(fail(name, `should include ${scope}.${field}=${expected}`));
   }
 }
 
