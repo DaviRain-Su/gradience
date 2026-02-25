@@ -622,7 +622,7 @@ async function runPureTsStages(
   context: PureTsContext,
   stages: PureTsStage[] = PURE_TS_PIPELINE,
 ): Promise<void> {
-  await runContextStages(tools, context, stages);
+  await runContextPipeline(tools, context, stages);
 }
 
 const PURE_TS_PIPELINE = makePipeline<PureTsStage>(runPureTsPreloadedStage, runPureTsSemanticStage);
@@ -641,7 +641,7 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
   await runPipeline(tools, stages);
 }
 
-async function runContextStages<TContext>(
+async function runContextPipeline<TContext>(
   tools: Map<string, ToolDefinition>,
   context: TContext,
   stages: ContextStage<TContext>[],
@@ -978,7 +978,7 @@ async function runZigRequiredStages(
   context: ZigRequiredContext,
   stages: ZigRequiredStage[] = ZIG_REQUIRED_PIPELINE,
 ): Promise<void> {
-  await runContextStages(tools, context, stages);
+  await runContextPipeline(tools, context, stages);
 }
 
 const ZIG_REQUIRED_PIPELINE = makePipeline<ZigRequiredStage>(
