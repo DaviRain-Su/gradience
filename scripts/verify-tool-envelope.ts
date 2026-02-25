@@ -230,6 +230,18 @@ function assertErrorReason(name: string, payload: Record<string, unknown>, code:
   }
 }
 
+function assertMetaFieldString(
+  name: string,
+  payload: Record<string, unknown>,
+  field: string,
+  expected: string,
+): void {
+  const meta = payload.meta as Record<string, unknown>;
+  if (String(meta?.[field] || "") !== expected) {
+    throw new Error(fail(name, `should include meta.${field}=${expected}`));
+  }
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -509,6 +521,7 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     quote: {},
   });
   assertErrorReason(TOOL.lifiRunWorkflow, lifiInvalidMode, 2, "invalid runMode: inspect");
+  assertMetaFieldString(TOOL.lifiRunWorkflow, lifiInvalidMode, "runMode", "inspect");
 
   const transferInvalidMode = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), {
     runMode: "inspect",
@@ -517,6 +530,7 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     amountRaw: "1",
   });
   assertErrorReason(TOOL.runTransferWorkflow, transferInvalidMode, 2, "invalid runMode: inspect");
+  assertMetaFieldString(TOOL.runTransferWorkflow, transferInvalidMode, "runMode", "inspect");
 }
 
 async function main(): Promise<void> {
