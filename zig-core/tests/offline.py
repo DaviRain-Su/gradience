@@ -9,9 +9,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BIN = ROOT / "zig-out" / "bin" / "gradience-zig"
+JsonDict = dict[str, Any]
 
 
-def run(payload: dict, env: dict) -> dict:
+def run(payload: JsonDict, env: JsonDict) -> JsonDict:
     proc = subprocess.run(
         [str(BIN)],
         input=json.dumps(payload, separators=(",", ":")).encode(),
@@ -29,7 +30,7 @@ def run(payload: dict, env: dict) -> dict:
     return json.loads(out)
 
 
-def first_row(value: Any) -> dict:
+def first_row(value: Any) -> JsonDict:
     if isinstance(value, list):
         assert len(value) >= 1
         return value[0]
@@ -39,10 +40,10 @@ def first_row(value: Any) -> dict:
 
 def assert_select_mixed_keeps(
     action: str,
-    params: dict,
+    params: JsonDict,
     container_key: str,
     expected_keys: set[str],
-    env: dict,
+    env: JsonDict,
 ) -> None:
     resp = run({"action": action, "params": params}, env)
     assert resp.get("status") == "ok"
@@ -52,8 +53,8 @@ def assert_select_mixed_keeps(
 
 def assert_select_rejected(
     action: str,
-    params: dict,
-    env: dict,
+    params: JsonDict,
+    env: JsonDict,
     code: int = 2,
 ) -> None:
     resp = run({"action": action, "params": params}, env)
@@ -63,10 +64,10 @@ def assert_select_rejected(
 
 def assert_select_alias_coalesced(
     action: str,
-    params: dict,
+    params: JsonDict,
     container_key: str,
     expected_keys_in_order: list[str],
-    env: dict,
+    env: JsonDict,
 ) -> None:
     resp = run({"action": action, "params": params}, env)
     assert resp.get("status") == "ok"
