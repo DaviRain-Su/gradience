@@ -873,6 +873,20 @@ function assertPreloadedZigDisabledCases(
   }
 }
 
+function runZigRequiredPreloadedCases(
+  payloads: Map<string, Record<string, unknown>>,
+  cases: ZigDisabledCase[],
+): void {
+  assertPreloadedZigDisabledCases(payloads, cases);
+}
+
+async function runZigRequiredExecutedCases(
+  tools: Map<string, ToolDefinition>,
+  cases: ZigDisabledCase[],
+): Promise<void> {
+  await runToolCaseList(tools, cases, assertZigDisabledCase);
+}
+
 async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
   input: ZigDisabledCase,
@@ -964,9 +978,8 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
   const payloads = await runEnvelopeChecks(tools, checks);
 
-  assertPreloadedZigDisabledCases(payloads, partitioned.empty);
-
-  await runToolCaseList(tools, partitioned.nonEmpty, assertZigDisabledCase);
+  runZigRequiredPreloadedCases(payloads, partitioned.empty);
+  await runZigRequiredExecutedCases(tools, partitioned.nonEmpty);
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
