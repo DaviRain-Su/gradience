@@ -5,18 +5,19 @@ type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
-type VoidContextStage = (tools: Map<string, ToolDefinition>, _context: undefined) => Promise<void>;
+type ContextStage<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
+type VoidContextStage = ContextStage<undefined>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: Map<string, Record<string, unknown>>;
 };
-type PureTsStage = (_tools: Map<string, ToolDefinition>, context: PureTsContext) => Promise<void>;
+type PureTsStage = ContextStage<PureTsContext>;
 type ZigRequiredContext = {
   preloadedCases: ZigDisabledCase[];
   executedCases: ZigDisabledCase[];
   preloadedPayloads: Map<string, Record<string, unknown>>;
 };
-type ZigRequiredStage = (tools: Map<string, ToolDefinition>, context: ZigRequiredContext) => Promise<void>;
+type ZigRequiredStage = ContextStage<ZigRequiredContext>;
 type ZigDisabledCase = { name: string; params: Params; reason: string };
 type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
 type LifiAnalysisCase = {
@@ -656,7 +657,7 @@ function adaptToolStages(
 async function runContextStages<TContext>(
   tools: Map<string, ToolDefinition>,
   context: TContext,
-  stages: Array<(tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>>,
+  stages: ContextStage<TContext>[],
 ): Promise<void> {
   for (const stage of stages) {
     await stage(tools, context);
