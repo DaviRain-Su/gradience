@@ -2,11 +2,12 @@ import { registerMonadTools } from "../src/tools/monad-tools.js";
 import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 
 type Params = Record<string, unknown>;
+type ResultFieldExpectation = "null" | "object" | "string";
 type ZigDisabledCase = { name: string; params: Params; reason: string };
 type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
 type LifiAnalysisCase = {
   quote: Params;
-  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" };
+  expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation };
 };
 type InvalidRunModeCase = { name: string; params: Params; runMode: string };
 
@@ -543,6 +544,23 @@ function assertResultNullFields(name: string, payload: Record<string, unknown>, 
   }
 }
 
+function assertResultFieldExpectation(
+  name: string,
+  payload: Record<string, unknown>,
+  field: string,
+  expectation: ResultFieldExpectation,
+): void {
+  if (expectation === "object") {
+    assertResultObjectField(name, payload, field);
+    return;
+  }
+  if (expectation === "string") {
+    assertResultStringField(name, payload, field);
+    return;
+  }
+  assertResultFieldNull(name, payload, field);
+}
+
 function assertResultObjectFieldValue(
   name: string,
   payload: Record<string, unknown>,
@@ -707,7 +725,7 @@ async function assertInvalidRunModeCase(
 async function assertLifiAnalysisCase(
   tools: Map<string, ToolDefinition>,
   quote: Params,
-  expectation: { txRequest: "null" | "object"; routeId: "null" | "string"; tool: "null" | "string" },
+  expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation },
 ): Promise<void> {
   const payload = await parseToolPayload(
     getTool(tools, TOOL.lifiRunWorkflow),
@@ -715,21 +733,9 @@ async function assertLifiAnalysisCase(
   );
   assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
   assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
-  if (expectation.txRequest === "object") {
-    assertResultObjectField(TOOL.lifiRunWorkflow, payload, "txRequest");
-  } else {
-    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["txRequest"]);
-  }
-  if (expectation.routeId === "string") {
-    assertResultStringField(TOOL.lifiRunWorkflow, payload, "routeId");
-  } else {
-    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["routeId"]);
-  }
-  if (expectation.tool === "string") {
-    assertResultStringField(TOOL.lifiRunWorkflow, payload, "tool");
-  } else {
-    assertResultNullFields(TOOL.lifiRunWorkflow, payload, ["tool"]);
-  }
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "txRequest", expectation.txRequest);
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "routeId", expectation.routeId);
+  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "tool", expectation.tool);
 }
 
 async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Promise<void> {
