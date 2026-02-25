@@ -697,18 +697,37 @@ function getStringField(
   return value;
 }
 
+function getBooleanField(
+  name: string,
+  obj: Record<string, unknown>,
+  field: string,
+  scope: string,
+): boolean {
+  const value = obj[field];
+  if (typeof value !== "boolean") {
+    throw new Error(fail(name, `${scope}.${field} must be boolean`));
+  }
+  return value;
+}
+
+function getArrayField(
+  name: string,
+  obj: Record<string, unknown> | null | undefined,
+  field: string,
+  scope: string,
+): unknown[] {
+  const value = obj?.[field];
+  if (!Array.isArray(value)) {
+    throw new Error(fail(name, `${scope}.${field} must be array`));
+  }
+  return value;
+}
+
 function assertValidationShape(name: string, payload: Record<string, unknown>): void {
   const result = getResult(name, payload);
-  const validation = result.validation as Record<string, unknown> | null | undefined;
-  if (!validation || typeof validation !== "object") {
-    throw new Error(fail(name, "result.validation must be object"));
-  }
-  if (typeof validation.ok !== "boolean") {
-    throw new Error(fail(name, "result.validation.ok must be boolean"));
-  }
-  if (!Array.isArray(validation.errors)) {
-    throw new Error(fail(name, "result.validation.errors must be array"));
-  }
+  const validation = getObjectField(name, result, "validation", "result");
+  getBooleanField(name, validation, "ok", "result.validation");
+  getArrayField(name, validation, "errors", "result.validation");
 }
 
 function assertBlockedWithMode(
@@ -868,8 +887,8 @@ function assertStrategyValidateEnvelope(name: string, payload: Record<string, un
 function assertInvalidValidationPayload(name: string, payload: Record<string, unknown>): void {
   assertStatusCode(name, payload, "error", 2);
   assertValidationShape(name, payload);
-  const invalidValidation = getResult(name, payload).validation as Record<string, unknown>;
-  if (invalidValidation.ok !== false) {
+  const invalidValidation = getObjectField(name, getResult(name, payload), "validation", "result");
+  if (getBooleanField(name, invalidValidation, "ok", "result.validation") !== false) {
     throw new Error(fail(name, "invalid strategy should set validation.ok=false"));
   }
   assertObjectFieldNonEmptyArray(name, invalidValidation, "errors", "result.validation");
@@ -881,8 +900,8 @@ function assertObjectFieldNonEmptyArray(
   field: string,
   scope: string,
 ): void {
-  const value = obj?.[field];
-  if (!Array.isArray(value) || value.length === 0) {
+  const value = getArrayField(name, obj, field, scope);
+  if (value.length === 0) {
     throw new Error(fail(name, `${scope}.${field} must be non-empty array`));
   }
 }
