@@ -312,6 +312,21 @@ async function assertInvalidRunModeCase(
   assertMetaFieldString(input.name, payload, "runMode", input.runMode);
 }
 
+function assertZigDisabledBlocked(
+  name: string,
+  payload: Record<string, unknown>,
+  reason: string,
+): void {
+  if (payload.status !== "blocked" || Number(payload.code) !== 13) {
+    throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
+  }
+  const meta = payload.meta as Record<string, unknown>;
+  if (meta?.source !== "ts-tool") {
+    throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
+  }
+  assertBlockedReason(name, payload, reason);
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -515,23 +530,13 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 
   for (const [name] of checks) {
     const payload = getPayload(payloads, name);
-    if (payload.status !== "blocked" || Number(payload.code) !== 13) {
-      throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
-    }
-    const meta = payload.meta as Record<string, unknown>;
-    if (meta?.source !== "ts-tool") {
-      throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
-    }
-    assertBlockedReason(name, payload, expectedReasonByTool[name] || "");
+    assertZigDisabledBlocked(name, payload, expectedReasonByTool[name] || "");
   }
 
   const versionLong = await parseToolPayload(getTool(tools, TOOL.version), { long: true });
   assertEnvelopeShape(TOOL.version, versionLong);
   assertEnvelopeOrder(TOOL.version, versionLong);
-  if (versionLong.status !== "blocked" || Number(versionLong.code) !== 13) {
-    throw new Error(fail(TOOL.version, "long=true should return blocked code 13 when zig is disabled"));
-  }
-  assertBlockedReason(TOOL.version, versionLong, "version discovery requires zig core");
+  assertZigDisabledBlocked(TOOL.version, versionLong, "version discovery requires zig core");
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
