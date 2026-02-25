@@ -179,6 +179,13 @@ function assertBlockedWithMode(
   }
 }
 
+function assertBlockedReason(name: string, payload: Record<string, unknown>, reason: string): void {
+  const result = getResult(name, payload);
+  if (String(result.reason || "") !== reason) {
+    throw new Error(fail(name, `should include result.reason=${reason}`));
+  }
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -328,6 +335,11 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     [TOOL.runtimeInfo, {}],
   ];
   const payloads = await runEnvelopeChecks(tools, checks);
+  const expectedReasonByTool: Record<string, string> = {
+    [TOOL.schema]: "schema discovery requires zig core",
+    [TOOL.version]: "version discovery requires zig core",
+    [TOOL.runtimeInfo]: "runtime info requires zig core",
+  };
 
   for (const [name] of checks) {
     const payload = getPayload(payloads, name);
@@ -338,6 +350,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
     if (meta?.source !== "ts-tool") {
       throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
     }
+    assertBlockedReason(name, payload, expectedReasonByTool[name] || "");
   }
 }
 
@@ -356,9 +369,11 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
     throw new Error(fail(TOOL.lifiExtractTxRequest, "should return blocked code 12 when missing tx"));
   }
+  assertBlockedReason(TOOL.lifiExtractTxRequest, blocked, "missing transactionRequest");
 
   const lifiSimBlocked = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), mkLifiWorkflowSimulateParams({}));
   assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiSimBlocked, 12, "simulate");
+  assertBlockedReason(TOOL.lifiRunWorkflow, lifiSimBlocked, "missing txRequest");
 
   const lifiAnalysis = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), {
     runMode: "analysis",
@@ -375,6 +390,7 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
 
   const transferExecBlocked = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), mkTransferWorkflowExecuteParams());
   assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
+  assertBlockedReason(TOOL.runTransferWorkflow, transferExecBlocked, "execute requires signedTxHex");
 }
 
 async function main(): Promise<void> {
