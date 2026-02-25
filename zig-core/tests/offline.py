@@ -177,6 +177,18 @@ def main() -> int:
     assert len(alias_selected) == 1
     assert set(alias_selected[0].keys()) == {"capability_auth"}
 
+    providers_select_mixed_unknown = run(
+        {
+            "action": "providersList",
+            "params": {"name": "1inch", "select": "name,notAField"},
+        },
+        env,
+    )
+    assert providers_select_mixed_unknown.get("status") == "ok"
+    mixed_selected = providers_select_mixed_unknown.get("providers", [])
+    assert len(mixed_selected) == 1
+    assert set(mixed_selected[0].keys()) == {"name"}
+
     providers_select_blank = run(
         {
             "action": "providersList",
@@ -271,6 +283,18 @@ def main() -> int:
     alias_rows_coalesced = chains_select_alias_coalesced.get("chains", [])
     assert len(alias_rows_coalesced) == 1
     assert list(alias_rows_coalesced[0].keys()) == ["chain_id"]
+
+    chains_select_mixed_unknown = run(
+        {
+            "action": "chainsTop",
+            "params": {"limit": 1, "select": "chain,notAField"},
+        },
+        env,
+    )
+    assert chains_select_mixed_unknown.get("status") == "ok"
+    chains_mixed_rows = chains_select_mixed_unknown.get("chains", [])
+    assert len(chains_mixed_rows) == 1
+    assert set(chains_mixed_rows[0].keys()) == {"chain"}
 
     chain_assets = run(
         {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
@@ -396,6 +420,22 @@ def main() -> int:
     yield_alias_rows_coalesced = yield_select_alias_coalesced.get("opportunities", [])
     assert len(yield_alias_rows_coalesced) == 1
     assert list(yield_alias_rows_coalesced[0].keys()) == ["tvl_usd"]
+
+    yield_select_mixed_unknown = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "limit": 1,
+                "select": "provider,notAField",
+            },
+        },
+        env,
+    )
+    assert yield_select_mixed_unknown.get("status") == "ok"
+    yield_mixed_rows = yield_select_mixed_unknown.get("opportunities", [])
+    assert len(yield_mixed_rows) == 1
+    assert set(yield_mixed_rows[0].keys()) == {"provider"}
 
     bridge = run(
         {
@@ -1001,6 +1041,24 @@ def main() -> int:
     )
     assert bridge_select_unknown_field.get("status") == "ok"
     assert bridge_select_unknown_field.get("results") == {}
+
+    bridge_select_mixed_unknown = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "provider,notAField",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_mixed_unknown.get("status") == "ok"
+    assert set(bridge_select_mixed_unknown.get("results", {}).keys()) == {"provider"}
 
     bridge_select_blank = run(
         {
@@ -1622,6 +1680,24 @@ def main() -> int:
     assert swap_select_unknown_field.get("status") == "ok"
     assert swap_select_unknown_field.get("results") == {}
 
+    swap_select_mixed_unknown = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "provider,notAField",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_mixed_unknown.get("status") == "ok"
+    assert set(swap_select_mixed_unknown.get("results", {}).keys()) == {"provider"}
+
     swap_select_blank = run(
         {
             "action": "swapQuote",
@@ -1757,6 +1833,22 @@ def main() -> int:
     assert len(lma_rows) == 1
     assert set(lma_rows[0].keys()) == {"provider", "supply_apy", "tvl_usd"}
 
+    lend_markets_select_mixed_unknown = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "asset": "USDC",
+                "limit": 1,
+                "select": "provider,notAField",
+            },
+        },
+        env,
+    )
+    assert lend_markets_select_mixed_unknown.get("status") == "ok"
+    lm_mixed_rows = lend_markets_select_mixed_unknown.get("markets", [])
+    assert len(lm_mixed_rows) == 1
+    assert set(lm_mixed_rows[0].keys()) == {"provider"}
+
     lend_rates = run(
         {
             "action": "lendRates",
@@ -1845,6 +1937,22 @@ def main() -> int:
     assert lend_rates_select_alias.get("status") == "ok"
     rates_alias = lend_rates_select_alias.get("rates", {})
     assert set(rates_alias.keys()) == {"provider", "supplyApy", "tvlUsd"}
+
+    lend_rates_select_mixed_unknown = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "base",
+                "asset": "USDC",
+                "provider": "morpho",
+                "select": "provider,notAField",
+            },
+        },
+        env,
+    )
+    assert lend_rates_select_mixed_unknown.get("status") == "ok"
+    rates_mixed = lend_rates_select_mixed_unknown.get("rates", {})
+    assert set(rates_mixed.keys()) == {"provider"}
 
     resolve_symbol = run(
         {"action": "assetsResolve", "params": {"chain": "base", "asset": "USDC"}}, env
