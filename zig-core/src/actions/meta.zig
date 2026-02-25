@@ -1465,19 +1465,19 @@ fn putBridgeQuoteSelectedField(
         try obj.put(QuoteFieldKey.asset, .{ .string = asset });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.eta_seconds)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.eta_seconds, "eta_seconds" })) {
         try obj.put(QuoteFieldKey.eta_seconds, .{ .integer = @as(i64, @intCast(quote.eta_seconds)) });
         return;
     }
@@ -1501,27 +1501,27 @@ fn putSwapQuoteSelectedField(
         try obj.put(QuoteFieldKey.chain, .{ .string = chain });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.from_asset)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.from_asset, "from_asset" })) {
         try obj.put(QuoteFieldKey.from_asset, .{ .string = from_asset });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.to_asset)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.to_asset, "to_asset" })) {
         try obj.put(QuoteFieldKey.to_asset, .{ .string = to_asset });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.amount_in)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.amount_in, "amount_in" })) {
         try obj.put(QuoteFieldKey.amount_in, .{ .string = amount_in });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" })) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.fee_bps, "fee_bps" })) {
         try obj.put(QuoteFieldKey.fee_bps, .{ .integer = @as(i64, @intCast(quote.fee_bps)) });
         return;
     }
-    if (fieldMatches(field, QuoteFieldKey.price_impact_bps)) {
+    if (fieldMatchesAny(field, &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" })) {
         try obj.put(QuoteFieldKey.price_impact_bps, .{ .integer = @as(i64, @intCast(quote.price_impact_bps)) });
         return;
     }
@@ -1548,6 +1548,13 @@ fn containsField(items: []const []const u8, field: []const u8) bool {
 
 fn fieldMatches(input: []const u8, canonical: []const u8) bool {
     return std.ascii.eqlIgnoreCase(input, canonical);
+}
+
+fn fieldMatchesAny(input: []const u8, aliases: []const []const u8) bool {
+    for (aliases) |alias| {
+        if (fieldMatches(input, alias)) return true;
+    }
+    return false;
 }
 
 fn hasNonEmptyCsvToken(raw: []const u8) bool {

@@ -811,6 +811,29 @@ def main() -> int:
         "estimatedAmountOut",
     }
 
+    bridge_select_snake_alias = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "provider": "lifi",
+                "select": "provider,estimated_amount_out,fee_bps,eta_seconds",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_snake_alias.get("status") == "ok"
+    assert set(bridge_select_snake_alias.get("results", {}).keys()) == {
+        "provider",
+        "estimatedAmountOut",
+        "feeBps",
+        "etaSeconds",
+    }
+
     bridge_select_unknown_field = run(
         {
             "action": "bridgeQuote",
@@ -1368,6 +1391,30 @@ def main() -> int:
     assert set(swap_select_case_insensitive.get("results", {}).keys()) == {
         "provider",
         "feeBps",
+    }
+
+    swap_select_snake_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "select": "provider,from_asset,to_asset,estimated_amount_out,price_impact_bps",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_snake_alias.get("status") == "ok"
+    assert set(swap_select_snake_alias.get("results", {}).keys()) == {
+        "provider",
+        "fromAsset",
+        "toAsset",
+        "estimatedAmountOut",
+        "priceImpactBps",
     }
 
     swap_select_unknown_field = run(
