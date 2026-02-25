@@ -58,6 +58,24 @@ def assert_select_rejected(
     assert int(resp.get("code", 0)) == code
 
 
+def assert_select_alias_coalesced(
+    action: str,
+    params: dict,
+    container_key: str,
+    expected_keys_in_order: list[str],
+    env: dict,
+) -> None:
+    resp = run({"action": action, "params": params}, env)
+    assert resp.get("status") == "ok"
+    container = resp.get(container_key, {})
+    if isinstance(container, list):
+        assert len(container) >= 1
+        row = container[0]
+    else:
+        row = container
+    assert list(row.keys()) == expected_keys_in_order
+
+
 def bridge_quote_params(**overrides: Any) -> dict[str, Any]:
     params: dict[str, Any] = {
         "from": "1",
@@ -292,17 +310,13 @@ def main() -> int:
     assert len(alias_rows) == 1
     assert set(alias_rows[0].keys()) == {"chain_id", "tvl_usd"}
 
-    chains_select_alias_coalesced = run(
-        {
-            "action": "chainsTop",
-            "params": {"limit": 1, "select": "chain_id,chainId"},
-        },
+    assert_select_alias_coalesced(
+        "chainsTop",
+        {"limit": 1, "select": "chain_id,chainId"},
+        "chains",
+        ["chain_id"],
         env,
     )
-    assert chains_select_alias_coalesced.get("status") == "ok"
-    alias_rows_coalesced = chains_select_alias_coalesced.get("chains", [])
-    assert len(alias_rows_coalesced) == 1
-    assert list(alias_rows_coalesced[0].keys()) == ["chain_id"]
 
     assert_select_mixed_keeps(
         "chainsTop",
@@ -400,21 +414,13 @@ def main() -> int:
     assert len(yield_alias_rows) == 1
     assert set(yield_alias_rows[0].keys()) == {"provider", "tvl_usd"}
 
-    yield_select_alias_coalesced = run(
-        {
-            "action": "yieldOpportunities",
-            "params": {
-                "asset": "USDC",
-                "limit": 1,
-                "select": "tvl_usd,tvlUsd",
-            },
-        },
+    assert_select_alias_coalesced(
+        "yieldOpportunities",
+        {"asset": "USDC", "limit": 1, "select": "tvl_usd,tvlUsd"},
+        "opportunities",
+        ["tvl_usd"],
         env,
     )
-    assert yield_select_alias_coalesced.get("status") == "ok"
-    yield_alias_rows_coalesced = yield_select_alias_coalesced.get("opportunities", [])
-    assert len(yield_alias_rows_coalesced) == 1
-    assert list(yield_alias_rows_coalesced[0].keys()) == ["tvl_usd"]
 
     assert_select_mixed_keeps(
         "yieldOpportunities",
@@ -991,25 +997,17 @@ def main() -> int:
         "etaSeconds",
     }
 
-    bridge_select_alias_coalesced = run(
-        {
-            "action": "bridgeQuote",
-            "params": {
-                "from": "1",
-                "to": "8453",
-                "asset": "USDC",
-                "amount": "1000000",
-                "provider": "lifi",
-                "select": "estimatedAmountOut,estimated_amount_out",
-                "resultsOnly": True,
-            },
-        },
+    assert_select_alias_coalesced(
+        "bridgeQuote",
+        bridge_quote_params(
+            provider="lifi",
+            select="estimatedAmountOut,estimated_amount_out",
+            resultsOnly=True,
+        ),
+        "results",
+        ["estimatedAmountOut"],
         env,
     )
-    assert bridge_select_alias_coalesced.get("status") == "ok"
-    assert list(bridge_select_alias_coalesced.get("results", {}).keys()) == [
-        "estimatedAmountOut"
-    ]
 
     bridge_select_unknown_field = run(
         {
@@ -1600,25 +1598,17 @@ def main() -> int:
         "priceImpactBps",
     }
 
-    swap_select_alias_coalesced = run(
-        {
-            "action": "swapQuote",
-            "params": {
-                "chain": "1",
-                "fromAsset": "USDC",
-                "toAsset": "DAI",
-                "amount": "1000000",
-                "provider": "1inch",
-                "select": "priceImpactBps,price_impact_bps",
-                "resultsOnly": True,
-            },
-        },
+    assert_select_alias_coalesced(
+        "swapQuote",
+        swap_quote_params(
+            provider="1inch",
+            select="priceImpactBps,price_impact_bps",
+            resultsOnly=True,
+        ),
+        "results",
+        ["priceImpactBps"],
         env,
     )
-    assert swap_select_alias_coalesced.get("status") == "ok"
-    assert list(swap_select_alias_coalesced.get("results", {}).keys()) == [
-        "priceImpactBps"
-    ]
 
     swap_select_unknown_field = run(
         {
