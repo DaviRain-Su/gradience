@@ -93,6 +93,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `fastest`)
   - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
+- `strategy` value is trimmed; blank/unknown values are rejected
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple routes share the same top priority bucket, `strategy` breaks ties
@@ -114,6 +115,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `lowestFee`)
   - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
+- `strategy` value is trimmed; blank/unknown values are rejected
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple candidates share the same top priority bucket, `strategy` breaks ties

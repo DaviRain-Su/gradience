@@ -652,6 +652,22 @@ def main() -> int:
     assert bridge_invalid_strategy.get("status") == "error"
     assert int(bridge_invalid_strategy.get("code", 0)) == 2
 
+    bridge_blank_strategy = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "strategy": "   ",
+            },
+        },
+        env,
+    )
+    assert bridge_blank_strategy.get("status") == "error"
+    assert int(bridge_blank_strategy.get("code", 0)) == 2
+
     bridge_select = run(
         {
             "action": "bridgeQuote",
@@ -1137,6 +1153,22 @@ def main() -> int:
     )
     assert swap_invalid_strategy.get("status") == "error"
     assert int(swap_invalid_strategy.get("code", 0)) == 2
+
+    swap_blank_strategy = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "strategy": "   ",
+            },
+        },
+        env,
+    )
+    assert swap_blank_strategy.get("status") == "error"
+    assert int(swap_blank_strategy.get("code", 0)) == 2
 
     swap_select = run(
         {
