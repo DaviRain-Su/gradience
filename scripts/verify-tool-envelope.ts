@@ -5,6 +5,11 @@ type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
+type PureTsContext = {
+  checks: Array<[string, Params]>;
+  payloads: Map<string, Record<string, unknown>>;
+};
+type PureTsStage = (_tools: Map<string, ToolDefinition>, context: PureTsContext) => Promise<void>;
 type ZigRequiredContext = {
   preloadedCases: ZigDisabledCase[];
   executedCases: ZigDisabledCase[];
@@ -591,6 +596,38 @@ function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>)
   assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
 }
 
+async function buildPureTsContext(tools: Map<string, ToolDefinition>): Promise<PureTsContext> {
+  const checks = mkPureTsChecks();
+  const payloads = await runEnvelopeChecks(tools, checks);
+  return { checks, payloads };
+}
+
+async function runPureTsPreloadedStage(
+  _tools: Map<string, ToolDefinition>,
+  context: PureTsContext,
+): Promise<void> {
+  runPureTsPreloadedChecks(context.payloads, context.checks);
+}
+
+async function runPureTsSemanticStage(
+  _tools: Map<string, ToolDefinition>,
+  context: PureTsContext,
+): Promise<void> {
+  runPureTsSemanticChecks(context.payloads);
+}
+
+async function runPureTsStages(
+  tools: Map<string, ToolDefinition>,
+  context: PureTsContext,
+  stages: PureTsStage[] = PURE_TS_STAGES,
+): Promise<void> {
+  for (const stage of stages) {
+    await stage(tools, context);
+  }
+}
+
+const PURE_TS_STAGES: PureTsStage[] = [runPureTsPreloadedStage, runPureTsSemanticStage];
+
 async function runToolCaseList<T>(
   tools: Map<string, ToolDefinition>,
   cases: T[],
@@ -1010,10 +1047,8 @@ async function runEnvelopeChecks(
 }
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  const checks = mkPureTsChecks();
-  const payloads = await runEnvelopeChecks(tools, checks);
-  runPureTsPreloadedChecks(payloads, checks);
-  runPureTsSemanticChecks(payloads);
+  const context = await buildPureTsContext(tools);
+  await runPureTsStages(tools, context);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
