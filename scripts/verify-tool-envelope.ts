@@ -276,6 +276,42 @@ function assertMetaFieldString(
   }
 }
 
+async function assertBlockedCase(
+  tools: Map<string, ToolDefinition>,
+  input: {
+    name: string;
+    params: Params;
+    code: number;
+    reason: string;
+    mode?: string;
+  },
+): Promise<void> {
+  const payload = await parseToolPayload(getTool(tools, input.name), input.params);
+  if (input.mode) {
+    assertBlockedWithMode(input.name, payload, input.code, input.mode);
+  } else if (payload.status !== "blocked" || Number(payload.code) !== input.code) {
+    throw new Error(fail(input.name, `should return blocked code ${input.code}`));
+  }
+  assertBlockedReason(input.name, payload, input.reason);
+}
+
+async function assertInvalidRunModeCase(
+  tools: Map<string, ToolDefinition>,
+  input: {
+    name: string;
+    params: Params;
+    runMode: string;
+  },
+): Promise<void> {
+  const payload = await parseToolPayload(getTool(tools, input.name), {
+    ...input.params,
+    runMode: input.runMode,
+  });
+  const reason = `invalid runMode: ${input.runMode}`;
+  assertErrorReason(input.name, payload, 2, reason);
+  assertMetaFieldString(input.name, payload, "runMode", input.runMode);
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -517,15 +553,20 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
     throw new Error(fail(TOOL.strategyValidate, "invalid strategy should include validation errors"));
   }
 
-  const blocked = await parseToolPayload(getTool(tools, TOOL.lifiExtractTxRequest), { quote: {} });
-  if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
-    throw new Error(fail(TOOL.lifiExtractTxRequest, "should return blocked code 12 when missing tx"));
-  }
-  assertBlockedReason(TOOL.lifiExtractTxRequest, blocked, "missing transactionRequest");
+  await assertBlockedCase(tools, {
+    name: TOOL.lifiExtractTxRequest,
+    params: { quote: {} },
+    code: 12,
+    reason: "missing transactionRequest",
+  });
 
-  const lifiSimBlocked = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), mkLifiWorkflowSimulateParams({}));
-  assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiSimBlocked, 12, "simulate");
-  assertBlockedReason(TOOL.lifiRunWorkflow, lifiSimBlocked, "missing txRequest");
+  await assertBlockedCase(tools, {
+    name: TOOL.lifiRunWorkflow,
+    params: mkLifiWorkflowSimulateParams({}),
+    code: 12,
+    mode: "simulate",
+    reason: "missing txRequest",
+  });
 
   const lifiAnalysis = await parseToolPayload(
     getTool(tools, TOOL.lifiRunWorkflow),
@@ -537,38 +578,45 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "routeId");
   assertResultFieldNull(TOOL.lifiRunWorkflow, lifiAnalysis, "tool");
 
-  const lifiExecuteBlocked = await parseToolPayload(
-    getTool(tools, TOOL.lifiRunWorkflow),
-    mkLifiWorkflowExecuteParams({}),
-  );
-  assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiExecuteBlocked, 12, "execute");
-  assertBlockedReason(TOOL.lifiRunWorkflow, lifiExecuteBlocked, "execute requires signedTxHex");
-
-  const transferExecBlocked = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), mkTransferWorkflowExecuteParams());
-  assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
-  assertBlockedReason(TOOL.runTransferWorkflow, transferExecBlocked, "execute requires signedTxHex");
-
-  const lifiInvalidMode = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), {
-    runMode: "inspect",
-    fromChain: 1,
-    toChain: 1,
-    fromToken: ADDR_A,
-    toToken: ADDR_B,
-    fromAmount: "1",
-    fromAddress: ADDR_C,
-    quote: {},
+  await assertBlockedCase(tools, {
+    name: TOOL.lifiRunWorkflow,
+    params: mkLifiWorkflowExecuteParams({}),
+    code: 12,
+    mode: "execute",
+    reason: "execute requires signedTxHex",
   });
-  assertErrorReason(TOOL.lifiRunWorkflow, lifiInvalidMode, 2, "invalid runMode: inspect");
-  assertMetaFieldString(TOOL.lifiRunWorkflow, lifiInvalidMode, "runMode", "inspect");
 
-  const transferInvalidMode = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), {
-    runMode: "inspect",
-    fromAddress: ADDR_A,
-    toAddress: ADDR_B,
-    amountRaw: "1",
+  await assertBlockedCase(tools, {
+    name: TOOL.runTransferWorkflow,
+    params: mkTransferWorkflowExecuteParams(),
+    code: 12,
+    mode: "execute",
+    reason: "execute requires signedTxHex",
   });
-  assertErrorReason(TOOL.runTransferWorkflow, transferInvalidMode, 2, "invalid runMode: inspect");
-  assertMetaFieldString(TOOL.runTransferWorkflow, transferInvalidMode, "runMode", "inspect");
+
+  await assertInvalidRunModeCase(tools, {
+    name: TOOL.lifiRunWorkflow,
+    runMode: "inspect",
+    params: {
+      fromChain: 1,
+      toChain: 1,
+      fromToken: ADDR_A,
+      toToken: ADDR_B,
+      fromAmount: "1",
+      fromAddress: ADDR_C,
+      quote: {},
+    },
+  });
+
+  await assertInvalidRunModeCase(tools, {
+    name: TOOL.runTransferWorkflow,
+    runMode: "inspect",
+    params: {
+      fromAddress: ADDR_A,
+      toAddress: ADDR_B,
+      amountRaw: "1",
+    },
+  });
 }
 
 async function main(): Promise<void> {
