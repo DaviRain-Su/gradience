@@ -813,6 +813,16 @@ function assertZigDisabledBlocked(
   assertBlockedReason(name, payload, reason);
 }
 
+function assertPreloadedZigDisabledCases(
+  payloads: Map<string, Record<string, unknown>>,
+  cases: ZigDisabledCase[],
+): void {
+  for (const c of cases) {
+    const payload = getPayload(payloads, c.name);
+    assertZigDisabledBlocked(c.name, payload, c.reason);
+  }
+}
+
 async function assertZigDisabledCase(
   tools: Map<string, ToolDefinition>,
   input: ZigDisabledCase,
@@ -881,10 +891,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
   const payloads = await runEnvelopeChecks(tools, checks);
 
-  await runCaseList(partitioned.empty, async (c) => {
-    const payload = getPayload(payloads, c.name);
-    assertZigDisabledBlocked(c.name, payload, c.reason);
-  });
+  assertPreloadedZigDisabledCases(payloads, partitioned.empty);
 
   await runToolCaseList(tools, partitioned.nonEmpty, async (caseTools, c) => {
     await assertZigDisabledCase(caseTools, c);
