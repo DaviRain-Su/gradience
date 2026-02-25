@@ -50,18 +50,25 @@ function assertBlockedWithMode(
   }
 }
 
-async function main(): Promise<void> {
-  process.env.MONAD_USE_ZIG_CORE = "0";
+function getTool(tools: Map<string, ToolDefinition>, name: string): ToolDefinition {
+  const tool = tools.get(name);
+  if (!tool) throw new Error(`missing tool: ${name}`);
+  return tool;
+}
 
-  const tools = new Map<string, ToolDefinition>();
-  const registrar: ToolRegistrar = {
-    registerTool(tool) {
-      tools.set(tool.name, tool);
-    },
-  };
-  registerMonadTools(registrar);
+async function runEnvelopeChecks(
+  tools: Map<string, ToolDefinition>,
+  checks: Array<[string, Params]>,
+): Promise<void> {
+  for (const [name, params] of checks) {
+    const payload = await parseToolPayload(getTool(tools, name), params);
+    assertEnvelopeShape(name, payload);
+    assertEnvelopeOrder(name, payload);
+  }
+}
 
-  const pureTsChecks: Array<[string, Params]> = [
+async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+  const checks: Array<[string, Params]> = [
     ["monad_buildTransferNative", { toAddress: "0x1111111111111111111111111111111111111111", amountWei: "1" }],
     [
       "monad_buildTransferErc20",
@@ -143,36 +150,27 @@ async function main(): Promise<void> {
     ],
     ["monad_lifi_extractTxRequest", { quote: {} }],
   ];
+  await runEnvelopeChecks(tools, checks);
+}
 
-  const zigRequiredChecks: Array<[string, Params]> = [
+async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+  const checks: Array<[string, Params]> = [
     ["monad_schema", {}],
     ["monad_version", {}],
     ["monad_runtimeInfo", {}],
   ];
+  await runEnvelopeChecks(tools, checks);
 
-  for (const [name, params] of pureTsChecks) {
-    const tool = tools.get(name);
-    if (!tool) throw new Error(`missing tool: ${name}`);
-    const payload = await parseToolPayload(tool, params);
-    assertEnvelopeShape(name, payload);
-    assertEnvelopeOrder(name, payload);
-  }
-
-  for (const [name, params] of zigRequiredChecks) {
-    const tool = tools.get(name);
-    if (!tool) throw new Error(`missing tool: ${name}`);
-    const payload = await parseToolPayload(tool, params);
-    assertEnvelopeShape(name, payload);
-    assertEnvelopeOrder(name, payload);
+  for (const [name, params] of checks) {
+    const payload = await parseToolPayload(getTool(tools, name), params);
     if (payload.status !== "blocked" || Number(payload.code) !== 13) {
       throw new Error(`${name} should return blocked code 13 when zig is disabled`);
     }
   }
+}
 
-  // behavioral spot checks
-  const validate = tools.get("monad_strategy_validate");
-  if (!validate) throw new Error("missing tool: monad_strategy_validate");
-  const invalid = await parseToolPayload(validate, {
+async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+  const invalid = await parseToolPayload(getTool(tools, "monad_strategy_validate"), {
     strategy: {
       id: "s",
       plan: { steps: [] },
@@ -184,16 +182,12 @@ async function main(): Promise<void> {
     throw new Error("monad_strategy_validate should return error code 2 for invalid strategy");
   }
 
-  const extract = tools.get("monad_lifi_extractTxRequest");
-  if (!extract) throw new Error("missing tool: monad_lifi_extractTxRequest");
-  const blocked = await parseToolPayload(extract, { quote: {} });
+  const blocked = await parseToolPayload(getTool(tools, "monad_lifi_extractTxRequest"), { quote: {} });
   if (blocked.status !== "blocked" || Number(blocked.code) !== 12) {
     throw new Error("monad_lifi_extractTxRequest should return blocked code 12 when missing tx");
   }
 
-  const lifiWorkflow = tools.get("monad_lifi_runWorkflow");
-  if (!lifiWorkflow) throw new Error("missing tool: monad_lifi_runWorkflow");
-  const lifiSimBlocked = await parseToolPayload(lifiWorkflow, {
+  const lifiSimBlocked = await parseToolPayload(getTool(tools, "monad_lifi_runWorkflow"), {
     runMode: "simulate",
     fromChain: 1,
     toChain: 1,
@@ -205,15 +199,29 @@ async function main(): Promise<void> {
   });
   assertBlockedWithMode("monad_lifi_runWorkflow", lifiSimBlocked, 12, "simulate");
 
-  const transferWorkflow = tools.get("monad_runTransferWorkflow");
-  if (!transferWorkflow) throw new Error("missing tool: monad_runTransferWorkflow");
-  const transferExecBlocked = await parseToolPayload(transferWorkflow, {
+  const transferExecBlocked = await parseToolPayload(getTool(tools, "monad_runTransferWorkflow"), {
     runMode: "execute",
     fromAddress: "0x1111111111111111111111111111111111111111",
     toAddress: "0x2222222222222222222222222222222222222222",
     amountRaw: "1",
   });
   assertBlockedWithMode("monad_runTransferWorkflow", transferExecBlocked, 12, "execute");
+}
+
+async function main(): Promise<void> {
+  process.env.MONAD_USE_ZIG_CORE = "0";
+
+  const tools = new Map<string, ToolDefinition>();
+  const registrar: ToolRegistrar = {
+    registerTool(tool) {
+      tools.set(tool.name, tool);
+    },
+  };
+  registerMonadTools(registrar);
+
+  await runPureTsChecks(tools);
+  await runZigRequiredChecks(tools);
+  await runBehaviorChecks(tools);
 
   console.log("tool envelope checks passed");
 }
