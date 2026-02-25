@@ -1065,13 +1065,13 @@ fn selectBridgeQuote(
 
         var min_rank: usize = std.math.maxInt(usize);
         for (candidates) |quote| {
-            const rank = priority_ranks.get(quote.provider) orelse continue;
+            const rank = providerPriorityRankFromMap(&priority_ranks, quote.provider) orelse continue;
             if (rank < min_rank) min_rank = rank;
         }
 
         if (min_rank != std.math.maxInt(usize)) {
             for (candidates) |quote| {
-                const rank = priority_ranks.get(quote.provider) orelse continue;
+                const rank = providerPriorityRankFromMap(&priority_ranks, quote.provider) orelse continue;
                 if (rank != min_rank) continue;
                 const quote_out = bridgeOutAmount(amount, quote.fee_bps);
                 if (selected == null or bridgeQuoteShouldReplace(strategy, quote_out, quote.eta_seconds, selected.?.out_amount, selected.?.quote.eta_seconds)) {
@@ -1118,13 +1118,13 @@ fn selectSwapQuote(
 
         var min_rank: usize = std.math.maxInt(usize);
         for (candidates) |quote| {
-            const rank = priority_ranks.get(quote.provider) orelse continue;
+            const rank = providerPriorityRankFromMap(&priority_ranks, quote.provider) orelse continue;
             if (rank < min_rank) min_rank = rank;
         }
 
         if (min_rank != std.math.maxInt(usize)) {
             for (candidates) |quote| {
-                const rank = priority_ranks.get(quote.provider) orelse continue;
+                const rank = providerPriorityRankFromMap(&priority_ranks, quote.provider) orelse continue;
                 if (rank != min_rank) continue;
                 const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
                 if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
@@ -1203,12 +1203,23 @@ fn buildProviderPriorityMap(allocator: std.mem.Allocator, priorities_raw: []cons
     while (parts.next()) |part| {
         const value = std.mem.trim(u8, part, " \r\n\t");
         if (value.len == 0) continue;
-        if (map.get(value) == null) {
+        if (providerPriorityRankFromMap(&map, value) == null) {
             try map.put(value, idx);
         }
         idx += 1;
     }
     return map;
+}
+
+fn providerPriorityRankFromMap(map: *const std.StringHashMap(usize), provider: []const u8) ?usize {
+    var it = map.iterator();
+    var rank: ?usize = null;
+    while (it.next()) |entry| {
+        if (!std.ascii.eqlIgnoreCase(entry.key_ptr.*, provider)) continue;
+        const value = entry.value_ptr.*;
+        if (rank == null or value < rank.?) rank = value;
+    }
+    return rank;
 }
 
 fn writeBridgeQuoteResponse(
