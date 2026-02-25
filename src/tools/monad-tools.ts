@@ -96,6 +96,16 @@ function parseWorkflowMode(params: Params, key = "runMode"): WorkflowMode | null
   return null;
 }
 
+function invalidRunModeEnvelope(params: Params, key = "runMode") {
+  const runMode = asString(params, key);
+  return toolEnvelope(
+    "error",
+    2,
+    { reason: `invalid runMode: ${runMode}` },
+    { runMode },
+  );
+}
+
 function ensureZigOk(result: ZigResult, fallback: string): void {
   if (result.status === "ok") return;
   throw new Error(String(result.error || result.message || fallback));
@@ -782,12 +792,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     async execute(_toolCallId, params: Params) {
       const runMode = parseWorkflowMode(params, "runMode");
       if (!runMode) {
-        return toolEnvelope(
-          "error",
-          2,
-          { reason: `invalid runMode: ${asString(params, "runMode")}` },
-          { runMode: asString(params, "runMode") },
-        );
+        return invalidRunModeEnvelope(params, "runMode");
       }
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
       const provider = getProvider(rpcUrl);
@@ -1191,12 +1196,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     async execute(_toolCallId, params: Params) {
       const runMode = parseWorkflowMode(params, "runMode");
       if (!runMode) {
-        return toolEnvelope(
-          "error",
-          2,
-          { reason: `invalid runMode: ${asString(params, "runMode")}` },
-          { runMode: asString(params, "runMode") },
-        );
+        return invalidRunModeEnvelope(params, "runMode");
       }
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
       const fromAddress = asString(params, "fromAddress");
