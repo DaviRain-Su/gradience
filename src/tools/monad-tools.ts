@@ -38,6 +38,7 @@ const ERC4626_ABI = [
 type Params = Record<string, unknown>;
 type ZigResult = Record<string, unknown>;
 type ToolStatus = "ok" | "error" | "blocked";
+type WorkflowMode = "analysis" | "simulate" | "execute";
 
 function toolEnvelope(
   status: ToolStatus,
@@ -85,6 +86,14 @@ function asOptionalString(params: Params, key: string): string | undefined {
   const value = params[key];
   if (value === undefined || value === null || value === "") return undefined;
   return String(value);
+}
+
+function parseWorkflowMode(params: Params, key = "runMode"): WorkflowMode | null {
+  const mode = asString(params, key);
+  if (mode === "analysis" || mode === "simulate" || mode === "execute") {
+    return mode;
+  }
+  return null;
 }
 
 function ensureZigOk(result: ZigResult, fallback: string): void {
@@ -771,7 +780,15 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       ],
     },
     async execute(_toolCallId, params: Params) {
-      const runMode = asString(params, "runMode");
+      const runMode = parseWorkflowMode(params, "runMode");
+      if (!runMode) {
+        return toolEnvelope(
+          "error",
+          2,
+          { reason: `invalid runMode: ${asString(params, "runMode")}` },
+          { runMode: asString(params, "runMode") },
+        );
+      }
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
       const provider = getProvider(rpcUrl);
       const base = {
@@ -1172,12 +1189,20 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["runMode", "fromAddress", "toAddress", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      const runMode = parseWorkflowMode(params, "runMode");
+      if (!runMode) {
+        return toolEnvelope(
+          "error",
+          2,
+          { reason: `invalid runMode: ${asString(params, "runMode")}` },
+          { runMode: asString(params, "runMode") },
+        );
+      }
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
       const fromAddress = asString(params, "fromAddress");
       const toAddress = asString(params, "toAddress");
       const tokenAddress = asOptionalString(params, "tokenAddress");
       const amountRaw = asString(params, "amountRaw");
-      const runMode = asString(params, "runMode");
 
       if (isZigCoreEnabled()) {
         const runtime = await callZigCore({ action: "runtimeInfo", params: { resultsOnly: true } });

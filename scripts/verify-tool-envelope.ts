@@ -220,6 +220,16 @@ function assertBlockedReason(name: string, payload: Record<string, unknown>, rea
   }
 }
 
+function assertErrorReason(name: string, payload: Record<string, unknown>, code: number, reason: string): void {
+  if (payload.status !== "error" || Number(payload.code) !== code) {
+    throw new Error(fail(name, `should return error code ${code}`));
+  }
+  const result = getResult(name, payload);
+  if (String(result.reason || "") !== reason) {
+    throw new Error(fail(name, `should include result.reason=${reason}`));
+  }
+}
+
 function assertOkWithMode(
   name: string,
   payload: Record<string, unknown>,
@@ -487,6 +497,26 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
   const transferExecBlocked = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), mkTransferWorkflowExecuteParams());
   assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
   assertBlockedReason(TOOL.runTransferWorkflow, transferExecBlocked, "execute requires signedTxHex");
+
+  const lifiInvalidMode = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), {
+    runMode: "inspect",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
+    fromAmount: "1",
+    fromAddress: ADDR_C,
+    quote: {},
+  });
+  assertErrorReason(TOOL.lifiRunWorkflow, lifiInvalidMode, 2, "invalid runMode: inspect");
+
+  const transferInvalidMode = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), {
+    runMode: "inspect",
+    fromAddress: ADDR_A,
+    toAddress: ADDR_B,
+    amountRaw: "1",
+  });
+  assertErrorReason(TOOL.runTransferWorkflow, transferInvalidMode, 2, "invalid runMode: inspect");
 }
 
 async function main(): Promise<void> {
