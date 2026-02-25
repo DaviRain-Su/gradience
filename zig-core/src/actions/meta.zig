@@ -567,36 +567,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     if (std.mem.eql(u8, action, "bridgeQuote")) {
-        const from_raw = getString(params, "from") orelse {
-            try writeMissing("from");
-            return true;
-        };
-        const to_raw = getString(params, "to") orelse {
-            try writeMissing("to");
-            return true;
-        };
-        const asset = getString(params, "asset") orelse {
-            try writeMissing("asset");
-            return true;
-        };
-        const amount_raw = getString(params, "amount") orelse {
-            try writeMissing("amount");
-            return true;
-        };
-
-        const from_chain = core_id.normalizeChain(from_raw) orelse {
-            try core_envelope.writeJson(core_errors.unsupported("unsupported from chain alias"));
-            return true;
-        };
-        const to_chain = core_id.normalizeChain(to_raw) orelse {
-            try core_envelope.writeJson(core_errors.unsupported("unsupported to chain alias"));
-            return true;
-        };
-
-        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
-            try writeInvalid("amount");
-            return true;
-        };
+        const input = (try parseBridgeQuoteInput(params)) orelse return true;
 
         const bridge_options = switch (parseBridgeQuoteOptions(params)) {
             .ok => |value| value,
@@ -605,7 +576,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 return true;
             },
         };
-        var candidates = try collectBridgeCandidates(allocator, from_chain, to_chain, asset);
+        var candidates = try collectBridgeCandidates(allocator, input.from_chain, input.to_chain, input.asset);
         defer candidates.deinit(allocator);
 
         if (candidates.items.len == 0) {
@@ -615,7 +586,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const selected = try selectBridgeQuote(
             allocator,
-            amount,
+            input.amount,
             candidates.items,
             bridge_options.provider_filter,
             bridge_options.provider_priority,
@@ -631,10 +602,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             allocator,
             chosen,
             chosen_out,
-            from_chain,
-            to_chain,
-            asset,
-            amount_raw,
+            input.from_chain,
+            input.to_chain,
+            input.asset,
+            input.amount_raw,
             bridge_options.select,
             bridge_options.results_only,
         );
@@ -642,32 +613,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     if (std.mem.eql(u8, action, "swapQuote")) {
-        const chain_raw = getString(params, "chain") orelse {
-            try writeMissing("chain");
-            return true;
-        };
-        const from_asset = getString(params, "fromAsset") orelse {
-            try writeMissing("fromAsset");
-            return true;
-        };
-        const to_asset = getString(params, "toAsset") orelse {
-            try writeMissing("toAsset");
-            return true;
-        };
-        const amount_raw = getString(params, "amount") orelse {
-            try writeMissing("amount");
-            return true;
-        };
-
-        const chain = core_id.normalizeChain(chain_raw) orelse {
-            try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
-            return true;
-        };
-
-        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
-            try writeInvalid("amount");
-            return true;
-        };
+        const input = (try parseSwapQuoteInput(params)) orelse return true;
 
         const swap_options = switch (parseSwapQuoteOptions(params)) {
             .ok => |value| value,
@@ -677,7 +623,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             },
         };
 
-        var candidates = try collectSwapCandidates(allocator, chain, from_asset, to_asset);
+        var candidates = try collectSwapCandidates(allocator, input.chain, input.from_asset, input.to_asset);
         defer candidates.deinit(allocator);
 
         if (candidates.items.len == 0) {
@@ -687,7 +633,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         const selected = try selectSwapQuote(
             allocator,
-            amount,
+            input.amount,
             candidates.items,
             swap_options.provider_filter,
             swap_options.provider_priority,
@@ -703,10 +649,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             allocator,
             chosen,
             chosen_out,
-            chain,
-            from_asset,
-            to_asset,
-            amount_raw,
+            input.chain,
+            input.from_asset,
+            input.to_asset,
+            input.amount_raw,
             swap_options.select,
             swap_options.results_only,
         );
@@ -1025,6 +971,22 @@ const SwapQuoteOptions = struct {
     results_only: bool,
 };
 
+const BridgeQuoteInput = struct {
+    from_chain: []const u8,
+    to_chain: []const u8,
+    asset: []const u8,
+    amount_raw: []const u8,
+    amount: u256,
+};
+
+const SwapQuoteInput = struct {
+    chain: []const u8,
+    from_asset: []const u8,
+    to_asset: []const u8,
+    amount_raw: []const u8,
+    amount: u256,
+};
+
 const QuoteOptionsParseResult = union(enum) {
     ok: BridgeQuoteOptions,
     invalid_field: []const u8,
@@ -1110,6 +1072,84 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
         .select = getString(params, "select"),
         .results_only = getBool(params, "resultsOnly") orelse false,
     } };
+}
+
+fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
+    const from_raw = getString(params, "from") orelse {
+        try writeMissing("from");
+        return null;
+    };
+    const to_raw = getString(params, "to") orelse {
+        try writeMissing("to");
+        return null;
+    };
+    const asset = getString(params, "asset") orelse {
+        try writeMissing("asset");
+        return null;
+    };
+    const amount_raw = getString(params, "amount") orelse {
+        try writeMissing("amount");
+        return null;
+    };
+
+    const from_chain = core_id.normalizeChain(from_raw) orelse {
+        try core_envelope.writeJson(core_errors.unsupported("unsupported from chain alias"));
+        return null;
+    };
+    const to_chain = core_id.normalizeChain(to_raw) orelse {
+        try core_envelope.writeJson(core_errors.unsupported("unsupported to chain alias"));
+        return null;
+    };
+
+    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+        try writeInvalid("amount");
+        return null;
+    };
+
+    return .{
+        .from_chain = from_chain,
+        .to_chain = to_chain,
+        .asset = asset,
+        .amount_raw = amount_raw,
+        .amount = amount,
+    };
+}
+
+fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
+    const chain_raw = getString(params, "chain") orelse {
+        try writeMissing("chain");
+        return null;
+    };
+    const from_asset = getString(params, "fromAsset") orelse {
+        try writeMissing("fromAsset");
+        return null;
+    };
+    const to_asset = getString(params, "toAsset") orelse {
+        try writeMissing("toAsset");
+        return null;
+    };
+    const amount_raw = getString(params, "amount") orelse {
+        try writeMissing("amount");
+        return null;
+    };
+
+    const chain = core_id.normalizeChain(chain_raw) orelse {
+        try core_envelope.writeJson(core_errors.unsupported("unsupported chain alias"));
+        return null;
+    };
+
+    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+        try writeInvalid("amount");
+        return null;
+    };
+
+    return .{
+        .chain = chain,
+        .from_asset = from_asset,
+        .to_asset = to_asset,
+        .amount_raw = amount_raw,
+        .amount = amount,
+    };
 }
 
 fn collectBridgeCandidates(
