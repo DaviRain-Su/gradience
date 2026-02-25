@@ -557,20 +557,13 @@ function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>)
   assertObjectFieldNonEmptyArray(TOOL.strategyTemplates, result, "templates", "result");
 }
 
-function runPureTsCoreEnvelopeChecks(
+function runPureTsPreloadedChecks(
   payloads: Map<string, Record<string, unknown>>,
   checks: Array<[string, Params]>,
 ): void {
   assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
   assertResultObjectFields(payloads, pureTsObjectFieldChecks());
   assertResultStringFields(payloads, pureTsStringFieldChecks());
-}
-
-function runPureTsPreloadedChecks(
-  payloads: Map<string, Record<string, unknown>>,
-  checks: Array<[string, Params]>,
-): void {
-  runPureTsCoreEnvelopeChecks(payloads, checks);
 }
 
 function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>): void {
