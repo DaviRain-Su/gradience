@@ -451,14 +451,26 @@ function getPayload(
 }
 
 function assertResultObjectField(name: string, payload: Record<string, unknown>, field: string): void {
-  const result = getResult(name, payload);
-  if (!result[field] || typeof result[field] !== "object") {
-    throw new Error(fail(name, `result.${field} must be object`));
-  }
+  assertResultFieldType(name, payload, field, "object");
 }
 
 function assertResultStringField(name: string, payload: Record<string, unknown>, field: string): void {
+  assertResultFieldType(name, payload, field, "string");
+}
+
+function assertResultFieldType(
+  name: string,
+  payload: Record<string, unknown>,
+  field: string,
+  expectedType: "object" | "string",
+): void {
   const result = getResult(name, payload);
+  if (expectedType === "object") {
+    if (!result[field] || typeof result[field] !== "object") {
+      throw new Error(fail(name, `result.${field} must be object`));
+    }
+    return;
+  }
   if (typeof result[field] !== "string") {
     throw new Error(fail(name, `result.${field} must be string`));
   }
