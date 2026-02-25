@@ -179,6 +179,20 @@ function assertBlockedWithMode(
   }
 }
 
+function assertOkWithMode(
+  name: string,
+  payload: Record<string, unknown>,
+  mode: string,
+): void {
+  const meta = payload.meta as Record<string, unknown>;
+  if (payload.status !== "ok" || Number(payload.code) !== 0) {
+    throw new Error(fail(name, "should return ok code 0"));
+  }
+  if (String(meta?.mode || "") !== mode) {
+    throw new Error(fail(name, `should include meta.mode=${mode}`));
+  }
+}
+
 function fail(name: string, message: string): string {
   return `[envelope:${name}] ${message}`;
 }
@@ -345,6 +359,19 @@ async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<vo
 
   const lifiSimBlocked = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), mkLifiWorkflowSimulateParams({}));
   assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiSimBlocked, 12, "simulate");
+
+  const lifiAnalysis = await parseToolPayload(getTool(tools, TOOL.lifiRunWorkflow), {
+    runMode: "analysis",
+    fromChain: 1,
+    toChain: 1,
+    fromToken: ADDR_A,
+    toToken: ADDR_B,
+    fromAmount: "1",
+    fromAddress: ADDR_C,
+    quote: {},
+  });
+  assertOkWithMode(TOOL.lifiRunWorkflow, lifiAnalysis, "analysis");
+  assertResultObjectField(TOOL.lifiRunWorkflow, lifiAnalysis, "quote");
 
   const transferExecBlocked = await parseToolPayload(getTool(tools, TOOL.runTransferWorkflow), mkTransferWorkflowExecuteParams());
   assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
