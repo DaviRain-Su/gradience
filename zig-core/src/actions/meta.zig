@@ -1627,52 +1627,79 @@ fn parseCanonicalSelectedFields(
     return fields;
 }
 
+const SelectAliasEntry = struct {
+    canonical: []const u8,
+    aliases: []const []const u8,
+};
+
+const providers_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = "name", .aliases = &.{"name"} },
+    .{ .canonical = "auth", .aliases = &.{"auth"} },
+    .{ .canonical = "categories", .aliases = &.{"categories"} },
+    .{ .canonical = "capabilities", .aliases = &.{"capabilities"} },
+    .{ .canonical = "capability_auth", .aliases = &.{ "capability_auth", "capabilityAuth" } },
+};
+
+const chains_top_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = "rank", .aliases = &.{"rank"} },
+    .{ .canonical = "chain", .aliases = &.{"chain"} },
+    .{ .canonical = "chain_id", .aliases = &.{ "chain_id", "chainId" } },
+    .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
+};
+
+const yield_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = "provider", .aliases = &.{"provider"} },
+    .{ .canonical = "chain", .aliases = &.{"chain"} },
+    .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "apy", .aliases = &.{"apy"} },
+    .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
+};
+
+const lend_markets_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = "provider", .aliases = &.{"provider"} },
+    .{ .canonical = "chain", .aliases = &.{"chain"} },
+    .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "supply_apy", .aliases = &.{ "supply_apy", "supplyApy" } },
+    .{ .canonical = "borrow_apy", .aliases = &.{ "borrow_apy", "borrowApy" } },
+    .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
+};
+
+const lend_rates_select_aliases = [_]SelectAliasEntry{
+    .{ .canonical = "provider", .aliases = &.{"provider"} },
+    .{ .canonical = "chain", .aliases = &.{"chain"} },
+    .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "supplyApy", .aliases = &.{ "supplyApy", "supply_apy" } },
+    .{ .canonical = "borrowApy", .aliases = &.{ "borrowApy", "borrow_apy" } },
+    .{ .canonical = "tvlUsd", .aliases = &.{ "tvlUsd", "tvl_usd" } },
+};
+
 fn canonicalProvidersSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, "name")) return "name";
-    if (fieldMatches(field, "auth")) return "auth";
-    if (fieldMatches(field, "categories")) return "categories";
-    if (fieldMatches(field, "capabilities")) return "capabilities";
-    if (fieldMatchesAny(field, &.{ "capability_auth", "capabilityAuth" })) return "capability_auth";
-    return null;
+    return canonicalFromAliasMap(field, &providers_select_aliases);
 }
 
 fn canonicalChainsTopSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, "rank")) return "rank";
-    if (fieldMatches(field, "chain")) return "chain";
-    if (fieldMatchesAny(field, &.{ "chain_id", "chainId" })) return "chain_id";
-    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
-    return null;
+    return canonicalFromAliasMap(field, &chains_top_select_aliases);
 }
 
 fn canonicalYieldSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, "provider")) return "provider";
-    if (fieldMatches(field, "chain")) return "chain";
-    if (fieldMatches(field, "asset")) return "asset";
-    if (fieldMatches(field, "market")) return "market";
-    if (fieldMatches(field, "apy")) return "apy";
-    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
-    return null;
+    return canonicalFromAliasMap(field, &yield_select_aliases);
 }
 
 fn canonicalLendMarketsSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, "provider")) return "provider";
-    if (fieldMatches(field, "chain")) return "chain";
-    if (fieldMatches(field, "asset")) return "asset";
-    if (fieldMatches(field, "market")) return "market";
-    if (fieldMatchesAny(field, &.{ "supply_apy", "supplyApy" })) return "supply_apy";
-    if (fieldMatchesAny(field, &.{ "borrow_apy", "borrowApy" })) return "borrow_apy";
-    if (fieldMatchesAny(field, &.{ "tvl_usd", "tvlUsd" })) return "tvl_usd";
-    return null;
+    return canonicalFromAliasMap(field, &lend_markets_select_aliases);
 }
 
 fn canonicalLendRatesSelectField(field: []const u8) ?[]const u8 {
-    if (fieldMatches(field, "provider")) return "provider";
-    if (fieldMatches(field, "chain")) return "chain";
-    if (fieldMatches(field, "asset")) return "asset";
-    if (fieldMatches(field, "market")) return "market";
-    if (fieldMatchesAny(field, &.{ "supplyApy", "supply_apy" })) return "supplyApy";
-    if (fieldMatchesAny(field, &.{ "borrowApy", "borrow_apy" })) return "borrowApy";
-    if (fieldMatchesAny(field, &.{ "tvlUsd", "tvl_usd" })) return "tvlUsd";
+    return canonicalFromAliasMap(field, &lend_rates_select_aliases);
+}
+
+fn canonicalFromAliasMap(field: []const u8, map: []const SelectAliasEntry) ?[]const u8 {
+    for (map) |entry| {
+        if (fieldMatchesAny(field, entry.aliases)) return entry.canonical;
+    }
     return null;
 }
 
