@@ -602,8 +602,10 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
 }
 
 function mkMainStages(): ToolStage[] {
-  return [runPureTsChecks, runZigRequiredChecks, runBehaviorChecks];
+  return [...MAIN_STAGES];
 }
+
+const MAIN_STAGES: ToolStage[] = [runPureTsChecks, runZigRequiredChecks, runBehaviorChecks];
 
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
