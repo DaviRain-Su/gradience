@@ -4,6 +4,7 @@ import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
+type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
 type ZigDisabledCase = { name: string; params: Params; reason: string };
 type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
 type LifiAnalysisCase = {
@@ -594,6 +595,12 @@ async function runToolCaseList<T>(
   }
 }
 
+async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolStage[]): Promise<void> {
+  for (const stage of stages) {
+    await stage(tools);
+  }
+}
+
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldExpectation(name, payload, field, "null");
@@ -955,10 +962,12 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
 }
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await assertInvalidStrategyCase(tools);
-  await runBlockedBehaviorCases(tools);
-  await runLifiAnalysisBehaviorCases(tools);
-  await runInvalidRunModeBehaviorCases(tools);
+  await runToolStages(tools, [
+    assertInvalidStrategyCase,
+    runBlockedBehaviorCases,
+    runLifiAnalysisBehaviorCases,
+    runInvalidRunModeBehaviorCases,
+  ]);
 }
 
 async function main(): Promise<void> {
