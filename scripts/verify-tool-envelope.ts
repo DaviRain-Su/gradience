@@ -601,6 +601,10 @@ async function runToolStages(tools: Map<string, ToolDefinition>, stages: ToolSta
   }
 }
 
+function mkMainStages(): ToolStage[] {
+  return [runPureTsChecks, runZigRequiredChecks, runBehaviorChecks];
+}
+
 function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldExpectation(name, payload, field, "null");
@@ -981,9 +985,7 @@ async function main(): Promise<void> {
   };
   registerMonadTools(registrar);
 
-  await runPureTsChecks(tools);
-  await runZigRequiredChecks(tools);
-  await runBehaviorChecks(tools);
+  await runToolStages(tools, mkMainStages());
 
   console.log("tool envelope checks passed");
 }
