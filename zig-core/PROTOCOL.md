@@ -59,6 +59,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - Optional params:
   - `limit` (default `10`)
   - `select` (comma-separated fields: `rank`, `chain`, `chain_id`, `tvl_usd`)
+- `select` field names are case-insensitive and duplicate fields are coalesced
 
 ### chainsAssets Notes
 
@@ -79,6 +80,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `order` (`desc` default, or `asc`)
   - `limit` (default `20`)
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `apy`, `tvl_usd`)
+- `select` field names are case-insensitive and duplicate fields are coalesced
 
 ### bridgeQuote Notes
 

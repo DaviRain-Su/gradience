@@ -190,6 +190,18 @@ def main() -> int:
     assert len(selected_rows) == 2
     assert set(selected_rows[0].keys()) == {"chain", "rank"}
 
+    chains_select_case_dup = run(
+        {
+            "action": "chainsTop",
+            "params": {"limit": 2, "select": "CHAIN,chain,RANK,rank"},
+        },
+        env,
+    )
+    assert chains_select_case_dup.get("status") == "ok"
+    selected_rows_case = chains_select_case_dup.get("chains", [])
+    assert len(selected_rows_case) == 2
+    assert set(selected_rows_case[0].keys()) == {"chain", "rank"}
+
     chain_assets = run(
         {"action": "chainsAssets", "params": {"chain": "base", "asset": "USDC"}},
         env,
@@ -236,6 +248,24 @@ def main() -> int:
     assert len(sel_rows) == 2
     assert set(sel_rows[0].keys()) == {"provider", "apy"}
     assert sel_rows[0]["apy"] <= sel_rows[1]["apy"]
+
+    yield_select_case_dup = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "asset": "USDC",
+                "sortBy": "apy",
+                "order": "asc",
+                "limit": 2,
+                "select": "PROVIDER,provider,APY,apy",
+            },
+        },
+        env,
+    )
+    assert yield_select_case_dup.get("status") == "ok"
+    sel_rows_case = yield_select_case_dup.get("opportunities", [])
+    assert len(sel_rows_case) == 2
+    assert set(sel_rows_case[0].keys()) == {"provider", "apy"}
 
     bridge = run(
         {

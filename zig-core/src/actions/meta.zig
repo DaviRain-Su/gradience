@@ -375,31 +375,25 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         var rows = std.ArrayList(std.json.Value).empty;
         defer rows.deinit(allocator);
 
-        var parts = std.mem.splitScalar(u8, select.?, ',');
-        var fields = std.ArrayList([]const u8).empty;
+        var fields = try parseSelectedFields(allocator, select.?);
         defer fields.deinit(allocator);
-        while (parts.next()) |part| {
-            const field = std.mem.trim(u8, part, " \r\n\t");
-            if (field.len == 0) continue;
-            try fields.append(allocator, field);
-        }
 
         for (chains_registry.chains[0..count]) |chain| {
             var obj = std.json.ObjectMap.init(allocator);
             for (fields.items) |field| {
-                if (std.mem.eql(u8, field, "rank")) {
+                if (fieldMatches(field, "rank")) {
                     try obj.put("rank", .{ .integer = chain.rank });
                     continue;
                 }
-                if (std.mem.eql(u8, field, "chain")) {
+                if (fieldMatches(field, "chain")) {
                     try obj.put("chain", .{ .string = chain.chain });
                     continue;
                 }
-                if (std.mem.eql(u8, field, "chain_id")) {
+                if (fieldMatches(field, "chain_id")) {
                     try obj.put("chain_id", .{ .string = chain.chain_id });
                     continue;
                 }
-                if (std.mem.eql(u8, field, "tvl_usd")) {
+                if (fieldMatches(field, "tvl_usd")) {
                     try obj.put("tvl_usd", .{ .float = chain.tvl_usd });
                     continue;
                 }
@@ -504,39 +498,33 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             var projected = std.ArrayList(std.json.Value).empty;
             defer projected.deinit(allocator);
 
-            var parts = std.mem.splitScalar(u8, fields_raw, ',');
-            var fields = std.ArrayList([]const u8).empty;
+            var fields = try parseSelectedFields(allocator, fields_raw);
             defer fields.deinit(allocator);
-            while (parts.next()) |part| {
-                const field = std.mem.trim(u8, part, " \r\n\t");
-                if (field.len == 0) continue;
-                try fields.append(allocator, field);
-            }
 
             for (rows.items) |entry| {
                 var obj = std.json.ObjectMap.init(allocator);
                 for (fields.items) |field| {
-                    if (std.mem.eql(u8, field, "provider")) {
+                    if (fieldMatches(field, "provider")) {
                         try obj.put("provider", .{ .string = entry.provider });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "chain")) {
+                    if (fieldMatches(field, "chain")) {
                         try obj.put("chain", .{ .string = entry.chain });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "asset")) {
+                    if (fieldMatches(field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "market")) {
+                    if (fieldMatches(field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "apy")) {
+                    if (fieldMatches(field, "apy")) {
                         try obj.put("apy", .{ .float = entry.apy });
                         continue;
                     }
-                    if (std.mem.eql(u8, field, "tvl_usd")) {
+                    if (fieldMatches(field, "tvl_usd")) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
                         continue;
                     }
