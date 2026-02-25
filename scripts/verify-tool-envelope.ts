@@ -503,6 +503,34 @@ function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>)
   }
 }
 
+function runPureTsCoreEnvelopeChecks(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<[string, Params]>,
+): void {
+  assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
+  assertResultObjectFields(payloads, pureTsObjectFieldChecks());
+  assertResultStringFields(payloads, pureTsStringFieldChecks());
+}
+
+function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>): void {
+  assertTemplatesNonEmpty(payloads);
+  assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
+  assertResultNestedObjectValueChecks(payloads, pureTsNestedSemanticChecks());
+
+  assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
+
+  assertResultObjectFieldValue(
+    TOOL.lifiExtractTxRequest,
+    getPayload(payloads, TOOL.lifiExtractTxRequest),
+    "txRequest",
+    "to",
+    ADDR_A,
+  );
+
+  const validatePayload = getPayload(payloads, TOOL.strategyValidate);
+  assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
+}
+
 async function runCaseList<T>(cases: T[], runner: (value: T) => Promise<void>): Promise<void> {
   for (const c of cases) {
     await runner(c);
@@ -818,30 +846,8 @@ async function runEnvelopeChecks(
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const checks = mkPureTsChecks();
   const payloads = await runEnvelopeChecks(tools, checks);
-
-  assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
-
-  assertResultObjectFields(payloads, pureTsObjectFieldChecks());
-  assertResultStringFields(payloads, pureTsStringFieldChecks());
-
-  assertTemplatesNonEmpty(payloads);
-
-  assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
-
-  assertResultNestedObjectValueChecks(payloads, pureTsNestedSemanticChecks());
-
-  assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
-
-  assertResultObjectFieldValue(
-    TOOL.lifiExtractTxRequest,
-    getPayload(payloads, TOOL.lifiExtractTxRequest),
-    "txRequest",
-    "to",
-    ADDR_A,
-  );
-
-  const validatePayload = getPayload(payloads, TOOL.strategyValidate);
-  assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
+  runPureTsCoreEnvelopeChecks(payloads, checks);
+  runPureTsSemanticChecks(payloads);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
