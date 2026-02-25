@@ -1083,10 +1083,7 @@ fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
         try writeMissing("to");
         return null;
     };
-    const asset = getString(params, "asset") orelse {
-        try writeMissing("asset");
-        return null;
-    };
+    const asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "asset")) orelse return null;
     const amount_raw = getString(params, "amount") orelse {
         try writeMissing("amount");
         return null;
@@ -1117,14 +1114,8 @@ fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
         try writeMissing("chain");
         return null;
     };
-    const from_asset = getString(params, "fromAsset") orelse {
-        try writeMissing("fromAsset");
-        return null;
-    };
-    const to_asset = getString(params, "toAsset") orelse {
-        try writeMissing("toAsset");
-        return null;
-    };
+    const from_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "fromAsset")) orelse return null;
+    const to_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "toAsset")) orelse return null;
     const amount_raw = getString(params, "amount") orelse {
         try writeMissing("amount");
         return null;
@@ -1702,6 +1693,19 @@ fn parseRequiredAmountU256(amount_raw: []const u8) !?u256 {
         try writeInvalid("amount");
         return null;
     };
+}
+
+fn parseRequiredTrimmedNonEmptyStringParam(obj: std.json.ObjectMap, key: []const u8) !?[]const u8 {
+    const raw = getString(obj, key) orelse {
+        try writeMissing(key);
+        return null;
+    };
+    const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+    if (trimmed.len == 0) {
+        try writeInvalid(key);
+        return null;
+    }
+    return trimmed;
 }
 
 fn writeInvalid(field_name: []const u8) !void {

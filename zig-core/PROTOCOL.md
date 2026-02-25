@@ -85,7 +85,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - Required params:
   - `from` (chain alias/id/CAIP-2)
   - `to` (chain alias/id/CAIP-2)
-  - `asset` (symbol)
+  - `asset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
 - Optional params:
@@ -105,8 +105,8 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 
 - Required params:
   - `chain` (chain alias/id/CAIP-2)
-  - `fromAsset` (symbol)
-  - `toAsset` (symbol)
+  - `fromAsset` (symbol, surrounding whitespace ignored, must be non-empty)
+  - `toAsset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
 - Optional params:
