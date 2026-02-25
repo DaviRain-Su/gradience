@@ -683,6 +683,7 @@ const BEHAVIOR_PIPELINE = makePipeline<ToolStage>(
   runLifiAnalysisBehaviorCases,
   runInvalidRunModeBehaviorCases,
 );
+const runMainPipelineWithContext = adaptToolPipeline(MAIN_PIPELINE);
 
 function makePipeline<TStage>(...stages: TStage[]): TStage[] {
   return stages;
@@ -1108,7 +1109,7 @@ async function main(): Promise<void> {
   };
   registerMonadTools(registrar);
 
-  await runToolStages(tools, MAIN_PIPELINE);
+  await runContextCheck(tools, buildVoidContext, runMainPipelineWithContext);
 
   console.log("tool envelope checks passed");
 }
