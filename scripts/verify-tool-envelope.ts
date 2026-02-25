@@ -164,6 +164,26 @@ function assertResultStringField(name: string, payload: Record<string, unknown>,
   }
 }
 
+function assertStringField(obj: Record<string, unknown>, key: string, context: string): string {
+  const value = obj[key];
+  if (typeof value !== "string") {
+    throw new Error(`${context}.${key} must be string`);
+  }
+  return value;
+}
+
+function assertObjectField(
+  obj: Record<string, unknown>,
+  key: string,
+  context: string,
+): Record<string, unknown> {
+  const value = obj[key];
+  if (!value || typeof value !== "object") {
+    throw new Error(`${context}.${key} must be object`);
+  }
+  return value as Record<string, unknown>;
+}
+
 function assertValidationShape(name: string, payload: Record<string, unknown>): void {
   const result = getResult(name, payload);
   const validation = result.validation as Record<string, unknown> | null | undefined;
@@ -328,6 +348,52 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
   if (!Array.isArray(templates) || templates.length === 0) {
     throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
+  }
+
+  const plan = getResult(TOOL.planLendingAction, getPayload(payloads, TOOL.planLendingAction)).plan as Record<string, unknown>;
+  if (String(plan.action || "") !== "supply") {
+    throw new Error(fail(TOOL.planLendingAction, "result.plan.action must equal supply"));
+  }
+
+  const paymentIntent = getResult(TOOL.paymentIntentCreate, getPayload(payloads, TOOL.paymentIntentCreate))
+    .paymentIntent as Record<string, unknown>;
+  if (paymentIntent.type !== "pay_per_call") {
+    throw new Error(fail(TOOL.paymentIntentCreate, "result.paymentIntent.type must equal pay_per_call"));
+  }
+
+  const subscriptionIntent = getResult(
+    TOOL.subscriptionIntentCreate,
+    getPayload(payloads, TOOL.subscriptionIntentCreate),
+  ).subscriptionIntent as Record<string, unknown>;
+  if (subscriptionIntent.type !== "subscription") {
+    throw new Error(fail(TOOL.subscriptionIntentCreate, "result.subscriptionIntent.type must equal subscription"));
+  }
+
+  const strategy = getResult(TOOL.strategyCompile, getPayload(payloads, TOOL.strategyCompile))
+    .strategy as Record<string, unknown>;
+  const metadata = assertObjectField(strategy, "metadata", fail(TOOL.strategyCompile, "result.strategy"));
+  if (metadata.template !== "pay-per-call-v1") {
+    throw new Error(fail(TOOL.strategyCompile, "result.strategy.metadata.template must equal pay-per-call-v1"));
+  }
+
+  const runResult = getResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun))
+    .result as Record<string, unknown>;
+  if (runResult.status !== "planned") {
+    throw new Error(fail(TOOL.strategyRun, "result.result.status must equal planned for mode=plan"));
+  }
+  const runId = assertStringField(runResult, "runId", fail(TOOL.strategyRun, "result.result"));
+  if (!runId.startsWith("run_")) {
+    throw new Error(fail(TOOL.strategyRun, "result.result.runId must start with run_"));
+  }
+  const evidence = assertObjectField(runResult, "evidence", fail(TOOL.strategyRun, "result.result"));
+  if (evidence.mode !== "plan") {
+    throw new Error(fail(TOOL.strategyRun, "result.result.evidence.mode must equal plan"));
+  }
+
+  const txRequest = getResult(TOOL.lifiExtractTxRequest, getPayload(payloads, TOOL.lifiExtractTxRequest))
+    .txRequest as Record<string, unknown>;
+  if (txRequest.to !== ADDR_A) {
+    throw new Error(fail(TOOL.lifiExtractTxRequest, "result.txRequest.to must match fixture"));
   }
 
   const validatePayload = getPayload(payloads, TOOL.strategyValidate);
