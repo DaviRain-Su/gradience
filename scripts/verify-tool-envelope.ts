@@ -742,8 +742,8 @@ async function assertBlockedCase(
   const payload = await executePayload(tools, input.name, input.params);
   if (input.mode) {
     assertBlockedWithMode(input.name, payload, input.code, input.mode);
-  } else if (payload.status !== "blocked" || Number(payload.code) !== input.code) {
-    throw new Error(fail(input.name, `should return blocked code ${input.code}`));
+  } else {
+    assertStatusCode(input.name, payload, "blocked", input.code);
   }
   assertBlockedReason(input.name, payload, input.reason);
 }
@@ -856,9 +856,7 @@ function assertOkWithMode(
   mode: string,
 ): void {
   const meta = payload.meta as Record<string, unknown>;
-  if (payload.status !== "ok" || Number(payload.code) !== 0) {
-    throw new Error(fail(name, "should return ok code 0"));
-  }
+  assertStatusCode(name, payload, "ok", 0);
   if (String(meta?.mode || "") !== mode) {
     throw new Error(fail(name, `should include meta.mode=${mode}`));
   }
