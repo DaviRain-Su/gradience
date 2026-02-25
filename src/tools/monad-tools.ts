@@ -332,15 +332,16 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             amountWei: asString(params, "amountWei"),
             valueHex: asString(params, "valueHex"),
             chainId: params.chainId ?? null,
+            resultsOnly: true,
           },
         });
         ensureZigOk(zig, "zig core buildTransferNative failed");
-        return textResult({ status: "ok", txRequest: zig.txRequest });
+        const payload = zigPayload(zig);
+        return toolOk({ txRequest: payload.txRequest });
       }
 
       const value = asString(params, "amountWei") || asString(params, "valueHex") || "0";
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "toAddress"),
           value,
@@ -375,13 +376,15 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             toAddress: asString(params, "toAddress"),
             amountRaw: asString(params, "amountRaw"),
             chainId: params.chainId ?? null,
+            resultsOnly: true,
           },
         });
         ensureZigOk(zig, "zig core buildTransferErc20 failed");
-        if (!zig.txRequest || typeof zig.txRequest !== "object") {
+        const payload = zigPayload(zig);
+        if (!payload.txRequest || typeof payload.txRequest !== "object") {
           throw new Error("zig core buildTransferErc20 missing txRequest");
         }
-        return textResult({ status: "ok", txRequest: zig.txRequest });
+        return toolOk({ txRequest: payload.txRequest as Record<string, unknown> });
       }
 
       const iface = new Interface(ERC20_ABI);
@@ -389,8 +392,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "toAddress"),
         asString(params, "amountRaw"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "tokenAddress"),
           value: "0",
@@ -425,10 +427,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             spender: asString(params, "spender"),
             amountRaw: asString(params, "amountRaw"),
             chainId: params.chainId ?? null,
+            resultsOnly: true,
           },
         });
         ensureZigOk(zig, "zig core buildErc20Approve failed");
-        return textResult({ status: "ok", txRequest: zig.txRequest });
+        return toolOk({ txRequest: zigPayload(zig).txRequest });
       }
 
       const iface = new Interface(ERC20_ABI);
@@ -436,8 +439,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "spender"),
         asString(params, "amountRaw"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "tokenAddress"),
           value: "0",
@@ -478,10 +480,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             to: asString(params, "to"),
             deadline: asString(params, "deadline"),
             chainId: params.chainId ?? null,
+            resultsOnly: true,
           },
         });
         ensureZigOk(zig, "zig core buildDexSwap failed");
-        return textResult({ status: "ok", txRequest: zig.txRequest, notes: zig.notes });
+        const payload = zigPayload(zig);
+        return toolOk({ txRequest: payload.txRequest, notes: payload.notes });
       }
 
       const iface = new Interface(ROUTER_ABI);
@@ -492,8 +496,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         asString(params, "to"),
         asString(params, "deadline"),
       ]);
-      return textResult({
-        status: "ok",
+      return toolOk({
         txRequest: {
           to: asString(params, "router"),
           value: "0",
@@ -523,8 +526,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["protocol", "market", "action", "asset", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
-      return textResult({
-        status: "ok",
+      return toolOk({
         plan: {
           protocol: asString(params, "protocol"),
           market: asString(params, "market"),
@@ -556,8 +558,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["token", "amountRaw", "payee"],
     },
     async execute(_toolCallId, params: Params) {
-      return textResult({
-        status: "ok",
+      return toolOk({
         paymentIntent: {
           type: "pay_per_call",
           token: asString(params, "token"),
@@ -590,8 +591,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["token", "amountRaw", "payee", "cadenceSeconds"],
     },
     async execute(_toolCallId, params: Params) {
-      return textResult({
-        status: "ok",
+      return toolOk({
         subscriptionIntent: {
           type: "subscription",
           token: asString(params, "token"),
@@ -643,7 +643,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         toAddress: asOptionalString(params, "toAddress"),
         slippage: params.slippage as number | undefined,
       });
-      return textResult({ status: "ok", quote });
+      return toolOk({ quote });
     },
   });
 
@@ -684,7 +684,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         toAddress: asOptionalString(params, "toAddress"),
         slippage: params.slippage as number | undefined,
       });
-      return textResult({ status: "ok", routes });
+      return toolOk({ routes });
     },
   });
 
@@ -704,7 +704,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const quote = params.quote as Record<string, unknown>;
       const txRequest =
         (quote?.transactionRequest as Record<string, unknown> | undefined) || null;
-      return textResult({ status: txRequest ? "ok" : "missing", txRequest });
+      if (!txRequest) {
+        return toolEnvelope("blocked", 12, { reason: "missing transactionRequest" });
+      }
+      return toolOk({ txRequest });
     },
   });
 
