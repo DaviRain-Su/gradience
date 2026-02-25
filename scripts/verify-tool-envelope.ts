@@ -139,6 +139,17 @@ function getResult(name: string, payload: Record<string, unknown>): Record<strin
   return result;
 }
 
+function getPayload(
+  payloads: Map<string, Record<string, unknown>>,
+  name: string,
+): Record<string, unknown> {
+  const payload = payloads.get(name);
+  if (!payload) {
+    throw new Error(fail(name, "missing payload after envelope checks"));
+  }
+  return payload;
+}
+
 function assertResultObjectField(name: string, payload: Record<string, unknown>, field: string): void {
   const result = getResult(name, payload);
   if (!result[field] || typeof result[field] !== "object") {
@@ -257,37 +268,34 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   const nonOkAllowed = new Set<string>([TOOL.strategyValidate]);
 
   for (const [name] of checks) {
-    const payload = payloads.get(name);
-    if (!payload) {
-      throw new Error(fail(name, "missing payload after envelope checks"));
-    }
+    const payload = getPayload(payloads, name);
     if (!nonOkAllowed.has(name)) {
       assertOkEnvelope(name, payload);
     }
   }
 
-  assertResultObjectField(TOOL.buildTransferNative, payloads.get(TOOL.buildTransferNative)!, "txRequest");
-  assertResultObjectField(TOOL.buildTransferErc20, payloads.get(TOOL.buildTransferErc20)!, "txRequest");
-  assertResultObjectField(TOOL.buildErc20Approve, payloads.get(TOOL.buildErc20Approve)!, "txRequest");
-  assertResultObjectField(TOOL.buildDexSwap, payloads.get(TOOL.buildDexSwap)!, "txRequest");
-  assertResultStringField(TOOL.buildDexSwap, payloads.get(TOOL.buildDexSwap)!, "notes");
-  assertResultObjectField(TOOL.planLendingAction, payloads.get(TOOL.planLendingAction)!, "plan");
-  assertResultObjectField(TOOL.paymentIntentCreate, payloads.get(TOOL.paymentIntentCreate)!, "paymentIntent");
+  assertResultObjectField(TOOL.buildTransferNative, getPayload(payloads, TOOL.buildTransferNative), "txRequest");
+  assertResultObjectField(TOOL.buildTransferErc20, getPayload(payloads, TOOL.buildTransferErc20), "txRequest");
+  assertResultObjectField(TOOL.buildErc20Approve, getPayload(payloads, TOOL.buildErc20Approve), "txRequest");
+  assertResultObjectField(TOOL.buildDexSwap, getPayload(payloads, TOOL.buildDexSwap), "txRequest");
+  assertResultStringField(TOOL.buildDexSwap, getPayload(payloads, TOOL.buildDexSwap), "notes");
+  assertResultObjectField(TOOL.planLendingAction, getPayload(payloads, TOOL.planLendingAction), "plan");
+  assertResultObjectField(TOOL.paymentIntentCreate, getPayload(payloads, TOOL.paymentIntentCreate), "paymentIntent");
   assertResultObjectField(
     TOOL.subscriptionIntentCreate,
-    payloads.get(TOOL.subscriptionIntentCreate)!,
+    getPayload(payloads, TOOL.subscriptionIntentCreate),
     "subscriptionIntent",
   );
-  assertResultObjectField(TOOL.strategyCompile, payloads.get(TOOL.strategyCompile)!, "strategy");
-  assertResultObjectField(TOOL.strategyRun, payloads.get(TOOL.strategyRun)!, "result");
-  assertResultObjectField(TOOL.lifiExtractTxRequest, payloads.get(TOOL.lifiExtractTxRequest)!, "txRequest");
+  assertResultObjectField(TOOL.strategyCompile, getPayload(payloads, TOOL.strategyCompile), "strategy");
+  assertResultObjectField(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun), "result");
+  assertResultObjectField(TOOL.lifiExtractTxRequest, getPayload(payloads, TOOL.lifiExtractTxRequest), "txRequest");
 
-  const templates = getResult(TOOL.strategyTemplates, payloads.get(TOOL.strategyTemplates)!).templates;
+  const templates = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates)).templates;
   if (!Array.isArray(templates) || templates.length === 0) {
     throw new Error(fail(TOOL.strategyTemplates, "result.templates must be non-empty array"));
   }
 
-  const validatePayload = payloads.get(TOOL.strategyValidate)!;
+  const validatePayload = getPayload(payloads, TOOL.strategyValidate);
   if (
     !(
       (validatePayload.status === "ok" && Number(validatePayload.code) === 0) ||
@@ -308,10 +316,7 @@ async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise
   const payloads = await runEnvelopeChecks(tools, checks);
 
   for (const [name] of checks) {
-    const payload = payloads.get(name);
-    if (!payload) {
-      throw new Error(fail(name, "missing payload after envelope checks"));
-    }
+    const payload = getPayload(payloads, name);
     if (payload.status !== "blocked" || Number(payload.code) !== 13) {
       throw new Error(fail(name, "should return blocked code 13 when zig is disabled"));
     }
