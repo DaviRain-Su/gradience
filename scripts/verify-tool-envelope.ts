@@ -241,6 +241,32 @@ function pureTsSemanticObjectChecks(): Array<{
   ];
 }
 
+function pureTsStringFieldChecks(): Array<{ name: string; fields: string[] }> {
+  return [{ name: TOOL.buildDexSwap, fields: ["notes"] }];
+}
+
+function pureTsNestedSemanticChecks(): Array<{
+  name: string;
+  parentField: string;
+  objectField: string;
+  key: string;
+  expected: unknown;
+}> {
+  return [
+    {
+      name: TOOL.strategyCompile,
+      parentField: "strategy",
+      objectField: "metadata",
+      key: "template",
+      expected: "pay-per-call-v1",
+    },
+  ];
+}
+
+function pureTsNonOkAllowed(): Set<string> {
+  return new Set<string>([TOOL.strategyValidate]);
+}
+
 function mkZigDisabledCases(): ZigDisabledCase[] {
   return [
     { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
@@ -768,25 +794,16 @@ async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void
   const checks = mkPureTsChecks();
   const payloads = await runEnvelopeChecks(tools, checks);
 
-  const nonOkAllowed = new Set<string>([TOOL.strategyValidate]);
-  assertOkForChecks(payloads, checks, nonOkAllowed);
+  assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
 
   assertResultObjectFields(payloads, pureTsObjectFieldChecks());
-  assertResultStringFields(payloads, [{ name: TOOL.buildDexSwap, fields: ["notes"] }]);
+  assertResultStringFields(payloads, pureTsStringFieldChecks());
 
   assertTemplatesNonEmpty(payloads);
 
   assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
 
-  assertResultNestedObjectValueChecks(payloads, [
-    {
-      name: TOOL.strategyCompile,
-      parentField: "strategy",
-      objectField: "metadata",
-      key: "template",
-      expected: "pay-per-call-v1",
-    },
-  ]);
+  assertResultNestedObjectValueChecks(payloads, pureTsNestedSemanticChecks());
 
   assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
 
