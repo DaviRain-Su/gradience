@@ -566,6 +566,13 @@ function runPureTsCoreEnvelopeChecks(
   assertResultStringFields(payloads, pureTsStringFieldChecks());
 }
 
+function runPureTsPreloadedChecks(
+  payloads: Map<string, Record<string, unknown>>,
+  checks: Array<[string, Params]>,
+): void {
+  runPureTsCoreEnvelopeChecks(payloads, checks);
+}
+
 function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>): void {
   assertTemplatesNonEmpty(payloads);
   assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
@@ -968,7 +975,7 @@ async function runEnvelopeChecks(
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
   const checks = mkPureTsChecks();
   const payloads = await runEnvelopeChecks(tools, checks);
-  runPureTsCoreEnvelopeChecks(payloads, checks);
+  runPureTsPreloadedChecks(payloads, checks);
   runPureTsSemanticChecks(payloads);
 }
 
