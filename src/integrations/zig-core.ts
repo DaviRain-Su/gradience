@@ -2,17 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 type ZigRequest = {
-  action:
-    | "getBalance"
-    | "getErc20Balance"
-    | "getBlockNumber"
-    | "runtimeInfo"
-    | "buildTransferNative"
-    | "buildTransferErc20"
-    | "buildErc20Approve"
-    | "buildDexSwap"
-    | "estimateGas"
-    | "sendSignedTransaction";
+  action: string;
   params: Record<string, unknown>;
 };
 

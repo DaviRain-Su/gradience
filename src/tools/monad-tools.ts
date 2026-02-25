@@ -37,6 +37,29 @@ const ERC4626_ABI = [
 
 type Params = Record<string, unknown>;
 type ZigResult = Record<string, unknown>;
+type ToolStatus = "ok" | "error" | "blocked";
+
+function toolEnvelope(
+  status: ToolStatus,
+  code: number,
+  result: Record<string, unknown> = {},
+  meta: Record<string, unknown> = {},
+) {
+  return textResult({ status, code, result, meta });
+}
+
+function toolOk(
+  result: Record<string, unknown> = {},
+  meta: Record<string, unknown> = {},
+) {
+  return toolEnvelope("ok", 0, result, meta);
+}
+
+function zigPayload(result: ZigResult): ZigResult {
+  const nested = result.results;
+  if (nested && typeof nested === "object") return nested as ZigResult;
+  return result;
+}
 
 function resolveRpc(params: { rpcUrl?: string }): string {
   return (params.rpcUrl || process.env.MONAD_RPC_URL || DEFAULT_RPC_URL).trim();
@@ -66,7 +89,7 @@ function asOptionalString(params: Params, key: string): string | undefined {
 
 function ensureZigOk(result: ZigResult, fallback: string): void {
   if (result.status === "ok") return;
-  throw new Error(String(result.error || fallback));
+  throw new Error(String(result.error || result.message || fallback));
 }
 
 function blockedByZigPolicy(
@@ -76,13 +99,12 @@ function blockedByZigPolicy(
 ) {
   const code = Number(result.code || 0);
   if (code !== 13) return null;
-  return textResult({
-    status: "blocked",
-    reason: String(result.error || "blocked by runtime policy"),
+  return toolEnvelope(
+    "blocked",
     code,
-    runtime,
-    rpcUrl,
-  });
+    { reason: String(result.error || "blocked by runtime policy") },
+    { runtime: runtime || null, rpcUrl },
+  );
 }
 
 export function registerMonadTools(registrar: ToolRegistrar): void {
@@ -108,28 +130,33 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "getBalance",
-          params: { address, rpcUrl, blockTag },
+          params: { address, rpcUrl, blockTag, resultsOnly: true },
         });
         ensureZigOk(zig, "zig core getBalance failed");
-        const balanceHex = String(zig.balanceHex || "0x0");
+        const payload = zigPayload(zig);
+        const balanceHex = String(payload.balanceHex || "0x0");
         const balanceWei = BigInt(balanceHex).toString();
-        return textResult({
-          status: "ok",
-          source: String(zig.source || "fresh"),
-          address,
-          balanceWei,
-          rpcUrl,
-        });
+        return toolOk(
+          {
+            address,
+            balanceWei,
+          },
+          {
+            source: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
 
       const provider = getProvider(rpcUrl);
       const balance = await provider.getBalance(address, blockTag);
-      return textResult({
-        status: "ok",
-        address,
-        balanceWei: balance.toString(),
-        rpcUrl,
-      });
+      return toolOk(
+        {
+          address,
+          balanceWei: balance.toString(),
+        },
+        { rpcUrl },
+      );
     },
   });
 
@@ -157,30 +184,35 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "getErc20Balance",
-          params: { rpcUrl, tokenAddress, address, blockTag },
+          params: { rpcUrl, tokenAddress, address, blockTag, resultsOnly: true },
         });
         ensureZigOk(zig, "zig core getErc20Balance failed");
-        const balanceHex = String(zig.balanceRaw || "0x0");
-        return textResult({
-          status: "ok",
-          source: String(zig.source || "fresh"),
-          address,
-          tokenAddress,
-          balanceRaw: BigInt(balanceHex).toString(),
-          rpcUrl,
-        });
+        const payload = zigPayload(zig);
+        const balanceHex = String(payload.balanceRaw || "0x0");
+        return toolOk(
+          {
+            address,
+            tokenAddress,
+            balanceRaw: BigInt(balanceHex).toString(),
+          },
+          {
+            source: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
 
       const provider = getProvider(rpcUrl);
       const contract = new Contract(tokenAddress, ERC20_ABI, provider);
       const balance = await contract.balanceOf(address, { blockTag });
-      return textResult({
-        status: "ok",
-        address,
-        tokenAddress,
-        balanceRaw: balance.toString(),
-        rpcUrl,
-      });
+      return toolOk(
+        {
+          address,
+          tokenAddress,
+          balanceRaw: balance.toString(),
+        },
+        { rpcUrl },
+      );
     },
   });
 
@@ -199,20 +231,80 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "getBlockNumber",
-          params: { rpcUrl },
+          params: { rpcUrl, resultsOnly: true },
         });
         ensureZigOk(zig, "zig core getBlockNumber failed");
-        return textResult({
-          status: "ok",
-          source: String(zig.source || "fresh"),
-          blockNumber: Number(zig.blockNumber || 0),
-          rpcUrl,
-        });
+        const payload = zigPayload(zig);
+        return toolOk(
+          { blockNumber: Number(payload.blockNumber || 0) },
+          {
+            source: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
 
       const provider = getProvider(rpcUrl);
       const block = await provider.getBlockNumber();
-      return textResult({ status: "ok", blockNumber: block, rpcUrl });
+      return toolOk({ blockNumber: block }, { rpcUrl });
+    },
+  });
+
+  registrar.registerTool({
+    name: "monad_schema",
+    label: "Monad Schema",
+    description: "Return zig-core action schema for tool discovery.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {},
+    },
+    async execute() {
+      if (!isZigCoreEnabled()) {
+        return toolEnvelope(
+          "blocked",
+          13,
+          { reason: "schema discovery requires zig core" },
+          { source: "ts-tool" },
+        );
+      }
+
+      const zig = await callZigCore({ action: "schema", params: { resultsOnly: true } });
+      ensureZigOk(zig, "zig core schema failed");
+      return toolOk(zigPayload(zig), { source: "zig-core" });
+    },
+  });
+
+  registrar.registerTool({
+    name: "monad_version",
+    label: "Monad Version",
+    description: "Return zig-core version and build metadata.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        long: { type: "boolean", default: false },
+      },
+    },
+    async execute(_toolCallId, params: Params) {
+      if (!isZigCoreEnabled()) {
+        return toolEnvelope(
+          "blocked",
+          13,
+          { reason: "version discovery requires zig core" },
+          { source: "ts-tool" },
+        );
+      }
+
+      const zig = await callZigCore({
+        action: "version",
+        params: {
+          long: Boolean(params.long),
+          resultsOnly: true,
+        },
+      });
+      ensureZigOk(zig, "zig core version failed");
+      return toolOk(zigPayload(zig), { source: "zig-core" });
     },
   });
 
@@ -1007,22 +1099,24 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "sendSignedTransaction",
-          params: { rpcUrl, signedTxHex },
+          params: { rpcUrl, signedTxHex, resultsOnly: true },
         });
         const blocked = blockedByZigPolicy(zig, rpcUrl);
         if (blocked) return blocked;
         ensureZigOk(zig, "zig core sendSignedTransaction failed");
-        return textResult({
-          status: "ok",
-          source: String(zig.source || "fresh"),
-          txHash: String(zig.txHash || ""),
-          rpcUrl,
-        });
+        const payload = zigPayload(zig);
+        return toolOk(
+          { txHash: String(payload.txHash || "") },
+          {
+            source: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
 
       const provider = getProvider(rpcUrl);
       const response = await provider.broadcastTransaction(signedTxHex);
-      return textResult({ status: "ok", txHash: response.hash, rpcUrl });
+      return toolOk({ txHash: response.hash }, { rpcUrl });
     },
   });
 
