@@ -94,7 +94,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
-  - `providers` applies case-insensitive priority order; when multiple routes share the same top priority bucket, `strategy` breaks ties
+  - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple routes share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`
@@ -114,7 +114,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
-  - `providers` applies case-insensitive priority order; when multiple candidates share the same top priority bucket, `strategy` breaks ties
+  - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple candidates share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
   - `providers` must contain at least one non-empty token after trimming; otherwise input is rejected
   - when `providers` has no matching provider, selection falls back to all candidates using `strategy`

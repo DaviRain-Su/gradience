@@ -598,22 +598,22 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = if (getString(params, "provider")) |raw| blk: {
-            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
-            if (trimmed.len == 0) {
+        const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
+            .missing => null,
+            .value => |value| value,
+            .invalid => {
                 try writeInvalid("provider");
                 return true;
-            }
-            break :blk trimmed;
-        } else null;
-        const provider_priority = if (getString(params, "providers")) |raw| blk: {
-            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
-            if (!hasNonEmptyCsvToken(trimmed)) {
+            },
+        };
+        const provider_priority = switch (parseOptionalProvidersParam(params)) {
+            .missing => null,
+            .value => |value| value,
+            .invalid => {
                 try writeInvalid("providers");
                 return true;
-            }
-            break :blk trimmed;
-        } else null;
+            },
+        };
         const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseBridgeStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
@@ -668,22 +668,22 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        const provider_filter = if (getString(params, "provider")) |raw| blk: {
-            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
-            if (trimmed.len == 0) {
+        const provider_filter = switch (parseOptionalTrimmedStringParam(params, "provider")) {
+            .missing => null,
+            .value => |value| value,
+            .invalid => {
                 try writeInvalid("provider");
                 return true;
-            }
-            break :blk trimmed;
-        } else null;
-        const provider_priority = if (getString(params, "providers")) |raw| blk: {
-            const trimmed = std.mem.trim(u8, raw, " \r\n\t");
-            if (!hasNonEmptyCsvToken(trimmed)) {
+            },
+        };
+        const provider_priority = switch (parseOptionalProvidersParam(params)) {
+            .missing => null,
+            .value => |value| value,
+            .invalid => {
                 try writeInvalid("providers");
                 return true;
-            }
-            break :blk trimmed;
-        } else null;
+            },
+        };
         const strategy_raw = std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
         const strategy = parseSwapStrategy(strategy_raw) orelse {
             try writeInvalid("strategy");
@@ -1473,6 +1473,28 @@ fn writeSelectedQuoteEnvelope(results_only: bool, obj: std.json.ObjectMap) !void
     } else {
         try core_envelope.writeJson(.{ .status = "ok", .quote = std.json.Value{ .object = obj } });
     }
+}
+
+const OptionalStringParam = union(enum) {
+    missing,
+    value: []const u8,
+    invalid,
+};
+
+fn parseOptionalTrimmedStringParam(obj: std.json.ObjectMap, key: []const u8) OptionalStringParam {
+    const raw = getString(obj, key) orelse return .missing;
+    const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+    if (trimmed.len == 0) return .invalid;
+    return .{ .value = trimmed };
+}
+
+fn parseOptionalProvidersParam(obj: std.json.ObjectMap) OptionalStringParam {
+    const parsed = parseOptionalTrimmedStringParam(obj, "providers");
+    return switch (parsed) {
+        .missing => .missing,
+        .invalid => .invalid,
+        .value => |value| if (hasNonEmptyCsvToken(value)) .{ .value = value } else .invalid,
+    };
 }
 
 fn getString(obj: std.json.ObjectMap, key: []const u8) ?[]const u8 {
