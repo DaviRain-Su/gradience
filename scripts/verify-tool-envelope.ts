@@ -65,15 +65,22 @@ function mkStrategyValidateParams(template: string): Params {
   };
 }
 
-function mkLifiWorkflowSimulateParams(quote: Params): Params {
+function mkLifiBaseParams(extra: Params = {}): Params {
   return {
-    runMode: "simulate",
     fromChain: 1,
     toChain: 1,
     fromToken: ADDR_A,
     toToken: ADDR_B,
     fromAmount: "1",
     fromAddress: ADDR_C,
+    ...extra,
+  };
+}
+
+function mkLifiWorkflowSimulateParams(quote: Params): Params {
+  return {
+    runMode: "simulate",
+    ...mkLifiBaseParams(),
     quote,
   };
 }
@@ -81,12 +88,7 @@ function mkLifiWorkflowSimulateParams(quote: Params): Params {
 function mkLifiWorkflowAnalysisParams(quote: Params): Params {
   return {
     runMode: "analysis",
-    fromChain: 1,
-    toChain: 1,
-    fromToken: ADDR_A,
-    toToken: ADDR_B,
-    fromAmount: "1",
-    fromAddress: ADDR_C,
+    ...mkLifiBaseParams(),
     quote,
   };
 }
@@ -94,12 +96,7 @@ function mkLifiWorkflowAnalysisParams(quote: Params): Params {
 function mkLifiWorkflowExecuteParams(quote: Params, extra: Params = {}): Params {
   return {
     runMode: "execute",
-    fromChain: 1,
-    toChain: 1,
-    fromToken: ADDR_A,
-    toToken: ADDR_B,
-    fromAmount: "1",
-    fromAddress: ADDR_C,
+    ...mkLifiBaseParams(),
     quote,
     ...extra,
   };
@@ -299,12 +296,7 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
       name: TOOL.lifiRunWorkflow,
       runMode: "inspect",
       params: {
-        fromChain: 1,
-        toChain: 1,
-        fromToken: ADDR_A,
-        toToken: ADDR_B,
-        fromAmount: "1",
-        fromAddress: ADDR_C,
+        ...mkLifiBaseParams(),
         quote: {},
       },
     },
