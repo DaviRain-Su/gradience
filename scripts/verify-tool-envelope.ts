@@ -2,6 +2,8 @@ import { registerMonadTools } from "../src/tools/monad-tools.js";
 import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 
 type Params = Record<string, unknown>;
+type Payload = Record<string, unknown>;
+type PayloadMap = Map<string, Payload>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type ToolMap = Map<string, ToolDefinition>;
@@ -11,13 +13,13 @@ type ContextBuilder<TContext> = (tools: ToolMap) => Promise<TContext>;
 type ContextRunner<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
-  payloads: Map<string, Record<string, unknown>>;
+  payloads: PayloadMap;
 };
 type PureTsStage = ContextStage<PureTsContext>;
 type ZigRequiredContext = {
   preloadedCases: ZigDisabledCase[];
   executedCases: ZigDisabledCase[];
-  preloadedPayloads: Map<string, Record<string, unknown>>;
+  preloadedPayloads: PayloadMap;
 };
 type ZigRequiredStage = ContextStage<ZigRequiredContext>;
 type ZigDisabledCase = { name: string; params: Params; reason: string };
@@ -378,7 +380,7 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
   ];
 }
 
-function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<string, unknown>> {
+function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Payload> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
     return JSON.parse(text) as Record<string, unknown>;
@@ -389,11 +391,11 @@ function executePayload(
   tools: ToolMap,
   name: string,
   params: Params,
-): Promise<Record<string, unknown>> {
+): Promise<Payload> {
   return parseToolPayload(getTool(tools, name), params);
 }
 
-function assertEnvelopeShape(name: string, payload: Record<string, unknown>): void {
+function assertEnvelopeShape(name: string, payload: Payload): void {
   if (typeof payload.status !== "string") {
     throw new Error(fail(name, "status must be string"));
   }
@@ -408,7 +410,7 @@ function assertEnvelopeShape(name: string, payload: Record<string, unknown>): vo
   }
 }
 
-function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): void {
+function assertEnvelopeOrder(name: string, payload: Payload): void {
   const keys = Object.keys(payload);
   const expected = ["status", "code", "result", "meta"];
   for (let i = 0; i < expected.length; i += 1) {
@@ -418,13 +420,13 @@ function assertEnvelopeOrder(name: string, payload: Record<string, unknown>): vo
   }
 }
 
-function assertOkEnvelope(name: string, payload: Record<string, unknown>): void {
+function assertOkEnvelope(name: string, payload: Payload): void {
   assertStatusCode(name, payload, "ok", 0);
 }
 
 function assertStatusCode(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   status: "ok" | "error" | "blocked",
   code: number,
 ): void {
@@ -435,7 +437,7 @@ function assertStatusCode(
 
 function assertStatusCodeOneOf(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   allowed: StatusCode[],
   label: string,
 ): void {
@@ -447,8 +449,8 @@ function assertStatusCodeOneOf(
   throw new Error(fail(name, label));
 }
 
-function getResult(name: string, payload: Record<string, unknown>): Record<string, unknown> {
-  const result = payload.result as Record<string, unknown> | null | undefined;
+function getResult(name: string, payload: Payload): Payload {
+  const result = payload.result as Payload | null | undefined;
   if (!result || typeof result !== "object") {
     throw new Error(fail(name, "result must be object"));
   }
@@ -456,9 +458,9 @@ function getResult(name: string, payload: Record<string, unknown>): Record<strin
 }
 
 function getPayload(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   name: string,
-): Record<string, unknown> {
+): Payload {
   const payload = payloads.get(name);
   if (!payload) {
     throw new Error(fail(name, "missing payload after envelope checks"));
@@ -466,17 +468,17 @@ function getPayload(
   return payload;
 }
 
-function assertResultObjectField(name: string, payload: Record<string, unknown>, field: string): void {
+function assertResultObjectField(name: string, payload: Payload, field: string): void {
   assertResultFieldType(name, payload, field, "object");
 }
 
-function assertResultStringField(name: string, payload: Record<string, unknown>, field: string): void {
+function assertResultStringField(name: string, payload: Payload, field: string): void {
   assertResultFieldType(name, payload, field, "string");
 }
 
 function assertResultFieldType(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   field: string,
   expectedType: "object" | "string",
 ): void {
@@ -491,7 +493,7 @@ function assertResultFieldType(
 }
 
 function assertResultFieldChecks(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<{ name: string; fields: string[] }>,
   expectation: ResultFieldExpectation,
 ): void {
@@ -504,14 +506,14 @@ function assertResultFieldChecks(
 }
 
 function assertResultObjectFields(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<{ name: string; fields: string[] }>,
 ): void {
   assertResultFieldChecks(payloads, checks, "object");
 }
 
 function assertResultObjectValueChecks(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<{ name: string; objectField: string; key: string; expected: unknown }>,
 ): void {
   for (const check of checks) {
@@ -526,7 +528,7 @@ function assertResultObjectValueChecks(
 }
 
 function assertResultNestedObjectValueChecks(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<{
     name: string;
     parentField: string;
@@ -548,14 +550,14 @@ function assertResultNestedObjectValueChecks(
 }
 
 function assertResultStringFields(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<{ name: string; fields: string[] }>,
 ): void {
   assertResultFieldChecks(payloads, checks, "string");
 }
 
 function assertOkForChecks(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<[string, Params]>,
   nonOkAllowed: Set<string>,
 ): void {
@@ -567,13 +569,13 @@ function assertOkForChecks(
   }
 }
 
-function assertTemplatesNonEmpty(payloads: Map<string, Record<string, unknown>>): void {
+function assertTemplatesNonEmpty(payloads: PayloadMap): void {
   const result = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates));
   assertObjectFieldNonEmptyArray(TOOL.strategyTemplates, result, "templates", "result");
 }
 
 function runPureTsPreloadedChecks(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   checks: Array<[string, Params]>,
 ): void {
   assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
@@ -581,7 +583,7 @@ function runPureTsPreloadedChecks(
   assertResultStringFields(payloads, pureTsStringFieldChecks());
 }
 
-function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>): void {
+function runPureTsSemanticChecks(payloads: PayloadMap): void {
   assertTemplatesNonEmpty(payloads);
   assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
   assertResultNestedObjectValueChecks(payloads, pureTsNestedSemanticChecks());
@@ -686,7 +688,7 @@ function makePipeline<TStage>(...stages: TStage[]): TStage[] {
   return stages;
 }
 
-function assertResultNullFields(name: string, payload: Record<string, unknown>, fields: string[]): void {
+function assertResultNullFields(name: string, payload: Payload, fields: string[]): void {
   for (const field of fields) {
     assertResultFieldExpectation(name, payload, field, "null");
   }
@@ -694,7 +696,7 @@ function assertResultNullFields(name: string, payload: Record<string, unknown>, 
 
 function assertResultFieldExpectation(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   field: string,
   expectation: ResultFieldExpectation,
 ): void {
@@ -714,7 +716,7 @@ function assertResultFieldExpectation(
 
 function assertResultObjectFieldValue(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   objectField: string,
   key: string,
   expected: unknown,
@@ -727,7 +729,7 @@ function assertResultObjectFieldValue(
 
 function assertResultNestedObjectFieldValue(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   parentField: string,
   objectField: string,
   key: string,
@@ -755,7 +757,7 @@ function getObjectField(
   return value as Record<string, unknown>;
 }
 
-function assertStrategyRunPlanResult(name: string, payload: Record<string, unknown>): void {
+function assertStrategyRunPlanResult(name: string, payload: Payload): void {
   const runResult = getObjectField(name, getResult(name, payload), "result", "result");
   if (runResult.status !== "planned") {
     throw new Error(fail(name, "result.result.status must equal planned for mode=plan"));
@@ -809,19 +811,19 @@ function getArrayField(
   return value;
 }
 
-function assertValidationShape(name: string, payload: Record<string, unknown>): void {
+function assertValidationShape(name: string, payload: Payload): void {
   const validation = getValidationObject(name, payload);
   getBooleanField(name, validation, "ok", "result.validation");
   getArrayField(name, validation, "errors", "result.validation");
 }
 
-function getValidationObject(name: string, payload: Record<string, unknown>): Record<string, unknown> {
+function getValidationObject(name: string, payload: Payload): Payload {
   return getObjectField(name, getResult(name, payload), "validation", "result");
 }
 
 function assertBlockedWithMode(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   code: number,
   mode: string,
 ): void {
@@ -829,22 +831,22 @@ function assertBlockedWithMode(
   assertMetaFieldString(name, payload, "mode", mode);
 }
 
-function assertBlockedReason(name: string, payload: Record<string, unknown>, reason: string): void {
+function assertBlockedReason(name: string, payload: Payload, reason: string): void {
   assertResultReason(name, payload, reason);
 }
 
-function assertResultReason(name: string, payload: Record<string, unknown>, reason: string): void {
+function assertResultReason(name: string, payload: Payload, reason: string): void {
   assertObjectFieldStringEquals(name, getResult(name, payload), "reason", reason, "result");
 }
 
-function assertErrorReason(name: string, payload: Record<string, unknown>, code: number, reason: string): void {
+function assertErrorReason(name: string, payload: Payload, code: number, reason: string): void {
   assertStatusCode(name, payload, "error", code);
   assertResultReason(name, payload, reason);
 }
 
 function assertMetaFieldString(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   field: string,
   expected: string,
 ): void {
@@ -929,7 +931,7 @@ async function runInvalidRunModeBehaviorCases(tools: ToolMap): Promise<void> {
 
 function assertZigDisabledBlocked(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   reason: string,
 ): void {
   assertStatusCode(name, payload, "blocked", 13);
@@ -941,7 +943,7 @@ function assertZigDisabledBlocked(
 }
 
 function assertPreloadedZigDisabledCases(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   cases: ZigDisabledCase[],
 ): void {
   for (const c of cases) {
@@ -951,7 +953,7 @@ function assertPreloadedZigDisabledCases(
 }
 
 function runZigRequiredPreloadedCases(
-  payloads: Map<string, Record<string, unknown>>,
+  payloads: PayloadMap,
   cases: ZigDisabledCase[],
 ): void {
   assertPreloadedZigDisabledCases(payloads, cases);
@@ -1013,7 +1015,7 @@ async function assertZigDisabledCase(
   assertZigDisabledBlocked(input.name, payload, input.reason);
 }
 
-function assertStrategyValidateEnvelope(name: string, payload: Record<string, unknown>): void {
+function assertStrategyValidateEnvelope(name: string, payload: Payload): void {
   assertStatusCodeOneOf(
     name,
     payload,
@@ -1026,7 +1028,7 @@ function assertStrategyValidateEnvelope(name: string, payload: Record<string, un
   assertValidationShape(name, payload);
 }
 
-function assertInvalidValidationPayload(name: string, payload: Record<string, unknown>): void {
+function assertInvalidValidationPayload(name: string, payload: Payload): void {
   assertStatusCode(name, payload, "error", 2);
   assertValidationShape(name, payload);
   const invalidValidation = getValidationObject(name, payload);
@@ -1050,7 +1052,7 @@ function assertObjectFieldNonEmptyArray(
 
 function assertOkWithMode(
   name: string,
-  payload: Record<string, unknown>,
+  payload: Payload,
   mode: string,
 ): void {
   assertStatusCode(name, payload, "ok", 0);
@@ -1070,8 +1072,8 @@ function getTool(tools: ToolMap, name: string): ToolDefinition {
 async function runEnvelopeChecks(
   tools: ToolMap,
   checks: Array<[string, Params]>,
-): Promise<Map<string, Record<string, unknown>>> {
-  const payloads = new Map<string, Record<string, unknown>>();
+): Promise<PayloadMap> {
+  const payloads: PayloadMap = new Map();
   for (const [name, params] of checks) {
     const payload = await executePayload(tools, name, params);
     assertEnvelopeShape(name, payload);
