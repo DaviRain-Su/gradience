@@ -56,6 +56,13 @@ function toolOk(
   return toolEnvelope("ok", 0, result, meta);
 }
 
+function toolOkZig(
+  result: Record<string, unknown> = {},
+  meta: Record<string, unknown> = {},
+) {
+  return toolOk(result, { source: "zig-core", ...meta });
+}
+
 function zigPayload(result: ZigResult): ZigResult {
   const nested = result.results;
   if (nested && typeof nested === "object") return nested as ZigResult;
@@ -135,6 +142,20 @@ function blockedByZigPolicy(
   );
 }
 
+function blockedByZigPolicyMeta(
+  result: ZigResult,
+  meta: Record<string, unknown> = {},
+) {
+  const code = Number(result.code || 0);
+  if (code !== 13) return null;
+  return toolEnvelope(
+    "blocked",
+    code,
+    { reason: String(result.error || "blocked by runtime policy") },
+    meta,
+  );
+}
+
 export function registerMonadTools(registrar: ToolRegistrar): void {
   registrar.registerTool({
     name: "monad_getBalance",
@@ -166,17 +187,19 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getBalance",
           params: { address, rpcUrl, blockTag, resultsOnly: true },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core getBalance failed");
         const payload = zigPayload(zig);
         const balanceHex = String(payload.balanceHex || "0x0");
         const balanceWei = BigInt(balanceHex).toString();
-        return toolOk(
+        return toolOkZig(
           {
             address,
             balanceWei,
           },
           {
-            source: String(payload.source || "fresh"),
+            providerSource: String(payload.source || "fresh"),
             rpcUrl,
           },
         );
@@ -226,17 +249,19 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getErc20Balance",
           params: { rpcUrl, tokenAddress, address, blockTag, resultsOnly: true },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core getErc20Balance failed");
         const payload = zigPayload(zig);
         const balanceHex = String(payload.balanceRaw || "0x0");
-        return toolOk(
+        return toolOkZig(
           {
             address,
             tokenAddress,
             balanceRaw: BigInt(balanceHex).toString(),
           },
           {
-            source: String(payload.source || "fresh"),
+            providerSource: String(payload.source || "fresh"),
             rpcUrl,
           },
         );
@@ -279,12 +304,14 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           action: "getBlockNumber",
           params: { rpcUrl, resultsOnly: true },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core getBlockNumber failed");
         const payload = zigPayload(zig);
-        return toolOk(
+        return toolOkZig(
           { blockNumber: Number(payload.blockNumber || 0) },
           {
-            source: String(payload.source || "fresh"),
+            providerSource: String(payload.source || "fresh"),
             rpcUrl,
           },
         );
@@ -293,6 +320,77 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const provider = getProvider(rpcUrl);
       const block = await provider.getBlockNumber();
       return toolOk({ blockNumber: block }, { rpcUrl });
+    },
+  });
+
+  registrar.registerTool({
+    name: "monad_estimateGas",
+    label: "Monad Estimate Gas",
+    description: "Estimate gas for a transaction request.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        from: { type: "string" },
+        to: { type: "string" },
+        data: { type: "string", default: "0x" },
+        value: { type: "string", default: "0x0" },
+        rpcUrl: { type: "string" },
+      },
+      required: ["from", "to"],
+    },
+    async execute(_toolCallId, params: Params) {
+      const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const from = asOptionalString(params, "from");
+      const to = asOptionalString(params, "to");
+      const data = asString(params, "data", "0x");
+      const value = asString(params, "value", "0x0");
+
+      if (!from) {
+        return toolEnvelope("error", 2, { reason: "missing from" }, { rpcUrl });
+      }
+      if (!to) {
+        return toolEnvelope("error", 2, { reason: "missing to" }, { rpcUrl });
+      }
+
+      const zigRequired = zigRequiredBlocked(
+        "estimateGas requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "estimateGas",
+          params: { from, to, data, value, rpcUrl, resultsOnly: true },
+        });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
+        ensureZigOk(zig, "zig core estimateGas failed");
+        const payload = zigPayload(zig);
+        return toolOkZig(
+          {
+            estimateGas: String(payload.estimateGas || "0"),
+            estimateGasHex: String(payload.estimateGasHex || "0x0"),
+            tx: { from, to, data, value },
+          },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
+      }
+
+      const provider = getProvider(rpcUrl);
+      const gas = await provider.estimateGas({ from, to, data, value });
+      return toolOk(
+        {
+          estimateGas: gas.toString(),
+          estimateGasHex: `0x${BigInt(gas.toString()).toString(16)}`,
+          tx: { from, to, data, value },
+        },
+        { rpcUrl },
+      );
     },
   });
 
@@ -316,8 +414,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       }
 
       const zig = await callZigCore({ action: "schema", params: { resultsOnly: true } });
+      const policyBlocked = blockedByZigPolicyMeta(zig, { source: "zig-core" });
+      if (policyBlocked) return policyBlocked;
       ensureZigOk(zig, "zig core schema failed");
-      return toolOk(zigPayload(zig), { source: "zig-core" });
+      return toolOkZig(zigPayload(zig));
     },
   });
 
@@ -349,8 +449,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           resultsOnly: true,
         },
       });
+      const policyBlocked = blockedByZigPolicyMeta(zig, { source: "zig-core" });
+      if (policyBlocked) return policyBlocked;
       ensureZigOk(zig, "zig core version failed");
-      return toolOk(zigPayload(zig), { source: "zig-core" });
+      return toolOkZig(zigPayload(zig));
     },
   });
 
@@ -377,8 +479,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         action: "runtimeInfo",
         params: { resultsOnly: true },
       });
+      const policyBlocked = blockedByZigPolicyMeta(zig, { source: "zig-core" });
+      if (policyBlocked) return policyBlocked;
       ensureZigOk(zig, "zig core runtimeInfo failed");
-      return toolOk(zigPayload(zig), { source: "zig-core" });
+      return toolOkZig(zigPayload(zig));
     },
   });
 
@@ -414,9 +518,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core buildTransferNative failed");
         const payload = zigPayload(zig);
-        return toolOk({ txRequest: payload.txRequest });
+        return toolOkZig({ txRequest: payload.txRequest });
       }
 
       const value = asString(params, "amountWei") || asString(params, "valueHex") || "0";
@@ -463,12 +569,14 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core buildTransferErc20 failed");
         const payload = zigPayload(zig);
         if (!payload.txRequest || typeof payload.txRequest !== "object") {
           throw new Error("zig core buildTransferErc20 missing txRequest");
         }
-        return toolOk({ txRequest: payload.txRequest as Record<string, unknown> });
+        return toolOkZig({ txRequest: payload.txRequest as Record<string, unknown> });
       }
 
       const iface = new Interface(ERC20_ABI);
@@ -519,8 +627,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core buildErc20Approve failed");
-        return toolOk({ txRequest: zigPayload(zig).txRequest });
+        return toolOkZig({ txRequest: zigPayload(zig).txRequest });
       }
 
       const iface = new Interface(ERC20_ABI);
@@ -577,9 +687,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core buildDexSwap failed");
         const payload = zigPayload(zig);
-        return toolOk({ txRequest: payload.txRequest, notes: payload.notes });
+        return toolOkZig({ txRequest: payload.txRequest, notes: payload.notes });
       }
 
       const iface = new Interface(ROUTER_ABI);
@@ -638,8 +750,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core planLendingAction failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       return toolOk({
@@ -692,8 +806,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core paymentIntentCreate failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       return toolOk({
@@ -748,8 +864,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core subscriptionIntentCreate failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       return toolOk({
@@ -814,8 +932,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core lifiGetQuote failed");
-        return toolOk({ quote: zigPayload(zig).quote });
+        return toolOkZig({ quote: zigPayload(zig).quote });
       }
 
       const quote = await fetchLifiQuote({
@@ -879,8 +999,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core lifiGetRoutes failed");
-        return toolOk({ routes: zigPayload(zig).routes });
+        return toolOkZig({ routes: zigPayload(zig).routes });
       }
 
       const routes = await fetchLifiRoutes({
@@ -927,8 +1049,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         if (zig.status === "blocked" && code === 12) {
           return toolEnvelope("blocked", 12, { reason: String(zig.error || "missing transactionRequest") });
         }
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core lifiExtractTxRequest failed");
-        return toolOk({ txRequest: zigPayload(zig).txRequest });
+        return toolOkZig({ txRequest: zigPayload(zig).txRequest });
       }
 
       const quote = params.quote as Record<string, unknown>;
@@ -1012,8 +1136,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             { mode: runMode, rpcUrl },
           );
         }
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core lifiRunWorkflow failed");
-        return toolOk(zigPayload(zig), { mode: runMode, rpcUrl });
+        return toolOkZig(zigPayload(zig), { mode: runMode, rpcUrl });
       }
 
       const provider = getProvider(rpcUrl);
@@ -1029,13 +1155,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       };
       let quote = params.quote as Record<string, unknown> | undefined;
       if (!quote) {
-        if (isZigCoreEnabled()) {
-          const zig = await callZigCore({ action: "lifiGetQuote", params: { ...base, resultsOnly: true } });
-          ensureZigOk(zig, "zig core lifiGetQuote failed");
-          quote = (zigPayload(zig).quote as Record<string, unknown>) || {};
-        } else {
-          quote = await fetchLifiQuote(base);
-        }
+        quote = await fetchLifiQuote(base);
       }
       const txRequest =
         (quote?.transactionRequest as Record<string, unknown> | undefined) || null;
@@ -1112,8 +1232,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core morphoVaultMeta failed");
-        return toolOk({ meta: zigPayload(zig).meta });
+        return toolOkZig({ meta: zigPayload(zig).meta });
       }
 
       const meta = await fetchMorphoVaultMeta(asString(params, "vaultAddress"));
@@ -1151,14 +1273,19 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultTotals failed");
         const payload = zigPayload(zig);
-        return toolOk(
+        return toolOkZig(
           {
             totalAssets: String(payload.totalAssets || "0"),
             totalSupply: String(payload.totalSupply || "0"),
           },
-          { rpcUrl },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
         );
       }
       const provider = getProvider(rpcUrl);
@@ -1209,9 +1336,17 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultBalance failed");
         const payload = zigPayload(zig);
-        return toolOk({ balanceShares: String(payload.balanceShares || "0") }, { rpcUrl });
+        return toolOkZig(
+          { balanceShares: String(payload.balanceShares || "0") },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
@@ -1252,9 +1387,17 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultPreviewDeposit failed");
         const payload = zigPayload(zig);
-        return toolOk({ shares: String(payload.shares || "0") }, { rpcUrl });
+        return toolOkZig(
+          { shares: String(payload.shares || "0") },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
@@ -1295,9 +1438,17 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultPreviewWithdraw failed");
         const payload = zigPayload(zig);
-        return toolOk({ shares: String(payload.shares || "0") }, { rpcUrl });
+        return toolOkZig(
+          { shares: String(payload.shares || "0") },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
@@ -1338,9 +1489,17 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultPreviewRedeem failed");
         const payload = zigPayload(zig);
-        return toolOk({ assets: String(payload.assets || "0") }, { rpcUrl });
+        return toolOkZig(
+          { assets: String(payload.assets || "0") },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
@@ -1383,9 +1542,17 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core morphoVaultConvert failed");
         const payload = zigPayload(zig);
-        return toolOk({ result: String(payload.result || "0") }, { rpcUrl });
+        return toolOkZig(
+          { result: String(payload.result || "0") },
+          {
+            providerSource: String(payload.source || "fresh"),
+            rpcUrl,
+          },
+        );
       }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
@@ -1432,7 +1599,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           },
         });
         ensureZigOk(zig, "zig core buildMorphoVaultDeposit failed");
-        return toolOk({ txRequest: zigPayload(zig).txRequest });
+        return toolOkZig({ txRequest: zigPayload(zig).txRequest });
       }
 
       const iface = new Interface([
@@ -1488,7 +1655,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           },
         });
         ensureZigOk(zig, "zig core buildMorphoVaultWithdraw failed");
-        return toolOk({ txRequest: zigPayload(zig).txRequest });
+        return toolOkZig({ txRequest: zigPayload(zig).txRequest });
       }
 
       const iface = new Interface([
@@ -1545,7 +1712,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
           },
         });
         ensureZigOk(zig, "zig core buildMorphoVaultRedeem failed");
-        return toolOk({ txRequest: zigPayload(zig).txRequest });
+        return toolOkZig({ txRequest: zigPayload(zig).txRequest });
       }
 
       const iface = new Interface([
@@ -1599,10 +1766,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         if (blocked) return blocked;
         ensureZigOk(zig, "zig core sendSignedTransaction failed");
         const payload = zigPayload(zig);
-        return toolOk(
+        return toolOkZig(
           { txHash: String(payload.txHash || "") },
           {
-            source: String(payload.source || "fresh"),
+            providerSource: String(payload.source || "fresh"),
             rpcUrl,
           },
         );
@@ -1667,8 +1834,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         if (zig.status === "blocked" && code === 12) {
           return toolEnvelope("blocked", 12, { reason: String(zig.error || "workflow blocked") }, { mode: runMode, rpcUrl });
         }
+        const blocked = blockedByZigPolicy(zig, rpcUrl);
+        if (blocked) return blocked;
         ensureZigOk(zig, "zig core runTransferWorkflow failed");
-        return toolOk(zigPayload(zig), { mode: runMode, rpcUrl });
+        return toolOkZig(zigPayload(zig), { mode: runMode, rpcUrl });
       }
 
       const provider = getProvider(rpcUrl);
@@ -1736,8 +1905,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
 
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({ action: "strategyTemplates", params: { resultsOnly: true } });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core strategyTemplates failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       return toolOk({ templates: STRATEGY_TEMPLATES });
@@ -1779,8 +1950,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core strategyCompile failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       const spec = compileStrategy({
@@ -1821,6 +1994,8 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core strategyValidate failed");
         const payload = zigPayload(zig);
         const validation = (payload.validation || {}) as Record<string, unknown>;
@@ -1828,7 +2003,7 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         if (!ok) {
           return toolEnvelope("error", 2, { validation });
         }
-        return toolOk({ validation });
+        return toolOkZig({ validation });
       }
 
       const validation = validateStrategy(params.strategy as any);
@@ -1867,8 +2042,10 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
             resultsOnly: true,
           },
         });
+        const policyBlocked = blockedByZigPolicyMeta(zig);
+        if (policyBlocked) return policyBlocked;
         ensureZigOk(zig, "zig core strategyRun failed");
-        return toolOk(zigPayload(zig));
+        return toolOkZig(zigPayload(zig));
       }
 
       const result = runStrategy(params.strategy as any, asString(params, "mode") as "plan" | "execute");

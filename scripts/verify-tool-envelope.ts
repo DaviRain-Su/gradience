@@ -49,6 +49,7 @@ const TOOL = {
   getBalance: "monad_getBalance",
   getErc20Balance: "monad_getErc20Balance",
   getBlockNumber: "monad_getBlockNumber",
+  estimateGas: "monad_estimateGas",
   buildTransferNative: "monad_buildTransferNative",
   buildTransferErc20: "monad_buildTransferErc20",
   buildErc20Approve: "monad_buildErc20Approve",
@@ -83,7 +84,7 @@ const TOOL = {
 
 const VALID_STRATEGY = {
   id: "s",
-  plan: { steps: [] },
+  plan: { steps: [{ id: "step-1", action: "payment" }] },
   metadata: { template: "pay-per-call-v1" },
   constraints: { risk: { maxPerRunUsd: 1, cooldownSeconds: 1 } },
 };
@@ -399,6 +400,21 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
 function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
   return [
     {
+      name: TOOL.schema,
+      params: {},
+      reason: "schema discovery requires zig core",
+    },
+    {
+      name: TOOL.version,
+      params: {},
+      reason: "version discovery requires zig core",
+    },
+    {
+      name: TOOL.runtimeInfo,
+      params: {},
+      reason: "runtime info requires zig core",
+    },
+    {
       name: TOOL.getBalance,
       params: { address: ADDR_A },
       reason: "getBalance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
@@ -412,6 +428,11 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
       name: TOOL.getBlockNumber,
       params: {},
       reason: "getBlockNumber requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.estimateGas,
+      params: { from: ADDR_A, to: ADDR_B, data: "0x", value: "0x0" },
+      reason: "estimateGas requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
       name: TOOL.buildTransferNative,
@@ -590,6 +611,9 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
 
 function mkZigEnabledCoreCases(): ZigEnabledCoreCase[] {
   return [
+    { name: TOOL.schema, params: {} },
+    { name: TOOL.version, params: { long: true } },
+    { name: TOOL.runtimeInfo, params: {} },
     { name: TOOL.buildTransferNative, params: { toAddress: ADDR_A, amountWei: "1" } },
     { name: TOOL.buildTransferErc20, params: { tokenAddress: ADDR_A, toAddress: ADDR_B, amountRaw: "1" } },
     { name: TOOL.buildErc20Approve, params: { tokenAddress: ADDR_A, spender: ADDR_B, amountRaw: "1" } },
@@ -658,6 +682,10 @@ function mkZigEnabledCoreCases(): ZigEnabledCoreCase[] {
       name: TOOL.morphoVaultBuildRedeem,
       params: { vaultAddress: ADDR_A, sharesRaw: "1", receiver: ADDR_B, owner: ADDR_C },
     },
+    {
+      name: TOOL.runTransferWorkflow,
+      params: { runMode: "analysis", fromAddress: ADDR_A, toAddress: ADDR_B, amountRaw: "1" },
+    },
     { name: TOOL.strategyTemplates, params: {} },
     {
       name: TOOL.strategyCompile,
@@ -672,9 +700,13 @@ function mkZigEnabledCoreCases(): ZigEnabledCoreCase[] {
 }
 
 const REQUIRED_ZIG_POLICY_TOOLS = [
+  TOOL.schema,
+  TOOL.version,
+  TOOL.runtimeInfo,
   TOOL.getBalance,
   TOOL.getErc20Balance,
   TOOL.getBlockNumber,
+  TOOL.estimateGas,
   TOOL.buildTransferNative,
   TOOL.buildTransferErc20,
   TOOL.buildErc20Approve,
@@ -705,9 +737,13 @@ const REQUIRED_ZIG_POLICY_TOOLS = [
 ] as const;
 
 const ZIG_ACTION_BY_CORE_TOOL: Record<string, string> = {
+  [TOOL.schema]: "schema",
+  [TOOL.version]: "version",
+  [TOOL.runtimeInfo]: "runtimeInfo",
   [TOOL.getBalance]: "getBalance",
   [TOOL.getErc20Balance]: "getErc20Balance",
   [TOOL.getBlockNumber]: "getBlockNumber",
+  [TOOL.estimateGas]: "estimateGas",
   [TOOL.buildTransferNative]: "buildTransferNative",
   [TOOL.buildTransferErc20]: "buildTransferErc20",
   [TOOL.buildErc20Approve]: "buildErc20Approve",
@@ -737,12 +773,24 @@ const ZIG_ACTION_BY_CORE_TOOL: Record<string, string> = {
   [TOOL.strategyRun]: "strategyRun",
 };
 
+const REQUIRED_ZIG_ENABLED_TOOLS = Object.keys(ZIG_ACTION_BY_CORE_TOOL);
+
+const REQUIRED_ZIG_SCHEMA_TOOLS = Object.keys(ZIG_ACTION_BY_CORE_TOOL);
+
+const ZIG_CORE_DISCOVERY_TOOLS = new Set<string>([
+  TOOL.schema,
+  TOOL.version,
+  TOOL.runtimeInfo,
+]);
+
+const ZIG_ACTION_MAPPING_EXEMPT_TOOLS = new Set<string>([]);
+
 const ZIG_ENABLED_CORE_EXTERNAL_TOOLS = [
   TOOL.getBalance,
   TOOL.getErc20Balance,
   TOOL.getBlockNumber,
+  TOOL.estimateGas,
   TOOL.sendSignedTransaction,
-  TOOL.runTransferWorkflow,
   TOOL.morphoVaultTotals,
   TOOL.morphoVaultBalance,
   TOOL.morphoVaultPreviewDeposit,
@@ -773,14 +821,33 @@ function assertZigEnabledCaseCoverage(cases: ZigEnabledCoreCase[]): void {
     if (names.has(c.name)) {
       throw new Error(fail(c.name, "duplicate zig-enabled core case"));
     }
+    if (!ZIG_ACTION_BY_CORE_TOOL[c.name]) {
+      throw new Error(fail(c.name, "zig-enabled core case references unknown core tool mapping"));
+    }
     names.add(c.name);
   }
 
   const external = new Set<string>(ZIG_ENABLED_CORE_EXTERNAL_TOOLS);
-  for (const name of REQUIRED_ZIG_POLICY_TOOLS) {
+  for (const name of REQUIRED_ZIG_ENABLED_TOOLS) {
     if (external.has(name)) continue;
     if (!names.has(name)) {
       throw new Error(fail(name, "missing zig-enabled core case coverage"));
+    }
+  }
+}
+
+function assertZigActionMappingCoverage(tools: ToolMap): void {
+  for (const name of tools.keys()) {
+    if (!name.startsWith("monad_")) continue;
+    if (ZIG_ACTION_MAPPING_EXEMPT_TOOLS.has(name)) continue;
+    if (!ZIG_ACTION_BY_CORE_TOOL[name]) {
+      throw new Error(fail(name, "missing zig action mapping for core tool"));
+    }
+  }
+
+  for (const name of Object.keys(ZIG_ACTION_BY_CORE_TOOL)) {
+    if (!tools.has(name)) {
+      throw new Error(fail(name, "zig action mapping references unregistered tool"));
     }
   }
 }
@@ -1197,6 +1264,19 @@ function getBooleanField(
   return value;
 }
 
+function getNumberField(
+  name: string,
+  obj: Record<string, unknown>,
+  field: string,
+  scope: string,
+): number {
+  const value = obj[field];
+  if (typeof value !== "number") {
+    throw new Error(fail(name, `${scope}.${field} must be number`));
+  }
+  return value;
+}
+
 function getArrayField(
   name: string,
   obj: Record<string, unknown> | null | undefined,
@@ -1251,6 +1331,18 @@ function assertMetaFieldString(
 ): void {
   const meta = payload.meta as Record<string, unknown>;
   assertObjectFieldStringEquals(name, meta, field, expected, "meta");
+}
+
+function assertMetaFieldNotString(
+  name: string,
+  payload: Payload,
+  field: string,
+  unexpected: string,
+): void {
+  const meta = payload.meta as Record<string, unknown>;
+  if (String(meta?.[field] || "") === unexpected) {
+    throw new Error(fail(name, `should not include meta.${field}=${unexpected}`));
+  }
 }
 
 function assertObjectFieldStringEquals(
@@ -1433,6 +1525,15 @@ function assertStrategyValidateEnvelope(name: string, payload: Payload): void {
   assertValidationShape(name, payload);
 }
 
+function assertValidStrategyValidateEnvelope(name: string, payload: Payload): void {
+  assertStatusCode(name, payload, "ok", 0);
+  assertValidationShape(name, payload);
+  const validation = getValidationObject(name, payload);
+  if (getBooleanField(name, validation, "ok", "result.validation") !== true) {
+    throw new Error(fail(name, "valid strategy should set validation.ok=true"));
+  }
+}
+
 function assertInvalidValidationPayload(name: string, payload: Payload): void {
   assertStatusCode(name, payload, "error", 2);
   assertValidationShape(name, payload);
@@ -1462,6 +1563,119 @@ function assertOkWithMode(
 ): void {
   assertStatusCode(name, payload, "ok", 0);
   assertMetaFieldString(name, payload, "mode", mode);
+}
+
+function assertZigEnabledCoreSemanticShape(name: string, payload: Payload): void {
+  if (name === TOOL.buildTransferNative) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.buildTransferErc20) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.buildErc20Approve) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.buildDexSwap) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.planLendingAction) {
+    assertResultObjectField(name, payload, "plan");
+    assertResultObjectFieldValue(name, payload, "plan", "action", "supply");
+    return;
+  }
+  if (name === TOOL.paymentIntentCreate) {
+    assertResultObjectField(name, payload, "paymentIntent");
+    assertResultObjectFieldValue(name, payload, "paymentIntent", "type", "pay_per_call");
+    assertResultObjectFieldValue(name, payload, "paymentIntent", "token", "USDC");
+    assertResultObjectFieldValue(name, payload, "paymentIntent", "payee", "0xabc");
+    return;
+  }
+  if (name === TOOL.subscriptionIntentCreate) {
+    assertResultObjectField(name, payload, "subscriptionIntent");
+    assertResultObjectFieldValue(name, payload, "subscriptionIntent", "type", "subscription");
+    assertResultObjectFieldValue(name, payload, "subscriptionIntent", "token", "USDC");
+    assertResultObjectFieldValue(name, payload, "subscriptionIntent", "cadenceSeconds", 60);
+    return;
+  }
+  if (name === TOOL.lifiGetQuote) {
+    assertResultObjectField(name, payload, "quote");
+    assertResultNestedObjectFieldValue(name, payload, "quote", "transactionRequest", "value", "0x0");
+    assertResultObjectFieldValue(name, payload, "quote", "tool", "lifi");
+    return;
+  }
+  if (name === TOOL.lifiGetRoutes) {
+    const routes = getArrayField(name, getResult(name, payload), "routes", "result");
+    if (routes.length === 0 || typeof routes[0] !== "object" || routes[0] === null) {
+      throw new Error(fail(name, "result.routes must include at least one object route"));
+    }
+    assertObjectFieldStringEquals(name, routes[0] as Record<string, unknown>, "tool", "lifi", "result.routes[0]");
+    return;
+  }
+  if (name === TOOL.lifiExtractTxRequest) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.lifiRunWorkflow) {
+    assertMetaFieldString(name, payload, "mode", "analysis");
+    assertResultObjectField(name, payload, "quote");
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultStringField(name, payload, "routeId");
+    assertResultStringField(name, payload, "tool");
+    assertResultObjectFieldValue(name, payload, "quote", "tool", "lifi");
+    return;
+  }
+  if (name === TOOL.morphoVaultMeta) {
+    assertResultObjectField(name, payload, "meta");
+    assertResultObjectFieldValue(name, payload, "meta", "protocol", "morpho");
+    assertResultObjectFieldValue(name, payload, "meta", "vaultAddress", ADDR_A);
+    return;
+  }
+  if (name === TOOL.morphoVaultBuildDeposit) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.morphoVaultBuildWithdraw) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.morphoVaultBuildRedeem) {
+    assertResultObjectField(name, payload, "txRequest");
+    assertResultObjectFieldValue(name, payload, "txRequest", "to", ADDR_A);
+    return;
+  }
+  if (name === TOOL.runTransferWorkflow) {
+    assertMetaFieldString(name, payload, "mode", "analysis");
+    assertObjectFieldStringEquals(name, getResult(name, payload), "fromAddress", ADDR_A, "result");
+    assertResultStringField(name, payload, "balanceWei");
+    return;
+  }
+  if (name === TOOL.strategyTemplates) {
+    const templates = getArrayField(name, getResult(name, payload), "templates", "result");
+    if (templates.length === 0 || typeof templates[0] !== "object" || templates[0] === null) {
+      throw new Error(fail(name, "result.templates must include at least one object template"));
+    }
+    assertObjectFieldStringEquals(name, templates[0] as Record<string, unknown>, "id", "pay-per-call-v1", "result.templates[0]");
+    return;
+  }
+  if (name === TOOL.strategyCompile) {
+    assertResultObjectField(name, payload, "strategy");
+    assertResultNestedObjectFieldValue(name, payload, "strategy", "metadata", "template", "pay-per-call-v1");
+    return;
+  }
+  if (name === TOOL.strategyRun) {
+    assertStrategyRunPlanResult(name, payload);
+  }
 }
 
 function fail(name: string, message: string): string {
@@ -1530,15 +1744,46 @@ async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
   process.env.MONAD_REQUIRE_ZIG_CORE = "1";
   try {
     const cases = mkZigEnabledCoreCases();
+    const external = new Set<string>(ZIG_ENABLED_CORE_EXTERNAL_TOOLS);
     assertZigEnabledCaseCoverage(cases);
     await runToolCaseList(tools, cases, async (enabledTools, c) => {
       const payload = await executePayload(enabledTools, c.name, c.params);
       assertEnvelopeShape(c.name, payload);
       assertEnvelopeOrder(c.name, payload);
       if (c.name === TOOL.strategyValidate) {
-        assertStrategyValidateEnvelope(c.name, payload);
+        assertValidStrategyValidateEnvelope(c.name, payload);
       } else {
         assertOkEnvelope(c.name, payload);
+      }
+      if (!external.has(c.name)) {
+        assertMetaFieldString(c.name, payload, "source", "zig-core");
+      }
+      assertMetaFieldNotString(c.name, payload, "source", "ts-tool");
+      assertZigEnabledCoreSemanticShape(c.name, payload);
+      if (ZIG_CORE_DISCOVERY_TOOLS.has(c.name)) {
+        const result = getResult(c.name, payload);
+        if (c.name === TOOL.schema) {
+          getStringField(c.name, result, "protocolVersion", "result");
+          const actions = getArrayField(c.name, result, "actions", "result");
+          if (actions.length === 0) {
+            throw new Error(fail(c.name, "result.actions must be non-empty array"));
+          }
+        }
+        if (c.name === TOOL.version) {
+          getStringField(c.name, result, "name", "result");
+          getStringField(c.name, result, "version", "result");
+          getStringField(c.name, result, "protocol", "result");
+          const build = getObjectField(c.name, result, "build", "result");
+          getStringField(c.name, build, "zig", "result.build");
+          getStringField(c.name, build, "os", "result.build");
+          getStringField(c.name, build, "arch", "result.build");
+        }
+        if (c.name === TOOL.runtimeInfo) {
+          getBooleanField(c.name, result, "strict", "result");
+          getBooleanField(c.name, result, "allowBroadcast", "result");
+          getNumberField(c.name, result, "defaultCacheTtlSeconds", "result");
+          getNumberField(c.name, result, "defaultMaxStaleSeconds", "result");
+        }
       }
     });
   } finally {
@@ -1558,9 +1803,19 @@ async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
 async function runZigEnabledBehaviorChecks(tools: ToolMap): Promise<void> {
   const prevUse = process.env.MONAD_USE_ZIG_CORE;
   const prevRequire = process.env.MONAD_REQUIRE_ZIG_CORE;
+  const prevAllowlist = process.env.ZIG_CORE_ALLOWLIST;
   process.env.MONAD_USE_ZIG_CORE = "1";
   process.env.MONAD_REQUIRE_ZIG_CORE = "1";
   try {
+    const invalidRunModeCases = mkInvalidRunModeCases();
+    await runToolCaseList(tools, invalidRunModeCases, assertInvalidRunModeCase);
+
+    const lifiExtractBlocked = await executePayload(tools, TOOL.lifiExtractTxRequest, { quote: {} });
+    assertEnvelopeShape(TOOL.lifiExtractTxRequest, lifiExtractBlocked);
+    assertEnvelopeOrder(TOOL.lifiExtractTxRequest, lifiExtractBlocked);
+    assertStatusCode(TOOL.lifiExtractTxRequest, lifiExtractBlocked, "blocked", 12);
+    assertResultReason(TOOL.lifiExtractTxRequest, lifiExtractBlocked, "missing transactionRequest");
+
     const lifiSimBlocked = await executePayload(tools, TOOL.lifiRunWorkflow, mkLifiWorkflowSimulateParams({}));
     assertEnvelopeShape(TOOL.lifiRunWorkflow, lifiSimBlocked);
     assertEnvelopeOrder(TOOL.lifiRunWorkflow, lifiSimBlocked);
@@ -1572,7 +1827,52 @@ async function runZigEnabledBehaviorChecks(tools: ToolMap): Promise<void> {
     assertEnvelopeOrder(TOOL.runTransferWorkflow, transferExecBlocked);
     assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
     assertResultReason(TOOL.runTransferWorkflow, transferExecBlocked, "execute requires signedTxHex");
+
+    const estimateMissingFrom = await executePayload(tools, TOOL.estimateGas, { to: ADDR_A });
+    assertEnvelopeShape(TOOL.estimateGas, estimateMissingFrom);
+    assertEnvelopeOrder(TOOL.estimateGas, estimateMissingFrom);
+    assertErrorReason(TOOL.estimateGas, estimateMissingFrom, 2, "missing from");
+
+    const estimateMissingTo = await executePayload(tools, TOOL.estimateGas, { from: ADDR_A });
+    assertEnvelopeShape(TOOL.estimateGas, estimateMissingTo);
+    assertEnvelopeOrder(TOOL.estimateGas, estimateMissingTo);
+    assertErrorReason(TOOL.estimateGas, estimateMissingTo, 2, "missing to");
+
+    process.env.ZIG_CORE_ALLOWLIST = "schema";
+    const transferPolicyBlocked = await executePayload(tools, TOOL.runTransferWorkflow, {
+      runMode: "analysis",
+      fromAddress: ADDR_A,
+      toAddress: ADDR_B,
+      amountRaw: "1",
+    });
+    assertEnvelopeShape(TOOL.runTransferWorkflow, transferPolicyBlocked);
+    assertEnvelopeOrder(TOOL.runTransferWorkflow, transferPolicyBlocked);
+    assertStatusCode(TOOL.runTransferWorkflow, transferPolicyBlocked, "blocked", 13);
+    assertResultReason(TOOL.runTransferWorkflow, transferPolicyBlocked, "action blocked by policy");
+
+    const strategyTemplatesPolicyBlocked = await executePayload(tools, TOOL.strategyTemplates, {});
+    assertEnvelopeShape(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked);
+    assertEnvelopeOrder(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked);
+    assertStatusCode(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked, "blocked", 13);
+    assertResultReason(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked, "action blocked by policy");
+
+    const versionPolicyBlocked = await executePayload(tools, TOOL.version, { long: true });
+    assertEnvelopeShape(TOOL.version, versionPolicyBlocked);
+    assertEnvelopeOrder(TOOL.version, versionPolicyBlocked);
+    assertStatusCode(TOOL.version, versionPolicyBlocked, "blocked", 13);
+    assertResultReason(TOOL.version, versionPolicyBlocked, "action blocked by policy");
+
+    const runtimeInfoPolicyBlocked = await executePayload(tools, TOOL.runtimeInfo, {});
+    assertEnvelopeShape(TOOL.runtimeInfo, runtimeInfoPolicyBlocked);
+    assertEnvelopeOrder(TOOL.runtimeInfo, runtimeInfoPolicyBlocked);
+    assertStatusCode(TOOL.runtimeInfo, runtimeInfoPolicyBlocked, "blocked", 13);
+    assertResultReason(TOOL.runtimeInfo, runtimeInfoPolicyBlocked, "action blocked by policy");
   } finally {
+    if (prevAllowlist === undefined) {
+      delete process.env.ZIG_CORE_ALLOWLIST;
+    } else {
+      process.env.ZIG_CORE_ALLOWLIST = prevAllowlist;
+    }
     if (prevUse === undefined) {
       delete process.env.MONAD_USE_ZIG_CORE;
     } else {
@@ -1601,7 +1901,7 @@ async function runZigSchemaCoverageChecks(tools: ToolMap): Promise<void> {
     }
     const actionSet = new Set(actions.map((v) => String(v)));
 
-    for (const toolName of REQUIRED_ZIG_POLICY_TOOLS) {
+    for (const toolName of REQUIRED_ZIG_SCHEMA_TOOLS) {
       const action = ZIG_ACTION_BY_CORE_TOOL[toolName];
       if (!action) {
         throw new Error(fail(toolName, "missing zig action mapping"));
@@ -1629,6 +1929,8 @@ async function main(): Promise<void> {
     },
   };
   registerMonadTools(registrar);
+
+  assertZigActionMappingCoverage(tools);
 
   await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
   await runZigSchemaCoverageChecks(tools);
