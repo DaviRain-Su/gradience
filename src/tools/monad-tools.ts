@@ -877,6 +877,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       );
       if (zigRequired) return zigRequired;
 
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "lifiExtractTxRequest",
+          params: {
+            quote: (params.quote as Record<string, unknown>) || {},
+            resultsOnly: true,
+          },
+        });
+        const code = Number(zig.code || 0);
+        if (zig.status === "blocked" && code === 12) {
+          return toolEnvelope("blocked", 12, { reason: String(zig.error || "missing transactionRequest") });
+        }
+        ensureZigOk(zig, "zig core lifiExtractTxRequest failed");
+        return toolOk({ txRequest: zigPayload(zig).txRequest });
+      }
+
       const quote = params.quote as Record<string, unknown>;
       const txRequest =
         (quote?.transactionRequest as Record<string, unknown> | undefined) || null;

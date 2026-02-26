@@ -364,6 +364,35 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "lifiExtractTxRequest")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const quote_value = params.get("quote") orelse {
+            try writeMissing("quote");
+            return true;
+        };
+        if (quote_value != .object) {
+            try writeInvalid("quote");
+            return true;
+        }
+
+        const quote = quote_value.object;
+        const tx_request = quote.get("transactionRequest") orelse {
+            try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "missing transactionRequest" });
+            return true;
+        };
+        if (tx_request != .object) {
+            try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "missing transactionRequest" });
+            return true;
+        }
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .txRequest = tx_request } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .txRequest = tx_request });
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "strategyTemplates")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const templates = .{

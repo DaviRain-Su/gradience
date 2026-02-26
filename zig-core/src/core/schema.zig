@@ -33,6 +33,7 @@ pub const supported_actions = [_][]const u8{
     "planLendingAction",
     "paymentIntentCreate",
     "subscriptionIntentCreate",
+    "lifiExtractTxRequest",
     "strategyTemplates",
     "strategyCompile",
     "strategyValidate",
