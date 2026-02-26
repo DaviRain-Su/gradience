@@ -6,20 +6,20 @@ type Payload = Record<string, unknown>;
 type PayloadMap = Map<string, Payload>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
+type NamedCheck<TExtra extends object = Record<string, never>> = { name: string } & TExtra;
 type ToolMap = Map<string, ToolDefinition>;
 type ToolStage = (tools: ToolMap) => Promise<void>;
 type ContextStage<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
 type ContextBuilder<TContext> = (tools: ToolMap) => Promise<TContext>;
 type ContextRunner<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
-type ResultFieldCheck = { name: string; fields: string[] };
-type ResultObjectValueCheck = { name: string; objectField: string; key: string; expected: unknown };
-type ResultNestedObjectValueCheck = {
-  name: string;
+type ResultFieldCheck = NamedCheck<{ fields: string[] }>;
+type ResultObjectValueCheck = NamedCheck<{ objectField: string; key: string; expected: unknown }>;
+type ResultNestedObjectValueCheck = NamedCheck<{
   parentField: string;
   objectField: string;
   key: string;
   expected: unknown;
-};
+}>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: PayloadMap;
