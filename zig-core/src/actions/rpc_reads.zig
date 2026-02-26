@@ -24,6 +24,14 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try handleGetBlockNumber(allocator, params);
         return true;
     }
+    if (std.mem.eql(u8, action, "morphoVaultTotals")) {
+        try handleMorphoVaultTotals(allocator, params);
+        return true;
+    }
+    if (std.mem.eql(u8, action, "morphoVaultBalance")) {
+        try handleMorphoVaultBalance(allocator, params);
+        return true;
+    }
     if (std.mem.eql(u8, action, "estimateGas")) {
         try handleEstimateGas(allocator, params);
         return true;
@@ -269,6 +277,98 @@ fn handleGetBlockNumber(allocator: std.mem.Allocator, params: std.json.ObjectMap
     }
 }
 
+fn handleMorphoVaultTotals(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
+    const vault_address = getString(params, "vaultAddress") orelse return writeMissing("vaultAddress");
+    const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
+
+    _ = normalizeHexAddress(vault_address) catch return writeInvalid("vaultAddress");
+
+    const total_assets_hex = rpcCallNoArg(allocator, rpc_url, vault_address, "totalAssets()") catch |err| {
+        try writeRpcError(err);
+        return;
+    };
+    defer allocator.free(total_assets_hex);
+
+    const total_supply_hex = rpcCallNoArg(allocator, rpc_url, vault_address, "totalSupply()") catch |err| {
+        try writeRpcError(err);
+        return;
+    };
+    defer allocator.free(total_supply_hex);
+
+    const total_assets = hexQuantityToDecimalString(allocator, total_assets_hex) catch {
+        try core_envelope.writeJson(core_errors.usage("invalid totalAssets"));
+        return;
+    };
+    defer allocator.free(total_assets);
+
+    const total_supply = hexQuantityToDecimalString(allocator, total_supply_hex) catch {
+        try core_envelope.writeJson(core_errors.usage("invalid totalSupply"));
+        return;
+    };
+    defer allocator.free(total_supply);
+
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = "fresh",
+                .totalAssets = total_assets,
+                .totalSupply = total_supply,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = "fresh",
+            .totalAssets = total_assets,
+            .totalSupply = total_supply,
+            .rpcUrl = rpc_url,
+        });
+    }
+}
+
+fn handleMorphoVaultBalance(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
+    const vault_address = getString(params, "vaultAddress") orelse return writeMissing("vaultAddress");
+    const owner = getString(params, "owner") orelse return writeMissing("owner");
+    const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
+
+    _ = normalizeHexAddress(vault_address) catch return writeInvalid("vaultAddress");
+    const owner_hex_40 = normalizeHexAddress(owner) catch return writeInvalid("owner");
+
+    const balance_hex = rpcCallAddressArg(allocator, rpc_url, vault_address, "balanceOf(address)", owner_hex_40) catch |err| {
+        try writeRpcError(err);
+        return;
+    };
+    defer allocator.free(balance_hex);
+
+    const balance_shares = hexQuantityToDecimalString(allocator, balance_hex) catch {
+        try core_envelope.writeJson(core_errors.usage("invalid balanceOf"));
+        return;
+    };
+    defer allocator.free(balance_shares);
+
+    if (results_only) {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .results = .{
+                .source = "fresh",
+                .balanceShares = balance_shares,
+                .rpcUrl = rpc_url,
+            },
+        });
+    } else {
+        try core_envelope.writeJson(.{
+            .status = "ok",
+            .source = "fresh",
+            .balanceShares = balance_shares,
+            .rpcUrl = rpc_url,
+        });
+    }
+}
+
 fn handleEstimateGas(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
     const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
@@ -339,10 +439,53 @@ pub fn writeRpcError(err: RpcCallError) !void {
     try rpc_errors.writeRpcError(err);
 }
 
+fn rpcCallNoArg(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    to: []const u8,
+    signature: []const u8,
+) ![]u8 {
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+    const data = try std.fmt.allocPrint(allocator, "0x{s}", .{selector_hex});
+    defer allocator.free(data);
+
+    const params_json = try std.fmt.allocPrint(allocator, "[{{\"to\":\"{s}\",\"data\":\"{s}\"}},\"latest\"]", .{ to, data });
+    defer allocator.free(params_json);
+
+    return rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_call", params_json);
+}
+
+fn rpcCallAddressArg(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    to: []const u8,
+    signature: []const u8,
+    address_40: []const u8,
+) ![]u8 {
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+    const data = try std.fmt.allocPrint(allocator, "0x{s}{s}{s}", .{ selector_hex, "000000000000000000000000", address_40 });
+    defer allocator.free(data);
+
+    const params_json = try std.fmt.allocPrint(allocator, "[{{\"to\":\"{s}\",\"data\":\"{s}\"}},\"latest\"]", .{ to, data });
+    defer allocator.free(params_json);
+
+    return rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_call", params_json);
+}
+
 fn parseHexU64(hex_input: []const u8) !u64 {
     const raw = if (std.mem.startsWith(u8, hex_input, "0x") or std.mem.startsWith(u8, hex_input, "0X")) hex_input[2..] else hex_input;
     if (raw.len == 0) return 0;
     return std.fmt.parseUnsigned(u64, raw, 16);
+}
+
+fn hexQuantityToDecimalString(allocator: std.mem.Allocator, hex_value: []const u8) ![]u8 {
+    const raw = if (std.mem.startsWith(u8, hex_value, "0x") or std.mem.startsWith(u8, hex_value, "0X")) hex_value[2..] else hex_value;
+    const n = if (raw.len == 0) @as(u256, 0) else try std.fmt.parseUnsigned(u256, raw, 16);
+    return std.fmt.allocPrint(allocator, "{d}", .{n});
 }
 
 fn normalizeHexAddress(input: []const u8) ![]const u8 {

@@ -23,6 +23,8 @@ pub const supported_actions = [_][]const u8{
     "getBalance",
     "getErc20Balance",
     "getBlockNumber",
+    "morphoVaultTotals",
+    "morphoVaultBalance",
     "buildTransferNative",
     "buildTransferErc20",
     "buildErc20Approve",
