@@ -1839,34 +1839,20 @@ async function runZigEnabledBehaviorChecks(tools: ToolMap): Promise<void> {
     assertErrorReason(TOOL.estimateGas, estimateMissingTo, 2, "missing to");
 
     process.env.ZIG_CORE_ALLOWLIST = "schema";
-    const transferPolicyBlocked = await executePayload(tools, TOOL.runTransferWorkflow, {
-      runMode: "analysis",
-      fromAddress: ADDR_A,
-      toAddress: ADDR_B,
-      amountRaw: "1",
+    const schemaAllowed = await executePayload(tools, TOOL.schema, {});
+    assertEnvelopeShape(TOOL.schema, schemaAllowed);
+    assertEnvelopeOrder(TOOL.schema, schemaAllowed);
+    assertOkEnvelope(TOOL.schema, schemaAllowed);
+
+    const allowlisted = new Set<string>([TOOL.schema]);
+    const policyCases = mkZigRequiredPolicyCases().filter((c) => !allowlisted.has(c.name));
+    await runToolCaseList(tools, policyCases, async (enabledTools, c) => {
+      const blocked = await executePayload(enabledTools, c.name, c.params);
+      assertEnvelopeShape(c.name, blocked);
+      assertEnvelopeOrder(c.name, blocked);
+      assertStatusCode(c.name, blocked, "blocked", 13);
+      assertResultReason(c.name, blocked, "action blocked by policy");
     });
-    assertEnvelopeShape(TOOL.runTransferWorkflow, transferPolicyBlocked);
-    assertEnvelopeOrder(TOOL.runTransferWorkflow, transferPolicyBlocked);
-    assertStatusCode(TOOL.runTransferWorkflow, transferPolicyBlocked, "blocked", 13);
-    assertResultReason(TOOL.runTransferWorkflow, transferPolicyBlocked, "action blocked by policy");
-
-    const strategyTemplatesPolicyBlocked = await executePayload(tools, TOOL.strategyTemplates, {});
-    assertEnvelopeShape(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked);
-    assertEnvelopeOrder(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked);
-    assertStatusCode(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked, "blocked", 13);
-    assertResultReason(TOOL.strategyTemplates, strategyTemplatesPolicyBlocked, "action blocked by policy");
-
-    const versionPolicyBlocked = await executePayload(tools, TOOL.version, { long: true });
-    assertEnvelopeShape(TOOL.version, versionPolicyBlocked);
-    assertEnvelopeOrder(TOOL.version, versionPolicyBlocked);
-    assertStatusCode(TOOL.version, versionPolicyBlocked, "blocked", 13);
-    assertResultReason(TOOL.version, versionPolicyBlocked, "action blocked by policy");
-
-    const runtimeInfoPolicyBlocked = await executePayload(tools, TOOL.runtimeInfo, {});
-    assertEnvelopeShape(TOOL.runtimeInfo, runtimeInfoPolicyBlocked);
-    assertEnvelopeOrder(TOOL.runtimeInfo, runtimeInfoPolicyBlocked);
-    assertStatusCode(TOOL.runtimeInfo, runtimeInfoPolicyBlocked, "blocked", 13);
-    assertResultReason(TOOL.runtimeInfo, runtimeInfoPolicyBlocked, "action blocked by policy");
   } finally {
     if (prevAllowlist === undefined) {
       delete process.env.ZIG_CORE_ALLOWLIST;
