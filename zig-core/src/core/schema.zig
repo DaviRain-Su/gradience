@@ -30,6 +30,10 @@ pub const supported_actions = [_][]const u8{
     "planLendingAction",
     "paymentIntentCreate",
     "subscriptionIntentCreate",
+    "strategyTemplates",
+    "strategyCompile",
+    "strategyValidate",
+    "strategyRun",
     "estimateGas",
     "sendSignedTransaction",
 };

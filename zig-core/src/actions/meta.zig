@@ -364,6 +364,223 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "strategyTemplates")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const templates = .{
+            .{ .id = "pay-per-call-v1", .title = "Pay Per Call", .version = "1.0" },
+            .{ .id = "subscription-v1", .title = "Subscription", .version = "1.0" },
+            .{ .id = "lend-v1", .title = "Lending", .version = "1.0" },
+            .{ .id = "swap-v1", .title = "Swap", .version = "1.0" },
+            .{ .id = "swap-deposit-v1", .title = "Swap Deposit", .version = "1.0" },
+            .{ .id = "lifi-swap-v1", .title = "LI.FI Swap", .version = "1.0" },
+            .{ .id = "withdraw-swap-v1", .title = "Withdraw Swap", .version = "1.0" },
+        };
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .templates = templates } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .templates = templates });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "strategyCompile")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const template = getString(params, "template") orelse "pay-per-call-v1";
+        const intent_text = getString(params, "intentText") orelse "";
+        const owner = getString(params, "owner");
+        const now_ms = std.time.milliTimestamp();
+
+        var id_buf: [48]u8 = undefined;
+        const strategy_id = try std.fmt.bufPrint(&id_buf, "strat_{d}", .{now_ms});
+        const goal = if (intent_text.len > 0) intent_text else "compiled from zig";
+
+        const strategy = .{
+            .id = strategy_id,
+            .name = "Compiled Strategy",
+            .version = "1.0",
+            .owner = owner,
+            .goal = goal,
+            .constraints = .{
+                .allow = .{ .chains = .{"monad"} },
+                .risk = .{ .maxPerRunUsd = @as(u64, 100), .cooldownSeconds = @as(u64, 300) },
+            },
+            .triggers = .{.{ .type = "manual" }},
+            .plan = .{
+                .steps = .{.{
+                    .id = "payment",
+                    .action = "payment",
+                    .tool = "monad_paymentIntent_create",
+                    .params = .{},
+                }},
+            },
+            .metadata = .{
+                .template = template,
+                .params = .{},
+            },
+        };
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .strategy = strategy } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .strategy = strategy });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "strategyValidate")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const strategy_value = params.get("strategy") orelse {
+            try writeMissing("strategy");
+            return true;
+        };
+        if (strategy_value != .object) {
+            try writeInvalid("strategy");
+            return true;
+        }
+        const strategy = strategy_value.object;
+
+        var errors = std.ArrayList([]const u8).empty;
+        defer errors.deinit(allocator);
+
+        const id = getString(strategy, "id");
+        if (id == null or id.?.len == 0) try errors.append(allocator, "missing id");
+
+        const plan_value = strategy.get("plan");
+        var has_steps = false;
+        if (plan_value) |p| {
+            if (p == .object) {
+                if (p.object.get("steps")) |steps| {
+                    if (steps == .array and steps.array.items.len > 0) {
+                        has_steps = true;
+                    }
+                }
+            }
+        }
+        if (!has_steps) try errors.append(allocator, "plan.steps required");
+
+        const metadata_value = strategy.get("metadata");
+        var template: ?[]const u8 = null;
+        if (metadata_value) |m| {
+            if (m == .object) {
+                template = getString(m.object, "template");
+            }
+        }
+        if (template == null or template.?.len == 0) {
+            try errors.append(allocator, "metadata.template required");
+        } else if (!isKnownTemplate(template.?)) {
+            const msg = try std.fmt.allocPrint(allocator, "unknown template {s}", .{template.?});
+            defer allocator.free(msg);
+            try errors.append(allocator, msg);
+        }
+
+        var max_per_run_ok = false;
+        var cooldown_ok = false;
+        if (strategy.get("constraints")) |constraints| {
+            if (constraints == .object) {
+                if (constraints.object.get("risk")) |risk| {
+                    if (risk == .object) {
+                        if (risk.object.get("maxPerRunUsd")) |max_per_run| {
+                            max_per_run_ok = switch (max_per_run) {
+                                .integer => |v| v > 0,
+                                .float => |v| v > 0,
+                                else => false,
+                            };
+                        }
+                        if (risk.object.get("cooldownSeconds")) |cooldown| {
+                            cooldown_ok = switch (cooldown) {
+                                .integer => |v| v > 0,
+                                .float => |v| v > 0,
+                                else => false,
+                            };
+                        }
+                    }
+                }
+            }
+        }
+        if (!max_per_run_ok) try errors.append(allocator, "constraints.risk.maxPerRunUsd required");
+        if (!cooldown_ok) try errors.append(allocator, "constraints.risk.cooldownSeconds required");
+
+        const ok = errors.items.len == 0;
+        const validation = .{ .ok = ok, .errors = errors.items };
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .validation = validation } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .validation = validation });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "strategyRun")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const mode = getString(params, "mode") orelse {
+            try writeMissing("mode");
+            return true;
+        };
+        if (!(std.mem.eql(u8, mode, "plan") or std.mem.eql(u8, mode, "simulate") or std.mem.eql(u8, mode, "execute"))) {
+            try writeInvalid("mode");
+            return true;
+        }
+
+        const now_ms = std.time.milliTimestamp();
+        var run_id_buf: [48]u8 = undefined;
+        var generated_buf: [48]u8 = undefined;
+        const run_id = try std.fmt.bufPrint(&run_id_buf, "run_{d}", .{now_ms});
+        const generated_at = try std.fmt.bufPrint(&generated_buf, "{d}", .{now_ms});
+
+        const status: []const u8 = if (std.mem.eql(u8, mode, "simulate")) "simulated" else "planned";
+        const is_execute = std.mem.eql(u8, mode, "execute");
+
+        if (is_execute) {
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .result = .{
+                            .status = status,
+                            .runId = run_id,
+                            .executeIntent = .{},
+                            .evidence = .{ .generatedAt = generated_at, .steps = .{}, .mode = mode },
+                        },
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .result = .{
+                        .status = status,
+                        .runId = run_id,
+                        .executeIntent = .{},
+                        .evidence = .{ .generatedAt = generated_at, .steps = .{}, .mode = mode },
+                    },
+                });
+            }
+        } else {
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .result = .{
+                            .status = status,
+                            .runId = run_id,
+                            .evidence = .{ .generatedAt = generated_at, .steps = .{}, .mode = mode },
+                        },
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .result = .{
+                        .status = status,
+                        .runId = run_id,
+                        .evidence = .{ .generatedAt = generated_at, .steps = .{}, .mode = mode },
+                    },
+                });
+            }
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "cachePolicy")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const method = getString(params, "method") orelse {
@@ -1937,6 +2154,22 @@ fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
         .string => |s| std.fmt.parseFloat(f64, s) catch null,
         else => null,
     };
+}
+
+fn isKnownTemplate(template: []const u8) bool {
+    const known = [_][]const u8{
+        "pay-per-call-v1",
+        "subscription-v1",
+        "lend-v1",
+        "swap-v1",
+        "swap-deposit-v1",
+        "lifi-swap-v1",
+        "withdraw-swap-v1",
+    };
+    for (known) |entry| {
+        if (std.mem.eql(u8, template, entry)) return true;
+    }
+    return false;
 }
 
 fn stringArrayToJson(allocator: std.mem.Allocator, values: []const []const u8) !std.json.Value {
