@@ -11,6 +11,15 @@ type ToolStage = (tools: ToolMap) => Promise<void>;
 type ContextStage<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
 type ContextBuilder<TContext> = (tools: ToolMap) => Promise<TContext>;
 type ContextRunner<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
+type ResultFieldCheck = { name: string; fields: string[] };
+type ResultObjectValueCheck = { name: string; objectField: string; key: string; expected: unknown };
+type ResultNestedObjectValueCheck = {
+  name: string;
+  parentField: string;
+  objectField: string;
+  key: string;
+  expected: unknown;
+};
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: PayloadMap;
@@ -223,7 +232,7 @@ function mkPureTsChecks(): Array<[string, Params]> {
   ];
 }
 
-function pureTsObjectFieldChecks(): Array<{ name: string; fields: string[] }> {
+function pureTsObjectFieldChecks(): ResultFieldCheck[] {
   return [
     { name: TOOL.buildTransferNative, fields: ["txRequest"] },
     { name: TOOL.buildTransferErc20, fields: ["txRequest"] },
@@ -238,12 +247,7 @@ function pureTsObjectFieldChecks(): Array<{ name: string; fields: string[] }> {
   ];
 }
 
-function pureTsSemanticObjectChecks(): Array<{
-  name: string;
-  objectField: string;
-  key: string;
-  expected: unknown;
-}> {
+function pureTsSemanticObjectChecks(): ResultObjectValueCheck[] {
   return [
     { name: TOOL.planLendingAction, objectField: "plan", key: "action", expected: "supply" },
     {
@@ -261,17 +265,11 @@ function pureTsSemanticObjectChecks(): Array<{
   ];
 }
 
-function pureTsStringFieldChecks(): Array<{ name: string; fields: string[] }> {
+function pureTsStringFieldChecks(): ResultFieldCheck[] {
   return [{ name: TOOL.buildDexSwap, fields: ["notes"] }];
 }
 
-function pureTsNestedSemanticChecks(): Array<{
-  name: string;
-  parentField: string;
-  objectField: string;
-  key: string;
-  expected: unknown;
-}> {
+function pureTsNestedSemanticChecks(): ResultNestedObjectValueCheck[] {
   return [
     {
       name: TOOL.strategyCompile,
@@ -494,7 +492,7 @@ function assertResultFieldType(
 
 function assertResultFieldChecks(
   payloads: PayloadMap,
-  checks: Array<{ name: string; fields: string[] }>,
+  checks: ResultFieldCheck[],
   expectation: ResultFieldExpectation,
 ): void {
   for (const check of checks) {
@@ -507,14 +505,14 @@ function assertResultFieldChecks(
 
 function assertResultObjectFields(
   payloads: PayloadMap,
-  checks: Array<{ name: string; fields: string[] }>,
+  checks: ResultFieldCheck[],
 ): void {
   assertResultFieldChecks(payloads, checks, "object");
 }
 
 function assertResultObjectValueChecks(
   payloads: PayloadMap,
-  checks: Array<{ name: string; objectField: string; key: string; expected: unknown }>,
+  checks: ResultObjectValueCheck[],
 ): void {
   for (const check of checks) {
     assertResultObjectFieldValue(
@@ -529,13 +527,7 @@ function assertResultObjectValueChecks(
 
 function assertResultNestedObjectValueChecks(
   payloads: PayloadMap,
-  checks: Array<{
-    name: string;
-    parentField: string;
-    objectField: string;
-    key: string;
-    expected: unknown;
-  }>,
+  checks: ResultNestedObjectValueCheck[],
 ): void {
   for (const check of checks) {
     assertResultNestedObjectFieldValue(
@@ -551,7 +543,7 @@ function assertResultNestedObjectValueChecks(
 
 function assertResultStringFields(
   payloads: PayloadMap,
-  checks: Array<{ name: string; fields: string[] }>,
+  checks: ResultFieldCheck[],
 ): void {
   assertResultFieldChecks(payloads, checks, "string");
 }
