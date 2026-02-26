@@ -727,6 +727,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       ],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "lifiGetQuote requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const quote = await fetchLifiQuote({
         fromChain: Number(params.fromChain),
         toChain: Number(params.toChain),
@@ -768,6 +773,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       ],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "lifiGetRoutes requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const routes = await fetchLifiRoutes({
         fromChain: Number(params.fromChain),
         toChain: Number(params.toChain),
@@ -795,6 +805,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["quote"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "lifiExtractTxRequest requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const quote = params.quote as Record<string, unknown>;
       const txRequest =
         (quote?.transactionRequest as Record<string, unknown> | undefined) || null;
