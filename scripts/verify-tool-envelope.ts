@@ -1,42 +1,12 @@
 import { registerMonadTools } from "../src/tools/monad-tools.js";
 import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
+import { TOOL_PARAMETERS_BY_NAME, TOOL_SPECS } from "../src/tools/monad-tool-manifest.js";
 
 type Params = Record<string, unknown>;
 type Payload = Record<string, unknown>;
 type PayloadMap = Map<string, Payload>;
-type ResultFieldExpectation = "null" | "object" | "string";
-type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
 type NamedCheck<TExtra extends object = Record<string, never>> = { name: string } & TExtra;
 type ToolMap = Map<string, ToolDefinition>;
-type ToolStage = (tools: ToolMap) => Promise<void>;
-type ContextStage<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
-type ContextBuilder<TContext> = (tools: ToolMap) => Promise<TContext>;
-type ContextRunner<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
-type ResultFieldCheck = NamedCheck<{ fields: string[] }>;
-type ResultObjectValueCheck = NamedCheck<{ objectField: string; key: string; expected: unknown }>;
-type ResultNestedObjectValueCheck = NamedCheck<{
-  parentField: string;
-  objectField: string;
-  key: string;
-  expected: unknown;
-}>;
-type PureTsContext = {
-  checks: Array<[string, Params]>;
-  payloads: PayloadMap;
-};
-type PureTsStage = ContextStage<PureTsContext>;
-type ZigRequiredContext = {
-  preloadedCases: ZigDisabledCase[];
-  executedCases: ZigDisabledCase[];
-  preloadedPayloads: PayloadMap;
-};
-type ZigRequiredStage = ContextStage<ZigRequiredContext>;
-type ZigDisabledCase = NamedCheck<{ params: Params; reason: string }>;
-type BlockedCase = NamedCheck<{ params: Params; code: number; reason: string; mode?: string }>;
-type LifiAnalysisCase = {
-  quote: Params;
-  expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation };
-};
 type InvalidRunModeCase = NamedCheck<{ params: Params; runMode: string }>;
 type ZigRequiredPolicyCase = NamedCheck<{ params: Params; reason: string }>;
 type ZigEnabledCoreCase = NamedCheck<{ params: Params }>;
@@ -45,41 +15,51 @@ const ADDR_A = "0x1111111111111111111111111111111111111111";
 const ADDR_B = "0x2222222222222222222222222222222222222222";
 const ADDR_C = "0x3333333333333333333333333333333333333333";
 
+const TOOL_BY_ACTION = Object.fromEntries(TOOL_SPECS.map((spec) => [spec.action, spec.name])) as Record<string, string>;
+
+function tool(action: string): string {
+  const name = TOOL_BY_ACTION[action];
+  if (!name) {
+    throw new Error(`missing tool for action: ${action}`);
+  }
+  return name;
+}
+
 const TOOL = {
-  getBalance: "monad_getBalance",
-  getErc20Balance: "monad_getErc20Balance",
-  getBlockNumber: "monad_getBlockNumber",
-  estimateGas: "monad_estimateGas",
-  buildTransferNative: "monad_buildTransferNative",
-  buildTransferErc20: "monad_buildTransferErc20",
-  buildErc20Approve: "monad_buildErc20Approve",
-  buildDexSwap: "monad_buildDexSwap",
-  planLendingAction: "monad_planLendingAction",
-  paymentIntentCreate: "monad_paymentIntent_create",
-  subscriptionIntentCreate: "monad_subscriptionIntent_create",
-  strategyTemplates: "monad_strategy_templates",
-  strategyCompile: "monad_strategy_compile",
-  strategyValidate: "monad_strategy_validate",
-  strategyRun: "monad_strategy_run",
-  lifiExtractTxRequest: "monad_lifi_extractTxRequest",
-  lifiGetQuote: "monad_lifi_getQuote",
-  lifiGetRoutes: "monad_lifi_getRoutes",
-  schema: "monad_schema",
-  version: "monad_version",
-  runtimeInfo: "monad_runtimeInfo",
-  lifiRunWorkflow: "monad_lifi_runWorkflow",
-  runTransferWorkflow: "monad_runTransferWorkflow",
-  sendSignedTransaction: "monad_sendSignedTransaction",
-  morphoVaultMeta: "monad_morpho_vault_meta",
-  morphoVaultTotals: "monad_morpho_vault_totals",
-  morphoVaultBalance: "monad_morpho_vault_balance",
-  morphoVaultPreviewDeposit: "monad_morpho_vault_previewDeposit",
-  morphoVaultPreviewWithdraw: "monad_morpho_vault_previewWithdraw",
-  morphoVaultPreviewRedeem: "monad_morpho_vault_previewRedeem",
-  morphoVaultConvert: "monad_morpho_vault_convert",
-  morphoVaultBuildDeposit: "monad_morpho_vault_buildDeposit",
-  morphoVaultBuildWithdraw: "monad_morpho_vault_buildWithdraw",
-  morphoVaultBuildRedeem: "monad_morpho_vault_buildRedeem",
+  getBalance: tool("getBalance"),
+  getErc20Balance: tool("getErc20Balance"),
+  getBlockNumber: tool("getBlockNumber"),
+  estimateGas: tool("estimateGas"),
+  buildTransferNative: tool("buildTransferNative"),
+  buildTransferErc20: tool("buildTransferErc20"),
+  buildErc20Approve: tool("buildErc20Approve"),
+  buildDexSwap: tool("buildDexSwap"),
+  planLendingAction: tool("planLendingAction"),
+  paymentIntentCreate: tool("paymentIntentCreate"),
+  subscriptionIntentCreate: tool("subscriptionIntentCreate"),
+  strategyTemplates: tool("strategyTemplates"),
+  strategyCompile: tool("strategyCompile"),
+  strategyValidate: tool("strategyValidate"),
+  strategyRun: tool("strategyRun"),
+  lifiExtractTxRequest: tool("lifiExtractTxRequest"),
+  lifiGetQuote: tool("lifiGetQuote"),
+  lifiGetRoutes: tool("lifiGetRoutes"),
+  schema: tool("schema"),
+  version: tool("version"),
+  runtimeInfo: tool("runtimeInfo"),
+  lifiRunWorkflow: tool("lifiRunWorkflow"),
+  runTransferWorkflow: tool("runTransferWorkflow"),
+  sendSignedTransaction: tool("sendSignedTransaction"),
+  morphoVaultMeta: tool("morphoVaultMeta"),
+  morphoVaultTotals: tool("morphoVaultTotals"),
+  morphoVaultBalance: tool("morphoVaultBalance"),
+  morphoVaultPreviewDeposit: tool("morphoVaultPreviewDeposit"),
+  morphoVaultPreviewWithdraw: tool("morphoVaultPreviewWithdraw"),
+  morphoVaultPreviewRedeem: tool("morphoVaultPreviewRedeem"),
+  morphoVaultConvert: tool("morphoVaultConvert"),
+  morphoVaultBuildDeposit: tool("buildMorphoVaultDeposit"),
+  morphoVaultBuildWithdraw: tool("buildMorphoVaultWithdraw"),
+  morphoVaultBuildRedeem: tool("buildMorphoVaultRedeem"),
 } as const;
 
 const VALID_STRATEGY = {
@@ -133,23 +113,6 @@ function mkLifiWorkflowSimulateParams(quote: Params): Params {
   };
 }
 
-function mkLifiWorkflowAnalysisParams(quote: Params): Params {
-  return {
-    runMode: "analysis",
-    ...mkLifiBaseParams(),
-    quote,
-  };
-}
-
-function mkLifiWorkflowExecuteParams(quote: Params, extra: Params = {}): Params {
-  return {
-    runMode: "execute",
-    ...mkLifiBaseParams(),
-    quote,
-    ...extra,
-  };
-}
-
 function mkTransferBaseParams(extra: Params = {}): Params {
   return {
     fromAddress: ADDR_A,
@@ -176,207 +139,6 @@ function mkLifiExtractTxRequestParams(): Params {
       },
     },
   };
-}
-
-function mkLifiQuoteWithTxRequest(extra: Params = {}): Params {
-  return {
-    transactionRequest: {
-      to: ADDR_A,
-      data: "0x",
-      value: "0x0",
-    },
-    ...extra,
-  };
-}
-
-function mkPureTsChecks(): Array<[string, Params]> {
-  return [
-    [TOOL.buildTransferNative, { toAddress: ADDR_A, amountWei: "1" }],
-    [
-      TOOL.buildTransferErc20,
-      {
-        tokenAddress: ADDR_A,
-        toAddress: ADDR_B,
-        amountRaw: "1",
-      },
-    ],
-    [
-      TOOL.buildErc20Approve,
-      {
-        tokenAddress: ADDR_A,
-        spender: ADDR_B,
-        amountRaw: "1",
-      },
-    ],
-    [
-      TOOL.buildDexSwap,
-      {
-        router: ADDR_A,
-        amountIn: "1",
-        amountOutMin: "1",
-        path: [ADDR_A, ADDR_B],
-        to: ADDR_C,
-        deadline: "9999999999",
-      },
-    ],
-    [
-      TOOL.planLendingAction,
-      { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
-    ],
-    [TOOL.paymentIntentCreate, { token: "USDC", amountRaw: "1", payee: "0xabc" }],
-    [
-      TOOL.subscriptionIntentCreate,
-      { token: "USDC", amountRaw: "1", payee: "0xabc", cadenceSeconds: 60 },
-    ],
-    [TOOL.strategyTemplates, {}],
-    [
-      TOOL.strategyCompile,
-      {
-        template: "pay-per-call-v1",
-        params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
-      },
-    ],
-    [
-      TOOL.strategyValidate,
-      mkStrategyValidateParams("pay-per-call-v1"),
-    ],
-    [
-      TOOL.strategyRun,
-      {
-        strategy: RUN_STRATEGY,
-        mode: "plan",
-      },
-    ],
-    [TOOL.lifiExtractTxRequest, mkLifiExtractTxRequestParams()],
-  ];
-}
-
-function pureTsObjectFieldChecks(): ResultFieldCheck[] {
-  return [
-    { name: TOOL.buildTransferNative, fields: ["txRequest"] },
-    { name: TOOL.buildTransferErc20, fields: ["txRequest"] },
-    { name: TOOL.buildErc20Approve, fields: ["txRequest"] },
-    { name: TOOL.buildDexSwap, fields: ["txRequest"] },
-    { name: TOOL.planLendingAction, fields: ["plan"] },
-    { name: TOOL.paymentIntentCreate, fields: ["paymentIntent"] },
-    { name: TOOL.subscriptionIntentCreate, fields: ["subscriptionIntent"] },
-    { name: TOOL.strategyCompile, fields: ["strategy"] },
-    { name: TOOL.strategyRun, fields: ["result"] },
-    { name: TOOL.lifiExtractTxRequest, fields: ["txRequest"] },
-  ];
-}
-
-function pureTsSemanticObjectChecks(): ResultObjectValueCheck[] {
-  return [
-    { name: TOOL.planLendingAction, objectField: "plan", key: "action", expected: "supply" },
-    {
-      name: TOOL.paymentIntentCreate,
-      objectField: "paymentIntent",
-      key: "type",
-      expected: "pay_per_call",
-    },
-    {
-      name: TOOL.subscriptionIntentCreate,
-      objectField: "subscriptionIntent",
-      key: "type",
-      expected: "subscription",
-    },
-  ];
-}
-
-function pureTsStringFieldChecks(): ResultFieldCheck[] {
-  return [{ name: TOOL.buildDexSwap, fields: ["notes"] }];
-}
-
-function pureTsNestedSemanticChecks(): ResultNestedObjectValueCheck[] {
-  return [
-    {
-      name: TOOL.strategyCompile,
-      parentField: "strategy",
-      objectField: "metadata",
-      key: "template",
-      expected: "pay-per-call-v1",
-    },
-  ];
-}
-
-function pureTsNonOkAllowed(): Set<string> {
-  return new Set<string>([TOOL.strategyValidate]);
-}
-
-function mkZigDisabledCases(): ZigDisabledCase[] {
-  return [
-    { name: TOOL.schema, params: {}, reason: "schema discovery requires zig core" },
-    { name: TOOL.version, params: {}, reason: "version discovery requires zig core" },
-    { name: TOOL.runtimeInfo, params: {}, reason: "runtime info requires zig core" },
-    { name: TOOL.version, params: { long: true }, reason: "version discovery requires zig core" },
-  ];
-}
-
-function mkZigRequiredEnvelopeChecks(cases: ZigDisabledCase[]): Array<[string, Params]> {
-  return cases.filter((c) => isEmptyParams(c.params)).map((c) => [c.name, c.params]);
-}
-
-function isEmptyParams(params: Params): boolean {
-  return Object.keys(params).length === 0;
-}
-
-function partitionByEmptyParams<T extends { params: Params }>(cases: T[]): {
-  empty: T[];
-  nonEmpty: T[];
-} {
-  const empty: T[] = [];
-  const nonEmpty: T[] = [];
-  for (const c of cases) {
-    if (isEmptyParams(c.params)) {
-      empty.push(c);
-    } else {
-      nonEmpty.push(c);
-    }
-  }
-  return { empty, nonEmpty };
-}
-
-function mkBehaviorBlockedCases(): BlockedCase[] {
-  return [
-    {
-      name: TOOL.lifiExtractTxRequest,
-      params: { quote: {} },
-      code: 12,
-      reason: "missing transactionRequest",
-    },
-    {
-      name: TOOL.lifiRunWorkflow,
-      params: mkLifiWorkflowSimulateParams({}),
-      code: 12,
-      mode: "simulate",
-      reason: "missing txRequest",
-    },
-    {
-      name: TOOL.lifiRunWorkflow,
-      params: mkLifiWorkflowExecuteParams({}),
-      code: 12,
-      mode: "execute",
-      reason: "execute requires signedTxHex",
-    },
-    {
-      name: TOOL.runTransferWorkflow,
-      params: mkTransferWorkflowExecuteParams(),
-      code: 12,
-      mode: "execute",
-      reason: "execute requires signedTxHex",
-    },
-  ];
-}
-
-function mkLifiAnalysisCases(): LifiAnalysisCase[] {
-  return [
-    { quote: {}, expectation: { txRequest: "null", routeId: "null", tool: "null" } },
-    {
-      quote: mkLifiQuoteWithTxRequest({ id: "route-1", tool: "lifi" }),
-      expectation: { txRequest: "object", routeId: "string", tool: "string" },
-    },
-  ];
 }
 
 function mkInvalidRunModeCases(): InvalidRunModeCase[] {
@@ -699,83 +461,15 @@ function mkZigEnabledCoreCases(): ZigEnabledCoreCase[] {
   ];
 }
 
-const REQUIRED_ZIG_POLICY_TOOLS = [
-  TOOL.schema,
-  TOOL.version,
-  TOOL.runtimeInfo,
-  TOOL.getBalance,
-  TOOL.getErc20Balance,
-  TOOL.getBlockNumber,
-  TOOL.estimateGas,
-  TOOL.buildTransferNative,
-  TOOL.buildTransferErc20,
-  TOOL.buildErc20Approve,
-  TOOL.buildDexSwap,
-  TOOL.planLendingAction,
-  TOOL.paymentIntentCreate,
-  TOOL.subscriptionIntentCreate,
-  TOOL.lifiGetQuote,
-  TOOL.lifiGetRoutes,
-  TOOL.lifiExtractTxRequest,
-  TOOL.lifiRunWorkflow,
-  TOOL.morphoVaultMeta,
-  TOOL.morphoVaultTotals,
-  TOOL.morphoVaultBalance,
-  TOOL.morphoVaultPreviewDeposit,
-  TOOL.morphoVaultPreviewWithdraw,
-  TOOL.morphoVaultPreviewRedeem,
-  TOOL.morphoVaultConvert,
-  TOOL.morphoVaultBuildDeposit,
-  TOOL.morphoVaultBuildWithdraw,
-  TOOL.morphoVaultBuildRedeem,
-  TOOL.sendSignedTransaction,
-  TOOL.runTransferWorkflow,
-  TOOL.strategyTemplates,
-  TOOL.strategyCompile,
-  TOOL.strategyValidate,
-  TOOL.strategyRun,
-] as const;
+const ZIG_ACTION_BY_CORE_TOOL = Object.fromEntries(
+  TOOL_SPECS.map((spec) => [spec.name, spec.action]),
+) as Record<string, string>;
 
-const ZIG_ACTION_BY_CORE_TOOL: Record<string, string> = {
-  [TOOL.schema]: "schema",
-  [TOOL.version]: "version",
-  [TOOL.runtimeInfo]: "runtimeInfo",
-  [TOOL.getBalance]: "getBalance",
-  [TOOL.getErc20Balance]: "getErc20Balance",
-  [TOOL.getBlockNumber]: "getBlockNumber",
-  [TOOL.estimateGas]: "estimateGas",
-  [TOOL.buildTransferNative]: "buildTransferNative",
-  [TOOL.buildTransferErc20]: "buildTransferErc20",
-  [TOOL.buildErc20Approve]: "buildErc20Approve",
-  [TOOL.buildDexSwap]: "buildDexSwap",
-  [TOOL.planLendingAction]: "planLendingAction",
-  [TOOL.paymentIntentCreate]: "paymentIntentCreate",
-  [TOOL.subscriptionIntentCreate]: "subscriptionIntentCreate",
-  [TOOL.lifiGetQuote]: "lifiGetQuote",
-  [TOOL.lifiGetRoutes]: "lifiGetRoutes",
-  [TOOL.lifiExtractTxRequest]: "lifiExtractTxRequest",
-  [TOOL.lifiRunWorkflow]: "lifiRunWorkflow",
-  [TOOL.morphoVaultMeta]: "morphoVaultMeta",
-  [TOOL.morphoVaultTotals]: "morphoVaultTotals",
-  [TOOL.morphoVaultBalance]: "morphoVaultBalance",
-  [TOOL.morphoVaultPreviewDeposit]: "morphoVaultPreviewDeposit",
-  [TOOL.morphoVaultPreviewWithdraw]: "morphoVaultPreviewWithdraw",
-  [TOOL.morphoVaultPreviewRedeem]: "morphoVaultPreviewRedeem",
-  [TOOL.morphoVaultConvert]: "morphoVaultConvert",
-  [TOOL.morphoVaultBuildDeposit]: "buildMorphoVaultDeposit",
-  [TOOL.morphoVaultBuildWithdraw]: "buildMorphoVaultWithdraw",
-  [TOOL.morphoVaultBuildRedeem]: "buildMorphoVaultRedeem",
-  [TOOL.sendSignedTransaction]: "sendSignedTransaction",
-  [TOOL.runTransferWorkflow]: "runTransferWorkflow",
-  [TOOL.strategyTemplates]: "strategyTemplates",
-  [TOOL.strategyCompile]: "strategyCompile",
-  [TOOL.strategyValidate]: "strategyValidate",
-  [TOOL.strategyRun]: "strategyRun",
-};
+const REQUIRED_ZIG_POLICY_TOOLS = TOOL_SPECS.map((spec) => spec.name);
 
-const REQUIRED_ZIG_ENABLED_TOOLS = Object.keys(ZIG_ACTION_BY_CORE_TOOL);
+const REQUIRED_ZIG_ENABLED_TOOLS = TOOL_SPECS.map((spec) => spec.name);
 
-const REQUIRED_ZIG_SCHEMA_TOOLS = Object.keys(ZIG_ACTION_BY_CORE_TOOL);
+const REQUIRED_ZIG_SCHEMA_TOOLS = TOOL_SPECS.map((spec) => spec.name);
 
 const ZIG_CORE_DISCOVERY_TOOLS = new Set<string>([
   TOOL.schema,
@@ -837,17 +531,53 @@ function assertZigEnabledCaseCoverage(cases: ZigEnabledCoreCase[]): void {
 }
 
 function assertZigActionMappingCoverage(tools: ToolMap): void {
+  const manifestToolNames = new Set<string>(TOOL_SPECS.map((spec) => spec.name));
+  const manifestActions = new Set<string>();
+  for (const spec of TOOL_SPECS) {
+    if (manifestActions.has(spec.action)) {
+      throw new Error(fail(spec.name, `duplicate zig action in manifest: ${spec.action}`));
+    }
+    manifestActions.add(spec.action);
+  }
+
+  const toolConstNames = Object.values(TOOL);
+  for (const name of toolConstNames) {
+    if (!manifestToolNames.has(name)) {
+      throw new Error(fail(name, "tool constant missing from monad tool manifest"));
+    }
+  }
+
+  for (const name of Object.keys(TOOL_PARAMETERS_BY_NAME)) {
+    if (!manifestToolNames.has(name)) {
+      throw new Error(fail(name, "tool parameter schema exists for non-manifest tool"));
+    }
+  }
+
+  for (const name of manifestToolNames) {
+    if (!TOOL_PARAMETERS_BY_NAME[name]) {
+      throw new Error(fail(name, "manifest tool missing parameter schema"));
+    }
+  }
+
   for (const name of tools.keys()) {
     if (!name.startsWith("monad_")) continue;
     if (ZIG_ACTION_MAPPING_EXEMPT_TOOLS.has(name)) continue;
+    if (!manifestToolNames.has(name)) {
+      throw new Error(fail(name, "registered monad tool missing from monad tool manifest"));
+    }
     if (!ZIG_ACTION_BY_CORE_TOOL[name]) {
       throw new Error(fail(name, "missing zig action mapping for core tool"));
     }
   }
 
-  for (const name of Object.keys(ZIG_ACTION_BY_CORE_TOOL)) {
+  for (const name of manifestToolNames) {
     if (!tools.has(name)) {
-      throw new Error(fail(name, "zig action mapping references unregistered tool"));
+      throw new Error(fail(name, "manifest tool is not registered"));
+    }
+    const registered = getTool(tools, name);
+    const expectedSchema = TOOL_PARAMETERS_BY_NAME[name];
+    if (registered.parameters !== expectedSchema) {
+      throw new Error(fail(name, "registered tool parameters must come from monad tool manifest"));
     }
   }
 }
@@ -907,20 +637,6 @@ function assertStatusCode(
   }
 }
 
-function assertStatusCodeOneOf(
-  name: string,
-  payload: Payload,
-  allowed: StatusCode[],
-  label: string,
-): void {
-  for (const entry of allowed) {
-    if (payload.status === entry.status && Number(payload.code) === entry.code) {
-      return;
-    }
-  }
-  throw new Error(fail(name, label));
-}
-
 function getResult(name: string, payload: Payload): Payload {
   const result = payload.result as Payload | null | undefined;
   if (!result || typeof result !== "object") {
@@ -964,140 +680,6 @@ function assertResultFieldType(
   }
 }
 
-function assertResultFieldChecks(
-  payloads: PayloadMap,
-  checks: ResultFieldCheck[],
-  expectation: ResultFieldExpectation,
-): void {
-  for (const check of checks) {
-    const payload = getPayload(payloads, check.name);
-    for (const field of check.fields) {
-      assertResultFieldExpectation(check.name, payload, field, expectation);
-    }
-  }
-}
-
-function assertResultObjectFields(
-  payloads: PayloadMap,
-  checks: ResultFieldCheck[],
-): void {
-  assertResultFieldChecks(payloads, checks, "object");
-}
-
-function assertResultObjectValueChecks(
-  payloads: PayloadMap,
-  checks: ResultObjectValueCheck[],
-): void {
-  for (const check of checks) {
-    assertResultObjectFieldValue(
-      check.name,
-      getPayload(payloads, check.name),
-      check.objectField,
-      check.key,
-      check.expected,
-    );
-  }
-}
-
-function assertResultNestedObjectValueChecks(
-  payloads: PayloadMap,
-  checks: ResultNestedObjectValueCheck[],
-): void {
-  for (const check of checks) {
-    assertResultNestedObjectFieldValue(
-      check.name,
-      getPayload(payloads, check.name),
-      check.parentField,
-      check.objectField,
-      check.key,
-      check.expected,
-    );
-  }
-}
-
-function assertResultStringFields(
-  payloads: PayloadMap,
-  checks: ResultFieldCheck[],
-): void {
-  assertResultFieldChecks(payloads, checks, "string");
-}
-
-function assertOkForChecks(
-  payloads: PayloadMap,
-  checks: Array<[string, Params]>,
-  nonOkAllowed: Set<string>,
-): void {
-  for (const [name] of checks) {
-    const payload = getPayload(payloads, name);
-    if (!nonOkAllowed.has(name)) {
-      assertOkEnvelope(name, payload);
-    }
-  }
-}
-
-function assertTemplatesNonEmpty(payloads: PayloadMap): void {
-  const result = getResult(TOOL.strategyTemplates, getPayload(payloads, TOOL.strategyTemplates));
-  assertObjectFieldNonEmptyArray(TOOL.strategyTemplates, result, "templates", "result");
-}
-
-function runPureTsPreloadedChecks(
-  payloads: PayloadMap,
-  checks: Array<[string, Params]>,
-): void {
-  assertOkForChecks(payloads, checks, pureTsNonOkAllowed());
-  assertResultObjectFields(payloads, pureTsObjectFieldChecks());
-  assertResultStringFields(payloads, pureTsStringFieldChecks());
-}
-
-function runPureTsSemanticChecks(payloads: PayloadMap): void {
-  assertTemplatesNonEmpty(payloads);
-  assertResultObjectValueChecks(payloads, pureTsSemanticObjectChecks());
-  assertResultNestedObjectValueChecks(payloads, pureTsNestedSemanticChecks());
-
-  assertStrategyRunPlanResult(TOOL.strategyRun, getPayload(payloads, TOOL.strategyRun));
-
-  assertResultObjectFieldValue(
-    TOOL.lifiExtractTxRequest,
-    getPayload(payloads, TOOL.lifiExtractTxRequest),
-    "txRequest",
-    "to",
-    ADDR_A,
-  );
-
-  const validatePayload = getPayload(payloads, TOOL.strategyValidate);
-  assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
-}
-
-async function buildPureTsContext(tools: ToolMap): Promise<PureTsContext> {
-  const checks = mkPureTsChecks();
-  const payloads = await runEnvelopeChecks(tools, checks);
-  return { checks, payloads };
-}
-
-async function runPureTsPreloadedStage(
-  _tools: ToolMap,
-  context: PureTsContext,
-): Promise<void> {
-  runPureTsPreloadedChecks(context.payloads, context.checks);
-}
-
-async function runPureTsSemanticStage(
-  _tools: ToolMap,
-  context: PureTsContext,
-): Promise<void> {
-  runPureTsSemanticChecks(context.payloads);
-}
-
-async function runPureTsStages(
-  tools: ToolMap,
-  context: PureTsContext,
-  stages: PureTsStage[] = PURE_TS_PIPELINE,
-): Promise<void> {
-  await runContextPipeline(stages, tools, context);
-}
-
-const PURE_TS_PIPELINE = makePipeline<PureTsStage>(runPureTsPreloadedStage, runPureTsSemanticStage);
-
 async function runToolCaseList<T>(
   tools: ToolMap,
   cases: T[],
@@ -1105,78 +687,6 @@ async function runToolCaseList<T>(
 ): Promise<void> {
   for (const c of cases) {
     await runner(tools, c);
-  }
-}
-
-async function runContextPipeline<TContext>(
-  stages: ContextStage<TContext>[],
-  tools: ToolMap,
-  context: TContext,
-): Promise<void> {
-  for (const stage of stages) {
-    await stage(tools, context);
-  }
-}
-
-async function runContextCheck<TContext>(
-  buildContext: ContextBuilder<TContext>,
-  runWithContext: ContextRunner<TContext>,
-  tools: ToolMap,
-): Promise<void> {
-  const context = await buildContext(tools);
-  await runWithContext(tools, context);
-}
-
-const buildVoidContext: ContextBuilder<void> = async () => undefined;
-
-function adaptToolPipeline(stages: ToolStage[]): ContextRunner<void> {
-  return async (tools: ToolMap, _context: void) => {
-    await runPipeline(stages, tools);
-  };
-}
-
-async function runPipeline(stages: ToolStage[], tools: ToolMap): Promise<void> {
-  for (const stage of stages) {
-    await stage(tools);
-  }
-}
-
-const MAIN_PIPELINE = makePipeline<ToolStage>(runPureTsChecks, runZigRequiredChecks, runBehaviorChecks);
-const BEHAVIOR_PIPELINE = makePipeline<ToolStage>(
-  assertInvalidStrategyCase,
-  runBlockedBehaviorCases,
-  runLifiAnalysisBehaviorCases,
-  runInvalidRunModeBehaviorCases,
-);
-const runMainPipelineWithContext = adaptToolPipeline(MAIN_PIPELINE);
-
-function makePipeline<TStage>(...stages: TStage[]): TStage[] {
-  return stages;
-}
-
-function assertResultNullFields(name: string, payload: Payload, fields: string[]): void {
-  for (const field of fields) {
-    assertResultFieldExpectation(name, payload, field, "null");
-  }
-}
-
-function assertResultFieldExpectation(
-  name: string,
-  payload: Payload,
-  field: string,
-  expectation: ResultFieldExpectation,
-): void {
-  if (expectation === "object") {
-    assertResultObjectField(name, payload, field);
-    return;
-  }
-  if (expectation === "string") {
-    assertResultStringField(name, payload, field);
-    return;
-  }
-  const result = getResult(name, payload);
-  if (result[field] !== null) {
-    throw new Error(fail(name, `result.${field} must be null`));
   }
 }
 
@@ -1310,10 +820,6 @@ function assertBlockedWithMode(
   assertMetaFieldString(name, payload, "mode", mode);
 }
 
-function assertBlockedReason(name: string, payload: Payload, reason: string): void {
-  assertResultReason(name, payload, reason);
-}
-
 function assertResultReason(name: string, payload: Payload, reason: string): void {
   assertObjectFieldStringEquals(name, getResult(name, payload), "reason", reason, "result");
 }
@@ -1357,19 +863,6 @@ function assertObjectFieldStringEquals(
   }
 }
 
-async function assertBlockedCase(
-  tools: ToolMap,
-  input: BlockedCase,
-): Promise<void> {
-  const payload = await executePayload(tools, input.name, input.params);
-  if (input.mode) {
-    assertBlockedWithMode(input.name, payload, input.code, input.mode);
-  } else {
-    assertStatusCode(input.name, payload, "blocked", input.code);
-  }
-  assertBlockedReason(input.name, payload, input.reason);
-}
-
 async function assertInvalidRunModeCase(
   tools: ToolMap,
   input: InvalidRunModeCase,
@@ -1383,148 +876,6 @@ async function assertInvalidRunModeCase(
   assertMetaFieldString(input.name, payload, "runMode", input.runMode);
 }
 
-async function assertLifiAnalysisCase(
-  tools: ToolMap,
-  input: LifiAnalysisCase,
-): Promise<void> {
-  const payload = await executePayload(tools, TOOL.lifiRunWorkflow, mkLifiWorkflowAnalysisParams(input.quote));
-  assertOkWithMode(TOOL.lifiRunWorkflow, payload, "analysis");
-  assertResultObjectField(TOOL.lifiRunWorkflow, payload, "quote");
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "txRequest", input.expectation.txRequest);
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "routeId", input.expectation.routeId);
-  assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "tool", input.expectation.tool);
-}
-
-async function assertInvalidStrategyCase(tools: ToolMap): Promise<void> {
-  const payload = await executePayload(tools, TOOL.strategyValidate, {
-    strategy: {
-      ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
-      constraints: { risk: { maxPerRunUsd: 0, cooldownSeconds: 0 } },
-    },
-  });
-  assertInvalidValidationPayload(TOOL.strategyValidate, payload);
-}
-
-async function runBlockedBehaviorCases(tools: ToolMap): Promise<void> {
-  const blockedCases = mkBehaviorBlockedCases();
-  await runToolCaseList(tools, blockedCases, assertBlockedCase);
-}
-
-async function runLifiAnalysisBehaviorCases(tools: ToolMap): Promise<void> {
-  const lifiAnalysisCases = mkLifiAnalysisCases();
-  await runToolCaseList(tools, lifiAnalysisCases, assertLifiAnalysisCase);
-}
-
-async function runInvalidRunModeBehaviorCases(tools: ToolMap): Promise<void> {
-  const invalidRunModeCases = mkInvalidRunModeCases();
-  await runToolCaseList(tools, invalidRunModeCases, assertInvalidRunModeCase);
-}
-
-function assertZigDisabledBlocked(
-  name: string,
-  payload: Payload,
-  reason: string,
-): void {
-  assertStatusCode(name, payload, "blocked", 13);
-  const meta = payload.meta as Record<string, unknown>;
-  if (meta?.source !== "ts-tool") {
-    throw new Error(fail(name, "should include meta.source=ts-tool when zig is disabled"));
-  }
-  assertBlockedReason(name, payload, reason);
-}
-
-function assertZigRequiredPolicyBlocked(name: string, payload: Payload, reason: string): void {
-  assertStatusCode(name, payload, "blocked", 13);
-  assertResultReason(name, payload, reason);
-  assertMetaFieldString(name, payload, "source", "ts-tool");
-}
-
-function assertPreloadedZigDisabledCases(
-  payloads: PayloadMap,
-  cases: ZigDisabledCase[],
-): void {
-  for (const c of cases) {
-    const payload = getPayload(payloads, c.name);
-    assertZigDisabledBlocked(c.name, payload, c.reason);
-  }
-}
-
-function runZigRequiredPreloadedCases(
-  payloads: PayloadMap,
-  cases: ZigDisabledCase[],
-): void {
-  assertPreloadedZigDisabledCases(payloads, cases);
-}
-
-async function runZigRequiredExecutedCases(
-  tools: ToolMap,
-  cases: ZigDisabledCase[],
-): Promise<void> {
-  await runToolCaseList(tools, cases, assertZigDisabledCase);
-}
-
-async function buildZigRequiredContext(tools: ToolMap): Promise<ZigRequiredContext> {
-  const zigDisabledCases = mkZigDisabledCases();
-  const partitioned = partitionByEmptyParams(zigDisabledCases);
-  const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
-  const preloadedPayloads = await runEnvelopeChecks(tools, checks);
-  return {
-    preloadedCases: partitioned.empty,
-    executedCases: partitioned.nonEmpty,
-    preloadedPayloads,
-  };
-}
-
-async function runZigRequiredPreloadedStage(
-  _tools: ToolMap,
-  context: ZigRequiredContext,
-): Promise<void> {
-  runZigRequiredPreloadedCases(context.preloadedPayloads, context.preloadedCases);
-}
-
-async function runZigRequiredExecutedStage(
-  tools: ToolMap,
-  context: ZigRequiredContext,
-): Promise<void> {
-  await runZigRequiredExecutedCases(tools, context.executedCases);
-}
-
-async function runZigRequiredStages(
-  tools: ToolMap,
-  context: ZigRequiredContext,
-  stages: ZigRequiredStage[] = ZIG_REQUIRED_PIPELINE,
-): Promise<void> {
-  await runContextPipeline(stages, tools, context);
-}
-
-const ZIG_REQUIRED_PIPELINE = makePipeline<ZigRequiredStage>(
-  runZigRequiredPreloadedStage,
-  runZigRequiredExecutedStage,
-);
-
-async function assertZigDisabledCase(
-  tools: ToolMap,
-  input: ZigDisabledCase,
-): Promise<void> {
-  const payload = await executePayload(tools, input.name, input.params);
-  assertEnvelopeShape(input.name, payload);
-  assertEnvelopeOrder(input.name, payload);
-  assertZigDisabledBlocked(input.name, payload, input.reason);
-}
-
-function assertStrategyValidateEnvelope(name: string, payload: Payload): void {
-  assertStatusCodeOneOf(
-    name,
-    payload,
-    [
-      { status: "ok", code: 0 },
-      { status: "error", code: 2 },
-    ],
-    "should return either ok/0 or error/2",
-  );
-  assertValidationShape(name, payload);
-}
-
 function assertValidStrategyValidateEnvelope(name: string, payload: Payload): void {
   assertStatusCode(name, payload, "ok", 0);
   assertValidationShape(name, payload);
@@ -1532,37 +883,6 @@ function assertValidStrategyValidateEnvelope(name: string, payload: Payload): vo
   if (getBooleanField(name, validation, "ok", "result.validation") !== true) {
     throw new Error(fail(name, "valid strategy should set validation.ok=true"));
   }
-}
-
-function assertInvalidValidationPayload(name: string, payload: Payload): void {
-  assertStatusCode(name, payload, "error", 2);
-  assertValidationShape(name, payload);
-  const invalidValidation = getValidationObject(name, payload);
-  if (getBooleanField(name, invalidValidation, "ok", "result.validation") !== false) {
-    throw new Error(fail(name, "invalid strategy should set validation.ok=false"));
-  }
-  assertObjectFieldNonEmptyArray(name, invalidValidation, "errors", "result.validation");
-}
-
-function assertObjectFieldNonEmptyArray(
-  name: string,
-  obj: Record<string, unknown> | null | undefined,
-  field: string,
-  scope: string,
-): void {
-  const value = getArrayField(name, obj, field, scope);
-  if (value.length === 0) {
-    throw new Error(fail(name, `${scope}.${field} must be non-empty array`));
-  }
-}
-
-function assertOkWithMode(
-  name: string,
-  payload: Payload,
-  mode: string,
-): void {
-  assertStatusCode(name, payload, "ok", 0);
-  assertMetaFieldString(name, payload, "mode", mode);
 }
 
 function assertZigEnabledCoreSemanticShape(name: string, payload: Payload): void {
@@ -1686,55 +1006,6 @@ function getTool(tools: ToolMap, name: string): ToolDefinition {
   const tool = tools.get(name);
   if (!tool) throw new Error(fail(name, "missing tool registration"));
   return tool;
-}
-
-async function runEnvelopeChecks(
-  tools: ToolMap,
-  checks: Array<[string, Params]>,
-): Promise<PayloadMap> {
-  const payloads: PayloadMap = new Map();
-  for (const [name, params] of checks) {
-    const payload = await executePayload(tools, name, params);
-    assertEnvelopeShape(name, payload);
-    assertEnvelopeOrder(name, payload);
-    payloads.set(name, payload);
-  }
-  return payloads;
-}
-
-async function runPureTsChecks(tools: ToolMap): Promise<void> {
-  await runContextCheck(buildPureTsContext, runPureTsStages, tools);
-}
-
-async function runZigRequiredChecks(tools: ToolMap): Promise<void> {
-  await runContextCheck(buildZigRequiredContext, runZigRequiredStages, tools);
-}
-
-const runBehaviorPipelineWithContext = adaptToolPipeline(BEHAVIOR_PIPELINE);
-
-async function runBehaviorChecks(tools: ToolMap): Promise<void> {
-  await runContextCheck(buildVoidContext, runBehaviorPipelineWithContext, tools);
-}
-
-async function runZigRequiredPolicyChecks(tools: ToolMap): Promise<void> {
-  const prev = process.env.MONAD_REQUIRE_ZIG_CORE;
-  process.env.MONAD_REQUIRE_ZIG_CORE = "1";
-  try {
-    const policyCases = mkZigRequiredPolicyCases();
-    assertZigPolicyCaseCoverage(policyCases);
-    await runToolCaseList(tools, policyCases, async (policyTools, c) => {
-      const payload = await executePayload(policyTools, c.name, c.params);
-      assertEnvelopeShape(c.name, payload);
-      assertEnvelopeOrder(c.name, payload);
-      assertZigRequiredPolicyBlocked(c.name, payload, c.reason);
-    });
-  } finally {
-    if (prev === undefined) {
-      delete process.env.MONAD_REQUIRE_ZIG_CORE;
-    } else {
-      process.env.MONAD_REQUIRE_ZIG_CORE = prev;
-    }
-  }
 }
 
 async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
@@ -1906,7 +1177,8 @@ async function runZigSchemaCoverageChecks(tools: ToolMap): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  process.env.MONAD_USE_ZIG_CORE = "0";
+  process.env.MONAD_USE_ZIG_CORE = "1";
+  process.env.MONAD_REQUIRE_ZIG_CORE = "1";
 
   const tools: ToolMap = new Map();
   const registrar: ToolRegistrar = {
@@ -1918,11 +1190,9 @@ async function main(): Promise<void> {
 
   assertZigActionMappingCoverage(tools);
 
-  await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
   await runZigSchemaCoverageChecks(tools);
   await runZigEnabledCoreChecks(tools);
   await runZigEnabledBehaviorChecks(tools);
-  await runZigRequiredPolicyChecks(tools);
 
   console.log("tool envelope checks passed");
 }

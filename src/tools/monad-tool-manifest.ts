@@ -1,0 +1,472 @@
+export type ToolSpec = {
+  name: string;
+  action: string;
+  label: string;
+  description: string;
+};
+
+const ANY_OBJECT_SCHEMA = { type: "object", additionalProperties: true };
+
+export const TOOL_PARAMETERS_BY_NAME: Record<string, Record<string, unknown>> = {
+  monad_schema: { type: "object", additionalProperties: false, properties: {} },
+  monad_version: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      long: { type: "boolean" },
+    },
+  },
+  monad_runtimeInfo: { type: "object", additionalProperties: false, properties: {} },
+  monad_getBalance: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      address: { type: "string" },
+      rpcUrl: { type: "string" },
+      blockTag: { type: "string" },
+    },
+    required: ["address"],
+  },
+  monad_getErc20Balance: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      address: { type: "string" },
+      tokenAddress: { type: "string" },
+      rpcUrl: { type: "string" },
+      blockTag: { type: "string" },
+    },
+    required: ["address", "tokenAddress"],
+  },
+  monad_getBlockNumber: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      rpcUrl: { type: "string" },
+    },
+  },
+  monad_estimateGas: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      from: { type: "string" },
+      to: { type: "string" },
+      data: { type: "string" },
+      value: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["from", "to"],
+  },
+  monad_buildTransferNative: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      toAddress: { type: "string" },
+      amountWei: { type: "string" },
+    },
+    required: ["toAddress", "amountWei"],
+  },
+  monad_buildTransferErc20: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      tokenAddress: { type: "string" },
+      toAddress: { type: "string" },
+      amountRaw: { type: "string" },
+    },
+    required: ["tokenAddress", "toAddress", "amountRaw"],
+  },
+  monad_buildErc20Approve: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      tokenAddress: { type: "string" },
+      spender: { type: "string" },
+      amountRaw: { type: "string" },
+    },
+    required: ["tokenAddress", "spender", "amountRaw"],
+  },
+  monad_buildDexSwap: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      router: { type: "string" },
+      amountIn: { type: "string" },
+      amountOutMin: { type: "string" },
+      path: { type: "array", items: { type: "string" } },
+      to: { type: "string" },
+      deadline: { type: "string" },
+    },
+    required: ["router", "amountIn", "amountOutMin", "path", "to", "deadline"],
+  },
+  monad_planLendingAction: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      protocol: { type: "string" },
+      market: { type: "string" },
+      action: { type: "string" },
+      asset: { type: "string" },
+      amountRaw: { type: "string" },
+    },
+    required: ["protocol", "market", "action", "asset", "amountRaw"],
+  },
+  monad_paymentIntent_create: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      token: { type: "string" },
+      amountRaw: { type: "string" },
+      payee: { type: "string" },
+      payer: { type: "string" },
+      expiresAt: { type: "string" },
+      memo: { type: "string" },
+    },
+    required: ["token", "amountRaw", "payee"],
+  },
+  monad_subscriptionIntent_create: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      token: { type: "string" },
+      amountRaw: { type: "string" },
+      payee: { type: "string" },
+      payer: { type: "string" },
+      cadenceSeconds: { type: "number" },
+      startsAt: { type: "string" },
+      expiresAt: { type: "string" },
+      memo: { type: "string" },
+    },
+    required: ["token", "amountRaw", "payee", "cadenceSeconds"],
+  },
+  monad_lifi_getQuote: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      fromChain: { type: "number" },
+      toChain: { type: "number" },
+      fromToken: { type: "string" },
+      toToken: { type: "string" },
+      fromAmount: { type: "string" },
+      fromAddress: { type: "string" },
+      slippage: { type: "number" },
+    },
+    required: ["fromChain", "toChain", "fromToken", "toToken", "fromAmount", "fromAddress"],
+  },
+  monad_lifi_getRoutes: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      fromChain: { type: "number" },
+      toChain: { type: "number" },
+      fromToken: { type: "string" },
+      toToken: { type: "string" },
+      fromAmount: { type: "string" },
+      fromAddress: { type: "string" },
+      slippage: { type: "number" },
+    },
+    required: ["fromChain", "toChain", "fromToken", "toToken", "fromAmount", "fromAddress"],
+  },
+  monad_lifi_extractTxRequest: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      quote: ANY_OBJECT_SCHEMA,
+    },
+    required: ["quote"],
+  },
+  monad_lifi_runWorkflow: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      runMode: { type: "string", enum: ["analysis", "simulate", "execute"] },
+      fromChain: { type: "number" },
+      toChain: { type: "number" },
+      fromToken: { type: "string" },
+      toToken: { type: "string" },
+      fromAmount: { type: "string" },
+      fromAddress: { type: "string" },
+      quote: ANY_OBJECT_SCHEMA,
+      txRequest: ANY_OBJECT_SCHEMA,
+      signedTxHex: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["runMode", "fromChain", "toChain", "fromToken", "toToken", "fromAmount", "fromAddress"],
+  },
+  monad_morpho_vault_meta: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress"],
+  },
+  monad_morpho_vault_totals: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress"],
+  },
+  monad_morpho_vault_balance: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      owner: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress", "owner"],
+  },
+  monad_morpho_vault_previewDeposit: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress", "amountRaw"],
+  },
+  monad_morpho_vault_previewWithdraw: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress", "amountRaw"],
+  },
+  monad_morpho_vault_previewRedeem: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      sharesRaw: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress", "sharesRaw"],
+  },
+  monad_morpho_vault_convert: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      mode: { type: "string", enum: ["toAssets", "toShares"] },
+      rpcUrl: { type: "string" },
+    },
+    required: ["vaultAddress", "amountRaw", "mode"],
+  },
+  monad_morpho_vault_buildDeposit: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      receiver: { type: "string" },
+    },
+    required: ["vaultAddress", "amountRaw", "receiver"],
+  },
+  monad_morpho_vault_buildWithdraw: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      receiver: { type: "string" },
+      owner: { type: "string" },
+    },
+    required: ["vaultAddress", "amountRaw", "receiver", "owner"],
+  },
+  monad_morpho_vault_buildRedeem: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      vaultAddress: { type: "string" },
+      sharesRaw: { type: "string" },
+      receiver: { type: "string" },
+      owner: { type: "string" },
+    },
+    required: ["vaultAddress", "sharesRaw", "receiver", "owner"],
+  },
+  monad_sendSignedTransaction: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      signedTxHex: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["signedTxHex"],
+  },
+  monad_runTransferWorkflow: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      runMode: { type: "string", enum: ["analysis", "simulate", "execute"] },
+      fromAddress: { type: "string" },
+      toAddress: { type: "string" },
+      amountRaw: { type: "string" },
+      tokenAddress: { type: "string" },
+      signedTxHex: { type: "string" },
+      rpcUrl: { type: "string" },
+    },
+    required: ["runMode", "fromAddress", "toAddress", "amountRaw"],
+  },
+  monad_strategy_templates: { type: "object", additionalProperties: false, properties: {} },
+  monad_strategy_compile: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      intentText: { type: "string" },
+      template: { type: "string" },
+      params: ANY_OBJECT_SCHEMA,
+      owner: { type: "string" },
+      chain: { type: "string" },
+      risk: ANY_OBJECT_SCHEMA,
+    },
+  },
+  monad_strategy_validate: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      strategy: ANY_OBJECT_SCHEMA,
+    },
+    required: ["strategy"],
+  },
+  monad_strategy_run: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      strategy: ANY_OBJECT_SCHEMA,
+      mode: { type: "string", enum: ["plan", "simulate", "execute"] },
+    },
+    required: ["strategy", "mode"],
+  },
+};
+
+export const TOOL_SPECS: ToolSpec[] = [
+  { name: "monad_schema", action: "schema", label: "Monad Schema", description: "Proxy Zig schema action." },
+  { name: "monad_version", action: "version", label: "Monad Version", description: "Proxy Zig version action." },
+  { name: "monad_runtimeInfo", action: "runtimeInfo", label: "Monad Runtime Info", description: "Proxy Zig runtimeInfo action." },
+  { name: "monad_getBalance", action: "getBalance", label: "Monad Get Balance", description: "Proxy Zig getBalance action." },
+  { name: "monad_getErc20Balance", action: "getErc20Balance", label: "Monad ERC20 Balance", description: "Proxy Zig getErc20Balance action." },
+  { name: "monad_getBlockNumber", action: "getBlockNumber", label: "Monad Block Number", description: "Proxy Zig getBlockNumber action." },
+  { name: "monad_estimateGas", action: "estimateGas", label: "Monad Estimate Gas", description: "Proxy Zig estimateGas action." },
+  { name: "monad_buildTransferNative", action: "buildTransferNative", label: "Monad Build Native Transfer", description: "Proxy Zig buildTransferNative action." },
+  { name: "monad_buildTransferErc20", action: "buildTransferErc20", label: "Monad Build ERC20 Transfer", description: "Proxy Zig buildTransferErc20 action." },
+  { name: "monad_buildErc20Approve", action: "buildErc20Approve", label: "Monad Build ERC20 Approve", description: "Proxy Zig buildErc20Approve action." },
+  { name: "monad_buildDexSwap", action: "buildDexSwap", label: "Monad Build DEX Swap", description: "Proxy Zig buildDexSwap action." },
+  { name: "monad_planLendingAction", action: "planLendingAction", label: "Monad Plan Lending", description: "Proxy Zig planLendingAction action." },
+  { name: "monad_paymentIntent_create", action: "paymentIntentCreate", label: "Monad Payment Intent", description: "Proxy Zig paymentIntentCreate action." },
+  {
+    name: "monad_subscriptionIntent_create",
+    action: "subscriptionIntentCreate",
+    label: "Monad Subscription Intent",
+    description: "Proxy Zig subscriptionIntentCreate action.",
+  },
+  { name: "monad_lifi_getQuote", action: "lifiGetQuote", label: "Monad LI.FI Quote", description: "Proxy Zig lifiGetQuote action." },
+  { name: "monad_lifi_getRoutes", action: "lifiGetRoutes", label: "Monad LI.FI Routes", description: "Proxy Zig lifiGetRoutes action." },
+  {
+    name: "monad_lifi_extractTxRequest",
+    action: "lifiExtractTxRequest",
+    label: "Monad LI.FI Extract Tx",
+    description: "Proxy Zig lifiExtractTxRequest action.",
+  },
+  { name: "monad_lifi_runWorkflow", action: "lifiRunWorkflow", label: "Monad LI.FI Workflow", description: "Proxy Zig lifiRunWorkflow action." },
+  { name: "monad_morpho_vault_meta", action: "morphoVaultMeta", label: "Monad Morpho Vault Meta", description: "Proxy Zig morphoVaultMeta action." },
+  {
+    name: "monad_morpho_vault_totals",
+    action: "morphoVaultTotals",
+    label: "Monad Morpho Vault Totals",
+    description: "Proxy Zig morphoVaultTotals action.",
+  },
+  {
+    name: "monad_morpho_vault_balance",
+    action: "morphoVaultBalance",
+    label: "Monad Morpho Vault Balance",
+    description: "Proxy Zig morphoVaultBalance action.",
+  },
+  {
+    name: "monad_morpho_vault_previewDeposit",
+    action: "morphoVaultPreviewDeposit",
+    label: "Monad Morpho Preview Deposit",
+    description: "Proxy Zig morphoVaultPreviewDeposit action.",
+  },
+  {
+    name: "monad_morpho_vault_previewWithdraw",
+    action: "morphoVaultPreviewWithdraw",
+    label: "Monad Morpho Preview Withdraw",
+    description: "Proxy Zig morphoVaultPreviewWithdraw action.",
+  },
+  {
+    name: "monad_morpho_vault_previewRedeem",
+    action: "morphoVaultPreviewRedeem",
+    label: "Monad Morpho Preview Redeem",
+    description: "Proxy Zig morphoVaultPreviewRedeem action.",
+  },
+  {
+    name: "monad_morpho_vault_convert",
+    action: "morphoVaultConvert",
+    label: "Monad Morpho Convert",
+    description: "Proxy Zig morphoVaultConvert action.",
+  },
+  {
+    name: "monad_morpho_vault_buildDeposit",
+    action: "buildMorphoVaultDeposit",
+    label: "Monad Morpho Build Deposit",
+    description: "Proxy Zig buildMorphoVaultDeposit action.",
+  },
+  {
+    name: "monad_morpho_vault_buildWithdraw",
+    action: "buildMorphoVaultWithdraw",
+    label: "Monad Morpho Build Withdraw",
+    description: "Proxy Zig buildMorphoVaultWithdraw action.",
+  },
+  {
+    name: "monad_morpho_vault_buildRedeem",
+    action: "buildMorphoVaultRedeem",
+    label: "Monad Morpho Build Redeem",
+    description: "Proxy Zig buildMorphoVaultRedeem action.",
+  },
+  {
+    name: "monad_sendSignedTransaction",
+    action: "sendSignedTransaction",
+    label: "Monad Send Signed Transaction",
+    description: "Proxy Zig sendSignedTransaction action.",
+  },
+  {
+    name: "monad_runTransferWorkflow",
+    action: "runTransferWorkflow",
+    label: "Monad Transfer Workflow",
+    description: "Proxy Zig runTransferWorkflow action.",
+  },
+  {
+    name: "monad_strategy_templates",
+    action: "strategyTemplates",
+    label: "Monad Strategy Templates",
+    description: "Proxy Zig strategyTemplates action.",
+  },
+  {
+    name: "monad_strategy_compile",
+    action: "strategyCompile",
+    label: "Monad Strategy Compile",
+    description: "Proxy Zig strategyCompile action.",
+  },
+  {
+    name: "monad_strategy_validate",
+    action: "strategyValidate",
+    label: "Monad Strategy Validate",
+    description: "Proxy Zig strategyValidate action.",
+  },
+  {
+    name: "monad_strategy_run",
+    action: "strategyRun",
+    label: "Monad Strategy Run",
+    description: "Proxy Zig strategyRun action.",
+  },
+];
