@@ -70,6 +70,15 @@ function getProvider(rpcUrl: string): JsonRpcProvider {
   return new JsonRpcProvider(rpcUrl);
 }
 
+function isZigCoreRequired(): boolean {
+  return process.env.MONAD_REQUIRE_ZIG_CORE === "1";
+}
+
+function zigRequiredBlocked(reason: string, meta: Record<string, unknown> = {}) {
+  if (isZigCoreEnabled() || !isZigCoreRequired()) return null;
+  return toolEnvelope("blocked", 13, { reason }, { source: "ts-tool", ...meta });
+}
+
 function asString(params: Params, key: string, fallback = ""): string {
   const value = params[key];
   if (value === undefined || value === null) return fallback;
@@ -146,6 +155,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const address = asString(params, "address");
       const blockTag = asString(params, "blockTag", "latest");
 
+      const zigRequired = zigRequiredBlocked(
+        "getBalance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "getBalance",
@@ -200,6 +215,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const address = asString(params, "address");
       const blockTag = asString(params, "blockTag", "latest");
 
+      const zigRequired = zigRequiredBlocked(
+        "getErc20Balance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "getErc20Balance",
@@ -246,6 +267,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+
+      const zigRequired = zigRequiredBlocked(
+        "getBlockNumber requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
 
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
@@ -371,6 +398,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["toAddress"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "buildTransferNative requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "buildTransferNative",
@@ -415,6 +447,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["tokenAddress", "toAddress", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "buildTransferErc20 requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "buildTransferErc20",
@@ -466,6 +503,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["tokenAddress", "spender", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "buildErc20Approve requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "buildErc20Approve",
@@ -516,6 +558,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["router", "amountIn", "amountOutMin", "path", "to", "deadline"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "buildDexSwap requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "buildDexSwap",
@@ -1151,6 +1198,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
       const signedTxHex = asString(params, "signedTxHex");
 
+      const zigRequired = zigRequiredBlocked(
+        "sendSignedTransaction requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
+
       if (isZigCoreEnabled()) {
         const zig = await callZigCore({
           action: "sendSignedTransaction",
@@ -1203,6 +1256,12 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       const toAddress = asString(params, "toAddress");
       const tokenAddress = asOptionalString(params, "tokenAddress");
       const amountRaw = asString(params, "amountRaw");
+
+      const zigRequired = zigRequiredBlocked(
+        "runTransferWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { mode: runMode, rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
 
       if (isZigCoreEnabled()) {
         const runtime = await callZigCore({ action: "runtimeInfo", params: { resultsOnly: true } });

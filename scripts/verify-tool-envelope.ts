@@ -38,6 +38,7 @@ type LifiAnalysisCase = {
   expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation };
 };
 type InvalidRunModeCase = NamedCheck<{ params: Params; runMode: string }>;
+type ZigRequiredPolicyCase = NamedCheck<{ params: Params; reason: string }>;
 
 const ADDR_A = "0x1111111111111111111111111111111111111111";
 const ADDR_B = "0x2222222222222222222222222222222222222222";
@@ -374,6 +375,31 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
       name: TOOL.runTransferWorkflow,
       runMode: "inspect",
       params: mkTransferBaseParams(),
+    },
+  ];
+}
+
+function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
+  return [
+    {
+      name: TOOL.buildTransferNative,
+      params: { toAddress: ADDR_A, amountWei: "1" },
+      reason: "buildTransferNative requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.buildErc20Approve,
+      params: { tokenAddress: ADDR_A, spender: ADDR_B, amountRaw: "1" },
+      reason: "buildErc20Approve requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.runTransferWorkflow,
+      params: {
+        runMode: "analysis",
+        fromAddress: ADDR_A,
+        toAddress: ADDR_B,
+        amountRaw: "1",
+      },
+      reason: "runTransferWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
   ];
 }
@@ -934,6 +960,12 @@ function assertZigDisabledBlocked(
   assertBlockedReason(name, payload, reason);
 }
 
+function assertZigRequiredPolicyBlocked(name: string, payload: Payload, reason: string): void {
+  assertStatusCode(name, payload, "blocked", 13);
+  assertResultReason(name, payload, reason);
+  assertMetaFieldString(name, payload, "source", "ts-tool");
+}
+
 function assertPreloadedZigDisabledCases(
   payloads: PayloadMap,
   cases: ZigDisabledCase[],
@@ -1089,6 +1121,26 @@ async function runBehaviorChecks(tools: ToolMap): Promise<void> {
   await runContextCheck(buildVoidContext, runBehaviorPipelineWithContext, tools);
 }
 
+async function runZigRequiredPolicyChecks(tools: ToolMap): Promise<void> {
+  const prev = process.env.MONAD_REQUIRE_ZIG_CORE;
+  process.env.MONAD_REQUIRE_ZIG_CORE = "1";
+  try {
+    const policyCases = mkZigRequiredPolicyCases();
+    await runToolCaseList(tools, policyCases, async (policyTools, c) => {
+      const payload = await executePayload(policyTools, c.name, c.params);
+      assertEnvelopeShape(c.name, payload);
+      assertEnvelopeOrder(c.name, payload);
+      assertZigRequiredPolicyBlocked(c.name, payload, c.reason);
+    });
+  } finally {
+    if (prev === undefined) {
+      delete process.env.MONAD_REQUIRE_ZIG_CORE;
+    } else {
+      process.env.MONAD_REQUIRE_ZIG_CORE = prev;
+    }
+  }
+}
+
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
@@ -1101,6 +1153,7 @@ async function main(): Promise<void> {
   registerMonadTools(registrar);
 
   await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
+  await runZigRequiredPolicyChecks(tools);
 
   console.log("tool envelope checks passed");
 }
