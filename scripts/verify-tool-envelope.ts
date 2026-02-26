@@ -31,13 +31,13 @@ type ZigRequiredContext = {
   preloadedPayloads: PayloadMap;
 };
 type ZigRequiredStage = ContextStage<ZigRequiredContext>;
-type ZigDisabledCase = { name: string; params: Params; reason: string };
-type BlockedCase = { name: string; params: Params; code: number; reason: string; mode?: string };
+type ZigDisabledCase = NamedCheck<{ params: Params; reason: string }>;
+type BlockedCase = NamedCheck<{ params: Params; code: number; reason: string; mode?: string }>;
 type LifiAnalysisCase = {
   quote: Params;
   expectation: { txRequest: ResultFieldExpectation; routeId: ResultFieldExpectation; tool: ResultFieldExpectation };
 };
-type InvalidRunModeCase = { name: string; params: Params; runMode: string };
+type InvalidRunModeCase = NamedCheck<{ params: Params; runMode: string }>;
 
 const ADDR_A = "0x1111111111111111111111111111111111111111";
 const ADDR_B = "0x2222222222222222222222222222222222222222";
