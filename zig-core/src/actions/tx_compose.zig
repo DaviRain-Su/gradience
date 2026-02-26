@@ -291,6 +291,190 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "buildMorphoVaultDeposit")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const vault_address = getString(params, "vaultAddress") orelse {
+            try writeMissing("vaultAddress");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const receiver = getString(params, "receiver") orelse {
+            try writeMissing("receiver");
+            return true;
+        };
+
+        const receiver_hex_40 = normalizeHexAddress(receiver) catch {
+            try writeInvalid("receiver");
+            return true;
+        };
+        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+            try writeInvalid("amountRaw");
+            return true;
+        };
+        const data = try encodeAmountAddress(allocator, "deposit(uint256 assets,address receiver)", amount, receiver_hex_40);
+        defer allocator.free(data);
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = vault_address,
+                        .value = "0",
+                        .data = data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = vault_address,
+                    .value = "0",
+                    .data = data,
+                    .chainId = getU64(params, "chainId"),
+                },
+            });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "buildMorphoVaultWithdraw")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const vault_address = getString(params, "vaultAddress") orelse {
+            try writeMissing("vaultAddress");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const receiver = getString(params, "receiver") orelse {
+            try writeMissing("receiver");
+            return true;
+        };
+        const owner = getString(params, "owner") orelse {
+            try writeMissing("owner");
+            return true;
+        };
+
+        const receiver_hex_40 = normalizeHexAddress(receiver) catch {
+            try writeInvalid("receiver");
+            return true;
+        };
+        const owner_hex_40 = normalizeHexAddress(owner) catch {
+            try writeInvalid("owner");
+            return true;
+        };
+        const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+            try writeInvalid("amountRaw");
+            return true;
+        };
+        const data = try encodeAmountAddressAddress(
+            allocator,
+            "withdraw(uint256 assets,address receiver,address owner)",
+            amount,
+            receiver_hex_40,
+            owner_hex_40,
+        );
+        defer allocator.free(data);
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = vault_address,
+                        .value = "0",
+                        .data = data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = vault_address,
+                    .value = "0",
+                    .data = data,
+                    .chainId = getU64(params, "chainId"),
+                },
+            });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "buildMorphoVaultRedeem")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const vault_address = getString(params, "vaultAddress") orelse {
+            try writeMissing("vaultAddress");
+            return true;
+        };
+        const shares_raw = getString(params, "sharesRaw") orelse {
+            try writeMissing("sharesRaw");
+            return true;
+        };
+        const receiver = getString(params, "receiver") orelse {
+            try writeMissing("receiver");
+            return true;
+        };
+        const owner = getString(params, "owner") orelse {
+            try writeMissing("owner");
+            return true;
+        };
+
+        const receiver_hex_40 = normalizeHexAddress(receiver) catch {
+            try writeInvalid("receiver");
+            return true;
+        };
+        const owner_hex_40 = normalizeHexAddress(owner) catch {
+            try writeInvalid("owner");
+            return true;
+        };
+        const shares = std.fmt.parseUnsigned(u256, shares_raw, 10) catch {
+            try writeInvalid("sharesRaw");
+            return true;
+        };
+        const data = try encodeAmountAddressAddress(
+            allocator,
+            "redeem(uint256 shares,address receiver,address owner)",
+            shares,
+            receiver_hex_40,
+            owner_hex_40,
+        );
+        defer allocator.free(data);
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txRequest = TxRequest{
+                        .to = vault_address,
+                        .value = "0",
+                        .data = data,
+                        .chainId = getU64(params, "chainId"),
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .txRequest = TxRequest{
+                    .to = vault_address,
+                    .value = "0",
+                    .data = data,
+                    .chainId = getU64(params, "chainId"),
+                },
+            });
+        }
+        return true;
+    }
+
     return false;
 }
 
@@ -312,6 +496,51 @@ fn encodeTwoArgTransferLike(
         "000000000000000000000000",
         address_40,
         amount_hex_buf,
+    });
+}
+
+fn encodeAmountAddress(
+    allocator: std.mem.Allocator,
+    signature: []const u8,
+    amount: u256,
+    address_40: []const u8,
+) ![]const u8 {
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+
+    var amount_hex_buf: [64]u8 = undefined;
+    _ = try std.fmt.bufPrint(&amount_hex_buf, "{x:0>64}", .{amount});
+
+    return std.fmt.allocPrint(allocator, "0x{s}{s}{s}{s}", .{
+        selector_hex,
+        amount_hex_buf,
+        "000000000000000000000000",
+        address_40,
+    });
+}
+
+fn encodeAmountAddressAddress(
+    allocator: std.mem.Allocator,
+    signature: []const u8,
+    amount: u256,
+    addr1_40: []const u8,
+    addr2_40: []const u8,
+) ![]const u8 {
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+
+    var amount_hex_buf: [64]u8 = undefined;
+    _ = try std.fmt.bufPrint(&amount_hex_buf, "{x:0>64}", .{amount});
+
+    return std.fmt.allocPrint(allocator, "0x{s}{s}{s}{s}{s}{s}", .{
+        selector_hex,
+        amount_hex_buf,
+        "000000000000000000000000",
+        addr1_40,
+        "000000000000000000000000",
+        addr2_40,
     });
 }
 

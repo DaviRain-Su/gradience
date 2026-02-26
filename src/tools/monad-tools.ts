@@ -1218,6 +1218,21 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       );
       if (zigRequired) return zigRequired;
 
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildMorphoVaultDeposit",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            receiver: asString(params, "receiver"),
+            chainId: params.chainId ?? null,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core buildMorphoVaultDeposit failed");
+        return toolOk({ txRequest: zigPayload(zig).txRequest });
+      }
+
       const iface = new Interface([
         "function deposit(uint256 assets,address receiver) returns (uint256)",
       ]);
@@ -1257,6 +1272,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         "morphoVaultBuildWithdraw requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildMorphoVaultWithdraw",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            receiver: asString(params, "receiver"),
+            owner: asString(params, "owner"),
+            chainId: params.chainId ?? null,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core buildMorphoVaultWithdraw failed");
+        return toolOk({ txRequest: zigPayload(zig).txRequest });
+      }
 
       const iface = new Interface([
         "function withdraw(uint256 assets,address receiver,address owner) returns (uint256)",
@@ -1298,6 +1329,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         "morphoVaultBuildRedeem requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "buildMorphoVaultRedeem",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            sharesRaw: asString(params, "sharesRaw"),
+            receiver: asString(params, "receiver"),
+            owner: asString(params, "owner"),
+            chainId: params.chainId ?? null,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core buildMorphoVaultRedeem failed");
+        return toolOk({ txRequest: zigPayload(zig).txRequest });
+      }
 
       const iface = new Interface([
         "function redeem(uint256 shares,address receiver,address owner) returns (uint256)",
