@@ -1555,6 +1555,37 @@ async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
   }
 }
 
+async function runZigEnabledBehaviorChecks(tools: ToolMap): Promise<void> {
+  const prevUse = process.env.MONAD_USE_ZIG_CORE;
+  const prevRequire = process.env.MONAD_REQUIRE_ZIG_CORE;
+  process.env.MONAD_USE_ZIG_CORE = "1";
+  process.env.MONAD_REQUIRE_ZIG_CORE = "1";
+  try {
+    const lifiSimBlocked = await executePayload(tools, TOOL.lifiRunWorkflow, mkLifiWorkflowSimulateParams({}));
+    assertEnvelopeShape(TOOL.lifiRunWorkflow, lifiSimBlocked);
+    assertEnvelopeOrder(TOOL.lifiRunWorkflow, lifiSimBlocked);
+    assertBlockedWithMode(TOOL.lifiRunWorkflow, lifiSimBlocked, 12, "simulate");
+    assertResultReason(TOOL.lifiRunWorkflow, lifiSimBlocked, "missing txRequest");
+
+    const transferExecBlocked = await executePayload(tools, TOOL.runTransferWorkflow, mkTransferWorkflowExecuteParams());
+    assertEnvelopeShape(TOOL.runTransferWorkflow, transferExecBlocked);
+    assertEnvelopeOrder(TOOL.runTransferWorkflow, transferExecBlocked);
+    assertBlockedWithMode(TOOL.runTransferWorkflow, transferExecBlocked, 12, "execute");
+    assertResultReason(TOOL.runTransferWorkflow, transferExecBlocked, "execute requires signedTxHex");
+  } finally {
+    if (prevUse === undefined) {
+      delete process.env.MONAD_USE_ZIG_CORE;
+    } else {
+      process.env.MONAD_USE_ZIG_CORE = prevUse;
+    }
+    if (prevRequire === undefined) {
+      delete process.env.MONAD_REQUIRE_ZIG_CORE;
+    } else {
+      process.env.MONAD_REQUIRE_ZIG_CORE = prevRequire;
+    }
+  }
+}
+
 async function runZigSchemaCoverageChecks(tools: ToolMap): Promise<void> {
   const prevUse = process.env.MONAD_USE_ZIG_CORE;
   process.env.MONAD_USE_ZIG_CORE = "1";
@@ -1602,6 +1633,7 @@ async function main(): Promise<void> {
   await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
   await runZigSchemaCoverageChecks(tools);
   await runZigEnabledCoreChecks(tools);
+  await runZigEnabledBehaviorChecks(tools);
   await runZigRequiredPolicyChecks(tools);
 
   console.log("tool envelope checks passed");
