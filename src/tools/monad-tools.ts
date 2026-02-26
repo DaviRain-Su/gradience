@@ -620,6 +620,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["protocol", "market", "action", "asset", "amountRaw"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "planLendingAction requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       return toolOk({
         plan: {
           protocol: asString(params, "protocol"),
@@ -652,6 +657,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["token", "amountRaw", "payee"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "paymentIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       return toolOk({
         paymentIntent: {
           type: "pay_per_call",
@@ -685,6 +695,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["token", "amountRaw", "payee", "cadenceSeconds"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "subscriptionIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       return toolOk({
         subscriptionIntent: {
           type: "subscription",

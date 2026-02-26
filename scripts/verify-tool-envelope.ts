@@ -458,6 +458,21 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
       reason: "morphoVaultBuildDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
+      name: TOOL.planLendingAction,
+      params: { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
+      reason: "planLendingAction requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.paymentIntentCreate,
+      params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
+      reason: "paymentIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.subscriptionIntentCreate,
+      params: { token: "USDC", amountRaw: "1", payee: "0xabc", cadenceSeconds: 60 },
+      reason: "subscriptionIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
       name: TOOL.strategyTemplates,
       params: {},
       reason: "strategyTemplates requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
