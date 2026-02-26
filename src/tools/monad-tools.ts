@@ -983,6 +983,39 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         return invalidRunModeEnvelope(params, "runMode");
       }
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "lifiRunWorkflow",
+          params: {
+            runMode,
+            fromChain: Number(params.fromChain),
+            toChain: Number(params.toChain),
+            fromToken: asString(params, "fromToken"),
+            toToken: asString(params, "toToken"),
+            fromAmount: asString(params, "fromAmount"),
+            fromAddress: asString(params, "fromAddress"),
+            toAddress: asOptionalString(params, "toAddress"),
+            slippage: params.slippage as number | undefined,
+            rpcUrl,
+            signedTxHex: asOptionalString(params, "signedTxHex"),
+            quote: (params.quote as Record<string, unknown> | undefined) || undefined,
+            resultsOnly: true,
+          },
+        });
+        const code = Number(zig.code || 0);
+        if (zig.status === "blocked" && code === 12) {
+          return toolEnvelope(
+            "blocked",
+            12,
+            { reason: String(zig.error || "workflow blocked") },
+            { mode: runMode, rpcUrl },
+          );
+        }
+        ensureZigOk(zig, "zig core lifiRunWorkflow failed");
+        return toolOk(zigPayload(zig), { mode: runMode, rpcUrl });
+      }
+
       const provider = getProvider(rpcUrl);
       const base = {
         fromChain: Number(params.fromChain),

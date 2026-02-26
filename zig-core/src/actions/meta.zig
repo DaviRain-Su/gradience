@@ -8,6 +8,8 @@ const core_runtime = @import("../core/runtime.zig");
 const core_cache_policy = @import("../core/cache_policy.zig");
 const providers_registry = @import("../core/providers_registry.zig");
 const core_version = @import("../core/version.zig");
+const rpc_client = @import("rpc_client.zig");
+const rpc_errors = @import("rpc_errors.zig");
 const chains_registry = @import("../core/chains_registry.zig");
 const chains_assets_registry = @import("../core/chains_assets_registry.zig");
 const yield_registry = @import("../core/yield_registry.zig");
@@ -495,6 +497,193 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try core_envelope.writeJson(.{ .status = "ok", .results = .{ .txRequest = tx_request } });
         } else {
             try core_envelope.writeJson(.{ .status = "ok", .txRequest = tx_request });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "lifiRunWorkflow")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const run_mode = getString(params, "runMode") orelse {
+            try writeMissing("runMode");
+            return true;
+        };
+        if (!(std.mem.eql(u8, run_mode, "analysis") or std.mem.eql(u8, run_mode, "simulate") or std.mem.eql(u8, run_mode, "execute"))) {
+            try writeInvalid("runMode");
+            return true;
+        }
+
+        const from_chain = getU64(params, "fromChain") orelse {
+            try writeMissing("fromChain");
+            return true;
+        };
+        const to_chain = getU64(params, "toChain") orelse {
+            try writeMissing("toChain");
+            return true;
+        };
+        const from_token = getString(params, "fromToken") orelse {
+            try writeMissing("fromToken");
+            return true;
+        };
+        const to_token = getString(params, "toToken") orelse {
+            try writeMissing("toToken");
+            return true;
+        };
+        const from_amount = getString(params, "fromAmount") orelse {
+            try writeMissing("fromAmount");
+            return true;
+        };
+        const from_address = getString(params, "fromAddress") orelse {
+            try writeMissing("fromAddress");
+            return true;
+        };
+        const to_address = getString(params, "toAddress") orelse from_address;
+        const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
+
+        var generated_quote = std.json.ObjectMap.init(allocator);
+        var generated_tx_request = std.json.ObjectMap.init(allocator);
+        var owns_generated = false;
+        defer if (owns_generated) {
+            generated_tx_request.deinit();
+            generated_quote.deinit();
+        };
+
+        const quote_value: std.json.Value = blk: {
+            if (params.get("quote")) |quote| {
+                if (quote != .object) {
+                    try writeInvalid("quote");
+                    return true;
+                }
+                break :blk quote;
+            }
+
+            owns_generated = true;
+            try generated_tx_request.put("to", .{ .string = to_address });
+            try generated_tx_request.put("data", .{ .string = "0x" });
+            try generated_tx_request.put("value", .{ .string = "0x0" });
+
+            try generated_quote.put("id", .{ .string = "zig-lifi-route-1" });
+            try generated_quote.put("tool", .{ .string = "lifi" });
+            try generated_quote.put("fromChain", .{ .integer = @intCast(from_chain) });
+            try generated_quote.put("toChain", .{ .integer = @intCast(to_chain) });
+            try generated_quote.put("fromToken", .{ .string = from_token });
+            try generated_quote.put("toToken", .{ .string = to_token });
+            try generated_quote.put("fromAmount", .{ .string = from_amount });
+            try generated_quote.put("fromAddress", .{ .string = from_address });
+            try generated_quote.put("toAddress", .{ .string = to_address });
+            try generated_quote.put("transactionRequest", .{ .object = generated_tx_request });
+            break :blk .{ .object = generated_quote };
+        };
+
+        const quote_obj = quote_value.object;
+        const tx_request = if (quote_obj.get("transactionRequest")) |tx|
+            if (tx == .object) tx else null
+        else
+            null;
+        const route_id: ?[]const u8 = if (quote_obj.get("id")) |idv|
+            if (idv == .string) idv.string else null
+        else
+            null;
+        const tool_name: ?[]const u8 = if (quote_obj.get("tool")) |toolv|
+            if (toolv == .string) toolv.string else null
+        else
+            null;
+
+        if (std.mem.eql(u8, run_mode, "analysis")) {
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .quote = quote_value,
+                        .txRequest = tx_request,
+                        .routeId = route_id,
+                        .tool = tool_name,
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .quote = quote_value, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
+            }
+            return true;
+        }
+
+        if (std.mem.eql(u8, run_mode, "simulate")) {
+            if (tx_request == null) {
+                try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "missing txRequest" });
+                return true;
+            }
+
+            const tx_obj = tx_request.?.object;
+            const tx_to = getString(tx_obj, "to") orelse "";
+            const tx_data = getString(tx_obj, "data") orelse "0x";
+            const tx_value = getString(tx_obj, "value") orelse "0x0";
+
+            const estimate_params = try std.fmt.allocPrint(
+                allocator,
+                "[{{\"from\":\"{s}\",\"to\":\"{s}\",\"data\":\"{s}\",\"value\":\"{s}\"}}]",
+                .{ from_address, tx_to, tx_data, tx_value },
+            );
+            defer allocator.free(estimate_params);
+
+            const estimate_hex = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_estimateGas", estimate_params) catch |rpc_err| {
+                try rpc_errors.writeRpcError(rpc_err);
+                return true;
+            };
+            defer allocator.free(estimate_hex);
+
+            const estimate_gas = hexQuantityToDecimalString(allocator, estimate_hex) catch {
+                try core_envelope.writeJson(core_errors.usage("invalid estimate gas"));
+                return true;
+            };
+            defer allocator.free(estimate_gas);
+
+            if (results_only) {
+                try core_envelope.writeJson(.{
+                    .status = "ok",
+                    .results = .{
+                        .estimateGas = estimate_gas,
+                        .txRequest = tx_request,
+                        .routeId = route_id,
+                        .tool = tool_name,
+                    },
+                });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .estimateGas = estimate_gas, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
+            }
+            return true;
+        }
+
+        const signed_tx_hex = getString(params, "signedTxHex") orelse {
+            try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "execute requires signedTxHex" });
+            return true;
+        };
+        if (!std.mem.startsWith(u8, signed_tx_hex, "0x")) {
+            try writeInvalid("signedTxHex");
+            return true;
+        }
+        if (!core_runtime.allowBroadcast()) {
+            try core_envelope.writeJson(core_errors.unsupported("broadcast disabled by runtime policy"));
+            return true;
+        }
+
+        const send_params = try std.fmt.allocPrint(allocator, "[\"{s}\"]", .{signed_tx_hex});
+        defer allocator.free(send_params);
+        const tx_hash = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_sendRawTransaction", send_params) catch |rpc_err| {
+            try rpc_errors.writeRpcError(rpc_err);
+            return true;
+        };
+        defer allocator.free(tx_hash);
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .txHash = tx_hash,
+                    .txRequest = tx_request,
+                    .routeId = route_id,
+                    .tool = tool_name,
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .txHash = tx_hash, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
         }
         return true;
     }
@@ -2310,6 +2499,12 @@ fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
         .string => |s| std.fmt.parseFloat(f64, s) catch null,
         else => null,
     };
+}
+
+fn hexQuantityToDecimalString(allocator: std.mem.Allocator, hex_value: []const u8) ![]u8 {
+    const raw = if (std.mem.startsWith(u8, hex_value, "0x") or std.mem.startsWith(u8, hex_value, "0X")) hex_value[2..] else hex_value;
+    const n = if (raw.len == 0) @as(u256, 0) else try std.fmt.parseUnsigned(u256, raw, 16);
+    return std.fmt.allocPrint(allocator, "{d}", .{n});
 }
 
 fn isKnownTemplate(template: []const u8) bool {

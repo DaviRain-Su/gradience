@@ -43,6 +43,7 @@ pub const supported_actions = [_][]const u8{
     "lifiGetQuote",
     "lifiGetRoutes",
     "lifiExtractTxRequest",
+    "lifiRunWorkflow",
     "strategyTemplates",
     "strategyCompile",
     "strategyValidate",
