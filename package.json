@@ -11,15 +11,14 @@
     "dashboard:dev": "tsx apps/dashboard/server.ts",
     "export:templates": "npm run build && node apps/api/export-templates.mjs",
     "tools:verify-envelope": "tsx scripts/verify-tool-envelope.ts",
+    "src:verify-bridge": "tsx scripts/verify-src-bridge-only.ts",
+    "verify": "npm run src:verify-bridge && npm run tools:verify-envelope && npm run build",
     "zig:build": "zig build --prefix zig-core/zig-out --build-file zig-core/build.zig",
     "zig:test": "npm run zig:offline && npm run zig:smoke",
     "zig:offline": "npm run zig:build && python3 zig-core/tests/offline.py",
     "zig:smoke": "npm run zig:build && python3 zig-core/tests/smoke.py"
   },
   "dependencies": {
-    "@lifi/sdk": "^3.9.1",
-    "@morpho-org/blue-sdk": "^1.1.0",
-    "ethers": "^6.12.1",
     "express": "^4.19.2",
     "sql.js": "^1.10.2"
   },

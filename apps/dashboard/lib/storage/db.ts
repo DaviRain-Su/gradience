@@ -1,7 +1,6 @@
 import initSqlJs from "sql.js";
 import path from "node:path";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import type { StrategySpec } from "../strategy/compiler.js";
 
 export type StrategyRow = {
@@ -28,19 +27,10 @@ export type DbHandle = {
   persist: () => void;
 };
 
-const DEFAULT_DB_PATH = path.join(
-  process.cwd(),
-  "data",
-  "strategies.sqlite",
-);
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "strategies.sqlite");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const WASM_PATH = path.join(
-  __dirname,
-  "..",
-  "..",
-  "..",
+  process.cwd(),
   "node_modules",
   "sql.js",
   "dist",
@@ -50,9 +40,7 @@ const WASM_PATH = path.join(
 export async function openDb(dbPath = DEFAULT_DB_PATH): Promise<DbHandle> {
   mkdirSync(path.dirname(dbPath), { recursive: true });
   const SQL = await initSqlJs({ locateFile: () => WASM_PATH });
-  const db = existsSync(dbPath)
-    ? new SQL.Database(readFileSync(dbPath))
-    : new SQL.Database();
+  const db = existsSync(dbPath) ? new SQL.Database(readFileSync(dbPath)) : new SQL.Database();
   db.exec(`
     CREATE TABLE IF NOT EXISTS strategies (
       id TEXT PRIMARY KEY,
@@ -73,10 +61,7 @@ export async function openDb(dbPath = DEFAULT_DB_PATH): Promise<DbHandle> {
     );
   `);
   try {
-    const columns = queryAll(
-      { db, persist: () => undefined },
-      "PRAGMA table_info(executions)"
-    );
+    const columns = queryAll({ db, persist: () => undefined }, "PRAGMA table_info(executions)");
     const hasEvidence = columns.some((col: any) => col.name === "evidence_json");
     if (!hasEvidence) {
       db.exec("ALTER TABLE executions ADD COLUMN evidence_json TEXT NOT NULL DEFAULT '{}' ");
@@ -107,7 +92,7 @@ export function saveStrategy(dbHandle: DbHandle, spec: StrategySpec) {
   const template = spec.metadata.template;
   const stmt = dbHandle.db.prepare(
     `INSERT INTO strategies (id, template, spec_json, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?)`,
   );
   stmt.run([spec.id, template, JSON.stringify(spec), "active", now, now]);
   stmt.free();
@@ -118,7 +103,7 @@ export function listStrategies(dbHandle: DbHandle): StrategyRow[] {
   const rows = queryAll(
     dbHandle,
     `SELECT id, template, spec_json, status, created_at, updated_at
-     FROM strategies ORDER BY created_at DESC`
+     FROM strategies ORDER BY created_at DESC`,
   );
   return rows.map((row: any) => ({
     id: row.id,
@@ -135,7 +120,7 @@ export function getStrategy(dbHandle: DbHandle, id: string): StrategyRow | null 
     dbHandle,
     `SELECT id, template, spec_json, status, created_at, updated_at
      FROM strategies WHERE id = ?`,
-    [id]
+    [id],
   );
   const row = rows[0];
   if (!row) return null;
@@ -151,12 +136,12 @@ export function getStrategy(dbHandle: DbHandle, id: string): StrategyRow | null 
 
 export function addExecution(
   dbHandle: DbHandle,
-  input: Omit<ExecutionRow, "createdAt">
+  input: Omit<ExecutionRow, "createdAt">,
 ) {
   const createdAt = new Date().toISOString();
   const stmt = dbHandle.db.prepare(
     `INSERT INTO executions (id, strategy_id, mode, status, payload_json, evidence_json, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
   );
   stmt.run([
     input.id,
@@ -175,7 +160,7 @@ export function listExecutions(dbHandle: DbHandle): ExecutionRow[] {
   const rows = queryAll(
     dbHandle,
     `SELECT id, strategy_id, mode, status, payload_json, evidence_json, created_at
-     FROM executions ORDER BY created_at DESC`
+     FROM executions ORDER BY created_at DESC`,
   );
   return rows.map((row: any) => ({
     id: row.id,
@@ -193,7 +178,7 @@ export function getExecution(dbHandle: DbHandle, id: string): ExecutionRow | nul
     dbHandle,
     `SELECT id, strategy_id, mode, status, payload_json, evidence_json, created_at
      FROM executions WHERE id = ?`,
-    [id]
+    [id],
   );
   const row = rows[0];
   if (!row) return null;

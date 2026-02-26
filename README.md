@@ -1,6 +1,6 @@
 # Monad OpenClaw Skill
 
-Minimal, purpose-built toolset for Monad + OpenClaw (implemented with ethers v6 + LI.FI SDK + Morpho SDK):
+Minimal, purpose-built toolset for Monad + OpenClaw (TypeScript bridge + Zig core runtime):
 
 - Payment/settlement intents (per-call or subscription)
 - ERC20/native transfers + DEX swap compose
@@ -26,9 +26,9 @@ Set RPC URL if needed:
 export MONAD_RPC_URL="https://rpc.monad.xyz"
 ```
 
-## Zig Core (optional)
+## Zig Core
 
-This repo now includes a Zig PoC core in `zig-core/` and can route selected tools through Zig + zigeth.
+This repo includes the Zig core in `zig-core/`. Tool execution routes through Zig by default.
 
 ```bash
 cd zig-core
@@ -47,6 +47,18 @@ Zig-backed execution is enabled by default. Disable it if needed:
 
 ```bash
 export MONAD_USE_ZIG_CORE=0
+```
+
+Bridge-only TS guard (ensures `src/` stays as a thin wrapper around Zig):
+
+```bash
+npm run src:verify-bridge
+```
+
+Full local verification:
+
+```bash
+npm run verify
 ```
 
 Optional override if binary is not in the default path (`zig-core/zig-out/bin/gradience-zig`):

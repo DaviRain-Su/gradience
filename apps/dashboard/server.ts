@@ -1,10 +1,10 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileStrategy } from "../../src/strategy/compiler.js";
-import { validateStrategy } from "../../src/strategy/validator.js";
-import { runStrategy } from "../../src/strategy/runner.js";
-import { STRATEGY_TEMPLATES } from "../../src/strategy/templates.js";
+import { compileStrategy } from "./lib/strategy/compiler.js";
+import { validateStrategy } from "./lib/strategy/validator.js";
+import { runStrategy } from "./lib/strategy/runner.js";
+import { STRATEGY_TEMPLATES } from "./lib/strategy/templates.js";
 import {
   addExecution,
   getExecution,
@@ -13,7 +13,7 @@ import {
   listStrategies,
   openDb,
   saveStrategy,
-} from "../../src/storage/db.js";
+} from "./lib/storage/db.js";
 
 const app = express();
 const PORT = Number(process.env.DASHBOARD_PORT || 4173);

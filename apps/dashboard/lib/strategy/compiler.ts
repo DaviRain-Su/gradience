@@ -35,10 +35,8 @@ const DEFAULT_RISK = {
 function inferTemplate(intentText: string): string {
   const lower = intentText.toLowerCase();
   if (lower.includes("swap") || lower.includes("兑换")) return "swap-v1";
-  if (lower.includes("lend") || lower.includes("借") || lower.includes("存入"))
-    return "lend-v1";
-  if (lower.includes("订阅") || lower.includes("subscription"))
-    return "subscription-v1";
+  if (lower.includes("lend") || lower.includes("借") || lower.includes("存入")) return "lend-v1";
+  if (lower.includes("订阅") || lower.includes("subscription")) return "subscription-v1";
   if (lower.includes("pay") || lower.includes("支付")) return "pay-per-call-v1";
   return "pay-per-call-v1";
 }
@@ -248,7 +246,6 @@ export function compileStrategy(input: {
   const template = input.template || inferTemplate(intentText);
   const templateMeta = findTemplate(template) || STRATEGY_TEMPLATES[0];
   const params = input.params || {};
-  const now = new Date().toISOString();
   const id = `strat_${Date.now()}`;
   return {
     id,

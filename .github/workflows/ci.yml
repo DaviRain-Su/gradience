@@ -16,8 +16,8 @@ jobs:
           cache: npm
       - name: Install deps
         run: npm ci
-      - name: Build TypeScript
-        run: npm run build
+      - name: Verify bridge + envelope + build
+        run: npm run verify
 
   zig-offline:
     runs-on: ubuntu-latest

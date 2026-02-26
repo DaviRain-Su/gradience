@@ -12,7 +12,7 @@ A focused Monad skill that exposes **payment/settlement**, **trade execution**, 
 ## What this skill covers
 
 - **Payment/settlement primitives**: per-call charge or subscription intent objects
-- **Transfer + DEX swap compose**: native + ERC20 transfer, approve, swapExactTokensForTokens (ethers v6)
+- **Transfer + DEX swap compose**: native + ERC20 transfer, approve, swapExactTokensForTokens
 - **Lending planning**: supply/borrow/repay/withdraw plan objects (protocol-agnostic)
 - **Workflow**: analysis → simulate → execute for transfers
 
