@@ -1098,7 +1098,7 @@ async function runBehaviorChecks(tools: ToolMap): Promise<void> {
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
-  const tools: ToolMap = new Map<string, ToolDefinition>();
+  const tools: ToolMap = new Map();
   const registrar: ToolRegistrar = {
     registerTool(tool) {
       tools.set(tool.name, tool);
