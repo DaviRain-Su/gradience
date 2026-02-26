@@ -39,6 +39,7 @@ type LifiAnalysisCase = {
 };
 type InvalidRunModeCase = NamedCheck<{ params: Params; runMode: string }>;
 type ZigRequiredPolicyCase = NamedCheck<{ params: Params; reason: string }>;
+type ZigEnabledCoreCase = NamedCheck<{ params: Params }>;
 
 const ADDR_A = "0x1111111111111111111111111111111111111111";
 const ADDR_B = "0x2222222222222222222222222222222222222222";
@@ -584,6 +585,89 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
       params: { strategy: RUN_STRATEGY, mode: "plan" },
       reason: "strategyRun requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
+  ];
+}
+
+function mkZigEnabledCoreCases(): ZigEnabledCoreCase[] {
+  return [
+    { name: TOOL.buildTransferNative, params: { toAddress: ADDR_A, amountWei: "1" } },
+    { name: TOOL.buildTransferErc20, params: { tokenAddress: ADDR_A, toAddress: ADDR_B, amountRaw: "1" } },
+    { name: TOOL.buildErc20Approve, params: { tokenAddress: ADDR_A, spender: ADDR_B, amountRaw: "1" } },
+    {
+      name: TOOL.buildDexSwap,
+      params: {
+        router: ADDR_A,
+        amountIn: "1",
+        amountOutMin: "1",
+        path: [ADDR_A, ADDR_B],
+        to: ADDR_C,
+        deadline: "9999999999",
+      },
+    },
+    {
+      name: TOOL.planLendingAction,
+      params: { protocol: "morpho", market: "USDC", action: "supply", asset: "USDC", amountRaw: "1" },
+    },
+    { name: TOOL.paymentIntentCreate, params: { token: "USDC", amountRaw: "1", payee: "0xabc" } },
+    {
+      name: TOOL.subscriptionIntentCreate,
+      params: { token: "USDC", amountRaw: "1", payee: "0xabc", cadenceSeconds: 60 },
+    },
+    {
+      name: TOOL.lifiGetQuote,
+      params: {
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+      },
+    },
+    {
+      name: TOOL.lifiGetRoutes,
+      params: {
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+      },
+    },
+    { name: TOOL.lifiExtractTxRequest, params: mkLifiExtractTxRequestParams() },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: {
+        runMode: "analysis",
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+      },
+    },
+    { name: TOOL.morphoVaultMeta, params: { vaultAddress: ADDR_A } },
+    { name: TOOL.morphoVaultBuildDeposit, params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B } },
+    {
+      name: TOOL.morphoVaultBuildWithdraw,
+      params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B, owner: ADDR_C },
+    },
+    {
+      name: TOOL.morphoVaultBuildRedeem,
+      params: { vaultAddress: ADDR_A, sharesRaw: "1", receiver: ADDR_B, owner: ADDR_C },
+    },
+    { name: TOOL.strategyTemplates, params: {} },
+    {
+      name: TOOL.strategyCompile,
+      params: {
+        template: "pay-per-call-v1",
+        params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
+      },
+    },
+    { name: TOOL.strategyValidate, params: mkStrategyValidateParams("pay-per-call-v1") },
+    { name: TOOL.strategyRun, params: { strategy: RUN_STRATEGY, mode: "plan" } },
   ];
 }
 
@@ -1374,6 +1458,37 @@ async function runZigRequiredPolicyChecks(tools: ToolMap): Promise<void> {
   }
 }
 
+async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
+  const prevUse = process.env.MONAD_USE_ZIG_CORE;
+  const prevRequire = process.env.MONAD_REQUIRE_ZIG_CORE;
+  process.env.MONAD_USE_ZIG_CORE = "1";
+  process.env.MONAD_REQUIRE_ZIG_CORE = "1";
+  try {
+    const cases = mkZigEnabledCoreCases();
+    await runToolCaseList(tools, cases, async (enabledTools, c) => {
+      const payload = await executePayload(enabledTools, c.name, c.params);
+      assertEnvelopeShape(c.name, payload);
+      assertEnvelopeOrder(c.name, payload);
+      if (c.name === TOOL.strategyValidate) {
+        assertStrategyValidateEnvelope(c.name, payload);
+      } else {
+        assertOkEnvelope(c.name, payload);
+      }
+    });
+  } finally {
+    if (prevUse === undefined) {
+      delete process.env.MONAD_USE_ZIG_CORE;
+    } else {
+      process.env.MONAD_USE_ZIG_CORE = prevUse;
+    }
+    if (prevRequire === undefined) {
+      delete process.env.MONAD_REQUIRE_ZIG_CORE;
+    } else {
+      process.env.MONAD_REQUIRE_ZIG_CORE = prevRequire;
+    }
+  }
+}
+
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
@@ -1386,6 +1501,7 @@ async function main(): Promise<void> {
   registerMonadTools(registrar);
 
   await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
+  await runZigEnabledCoreChecks(tools);
   await runZigRequiredPolicyChecks(tools);
 
   console.log("tool envelope checks passed");
