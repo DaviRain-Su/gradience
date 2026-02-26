@@ -799,6 +799,25 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       );
       if (zigRequired) return zigRequired;
 
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "lifiGetQuote",
+          params: {
+            fromChain: Number(params.fromChain),
+            toChain: Number(params.toChain),
+            fromToken: asString(params, "fromToken"),
+            toToken: asString(params, "toToken"),
+            fromAmount: asString(params, "fromAmount"),
+            fromAddress: asString(params, "fromAddress"),
+            toAddress: asOptionalString(params, "toAddress"),
+            slippage: params.slippage as number | undefined,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core lifiGetQuote failed");
+        return toolOk({ quote: zigPayload(zig).quote });
+      }
+
       const quote = await fetchLifiQuote({
         fromChain: Number(params.fromChain),
         toChain: Number(params.toChain),
@@ -844,6 +863,25 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         "lifiGetRoutes requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "lifiGetRoutes",
+          params: {
+            fromChain: Number(params.fromChain),
+            toChain: Number(params.toChain),
+            fromToken: asString(params, "fromToken"),
+            toToken: asString(params, "toToken"),
+            fromAmount: asString(params, "fromAmount"),
+            fromAddress: asString(params, "fromAddress"),
+            toAddress: asOptionalString(params, "toAddress"),
+            slippage: params.slippage as number | undefined,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core lifiGetRoutes failed");
+        return toolOk({ routes: zigPayload(zig).routes });
+      }
 
       const routes = await fetchLifiRoutes({
         fromChain: Number(params.fromChain),
@@ -956,9 +994,16 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         toAddress: asOptionalString(params, "toAddress"),
         slippage: params.slippage as number | undefined,
       };
-      const quote =
-        (params.quote as Record<string, unknown> | undefined) ||
-        (await fetchLifiQuote(base));
+      let quote = params.quote as Record<string, unknown> | undefined;
+      if (!quote) {
+        if (isZigCoreEnabled()) {
+          const zig = await callZigCore({ action: "lifiGetQuote", params: { ...base, resultsOnly: true } });
+          ensureZigOk(zig, "zig core lifiGetQuote failed");
+          quote = (zigPayload(zig).quote as Record<string, unknown>) || {};
+        } else {
+          quote = await fetchLifiQuote(base);
+        }
+      }
       const txRequest =
         (quote?.transactionRequest as Record<string, unknown> | undefined) || null;
 

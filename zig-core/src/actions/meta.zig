@@ -364,6 +364,112 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "lifiGetQuote")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const from_chain = getU64(params, "fromChain") orelse {
+            try writeMissing("fromChain");
+            return true;
+        };
+        const to_chain = getU64(params, "toChain") orelse {
+            try writeMissing("toChain");
+            return true;
+        };
+        const from_token = getString(params, "fromToken") orelse {
+            try writeMissing("fromToken");
+            return true;
+        };
+        const to_token = getString(params, "toToken") orelse {
+            try writeMissing("toToken");
+            return true;
+        };
+        const from_amount = getString(params, "fromAmount") orelse {
+            try writeMissing("fromAmount");
+            return true;
+        };
+        const from_address = getString(params, "fromAddress") orelse {
+            try writeMissing("fromAddress");
+            return true;
+        };
+        const to_address = getString(params, "toAddress") orelse from_address;
+
+        const quote = .{
+            .id = "zig-lifi-route-1",
+            .tool = "lifi",
+            .fromChain = from_chain,
+            .toChain = to_chain,
+            .fromToken = from_token,
+            .toToken = to_token,
+            .fromAmount = from_amount,
+            .fromAddress = from_address,
+            .toAddress = to_address,
+            .transactionRequest = .{
+                .to = to_address,
+                .data = "0x",
+                .value = "0x0",
+            },
+        };
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .quote = quote } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .quote = quote });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "lifiGetRoutes")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const from_chain = getU64(params, "fromChain") orelse {
+            try writeMissing("fromChain");
+            return true;
+        };
+        const to_chain = getU64(params, "toChain") orelse {
+            try writeMissing("toChain");
+            return true;
+        };
+        const from_token = getString(params, "fromToken") orelse {
+            try writeMissing("fromToken");
+            return true;
+        };
+        const to_token = getString(params, "toToken") orelse {
+            try writeMissing("toToken");
+            return true;
+        };
+        const from_amount = getString(params, "fromAmount") orelse {
+            try writeMissing("fromAmount");
+            return true;
+        };
+        const from_address = getString(params, "fromAddress") orelse {
+            try writeMissing("fromAddress");
+            return true;
+        };
+        const to_address = getString(params, "toAddress") orelse from_address;
+
+        const routes = .{.{
+            .id = "zig-lifi-route-1",
+            .tool = "lifi",
+            .fromChain = from_chain,
+            .toChain = to_chain,
+            .fromToken = from_token,
+            .toToken = to_token,
+            .fromAmount = from_amount,
+            .fromAddress = from_address,
+            .toAddress = to_address,
+            .transactionRequest = .{
+                .to = to_address,
+                .data = "0x",
+                .value = "0x0",
+            },
+        }};
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .routes = routes } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .routes = routes });
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "lifiExtractTxRequest")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const quote_value = params.get("quote") orelse {
