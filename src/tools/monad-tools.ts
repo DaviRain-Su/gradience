@@ -1650,119 +1650,25 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       if (zigRequired) return zigRequired;
 
       if (isZigCoreEnabled()) {
-        const runtime = await callZigCore({ action: "runtimeInfo", params: { resultsOnly: true } });
-        const runtimePayload = zigPayload(runtime);
-        const runtimeMeta = {
-          strict: Boolean(runtimePayload.strict),
-          allowBroadcast: Boolean(runtimePayload.allowBroadcast),
-        };
-
-        if (runMode === "analysis") {
-          const zig = await callZigCore({
-            action: "getBalance",
-            params: { rpcUrl, address: fromAddress, blockTag: "latest", resultsOnly: true },
-          });
-          ensureZigOk(zig, "zig core analysis getBalance failed");
-          const payload = zigPayload(zig);
-          return toolOk(
-            {
-              fromAddress,
-              balanceWei: BigInt(String(payload.balanceHex || "0x0")).toString(),
-            },
-            {
-              mode: "analysis",
-              source: String(payload.source || "fresh"),
-              runtime: runtimeMeta,
-              rpcUrl,
-            },
-          );
-        }
-
-        if (runMode === "simulate") {
-          const txRequest = tokenAddress
-            ? (await callZigCore({
-                action: "buildTransferErc20",
-                params: {
-                  tokenAddress,
-                  toAddress,
-                  amountRaw,
-                  resultsOnly: true,
-                },
-              }))
-            : (await callZigCore({
-                action: "buildTransferNative",
-                params: {
-                  toAddress,
-                  amountWei: amountRaw,
-                  resultsOnly: true,
-                },
-              }));
-
-          ensureZigOk(txRequest, "zig core build tx failed");
-          const txPayload = zigPayload(txRequest);
-          if (!txPayload.txRequest) throw new Error("zig core build tx missing txRequest");
-
-          const builtTx = txPayload.txRequest as Record<string, unknown>;
-          const estimate = await callZigCore({
-            action: "estimateGas",
-            params: {
-              rpcUrl,
-              from: fromAddress,
-              to: String(builtTx.to || ""),
-              data: String(builtTx.data || "0x"),
-              value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
-              resultsOnly: true,
-            },
-          });
-
-          ensureZigOk(estimate, "zig core estimateGas failed");
-          const estimatePayload = zigPayload(estimate);
-
-          return toolOk(
-            {
-              estimateGas: String(estimatePayload.estimateGas || "0"),
-              tx: {
-                from: fromAddress,
-                to: String(builtTx.to || ""),
-                data: String(builtTx.data || "0x"),
-                value: tokenAddress ? "0x0" : String(builtTx.value || amountRaw),
-              },
-            },
-            {
-              mode: "simulate",
-              source: String(estimatePayload.source || "fresh"),
-              runtime: runtimeMeta,
-              rpcUrl,
-            },
-          );
-        }
-
-        if (!asOptionalString(params, "signedTxHex")) {
-          return toolEnvelope(
-            "blocked",
-            12,
-            { reason: "execute requires signedTxHex" },
-            { mode: "execute", runtime: runtimeMeta, rpcUrl },
-          );
-        }
-
-        const sent = await callZigCore({
-          action: "sendSignedTransaction",
-          params: { rpcUrl, signedTxHex: asString(params, "signedTxHex"), resultsOnly: true },
-        });
-        const blocked = blockedByZigPolicy(sent, rpcUrl, runtimeMeta);
-        if (blocked) return blocked;
-        ensureZigOk(sent, "zig core sendSignedTransaction failed");
-        const sentPayload = zigPayload(sent);
-        return toolOk(
-          { txHash: String(sentPayload.txHash || "") },
-          {
-            mode: "execute",
-            source: String(sentPayload.source || "fresh"),
-            runtime: runtimeMeta,
+        const zig = await callZigCore({
+          action: "runTransferWorkflow",
+          params: {
+            runMode,
             rpcUrl,
+            fromAddress,
+            toAddress,
+            tokenAddress,
+            amountRaw,
+            signedTxHex: asOptionalString(params, "signedTxHex"),
+            resultsOnly: true,
           },
-        );
+        });
+        const code = Number(zig.code || 0);
+        if (zig.status === "blocked" && code === 12) {
+          return toolEnvelope("blocked", 12, { reason: String(zig.error || "workflow blocked") }, { mode: runMode, rpcUrl });
+        }
+        ensureZigOk(zig, "zig core runTransferWorkflow failed");
+        return toolOk(zigPayload(zig), { mode: runMode, rpcUrl });
       }
 
       const provider = getProvider(rpcUrl);

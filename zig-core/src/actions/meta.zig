@@ -688,6 +688,142 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "runTransferWorkflow")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const run_mode = getString(params, "runMode") orelse {
+            try writeMissing("runMode");
+            return true;
+        };
+        if (!(std.mem.eql(u8, run_mode, "analysis") or std.mem.eql(u8, run_mode, "simulate") or std.mem.eql(u8, run_mode, "execute"))) {
+            try writeInvalid("runMode");
+            return true;
+        }
+
+        const from_address = getString(params, "fromAddress") orelse {
+            try writeMissing("fromAddress");
+            return true;
+        };
+        const to_address = getString(params, "toAddress") orelse {
+            try writeMissing("toAddress");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const token_address = getString(params, "tokenAddress");
+        const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
+
+        _ = normalizeHexAddress40(from_address) catch {
+            try writeInvalid("fromAddress");
+            return true;
+        };
+        _ = normalizeHexAddress40(to_address) catch {
+            try writeInvalid("toAddress");
+            return true;
+        };
+
+        if (std.mem.eql(u8, run_mode, "analysis")) {
+            const rpc_params = try std.fmt.allocPrint(allocator, "[\"{s}\",\"latest\"]", .{from_address});
+            defer allocator.free(rpc_params);
+
+            const balance_hex = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_getBalance", rpc_params) catch |rpc_err| {
+                try rpc_errors.writeRpcError(rpc_err);
+                return true;
+            };
+            defer allocator.free(balance_hex);
+            const balance_wei = hexQuantityToDecimalString(allocator, balance_hex) catch {
+                try core_envelope.writeJson(core_errors.usage("invalid balance"));
+                return true;
+            };
+            defer allocator.free(balance_wei);
+
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = .{ .source = "fresh", .fromAddress = from_address, .balanceWei = balance_wei } });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .source = "fresh", .fromAddress = from_address, .balanceWei = balance_wei });
+            }
+            return true;
+        }
+
+        if (std.mem.eql(u8, run_mode, "simulate")) {
+            var tx_to: []const u8 = to_address;
+            var tx_data: []const u8 = "0x";
+            var tx_value: []const u8 = amount_raw;
+            var free_tx_data = false;
+            defer if (free_tx_data) allocator.free(tx_data);
+
+            if (token_address) |token| {
+                _ = normalizeHexAddress40(token) catch {
+                    try writeInvalid("tokenAddress");
+                    return true;
+                };
+                _ = std.fmt.parseUnsigned(u256, amount_raw, 10) catch {
+                    try writeInvalid("amountRaw");
+                    return true;
+                };
+                tx_to = token;
+                tx_data = try encodeErc20TransferData(allocator, to_address, amount_raw);
+                free_tx_data = true;
+                tx_value = "0x0";
+            }
+
+            const estimate_params = try std.fmt.allocPrint(
+                allocator,
+                "[{{\"from\":\"{s}\",\"to\":\"{s}\",\"data\":\"{s}\",\"value\":\"{s}\"}}]",
+                .{ from_address, tx_to, tx_data, tx_value },
+            );
+            defer allocator.free(estimate_params);
+
+            const estimate_hex = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_estimateGas", estimate_params) catch |rpc_err| {
+                try rpc_errors.writeRpcError(rpc_err);
+                return true;
+            };
+            defer allocator.free(estimate_hex);
+            const estimate_gas = hexQuantityToDecimalString(allocator, estimate_hex) catch {
+                try core_envelope.writeJson(core_errors.usage("invalid estimate gas"));
+                return true;
+            };
+            defer allocator.free(estimate_gas);
+
+            const tx = .{ .from = from_address, .to = tx_to, .data = tx_data, .value = tx_value };
+            if (results_only) {
+                try core_envelope.writeJson(.{ .status = "ok", .results = .{ .source = "fresh", .estimateGas = estimate_gas, .tx = tx } });
+            } else {
+                try core_envelope.writeJson(.{ .status = "ok", .source = "fresh", .estimateGas = estimate_gas, .tx = tx });
+            }
+            return true;
+        }
+
+        const signed_tx_hex = getString(params, "signedTxHex") orelse {
+            try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "execute requires signedTxHex" });
+            return true;
+        };
+        if (!std.mem.startsWith(u8, signed_tx_hex, "0x")) {
+            try writeInvalid("signedTxHex");
+            return true;
+        }
+        if (!core_runtime.allowBroadcast()) {
+            try core_envelope.writeJson(core_errors.unsupported("broadcast disabled by runtime policy"));
+            return true;
+        }
+
+        const send_params = try std.fmt.allocPrint(allocator, "[\"{s}\"]", .{signed_tx_hex});
+        defer allocator.free(send_params);
+        const tx_hash = rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_sendRawTransaction", send_params) catch |rpc_err| {
+            try rpc_errors.writeRpcError(rpc_err);
+            return true;
+        };
+        defer allocator.free(tx_hash);
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .source = "fresh", .txHash = tx_hash } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .source = "fresh", .txHash = tx_hash });
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "morphoVaultMeta")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const vault_address = getString(params, "vaultAddress") orelse {
@@ -2505,6 +2641,34 @@ fn hexQuantityToDecimalString(allocator: std.mem.Allocator, hex_value: []const u
     const raw = if (std.mem.startsWith(u8, hex_value, "0x") or std.mem.startsWith(u8, hex_value, "0X")) hex_value[2..] else hex_value;
     const n = if (raw.len == 0) @as(u256, 0) else try std.fmt.parseUnsigned(u256, raw, 16);
     return std.fmt.allocPrint(allocator, "{d}", .{n});
+}
+
+fn normalizeHexAddress40(input: []const u8) ![]const u8 {
+    const raw = if (std.mem.startsWith(u8, input, "0x") or std.mem.startsWith(u8, input, "0X")) input[2..] else input;
+    if (raw.len != 40) return error.InvalidAddress;
+    for (raw) |c| {
+        if (!std.ascii.isHex(c)) return error.InvalidAddress;
+    }
+    return raw;
+}
+
+fn encodeErc20TransferData(allocator: std.mem.Allocator, to_address: []const u8, amount_raw: []const u8) ![]u8 {
+    const to_hex_40 = try normalizeHexAddress40(to_address);
+    const amount = try std.fmt.parseUnsigned(u256, amount_raw, 10);
+
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash("transfer(address,uint256)", &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+
+    var amount_hex_buf: [64]u8 = undefined;
+    _ = try std.fmt.bufPrint(&amount_hex_buf, "{x:0>64}", .{amount});
+
+    return std.fmt.allocPrint(allocator, "0x{s}{s}{s}{s}", .{
+        selector_hex,
+        "000000000000000000000000",
+        to_hex_40,
+        amount_hex_buf,
+    });
 }
 
 fn isKnownTemplate(template: []const u8) bool {

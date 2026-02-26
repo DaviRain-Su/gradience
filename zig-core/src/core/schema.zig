@@ -44,6 +44,7 @@ pub const supported_actions = [_][]const u8{
     "lifiGetRoutes",
     "lifiExtractTxRequest",
     "lifiRunWorkflow",
+    "runTransferWorkflow",
     "strategyTemplates",
     "strategyCompile",
     "strategyValidate",
