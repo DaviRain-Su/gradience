@@ -587,6 +587,55 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
   ];
 }
 
+const REQUIRED_ZIG_POLICY_TOOLS = [
+  TOOL.getBalance,
+  TOOL.getErc20Balance,
+  TOOL.getBlockNumber,
+  TOOL.buildTransferNative,
+  TOOL.buildTransferErc20,
+  TOOL.buildErc20Approve,
+  TOOL.buildDexSwap,
+  TOOL.planLendingAction,
+  TOOL.paymentIntentCreate,
+  TOOL.subscriptionIntentCreate,
+  TOOL.lifiGetQuote,
+  TOOL.lifiGetRoutes,
+  TOOL.lifiExtractTxRequest,
+  TOOL.lifiRunWorkflow,
+  TOOL.morphoVaultMeta,
+  TOOL.morphoVaultTotals,
+  TOOL.morphoVaultBalance,
+  TOOL.morphoVaultPreviewDeposit,
+  TOOL.morphoVaultPreviewWithdraw,
+  TOOL.morphoVaultPreviewRedeem,
+  TOOL.morphoVaultConvert,
+  TOOL.morphoVaultBuildDeposit,
+  TOOL.morphoVaultBuildWithdraw,
+  TOOL.morphoVaultBuildRedeem,
+  TOOL.sendSignedTransaction,
+  TOOL.runTransferWorkflow,
+  TOOL.strategyTemplates,
+  TOOL.strategyCompile,
+  TOOL.strategyValidate,
+  TOOL.strategyRun,
+] as const;
+
+function assertZigPolicyCaseCoverage(cases: ZigRequiredPolicyCase[]): void {
+  const names = new Set<string>();
+  for (const c of cases) {
+    if (names.has(c.name)) {
+      throw new Error(fail(c.name, "duplicate zig policy case"));
+    }
+    names.add(c.name);
+  }
+
+  for (const name of REQUIRED_ZIG_POLICY_TOOLS) {
+    if (!names.has(name)) {
+      throw new Error(fail(name, "missing zig policy case coverage"));
+    }
+  }
+}
+
 function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Payload> {
   return tool.execute("verify", params).then((out) => {
     const text = out.content[0]?.text ?? "{}";
@@ -1309,6 +1358,7 @@ async function runZigRequiredPolicyChecks(tools: ToolMap): Promise<void> {
   process.env.MONAD_REQUIRE_ZIG_CORE = "1";
   try {
     const policyCases = mkZigRequiredPolicyCases();
+    assertZigPolicyCaseCoverage(policyCases);
     await runToolCaseList(tools, policyCases, async (policyTools, c) => {
       const payload = await executePayload(policyTools, c.name, c.params);
       assertEnvelopeShape(c.name, payload);
