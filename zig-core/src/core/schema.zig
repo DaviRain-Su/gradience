@@ -25,6 +25,7 @@ pub const supported_actions = [_][]const u8{
     "getBlockNumber",
     "morphoVaultTotals",
     "morphoVaultBalance",
+    "morphoVaultMeta",
     "morphoVaultPreviewDeposit",
     "morphoVaultPreviewWithdraw",
     "morphoVaultPreviewRedeem",

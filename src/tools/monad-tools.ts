@@ -1071,6 +1071,18 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       );
       if (zigRequired) return zigRequired;
 
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "morphoVaultMeta",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core morphoVaultMeta failed");
+        return toolOk({ meta: zigPayload(zig).meta });
+      }
+
       const meta = await fetchMorphoVaultMeta(asString(params, "vaultAddress"));
       return toolOk({ meta });
     },

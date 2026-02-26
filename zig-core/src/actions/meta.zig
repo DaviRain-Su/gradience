@@ -499,6 +499,27 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "morphoVaultMeta")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const vault_address = getString(params, "vaultAddress") orelse {
+            try writeMissing("vaultAddress");
+            return true;
+        };
+
+        const meta = .{
+            .protocol = "morpho",
+            .vaultAddress = vault_address,
+            .source = "zig-registry",
+        };
+
+        if (results_only) {
+            try core_envelope.writeJson(.{ .status = "ok", .results = .{ .meta = meta } });
+        } else {
+            try core_envelope.writeJson(.{ .status = "ok", .meta = meta });
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "strategyTemplates")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const templates = .{
