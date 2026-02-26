@@ -45,6 +45,9 @@ const ADDR_B = "0x2222222222222222222222222222222222222222";
 const ADDR_C = "0x3333333333333333333333333333333333333333";
 
 const TOOL = {
+  getBalance: "monad_getBalance",
+  getErc20Balance: "monad_getErc20Balance",
+  getBlockNumber: "monad_getBlockNumber",
   buildTransferNative: "monad_buildTransferNative",
   buildTransferErc20: "monad_buildTransferErc20",
   buildErc20Approve: "monad_buildErc20Approve",
@@ -64,8 +67,17 @@ const TOOL = {
   runtimeInfo: "monad_runtimeInfo",
   lifiRunWorkflow: "monad_lifi_runWorkflow",
   runTransferWorkflow: "monad_runTransferWorkflow",
+  sendSignedTransaction: "monad_sendSignedTransaction",
+  morphoVaultMeta: "monad_morpho_vault_meta",
   morphoVaultTotals: "monad_morpho_vault_totals",
+  morphoVaultBalance: "monad_morpho_vault_balance",
+  morphoVaultPreviewDeposit: "monad_morpho_vault_previewDeposit",
+  morphoVaultPreviewWithdraw: "monad_morpho_vault_previewWithdraw",
+  morphoVaultPreviewRedeem: "monad_morpho_vault_previewRedeem",
+  morphoVaultConvert: "monad_morpho_vault_convert",
   morphoVaultBuildDeposit: "monad_morpho_vault_buildDeposit",
+  morphoVaultBuildWithdraw: "monad_morpho_vault_buildWithdraw",
+  morphoVaultBuildRedeem: "monad_morpho_vault_buildRedeem",
 } as const;
 
 const VALID_STRATEGY = {
@@ -386,14 +398,46 @@ function mkInvalidRunModeCases(): InvalidRunModeCase[] {
 function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
   return [
     {
+      name: TOOL.getBalance,
+      params: { address: ADDR_A },
+      reason: "getBalance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.getErc20Balance,
+      params: { address: ADDR_A, tokenAddress: ADDR_B },
+      reason: "getErc20Balance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.getBlockNumber,
+      params: {},
+      reason: "getBlockNumber requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
       name: TOOL.buildTransferNative,
       params: { toAddress: ADDR_A, amountWei: "1" },
       reason: "buildTransferNative requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
+      name: TOOL.buildTransferErc20,
+      params: { tokenAddress: ADDR_A, toAddress: ADDR_B, amountRaw: "1" },
+      reason: "buildTransferErc20 requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
       name: TOOL.buildErc20Approve,
       params: { tokenAddress: ADDR_A, spender: ADDR_B, amountRaw: "1" },
       reason: "buildErc20Approve requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.buildDexSwap,
+      params: {
+        router: ADDR_A,
+        amountIn: "1",
+        amountOutMin: "1",
+        path: [ADDR_A, ADDR_B],
+        to: ADDR_C,
+        deadline: "9999999999",
+      },
+      reason: "buildDexSwap requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
       name: TOOL.runTransferWorkflow,
@@ -404,6 +448,11 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
         amountRaw: "1",
       },
       reason: "runTransferWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.sendSignedTransaction,
+      params: { signedTxHex: "0xdeadbeef" },
+      reason: "sendSignedTransaction requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
       name: TOOL.lifiRunWorkflow,
@@ -448,14 +497,54 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
       reason: "lifiExtractTxRequest requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
+      name: TOOL.morphoVaultMeta,
+      params: { vaultAddress: ADDR_A },
+      reason: "morphoVaultMeta requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
       name: TOOL.morphoVaultTotals,
       params: { vaultAddress: ADDR_A },
       reason: "morphoVaultTotals requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
+      name: TOOL.morphoVaultBalance,
+      params: { vaultAddress: ADDR_A, owner: ADDR_B },
+      reason: "morphoVaultBalance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultPreviewDeposit,
+      params: { vaultAddress: ADDR_A, amountRaw: "1" },
+      reason: "morphoVaultPreviewDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultPreviewWithdraw,
+      params: { vaultAddress: ADDR_A, amountRaw: "1" },
+      reason: "morphoVaultPreviewWithdraw requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultPreviewRedeem,
+      params: { vaultAddress: ADDR_A, sharesRaw: "1" },
+      reason: "morphoVaultPreviewRedeem requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultConvert,
+      params: { vaultAddress: ADDR_A, amountRaw: "1", mode: "toShares" },
+      reason: "morphoVaultConvert requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
       name: TOOL.morphoVaultBuildDeposit,
       params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B },
       reason: "morphoVaultBuildDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultBuildWithdraw,
+      params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B, owner: ADDR_C },
+      reason: "morphoVaultBuildWithdraw requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultBuildRedeem,
+      params: { vaultAddress: ADDR_A, sharesRaw: "1", receiver: ADDR_B, owner: ADDR_C },
+      reason: "morphoVaultBuildRedeem requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
     {
       name: TOOL.planLendingAction,
