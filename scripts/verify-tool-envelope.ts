@@ -4,10 +4,11 @@ import type { ToolDefinition, ToolRegistrar } from "../src/core/types.js";
 type Params = Record<string, unknown>;
 type ResultFieldExpectation = "null" | "object" | "string";
 type StatusCode = { status: "ok" | "error" | "blocked"; code: number };
-type ToolStage = (tools: Map<string, ToolDefinition>) => Promise<void>;
-type ContextStage<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
-type ContextBuilder<TContext> = (tools: Map<string, ToolDefinition>) => Promise<TContext>;
-type ContextRunner<TContext> = (tools: Map<string, ToolDefinition>, context: TContext) => Promise<void>;
+type ToolMap = Map<string, ToolDefinition>;
+type ToolStage = (tools: ToolMap) => Promise<void>;
+type ContextStage<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
+type ContextBuilder<TContext> = (tools: ToolMap) => Promise<TContext>;
+type ContextRunner<TContext> = (tools: ToolMap, context: TContext) => Promise<void>;
 type PureTsContext = {
   checks: Array<[string, Params]>;
   payloads: Map<string, Record<string, unknown>>;
@@ -385,7 +386,7 @@ function parseToolPayload(tool: ToolDefinition, params: Params): Promise<Record<
 }
 
 function executePayload(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   name: string,
   params: Params,
 ): Promise<Record<string, unknown>> {
@@ -599,28 +600,28 @@ function runPureTsSemanticChecks(payloads: Map<string, Record<string, unknown>>)
   assertStrategyValidateEnvelope(TOOL.strategyValidate, validatePayload);
 }
 
-async function buildPureTsContext(tools: Map<string, ToolDefinition>): Promise<PureTsContext> {
+async function buildPureTsContext(tools: ToolMap): Promise<PureTsContext> {
   const checks = mkPureTsChecks();
   const payloads = await runEnvelopeChecks(tools, checks);
   return { checks, payloads };
 }
 
 async function runPureTsPreloadedStage(
-  _tools: Map<string, ToolDefinition>,
+  _tools: ToolMap,
   context: PureTsContext,
 ): Promise<void> {
   runPureTsPreloadedChecks(context.payloads, context.checks);
 }
 
 async function runPureTsSemanticStage(
-  _tools: Map<string, ToolDefinition>,
+  _tools: ToolMap,
   context: PureTsContext,
 ): Promise<void> {
   runPureTsSemanticChecks(context.payloads);
 }
 
 async function runPureTsStages(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   context: PureTsContext,
   stages: PureTsStage[] = PURE_TS_PIPELINE,
 ): Promise<void> {
@@ -630,9 +631,9 @@ async function runPureTsStages(
 const PURE_TS_PIPELINE = makePipeline<PureTsStage>(runPureTsPreloadedStage, runPureTsSemanticStage);
 
 async function runToolCaseList<T>(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   cases: T[],
-  runner: (tools: Map<string, ToolDefinition>, value: T) => Promise<void>,
+  runner: (tools: ToolMap, value: T) => Promise<void>,
 ): Promise<void> {
   for (const c of cases) {
     await runner(tools, c);
@@ -641,7 +642,7 @@ async function runToolCaseList<T>(
 
 async function runContextPipeline<TContext>(
   stages: ContextStage<TContext>[],
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   context: TContext,
 ): Promise<void> {
   for (const stage of stages) {
@@ -652,7 +653,7 @@ async function runContextPipeline<TContext>(
 async function runContextCheck<TContext>(
   buildContext: ContextBuilder<TContext>,
   runWithContext: ContextRunner<TContext>,
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
 ): Promise<void> {
   const context = await buildContext(tools);
   await runWithContext(tools, context);
@@ -661,12 +662,12 @@ async function runContextCheck<TContext>(
 const buildVoidContext: ContextBuilder<void> = async () => undefined;
 
 function adaptToolPipeline(stages: ToolStage[]): ContextRunner<void> {
-  return async (tools: Map<string, ToolDefinition>, _context: void) => {
+  return async (tools: ToolMap, _context: void) => {
     await runPipeline(stages, tools);
   };
 }
 
-async function runPipeline(stages: ToolStage[], tools: Map<string, ToolDefinition>): Promise<void> {
+async function runPipeline(stages: ToolStage[], tools: ToolMap): Promise<void> {
   for (const stage of stages) {
     await stage(tools);
   }
