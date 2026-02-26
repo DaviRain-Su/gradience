@@ -865,7 +865,7 @@ function assertObjectFieldStringEquals(
 }
 
 async function assertBlockedCase(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   input: BlockedCase,
 ): Promise<void> {
   const payload = await executePayload(tools, input.name, input.params);
@@ -878,7 +878,7 @@ async function assertBlockedCase(
 }
 
 async function assertInvalidRunModeCase(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   input: InvalidRunModeCase,
 ): Promise<void> {
   const payload = await executePayload(tools, input.name, {
@@ -891,7 +891,7 @@ async function assertInvalidRunModeCase(
 }
 
 async function assertLifiAnalysisCase(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   input: LifiAnalysisCase,
 ): Promise<void> {
   const payload = await executePayload(tools, TOOL.lifiRunWorkflow, mkLifiWorkflowAnalysisParams(input.quote));
@@ -902,7 +902,7 @@ async function assertLifiAnalysisCase(
   assertResultFieldExpectation(TOOL.lifiRunWorkflow, payload, "tool", input.expectation.tool);
 }
 
-async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Promise<void> {
+async function assertInvalidStrategyCase(tools: ToolMap): Promise<void> {
   const payload = await executePayload(tools, TOOL.strategyValidate, {
     strategy: {
       ...(mkStrategyValidateParams("missing-template").strategy as Record<string, unknown>),
@@ -912,17 +912,17 @@ async function assertInvalidStrategyCase(tools: Map<string, ToolDefinition>): Pr
   assertInvalidValidationPayload(TOOL.strategyValidate, payload);
 }
 
-async function runBlockedBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runBlockedBehaviorCases(tools: ToolMap): Promise<void> {
   const blockedCases = mkBehaviorBlockedCases();
   await runToolCaseList(tools, blockedCases, assertBlockedCase);
 }
 
-async function runLifiAnalysisBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runLifiAnalysisBehaviorCases(tools: ToolMap): Promise<void> {
   const lifiAnalysisCases = mkLifiAnalysisCases();
   await runToolCaseList(tools, lifiAnalysisCases, assertLifiAnalysisCase);
 }
 
-async function runInvalidRunModeBehaviorCases(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runInvalidRunModeBehaviorCases(tools: ToolMap): Promise<void> {
   const invalidRunModeCases = mkInvalidRunModeCases();
   await runToolCaseList(tools, invalidRunModeCases, assertInvalidRunModeCase);
 }
@@ -958,13 +958,13 @@ function runZigRequiredPreloadedCases(
 }
 
 async function runZigRequiredExecutedCases(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   cases: ZigDisabledCase[],
 ): Promise<void> {
   await runToolCaseList(tools, cases, assertZigDisabledCase);
 }
 
-async function buildZigRequiredContext(tools: Map<string, ToolDefinition>): Promise<ZigRequiredContext> {
+async function buildZigRequiredContext(tools: ToolMap): Promise<ZigRequiredContext> {
   const zigDisabledCases = mkZigDisabledCases();
   const partitioned = partitionByEmptyParams(zigDisabledCases);
   const checks = mkZigRequiredEnvelopeChecks(partitioned.empty);
@@ -977,21 +977,21 @@ async function buildZigRequiredContext(tools: Map<string, ToolDefinition>): Prom
 }
 
 async function runZigRequiredPreloadedStage(
-  _tools: Map<string, ToolDefinition>,
+  _tools: ToolMap,
   context: ZigRequiredContext,
 ): Promise<void> {
   runZigRequiredPreloadedCases(context.preloadedPayloads, context.preloadedCases);
 }
 
 async function runZigRequiredExecutedStage(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   context: ZigRequiredContext,
 ): Promise<void> {
   await runZigRequiredExecutedCases(tools, context.executedCases);
 }
 
 async function runZigRequiredStages(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   context: ZigRequiredContext,
   stages: ZigRequiredStage[] = ZIG_REQUIRED_PIPELINE,
 ): Promise<void> {
@@ -1004,7 +1004,7 @@ const ZIG_REQUIRED_PIPELINE = makePipeline<ZigRequiredStage>(
 );
 
 async function assertZigDisabledCase(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   input: ZigDisabledCase,
 ): Promise<void> {
   const payload = await executePayload(tools, input.name, input.params);
@@ -1061,14 +1061,14 @@ function fail(name: string, message: string): string {
   return `[envelope:${name}] ${message}`;
 }
 
-function getTool(tools: Map<string, ToolDefinition>, name: string): ToolDefinition {
+function getTool(tools: ToolMap, name: string): ToolDefinition {
   const tool = tools.get(name);
   if (!tool) throw new Error(fail(name, "missing tool registration"));
   return tool;
 }
 
 async function runEnvelopeChecks(
-  tools: Map<string, ToolDefinition>,
+  tools: ToolMap,
   checks: Array<[string, Params]>,
 ): Promise<Map<string, Record<string, unknown>>> {
   const payloads = new Map<string, Record<string, unknown>>();
@@ -1081,24 +1081,24 @@ async function runEnvelopeChecks(
   return payloads;
 }
 
-async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runPureTsChecks(tools: ToolMap): Promise<void> {
   await runContextCheck(buildPureTsContext, runPureTsStages, tools);
 }
 
-async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runZigRequiredChecks(tools: ToolMap): Promise<void> {
   await runContextCheck(buildZigRequiredContext, runZigRequiredStages, tools);
 }
 
 const runBehaviorPipelineWithContext = adaptToolPipeline(BEHAVIOR_PIPELINE);
 
-async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
+async function runBehaviorChecks(tools: ToolMap): Promise<void> {
   await runContextCheck(buildVoidContext, runBehaviorPipelineWithContext, tools);
 }
 
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
-  const tools = new Map<string, ToolDefinition>();
+  const tools: ToolMap = new Map<string, ToolDefinition>();
   const registrar: ToolRegistrar = {
     registerTool(tool) {
       tools.set(tool.name, tool);
