@@ -650,9 +650,9 @@ async function runContextPipeline<TContext>(
 }
 
 async function runContextCheck<TContext>(
-  tools: Map<string, ToolDefinition>,
   buildContext: ContextBuilder<TContext>,
   runWithContext: ContextRunner<TContext>,
+  tools: Map<string, ToolDefinition>,
 ): Promise<void> {
   const context = await buildContext(tools);
   await runWithContext(tools, context);
@@ -1081,17 +1081,17 @@ async function runEnvelopeChecks(
 }
 
 async function runPureTsChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runContextCheck(tools, buildPureTsContext, runPureTsStages);
+  await runContextCheck(buildPureTsContext, runPureTsStages, tools);
 }
 
 async function runZigRequiredChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runContextCheck(tools, buildZigRequiredContext, runZigRequiredStages);
+  await runContextCheck(buildZigRequiredContext, runZigRequiredStages, tools);
 }
 
 const runBehaviorPipelineWithContext = adaptToolPipeline(BEHAVIOR_PIPELINE);
 
 async function runBehaviorChecks(tools: Map<string, ToolDefinition>): Promise<void> {
-  await runContextCheck(tools, buildVoidContext, runBehaviorPipelineWithContext);
+  await runContextCheck(buildVoidContext, runBehaviorPipelineWithContext, tools);
 }
 
 async function main(): Promise<void> {
@@ -1105,7 +1105,7 @@ async function main(): Promise<void> {
   };
   registerMonadTools(registrar);
 
-  await runContextCheck(tools, buildVoidContext, runMainPipelineWithContext);
+  await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
 
   console.log("tool envelope checks passed");
 }
