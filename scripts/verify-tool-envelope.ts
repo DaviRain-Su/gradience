@@ -457,6 +457,29 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
       params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B },
       reason: "morphoVaultBuildDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
+    {
+      name: TOOL.strategyTemplates,
+      params: {},
+      reason: "strategyTemplates requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.strategyCompile,
+      params: {
+        template: "pay-per-call-v1",
+        params: { token: "USDC", amountRaw: "1", payee: "0xabc" },
+      },
+      reason: "strategyCompile requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.strategyValidate,
+      params: mkStrategyValidateParams("pay-per-call-v1"),
+      reason: "strategyValidate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.strategyRun,
+      params: { strategy: RUN_STRATEGY, mode: "plan" },
+      reason: "strategyRun requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
   ];
 }
 

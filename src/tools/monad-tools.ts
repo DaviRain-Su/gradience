@@ -1507,6 +1507,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     description: "List available strategy templates.",
     parameters: { type: "object", additionalProperties: false, properties: {} },
     async execute() {
+      const zigRequired = zigRequiredBlocked(
+        "strategyTemplates requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       return toolOk({ templates: STRATEGY_TEMPLATES });
     },
   });
@@ -1528,6 +1533,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       },
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "strategyCompile requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const spec = compileStrategy({
         intentText: asOptionalString(params, "intentText"),
         template: asOptionalString(params, "template"),
@@ -1553,6 +1563,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["strategy"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "strategyValidate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const validation = validateStrategy(params.strategy as any);
       if (!validation.ok) {
         return toolEnvelope("error", 2, { validation });
@@ -1575,6 +1590,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["strategy", "mode"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "strategyRun requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const result = runStrategy(params.strategy as any, asString(params, "mode") as "plan" | "execute");
       return toolOk({ result });
     },
