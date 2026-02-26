@@ -837,6 +837,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       ],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "lifiRunWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const runMode = parseWorkflowMode(params, "runMode");
       if (!runMode) {
         return invalidRunModeEnvelope(params, "runMode");
@@ -918,6 +923,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["vaultAddress"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultMeta requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const meta = await fetchMorphoVaultMeta(asString(params, "vaultAddress"));
       return toolOk({ meta });
     },
@@ -938,6 +948,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultTotals requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const [totalAssets, totalSupply] = await Promise.all([
@@ -970,6 +985,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultBalance requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const balance = await contract.balanceOf(asString(params, "owner"));
@@ -993,6 +1013,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultPreviewDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewDeposit(asString(params, "amountRaw"));
@@ -1016,6 +1041,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultPreviewWithdraw requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewWithdraw(asString(params, "amountRaw"));
@@ -1039,6 +1069,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultPreviewRedeem requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const assets = await contract.previewRedeem(asString(params, "sharesRaw"));
@@ -1063,6 +1098,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
     },
     async execute(_toolCallId, params: Params) {
       const rpcUrl = resolveRpc({ rpcUrl: asOptionalString(params, "rpcUrl") });
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultConvert requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+        { rpcUrl },
+      );
+      if (zigRequired) return zigRequired;
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const mode = asString(params, "mode");
@@ -1091,6 +1131,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["vaultAddress", "amountRaw", "receiver"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultBuildDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const iface = new Interface([
         "function deposit(uint256 assets,address receiver) returns (uint256)",
       ]);
@@ -1126,6 +1171,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["vaultAddress", "amountRaw", "receiver", "owner"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultBuildWithdraw requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const iface = new Interface([
         "function withdraw(uint256 assets,address receiver,address owner) returns (uint256)",
       ]);
@@ -1162,6 +1212,11 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       required: ["vaultAddress", "sharesRaw", "receiver", "owner"],
     },
     async execute(_toolCallId, params: Params) {
+      const zigRequired = zigRequiredBlocked(
+        "morphoVaultBuildRedeem requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+      );
+      if (zigRequired) return zigRequired;
+
       const iface = new Interface([
         "function redeem(uint256 shares,address receiver,address owner) returns (uint256)",
       ]);

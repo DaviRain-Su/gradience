@@ -62,6 +62,8 @@ const TOOL = {
   runtimeInfo: "monad_runtimeInfo",
   lifiRunWorkflow: "monad_lifi_runWorkflow",
   runTransferWorkflow: "monad_runTransferWorkflow",
+  morphoVaultTotals: "monad_morpho_vault_totals",
+  morphoVaultBuildDeposit: "monad_morpho_vault_buildDeposit",
 } as const;
 
 const VALID_STRATEGY = {
@@ -400,6 +402,29 @@ function mkZigRequiredPolicyCases(): ZigRequiredPolicyCase[] {
         amountRaw: "1",
       },
       reason: "runTransferWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.lifiRunWorkflow,
+      params: {
+        runMode: "analysis",
+        fromChain: 1,
+        toChain: 1,
+        fromToken: ADDR_A,
+        toToken: ADDR_B,
+        fromAmount: "1",
+        fromAddress: ADDR_C,
+      },
+      reason: "lifiRunWorkflow requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultTotals,
+      params: { vaultAddress: ADDR_A },
+      reason: "morphoVaultTotals requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
+    },
+    {
+      name: TOOL.morphoVaultBuildDeposit,
+      params: { vaultAddress: ADDR_A, amountRaw: "1", receiver: ADDR_B },
+      reason: "morphoVaultBuildDeposit requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
     },
   ];
 }
