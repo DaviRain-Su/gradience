@@ -704,6 +704,39 @@ const REQUIRED_ZIG_POLICY_TOOLS = [
   TOOL.strategyRun,
 ] as const;
 
+const ZIG_ACTION_BY_CORE_TOOL: Record<string, string> = {
+  [TOOL.getBalance]: "getBalance",
+  [TOOL.getErc20Balance]: "getErc20Balance",
+  [TOOL.getBlockNumber]: "getBlockNumber",
+  [TOOL.buildTransferNative]: "buildTransferNative",
+  [TOOL.buildTransferErc20]: "buildTransferErc20",
+  [TOOL.buildErc20Approve]: "buildErc20Approve",
+  [TOOL.buildDexSwap]: "buildDexSwap",
+  [TOOL.planLendingAction]: "planLendingAction",
+  [TOOL.paymentIntentCreate]: "paymentIntentCreate",
+  [TOOL.subscriptionIntentCreate]: "subscriptionIntentCreate",
+  [TOOL.lifiGetQuote]: "lifiGetQuote",
+  [TOOL.lifiGetRoutes]: "lifiGetRoutes",
+  [TOOL.lifiExtractTxRequest]: "lifiExtractTxRequest",
+  [TOOL.lifiRunWorkflow]: "lifiRunWorkflow",
+  [TOOL.morphoVaultMeta]: "morphoVaultMeta",
+  [TOOL.morphoVaultTotals]: "morphoVaultTotals",
+  [TOOL.morphoVaultBalance]: "morphoVaultBalance",
+  [TOOL.morphoVaultPreviewDeposit]: "morphoVaultPreviewDeposit",
+  [TOOL.morphoVaultPreviewWithdraw]: "morphoVaultPreviewWithdraw",
+  [TOOL.morphoVaultPreviewRedeem]: "morphoVaultPreviewRedeem",
+  [TOOL.morphoVaultConvert]: "morphoVaultConvert",
+  [TOOL.morphoVaultBuildDeposit]: "buildMorphoVaultDeposit",
+  [TOOL.morphoVaultBuildWithdraw]: "buildMorphoVaultWithdraw",
+  [TOOL.morphoVaultBuildRedeem]: "buildMorphoVaultRedeem",
+  [TOOL.sendSignedTransaction]: "sendSignedTransaction",
+  [TOOL.runTransferWorkflow]: "runTransferWorkflow",
+  [TOOL.strategyTemplates]: "strategyTemplates",
+  [TOOL.strategyCompile]: "strategyCompile",
+  [TOOL.strategyValidate]: "strategyValidate",
+  [TOOL.strategyRun]: "strategyRun",
+};
+
 const ZIG_ENABLED_CORE_EXTERNAL_TOOLS = [
   TOOL.getBalance,
   TOOL.getErc20Balance,
@@ -1522,6 +1555,39 @@ async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
   }
 }
 
+async function runZigSchemaCoverageChecks(tools: ToolMap): Promise<void> {
+  const prevUse = process.env.MONAD_USE_ZIG_CORE;
+  process.env.MONAD_USE_ZIG_CORE = "1";
+  try {
+    const payload = await executePayload(tools, TOOL.schema, {});
+    assertEnvelopeShape(TOOL.schema, payload);
+    assertEnvelopeOrder(TOOL.schema, payload);
+    assertOkEnvelope(TOOL.schema, payload);
+
+    const actions = getResult(TOOL.schema, payload).actions;
+    if (!Array.isArray(actions)) {
+      throw new Error(fail(TOOL.schema, "result.actions must be array"));
+    }
+    const actionSet = new Set(actions.map((v) => String(v)));
+
+    for (const toolName of REQUIRED_ZIG_POLICY_TOOLS) {
+      const action = ZIG_ACTION_BY_CORE_TOOL[toolName];
+      if (!action) {
+        throw new Error(fail(toolName, "missing zig action mapping"));
+      }
+      if (!actionSet.has(action)) {
+        throw new Error(fail(toolName, `zig schema missing action ${action}`));
+      }
+    }
+  } finally {
+    if (prevUse === undefined) {
+      delete process.env.MONAD_USE_ZIG_CORE;
+    } else {
+      process.env.MONAD_USE_ZIG_CORE = prevUse;
+    }
+  }
+}
+
 async function main(): Promise<void> {
   process.env.MONAD_USE_ZIG_CORE = "0";
 
@@ -1534,6 +1600,7 @@ async function main(): Promise<void> {
   registerMonadTools(registrar);
 
   await runContextCheck(buildVoidContext, runMainPipelineWithContext, tools);
+  await runZigSchemaCoverageChecks(tools);
   await runZigEnabledCoreChecks(tools);
   await runZigRequiredPolicyChecks(tools);
 
