@@ -32,6 +32,22 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try handleMorphoVaultBalance(allocator, params);
         return true;
     }
+    if (std.mem.eql(u8, action, "morphoVaultPreviewDeposit")) {
+        try handleMorphoVaultPreviewDeposit(allocator, params);
+        return true;
+    }
+    if (std.mem.eql(u8, action, "morphoVaultPreviewWithdraw")) {
+        try handleMorphoVaultPreviewWithdraw(allocator, params);
+        return true;
+    }
+    if (std.mem.eql(u8, action, "morphoVaultPreviewRedeem")) {
+        try handleMorphoVaultPreviewRedeem(allocator, params);
+        return true;
+    }
+    if (std.mem.eql(u8, action, "morphoVaultConvert")) {
+        try handleMorphoVaultConvert(allocator, params);
+        return true;
+    }
     if (std.mem.eql(u8, action, "estimateGas")) {
         try handleEstimateGas(allocator, params);
         return true;
@@ -369,6 +385,75 @@ fn handleMorphoVaultBalance(allocator: std.mem.Allocator, params: std.json.Objec
     }
 }
 
+fn handleMorphoVaultPreviewDeposit(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    try handleMorphoVaultUintRead(allocator, params, "amountRaw", "previewDeposit(uint256)", "shares", "invalid previewDeposit");
+}
+
+fn handleMorphoVaultPreviewWithdraw(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    try handleMorphoVaultUintRead(allocator, params, "amountRaw", "previewWithdraw(uint256)", "shares", "invalid previewWithdraw");
+}
+
+fn handleMorphoVaultPreviewRedeem(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    try handleMorphoVaultUintRead(allocator, params, "sharesRaw", "previewRedeem(uint256)", "assets", "invalid previewRedeem");
+}
+
+fn handleMorphoVaultConvert(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
+    const mode = getString(params, "mode") orelse return writeMissing("mode");
+    const signature = if (std.mem.eql(u8, mode, "toShares"))
+        "convertToShares(uint256)"
+    else if (std.mem.eql(u8, mode, "toAssets"))
+        "convertToAssets(uint256)"
+    else {
+        try writeInvalid("mode");
+        return;
+    };
+    try handleMorphoVaultUintRead(allocator, params, "amountRaw", signature, "result", "invalid convert result");
+}
+
+fn handleMorphoVaultUintRead(
+    allocator: std.mem.Allocator,
+    params: std.json.ObjectMap,
+    amount_field: []const u8,
+    signature: []const u8,
+    result_field: []const u8,
+    invalid_message: []const u8,
+) !void {
+    const results_only = getBool(params, "resultsOnly") orelse false;
+    const vault_address = getString(params, "vaultAddress") orelse return writeMissing("vaultAddress");
+    const amount_raw = getString(params, amount_field) orelse return writeMissing(amount_field);
+    const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
+
+    _ = normalizeHexAddress(vault_address) catch return writeInvalid("vaultAddress");
+    const amount = std.fmt.parseUnsigned(u256, amount_raw, 10) catch return writeInvalid(amount_field);
+
+    const result_hex = rpcCallUintArg(allocator, rpc_url, vault_address, signature, amount) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => {
+            try writeRpcError(err);
+            return;
+        },
+    };
+    defer allocator.free(result_hex);
+
+    const value = hexQuantityToDecimalString(allocator, result_hex) catch {
+        try core_envelope.writeJson(core_errors.usage(invalid_message));
+        return;
+    };
+    defer allocator.free(value);
+
+    var payload = std.json.ObjectMap.init(allocator);
+    defer payload.deinit();
+    try payload.put("source", .{ .string = "fresh" });
+    try payload.put(result_field, .{ .string = value });
+    try payload.put("rpcUrl", .{ .string = rpc_url });
+
+    if (results_only) {
+        try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = payload } });
+    } else {
+        try core_envelope.writeJson(.{ .status = "ok", .result = std.json.Value{ .object = payload } });
+    }
+}
+
 fn handleEstimateGas(allocator: std.mem.Allocator, params: std.json.ObjectMap) !void {
     const results_only = getBool(params, "resultsOnly") orelse false;
     const rpc_url = getString(params, "rpcUrl") orelse "https://rpc.monad.xyz";
@@ -468,6 +553,28 @@ fn rpcCallAddressArg(
     std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
     const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
     const data = try std.fmt.allocPrint(allocator, "0x{s}{s}{s}", .{ selector_hex, "000000000000000000000000", address_40 });
+    defer allocator.free(data);
+
+    const params_json = try std.fmt.allocPrint(allocator, "[{{\"to\":\"{s}\",\"data\":\"{s}\"}},\"latest\"]", .{ to, data });
+    defer allocator.free(params_json);
+
+    return rpc_client.rpcCallResultStringQuiet(allocator, rpc_url, "eth_call", params_json);
+}
+
+fn rpcCallUintArg(
+    allocator: std.mem.Allocator,
+    rpc_url: []const u8,
+    to: []const u8,
+    signature: []const u8,
+    amount: u256,
+) ![]u8 {
+    var selector_bytes: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &selector_bytes, .{});
+    const selector_hex = std.fmt.bytesToHex(selector_bytes[0..4], .lower);
+    var amount_hex_buf: [64]u8 = undefined;
+    _ = std.fmt.bufPrint(&amount_hex_buf, "{x:0>64}", .{amount}) catch unreachable;
+
+    const data = try std.fmt.allocPrint(allocator, "0x{s}{s}", .{ selector_hex, amount_hex_buf });
     defer allocator.free(data);
 
     const params_json = try std.fmt.allocPrint(allocator, "[{{\"to\":\"{s}\",\"data\":\"{s}\"}},\"latest\"]", .{ to, data });

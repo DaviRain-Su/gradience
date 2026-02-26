@@ -1196,6 +1196,21 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         { rpcUrl },
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "morphoVaultPreviewDeposit",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            rpcUrl,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core morphoVaultPreviewDeposit failed");
+        const payload = zigPayload(zig);
+        return toolOk({ shares: String(payload.shares || "0") }, { rpcUrl });
+      }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewDeposit(asString(params, "amountRaw"));
@@ -1224,6 +1239,21 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         { rpcUrl },
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "morphoVaultPreviewWithdraw",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            rpcUrl,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core morphoVaultPreviewWithdraw failed");
+        const payload = zigPayload(zig);
+        return toolOk({ shares: String(payload.shares || "0") }, { rpcUrl });
+      }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const shares = await contract.previewWithdraw(asString(params, "amountRaw"));
@@ -1252,6 +1282,21 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         { rpcUrl },
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "morphoVaultPreviewRedeem",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            sharesRaw: asString(params, "sharesRaw"),
+            rpcUrl,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core morphoVaultPreviewRedeem failed");
+        const payload = zigPayload(zig);
+        return toolOk({ assets: String(payload.assets || "0") }, { rpcUrl });
+      }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const assets = await contract.previewRedeem(asString(params, "sharesRaw"));
@@ -1281,6 +1326,22 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         { rpcUrl },
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "morphoVaultConvert",
+          params: {
+            vaultAddress: asString(params, "vaultAddress"),
+            amountRaw: asString(params, "amountRaw"),
+            mode: asString(params, "mode"),
+            rpcUrl,
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core morphoVaultConvert failed");
+        const payload = zigPayload(zig);
+        return toolOk({ result: String(payload.result || "0") }, { rpcUrl });
+      }
       const provider = getProvider(rpcUrl);
       const contract = new Contract(asString(params, "vaultAddress"), ERC4626_ABI, provider);
       const mode = asString(params, "mode");
