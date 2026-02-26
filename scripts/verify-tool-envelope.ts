@@ -704,6 +704,20 @@ const REQUIRED_ZIG_POLICY_TOOLS = [
   TOOL.strategyRun,
 ] as const;
 
+const ZIG_ENABLED_CORE_EXTERNAL_TOOLS = [
+  TOOL.getBalance,
+  TOOL.getErc20Balance,
+  TOOL.getBlockNumber,
+  TOOL.sendSignedTransaction,
+  TOOL.runTransferWorkflow,
+  TOOL.morphoVaultTotals,
+  TOOL.morphoVaultBalance,
+  TOOL.morphoVaultPreviewDeposit,
+  TOOL.morphoVaultPreviewWithdraw,
+  TOOL.morphoVaultPreviewRedeem,
+  TOOL.morphoVaultConvert,
+] as const;
+
 function assertZigPolicyCaseCoverage(cases: ZigRequiredPolicyCase[]): void {
   const names = new Set<string>();
   for (const c of cases) {
@@ -716,6 +730,24 @@ function assertZigPolicyCaseCoverage(cases: ZigRequiredPolicyCase[]): void {
   for (const name of REQUIRED_ZIG_POLICY_TOOLS) {
     if (!names.has(name)) {
       throw new Error(fail(name, "missing zig policy case coverage"));
+    }
+  }
+}
+
+function assertZigEnabledCaseCoverage(cases: ZigEnabledCoreCase[]): void {
+  const names = new Set<string>();
+  for (const c of cases) {
+    if (names.has(c.name)) {
+      throw new Error(fail(c.name, "duplicate zig-enabled core case"));
+    }
+    names.add(c.name);
+  }
+
+  const external = new Set<string>(ZIG_ENABLED_CORE_EXTERNAL_TOOLS);
+  for (const name of REQUIRED_ZIG_POLICY_TOOLS) {
+    if (external.has(name)) continue;
+    if (!names.has(name)) {
+      throw new Error(fail(name, "missing zig-enabled core case coverage"));
     }
   }
 }
@@ -1465,6 +1497,7 @@ async function runZigEnabledCoreChecks(tools: ToolMap): Promise<void> {
   process.env.MONAD_REQUIRE_ZIG_CORE = "1";
   try {
     const cases = mkZigEnabledCoreCases();
+    assertZigEnabledCaseCoverage(cases);
     await runToolCaseList(tools, cases, async (enabledTools, c) => {
       const payload = await executePayload(enabledTools, c.name, c.params);
       assertEnvelopeShape(c.name, payload);
