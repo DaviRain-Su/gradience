@@ -625,6 +625,23 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
       );
       if (zigRequired) return zigRequired;
 
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "planLendingAction",
+          params: {
+            protocol: asString(params, "protocol"),
+            market: asString(params, "market"),
+            action: asString(params, "action"),
+            asset: asString(params, "asset"),
+            amountRaw: asString(params, "amountRaw"),
+            receiver: asOptionalString(params, "receiver"),
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core planLendingAction failed");
+        return toolOk(zigPayload(zig));
+      }
+
       return toolOk({
         plan: {
           protocol: asString(params, "protocol"),
@@ -661,6 +678,23 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         "paymentIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "paymentIntentCreate",
+          params: {
+            token: asString(params, "token"),
+            amountRaw: asString(params, "amountRaw"),
+            payer: asOptionalString(params, "payer"),
+            payee: asString(params, "payee"),
+            expiresAt: asOptionalString(params, "expiresAt"),
+            memo: asOptionalString(params, "memo"),
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core paymentIntentCreate failed");
+        return toolOk(zigPayload(zig));
+      }
 
       return toolOk({
         paymentIntent: {
@@ -699,6 +733,24 @@ export function registerMonadTools(registrar: ToolRegistrar): void {
         "subscriptionIntentCreate requires zig core when MONAD_REQUIRE_ZIG_CORE=1",
       );
       if (zigRequired) return zigRequired;
+
+      if (isZigCoreEnabled()) {
+        const zig = await callZigCore({
+          action: "subscriptionIntentCreate",
+          params: {
+            token: asString(params, "token"),
+            amountRaw: asString(params, "amountRaw"),
+            payer: asOptionalString(params, "payer"),
+            payee: asString(params, "payee"),
+            cadenceSeconds: Number(params.cadenceSeconds || 0),
+            startAt: asOptionalString(params, "startAt"),
+            endAt: asOptionalString(params, "endAt"),
+            resultsOnly: true,
+          },
+        });
+        ensureZigOk(zig, "zig core subscriptionIntentCreate failed");
+        return toolOk(zigPayload(zig));
+      }
 
       return toolOk({
         subscriptionIntent: {

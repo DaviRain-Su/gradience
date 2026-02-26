@@ -202,6 +202,168 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         return true;
     }
 
+    if (std.mem.eql(u8, action, "planLendingAction")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const protocol = getString(params, "protocol") orelse {
+            try writeMissing("protocol");
+            return true;
+        };
+        const market = getString(params, "market") orelse {
+            try writeMissing("market");
+            return true;
+        };
+        const plan_action = getString(params, "action") orelse {
+            try writeMissing("action");
+            return true;
+        };
+        const asset = getString(params, "asset") orelse {
+            try writeMissing("asset");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const receiver = getString(params, "receiver");
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .plan = .{
+                        .protocol = protocol,
+                        .market = market,
+                        .action = plan_action,
+                        .asset = asset,
+                        .amountRaw = amount_raw,
+                        .receiver = receiver,
+                        .nextStep = "Use protocol adapter to encode calldata (not included in this plan).",
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .plan = .{
+                    .protocol = protocol,
+                    .market = market,
+                    .action = plan_action,
+                    .asset = asset,
+                    .amountRaw = amount_raw,
+                    .receiver = receiver,
+                    .nextStep = "Use protocol adapter to encode calldata (not included in this plan).",
+                },
+            });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "paymentIntentCreate")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const token = getString(params, "token") orelse {
+            try writeMissing("token");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const payee = getString(params, "payee") orelse {
+            try writeMissing("payee");
+            return true;
+        };
+        const payer = getString(params, "payer");
+        const expires_at = getString(params, "expiresAt");
+        const memo = getString(params, "memo");
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .paymentIntent = .{
+                        .type = "pay_per_call",
+                        .token = token,
+                        .amountRaw = amount_raw,
+                        .payer = payer,
+                        .payee = payee,
+                        .expiresAt = expires_at,
+                        .memo = memo,
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .paymentIntent = .{
+                    .type = "pay_per_call",
+                    .token = token,
+                    .amountRaw = amount_raw,
+                    .payer = payer,
+                    .payee = payee,
+                    .expiresAt = expires_at,
+                    .memo = memo,
+                },
+            });
+        }
+        return true;
+    }
+
+    if (std.mem.eql(u8, action, "subscriptionIntentCreate")) {
+        const results_only = getBool(params, "resultsOnly") orelse false;
+        const token = getString(params, "token") orelse {
+            try writeMissing("token");
+            return true;
+        };
+        const amount_raw = getString(params, "amountRaw") orelse {
+            try writeMissing("amountRaw");
+            return true;
+        };
+        const payee = getString(params, "payee") orelse {
+            try writeMissing("payee");
+            return true;
+        };
+        const cadence_seconds = getU64(params, "cadenceSeconds") orelse {
+            try writeMissing("cadenceSeconds");
+            return true;
+        };
+        const payer = getString(params, "payer");
+        const start_at = getString(params, "startAt");
+        const end_at = getString(params, "endAt");
+
+        if (results_only) {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .results = .{
+                    .subscriptionIntent = .{
+                        .type = "subscription",
+                        .token = token,
+                        .amountRaw = amount_raw,
+                        .payer = payer,
+                        .payee = payee,
+                        .cadenceSeconds = cadence_seconds,
+                        .startAt = start_at,
+                        .endAt = end_at,
+                    },
+                },
+            });
+        } else {
+            try core_envelope.writeJson(.{
+                .status = "ok",
+                .subscriptionIntent = .{
+                    .type = "subscription",
+                    .token = token,
+                    .amountRaw = amount_raw,
+                    .payer = payer,
+                    .payee = payee,
+                    .cadenceSeconds = cadence_seconds,
+                    .startAt = start_at,
+                    .endAt = end_at,
+                },
+            });
+        }
+        return true;
+    }
+
     if (std.mem.eql(u8, action, "cachePolicy")) {
         const results_only = getBool(params, "resultsOnly") orelse false;
         const method = getString(params, "method") orelse {

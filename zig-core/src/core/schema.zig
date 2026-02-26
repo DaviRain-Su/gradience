@@ -27,6 +27,9 @@ pub const supported_actions = [_][]const u8{
     "buildTransferErc20",
     "buildErc20Approve",
     "buildDexSwap",
+    "planLendingAction",
+    "paymentIntentCreate",
+    "subscriptionIntentCreate",
     "estimateGas",
     "sendSignedTransaction",
 };
