@@ -155,6 +155,16 @@ Runtime controls (optional):
 
 Core tools + strategy compiler/runner are documented in `skills/monad-pay-exec/SKILL.md`.
 
+## Using with OpenCode / Pi / Codex agents
+
+You can use this repo with generic coding agents even without OpenClaw skill loading.
+
+- Give the agent `skills/monad-pay-exec/SKILL.md` as behavior/tooling reference.
+- Ask the agent to run `npm run verify:full` before and after changes.
+- For direct Zig action calls, use the binary protocol in `src/integrations/zig-core.ts`:
+  send JSON on stdin with `{ "action": "...", "params": { ... } }`, parse JSON from stdout.
+- Reusable prompt template: `docs/AGENT_PROMPT_TEMPLATE.md`.
+
 ## Dashboard
 
 Start the local dashboard:

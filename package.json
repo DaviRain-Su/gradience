@@ -2,6 +2,11 @@
   "name": "monad-openclaw-skill",
   "version": "0.1.0",
   "description": "Monad payment + execution toolset exposed as OpenClaw skills",
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

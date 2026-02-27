@@ -4,6 +4,9 @@
   "description": "Monad payment/settlement + execution toolset for OpenClaw",
   "version": "0.1.0",
   "repository": "local:/Users/davirian/dev/gradience",
+  "skills": [
+    "skills"
+  ],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
