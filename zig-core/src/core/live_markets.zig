@@ -333,6 +333,7 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
     const result = std.process.Child.run(.{
         .allocator = allocator,
         .argv = &argv,
+        .max_output_bytes = 16 * 1024 * 1024,
     }) catch return error.LiveSourceUnavailable;
     defer allocator.free(result.stderr);
 
