@@ -1376,10 +1376,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         defer allocator.free(ctx.provider);
                         defer allocator.free(ctx.url);
                         defer allocator.free(ctx.transport);
+                        defer allocator.free(ctx.probe);
                         const message = try std.fmt.allocPrint(
                             allocator,
-                            "live yield source unavailable (provider={s}, url={s}, transport={s})",
-                            .{ ctx.provider, ctx.url, ctx.transport },
+                            "live yield source unavailable (provider={s}, url={s}, transport={s}, {s})",
+                            .{ ctx.provider, ctx.url, ctx.transport, ctx.probe },
                         );
                         defer allocator.free(message);
                         try core_envelope.writeJson(core_errors.unavailable(message));
@@ -1688,10 +1689,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         defer allocator.free(ctx.provider);
                         defer allocator.free(ctx.url);
                         defer allocator.free(ctx.transport);
+                        defer allocator.free(ctx.probe);
                         const message = try std.fmt.allocPrint(
                             allocator,
-                            "live lending source unavailable (provider={s}, url={s}, transport={s})",
-                            .{ ctx.provider, ctx.url, ctx.transport },
+                            "live lending source unavailable (provider={s}, url={s}, transport={s}, {s})",
+                            .{ ctx.provider, ctx.url, ctx.transport, ctx.probe },
                         );
                         defer allocator.free(message);
                         try core_envelope.writeJson(core_errors.unavailable(message));
@@ -1862,10 +1864,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         defer allocator.free(ctx.provider);
                         defer allocator.free(ctx.url);
                         defer allocator.free(ctx.transport);
+                        defer allocator.free(ctx.probe);
                         const message = try std.fmt.allocPrint(
                             allocator,
-                            "live lending source unavailable (provider={s}, url={s}, transport={s})",
-                            .{ ctx.provider, ctx.url, ctx.transport },
+                            "live lending source unavailable (provider={s}, url={s}, transport={s}, {s})",
+                            .{ ctx.provider, ctx.url, ctx.transport, ctx.probe },
                         );
                         defer allocator.free(message);
                         try core_envelope.writeJson(core_errors.unavailable(message));

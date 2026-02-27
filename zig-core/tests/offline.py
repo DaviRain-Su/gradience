@@ -771,6 +771,32 @@ def main() -> int:
         assert yield_live_cache_hit.get("source") == "cache"
         assert yield_live_cache_hit.get("sourceProvider") == "defillama"
 
+        env_live_cache_no_path = env_live_cache.copy()
+        env_live_cache_no_path["DEFI_LIVE_HTTP_TRANSPORT"] = "curl"
+        env_live_cache_no_path["PATH"] = ""
+        yield_live_curl_missing_binary_fallback = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "defillama",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_path,
+        )
+        assert yield_live_curl_missing_binary_fallback.get("status") == "ok"
+        assert yield_live_curl_missing_binary_fallback.get("source") in {
+            "live",
+            "cache",
+        }
+        assert (
+            yield_live_curl_missing_binary_fallback.get("sourceProvider") == "defillama"
+        )
+
         yield_live_arbitrum = run(
             {
                 "action": "yieldOpportunities",

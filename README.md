@@ -310,6 +310,7 @@ Optional direct source URLs:
 Live HTTP transport override:
 
 - `DEFI_LIVE_HTTP_TRANSPORT` (`curl` default, optional `zig`)
+- if selected transport fails, runtime attempts the other transport before returning unavailable
 
 Recommended production defaults:
 

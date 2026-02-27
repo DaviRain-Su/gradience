@@ -14,6 +14,7 @@ pub const LiveSourceInfo = struct {
     provider: []u8,
     url: []u8,
     transport: []u8,
+    probe: []u8,
 };
 
 pub fn resolveLiveSourceInfo(
@@ -36,10 +37,12 @@ pub fn resolveLiveSourceInfo(
 
     const url = providerUrl(allocator, provider_name) catch try allocator.dupe(u8, "<unset>");
     const transport = try readTransport(allocator);
+    const probe = probeUrlWithCurl(allocator, url);
     return .{
         .provider = try allocator.dupe(u8, provider_name),
         .url = url,
         .transport = transport,
+        .probe = probe,
     };
 }
 
@@ -311,12 +314,19 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
         "-sS",
         "-L",
         "--fail",
+        "--retry",
+        "2",
+        "--retry-all-errors",
+        "--connect-timeout",
+        "5",
         "--max-time",
-        "15",
+        "30",
         "--header",
         "accept: application/json",
         "--header",
         "accept-encoding: identity",
+        "--user-agent",
+        "gradience-zig-live/1",
         url,
     };
 
@@ -338,7 +348,7 @@ fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
     defer allocator.free(transport);
 
     if (std.ascii.eqlIgnoreCase(std.mem.trim(u8, transport, " \r\n\t"), "curl")) {
-        return fetchHttpBodyWithCurl(allocator, url);
+        return fetchHttpBodyWithCurl(allocator, url) catch fetchHttpBodyWithZig(allocator, url);
     }
 
     return fetchHttpBodyWithZig(allocator, url) catch fetchHttpBodyWithCurl(allocator, url);
@@ -374,6 +384,57 @@ fn fetchHttpBodyWithZig(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
 
     if (fetch_result.status != .ok) return error.LiveSourceUnavailable;
     return allocator.dupe(u8, response_body.written()) catch error.LiveSourceUnavailable;
+}
+
+fn probeUrlWithCurl(allocator: std.mem.Allocator, url: []const u8) []u8 {
+    const argv = [_][]const u8{
+        "curl",
+        "-sS",
+        "-L",
+        "--max-time",
+        "10",
+        "--header",
+        "accept: application/json",
+        "--header",
+        "accept-encoding: identity",
+        "-o",
+        "/dev/null",
+        "-w",
+        "%{http_code} %{size_download}",
+        url,
+    };
+
+    const result = std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &argv,
+    }) catch return allocProbe(allocator, "probe=spawn-failed");
+
+    const stdout_trimmed = std.mem.trim(u8, result.stdout, " \r\n\t");
+    const stderr_trimmed = std.mem.trim(u8, result.stderr, " \r\n\t");
+
+    if (result.term.Exited == 0) {
+        const probe_msg = std.fmt.allocPrint(
+            allocator,
+            "probe=ok http_size='{s}' stderr='{s}'",
+            .{ stdout_trimmed, stderr_trimmed },
+        ) catch allocProbe(allocator, "probe=ok");
+        allocator.free(result.stdout);
+        allocator.free(result.stderr);
+        return probe_msg;
+    }
+
+    const probe_err = std.fmt.allocPrint(
+        allocator,
+        "probe=failed term={any} stdout='{s}' stderr='{s}'",
+        .{ result.term, stdout_trimmed, stderr_trimmed },
+    ) catch allocProbe(allocator, "probe=failed");
+    allocator.free(result.stdout);
+    allocator.free(result.stderr);
+    return probe_err;
+}
+
+fn allocProbe(allocator: std.mem.Allocator, msg: []const u8) []u8 {
+    return allocator.dupe(u8, msg) catch @panic("out of memory");
 }
 
 fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {

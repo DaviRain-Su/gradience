@@ -101,6 +101,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `DEFI_AAVE_POOLS_URL`
   - `DEFI_KAMINO_POOLS_URL`
   - `DEFI_LIVE_HTTP_TRANSPORT` (`curl` default, optional `zig`)
+  - runtime attempts the alternate transport if the selected transport fails
 
 Production recommendation:
 
