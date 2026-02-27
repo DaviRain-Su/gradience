@@ -73,6 +73,15 @@ pub fn resolveAsset(allocator: std.mem.Allocator, chain_caip2: []const u8, asset
     return null;
 }
 
+pub fn resolveAssetDecimals(chain_caip2: []const u8, asset: []const u8) ?u8 {
+    for (assets_registry.assets) |entry| {
+        if (std.mem.eql(u8, entry.chain_caip2, chain_caip2) and std.ascii.eqlIgnoreCase(entry.symbol, asset)) {
+            return entry.decimals;
+        }
+    }
+    return null;
+}
+
 fn isHexAddress(value: []const u8) bool {
     if (value.len != 42) return false;
     if (!(value[0] == '0' and (value[1] == 'x' or value[1] == 'X'))) return false;

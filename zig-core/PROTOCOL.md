@@ -95,13 +95,15 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `amount` (base units)
 - `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
 - response `amountIn` echoes the trimmed amount text
+- response includes `source` to indicate provider selection path (`provider`, `providers`, `strategy`)
 - Optional params:
   - `provider` (`across`, `lifi`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `fastest`)
-  - `select` (comma-separated fields: `provider`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
+  - `select` (comma-separated fields: `provider`, `source`, `fromChain`, `toChain`, `asset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `etaSeconds`)
 - `strategy` value is trimmed; blank/unknown values are rejected
 - `select` also accepts snake_case aliases for quote fields (e.g. `estimated_amount_out`, `fee_bps`, `eta_seconds`)
+- `select` also accepts `inputAmount` / `input_amount` for `amountIn`, and `estimatedOut` / `estimated_out` for `estimatedAmountOut`
 - alias/camel/snake variants are coalesced to canonical response keys
 - Selection behavior:
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
@@ -119,18 +121,32 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `chain` (chain alias/id/CAIP-2, surrounding whitespace ignored, must be non-empty)
   - `fromAsset` (symbol, surrounding whitespace ignored, must be non-empty)
   - `toAsset` (symbol, surrounding whitespace ignored, must be non-empty)
-  - `amount` (base units)
-- `amount` is parsed as unsigned integer text; surrounding whitespace is ignored
-- response `amountIn` echoes the trimmed amount text
+- For `type=exact-input`:
+  - `amount` (base units, required; aliases: `amountIn`, `amount_in`)
+- For `type=exact-output`:
+  - `amountOut` or `amountOutDecimal` (one required; snake_case aliases: `amount_out`, `amount_out_decimal`)
+  - `amount`/`amountIn`/`amount_in`/`amountDecimal` are rejected
+  - raw and decimal output amount forms cannot be mixed in the same request
+- `amountOutDecimal` / `amount_out_decimal` are converted to base units using the destination asset (`toAsset`) decimals from the local asset registry
+- amount fields are parsed as unsigned integer text; surrounding whitespace is ignored
+- when alias variants for the same semantic field are provided together (for example `type` + `tradeType`, or `slippagePct` + `slippage_pct`), values must agree
+- response always includes `tradeType` and canonical `amountIn` / `estimatedAmountOut`
+- response also includes `source` to indicate provider selection path (`provider`, `providers`, `default_exact_output`, `strategy`)
 - Optional params:
+  - `type` (`exact-input` default, or `exact-output`; aliases: `tradeType`, `trade_type`)
   - `provider` (`1inch`, `uniswap`, `jupiter`, `fibrous`, `bungee`)
   - `providers` (comma-separated provider priority, used when `provider` is not set)
   - `strategy` (`bestOut` default, or `lowestFee`)
-  - `select` (comma-separated fields: `provider`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `feeBps`, `priceImpactBps`)
+  - `slippagePct` (optional, alias: `slippage_pct`; allowed only with `provider=uniswap`; value must be `> 0` and `<= 100`)
+  - `select` (comma-separated fields: `provider`, `source`, `chain`, `fromAsset`, `toAsset`, `amountIn`, `estimatedAmountOut`, `tradeType`, `feeBps`, `priceImpactBps`)
 - `strategy` value is trimmed; blank/unknown values are rejected
-- `select` also accepts snake_case aliases for quote fields (e.g. `from_asset`, `to_asset`, `estimated_amount_out`, `fee_bps`, `price_impact_bps`)
+- `select` also accepts snake_case aliases for quote fields (e.g. `from_asset`, `to_asset`, `estimated_amount_out`, `trade_type`, `fee_bps`, `price_impact_bps`)
+- `select` also accepts `inputAmount` / `input_amount` for `amountIn`, and `estimatedOut` / `estimated_out` for `estimatedAmountOut`
 - alias/camel/snake variants are coalesced to canonical response keys
 - Selection behavior:
+  - for EVM `exact-output` without explicit `provider`, provider defaults to `uniswap`
+  - for EVM `exact-output` with `providers`, list must include `uniswap` (otherwise returns code `13`)
+  - `exact-output` is currently supported only on EVM with `provider=uniswap` (unsupported combinations return code `13`)
   - `provider` is strict: when set, only that provider is considered (case-insensitive, surrounding whitespace ignored)
   - `providers` applies case-insensitive priority order (per-token surrounding whitespace ignored); when multiple candidates share the same top priority bucket, `strategy` breaks ties
   - duplicate names in `providers` keep first occurrence precedence
@@ -139,6 +155,17 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `select` field names are case-insensitive; unknown fields are ignored
   - blank/empty `select` values are rejected
   - duplicate `select` fields are coalesced
+
+### LI.FI Notes (`lifiGetQuote`, `lifiGetRoutes`, `lifiRunWorkflow`)
+
+- `lifiGetQuote` response includes `quote.tool="lifi"` and `quote.source="lifi"`
+- `lifiGetRoutes` response routes include `tool="lifi"` and `source="lifi"`
+- `lifiRunWorkflow` response includes top-level `tool` and `source`
+  - `source` is derived from `quote.source` when present, otherwise falls back to `tool`
+- `lifiRunWorkflow` run modes:
+  - `analysis`: returns quote + txRequest + route metadata
+  - `simulate`: requires `txRequest`; returns `estimateGas`
+  - `execute`: requires `signedTxHex`; returns `txHash` (subject to runtime broadcast policy)
 
 ### lendMarkets Notes
 

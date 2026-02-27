@@ -397,6 +397,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const quote = .{
             .id = "zig-lifi-route-1",
             .tool = "lifi",
+            .source = QuoteSource.lifi,
             .fromChain = from_chain,
             .toChain = to_chain,
             .fromToken = from_token,
@@ -450,6 +451,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const routes = .{.{
             .id = "zig-lifi-route-1",
             .tool = "lifi",
+            .source = QuoteSource.lifi,
             .fromChain = from_chain,
             .toChain = to_chain,
             .fromToken = from_token,
@@ -484,7 +486,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         }
 
         const quote = quote_value.object;
-        const tx_request = quote.get("transactionRequest") orelse {
+        const tx_request = quote.get(LifiFieldKey.transaction_request) orelse {
             try core_envelope.writeJson(.{ .status = "blocked", .code = 12, .@"error" = "missing transactionRequest" });
             return true;
         };
@@ -557,34 +559,41 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
 
             owns_generated = true;
-            try generated_tx_request.put("to", .{ .string = to_address });
-            try generated_tx_request.put("data", .{ .string = "0x" });
-            try generated_tx_request.put("value", .{ .string = "0x0" });
+            try generated_tx_request.put(LifiFieldKey.tx_to, .{ .string = to_address });
+            try generated_tx_request.put(LifiFieldKey.tx_data, .{ .string = "0x" });
+            try generated_tx_request.put(LifiFieldKey.tx_value, .{ .string = "0x0" });
 
-            try generated_quote.put("id", .{ .string = "zig-lifi-route-1" });
-            try generated_quote.put("tool", .{ .string = "lifi" });
-            try generated_quote.put("fromChain", .{ .integer = @intCast(from_chain) });
-            try generated_quote.put("toChain", .{ .integer = @intCast(to_chain) });
-            try generated_quote.put("fromToken", .{ .string = from_token });
-            try generated_quote.put("toToken", .{ .string = to_token });
-            try generated_quote.put("fromAmount", .{ .string = from_amount });
-            try generated_quote.put("fromAddress", .{ .string = from_address });
-            try generated_quote.put("toAddress", .{ .string = to_address });
-            try generated_quote.put("transactionRequest", .{ .object = generated_tx_request });
+            try generated_quote.put(LifiFieldKey.id, .{ .string = "zig-lifi-route-1" });
+            try generated_quote.put(LifiFieldKey.tool, .{ .string = "lifi" });
+            try generated_quote.put(LifiFieldKey.source, .{ .string = QuoteSource.lifi });
+            try generated_quote.put(LifiFieldKey.from_chain, .{ .integer = @intCast(from_chain) });
+            try generated_quote.put(LifiFieldKey.to_chain, .{ .integer = @intCast(to_chain) });
+            try generated_quote.put(LifiFieldKey.from_token, .{ .string = from_token });
+            try generated_quote.put(LifiFieldKey.to_token, .{ .string = to_token });
+            try generated_quote.put(LifiFieldKey.from_amount, .{ .string = from_amount });
+            try generated_quote.put(LifiFieldKey.from_address, .{ .string = from_address });
+            try generated_quote.put(LifiFieldKey.to_address, .{ .string = to_address });
+            try generated_quote.put(LifiFieldKey.transaction_request, .{ .object = generated_tx_request });
             break :blk .{ .object = generated_quote };
         };
 
         const quote_obj = quote_value.object;
-        const tx_request = if (quote_obj.get("transactionRequest")) |tx|
+        const tx_request = if (quote_obj.get(LifiFieldKey.transaction_request)) |tx|
             if (tx == .object) tx else null
         else
             null;
-        const route_id: ?[]const u8 = if (quote_obj.get("id")) |idv|
+        const route_id: ?[]const u8 = if (quote_obj.get(LifiFieldKey.id)) |idv|
             if (idv == .string) idv.string else null
         else
             null;
-        const tool_name: ?[]const u8 = if (quote_obj.get("tool")) |toolv|
+        const tool_name: ?[]const u8 = if (quote_obj.get(LifiFieldKey.tool)) |toolv|
             if (toolv == .string) toolv.string else null
+        else
+            null;
+        const source_name: ?[]const u8 = if (quote_obj.get(LifiFieldKey.source)) |sourcev|
+            if (sourcev == .string) sourcev.string else null
+        else if (tool_name) |tool|
+            tool
         else
             null;
 
@@ -597,10 +606,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         .txRequest = tx_request,
                         .routeId = route_id,
                         .tool = tool_name,
+                        .source = source_name,
                     },
                 });
             } else {
-                try core_envelope.writeJson(.{ .status = "ok", .quote = quote_value, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
+                try core_envelope.writeJson(.{ .status = "ok", .quote = quote_value, .txRequest = tx_request, .routeId = route_id, .tool = tool_name, .source = source_name });
             }
             return true;
         }
@@ -612,9 +622,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
 
             const tx_obj = tx_request.?.object;
-            const tx_to = getString(tx_obj, "to") orelse "";
-            const tx_data = getString(tx_obj, "data") orelse "0x";
-            const tx_value = getString(tx_obj, "value") orelse "0x0";
+            const tx_to = getString(tx_obj, LifiFieldKey.tx_to) orelse "";
+            const tx_data = getString(tx_obj, LifiFieldKey.tx_data) orelse "0x";
+            const tx_value = getString(tx_obj, LifiFieldKey.tx_value) orelse "0x0";
 
             const estimate_params = try std.fmt.allocPrint(
                 allocator,
@@ -643,10 +653,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         .txRequest = tx_request,
                         .routeId = route_id,
                         .tool = tool_name,
+                        .source = source_name,
                     },
                 });
             } else {
-                try core_envelope.writeJson(.{ .status = "ok", .estimateGas = estimate_gas, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
+                try core_envelope.writeJson(.{ .status = "ok", .estimateGas = estimate_gas, .txRequest = tx_request, .routeId = route_id, .tool = tool_name, .source = source_name });
             }
             return true;
         }
@@ -680,10 +691,11 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     .txRequest = tx_request,
                     .routeId = route_id,
                     .tool = tool_name,
+                    .source = source_name,
                 },
             });
         } else {
-            try core_envelope.writeJson(.{ .status = "ok", .txHash = tx_hash, .txRequest = tx_request, .routeId = route_id, .tool = tool_name });
+            try core_envelope.writeJson(.{ .status = "ok", .txHash = tx_hash, .txRequest = tx_request, .routeId = route_id, .tool = tool_name, .source = source_name });
         }
         return true;
     }
@@ -1418,6 +1430,12 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 return true;
             },
         };
+        const source: []const u8 = if (bridge_options.provider_filter != null)
+            QuoteSource.provider
+        else if (bridge_options.provider_priority != null)
+            QuoteSource.providers
+        else
+            QuoteSource.strategy;
         var candidates = try collectBridgeCandidates(allocator, input.from_chain, input.to_chain, input.asset);
         defer candidates.deinit(allocator);
 
@@ -1448,6 +1466,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             input.to_chain,
             input.asset,
             input.amount_raw,
+            source,
             bridge_options.select,
             bridge_options.results_only,
         );
@@ -1455,8 +1474,6 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
     }
 
     if (std.mem.eql(u8, action, "swapQuote")) {
-        const input = (try parseSwapQuoteInput(params)) orelse return true;
-
         const swap_options = switch (parseSwapQuoteOptions(params)) {
             .ok => |value| value,
             .invalid_field => |field_name| {
@@ -1465,7 +1482,49 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             },
         };
 
-        var candidates = try collectSwapCandidates(allocator, input.chain, input.from_asset, input.to_asset);
+        const input = (try parseSwapQuoteInput(allocator, params, swap_options.trade_type)) orelse return true;
+
+        var source: []const u8 = if (swap_options.provider_filter != null)
+            QuoteSource.provider
+        else if (swap_options.provider_priority != null)
+            QuoteSource.providers
+        else
+            QuoteSource.strategy;
+
+        if (swap_options.trade_type == .exact_output) {
+            if (!std.mem.startsWith(u8, input.chain, "eip155:")) {
+                try writeUnsupportedExactOutput();
+                return true;
+            }
+            if (swap_options.provider_filter) |provider| {
+                if (!std.ascii.eqlIgnoreCase(provider, "uniswap")) {
+                    try writeUnsupportedExactOutput();
+                    return true;
+                }
+            } else if (swap_options.provider_priority) |providers_raw| {
+                if (!providersListContains(providers_raw, "uniswap")) {
+                    try writeUnsupportedExactOutput();
+                    return true;
+                }
+            }
+        }
+
+        var provider_filter = swap_options.provider_filter;
+        if (provider_filter == null and
+            swap_options.trade_type == .exact_output and
+            std.mem.startsWith(u8, input.chain, "eip155:"))
+        {
+            provider_filter = "uniswap";
+            source = QuoteSource.default_exact_output;
+        }
+
+        var candidates = try collectSwapCandidates(
+            allocator,
+            input.chain,
+            input.from_asset,
+            input.to_asset,
+            swap_options.trade_type,
+        );
         defer candidates.deinit(allocator);
 
         if (candidates.items.len == 0) {
@@ -1477,9 +1536,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             allocator,
             input.amount,
             candidates.items,
-            swap_options.provider_filter,
+            provider_filter,
             swap_options.provider_priority,
             swap_options.strategy,
+            swap_options.trade_type,
         );
         if (selected == null) {
             try writeNoSwapRoute();
@@ -1490,11 +1550,14 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         try writeSwapQuoteResponse(
             allocator,
             chosen,
+            selected.?.in_amount,
             chosen_out,
             input.chain,
             input.from_asset,
             input.to_asset,
-            input.amount_raw,
+            swap_options.trade_type,
+            if (swap_options.trade_type == .exact_input) input.amount_raw else null,
+            source,
             swap_options.select,
             swap_options.results_only,
         );
@@ -1777,6 +1840,7 @@ const BridgeQuoteSelection = struct {
 
 const SwapQuoteSelection = struct {
     quote: swap_quotes_registry.SwapQuote,
+    in_amount: u256,
     out_amount: u256,
 };
 
@@ -1788,6 +1852,11 @@ const BridgeStrategy = enum {
 const SwapStrategy = enum {
     best_out,
     lowest_fee,
+};
+
+const SwapTradeType = enum {
+    exact_input,
+    exact_output,
 };
 
 const BridgeQuoteOptions = struct {
@@ -1802,6 +1871,8 @@ const SwapQuoteOptions = struct {
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
     strategy: SwapStrategy,
+    trade_type: SwapTradeType,
+    slippage_pct: ?f64,
     select: ?[]const u8,
     results_only: bool,
 };
@@ -1851,6 +1922,7 @@ const CommonOptionsParseResult = union(enum) {
 
 const QuoteFieldKey = struct {
     const provider = "provider";
+    const source = "source";
     const from_chain = "fromChain";
     const to_chain = "toChain";
     const chain = "chain";
@@ -1862,6 +1934,39 @@ const QuoteFieldKey = struct {
     const fee_bps = "feeBps";
     const eta_seconds = "etaSeconds";
     const price_impact_bps = "priceImpactBps";
+    const trade_type = "tradeType";
+};
+
+const QuoteFieldAlias = struct {
+    const input_amount_camel = "inputAmount";
+    const input_amount_snake = "input_amount";
+    const estimated_out_camel = "estimatedOut";
+    const estimated_out_snake = "estimated_out";
+};
+
+const QuoteSource = struct {
+    const lifi = "lifi";
+    const provider = "provider";
+    const providers = "providers";
+    const strategy = "strategy";
+    const default_exact_output = "default_exact_output";
+};
+
+const LifiFieldKey = struct {
+    const id = "id";
+    const tool = "tool";
+    const source = "source";
+    const from_chain = "fromChain";
+    const to_chain = "toChain";
+    const from_token = "fromToken";
+    const to_token = "toToken";
+    const from_amount = "fromAmount";
+    const from_address = "fromAddress";
+    const to_address = "toAddress";
+    const transaction_request = "transactionRequest";
+    const tx_to = "to";
+    const tx_data = "data";
+    const tx_value = "value";
 };
 
 fn parseBridgeStrategy(raw: []const u8) ?BridgeStrategy {
@@ -1873,6 +1978,12 @@ fn parseBridgeStrategy(raw: []const u8) ?BridgeStrategy {
 fn parseSwapStrategy(raw: []const u8) ?SwapStrategy {
     if (std.ascii.eqlIgnoreCase(raw, "bestOut")) return .best_out;
     if (std.ascii.eqlIgnoreCase(raw, "lowestFee")) return .lowest_fee;
+    return null;
+}
+
+fn parseSwapTradeType(raw: []const u8) ?SwapTradeType {
+    if (std.ascii.eqlIgnoreCase(raw, "exact-input")) return .exact_input;
+    if (std.ascii.eqlIgnoreCase(raw, "exact-output")) return .exact_output;
     return null;
 }
 
@@ -1900,13 +2011,36 @@ fn parseSwapQuoteOptions(params: std.json.ObjectMap) SwapOptionsParseResult {
         .invalid_field => |field_name| return .{ .invalid_field = field_name },
     };
 
+    if (swapTradeTypeAliasesConflict(params)) {
+        return .{ .invalid_field = "type" };
+    }
+
     const strategy_raw = parseStrategyRawParam(params);
     const strategy = parseSwapStrategy(strategy_raw) orelse return .{ .invalid_field = "strategy" };
+    const trade_type_raw = parseSwapTradeTypeRawParam(params);
+    const trade_type = parseSwapTradeType(trade_type_raw) orelse return .{ .invalid_field = "type" };
+
+    const slippage_pct = switch (parseOptionalSlippageParam(params)) {
+        .missing => null,
+        .value => |value| value,
+        .invalid => return .{ .invalid_field = "slippagePct" },
+    };
+
+    if (slippage_pct) |value| {
+        if (!(value > 0 and value <= 100)) {
+            return .{ .invalid_field = "slippagePct" };
+        }
+        if (common.provider_filter == null or !std.ascii.eqlIgnoreCase(common.provider_filter.?, "uniswap")) {
+            return .{ .invalid_field = "slippagePct" };
+        }
+    }
 
     return .{ .ok = .{
         .provider_filter = common.provider_filter,
         .provider_priority = common.provider_priority,
         .strategy = strategy,
+        .trade_type = trade_type,
+        .slippage_pct = slippage_pct,
         .select = common.select,
         .results_only = common.results_only,
     } };
@@ -1943,6 +2077,28 @@ fn parseStrategyRawParam(params: std.json.ObjectMap) []const u8 {
     return std.mem.trim(u8, getString(params, "strategy") orelse "bestOut", " \r\n\t");
 }
 
+fn parseSwapTradeTypeRawParam(params: std.json.ObjectMap) []const u8 {
+    if (getString(params, "type")) |value| return std.mem.trim(u8, value, " \r\n\t");
+    if (getString(params, "tradeType")) |value| return std.mem.trim(u8, value, " \r\n\t");
+    if (getString(params, "trade_type")) |value| return std.mem.trim(u8, value, " \r\n\t");
+    return "exact-input";
+}
+
+fn swapTradeTypeAliasesConflict(params: std.json.ObjectMap) bool {
+    var first: ?[]const u8 = null;
+    const aliases = [_][]const u8{ "type", "tradeType", "trade_type" };
+    for (aliases) |key| {
+        const raw = getString(params, key) orelse continue;
+        const value = std.mem.trim(u8, raw, " \r\n\t");
+        if (first == null) {
+            first = value;
+            continue;
+        }
+        if (!std.ascii.eqlIgnoreCase(first.?, value)) return true;
+    }
+    return false;
+}
+
 fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
     const from_chain = (try parseRequiredNormalizedChainParam(params, "from", "from")) orelse return null;
     const to_chain = (try parseRequiredNormalizedChainParam(params, "to", "to")) orelse return null;
@@ -1958,11 +2114,126 @@ fn parseBridgeQuoteInput(params: std.json.ObjectMap) !?BridgeQuoteInput {
     };
 }
 
-fn parseSwapQuoteInput(params: std.json.ObjectMap) !?SwapQuoteInput {
+fn parseSwapQuoteInput(allocator: std.mem.Allocator, params: std.json.ObjectMap, trade_type: SwapTradeType) !?SwapQuoteInput {
     const chain = (try parseRequiredNormalizedChainParam(params, "chain", null)) orelse return null;
     const from_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "fromAsset")) orelse return null;
     const to_asset = (try parseRequiredTrimmedNonEmptyStringParam(params, "toAsset")) orelse return null;
-    const amount = (try parseRequiredAmountParam(params, "amount")) orelse return null;
+
+    const amount = switch (trade_type) {
+        .exact_input => blk: {
+            if (amountAliasConflict(params, &.{ "amount", "amountIn", "amount_in" })) |field_name| {
+                try writeInvalid(field_name);
+                return null;
+            }
+
+            if (params.get("amountOut") != null) {
+                try writeInvalid("amountOut");
+                return null;
+            }
+            if (params.get("amount_out") != null) {
+                try writeInvalid("amount_out");
+                return null;
+            }
+            if (params.get("amountOutDecimal") != null) {
+                try writeInvalid("amountOutDecimal");
+                return null;
+            }
+            if (params.get("amount_out_decimal") != null) {
+                try writeInvalid("amount_out_decimal");
+                return null;
+            }
+
+            if (params.get("amount") != null) {
+                break :blk (try parseRequiredAmountParam(params, "amount")) orelse return null;
+            }
+            if (params.get("amountIn") != null) {
+                break :blk (try parseRequiredAmountParam(params, "amountIn")) orelse return null;
+            }
+            if (params.get("amount_in") != null) {
+                break :blk (try parseRequiredAmountParam(params, "amount_in")) orelse return null;
+            }
+
+            try writeMissing("amount");
+            return null;
+        },
+        .exact_output => blk: {
+            const out_decimals = core_id.resolveAssetDecimals(chain, to_asset) orelse {
+                if (params.get("amountOutDecimal") != null or params.get("amount_out_decimal") != null) {
+                    try writeInvalid("amountOutDecimal");
+                    return null;
+                }
+                if (params.get("amountOut") != null) {
+                    break :blk (try parseRequiredAmountParam(params, "amountOut")) orelse return null;
+                }
+                if (params.get("amount_out") != null) {
+                    break :blk (try parseRequiredAmountParam(params, "amount_out")) orelse return null;
+                }
+                try writeMissing("amountOut");
+                return null;
+            };
+
+            if (amountAliasConflict(params, &.{ "amountOut", "amount_out" })) |field_name| {
+                try writeInvalid(field_name);
+                return null;
+            }
+
+            if (decimalAmountAliasConflict(allocator, params, out_decimals, &.{ "amountOutDecimal", "amount_out_decimal" })) |field_name| {
+                try writeInvalid(field_name);
+                return null;
+            }
+
+            const has_raw_out = params.get("amountOut") != null or params.get("amount_out") != null;
+            const has_decimal_out = params.get("amountOutDecimal") != null or params.get("amount_out_decimal") != null;
+            if (has_raw_out and has_decimal_out) {
+                try writeInvalid("amountOut");
+                return null;
+            }
+
+            if (params.get("amount") != null) {
+                try writeInvalid("amount");
+                return null;
+            }
+            if (params.get("amountIn") != null) {
+                try writeInvalid("amountIn");
+                return null;
+            }
+            if (params.get("amount_in") != null) {
+                try writeInvalid("amount_in");
+                return null;
+            }
+            if (params.get("amountDecimal") != null) {
+                try writeInvalid("amountDecimal");
+                return null;
+            }
+
+            if (params.get("amountOut") != null) {
+                break :blk (try parseRequiredAmountParam(params, "amountOut")) orelse return null;
+            }
+            if (params.get("amount_out") != null) {
+                break :blk (try parseRequiredAmountParam(params, "amount_out")) orelse return null;
+            }
+            if (params.get("amountOutDecimal") != null) {
+                break :blk (try parseRequiredDecimalAmountParam(
+                    allocator,
+                    params,
+                    "amountOutDecimal",
+                    out_decimals,
+                    "amountOutDecimal",
+                )) orelse return null;
+            }
+            if (params.get("amount_out_decimal") != null) {
+                break :blk (try parseRequiredDecimalAmountParam(
+                    allocator,
+                    params,
+                    "amount_out_decimal",
+                    out_decimals,
+                    "amount_out_decimal",
+                )) orelse return null;
+            }
+            try writeMissing("amountOut");
+            return null;
+        },
+    };
 
     return .{
         .chain = chain,
@@ -1994,12 +2265,15 @@ fn collectSwapCandidates(
     chain: []const u8,
     from_asset: []const u8,
     to_asset: []const u8,
+    trade_type: SwapTradeType,
 ) !std.ArrayList(swap_quotes_registry.SwapQuote) {
     var candidates = std.ArrayList(swap_quotes_registry.SwapQuote).empty;
     for (swap_quotes_registry.quotes) |quote| {
         if (!std.mem.eql(u8, quote.chain, chain)) continue;
         if (!std.ascii.eqlIgnoreCase(quote.from_asset, from_asset)) continue;
         if (!std.ascii.eqlIgnoreCase(quote.to_asset, to_asset)) continue;
+        if (trade_type == .exact_input and !std.ascii.eqlIgnoreCase(quote.trade_type, "exact-input")) continue;
+        if (trade_type == .exact_output and !std.ascii.eqlIgnoreCase(quote.trade_type, "exact-output")) continue;
         try candidates.append(allocator, quote);
     }
     return candidates;
@@ -2065,15 +2339,19 @@ fn selectSwapQuote(
     provider_filter: ?[]const u8,
     provider_priority: ?[]const u8,
     strategy: SwapStrategy,
+    trade_type: SwapTradeType,
 ) !?SwapQuoteSelection {
     var selected: ?SwapQuoteSelection = null;
 
     if (provider_filter) |provider| {
         for (candidates) |quote| {
             if (!std.ascii.eqlIgnoreCase(quote.provider, provider)) continue;
-            const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-            if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
-                selected = .{ .quote = quote, .out_amount = quote_out };
+            const quote_in, const quote_out = switch (trade_type) {
+                .exact_input => .{ amount, swapOutAmountFromIn(amount, quote.fee_bps, quote.price_impact_bps) },
+                .exact_output => .{ swapInAmountForExactOutput(amount, quote.fee_bps, quote.price_impact_bps), amount },
+            };
+            if (selected == null or swapQuoteShouldReplace(strategy, trade_type, quote, quote_in, quote_out, selected.?.quote, selected.?.in_amount, selected.?.out_amount)) {
+                selected = .{ .quote = quote, .in_amount = quote_in, .out_amount = quote_out };
             }
         }
         return selected;
@@ -2093,9 +2371,12 @@ fn selectSwapQuote(
             for (candidates) |quote| {
                 const rank = providerPriorityRankFromMap(&priority_ranks, quote.provider) orelse continue;
                 if (rank != min_rank) continue;
-                const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-                if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
-                    selected = .{ .quote = quote, .out_amount = quote_out };
+                const quote_in, const quote_out = switch (trade_type) {
+                    .exact_input => .{ amount, swapOutAmountFromIn(amount, quote.fee_bps, quote.price_impact_bps) },
+                    .exact_output => .{ swapInAmountForExactOutput(amount, quote.fee_bps, quote.price_impact_bps), amount },
+                };
+                if (selected == null or swapQuoteShouldReplace(strategy, trade_type, quote, quote_in, quote_out, selected.?.quote, selected.?.in_amount, selected.?.out_amount)) {
+                    selected = .{ .quote = quote, .in_amount = quote_in, .out_amount = quote_out };
                 }
             }
             if (selected != null) return selected;
@@ -2103,9 +2384,12 @@ fn selectSwapQuote(
     }
 
     for (candidates) |quote| {
-        const quote_out = swapOutAmount(amount, quote.fee_bps, quote.price_impact_bps);
-        if (selected == null or swapQuoteShouldReplace(strategy, quote, quote_out, selected.?.quote, selected.?.out_amount)) {
-            selected = .{ .quote = quote, .out_amount = quote_out };
+        const quote_in, const quote_out = switch (trade_type) {
+            .exact_input => .{ amount, swapOutAmountFromIn(amount, quote.fee_bps, quote.price_impact_bps) },
+            .exact_output => .{ swapInAmountForExactOutput(amount, quote.fee_bps, quote.price_impact_bps), amount },
+        };
+        if (selected == null or swapQuoteShouldReplace(strategy, trade_type, quote, quote_in, quote_out, selected.?.quote, selected.?.in_amount, selected.?.out_amount)) {
+            selected = .{ .quote = quote, .in_amount = quote_in, .out_amount = quote_out };
         }
     }
     return selected;
@@ -2134,18 +2418,29 @@ fn bridgeOutAmount(amount: u256, fee_bps: u16) u256 {
     return amount - ((amount * fee_bps_u256) / 10_000);
 }
 
-fn swapOutAmount(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
+fn swapOutAmountFromIn(amount: u256, fee_bps: u16, impact_bps: u16) u256 {
     const fee_bps_u256: u256 = @intCast(fee_bps);
     const impact_bps_u256: u256 = @intCast(impact_bps);
     const after_fee = amount - ((amount * fee_bps_u256) / 10_000);
     return after_fee - ((after_fee * impact_bps_u256) / 10_000);
 }
 
+fn swapInAmountForExactOutput(out_amount: u256, fee_bps: u16, impact_bps: u16) u256 {
+    const fee_bps_u256: u256 = @intCast(fee_bps);
+    const impact_bps_u256: u256 = @intCast(impact_bps);
+    const multiplier = (10_000 - fee_bps_u256) * (10_000 - impact_bps_u256);
+    const numerator = out_amount * 100_000_000;
+    return (numerator + (multiplier - 1)) / multiplier;
+}
+
 fn swapQuoteShouldReplace(
     strategy: SwapStrategy,
+    trade_type: SwapTradeType,
     candidate: swap_quotes_registry.SwapQuote,
+    candidate_in: u256,
     candidate_out: u256,
     current: swap_quotes_registry.SwapQuote,
+    current_in: u256,
     current_out: u256,
 ) bool {
     if (strategy == .lowest_fee) {
@@ -2153,11 +2448,19 @@ fn swapQuoteShouldReplace(
         if (candidate.fee_bps > current.fee_bps) return false;
         if (candidate.price_impact_bps < current.price_impact_bps) return true;
         if (candidate.price_impact_bps > current.price_impact_bps) return false;
+        if (trade_type == .exact_output) {
+            return candidate_in < current_in;
+        }
         return candidate_out > current_out;
     }
 
-    if (candidate_out > current_out) return true;
-    if (candidate_out < current_out) return false;
+    if (trade_type == .exact_output) {
+        if (candidate_in < current_in) return true;
+        if (candidate_in > current_in) return false;
+    } else {
+        if (candidate_out > current_out) return true;
+        if (candidate_out < current_out) return false;
+    }
     if (candidate.fee_bps < current.fee_bps) return true;
     if (candidate.fee_bps > current.fee_bps) return false;
     return candidate.price_impact_bps < current.price_impact_bps;
@@ -2176,6 +2479,16 @@ fn buildProviderPriorityMap(allocator: std.mem.Allocator, priorities_raw: []cons
         idx += 1;
     }
     return map;
+}
+
+fn providersListContains(providers_raw: []const u8, provider: []const u8) bool {
+    var parts = std.mem.splitScalar(u8, providers_raw, ',');
+    while (parts.next()) |part| {
+        const value = std.mem.trim(u8, part, " \r\n\t");
+        if (value.len == 0) continue;
+        if (std.ascii.eqlIgnoreCase(value, provider)) return true;
+    }
+    return false;
 }
 
 fn providerPriorityRankFromMap(map: *const std.StringHashMap(usize), provider: []const u8) ?usize {
@@ -2197,6 +2510,7 @@ fn writeBridgeQuoteResponse(
     to_chain: []const u8,
     asset: []const u8,
     amount_in: []const u8,
+    source: []const u8,
     select: ?[]const u8,
     results_only: bool,
 ) !void {
@@ -2208,7 +2522,7 @@ fn writeBridgeQuoteResponse(
         var fields = try parseQuoteSelectedFields(allocator, fields_raw);
         defer fields.deinit(allocator);
         for (fields.items) |field| {
-            try putBridgeQuoteSelectedField(&obj, field, quote, from_chain, to_chain, asset, amount_in, estimated_out);
+            try putBridgeQuoteSelectedField(&obj, field, quote, source, from_chain, to_chain, asset, amount_in, estimated_out);
         }
 
         try writeSelectedQuoteEnvelope(results_only, obj);
@@ -2220,6 +2534,7 @@ fn writeBridgeQuoteResponse(
             .status = "ok",
             .results = .{
                 .provider = quote.provider,
+                .source = source,
                 .fromChain = from_chain,
                 .toChain = to_chain,
                 .asset = asset,
@@ -2233,6 +2548,7 @@ fn writeBridgeQuoteResponse(
         try core_envelope.writeJson(.{
             .status = "ok",
             .provider = quote.provider,
+            .source = source,
             .fromChain = from_chain,
             .toChain = to_chain,
             .asset = asset,
@@ -2247,23 +2563,37 @@ fn writeBridgeQuoteResponse(
 fn writeSwapQuoteResponse(
     allocator: std.mem.Allocator,
     quote: swap_quotes_registry.SwapQuote,
+    in_amount: u256,
     out_amount: u256,
     chain: []const u8,
     from_asset: []const u8,
     to_asset: []const u8,
-    amount_in: []const u8,
+    trade_type: SwapTradeType,
+    amount_in_raw: ?[]const u8,
+    source: []const u8,
     select: ?[]const u8,
     results_only: bool,
 ) !void {
+    const amount_in = if (amount_in_raw) |raw|
+        raw
+    else
+        try std.fmt.allocPrint(allocator, "{}", .{in_amount});
+    defer if (amount_in_raw == null) allocator.free(amount_in);
+
     const estimated_out = try std.fmt.allocPrint(allocator, "{}", .{out_amount});
     defer allocator.free(estimated_out);
+
+    const trade_type_str = switch (trade_type) {
+        .exact_input => "exact-input",
+        .exact_output => "exact-output",
+    };
 
     if (select) |fields_raw| {
         var obj = std.json.ObjectMap.init(allocator);
         var fields = try parseQuoteSelectedFields(allocator, fields_raw);
         defer fields.deinit(allocator);
         for (fields.items) |field| {
-            try putSwapQuoteSelectedField(&obj, field, quote, chain, from_asset, to_asset, amount_in, estimated_out);
+            try putSwapQuoteSelectedField(&obj, field, quote, source, chain, from_asset, to_asset, amount_in, estimated_out);
         }
 
         try writeSelectedQuoteEnvelope(results_only, obj);
@@ -2275,11 +2605,13 @@ fn writeSwapQuoteResponse(
             .status = "ok",
             .results = .{
                 .provider = quote.provider,
+                .source = source,
                 .chain = chain,
                 .fromAsset = from_asset,
                 .toAsset = to_asset,
                 .amountIn = amount_in,
                 .estimatedAmountOut = estimated_out,
+                .tradeType = trade_type_str,
                 .feeBps = quote.fee_bps,
                 .priceImpactBps = quote.price_impact_bps,
             },
@@ -2288,11 +2620,13 @@ fn writeSwapQuoteResponse(
         try core_envelope.writeJson(.{
             .status = "ok",
             .provider = quote.provider,
+            .source = source,
             .chain = chain,
             .fromAsset = from_asset,
             .toAsset = to_asset,
             .amountIn = amount_in,
             .estimatedAmountOut = estimated_out,
+            .tradeType = trade_type_str,
             .feeBps = quote.fee_bps,
             .priceImpactBps = quote.price_impact_bps,
         });
@@ -2303,6 +2637,7 @@ fn putBridgeQuoteSelectedField(
     obj: *std.json.ObjectMap,
     field: []const u8,
     quote: bridge_quotes_registry.BridgeQuote,
+    source: []const u8,
     from_chain: []const u8,
     to_chain: []const u8,
     asset: []const u8,
@@ -2311,6 +2646,10 @@ fn putBridgeQuoteSelectedField(
 ) !void {
     if (fieldMatches(field, QuoteFieldKey.provider)) {
         try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
+        return;
+    }
+    if (fieldMatches(field, QuoteFieldKey.source)) {
+        try obj.put(QuoteFieldKey.source, .{ .string = source });
         return;
     }
     if (fieldMatches(field, QuoteFieldKey.from_chain)) {
@@ -2347,6 +2686,7 @@ fn putSwapQuoteSelectedField(
     obj: *std.json.ObjectMap,
     field: []const u8,
     quote: swap_quotes_registry.SwapQuote,
+    source: []const u8,
     chain: []const u8,
     from_asset: []const u8,
     to_asset: []const u8,
@@ -2355,6 +2695,10 @@ fn putSwapQuoteSelectedField(
 ) !void {
     if (fieldMatches(field, QuoteFieldKey.provider)) {
         try obj.put(QuoteFieldKey.provider, .{ .string = quote.provider });
+        return;
+    }
+    if (fieldMatches(field, QuoteFieldKey.source)) {
+        try obj.put(QuoteFieldKey.source, .{ .string = source });
         return;
     }
     if (fieldMatches(field, QuoteFieldKey.chain)) {
@@ -2375,6 +2719,10 @@ fn putSwapQuoteSelectedField(
     }
     if (fieldMatches(field, QuoteFieldKey.estimated_out)) {
         try obj.put(QuoteFieldKey.estimated_out, .{ .string = estimated_out });
+        return;
+    }
+    if (fieldMatches(field, QuoteFieldKey.trade_type)) {
+        try obj.put(QuoteFieldKey.trade_type, .{ .string = quote.trade_type });
         return;
     }
     if (fieldMatches(field, QuoteFieldKey.fee_bps)) {
@@ -2483,14 +2831,16 @@ const lend_rates_select_aliases = [_]SelectAliasEntry{
 
 const quote_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = QuoteFieldKey.provider, .aliases = &.{QuoteFieldKey.provider} },
+    .{ .canonical = QuoteFieldKey.source, .aliases = &.{QuoteFieldKey.source} },
     .{ .canonical = QuoteFieldKey.from_chain, .aliases = &.{QuoteFieldKey.from_chain} },
     .{ .canonical = QuoteFieldKey.to_chain, .aliases = &.{QuoteFieldKey.to_chain} },
     .{ .canonical = QuoteFieldKey.chain, .aliases = &.{QuoteFieldKey.chain} },
     .{ .canonical = QuoteFieldKey.asset, .aliases = &.{QuoteFieldKey.asset} },
     .{ .canonical = QuoteFieldKey.from_asset, .aliases = &.{ QuoteFieldKey.from_asset, "from_asset" } },
     .{ .canonical = QuoteFieldKey.to_asset, .aliases = &.{ QuoteFieldKey.to_asset, "to_asset" } },
-    .{ .canonical = QuoteFieldKey.amount_in, .aliases = &.{ QuoteFieldKey.amount_in, "amount_in" } },
-    .{ .canonical = QuoteFieldKey.estimated_out, .aliases = &.{ QuoteFieldKey.estimated_out, "estimated_amount_out" } },
+    .{ .canonical = QuoteFieldKey.amount_in, .aliases = &.{ QuoteFieldKey.amount_in, "amount_in", QuoteFieldAlias.input_amount_camel, QuoteFieldAlias.input_amount_snake } },
+    .{ .canonical = QuoteFieldKey.estimated_out, .aliases = &.{ QuoteFieldKey.estimated_out, "estimated_amount_out", QuoteFieldAlias.estimated_out_camel, QuoteFieldAlias.estimated_out_snake } },
+    .{ .canonical = QuoteFieldKey.trade_type, .aliases = &.{ QuoteFieldKey.trade_type, "trade_type" } },
     .{ .canonical = QuoteFieldKey.fee_bps, .aliases = &.{ QuoteFieldKey.fee_bps, "fee_bps" } },
     .{ .canonical = QuoteFieldKey.eta_seconds, .aliases = &.{ QuoteFieldKey.eta_seconds, "eta_seconds" } },
     .{ .canonical = QuoteFieldKey.price_impact_bps, .aliases = &.{ QuoteFieldKey.price_impact_bps, "price_impact_bps" } },
@@ -2563,6 +2913,18 @@ const OptionalStringParam = union(enum) {
     invalid,
 };
 
+const OptionalF64Param = union(enum) {
+    missing,
+    value: f64,
+    invalid,
+};
+
+const OptionalU256Param = union(enum) {
+    missing,
+    value: u256,
+    invalid,
+};
+
 fn parseOptionalTrimmedStringParam(obj: std.json.ObjectMap, key: []const u8) OptionalStringParam {
     const raw = getString(obj, key) orelse return .missing;
     const trimmed = std.mem.trim(u8, raw, " \r\n\t");
@@ -2586,6 +2948,91 @@ fn parseOptionalSelectParam(obj: std.json.ObjectMap) OptionalStringParam {
         .invalid => .invalid,
         .value => |value| if (hasNonEmptyCsvToken(value)) .{ .value = value } else .invalid,
     };
+}
+
+fn parseOptionalSlippageParam(obj: std.json.ObjectMap) OptionalF64Param {
+    const camel_present = obj.get("slippagePct") != null;
+    const snake_present = obj.get("slippage_pct") != null;
+    if (!camel_present and !snake_present) return .missing;
+
+    const camel_value = if (camel_present) getF64(obj, "slippagePct") else null;
+    const snake_value = if (snake_present) getF64(obj, "slippage_pct") else null;
+
+    if (camel_present and camel_value == null) return .invalid;
+    if (snake_present and snake_value == null) return .invalid;
+
+    if (camel_present and snake_present) {
+        if (camel_value.? != snake_value.?) return .invalid;
+        return .{ .value = camel_value.? };
+    }
+
+    if (camel_value) |value| return .{ .value = value };
+    if (snake_value) |value| return .{ .value = value };
+    return .invalid;
+}
+
+fn amountAliasConflict(obj: std.json.ObjectMap, aliases: []const []const u8) ?[]const u8 {
+    var baseline: ?u256 = null;
+    for (aliases) |key| {
+        switch (parseOptionalAmountAliasAsU256(obj, key)) {
+            .missing => {},
+            .invalid => return key,
+            .value => |value| {
+                if (baseline == null) {
+                    baseline = value;
+                } else if (baseline.? != value) {
+                    return key;
+                }
+            },
+        }
+    }
+    return null;
+}
+
+fn decimalAmountAliasConflict(
+    allocator: std.mem.Allocator,
+    obj: std.json.ObjectMap,
+    decimals: u8,
+    aliases: []const []const u8,
+) ?[]const u8 {
+    var baseline: ?u256 = null;
+    for (aliases) |key| {
+        switch (parseOptionalDecimalAliasAsU256(allocator, obj, key, decimals)) {
+            .missing => {},
+            .invalid => return key,
+            .value => |value| {
+                if (baseline == null) {
+                    baseline = value;
+                } else if (baseline.? != value) {
+                    return key;
+                }
+            },
+        }
+    }
+    return null;
+}
+
+fn parseOptionalAmountAliasAsU256(obj: std.json.ObjectMap, key: []const u8) OptionalU256Param {
+    const raw = getString(obj, key) orelse return .missing;
+    const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+    if (trimmed.len == 0) return .invalid;
+    const value = std.fmt.parseUnsigned(u256, trimmed, 10) catch return .invalid;
+    return .{ .value = value };
+}
+
+fn parseOptionalDecimalAliasAsU256(
+    allocator: std.mem.Allocator,
+    obj: std.json.ObjectMap,
+    key: []const u8,
+    decimals: u8,
+) OptionalU256Param {
+    const raw = getString(obj, key) orelse return .missing;
+    const trimmed = std.mem.trim(u8, raw, " \r\n\t");
+    if (trimmed.len == 0) return .invalid;
+    const base = core_id.decimalToBase(allocator, trimmed, decimals) catch return .invalid;
+    defer allocator.free(base);
+    const value = std.fmt.parseUnsigned(u256, base, 10) catch return .invalid;
+    return .{ .value = value };
 }
 
 fn parseOptionalSelectOrWriteInvalid(obj: std.json.ObjectMap) !?[]const u8 {
@@ -2723,6 +3170,10 @@ fn writeNoSwapRoute() !void {
     try core_envelope.writeJson(core_errors.unsupported("no swap quote route for input"));
 }
 
+fn writeUnsupportedExactOutput() !void {
+    try core_envelope.writeJson(core_errors.unsupported("exact-output swap quotes are currently supported only on EVM with --provider uniswap"));
+}
+
 fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
     const msg = if (which) |value|
         if (std.mem.eql(u8, value, "from")) "unsupported from chain alias" else if (std.mem.eql(u8, value, "to")) "unsupported to chain alias" else "unsupported chain alias"
@@ -2731,9 +3182,9 @@ fn writeUnsupportedChainAlias(which: ?[]const u8) !void {
     try core_envelope.writeJson(core_errors.unsupported(msg));
 }
 
-fn parseRequiredAmountU256(amount_trimmed: []const u8) !?u256 {
+fn parseRequiredAmountU256(amount_trimmed: []const u8, key: []const u8) !?u256 {
     return std.fmt.parseUnsigned(u256, amount_trimmed, 10) catch {
-        try writeInvalid("amount");
+        try writeInvalid(key);
         return null;
     };
 }
@@ -2748,8 +3199,30 @@ fn parseRequiredAmountParam(obj: std.json.ObjectMap, key: []const u8) !?ParsedAm
         try writeInvalid(key);
         return null;
     }
-    const value = (try parseRequiredAmountU256(trimmed)) orelse return null;
+    const value = (try parseRequiredAmountU256(trimmed, key)) orelse return null;
     return .{ .raw = trimmed, .value = value };
+}
+
+fn parseRequiredDecimalAmountParam(
+    allocator: std.mem.Allocator,
+    obj: std.json.ObjectMap,
+    key: []const u8,
+    decimals: u8,
+    invalid_field_name: []const u8,
+) !?ParsedAmountParam {
+    const decimal_value = (try parseRequiredTrimmedNonEmptyStringParam(obj, key)) orelse return null;
+    const base_value = core_id.decimalToBase(allocator, decimal_value, decimals) catch {
+        try writeInvalid(invalid_field_name);
+        return null;
+    };
+    defer allocator.free(base_value);
+
+    const parsed = std.fmt.parseUnsigned(u256, base_value, 10) catch {
+        try writeInvalid(invalid_field_name);
+        return null;
+    };
+
+    return .{ .raw = "", .value = parsed };
 }
 
 fn parseRequiredNormalizedChainParam(

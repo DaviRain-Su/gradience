@@ -444,6 +444,7 @@ def main() -> int:
     )
     assert bridge.get("status") == "ok"
     assert bridge.get("provider") == "lifi"
+    assert bridge.get("source") == "provider"
     assert bridge.get("estimatedAmountOut") == "999300"
 
     bridge_spaced_amount = run(
@@ -628,6 +629,7 @@ def main() -> int:
     )
     assert bridge_fastest.get("status") == "ok"
     assert bridge_fastest.get("provider") == "bungee"
+    assert bridge_fastest.get("source") == "strategy"
     assert bridge_fastest.get("etaSeconds") == 150
 
     bridge_fastest_case_insensitive = run(
@@ -693,6 +695,7 @@ def main() -> int:
     )
     assert bridge_provider_priority.get("status") == "ok"
     assert bridge_provider_priority.get("provider") == "lifi"
+    assert bridge_provider_priority.get("source") == "providers"
     assert bridge_provider_priority.get("estimatedAmountOut") == "999300"
 
     bridge_provider_priority_duplicate = run(
@@ -910,6 +913,26 @@ def main() -> int:
     bq_results = bridge_select_results_only.get("results", {})
     assert set(bq_results.keys()) == {"provider", "estimatedAmountOut"}
 
+    bridge_select_source_results_only = run(
+        {
+            "action": "bridgeQuote",
+            "params": {
+                "from": "1",
+                "to": "8453",
+                "asset": "USDC",
+                "amount": "1000000",
+                "providers": "lifi,across",
+                "select": "provider,source",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert bridge_select_source_results_only.get("status") == "ok"
+    bq_source_results = bridge_select_source_results_only.get("results", {})
+    assert bq_source_results.get("provider") == "lifi"
+    assert bq_source_results.get("source") == "providers"
+
     bridge_select_spaced = run(
         {
             "action": "bridgeQuote",
@@ -1008,6 +1031,42 @@ def main() -> int:
         env,
     )
 
+    assert_select_alias_coalesced(
+        "bridgeQuote",
+        bridge_quote_params(
+            provider="lifi",
+            select="amountIn,inputAmount,input_amount",
+            resultsOnly=True,
+        ),
+        "results",
+        ["amountIn"],
+        env,
+    )
+
+    assert_select_alias_coalesced(
+        "bridgeQuote",
+        bridge_quote_params(
+            provider="lifi",
+            select="estimatedAmountOut,estimatedOut,estimated_out",
+            resultsOnly=True,
+        ),
+        "results",
+        ["estimatedAmountOut"],
+        env,
+    )
+
+    assert_select_alias_coalesced(
+        "bridgeQuote",
+        bridge_quote_params(
+            provider="lifi",
+            select="source,source",
+            resultsOnly=True,
+        ),
+        "results",
+        ["source"],
+        env,
+    )
+
     bridge_select_unknown_field = run(
         {
             "action": "bridgeQuote",
@@ -1064,7 +1123,496 @@ def main() -> int:
     )
     assert swap.get("status") == "ok"
     assert swap.get("provider") == "1inch"
+    assert swap.get("source") == "provider"
+    assert swap.get("tradeType") == "exact-input"
     assert swap.get("estimatedAmountOut") == "998901"
+
+    swap_exact_output_default_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "type": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_default_uniswap.get("status") == "ok"
+    assert swap_exact_output_default_uniswap.get("provider") == "uniswap"
+    assert swap_exact_output_default_uniswap.get("source") == "default_exact_output"
+    assert swap_exact_output_default_uniswap.get("tradeType") == "exact-output"
+    assert swap_exact_output_default_uniswap.get("estimatedAmountOut") == "998501"
+
+    swap_exact_output_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_uniswap.get("status") == "ok"
+    assert swap_exact_output_uniswap.get("provider") == "uniswap"
+    assert swap_exact_output_uniswap.get("source") == "provider"
+    assert swap_exact_output_uniswap.get("tradeType") == "exact-output"
+
+    swap_exact_output_amount_out_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amount_out": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_amount_out_alias.get("status") == "ok"
+    assert swap_exact_output_amount_out_alias.get("provider") == "uniswap"
+    assert swap_exact_output_amount_out_alias.get("tradeType") == "exact-output"
+
+    swap_exact_output_amount_aliases_same = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "amount_out": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_amount_aliases_same.get("status") == "ok"
+    assert swap_exact_output_amount_aliases_same.get("tradeType") == "exact-output"
+
+    swap_exact_output_amount_aliases_conflict = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "amount_out": "998500",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_amount_aliases_conflict.get("status") == "error"
+    assert int(swap_exact_output_amount_aliases_conflict.get("code", 0)) == 2
+
+    swap_exact_output_select_source_default = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "select": "provider,source",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_select_source_default.get("status") == "ok"
+    sq_exact_default = swap_exact_output_select_source_default.get("results", {})
+    assert sq_exact_default.get("provider") == "uniswap"
+    assert sq_exact_default.get("source") == "default_exact_output"
+
+    swap_exact_output_select_source_provider = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "select": "provider,source",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_select_source_provider.get("status") == "ok"
+    sq_exact_provider = swap_exact_output_select_source_provider.get("results", {})
+    assert sq_exact_provider.get("provider") == "uniswap"
+    assert sq_exact_provider.get("source") == "provider"
+
+    swap_exact_output_decimal = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOutDecimal": "0.5",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_decimal.get("status") == "ok"
+    assert swap_exact_output_decimal.get("provider") == "uniswap"
+    assert swap_exact_output_decimal.get("tradeType") == "exact-output"
+    assert swap_exact_output_decimal.get("estimatedAmountOut") == "500000000000000000"
+
+    swap_exact_output_decimal_snake = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amount_out_decimal": "0.5",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_decimal_snake.get("status") == "ok"
+    assert swap_exact_output_decimal_snake.get("provider") == "uniswap"
+    assert swap_exact_output_decimal_snake.get("tradeType") == "exact-output"
+    assert (
+        swap_exact_output_decimal_snake.get("estimatedAmountOut")
+        == "500000000000000000"
+    )
+
+    swap_exact_output_raw_and_decimal_conflict = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "amount_out_decimal": "0.5",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_raw_and_decimal_conflict.get("status") == "error"
+    assert int(swap_exact_output_raw_and_decimal_conflict.get("code", 0)) == 2
+
+    swap_exact_output_unsupported_provider = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "1inch",
+                "type": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_unsupported_provider.get("status") == "error"
+    assert int(swap_exact_output_unsupported_provider.get("code", 0)) == 13
+    assert "exact-output" in str(
+        swap_exact_output_unsupported_provider.get("error", "")
+    )
+
+    swap_exact_output_solana_unsupported = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "solana",
+                "fromAsset": "USDC",
+                "toAsset": "SOL",
+                "type": "exact-output",
+                "amountOut": "1000000",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_solana_unsupported.get("status") == "error"
+    assert int(swap_exact_output_solana_unsupported.get("code", 0)) == 13
+    assert "exact-output" in str(swap_exact_output_solana_unsupported.get("error", ""))
+
+    swap_exact_output_providers_missing_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "providers": "1inch,jupiter",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_providers_missing_uniswap.get("status") == "error"
+    assert int(swap_exact_output_providers_missing_uniswap.get("code", 0)) == 13
+
+    swap_exact_output_providers_with_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "type": "exact-output",
+                "amountOut": "998501",
+                "providers": "1inch,uniswap",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_providers_with_uniswap.get("status") == "ok"
+    assert swap_exact_output_providers_with_uniswap.get("provider") == "uniswap"
+
+    swap_exact_output_missing_amount_out = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_missing_amount_out.get("status") == "error"
+    assert int(swap_exact_output_missing_amount_out.get("code", 0)) == 2
+
+    swap_exact_output_with_amount = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "amount": "1000000",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_with_amount.get("status") == "error"
+    assert int(swap_exact_output_with_amount.get("code", 0)) == 2
+
+    swap_exact_output_trade_type_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "tradeType": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_trade_type_alias.get("status") == "ok"
+    assert swap_exact_output_trade_type_alias.get("tradeType") == "exact-output"
+
+    swap_exact_output_trade_type_snake_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "trade_type": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_trade_type_snake_alias.get("status") == "ok"
+    assert swap_exact_output_trade_type_snake_alias.get("tradeType") == "exact-output"
+
+    swap_exact_output_trade_type_same_aliases = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-output",
+                "tradeType": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_trade_type_same_aliases.get("status") == "ok"
+    assert swap_exact_output_trade_type_same_aliases.get("tradeType") == "exact-output"
+
+    swap_exact_output_trade_type_conflict = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "uniswap",
+                "type": "exact-input",
+                "tradeType": "exact-output",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_output_trade_type_conflict.get("status") == "error"
+    assert int(swap_exact_output_trade_type_conflict.get("code", 0)) == 2
+
+    swap_exact_input_with_amount_out = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "provider": "1inch",
+                "amount": "1000000",
+                "amountOut": "998501",
+            },
+        },
+        env,
+    )
+    assert swap_exact_input_with_amount_out.get("status") == "error"
+    assert int(swap_exact_input_with_amount_out.get("code", 0)) == 2
+
+    swap_slippage_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "uniswap",
+                "slippagePct": 1.25,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_uniswap.get("status") == "ok"
+    assert swap_slippage_uniswap.get("provider") == "uniswap"
+
+    swap_slippage_non_uniswap = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "1inch",
+                "slippagePct": 1.25,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_non_uniswap.get("status") == "error"
+    assert int(swap_slippage_non_uniswap.get("code", 0)) == 2
+
+    swap_slippage_snake_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "uniswap",
+                "slippage_pct": 1.25,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_snake_alias.get("status") == "ok"
+    assert swap_slippage_snake_alias.get("provider") == "uniswap"
+
+    swap_slippage_same_aliases = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "uniswap",
+                "slippagePct": 1.25,
+                "slippage_pct": 1.25,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_same_aliases.get("status") == "ok"
+    assert swap_slippage_same_aliases.get("provider") == "uniswap"
+
+    swap_slippage_alias_conflict = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "uniswap",
+                "slippagePct": 1.25,
+                "slippage_pct": 2.0,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_alias_conflict.get("status") == "error"
+    assert int(swap_slippage_alias_conflict.get("code", 0)) == 2
+
+    swap_slippage_invalid_zero = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "provider": "uniswap",
+                "slippagePct": 0,
+            },
+        },
+        env,
+    )
+    assert swap_slippage_invalid_zero.get("status") == "error"
+    assert int(swap_slippage_invalid_zero.get("code", 0)) == 2
 
     swap_spaced_amount = run(
         {
@@ -1082,6 +1630,74 @@ def main() -> int:
     assert swap_spaced_amount.get("status") == "ok"
     assert swap_spaced_amount.get("provider") == "1inch"
     assert swap_spaced_amount.get("amountIn") == "1000000"
+
+    swap_amount_in_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amountIn": "1000000",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_amount_in_alias.get("status") == "ok"
+    assert swap_amount_in_alias.get("provider") == "1inch"
+    assert swap_amount_in_alias.get("amountIn") == "1000000"
+
+    swap_amount_aliases_same = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "amountIn": "1000000",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_amount_aliases_same.get("status") == "ok"
+    assert swap_amount_aliases_same.get("amountIn") == "1000000"
+
+    swap_amount_aliases_conflict = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "amountIn": "1000001",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_amount_aliases_conflict.get("status") == "error"
+    assert int(swap_amount_aliases_conflict.get("code", 0)) == 2
+
+    swap_amount_in_snake_alias = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount_in": "1000000",
+                "provider": "1inch",
+            },
+        },
+        env,
+    )
+    assert swap_amount_in_snake_alias.get("status") == "ok"
+    assert swap_amount_in_snake_alias.get("provider") == "1inch"
+    assert swap_amount_in_snake_alias.get("amountIn") == "1000000"
 
     swap_spaced_assets = run(
         {
@@ -1233,6 +1849,7 @@ def main() -> int:
     )
     assert swap_provider_priority.get("status") == "ok"
     assert swap_provider_priority.get("provider") == "uniswap"
+    assert swap_provider_priority.get("source") == "providers"
     assert swap_provider_priority.get("estimatedAmountOut") == "998501"
 
     swap_provider_priority_duplicate = run(
@@ -1363,6 +1980,7 @@ def main() -> int:
     )
     assert swap_lowest_fee.get("status") == "ok"
     assert swap_lowest_fee.get("provider") == "1inch"
+    assert swap_lowest_fee.get("source") == "strategy"
 
     swap_lowest_fee_case_insensitive = run(
         {
@@ -1513,6 +2131,26 @@ def main() -> int:
     sq_results = swap_select_results_only.get("results", {})
     assert set(sq_results.keys()) == {"provider", "feeBps"}
 
+    swap_select_source_results_only = run(
+        {
+            "action": "swapQuote",
+            "params": {
+                "chain": "1",
+                "fromAsset": "USDC",
+                "toAsset": "DAI",
+                "amount": "1000000",
+                "providers": "uniswap,1inch",
+                "select": "provider,source",
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert swap_select_source_results_only.get("status") == "ok"
+    sq_source_results = swap_select_source_results_only.get("results", {})
+    assert sq_source_results.get("provider") == "uniswap"
+    assert sq_source_results.get("source") == "providers"
+
     swap_select_spaced = run(
         {
             "action": "swapQuote",
@@ -1582,7 +2220,7 @@ def main() -> int:
                 "toAsset": "DAI",
                 "amount": "1000000",
                 "provider": "1inch",
-                "select": "provider,from_asset,to_asset,estimated_amount_out,price_impact_bps",
+                "select": "provider,from_asset,to_asset,estimated_amount_out,trade_type,price_impact_bps",
                 "resultsOnly": True,
             },
         },
@@ -1594,6 +2232,7 @@ def main() -> int:
         "fromAsset",
         "toAsset",
         "estimatedAmountOut",
+        "tradeType",
         "priceImpactBps",
     }
 
@@ -1606,6 +2245,42 @@ def main() -> int:
         ),
         "results",
         ["priceImpactBps"],
+        env,
+    )
+
+    assert_select_alias_coalesced(
+        "swapQuote",
+        swap_quote_params(
+            provider="1inch",
+            select="amountIn,inputAmount,input_amount",
+            resultsOnly=True,
+        ),
+        "results",
+        ["amountIn"],
+        env,
+    )
+
+    assert_select_alias_coalesced(
+        "swapQuote",
+        swap_quote_params(
+            provider="1inch",
+            select="estimatedAmountOut,estimatedOut,estimated_out",
+            resultsOnly=True,
+        ),
+        "results",
+        ["estimatedAmountOut"],
+        env,
+    )
+
+    assert_select_alias_coalesced(
+        "swapQuote",
+        swap_quote_params(
+            provider="1inch",
+            select="source,source",
+            resultsOnly=True,
+        ),
+        "results",
+        ["source"],
         env,
     )
 
@@ -1649,6 +2324,64 @@ def main() -> int:
         swap_quote_params(provider="1inch", select=",, ,"),
         env,
     )
+
+    lifi_quote = run(
+        {
+            "action": "lifiGetQuote",
+            "params": {
+                "fromChain": 1,
+                "toChain": 8453,
+                "fromToken": "0x1111111111111111111111111111111111111111",
+                "toToken": "0x2222222222222222222222222222222222222222",
+                "fromAmount": "1000000",
+                "fromAddress": "0x3333333333333333333333333333333333333333",
+            },
+        },
+        env,
+    )
+    assert lifi_quote.get("status") == "ok"
+    assert lifi_quote.get("quote", {}).get("tool") == "lifi"
+    assert lifi_quote.get("quote", {}).get("source") == "lifi"
+
+    lifi_routes = run(
+        {
+            "action": "lifiGetRoutes",
+            "params": {
+                "fromChain": 1,
+                "toChain": 8453,
+                "fromToken": "0x1111111111111111111111111111111111111111",
+                "toToken": "0x2222222222222222222222222222222222222222",
+                "fromAmount": "1000000",
+                "fromAddress": "0x3333333333333333333333333333333333333333",
+            },
+        },
+        env,
+    )
+    assert lifi_routes.get("status") == "ok"
+    routes = lifi_routes.get("routes", [])
+    assert len(routes) >= 1
+    assert routes[0].get("tool") == "lifi"
+    assert routes[0].get("source") == "lifi"
+
+    lifi_workflow_analysis = run(
+        {
+            "action": "lifiRunWorkflow",
+            "params": {
+                "runMode": "analysis",
+                "fromChain": 1,
+                "toChain": 8453,
+                "fromToken": "0x1111111111111111111111111111111111111111",
+                "toToken": "0x2222222222222222222222222222222222222222",
+                "fromAmount": "1000000",
+                "fromAddress": "0x3333333333333333333333333333333333333333",
+            },
+        },
+        env,
+    )
+    assert lifi_workflow_analysis.get("status") == "ok"
+    assert lifi_workflow_analysis.get("tool") == "lifi"
+    assert lifi_workflow_analysis.get("source") == "lifi"
+    assert lifi_workflow_analysis.get("quote", {}).get("source") == "lifi"
 
     lend_markets = run(
         {

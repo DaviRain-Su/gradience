@@ -929,6 +929,7 @@ function assertZigEnabledCoreSemanticShape(name: string, payload: Payload): void
     assertResultObjectField(name, payload, "quote");
     assertResultNestedObjectFieldValue(name, payload, "quote", "transactionRequest", "value", "0x0");
     assertResultObjectFieldValue(name, payload, "quote", "tool", "lifi");
+    assertResultObjectFieldValue(name, payload, "quote", "source", "lifi");
     return;
   }
   if (name === TOOL.lifiGetRoutes) {
@@ -937,6 +938,7 @@ function assertZigEnabledCoreSemanticShape(name: string, payload: Payload): void
       throw new Error(fail(name, "result.routes must include at least one object route"));
     }
     assertObjectFieldStringEquals(name, routes[0] as Record<string, unknown>, "tool", "lifi", "result.routes[0]");
+    assertObjectFieldStringEquals(name, routes[0] as Record<string, unknown>, "source", "lifi", "result.routes[0]");
     return;
   }
   if (name === TOOL.lifiExtractTxRequest) {
@@ -950,7 +952,9 @@ function assertZigEnabledCoreSemanticShape(name: string, payload: Payload): void
     assertResultObjectField(name, payload, "txRequest");
     assertResultStringField(name, payload, "routeId");
     assertResultStringField(name, payload, "tool");
+    assertResultStringField(name, payload, "source");
     assertResultObjectFieldValue(name, payload, "quote", "tool", "lifi");
+    assertResultObjectFieldValue(name, payload, "quote", "source", "lifi");
     return;
   }
   if (name === TOOL.morphoVaultMeta) {
