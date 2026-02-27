@@ -352,6 +352,9 @@ Example live/cached metadata envelope:
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts camelCase aliases (`supplyApy`, `borrowApy`, `tvlUsd`)
 - blank/empty `select` values are rejected (including comma-only token lists)
+- stablecoin filters (`USDC`/`USDT`/`DAI`/`USD`) can match wrapped-family symbols in live mode
+- live pools missing borrow APR are retained with `borrowApy=0`
+- live rows include `asset_matched_by` (`exact` or `family`)
 - bundled registry includes Monad entries (`chain=monad` / `eip155:10143`) for Morpho markets
 - response includes top-level `source` (`live`, `cache`, `stale_cache`, or `registry`)
 - response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)

@@ -2,6 +2,7 @@ pub const LendMarket = struct {
     provider: []const u8,
     chain: []const u8,
     asset: []const u8,
+    asset_matched_by: []const u8 = "exact",
     market: []const u8,
     supply_apy: f64,
     borrow_apy: f64,

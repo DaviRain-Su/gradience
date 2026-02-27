@@ -145,6 +145,12 @@ Bundled registry data now includes Monad (`monad` / `eip155:10143`) Morpho USDC 
 `lendMarkets` supports filters: `chain`, `asset`, `provider`, `live`, `liveMode`, `liveProvider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 Bundled registry data now includes Monad (`monad` / `eip155:10143`) Morpho USDC entries.
 
+Live lending filter notes:
+
+- stablecoin asset filters (`USDC`/`USDT`/`DAI`/`USD`) also match wrapped family symbols (for example `BBQUSDC`, `HYPERUSDCD`)
+- live rows without borrow APR can still appear with `borrowApy=0` (supply-only pools)
+- live rows include `asset_matched_by` (`exact` or `family`) so consumers can distinguish strict vs family matches
+
 `lendRates` supports `chain`, `asset`, `provider`, with optional `live`, `liveMode`, `liveProvider`, and `select`.
 
 Set `live=true` for `yieldOpportunities` / `lendMarkets` / `lendRates` to fetch real-time market data

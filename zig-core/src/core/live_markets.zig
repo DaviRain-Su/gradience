@@ -88,9 +88,10 @@ pub fn appendYieldEntriesLive(
         }
 
         const asset = getString(obj, "symbol") orelse continue;
-        if (asset_filter) |required| {
-            if (!std.ascii.eqlIgnoreCase(asset, required)) continue;
-        }
+        const asset_matched_by = if (asset_filter) |required|
+            (assetMatchKind(asset, required) orelse continue)
+        else
+            "exact";
 
         const project = getString(obj, "project") orelse continue;
         const provider = canonicalProvider(project);
@@ -111,6 +112,7 @@ pub fn appendYieldEntriesLive(
             .provider = try allocator.dupe(u8, provider),
             .chain = try allocator.dupe(u8, chain),
             .asset = try allocator.dupe(u8, asset),
+            .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
             .apy = apy,
             .tvl_usd = tvl_usd,
@@ -160,7 +162,7 @@ pub fn appendLendEntriesLive(
         if (item != .object) continue;
         const obj = item.object;
 
-        const borrow_apy = getF64(obj, "apyBaseBorrow") orelse continue;
+        const borrow_apy = getF64(obj, "apyBaseBorrow") orelse 0;
         const supply_apy = getF64(obj, "apyBase") orelse getF64(obj, "apy") orelse continue;
 
         const chain_raw = getString(obj, "chain") orelse continue;
@@ -170,9 +172,10 @@ pub fn appendLendEntriesLive(
         }
 
         const asset = getString(obj, "symbol") orelse continue;
-        if (asset_filter) |required| {
-            if (!std.ascii.eqlIgnoreCase(asset, required)) continue;
-        }
+        const asset_matched_by = if (asset_filter) |required|
+            (assetMatchKind(asset, required) orelse continue)
+        else
+            "exact";
 
         const project = getString(obj, "project") orelse continue;
         const provider = canonicalProvider(project);
@@ -191,6 +194,7 @@ pub fn appendLendEntriesLive(
             .provider = try allocator.dupe(u8, provider),
             .chain = try allocator.dupe(u8, chain),
             .asset = try allocator.dupe(u8, asset),
+            .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
             .supply_apy = supply_apy,
             .borrow_apy = borrow_apy,
@@ -523,4 +527,38 @@ fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
         .integer => @as(f64, @floatFromInt(value.integer)),
         else => null,
     };
+}
+
+fn assetMatchKind(symbol: []const u8, filter: []const u8) ?[]const u8 {
+    if (std.ascii.eqlIgnoreCase(symbol, filter)) return "exact";
+    if (isStableFilter(filter) and containsIgnoreCase(symbol, filter)) return "family";
+    return null;
+}
+
+fn isStableFilter(filter: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(filter, "USDC") or
+        std.ascii.eqlIgnoreCase(filter, "USDT") or
+        std.ascii.eqlIgnoreCase(filter, "DAI") or
+        std.ascii.eqlIgnoreCase(filter, "USD");
+}
+
+fn containsIgnoreCase(haystack: []const u8, needle: []const u8) bool {
+    if (needle.len == 0) return true;
+    if (haystack.len < needle.len) return false;
+
+    var i: usize = 0;
+    while (i + needle.len <= haystack.len) : (i += 1) {
+        var matched = true;
+        var j: usize = 0;
+        while (j < needle.len) : (j += 1) {
+            const a = std.ascii.toUpper(haystack[i + j]);
+            const b = std.ascii.toUpper(needle[j]);
+            if (a != b) {
+                matched = false;
+                break;
+            }
+        }
+        if (matched) return true;
+    }
+    return false;
 }

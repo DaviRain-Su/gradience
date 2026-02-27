@@ -1456,6 +1456,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
+                    if (std.mem.eql(u8, field, "asset_matched_by")) {
+                        try obj.put("asset_matched_by", .{ .string = entry.asset_matched_by });
+                        continue;
+                    }
                     if (std.mem.eql(u8, field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
@@ -1769,6 +1773,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("asset", .{ .string = entry.asset });
                         continue;
                     }
+                    if (std.mem.eql(u8, field, "asset_matched_by")) {
+                        try obj.put("asset_matched_by", .{ .string = entry.asset_matched_by });
+                        continue;
+                    }
                     if (std.mem.eql(u8, field, "market")) {
                         try obj.put("market", .{ .string = entry.market });
                         continue;
@@ -1891,7 +1899,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
 
         for (lend_source) |entry| {
             if (!std.mem.eql(u8, entry.chain, chain)) continue;
-            if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+            if (!assetFilterMatchesForRates(entry.asset, asset, source_provider)) continue;
             if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
 
             if (select) |fields_raw| {
@@ -1909,6 +1917,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     }
                     if (std.mem.eql(u8, field, "asset")) {
                         try obj.put("asset", .{ .string = entry.asset });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "assetMatchedBy")) {
+                        try obj.put("assetMatchedBy", .{ .string = entry.asset_matched_by });
                         continue;
                     }
                     if (std.mem.eql(u8, field, "market")) {
@@ -1948,6 +1960,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         .provider = entry.provider,
                         .chain = entry.chain,
                         .asset = entry.asset,
+                        .assetMatchedBy = entry.asset_matched_by,
                         .market = entry.market,
                         .supplyApy = entry.supply_apy,
                         .borrowApy = entry.borrow_apy,
@@ -1964,6 +1977,7 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     .provider = entry.provider,
                     .chain = entry.chain,
                     .asset = entry.asset,
+                    .assetMatchedBy = entry.asset_matched_by,
                     .market = entry.market,
                     .supplyApy = entry.supply_apy,
                     .borrowApy = entry.borrow_apy,
@@ -2037,6 +2051,39 @@ fn lessLendMarket(ctx: LendSortContext, a: lend_registry.LendMarket, b: lend_reg
 
     if (a.tvl_usd == b.tvl_usd) return false;
     return if (ctx.ascending) a.tvl_usd < b.tvl_usd else a.tvl_usd > b.tvl_usd;
+}
+
+fn assetFilterMatchesForRates(entry_asset: []const u8, requested_asset: []const u8, source_provider: []const u8) bool {
+    if (std.ascii.eqlIgnoreCase(entry_asset, requested_asset)) return true;
+    if (std.mem.eql(u8, source_provider, "registry")) return false;
+
+    if (std.ascii.eqlIgnoreCase(requested_asset, "USDC") or
+        std.ascii.eqlIgnoreCase(requested_asset, "USDT") or
+        std.ascii.eqlIgnoreCase(requested_asset, "DAI") or
+        std.ascii.eqlIgnoreCase(requested_asset, "USD"))
+    {
+        return containsIgnoreCaseMeta(entry_asset, requested_asset);
+    }
+    return false;
+}
+
+fn containsIgnoreCaseMeta(haystack: []const u8, needle: []const u8) bool {
+    if (needle.len == 0) return true;
+    if (haystack.len < needle.len) return false;
+
+    var i: usize = 0;
+    while (i + needle.len <= haystack.len) : (i += 1) {
+        var matched = true;
+        var j: usize = 0;
+        while (j < needle.len) : (j += 1) {
+            if (std.ascii.toUpper(haystack[i + j]) != std.ascii.toUpper(needle[j])) {
+                matched = false;
+                break;
+            }
+        }
+        if (matched) return true;
+    }
+    return false;
 }
 
 const BridgeQuoteSelection = struct {
@@ -3010,6 +3057,7 @@ const yield_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "provider", .aliases = &.{"provider"} },
     .{ .canonical = "chain", .aliases = &.{"chain"} },
     .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "asset_matched_by", .aliases = &.{ "asset_matched_by", "assetMatchedBy" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
     .{ .canonical = "apy", .aliases = &.{"apy"} },
     .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
@@ -3019,6 +3067,7 @@ const lend_markets_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "provider", .aliases = &.{"provider"} },
     .{ .canonical = "chain", .aliases = &.{"chain"} },
     .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "asset_matched_by", .aliases = &.{ "asset_matched_by", "assetMatchedBy" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
     .{ .canonical = "supply_apy", .aliases = &.{ "supply_apy", "supplyApy" } },
     .{ .canonical = "borrow_apy", .aliases = &.{ "borrow_apy", "borrowApy" } },
@@ -3029,6 +3078,7 @@ const lend_rates_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "provider", .aliases = &.{"provider"} },
     .{ .canonical = "chain", .aliases = &.{"chain"} },
     .{ .canonical = "asset", .aliases = &.{"asset"} },
+    .{ .canonical = "assetMatchedBy", .aliases = &.{ "assetMatchedBy", "asset_matched_by" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
     .{ .canonical = "supplyApy", .aliases = &.{ "supplyApy", "supply_apy" } },
     .{ .canonical = "borrowApy", .aliases = &.{ "borrowApy", "borrow_apy" } },

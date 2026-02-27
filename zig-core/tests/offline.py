@@ -180,6 +180,16 @@ def main() -> int:
                         "tvlUsd": 151000000,
                     },
                     {
+                        "chain": "Monad",
+                        "project": "Morpho",
+                        "symbol": "BBQUSDC",
+                        "poolMeta": "Morpho Monad BBQUSDC live",
+                        "apy": 6.1,
+                        "apyBase": 6.1,
+                        "apyBaseBorrow": None,
+                        "tvlUsd": 8700000,
+                    },
+                    {
                         "chain": "Arbitrum",
                         "project": "Morpho",
                         "symbol": "USDC",
@@ -968,6 +978,31 @@ def main() -> int:
         )
         assert lend_markets_live_cache_hit.get("status") == "ok"
         assert lend_markets_live_cache_hit.get("source") == "cache"
+
+        lend_markets_live_stable_family = run(
+            {
+                "action": "lendMarkets",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 20,
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_markets_live_stable_family.get("status") == "ok"
+        family_rows = lend_markets_live_stable_family.get("markets", [])
+        assert len(family_rows) >= 1
+        assert all(
+            isinstance(row.get("asset"), str) and "USDC" in row.get("asset", "")
+            for row in family_rows
+        )
+        assert all(
+            row.get("asset_matched_by") in {"exact", "family"} for row in family_rows
+        )
+        assert any(row.get("asset_matched_by") == "family" for row in family_rows)
 
         lend_rates_live_cache_hit = run(
             {
