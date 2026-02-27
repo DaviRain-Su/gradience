@@ -93,6 +93,7 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - response includes top-level `source` (`live`, `cache`, `stale_cache`, or `registry`)
 - response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)
 - response also includes `fetchedAtUnix` and `sourceUrl` (`0`/empty string when using bundled registry)
+- unknown `liveProvider` / `liveMode` values are rejected with validation error (`code=2`)
 - when `liveProvider=auto`, provider hint (`provider` param) is preferred first, then falls back to `defillama`
 - direct source env overrides:
   - `DEFI_MORPHO_POOLS_URL`
@@ -135,6 +136,8 @@ Offline matrix case names (contract regression):
 - `auto_morpho_fallback_defillama`
 - `auto_aave_fallback_defillama`
 - `forced_kamino_missing_url`
+- `forced_morpho_bad_json`
+- `auto_morpho_bad_json_fallback`
 
 Case input summary:
 
@@ -144,6 +147,8 @@ Case input summary:
 - `auto_morpho_fallback_defillama`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
 - `auto_aave_fallback_defillama`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
 - `forced_kamino_missing_url`: `chain=solana`, `provider=kamino`, `liveMode=live`, `liveProvider=kamino` (without `DEFI_KAMINO_POOLS_URL`)
+- `forced_morpho_bad_json`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
+- `auto_morpho_bad_json_fallback`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
 
 Copy-ready request snippets:
 
@@ -163,6 +168,8 @@ Expected key fields (assertion template):
 - `auto_morpho_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
 - `auto_aave_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
 - `forced_kamino_missing_url` -> `status=error`, `code=12`
+- `forced_morpho_bad_json` -> `status=error`, `code=12`
+- `auto_morpho_bad_json_fallback` -> `status=ok`, `sourceProvider=defillama`
 
 `jq` assertion snippets:
 
@@ -175,6 +182,12 @@ jq -e '.status=="error" and (.code|tonumber)==12'
 
 # auto fallback to defillama
 jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="defillama"'
+
+# forced provider bad-json response -> unavailable
+jq -e '.status=="error" and (.code|tonumber)==12'
+
+# auto bad-json fallback -> defillama
+jq -e '.status=="ok" and .sourceProvider=="defillama"'
 ```
 
 Bash one-liners (request + assert):

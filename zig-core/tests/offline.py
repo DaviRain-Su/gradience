@@ -137,6 +137,15 @@ def main() -> int:
         request_count = 0
 
         def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/badjson":
+                body = b"not-json"
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if self.path != "/pools":
                 self.send_response(404)
                 self.end_headers()
@@ -458,6 +467,44 @@ def main() -> int:
         assert yield_auto_kamino_fallback.get("source") in {"live", "cache"}
         assert yield_auto_kamino_fallback.get("sourceProvider") == "defillama"
 
+        # Non-JSON live response should not crash and should fall back in auto mode.
+        env_live_bad_json = env_live_cache.copy()
+        env_live_bad_json["DEFI_MORPHO_POOLS_URL"] = f"http://127.0.0.1:{port}/badjson"
+        yield_auto_bad_json_fallback = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "auto",
+                    "limit": 1,
+                },
+            },
+            env_live_bad_json,
+        )
+        assert yield_auto_bad_json_fallback.get("status") == "ok"
+        assert yield_auto_bad_json_fallback.get("sourceProvider") == "defillama"
+
+        # Forced provider with non-JSON response should fail (no auto provider fallback).
+        yield_forced_bad_json_error = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "morpho",
+                    "limit": 1,
+                },
+            },
+            env_live_bad_json,
+        )
+        assert yield_forced_bad_json_error.get("status") == "error"
+        assert int(yield_forced_bad_json_error.get("code", 0)) == 12
+
         # Structured matrix checks for forced-vs-auto provider behavior.
         matrix_cases = [
             (
@@ -564,6 +611,42 @@ def main() -> int:
                 "error",
                 None,
                 12,
+            ),
+            (
+                "forced_morpho_bad_json",
+                env_live_bad_json,
+                {
+                    "action": "yieldOpportunities",
+                    "params": {
+                        "chain": "monad",
+                        "asset": "USDC",
+                        "provider": "morpho",
+                        "liveMode": "live",
+                        "liveProvider": "morpho",
+                        "limit": 1,
+                    },
+                },
+                "error",
+                None,
+                12,
+            ),
+            (
+                "auto_morpho_bad_json_fallback",
+                env_live_bad_json,
+                {
+                    "action": "yieldOpportunities",
+                    "params": {
+                        "chain": "monad",
+                        "asset": "USDC",
+                        "provider": "morpho",
+                        "liveMode": "live",
+                        "liveProvider": "auto",
+                        "limit": 1,
+                    },
+                },
+                "ok",
+                "defillama",
+                None,
             ),
         ]
         for (
@@ -3553,6 +3636,38 @@ def main() -> int:
     )
     assert yield_invalid_live_provider.get("status") == "error"
     assert int(yield_invalid_live_provider.get("code", 0)) == 2
+
+    lend_markets_invalid_live_provider = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+                "liveProvider": "unknown-provider",
+            },
+        },
+        env,
+    )
+    assert lend_markets_invalid_live_provider.get("status") == "error"
+    assert int(lend_markets_invalid_live_provider.get("code", 0)) == 2
+
+    lend_rates_invalid_live_provider = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+                "liveProvider": "unknown-provider",
+            },
+        },
+        env,
+    )
+    assert lend_rates_invalid_live_provider.get("status") == "error"
+    assert int(lend_rates_invalid_live_provider.get("code", 0)) == 2
 
     lend_rates_select = run(
         {

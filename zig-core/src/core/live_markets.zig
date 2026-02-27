@@ -213,14 +213,16 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
     const cached = try core_cache.get(allocator, cache_key);
     if (cached) |record| {
         if (now <= record.expiresAtUnix) {
-            const parsed_cached = try std.json.parseFromSlice(std.json.Value, allocator, record.valueJson, .{});
-            return .{
-                .parsed = parsed_cached,
-                .source = "cache",
-                .source_provider = try allocator.dupe(u8, provider_name),
-                .fetched_at_unix = record.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
-                .source_url = url,
-            };
+            const parsed_cached = std.json.parseFromSlice(std.json.Value, allocator, record.valueJson, .{}) catch null;
+            if (parsed_cached) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "cache",
+                    .source_provider = try allocator.dupe(u8, provider_name),
+                    .fetched_at_unix = record.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = url,
+                };
+            }
         }
     }
 
@@ -230,21 +232,29 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
     var response_body = std.Io.Writer.Allocating.init(allocator);
     defer response_body.deinit();
 
+    const headers = [_]std.http.Header{
+        .{ .name = "accept", .value = "application/json" },
+        .{ .name = "accept-encoding", .value = "identity" },
+    };
+
     const fetch_result = client.fetch(.{
         .location = .{ .url = url },
         .method = .GET,
+        .extra_headers = &headers,
         .response_writer = &response_body.writer,
     }) catch {
         if (allow_stale and cached != null) {
             const stale = cached.?;
-            const parsed_stale = try std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{});
-            return .{
-                .parsed = parsed_stale,
-                .source = "stale_cache",
-                .source_provider = try allocator.dupe(u8, provider_name),
-                .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
-                .source_url = url,
-            };
+            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
+            if (parsed_stale) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "stale_cache",
+                    .source_provider = try allocator.dupe(u8, provider_name),
+                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = url,
+                };
+            }
         }
         return error.LiveSourceUnavailable;
     };
@@ -252,21 +262,38 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
     if (fetch_result.status != .ok) {
         if (allow_stale and cached != null) {
             const stale = cached.?;
-            const parsed_stale = try std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{});
-            return .{
-                .parsed = parsed_stale,
-                .source = "stale_cache",
-                .source_provider = try allocator.dupe(u8, provider_name),
-                .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
-                .source_url = url,
-            };
+            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
+            if (parsed_stale) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "stale_cache",
+                    .source_provider = try allocator.dupe(u8, provider_name),
+                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = url,
+                };
+            }
         }
         return error.LiveSourceUnavailable;
     }
 
     try core_cache.put(allocator, cache_key, ttl_seconds, response_body.written());
 
-    const parsed_live = try std.json.parseFromSlice(std.json.Value, allocator, response_body.written(), .{});
+    const parsed_live = std.json.parseFromSlice(std.json.Value, allocator, response_body.written(), .{}) catch {
+        if (allow_stale and cached != null) {
+            const stale = cached.?;
+            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
+            if (parsed_stale) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "stale_cache",
+                    .source_provider = try allocator.dupe(u8, provider_name),
+                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = url,
+                };
+            }
+        }
+        return error.LiveSourceUnavailable;
+    };
 
     return .{
         .parsed = parsed_live,
