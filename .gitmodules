@@ -1,3 +1,6 @@
 [submodule "zig-core/deps/zigeth"]
 	path = zig-core/deps/zigeth
 	url = https://github.com/DaviRain-Su/zigeth.git
+[submodule "defi-cli"]
+	path = defi-cli
+	url = https://github.com/ggonzalez94/defi-cli.git
