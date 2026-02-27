@@ -226,23 +226,7 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
         }
     }
 
-    var client: std.http.Client = .{ .allocator = allocator };
-    defer client.deinit();
-
-    var response_body = std.Io.Writer.Allocating.init(allocator);
-    defer response_body.deinit();
-
-    const headers = [_]std.http.Header{
-        .{ .name = "accept", .value = "application/json" },
-        .{ .name = "accept-encoding", .value = "identity" },
-    };
-
-    const fetch_result = client.fetch(.{
-        .location = .{ .url = url },
-        .method = .GET,
-        .extra_headers = &headers,
-        .response_writer = &response_body.writer,
-    }) catch {
+    const body = fetchHttpBody(allocator, url) catch {
         if (allow_stale and cached != null) {
             const stale = cached.?;
             const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
@@ -258,27 +242,11 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
         }
         return error.LiveSourceUnavailable;
     };
+    defer allocator.free(body);
 
-    if (fetch_result.status != .ok) {
-        if (allow_stale and cached != null) {
-            const stale = cached.?;
-            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
-            if (parsed_stale) |parsed| {
-                return .{
-                    .parsed = parsed,
-                    .source = "stale_cache",
-                    .source_provider = try allocator.dupe(u8, provider_name),
-                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
-                    .source_url = url,
-                };
-            }
-        }
-        return error.LiveSourceUnavailable;
-    }
+    try core_cache.put(allocator, cache_key, ttl_seconds, body);
 
-    try core_cache.put(allocator, cache_key, ttl_seconds, response_body.written());
-
-    const parsed_live = std.json.parseFromSlice(std.json.Value, allocator, response_body.written(), .{}) catch {
+    const parsed_live = std.json.parseFromSlice(std.json.Value, allocator, body, .{}) catch {
         if (allow_stale and cached != null) {
             const stale = cached.?;
             const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
@@ -302,6 +270,69 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !
         .fetched_at_unix = now,
         .source_url = url,
     };
+}
+
+fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
+    const argv = [_][]const u8{
+        "curl",
+        "-sS",
+        "-L",
+        "--fail",
+        "--max-time",
+        "15",
+        "--header",
+        "accept: application/json",
+        "--header",
+        "accept-encoding: identity",
+        url,
+    };
+
+    const result = std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &argv,
+    }) catch return error.LiveSourceUnavailable;
+    defer allocator.free(result.stderr);
+
+    if (result.term.Exited != 0) {
+        allocator.free(result.stdout);
+        return error.LiveSourceUnavailable;
+    }
+    return result.stdout;
+}
+
+fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
+    const transport = std.process.getEnvVarOwned(allocator, "DEFI_LIVE_HTTP_TRANSPORT") catch
+        try allocator.dupe(u8, "curl");
+    defer allocator.free(transport);
+
+    if (std.ascii.eqlIgnoreCase(std.mem.trim(u8, transport, " \r\n\t"), "curl")) {
+        return fetchHttpBodyWithCurl(allocator, url);
+    }
+
+    return fetchHttpBodyWithZig(allocator, url) catch fetchHttpBodyWithCurl(allocator, url);
+}
+
+fn fetchHttpBodyWithZig(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
+    var client: std.http.Client = .{ .allocator = allocator };
+    defer client.deinit();
+
+    var response_body = std.Io.Writer.Allocating.init(allocator);
+    defer response_body.deinit();
+
+    const headers = [_]std.http.Header{
+        .{ .name = "accept", .value = "application/json" },
+        .{ .name = "accept-encoding", .value = "identity" },
+    };
+
+    const fetch_result = client.fetch(.{
+        .location = .{ .url = url },
+        .method = .GET,
+        .extra_headers = &headers,
+        .response_writer = &response_body.writer,
+    }) catch return error.LiveSourceUnavailable;
+
+    if (fetch_result.status != .ok) return error.LiveSourceUnavailable;
+    return allocator.dupe(u8, response_body.written()) catch error.LiveSourceUnavailable;
 }
 
 fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {
