@@ -3,6 +3,13 @@ const assets_registry = @import("assets_registry.zig");
 
 pub fn normalizeChain(chain: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, chain, "1") or std.mem.eql(u8, chain, "ethereum")) return "eip155:1";
+    if (std.mem.eql(u8, chain, "10") or std.mem.eql(u8, chain, "optimism")) return "eip155:10";
+    if (std.mem.eql(u8, chain, "56") or std.mem.eql(u8, chain, "bsc") or std.mem.eql(u8, chain, "binance") or std.mem.eql(u8, chain, "bnb")) return "eip155:56";
+    if (std.mem.eql(u8, chain, "137") or std.mem.eql(u8, chain, "polygon")) return "eip155:137";
+    if (std.mem.eql(u8, chain, "324") or std.mem.eql(u8, chain, "zksync") or std.mem.eql(u8, chain, "zksync-era")) return "eip155:324";
+    if (std.mem.eql(u8, chain, "59144") or std.mem.eql(u8, chain, "linea")) return "eip155:59144";
+    if (std.mem.eql(u8, chain, "42161") or std.mem.eql(u8, chain, "arbitrum")) return "eip155:42161";
+    if (std.mem.eql(u8, chain, "43114") or std.mem.eql(u8, chain, "avalanche")) return "eip155:43114";
     if (std.mem.eql(u8, chain, "8453") or std.mem.eql(u8, chain, "base")) return "eip155:8453";
     if (std.mem.eql(u8, chain, "10143") or std.mem.eql(u8, chain, "monad")) return "eip155:10143";
     if (std.mem.eql(u8, chain, "solana")) return "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";

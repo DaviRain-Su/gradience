@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 import json
 import os
+import socketserver
 import subprocess
 import sys
+import threading
+import time
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +101,27 @@ def swap_quote_params(**overrides: Any) -> dict[str, Any]:
     return params
 
 
+def assert_live_provider_matrix_case(
+    env: JsonDict,
+    payload: JsonDict,
+    *,
+    case_name: str,
+    expected_status: str,
+    expected_source_provider: str | None = None,
+    expected_code: int | None = None,
+) -> None:
+    out = run(payload, env)
+    assert out.get("status") == expected_status, f"[{case_name}] status mismatch: {out}"
+    if expected_source_provider is not None:
+        assert out.get("sourceProvider") == expected_source_provider, (
+            f"[{case_name}] sourceProvider mismatch: {out}"
+        )
+    if expected_code is not None:
+        assert int(out.get("code", 0)) == expected_code, (
+            f"[{case_name}] code mismatch: {out}"
+        )
+
+
 def main() -> int:
     if not BIN.exists():
         print(f"missing binary: {BIN}", file=sys.stderr)
@@ -105,12 +130,807 @@ def main() -> int:
 
     env = os.environ.copy()
     env["ZIG_CORE_CACHE_DIR"] = str(ROOT / ".runtime-cache-test")
+    # Keep default live-source calls deterministic and fast-fail in offline tests.
+    env["DEFI_LLAMA_POOLS_URL"] = "http://127.0.0.1:1/pools"
+
+    class LivePoolsHandler(BaseHTTPRequestHandler):
+        request_count = 0
+
+        def do_GET(self) -> None:  # noqa: N802
+            if self.path != "/pools":
+                self.send_response(404)
+                self.end_headers()
+                return
+            LivePoolsHandler.request_count += 1
+            payload = {
+                "status": "success",
+                "data": [
+                    {
+                        "chain": "Monad",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Monad USDC live",
+                        "apy": 6.2,
+                        "apyBase": 6.2,
+                        "apyBaseBorrow": 7.5,
+                        "tvlUsd": 151000000,
+                    },
+                    {
+                        "chain": "Arbitrum",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Arbitrum USDC live",
+                        "apy": 5.8,
+                        "apyBase": 5.8,
+                        "apyBaseBorrow": 6.9,
+                        "tvlUsd": 420000000,
+                    },
+                    {
+                        "chain": "Optimism",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Optimism USDC live",
+                        "apy": 5.4,
+                        "apyBase": 5.4,
+                        "apyBaseBorrow": 6.5,
+                        "tvlUsd": 280000000,
+                    },
+                    {
+                        "chain": "Polygon",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Polygon USDC live",
+                        "apy": 5.2,
+                        "apyBase": 5.2,
+                        "apyBaseBorrow": 6.3,
+                        "tvlUsd": 310000000,
+                    },
+                    {
+                        "chain": "BSC",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho BSC USDC live",
+                        "apy": 5.0,
+                        "apyBase": 5.0,
+                        "apyBaseBorrow": 6.1,
+                        "tvlUsd": 260000000,
+                    },
+                    {
+                        "chain": "Avalanche",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Avalanche USDC live",
+                        "apy": 4.9,
+                        "apyBase": 4.9,
+                        "apyBaseBorrow": 6.0,
+                        "tvlUsd": 190000000,
+                    },
+                    {
+                        "chain": "Linea",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Linea USDC live",
+                        "apy": 5.1,
+                        "apyBase": 5.1,
+                        "apyBaseBorrow": 6.2,
+                        "tvlUsd": 170000000,
+                    },
+                    {
+                        "chain": "zksync-era",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho zkSync USDC live",
+                        "apy": 5.3,
+                        "apyBase": 5.3,
+                        "apyBaseBorrow": 6.4,
+                        "tvlUsd": 160000000,
+                    },
+                    {
+                        "chain": "Ethereum",
+                        "project": "Aave",
+                        "symbol": "USDC",
+                        "poolMeta": "Aave Ethereum USDC live",
+                        "apy": 4.4,
+                        "apyBase": 4.4,
+                        "apyBaseBorrow": 5.2,
+                        "tvlUsd": 1900000000,
+                    },
+                    {
+                        "chain": "Solana",
+                        "project": "Kamino",
+                        "symbol": "USDC",
+                        "poolMeta": "Kamino Solana USDC live",
+                        "apy": 6.0,
+                        "apyBase": 6.0,
+                        "apyBaseBorrow": 7.2,
+                        "tvlUsd": 410000000,
+                    },
+                ],
+            }
+            body = json.dumps(payload).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:  # noqa: A003
+            return
+
+    with socketserver.TCPServer(("127.0.0.1", 0), LivePoolsHandler) as httpd:
+        port = int(httpd.server_address[1])
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+
+        env_live_cache = env.copy()
+        env_live_cache["ZIG_CORE_CACHE_DIR"] = str(
+            ROOT / f".runtime-cache-test-live-{os.getpid()}"
+        )
+        env_live_cache["DEFI_LLAMA_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
+        env_live_cache["DEFI_MORPHO_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
+        env_live_cache["DEFI_AAVE_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
+        env_live_cache["DEFI_KAMINO_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
+        env_live_cache["DEFI_LIVE_MARKETS_TTL_SECONDS"] = "120"
+        env_live_cache["DEFI_LIVE_MARKETS_ALLOW_STALE"] = "true"
+
+        yield_live_first = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_first.get("status") == "ok"
+        assert yield_live_first.get("source") == "live"
+        assert yield_live_first.get("sourceProvider") == "defillama"
+        assert int(yield_live_first.get("fetchedAtUnix", 0)) > 0
+        assert str(yield_live_first.get("sourceUrl", "")).startswith(
+            "http://127.0.0.1:"
+        )
+
+        yield_live_morpho_provider = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "morpho",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_morpho_provider.get("status") == "ok"
+        assert yield_live_morpho_provider.get("source") in {"live", "cache"}
+        assert yield_live_morpho_provider.get("sourceProvider") == "morpho"
+
+        lend_rates_live_morpho_provider = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "morpho",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_morpho_provider.get("status") == "ok"
+        assert lend_rates_live_morpho_provider.get("source") in {"live", "cache"}
+        assert lend_rates_live_morpho_provider.get("sourceProvider") == "morpho"
+
+        lend_rates_live_aave_provider = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "ethereum",
+                    "asset": "USDC",
+                    "provider": "aave",
+                    "liveMode": "live",
+                    "liveProvider": "aave",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_aave_provider.get("status") == "ok"
+        assert lend_rates_live_aave_provider.get("source") in {"live", "cache"}
+        assert lend_rates_live_aave_provider.get("sourceProvider") == "aave"
+
+        env_live_cache_no_aave = env_live_cache.copy()
+        env_live_cache_no_aave.pop("DEFI_AAVE_POOLS_URL", None)
+
+        lend_rates_auto_aave_fallback = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "ethereum",
+                    "asset": "USDC",
+                    "provider": "aave",
+                    "liveMode": "live",
+                    "liveProvider": "auto",
+                },
+            },
+            env_live_cache_no_aave,
+        )
+        assert lend_rates_auto_aave_fallback.get("status") == "ok"
+        assert lend_rates_auto_aave_fallback.get("source") in {"live", "cache"}
+        assert lend_rates_auto_aave_fallback.get("sourceProvider") == "defillama"
+
+        lend_rates_live_aave_missing_url = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "ethereum",
+                    "asset": "USDC",
+                    "provider": "aave",
+                    "liveMode": "live",
+                    "liveProvider": "aave",
+                },
+            },
+            env_live_cache_no_aave,
+        )
+        assert lend_rates_live_aave_missing_url.get("status") == "error"
+        assert int(lend_rates_live_aave_missing_url.get("code", 0)) == 12
+
+        env_live_cache_no_morpho = env_live_cache.copy()
+        env_live_cache_no_morpho.pop("DEFI_MORPHO_POOLS_URL", None)
+
+        yield_live_morpho_missing_url = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "morpho",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_morpho,
+        )
+        assert yield_live_morpho_missing_url.get("status") == "error"
+        assert int(yield_live_morpho_missing_url.get("code", 0)) == 12
+
+        yield_auto_morpho_fallback = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "auto",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_morpho,
+        )
+        assert yield_auto_morpho_fallback.get("status") == "ok"
+        assert yield_auto_morpho_fallback.get("source") in {"live", "cache"}
+        assert yield_auto_morpho_fallback.get("sourceProvider") == "defillama"
+
+        env_live_cache_no_kamino = env_live_cache.copy()
+        env_live_cache_no_kamino.pop("DEFI_KAMINO_POOLS_URL", None)
+
+        yield_live_kamino_missing_url = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "solana",
+                    "asset": "USDC",
+                    "provider": "kamino",
+                    "liveMode": "live",
+                    "liveProvider": "kamino",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_kamino,
+        )
+        assert yield_live_kamino_missing_url.get("status") == "error"
+        assert int(yield_live_kamino_missing_url.get("code", 0)) == 12
+
+        yield_auto_kamino_fallback = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "solana",
+                    "asset": "USDC",
+                    "provider": "kamino",
+                    "liveMode": "live",
+                    "liveProvider": "auto",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_kamino,
+        )
+        assert yield_auto_kamino_fallback.get("status") == "ok"
+        assert yield_auto_kamino_fallback.get("source") in {"live", "cache"}
+        assert yield_auto_kamino_fallback.get("sourceProvider") == "defillama"
+
+        # Structured matrix checks for forced-vs-auto provider behavior.
+        matrix_cases = [
+            (
+                "forced_morpho_success",
+                env_live_cache,
+                {
+                    "action": "yieldOpportunities",
+                    "params": {
+                        "chain": "monad",
+                        "asset": "USDC",
+                        "provider": "morpho",
+                        "liveMode": "live",
+                        "liveProvider": "morpho",
+                        "limit": 1,
+                    },
+                },
+                "ok",
+                "morpho",
+                None,
+            ),
+            (
+                "forced_aave_success",
+                env_live_cache,
+                {
+                    "action": "lendRates",
+                    "params": {
+                        "chain": "ethereum",
+                        "asset": "USDC",
+                        "provider": "aave",
+                        "liveMode": "live",
+                        "liveProvider": "aave",
+                    },
+                },
+                "ok",
+                "aave",
+                None,
+            ),
+            (
+                "forced_aave_missing_url",
+                env_live_cache_no_aave,
+                {
+                    "action": "lendRates",
+                    "params": {
+                        "chain": "ethereum",
+                        "asset": "USDC",
+                        "provider": "aave",
+                        "liveMode": "live",
+                        "liveProvider": "aave",
+                    },
+                },
+                "error",
+                None,
+                12,
+            ),
+            (
+                "auto_morpho_fallback_defillama",
+                env_live_cache_no_morpho,
+                {
+                    "action": "yieldOpportunities",
+                    "params": {
+                        "chain": "monad",
+                        "asset": "USDC",
+                        "provider": "morpho",
+                        "liveMode": "live",
+                        "liveProvider": "auto",
+                        "limit": 1,
+                    },
+                },
+                "ok",
+                "defillama",
+                None,
+            ),
+            (
+                "auto_aave_fallback_defillama",
+                env_live_cache_no_aave,
+                {
+                    "action": "lendRates",
+                    "params": {
+                        "chain": "ethereum",
+                        "asset": "USDC",
+                        "provider": "aave",
+                        "liveMode": "live",
+                        "liveProvider": "auto",
+                    },
+                },
+                "ok",
+                "defillama",
+                None,
+            ),
+            (
+                "forced_kamino_missing_url",
+                env_live_cache_no_kamino,
+                {
+                    "action": "yieldOpportunities",
+                    "params": {
+                        "chain": "solana",
+                        "asset": "USDC",
+                        "provider": "kamino",
+                        "liveMode": "live",
+                        "liveProvider": "kamino",
+                        "limit": 1,
+                    },
+                },
+                "error",
+                None,
+                12,
+            ),
+        ]
+        for (
+            case_name,
+            case_env,
+            case_payload,
+            expected_status,
+            expected_source_provider,
+            expected_code,
+        ) in matrix_cases:
+            assert_live_provider_matrix_case(
+                case_env,
+                case_payload,
+                case_name=case_name,
+                expected_status=expected_status,
+                expected_source_provider=expected_source_provider,
+                expected_code=expected_code,
+            )
+
+        yield_live_kamino_provider = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "solana",
+                    "asset": "USDC",
+                    "provider": "kamino",
+                    "liveMode": "live",
+                    "liveProvider": "kamino",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_kamino_provider.get("status") == "ok"
+        assert yield_live_kamino_provider.get("source") in {"live", "cache"}
+        assert yield_live_kamino_provider.get("sourceProvider") == "kamino"
+
+        yield_live_auto_morpho = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "auto",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_auto_morpho.get("status") == "ok"
+        assert yield_live_auto_morpho.get("source") in {"live", "cache"}
+        assert yield_live_auto_morpho.get("sourceProvider") == "morpho"
+
+        httpd.shutdown()
+        thread.join(timeout=5)
+
+        yield_live_cache_hit = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_cache_hit.get("status") == "ok"
+        assert yield_live_cache_hit.get("source") == "cache"
+        assert yield_live_cache_hit.get("sourceProvider") == "defillama"
+
+        yield_live_arbitrum = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "arbitrum",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert yield_live_arbitrum.get("status") == "ok"
+        assert yield_live_arbitrum.get("source") in {"live", "cache"}
+        arb_rows = yield_live_arbitrum.get("opportunities", [])
+        assert len(arb_rows) >= 1
+        assert arb_rows[0].get("chain") == "eip155:42161"
+
+        lend_rates_live_arbitrum = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "arbitrum",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_arbitrum.get("status") == "ok"
+        assert lend_rates_live_arbitrum.get("source") in {"live", "cache"}
+        assert lend_rates_live_arbitrum.get("chain") == "eip155:42161"
+
+        lend_markets_live_arbitrum = run(
+            {
+                "action": "lendMarkets",
+                "params": {
+                    "chain": "arbitrum",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_markets_live_arbitrum.get("status") == "ok"
+        assert lend_markets_live_arbitrum.get("source") in {"live", "cache"}
+        arb_markets = lend_markets_live_arbitrum.get("markets", [])
+        assert len(arb_markets) >= 1
+        assert arb_markets[0].get("chain") == "eip155:42161"
+
+        lend_rates_live_optimism = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "optimism",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_optimism.get("status") == "ok"
+        assert lend_rates_live_optimism.get("source") in {"live", "cache"}
+        assert lend_rates_live_optimism.get("chain") == "eip155:10"
+
+        lend_markets_live_polygon = run(
+            {
+                "action": "lendMarkets",
+                "params": {
+                    "chain": "polygon",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_markets_live_polygon.get("status") == "ok"
+        assert lend_markets_live_polygon.get("source") in {"live", "cache"}
+        polygon_markets = lend_markets_live_polygon.get("markets", [])
+        assert len(polygon_markets) >= 1
+        assert polygon_markets[0].get("chain") == "eip155:137"
+
+        lend_rates_live_bsc = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "bsc",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_bsc.get("status") == "ok"
+        assert lend_rates_live_bsc.get("source") in {"live", "cache"}
+        assert lend_rates_live_bsc.get("chain") == "eip155:56"
+
+        lend_markets_live_avalanche = run(
+            {
+                "action": "lendMarkets",
+                "params": {
+                    "chain": "avalanche",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_markets_live_avalanche.get("status") == "ok"
+        assert lend_markets_live_avalanche.get("source") in {"live", "cache"}
+        avalanche_markets = lend_markets_live_avalanche.get("markets", [])
+        assert len(avalanche_markets) >= 1
+        assert avalanche_markets[0].get("chain") == "eip155:43114"
+
+        lend_rates_live_linea = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "linea",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_linea.get("status") == "ok"
+        assert lend_rates_live_linea.get("source") in {"live", "cache"}
+        assert lend_rates_live_linea.get("chain") == "eip155:59144"
+
+        lend_rates_live_zksync = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "zksync",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_zksync.get("status") == "ok"
+        assert lend_rates_live_zksync.get("source") in {"live", "cache"}
+        assert lend_rates_live_zksync.get("chain") == "eip155:324"
+
+        lend_markets_live_cache_hit = run(
+            {
+                "action": "lendMarkets",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_markets_live_cache_hit.get("status") == "ok"
+        assert lend_markets_live_cache_hit.get("source") == "cache"
+
+        lend_rates_live_cache_hit = run(
+            {
+                "action": "lendRates",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                },
+            },
+            env_live_cache,
+        )
+        assert lend_rates_live_cache_hit.get("status") == "ok"
+        assert lend_rates_live_cache_hit.get("source") == "cache"
+        assert LivePoolsHandler.request_count >= 2
+
+    env_live_stale = env.copy()
+    env_live_stale["ZIG_CORE_CACHE_DIR"] = str(
+        ROOT / f".runtime-cache-test-stale-{os.getpid()}"
+    )
+    env_live_stale["DEFI_LIVE_MARKETS_TTL_SECONDS"] = "1"
+    env_live_stale["DEFI_LIVE_MARKETS_ALLOW_STALE"] = "true"
+
+    # Seed cache first with a live response using a temporary server.
+    with socketserver.TCPServer(("127.0.0.1", 0), LivePoolsHandler) as httpd_seed:
+        port_seed = int(httpd_seed.server_address[1])
+        thread_seed = threading.Thread(target=httpd_seed.serve_forever, daemon=True)
+        thread_seed.start()
+        seeded_url = f"http://127.0.0.1:{port_seed}/pools"
+        env_live_stale["DEFI_LLAMA_POOLS_URL"] = seeded_url
+        env_live_stale["DEFI_MORPHO_POOLS_URL"] = seeded_url
+        env_live_stale_seed = env_live_stale.copy()
+        env_live_stale_seed["DEFI_LLAMA_POOLS_URL"] = seeded_url
+        env_live_stale_seed["DEFI_MORPHO_POOLS_URL"] = seeded_url
+        seeded = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "limit": 1,
+                },
+            },
+            env_live_stale_seed,
+        )
+        assert seeded.get("status") == "ok"
+        assert seeded.get("source") == "live"
+        httpd_seed.shutdown()
+        thread_seed.join(timeout=5)
+
+    time.sleep(2)
+    stale_hit = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+                "limit": 1,
+            },
+        },
+        env_live_stale,
+    )
+    assert stale_hit.get("status") == "ok"
+    assert stale_hit.get("source") == "stale_cache"
+    assert stale_hit.get("sourceProvider") == "defillama"
+
+    lend_markets_stale_hit = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+                "limit": 1,
+            },
+        },
+        env_live_stale,
+    )
+    assert lend_markets_stale_hit.get("status") == "ok"
+    assert lend_markets_stale_hit.get("source") == "stale_cache"
+
+    lend_rates_stale_hit = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+            },
+        },
+        env_live_stale,
+    )
+    assert lend_rates_stale_hit.get("status") == "ok"
+    assert lend_rates_stale_hit.get("source") == "stale_cache"
 
     normalize_chain = run(
         {"action": "normalizeChain", "params": {"chain": "monad"}}, env
     )
     assert normalize_chain.get("status") == "ok"
     assert normalize_chain.get("caip2") == "eip155:10143"
+
+    normalize_chain_arbitrum = run(
+        {"action": "normalizeChain", "params": {"chain": "arbitrum"}},
+        env,
+    )
+    assert normalize_chain_arbitrum.get("status") == "ok"
+    assert normalize_chain_arbitrum.get("caip2") == "eip155:42161"
+
+    normalize_chain_polygon = run(
+        {"action": "normalizeChain", "params": {"chain": "polygon"}},
+        env,
+    )
+    assert normalize_chain_polygon.get("status") == "ok"
+    assert normalize_chain_polygon.get("caip2") == "eip155:137"
 
     normalize_amount = run(
         {
@@ -335,6 +1155,42 @@ def main() -> int:
     assert len(assets) == 1
     assert assets[0].get("symbol") == "USDC"
 
+    chain_assets_monad = run(
+        {"action": "chainsAssets", "params": {"chain": "monad", "asset": "USDC"}},
+        env,
+    )
+    assert chain_assets_monad.get("status") == "ok"
+    assert chain_assets_monad.get("chain") == "eip155:10143"
+    monad_assets = chain_assets_monad.get("assets", [])
+    assert len(monad_assets) == 1
+    assert monad_assets[0].get("symbol") == "USDC"
+    assert str(monad_assets[0].get("caip19", "")).startswith("eip155:10143/erc20:")
+
+    for chain_alias, chain_caip2 in [
+        ("arbitrum", "eip155:42161"),
+        ("optimism", "eip155:10"),
+        ("polygon", "eip155:137"),
+        ("bsc", "eip155:56"),
+        ("avalanche", "eip155:43114"),
+        ("linea", "eip155:59144"),
+        ("zksync", "eip155:324"),
+    ]:
+        chain_assets_extra = run(
+            {
+                "action": "chainsAssets",
+                "params": {"chain": chain_alias, "asset": "USDC"},
+            },
+            env,
+        )
+        assert chain_assets_extra.get("status") == "ok"
+        assert chain_assets_extra.get("chain") == chain_caip2
+        extra_assets = chain_assets_extra.get("assets", [])
+        assert len(extra_assets) == 1
+        assert extra_assets[0].get("symbol") == "USDC"
+        assert str(extra_assets[0].get("caip19", "")).startswith(
+            f"{chain_caip2}/erc20:"
+        )
+
     yield_rows = run(
         {
             "action": "yieldOpportunities",
@@ -352,6 +1208,80 @@ def main() -> int:
     opportunities = yield_rows.get("opportunities", [])
     assert len(opportunities) >= 1
     assert opportunities[0].get("provider") == "morpho"
+
+    yield_monad = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "limit": 5,
+            },
+        },
+        env,
+    )
+    assert yield_monad.get("status") == "ok"
+    assert yield_monad.get("source") == "registry"
+    assert int(yield_monad.get("fetchedAtUnix", 0)) == 0
+    assert yield_monad.get("sourceUrl", "") == ""
+    monad_opp = yield_monad.get("opportunities", [])
+    assert len(monad_opp) >= 1
+    assert monad_opp[0].get("chain") == "eip155:10143"
+    assert monad_opp[0].get("provider") == "morpho"
+
+    yield_monad_caip2 = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "eip155:10143",
+                "asset": "USDC",
+                "provider": "morpho",
+                "limit": 1,
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert yield_monad_caip2.get("status") == "ok"
+    monad_opp_results = yield_monad_caip2.get("results", [])
+    assert len(monad_opp_results) == 1
+    assert monad_opp_results[0].get("chain") == "eip155:10143"
+
+    env_live_unavailable = env.copy()
+    env_live_unavailable["DEFI_LLAMA_POOLS_URL"] = "http://127.0.0.1:1/pools"
+
+    yield_auto_fallback = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "auto",
+                "limit": 1,
+            },
+        },
+        env_live_unavailable,
+    )
+    assert yield_auto_fallback.get("status") == "ok"
+    assert yield_auto_fallback.get("source") == "registry"
+    assert int(yield_auto_fallback.get("fetchedAtUnix", 0)) == 0
+
+    yield_live_unavailable = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "live": True,
+            },
+        },
+        env_live_unavailable,
+    )
+    assert yield_live_unavailable.get("status") == "error"
+    assert int(yield_live_unavailable.get("code", 0)) == 12
 
     yield_select = run(
         {
@@ -2401,6 +3331,77 @@ def main() -> int:
     assert len(markets) >= 1
     assert markets[0].get("provider") == "aave"
 
+    lend_markets_monad = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "limit": 5,
+            },
+        },
+        env,
+    )
+    assert lend_markets_monad.get("status") == "ok"
+    assert lend_markets_monad.get("source") == "registry"
+    assert int(lend_markets_monad.get("fetchedAtUnix", 0)) == 0
+    assert lend_markets_monad.get("sourceUrl", "") == ""
+    monad_markets = lend_markets_monad.get("markets", [])
+    assert len(monad_markets) >= 1
+    assert monad_markets[0].get("chain") == "eip155:10143"
+    assert monad_markets[0].get("provider") == "morpho"
+
+    lend_markets_monad_caip2 = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "eip155:10143",
+                "asset": "USDC",
+                "provider": "morpho",
+                "limit": 1,
+                "resultsOnly": True,
+            },
+        },
+        env,
+    )
+    assert lend_markets_monad_caip2.get("status") == "ok"
+    monad_markets_results = lend_markets_monad_caip2.get("results", [])
+    assert len(monad_markets_results) == 1
+    assert monad_markets_results[0].get("chain") == "eip155:10143"
+
+    lend_markets_auto_fallback = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "auto",
+                "limit": 1,
+            },
+        },
+        env_live_unavailable,
+    )
+    assert lend_markets_auto_fallback.get("status") == "ok"
+    assert lend_markets_auto_fallback.get("source") == "registry"
+    assert int(lend_markets_auto_fallback.get("fetchedAtUnix", 0)) == 0
+
+    lend_markets_live_unavailable = run(
+        {
+            "action": "lendMarkets",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "live": True,
+            },
+        },
+        env_live_unavailable,
+    )
+    assert lend_markets_live_unavailable.get("status") == "error"
+    assert int(lend_markets_live_unavailable.get("code", 0)) == 12
+
     lend_markets_select = run(
         {
             "action": "lendMarkets",
@@ -2481,6 +3482,77 @@ def main() -> int:
     assert lend_rates.get("status") == "ok"
     assert lend_rates.get("provider") == "morpho"
     assert isinstance(lend_rates.get("supplyApy"), float)
+
+    lend_rates_monad = run(
+        {
+            "action": "lendRates",
+            "params": {"chain": "monad", "asset": "USDC", "provider": "morpho"},
+        },
+        env,
+    )
+    assert lend_rates_monad.get("status") == "ok"
+    assert lend_rates_monad.get("source") == "registry"
+    assert int(lend_rates_monad.get("fetchedAtUnix", 0)) == 0
+    assert lend_rates_monad.get("sourceUrl", "") == ""
+    assert lend_rates_monad.get("chain") == "eip155:10143"
+    assert lend_rates_monad.get("provider") == "morpho"
+
+    lend_rates_live_unavailable = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "live": True,
+            },
+        },
+        env_live_unavailable,
+    )
+    assert lend_rates_live_unavailable.get("status") == "error"
+    assert int(lend_rates_live_unavailable.get("code", 0)) == 12
+
+    lend_rates_auto_fallback = run(
+        {
+            "action": "lendRates",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "auto",
+            },
+        },
+        env_live_unavailable,
+    )
+    assert lend_rates_auto_fallback.get("status") == "ok"
+    assert lend_rates_auto_fallback.get("source") == "registry"
+    assert int(lend_rates_auto_fallback.get("fetchedAtUnix", 0)) == 0
+
+    yield_invalid_live_mode = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {"chain": "monad", "asset": "USDC", "liveMode": "bad-mode"},
+        },
+        env,
+    )
+    assert yield_invalid_live_mode.get("status") == "error"
+    assert int(yield_invalid_live_mode.get("code", 0)) == 2
+
+    yield_invalid_live_provider = run(
+        {
+            "action": "yieldOpportunities",
+            "params": {
+                "chain": "monad",
+                "asset": "USDC",
+                "provider": "morpho",
+                "liveMode": "live",
+                "liveProvider": "unknown-provider",
+            },
+        },
+        env,
+    )
+    assert yield_invalid_live_provider.get("status") == "error"
+    assert int(yield_invalid_live_provider.get("code", 0)) == 2
 
     lend_rates_select = run(
         {
@@ -2612,6 +3684,46 @@ def main() -> int:
         resolve_results_only.get("results", {}).get("caip19")
         == "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
     )
+
+    resolve_monad_symbol = run(
+        {"action": "assetsResolve", "params": {"chain": "monad", "asset": "USDC"}},
+        env,
+    )
+    assert resolve_monad_symbol.get("status") == "ok"
+    assert str(resolve_monad_symbol.get("caip19", "")).startswith("eip155:10143/erc20:")
+
+    resolve_monad_results_only = run(
+        {
+            "action": "assetsResolve",
+            "params": {"chain": "monad", "asset": "USDC", "resultsOnly": True},
+        },
+        env,
+    )
+    assert resolve_monad_results_only.get("status") == "ok"
+    assert str(
+        resolve_monad_results_only.get("results", {}).get("caip19", "")
+    ).startswith("eip155:10143/erc20:")
+
+    for chain_alias, chain_caip2 in [
+        ("arbitrum", "eip155:42161"),
+        ("optimism", "eip155:10"),
+        ("polygon", "eip155:137"),
+        ("bsc", "eip155:56"),
+        ("avalanche", "eip155:43114"),
+        ("linea", "eip155:59144"),
+        ("zksync", "eip155:324"),
+    ]:
+        resolve_chain_symbol = run(
+            {
+                "action": "assetsResolve",
+                "params": {"chain": chain_alias, "asset": "USDC"},
+            },
+            env,
+        )
+        assert resolve_chain_symbol.get("status") == "ok"
+        assert str(resolve_chain_symbol.get("caip19", "")).startswith(
+            f"{chain_caip2}/erc20:"
+        )
 
     policy = run({"action": "cachePolicy", "params": {"method": "ETH_GETBALANCE"}}, env)
     assert policy.get("status") == "ok"

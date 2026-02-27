@@ -131,8 +131,10 @@ Most listing/query actions support `resultsOnly: true` to place data under a `re
 `chainsTop` supports `limit` and optional `select` (for example: `chain,rank`).
 
 `chainsAssets` supports `chain` (required), with optional `asset` and `limit` filters.
+Bundled chain-asset data includes `USDC` on Ethereum/Base/Monad/Arbitrum/Optimism/Polygon/BSC/Avalanche/Linea/zkSync, plus Monad `WMON`.
 
-`yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
+`yieldOpportunities` supports filters: `chain`, `asset`, `provider`, `live`, `liveMode`, `liveProvider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
+Bundled registry data now includes Monad (`monad` / `eip155:10143`) Morpho USDC entries.
 
 `bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider` and `select`.
 
@@ -140,9 +142,156 @@ Most listing/query actions support `resultsOnly: true` to place data under a `re
 `amount`/`amountIn`, `amountOut`/`amount_out`, `amountOutDecimal`/`amount_out_decimal`), plus `source` and
 `tradeType` in responses.
 
-`lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
+`lendMarkets` supports filters: `chain`, `asset`, `provider`, `live`, `liveMode`, `liveProvider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
+Bundled registry data now includes Monad (`monad` / `eip155:10143`) Morpho USDC entries.
 
-`lendRates` supports `chain`, `asset`, `provider`, with optional `select`.
+`lendRates` supports `chain`, `asset`, `provider`, with optional `live`, `liveMode`, `liveProvider`, and `select`.
+
+Set `live=true` for `yieldOpportunities` / `lendMarkets` / `lendRates` to fetch real-time market data
+from `DEFI_LLAMA_POOLS_URL` (defaults to `https://yields.llama.fi/pools`).
+Set `liveMode=auto` to try live first and safely fall back to bundled registry.
+Set `liveProvider` to force source selection (`defillama`, `morpho`, `aave`, `kamino`, or `auto`).
+`liveProvider=auto` routes by provider hint first (for example `provider=morpho` prefers Morpho source, then falls back).
+Responses include `source` (`live`, `cache`, `stale_cache`, or `registry`), `sourceProvider`, plus `fetchedAtUnix` and `sourceUrl`.
+
+Priority example (`provider` hint + `liveProvider=auto`):
+
+```json
+{
+  "action": "lendRates",
+  "params": {
+    "chain": "ethereum",
+    "asset": "USDC",
+    "provider": "aave",
+    "liveMode": "live",
+    "liveProvider": "auto"
+  }
+}
+```
+
+Expected behavior: prefer Aave direct source first; if unavailable, fall back to DefiLlama; then cache/stale behavior applies.
+If you force `liveProvider=aave` (or `morpho`/`kamino`) without corresponding `DEFI_*_POOLS_URL`, request returns provider-unavailable.
+
+Minimal direct-source request examples:
+
+```json
+{"action":"yieldOpportunities","params":{"chain":"monad","asset":"USDC","provider":"morpho","liveMode":"live","liveProvider":"morpho","limit":5}}
+{"action":"lendMarkets","params":{"chain":"ethereum","asset":"USDC","provider":"aave","liveMode":"live","liveProvider":"aave","limit":5}}
+{"action":"yieldOpportunities","params":{"chain":"solana","asset":"USDC","provider":"kamino","liveMode":"live","liveProvider":"kamino","limit":5}}
+```
+
+`liveProvider` behavior matrix:
+
+| Mode | Direct URL configured | Expected result |
+| --- | --- | --- |
+| `liveProvider=morpho|aave|kamino` | Yes | Direct source (`sourceProvider` = forced provider) |
+| `liveProvider=morpho|aave|kamino` | No | Error `code=12` (provider unavailable) |
+| `liveProvider=auto` + `provider` hint | Yes | Prefer hinted direct source |
+| `liveProvider=auto` + `provider` hint | No | Fallback to `defillama` |
+| `liveProvider=defillama` | N/A | Use DefiLlama source directly |
+
+Reference test case names (offline matrix):
+
+- `forced_morpho_success`
+- `forced_aave_success`
+- `forced_aave_missing_url`
+- `auto_morpho_fallback_defillama`
+- `auto_aave_fallback_defillama`
+- `forced_kamino_missing_url`
+
+Case input summary:
+
+- `forced_morpho_success`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho`
+- `forced_aave_success`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave`
+- `forced_aave_missing_url`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave` (without `DEFI_AAVE_POOLS_URL`)
+- `auto_morpho_fallback_defillama`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
+- `auto_aave_fallback_defillama`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
+- `forced_kamino_missing_url`: `chain=solana`, `provider=kamino`, `liveMode=live`, `liveProvider=kamino` (without `DEFI_KAMINO_POOLS_URL`)
+
+Copy-ready request snippets:
+
+```json
+{"action":"yieldOpportunities","params":{"chain":"monad","asset":"USDC","provider":"morpho","liveMode":"live","liveProvider":"morpho","limit":1}}
+{"action":"lendRates","params":{"chain":"ethereum","asset":"USDC","provider":"aave","liveMode":"live","liveProvider":"aave"}}
+{"action":"lendRates","params":{"chain":"ethereum","asset":"USDC","provider":"aave","liveMode":"live","liveProvider":"auto"}}
+{"action":"yieldOpportunities","params":{"chain":"monad","asset":"USDC","provider":"morpho","liveMode":"live","liveProvider":"auto","limit":1}}
+{"action":"yieldOpportunities","params":{"chain":"solana","asset":"USDC","provider":"kamino","liveMode":"live","liveProvider":"kamino","limit":1}}
+```
+
+Expected key fields (assertion template):
+
+- `forced_morpho_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=morpho`
+- `forced_aave_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=aave`
+- `forced_aave_missing_url` -> `status=error`, `code=12`
+- `auto_morpho_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
+- `auto_aave_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
+- `forced_kamino_missing_url` -> `status=error`, `code=12`
+
+`jq` assertion snippets (copy-ready):
+
+```bash
+# success + provider source
+jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="morpho"'
+
+# forced provider missing URL -> unavailable
+jq -e '.status=="error" and (.code|tonumber)==12'
+
+# auto fallback to defillama
+jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="defillama"'
+```
+
+Bash one-liners (request + assert):
+
+```bash
+# forced morpho success
+printf '%s\n' '{"action":"yieldOpportunities","params":{"chain":"monad","asset":"USDC","provider":"morpho","liveMode":"live","liveProvider":"morpho","limit":1}}' \
+  | zig-core/zig-out/bin/gradience-zig \
+  | jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="morpho"'
+
+# forced aave missing URL -> code 12
+env -u DEFI_AAVE_POOLS_URL \
+  sh -c "printf '%s\n' '{\"action\":\"lendRates\",\"params\":{\"chain\":\"ethereum\",\"asset\":\"USDC\",\"provider\":\"aave\",\"liveMode\":\"live\",\"liveProvider\":\"aave\"}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"error\" and (.code|tonumber)==12'"
+
+# auto fallback to defillama
+env -u DEFI_MORPHO_POOLS_URL \
+  sh -c "printf '%s\n' '{\"action\":\"yieldOpportunities\",\"params\":{\"chain\":\"monad\",\"asset\":\"USDC\",\"provider\":\"morpho\",\"liveMode\":\"live\",\"liveProvider\":\"auto\",\"limit\":1}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"ok\" and (.source==\"live\" or .source==\"cache\") and .sourceProvider==\"defillama\"'"
+```
+Supported chain aliases now include: `ethereum`, `base`, `monad`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`, `linea`, `zksync`, and `solana`.
+Example live metadata envelope:
+
+```json
+{
+  "status": "ok",
+  "source": "cache",
+  "fetchedAtUnix": 1760000000,
+  "sourceUrl": "https://yields.llama.fi/pools",
+  "markets": [
+    {
+      "provider": "morpho",
+      "chain": "eip155:10143",
+      "asset": "USDC"
+    }
+  ]
+}
+```
+
+Monitoring guidance (recommended):
+
+- Treat `source=live` or `source=cache` as healthy.
+- Treat `source=stale_cache` as degraded and raise warning-level alert.
+- Treat `source=registry` as fallback-only (warning when `liveMode=auto`, expected when `liveMode=registry`).
+- Alert if `source` is `cache`/`stale_cache` and `now - fetchedAtUnix` exceeds your freshness SLO.
+
+Live cache controls:
+
+- `DEFI_LIVE_MARKETS_TTL_SECONDS` (default `60`)
+- `DEFI_LIVE_MARKETS_ALLOW_STALE` (default `true`)
+
+Optional direct source URLs:
+
+- `DEFI_MORPHO_POOLS_URL`
+- `DEFI_AAVE_POOLS_URL`
+- `DEFI_KAMINO_POOLS_URL`
 
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 

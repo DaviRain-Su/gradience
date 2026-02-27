@@ -16,6 +16,7 @@ const yield_registry = @import("../core/yield_registry.zig");
 const bridge_quotes_registry = @import("../core/bridge_quotes_registry.zig");
 const swap_quotes_registry = @import("../core/swap_quotes_registry.zig");
 const lend_registry = @import("../core/lend_registry.zig");
+const live_markets = @import("../core/live_markets.zig");
 
 pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.ObjectMap) !bool {
     if (std.mem.eql(u8, action, "schema")) {
@@ -1322,6 +1323,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const chain_raw = getString(params, "chain");
         const asset_filter = getString(params, "asset");
         const provider_filter = getString(params, "provider");
+        const live = getBool(params, "live") orelse false;
+        const live_mode_raw = getString(params, "liveMode");
+        const live_provider = getString(params, "liveProvider");
         const min_tvl = getF64(params, "minTvlUsd") orelse 0;
         const limit_raw = getU64(params, "limit") orelse 20;
         const limit: usize = @intCast(limit_raw);
@@ -1341,20 +1345,69 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         var rows = std.ArrayList(yield_registry.YieldEntry).empty;
         defer rows.deinit(allocator);
 
-        for (yield_registry.opportunities) |entry| {
-            if (chain) |c| {
-                if (!std.mem.eql(u8, entry.chain, c)) continue;
-            }
-            if (asset_filter) |asset| {
-                if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
-            }
-            if (provider_filter) |provider| {
-                if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
-            }
-            if (entry.tvl_usd < min_tvl) continue;
-
-            try rows.append(allocator, entry);
+        const live_mode = live_mode_raw orelse if (live) "live" else "registry";
+        if (!std.ascii.eqlIgnoreCase(live_mode, "registry") and !std.ascii.eqlIgnoreCase(live_mode, "live") and !std.ascii.eqlIgnoreCase(live_mode, "auto")) {
+            try writeInvalid("liveMode");
+            return true;
         }
+        const use_live = std.ascii.eqlIgnoreCase(live_mode, "live") or std.ascii.eqlIgnoreCase(live_mode, "auto");
+        const fallback_registry = std.ascii.eqlIgnoreCase(live_mode, "auto");
+        var source: []const u8 = "registry";
+        var source_provider: []const u8 = "registry";
+        var fetched_at_unix: i64 = 0;
+        var source_url: []const u8 = "";
+
+        if (use_live) {
+            const maybe_live_info = live_markets.appendYieldEntriesLive(
+                allocator,
+                &rows,
+                live_provider,
+                chain,
+                asset_filter,
+                provider_filter,
+            ) catch |err| blk: {
+                if (err == error.InvalidLiveProvider) {
+                    try writeInvalid("liveProvider");
+                    return true;
+                }
+                if (!fallback_registry) {
+                    try core_envelope.writeJson(core_errors.unavailable("live yield source unavailable"));
+                    return true;
+                }
+                break :blk null;
+            };
+            if (maybe_live_info) |live_info| {
+                source = live_info.source;
+                source_provider = live_info.source_provider;
+                fetched_at_unix = live_info.fetched_at_unix;
+                source_url = live_info.source_url;
+            }
+        }
+
+        if (rows.items.len == 0 and (!use_live or fallback_registry)) {
+            for (yield_registry.opportunities) |entry| {
+                if (chain) |c| {
+                    if (!std.mem.eql(u8, entry.chain, c)) continue;
+                }
+                if (asset_filter) |asset| {
+                    if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+                }
+                if (provider_filter) |provider| {
+                    if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+                }
+                try rows.append(allocator, entry);
+            }
+            source = "registry";
+            source_provider = "registry";
+        }
+
+        var compact_len: usize = 0;
+        for (rows.items) |entry| {
+            if (entry.tvl_usd < min_tvl) continue;
+            rows.items[compact_len] = entry;
+            compact_len += 1;
+        }
+        rows.items.len = compact_len;
 
         const less_ctx = SortContext{
             .sort_by = sort_by,
@@ -1405,17 +1458,17 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
 
             if (results_only) {
-                try core_envelope.writeJson(.{ .status = "ok", .results = projected.items });
+                try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .results = projected.items });
             } else {
-                try core_envelope.writeJson(.{ .status = "ok", .opportunities = projected.items });
+                try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .opportunities = projected.items });
             }
             return true;
         }
 
         if (results_only) {
-            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+            try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .results = rows.items });
         } else {
-            try core_envelope.writeJson(.{ .status = "ok", .opportunities = rows.items });
+            try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .opportunities = rows.items });
         }
         return true;
     }
@@ -1568,6 +1621,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         const chain_raw = getString(params, "chain");
         const asset_filter = getString(params, "asset");
         const provider_filter = getString(params, "provider");
+        const live = getBool(params, "live") orelse false;
+        const live_mode_raw = getString(params, "liveMode");
+        const live_provider = getString(params, "liveProvider");
         const min_tvl = getF64(params, "minTvlUsd") orelse 0;
         const limit_raw = getU64(params, "limit") orelse 20;
         const limit: usize = @intCast(limit_raw);
@@ -1587,20 +1643,69 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
         var rows = std.ArrayList(lend_registry.LendMarket).empty;
         defer rows.deinit(allocator);
 
-        for (lend_registry.markets) |entry| {
-            if (chain) |c| {
-                if (!std.mem.eql(u8, entry.chain, c)) continue;
-            }
-            if (asset_filter) |asset| {
-                if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
-            }
-            if (provider_filter) |provider| {
-                if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
-            }
-            if (entry.tvl_usd < min_tvl) continue;
-
-            try rows.append(allocator, entry);
+        const live_mode = live_mode_raw orelse if (live) "live" else "registry";
+        if (!std.ascii.eqlIgnoreCase(live_mode, "registry") and !std.ascii.eqlIgnoreCase(live_mode, "live") and !std.ascii.eqlIgnoreCase(live_mode, "auto")) {
+            try writeInvalid("liveMode");
+            return true;
         }
+        const use_live = std.ascii.eqlIgnoreCase(live_mode, "live") or std.ascii.eqlIgnoreCase(live_mode, "auto");
+        const fallback_registry = std.ascii.eqlIgnoreCase(live_mode, "auto");
+        var source: []const u8 = "registry";
+        var source_provider: []const u8 = "registry";
+        var fetched_at_unix: i64 = 0;
+        var source_url: []const u8 = "";
+
+        if (use_live) {
+            const maybe_live_info = live_markets.appendLendEntriesLive(
+                allocator,
+                &rows,
+                live_provider,
+                chain,
+                asset_filter,
+                provider_filter,
+            ) catch |err| blk: {
+                if (err == error.InvalidLiveProvider) {
+                    try writeInvalid("liveProvider");
+                    return true;
+                }
+                if (!fallback_registry) {
+                    try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    return true;
+                }
+                break :blk null;
+            };
+            if (maybe_live_info) |live_info| {
+                source = live_info.source;
+                source_provider = live_info.source_provider;
+                fetched_at_unix = live_info.fetched_at_unix;
+                source_url = live_info.source_url;
+            }
+        }
+
+        if (rows.items.len == 0 and (!use_live or fallback_registry)) {
+            for (lend_registry.markets) |entry| {
+                if (chain) |c| {
+                    if (!std.mem.eql(u8, entry.chain, c)) continue;
+                }
+                if (asset_filter) |asset| {
+                    if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
+                }
+                if (provider_filter) |provider| {
+                    if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
+                }
+                try rows.append(allocator, entry);
+            }
+            source = "registry";
+            source_provider = "registry";
+        }
+
+        var filtered_len: usize = 0;
+        for (rows.items) |entry| {
+            if (entry.tvl_usd < min_tvl) continue;
+            rows.items[filtered_len] = entry;
+            filtered_len += 1;
+        }
+        rows.items.len = filtered_len;
 
         const less_ctx = LendSortContext{
             .sort_by = sort_by,
@@ -1655,17 +1760,17 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             }
 
             if (results_only) {
-                try core_envelope.writeJson(.{ .status = "ok", .results = projected.items });
+                try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .results = projected.items });
             } else {
-                try core_envelope.writeJson(.{ .status = "ok", .markets = projected.items });
+                try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .markets = projected.items });
             }
             return true;
         }
 
         if (results_only) {
-            try core_envelope.writeJson(.{ .status = "ok", .results = rows.items });
+            try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .results = rows.items });
         } else {
-            try core_envelope.writeJson(.{ .status = "ok", .markets = rows.items });
+            try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .markets = rows.items });
         }
         return true;
     }
@@ -1683,6 +1788,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             try writeMissing("provider");
             return true;
         };
+        const live = getBool(params, "live") orelse false;
+        const live_mode_raw = getString(params, "liveMode");
+        const live_provider = getString(params, "liveProvider");
         const select = parseOptionalSelectOrWriteInvalid(params) catch return true;
         const results_only = getBool(params, "resultsOnly") orelse false;
 
@@ -1691,7 +1799,52 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             return true;
         };
 
-        for (lend_registry.markets) |entry| {
+        const live_mode = live_mode_raw orelse if (live) "live" else "registry";
+        if (!std.ascii.eqlIgnoreCase(live_mode, "registry") and !std.ascii.eqlIgnoreCase(live_mode, "live") and !std.ascii.eqlIgnoreCase(live_mode, "auto")) {
+            try writeInvalid("liveMode");
+            return true;
+        }
+        const use_live = std.ascii.eqlIgnoreCase(live_mode, "live") or std.ascii.eqlIgnoreCase(live_mode, "auto");
+        const fallback_registry = std.ascii.eqlIgnoreCase(live_mode, "auto");
+        var source: []const u8 = "registry";
+        var source_provider: []const u8 = "registry";
+        var fetched_at_unix: i64 = 0;
+        var source_url: []const u8 = "";
+
+        var live_rows = std.ArrayList(lend_registry.LendMarket).empty;
+        defer live_rows.deinit(allocator);
+
+        const lend_source: []const lend_registry.LendMarket = blk: {
+            if (!use_live) break :blk lend_registry.markets[0..];
+            const maybe_live_info = live_markets.appendLendEntriesLive(
+                allocator,
+                &live_rows,
+                live_provider,
+                chain,
+                asset,
+                provider,
+            ) catch |err| blk2: {
+                if (err == error.InvalidLiveProvider) {
+                    try writeInvalid("liveProvider");
+                    return true;
+                }
+                if (!fallback_registry) {
+                    try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    return true;
+                }
+                break :blk2 null;
+            };
+            if (maybe_live_info) |live_info| {
+                source = live_info.source;
+                source_provider = live_info.source_provider;
+                fetched_at_unix = live_info.fetched_at_unix;
+                source_url = live_info.source_url;
+                break :blk live_rows.items;
+            }
+            break :blk lend_registry.markets[0..];
+        };
+
+        for (lend_source) |entry| {
             if (!std.mem.eql(u8, entry.chain, chain)) continue;
             if (!std.ascii.eqlIgnoreCase(entry.asset, asset)) continue;
             if (!std.ascii.eqlIgnoreCase(entry.provider, provider)) continue;
@@ -1732,9 +1885,9 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                 }
 
                 if (results_only) {
-                    try core_envelope.writeJson(.{ .status = "ok", .results = std.json.Value{ .object = obj } });
+                    try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .results = std.json.Value{ .object = obj } });
                 } else {
-                    try core_envelope.writeJson(.{ .status = "ok", .rates = std.json.Value{ .object = obj } });
+                    try core_envelope.writeJson(.{ .status = "ok", .source = source, .sourceProvider = source_provider, .fetchedAtUnix = fetched_at_unix, .sourceUrl = source_url, .rates = std.json.Value{ .object = obj } });
                 }
                 return true;
             }
@@ -1742,6 +1895,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             if (results_only) {
                 try core_envelope.writeJson(.{
                     .status = "ok",
+                    .source = source,
+                    .sourceProvider = source_provider,
+                    .fetchedAtUnix = fetched_at_unix,
+                    .sourceUrl = source_url,
                     .results = .{
                         .provider = entry.provider,
                         .chain = entry.chain,
@@ -1755,6 +1912,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
             } else {
                 try core_envelope.writeJson(.{
                     .status = "ok",
+                    .source = source,
+                    .sourceProvider = source_provider,
+                    .fetchedAtUnix = fetched_at_unix,
+                    .sourceUrl = source_url,
                     .provider = entry.provider,
                     .chain = entry.chain,
                     .asset = entry.asset,
