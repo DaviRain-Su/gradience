@@ -154,6 +154,7 @@ Set `liveProvider` to force source selection (`defillama`, `morpho`, `aave`, `ka
 `liveProvider=auto` routes by provider hint first (for example `provider=morpho` prefers Morpho source, then falls back).
 Responses include `source` (`live`, `cache`, `stale_cache`, or `registry`), `sourceProvider`, plus `fetchedAtUnix` and `sourceUrl`.
 Unknown `liveProvider` / `liveMode` values are rejected as validation errors (`code=2`).
+Live provider-unavailable errors include context in `error` message (`provider`, `url`, `transport`).
 
 Priority example (`provider` hint + `liveProvider=auto`):
 
@@ -305,6 +306,44 @@ Optional direct source URLs:
 - `DEFI_MORPHO_POOLS_URL`
 - `DEFI_AAVE_POOLS_URL`
 - `DEFI_KAMINO_POOLS_URL`
+
+Live HTTP transport override:
+
+- `DEFI_LIVE_HTTP_TRANSPORT` (`curl` default, optional `zig`)
+
+Recommended production defaults:
+
+- `liveMode=auto` (prefer live data, fallback to registry)
+- `liveProvider=auto` (prefer provider-hint direct source, fallback to DefiLlama)
+- keep `DEFI_LIVE_HTTP_TRANSPORT` at default `curl` unless you explicitly validate `zig` transport in your runtime
+- monitor `source`/`sourceProvider` and alert on `stale_cache` or repeated `registry` fallback
+
+Minimal `.env` template (live-first, resilient):
+
+```dotenv
+# Live strategy
+DEFI_LIVE_HTTP_TRANSPORT=curl
+
+# Optional direct providers (set only when available)
+# DEFI_MORPHO_POOLS_URL=https://...
+# DEFI_AAVE_POOLS_URL=https://...
+# DEFI_KAMINO_POOLS_URL=https://...
+
+# Optional live source override (default DefiLlama URL is used if unset)
+# DEFI_LLAMA_POOLS_URL=https://yields.llama.fi/pools
+
+# Optional cache knobs
+# DEFI_LIVE_MARKETS_TTL_SECONDS=60
+# DEFI_LIVE_MARKETS_ALLOW_STALE=true
+```
+
+Startup self-check checklist:
+
+- `curl` is installed and executable in runtime PATH
+- `DEFI_LLAMA_POOLS_URL` (or direct provider URL) is reachable from runtime network
+- `liveMode=registry` request succeeds for your critical chain/provider pair
+- `liveMode=live` returns either `source=live|cache|stale_cache` or a contextual `code=12` error
+- alerts are wired for repeated `source=registry` fallback in `liveMode=auto`
 
 `rpcCallCached` now applies method policy defaults (`ttlSeconds`, `maxStaleSeconds`, `allowStaleFallback`) and supports overriding via params.
 

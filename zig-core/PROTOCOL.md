@@ -94,11 +94,38 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)
 - response also includes `fetchedAtUnix` and `sourceUrl` (`0`/empty string when using bundled registry)
 - unknown `liveProvider` / `liveMode` values are rejected with validation error (`code=2`)
+- provider-unavailable errors include source context in `error` message (`provider`, `url`, `transport`)
 - when `liveProvider=auto`, provider hint (`provider` param) is preferred first, then falls back to `defillama`
 - direct source env overrides:
   - `DEFI_MORPHO_POOLS_URL`
   - `DEFI_AAVE_POOLS_URL`
   - `DEFI_KAMINO_POOLS_URL`
+  - `DEFI_LIVE_HTTP_TRANSPORT` (`curl` default, optional `zig`)
+
+Production recommendation:
+
+- use `liveMode=auto` + `liveProvider=auto` for resilient live-first behavior
+- keep transport default (`curl`) unless `zig` transport is explicitly validated in your runtime environment
+
+Minimal env template:
+
+```dotenv
+DEFI_LIVE_HTTP_TRANSPORT=curl
+# DEFI_MORPHO_POOLS_URL=https://...
+# DEFI_AAVE_POOLS_URL=https://...
+# DEFI_KAMINO_POOLS_URL=https://...
+# DEFI_LLAMA_POOLS_URL=https://yields.llama.fi/pools
+# DEFI_LIVE_MARKETS_TTL_SECONDS=60
+# DEFI_LIVE_MARKETS_ALLOW_STALE=true
+```
+
+Startup self-check checklist:
+
+- verify `curl` is available in runtime PATH
+- verify configured live source URL is reachable from runtime network
+- verify `liveMode=registry` succeeds for a baseline query
+- verify `liveMode=live` returns live/cache/stale source or contextual `code=12`
+- monitor repeated `source=registry` under `liveMode=auto`
 
 Priority example:
 

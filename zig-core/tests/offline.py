@@ -122,6 +122,21 @@ def assert_live_provider_matrix_case(
         )
 
 
+def assert_live_unavailable_error_context(
+    payload_out: JsonDict,
+    *,
+    expected_provider: str,
+    expected_transport: str | None = None,
+) -> None:
+    assert payload_out.get("status") == "error"
+    assert int(payload_out.get("code", 0)) == 12
+    message = str(payload_out.get("error", ""))
+    assert "source unavailable" in message
+    assert f"provider={expected_provider}" in message
+    if expected_transport is not None:
+        assert f"transport={expected_transport}" in message
+
+
 def main() -> int:
     if not BIN.exists():
         print(f"missing binary: {BIN}", file=sys.stderr)
@@ -388,8 +403,11 @@ def main() -> int:
             },
             env_live_cache_no_aave,
         )
-        assert lend_rates_live_aave_missing_url.get("status") == "error"
-        assert int(lend_rates_live_aave_missing_url.get("code", 0)) == 12
+        assert_live_unavailable_error_context(
+            lend_rates_live_aave_missing_url,
+            expected_provider="aave",
+            expected_transport="curl",
+        )
 
         env_live_cache_no_morpho = env_live_cache.copy()
         env_live_cache_no_morpho.pop("DEFI_MORPHO_POOLS_URL", None)
@@ -408,8 +426,11 @@ def main() -> int:
             },
             env_live_cache_no_morpho,
         )
-        assert yield_live_morpho_missing_url.get("status") == "error"
-        assert int(yield_live_morpho_missing_url.get("code", 0)) == 12
+        assert_live_unavailable_error_context(
+            yield_live_morpho_missing_url,
+            expected_provider="morpho",
+            expected_transport="curl",
+        )
 
         yield_auto_morpho_fallback = run(
             {
@@ -446,8 +467,33 @@ def main() -> int:
             },
             env_live_cache_no_kamino,
         )
-        assert yield_live_kamino_missing_url.get("status") == "error"
-        assert int(yield_live_kamino_missing_url.get("code", 0)) == 12
+        assert_live_unavailable_error_context(
+            yield_live_kamino_missing_url,
+            expected_provider="kamino",
+            expected_transport="curl",
+        )
+
+        env_live_cache_no_morpho_zig = env_live_cache_no_morpho.copy()
+        env_live_cache_no_morpho_zig["DEFI_LIVE_HTTP_TRANSPORT"] = "zig"
+        yield_live_morpho_missing_url_zig_transport = run(
+            {
+                "action": "yieldOpportunities",
+                "params": {
+                    "chain": "monad",
+                    "asset": "USDC",
+                    "provider": "morpho",
+                    "liveMode": "live",
+                    "liveProvider": "morpho",
+                    "limit": 1,
+                },
+            },
+            env_live_cache_no_morpho_zig,
+        )
+        assert_live_unavailable_error_context(
+            yield_live_morpho_missing_url_zig_transport,
+            expected_provider="morpho",
+            expected_transport="zig",
+        )
 
         yield_auto_kamino_fallback = run(
             {
@@ -502,8 +548,11 @@ def main() -> int:
             },
             env_live_bad_json,
         )
-        assert yield_forced_bad_json_error.get("status") == "error"
-        assert int(yield_forced_bad_json_error.get("code", 0)) == 12
+        assert_live_unavailable_error_context(
+            yield_forced_bad_json_error,
+            expected_provider="morpho",
+            expected_transport="curl",
+        )
 
         # Structured matrix checks for forced-vs-auto provider behavior.
         matrix_cases = [

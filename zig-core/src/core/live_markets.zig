@@ -10,6 +10,39 @@ pub const LiveFetchInfo = struct {
     source_url: []const u8,
 };
 
+pub const LiveSourceInfo = struct {
+    provider: []u8,
+    url: []u8,
+    transport: []u8,
+};
+
+pub fn resolveLiveSourceInfo(
+    allocator: std.mem.Allocator,
+    live_provider: ?[]const u8,
+    provider_filter: ?[]const u8,
+) !LiveSourceInfo {
+    const selected = try selectLiveProvider(allocator, live_provider);
+    defer allocator.free(selected);
+
+    const provider_name = if (std.mem.eql(u8, selected, "auto")) blk: {
+        if (provider_filter) |provider_name_raw| {
+            const canonical = canonicalProvider(provider_name_raw);
+            if (std.mem.eql(u8, canonical, "morpho") or std.mem.eql(u8, canonical, "aave") or std.mem.eql(u8, canonical, "kamino")) {
+                break :blk canonical;
+            }
+        }
+        break :blk "defillama";
+    } else selected;
+
+    const url = providerUrl(allocator, provider_name) catch try allocator.dupe(u8, "<unset>");
+    const transport = try readTransport(allocator);
+    return .{
+        .provider = try allocator.dupe(u8, provider_name),
+        .url = url,
+        .transport = transport,
+    };
+}
+
 pub fn appendYieldEntriesLive(
     allocator: std.mem.Allocator,
     rows: *std.ArrayList(yield_registry.YieldEntry),
@@ -301,8 +334,7 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
 }
 
 fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
-    const transport = std.process.getEnvVarOwned(allocator, "DEFI_LIVE_HTTP_TRANSPORT") catch
-        try allocator.dupe(u8, "curl");
+    const transport = try readTransport(allocator);
     defer allocator.free(transport);
 
     if (std.ascii.eqlIgnoreCase(std.mem.trim(u8, transport, " \r\n\t"), "curl")) {
@@ -310,6 +342,15 @@ fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
     }
 
     return fetchHttpBodyWithZig(allocator, url) catch fetchHttpBodyWithCurl(allocator, url);
+}
+
+fn readTransport(allocator: std.mem.Allocator) ![]u8 {
+    const transport = std.process.getEnvVarOwned(allocator, "DEFI_LIVE_HTTP_TRANSPORT") catch
+        try allocator.dupe(u8, "curl");
+    const trimmed = std.mem.trim(u8, transport, " \r\n\t");
+    if (trimmed.len == transport.len) return transport;
+    defer allocator.free(transport);
+    return allocator.dupe(u8, trimmed);
 }
 
 fn fetchHttpBodyWithZig(allocator: std.mem.Allocator, url: []const u8) ![]u8 {

@@ -1371,7 +1371,21 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     return true;
                 }
                 if (!fallback_registry) {
-                    try core_envelope.writeJson(core_errors.unavailable("live yield source unavailable"));
+                    const source_info = live_markets.resolveLiveSourceInfo(allocator, live_provider, provider_filter) catch null;
+                    if (source_info) |ctx| {
+                        defer allocator.free(ctx.provider);
+                        defer allocator.free(ctx.url);
+                        defer allocator.free(ctx.transport);
+                        const message = try std.fmt.allocPrint(
+                            allocator,
+                            "live yield source unavailable (provider={s}, url={s}, transport={s})",
+                            .{ ctx.provider, ctx.url, ctx.transport },
+                        );
+                        defer allocator.free(message);
+                        try core_envelope.writeJson(core_errors.unavailable(message));
+                    } else {
+                        try core_envelope.writeJson(core_errors.unavailable("live yield source unavailable"));
+                    }
                     return true;
                 }
                 break :blk null;
@@ -1669,7 +1683,21 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     return true;
                 }
                 if (!fallback_registry) {
-                    try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    const source_info = live_markets.resolveLiveSourceInfo(allocator, live_provider, provider_filter) catch null;
+                    if (source_info) |ctx| {
+                        defer allocator.free(ctx.provider);
+                        defer allocator.free(ctx.url);
+                        defer allocator.free(ctx.transport);
+                        const message = try std.fmt.allocPrint(
+                            allocator,
+                            "live lending source unavailable (provider={s}, url={s}, transport={s})",
+                            .{ ctx.provider, ctx.url, ctx.transport },
+                        );
+                        defer allocator.free(message);
+                        try core_envelope.writeJson(core_errors.unavailable(message));
+                    } else {
+                        try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    }
                     return true;
                 }
                 break :blk null;
@@ -1829,7 +1857,21 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     return true;
                 }
                 if (!fallback_registry) {
-                    try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    const source_info = live_markets.resolveLiveSourceInfo(allocator, live_provider, provider) catch null;
+                    if (source_info) |ctx| {
+                        defer allocator.free(ctx.provider);
+                        defer allocator.free(ctx.url);
+                        defer allocator.free(ctx.transport);
+                        const message = try std.fmt.allocPrint(
+                            allocator,
+                            "live lending source unavailable (provider={s}, url={s}, transport={s})",
+                            .{ ctx.provider, ctx.url, ctx.transport },
+                        );
+                        defer allocator.free(message);
+                        try core_envelope.writeJson(core_errors.unavailable(message));
+                    } else {
+                        try core_envelope.writeJson(core_errors.unavailable("live lending source unavailable"));
+                    }
                     return true;
                 }
                 break :blk2 null;
