@@ -4,25 +4,20 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  typescript:
+  verify-full:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-      - name: Install deps
-        run: npm ci
-      - name: Verify bridge + envelope + build
-        run: npm run verify
-
-  zig-offline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -32,5 +27,5 @@ jobs:
           version: 0.15.2
       - name: Install deps
         run: npm ci
-      - name: Run Zig offline tests
-        run: npm run zig:offline
+      - name: Run full verification suite
+        run: npm run verify:full

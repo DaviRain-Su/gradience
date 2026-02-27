@@ -4,13 +4,19 @@ Minimal, purpose-built toolset for Monad + OpenClaw (TypeScript bridge + Zig cor
 
 - Payment/settlement intents (per-call or subscription)
 - ERC20/native transfers + DEX swap compose
-- LI.FI quote via SDK
+- LI.FI quote/workflow via Zig core actions
 - Morpho vault compose (ERC4626)
 - Analysis → simulate → execute workflow for transfers
 
 > This repo is intentionally small and hackathon-focused. It avoids the full pi-chain-tools surface area.
 
 ## Install (local)
+
+Initialize submodules first (required for `zig-core/deps/zigeth` and pinned `defi-cli`):
+
+```bash
+npm run bootstrap:submodules
+```
 
 ```bash
 openclaw plugins install /Users/davirian/dev/gradience
@@ -61,6 +67,27 @@ Full local verification:
 npm run verify
 ```
 
+Full verification including Zig offline suite:
+
+```bash
+npm run verify:full
+```
+
+Bridge runtime smoke check:
+
+```bash
+npm run verify:bridge-smoke
+```
+
+Submodule-only verification:
+
+```bash
+npm run verify:submodules
+```
+
+`verify:submodules` also ensures submodules are checked out at the pinned commit in the parent repo index.
+It also fails if any submodule working tree has uncommitted changes.
+
 Optional override if binary is not in the default path (`zig-core/zig-out/bin/gradience-zig`):
 
 ```bash
@@ -69,15 +96,7 @@ export GRADIENCE_ZIG_BIN="/absolute/path/to/gradience-zig"
 
 Current Zig-routed tools:
 
-- `monad_getBalance`
-- `monad_getErc20Balance`
-- `monad_getBlockNumber`
-- `monad_buildTransferNative`
-- `monad_buildTransferErc20`
-- `monad_buildErc20Approve`
-- `monad_buildDexSwap`
-- `monad_sendSignedTransaction`
-- `monad_runTransferWorkflow`
+- All `monad_*` tools are routed through Zig core via the bridge manifest in `src/tools/monad-tool-manifest.ts`.
 
 Zig foundation actions (defi-cli style groundwork) are available in `zig-core` protocol:
 
@@ -115,7 +134,9 @@ Most listing/query actions support `resultsOnly: true` to place data under a `re
 
 `bridgeQuote` supports `from`, `to`, `asset`, `amount` with optional `provider` and `select`.
 
-`swapQuote` supports `chain`, `fromAsset`, `toAsset`, `amount` with optional `provider` and `select`.
+`swapQuote` supports exact-input and exact-output modes with aliases (`type`/`tradeType`/`trade_type`,
+`amount`/`amountIn`, `amountOut`/`amount_out`, `amountOutDecimal`/`amount_out_decimal`), plus `source` and
+`tradeType` in responses.
 
 `lendMarkets` supports filters: `chain`, `asset`, `provider`, `minTvlUsd`, `sortBy`, `order`, `limit`, `select`.
 
