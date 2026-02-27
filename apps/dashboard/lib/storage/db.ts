@@ -192,3 +192,35 @@ export function getExecution(dbHandle: DbHandle, id: string): ExecutionRow | nul
     createdAt: String(row.created_at),
   };
 }
+
+export function updateExecution(
+  dbHandle: DbHandle,
+  id: string,
+  input: {
+    status?: string;
+    payload?: Record<string, unknown>;
+    evidence?: Record<string, unknown> | null;
+  },
+): boolean {
+  const current = getExecution(dbHandle, id);
+  if (!current) return false;
+
+  const nextStatus = input.status ?? current.status;
+  const nextPayload = input.payload ?? current.payload;
+  const nextEvidence = input.evidence ?? current.evidence ?? {};
+
+  const stmt = dbHandle.db.prepare(
+    `UPDATE executions
+     SET status = ?, payload_json = ?, evidence_json = ?
+     WHERE id = ?`,
+  );
+  stmt.run([
+    nextStatus,
+    JSON.stringify(nextPayload),
+    JSON.stringify(nextEvidence || {}),
+    id,
+  ]);
+  stmt.free();
+  dbHandle.persist();
+  return true;
+}

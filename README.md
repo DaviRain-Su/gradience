@@ -67,6 +67,8 @@ Full local verification:
 npm run verify
 ```
 
+`verify` includes an execution CLI smoke check to ensure CLI-first transaction flow remains available.
+
 Full verification including Zig offline suite:
 
 ```bash
@@ -173,7 +175,211 @@ Start the local dashboard:
 npm run dashboard:dev
 ```
 
+Dashboard is observe-only by default (read APIs only).
+To enable write/mutation APIs for local admin flows:
+
+```bash
+npm run dashboard:dev:mutate
+```
+
 Open `http://127.0.0.1:4173` to view strategies and execution logs.
+
+## Execution CLI (primary)
+
+Use the execution CLI for real transaction flow (build -> sign -> send):
+
+```bash
+npm run exec:cli -- help
+```
+
+Common examples:
+
+```bash
+# Native transfer
+npm run exec:cli -- native-transfer --to-address 0x... --amount-wei 1000000000000000 --from-address 0x...
+
+# Execute prebuilt txRequest JSON
+npm run exec:cli -- tx-request --tx-request-file ./tx-request.json --from-address 0x...
+
+# Build + send arbitrary Zig build action
+npm run exec:cli -- build-send --build-action buildErc20Approve --build-params-json '{"tokenAddress":"0x...","spender":"0x...","amountRaw":"1000000"}'
+
+# Dedicated execution commands
+npm run exec:cli -- erc20-approve --token-address 0x... --spender 0x... --amount-raw 1000000
+npm run exec:cli -- dex-swap --router 0x... --amount-in 1000000 --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0x... --deadline 1760000000
+npm run exec:cli -- swap-flow --token-address 0xTokenIn --router 0xRouter --amount-in 1000000 --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0xReceiver --deadline 1760000000 --wait-approve true --watch true
+npm run exec:cli -- vault-flow --token-address 0xUnderlying --vault-address 0xVault --amount-raw 1000000 --receiver 0xReceiver --wait-approve true --watch true
+npm run exec:cli -- withdraw-swap-flow --vault-address 0xVault --withdraw-amount-raw 1000000 --receiver 0xReceiver --owner 0xOwner --router 0xRouter --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0xReceiver --deadline 1760000000 --wait-withdraw true --watch true
+npm run exec:cli -- vault-exit-flow --mode withdraw --vault-address 0xVault --amount-raw 1000000 --receiver 0xReceiver --owner 0xOwner --swap true --router 0xRouter --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0xReceiver --deadline 1760000000 --watch true
+npm run exec:cli -- swap-flow --token-address 0xTokenIn --router 0xRouter --amount-in 1000000 --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0xReceiver --deadline 1760000000 --dry-run true
+npm run exec:cli -- morpho-vault-deposit --vault-address 0x... --amount-raw 1000000 --receiver 0x...
+
+Flow risk controls (available on flow commands like `swap-flow`, `vault-flow`, `withdraw-swap-flow`, `vault-exit-flow`):
+
+- `--max-gas-wei <integer>`: fail if built tx gas/gasLimit exceeds threshold
+- `--require-receipt-confirmed true|false` (default `true`): require watch result to be confirmed
+- `--fail-on-timeout true|false` (default `true`): treat watch timeout as failure
+- `--dry-run true|false` (default `false`): build and validate txRequests only (no sign/send)
+- `--output full|summary|txrequest` (default `full`): choose JSON verbosity / txRequest extraction mode
+
+`summary` mode normalizes key fields for automation (`status`, `executionId`, `txHash`, `receiptStatus`, timing fields) and includes `flowSummary.steps` for flow commands.
+`flowSummary.steps[*].kind` uses canonical values: `approve | swap | deposit | withdraw | exit`, and each step includes stable `order`.
+`summary` also includes `commandType` (`execution|flow|observer`) and `resourceType` (for example `native-transfer|approve|vault-flow|watch|receipt`).
+`summary` and `txrequest` both include `schemaVersion` (currently `"1"`) for parser compatibility.
+
+Summary minimum fields by command type:
+
+- `execution`: `schemaVersion`, `status`, `commandType=execution`, `resourceType`, `action`, `dryRun` (for dry-run cases)
+- `flow`: `schemaVersion`, `status`, `commandType=flow`, `resourceType`, `flow`, `flowSummary.steps`
+- `observer`: `schemaVersion`, `status`, `commandType=observer`, `resourceType`, `action`, `receiptStatus`
+
+Common `resourceType` mapping:
+
+- `native-transfer` dry-run summary -> `native-transfer`
+- `erc20-approve` dry-run summary -> `approve`
+- `tx-request` dry-run summary -> `txrequest`
+- `morpho-vault-deposit` dry-run summary -> `vault-deposit`
+- `receipt` summary -> `receipt`
+- `watch` summary -> `watch`
+- `swap-flow` / `vault-flow` / `withdraw-swap-flow` / `vault-exit-flow` summary -> same as flow id
+
+Detailed schema reference: `docs/exec-cli-output-schema.md`.
+
+Output mode examples:
+
+```bash
+# Compact flow summary
+npm run exec:cli -- swap-flow --token-address 0xTokenIn --router 0xRouter --amount-in 1000000 --amount-out-min 990000 --path 0xTokenIn,0xTokenOut --to 0xReceiver --deadline 1760000000 --dry-run true --output summary
+
+# TxRequest-focused output (single command)
+npm run exec:cli -- native-transfer --to-address 0x... --amount-wei 1 --dry-run true --output txrequest
+
+# TxRequest-focused output (flow command returns txRequest step list)
+npm run exec:cli -- vault-flow --token-address 0xUnderlying --vault-address 0xVault --amount-raw 1000000 --receiver 0xReceiver --dry-run true --output txrequest
+```
+
+Example summary payload excerpt:
+
+```json
+{
+  "status": "ok",
+  "flow": "vault-flow",
+  "flowSummary": {
+    "steps": [
+      { "step": "approve", "kind": "approve", "label": "Approve", "order": 1, "dryRun": true },
+      { "step": "deposit", "kind": "deposit", "label": "Deposit", "order": 2, "dryRun": true }
+    ]
+  }
+}
+```
+
+Example txrequest payload excerpt:
+
+```json
+{
+  "status": "ok",
+  "flow": "swap-flow",
+  "source": "steps",
+  "txRequest": [
+    { "action": "buildErc20Approve", "txRequest": { "to": "0x..." } },
+    { "action": "buildDexSwap", "txRequest": { "to": "0x..." } }
+  ]
+}
+```
+
+`txrequest` mode includes `source` values: `single` (direct txRequest), `steps` (flow dry-run steps), `nested` (extracted from nested result objects).
+
+Note: observer commands (`receipt`, `watch`) do not support `--output txrequest`; they return `status=error` with `errorType=exec-cli`.
+
+Script parsing recommendation:
+
+- Check `schemaVersion` first, then branch by `--output` mode.
+- In `summary`, branch by `commandType` then `resourceType`; for flows read `flowSummary.steps[*].kind`.
+- In `txrequest`, branch by `source` (`single|steps|nested`) before decoding `txRequest` payload shape.
+
+Minimal parser pseudocode:
+
+```ts
+function handleExecCliOutput(payload: any, mode: "summary" | "txrequest" | "full") {
+  if (payload?.status === "error") {
+    if (payload.schemaVersion !== "1") throw new Error("unsupported error schema");
+    throw new Error(payload.message || "exec-cli error");
+  }
+
+  if (mode !== "full" && payload.schemaVersion !== "1") throw new Error("unsupported schema version");
+
+  if (mode === "summary") {
+    if (payload.commandType === "flow") return payload.flowSummary?.steps ?? [];
+    if (payload.commandType === "observer") return { txHash: payload.txHash, receiptStatus: payload.receiptStatus };
+    return { executionId: payload.executionId, resourceType: payload.resourceType };
+  }
+
+  if (mode === "txrequest") {
+    if (payload.source === "single") return [payload.txRequest];
+    if (payload.source === "steps") return payload.txRequest.map((x: any) => x.txRequest);
+    if (payload.source === "nested") return payload.txRequest.map((x: any) => x.txRequest);
+  }
+
+  return payload;
+}
+```
+
+npm run exec:cli -- morpho-vault-withdraw --vault-address 0x... --amount-raw 1000000 --receiver 0x... --owner 0x...
+npm run exec:cli -- morpho-vault-redeem --vault-address 0x... --shares-raw 1000000 --receiver 0x... --owner 0x...
+
+# Receipt + watch
+npm run exec:cli -- receipt --tx-hash 0x...
+npm run exec:cli -- watch --execution-id exec_cli_native_transfer_... --timeout-ms 60000 --interval-ms 3000
+```
+
+Execution CLI requires signer adapter URL:
+
+- `GRADIENCE_SIGNER_URL`
+
+Example signer adapter contract (`GRADIENCE_SIGNER_URL` target):
+
+- Request: `{ "txRequest": { ... }, "fromAddress": "0x..." }`
+- Response: `{ "signedTxHex": "0x...", "signer": "my-signer" }`
+
+## Dashboard execute API (optional, disabled by default)
+
+Dashboard write endpoints are disabled unless explicitly enabled:
+
+- `DASHBOARD_ENABLE_MUTATION_API=1`
+- `DASHBOARD_OBSERVE_ONLY=0`
+- `DASHBOARD_ENABLE_EXECUTE_API=1`
+- By default, execute endpoints accept loopback requests only (`127.0.0.1` / `::1`).
+- To allow remote callers (not recommended), set `DASHBOARD_ALLOW_REMOTE_EXECUTE_API=1`.
+
+Runtime mode visibility endpoint:
+
+- `GET /api/runtime/capabilities`
+
+When enabled, available endpoints are:
+
+- `POST /api/execute/native-transfer`
+- Body: `{ "toAddress": "0x...", "amountWei": "...", "fromAddress": "0x...", "rpcUrl": "..." }`
+
+Additional execution endpoints:
+
+- `POST /api/execute/tx-request`
+  - Body: `{ "txRequest": { ... }, "fromAddress": "0x...", "rpcUrl": "..." }`
+- `POST /api/execute/erc20-approve`
+  - Body: `{ "tokenAddress": "0x...", "spender": "0x...", "amountRaw": "...", "fromAddress": "0x...", "rpcUrl": "..." }`
+- `POST /api/execute/dex-swap`
+  - Body: `{ "router": "0x...", "amountIn": "...", "amountOutMin": "...", "path": ["0x...","0x..."], "to": "0x...", "deadline": "..." }`
+- `POST /api/execute/morpho-vault-deposit`
+  - Body: `{ "vaultAddress": "0x...", "amountRaw": "...", "receiver": "0x...", "fromAddress": "0x...", "rpcUrl": "..." }`
+- `POST /api/execute/morpho-vault-withdraw`
+  - Body: `{ "vaultAddress": "0x...", "amountRaw": "...", "receiver": "0x...", "owner": "0x...", "fromAddress": "0x...", "rpcUrl": "..." }`
+- `POST /api/execute/morpho-vault-redeem`
+  - Body: `{ "vaultAddress": "0x...", "sharesRaw": "...", "receiver": "0x...", "owner": "0x...", "fromAddress": "0x...", "rpcUrl": "..." }`
+- `GET /api/executions/:id/receipt?rpcUrl=https://...`
+  - Fetches `eth_getTransactionReceipt` for stored execution `txHash`
+- `POST /api/executions/:id/watch`
+  - Body (optional): `{ "rpcUrl": "https://...", "timeoutMs": 60000, "intervalMs": 3000 }`
+  - Polls receipt until `confirmed` / `failed` or returns `status: "timeout"`
+  - On `confirmed` / `failed`, execution row status is updated in storage
 
 ## FastAPI (optional, read-only)
 
