@@ -23,6 +23,7 @@ export type DefiPoolQuery = {
 
 export type DefiPool = {
   id: string;
+  marketId: string | null;
   kind: DefiKind;
   provider: string | null;
   chain: string | null;
@@ -42,6 +43,7 @@ export type DefiPool = {
 
 export type DefiFieldMapping = {
   id: string | null;
+  marketId: string | null;
   provider: string | null;
   chain: string | null;
   asset: string | null;
@@ -173,6 +175,13 @@ function stablePoolId(kind: DefiKind, row: RawRow, fallbackId: string): string {
   return id || fallbackId;
 }
 
+function inferMarketIdFromMarketLabel(market: string | undefined): string | undefined {
+  if (!market) return undefined;
+  const trimmed = market.trim();
+  const match = /^morpho\s+(0x[a-f0-9]{64})$/i.exec(trimmed);
+  return match?.[1];
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
@@ -224,6 +233,8 @@ function normalizePool(
     "lpToken",
   ]);
   const providerInfo = firstStringWithKey(row, ["provider", "protocol"]);
+  const marketIdInfo = firstStringWithKey(row, ["marketId", "uniqueKey", "pool", "id"]);
+  const marketLabelInfo = firstStringWithKey(row, ["market", "poolMeta", "name"]);
   const chainInfo = firstStringWithKey(row, ["chain", "chainId"]);
   const assetInfo = firstStringWithKey(row, ["asset", "underlying", "underlyingSymbol"]);
   const symbolInfo = firstStringWithKey(row, ["symbol", "poolSymbol", "name"]);
@@ -240,6 +251,7 @@ function normalizePool(
 
   const pool: DefiPool = {
     id: stablePoolId(kind, row, fallbackId),
+    marketId: marketIdInfo.value || inferMarketIdFromMarketLabel(marketLabelInfo.value) || null,
     kind,
     provider: providerInfo.value || null,
     chain: chainInfo.value || null,
@@ -262,6 +274,7 @@ function normalizePool(
     raw: row,
     fieldMapping: {
       id: idInfo.key,
+      marketId: marketIdInfo.key,
       provider: providerInfo.key,
       chain: chainInfo.key,
       asset: assetInfo.key,

@@ -1,7 +1,7 @@
 type MetricLabels = Record<string, string>;
 
 type RequestMetricInput = {
-  endpoint: "list" | "detail";
+  endpoint: "list" | "detail" | "smoke";
   kind: "yield" | "lend";
   status: "ok" | "error" | "not_found" | "disabled" | "invalid";
   errorType?: "none" | "upstream" | "validation" | "cursor_mismatch" | "cursor_expired" | "config";

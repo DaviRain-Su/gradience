@@ -556,6 +556,136 @@ app.get("/api/defi/live-plan", (req: express.Request, res: express.Response) => 
   });
 });
 
+app.get("/api/defi/smoke/morpho-live", async (req: express.Request, res: express.Response) => {
+  const startedAtMs = Date.now();
+  if (!zigDefiEnabled()) {
+    recordDefiRequestMetric({
+      endpoint: "smoke",
+      kind: "lend",
+      status: "disabled",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(503).json({ status: "disabled", message: "zig core is disabled" });
+    return;
+  }
+
+  const kind = queryString(req, "kind") === "yield" ? "yield" : "lend";
+  const asset = queryString(req, "asset") || "USDC";
+  const limit = Math.max(1, Math.min(25, Math.trunc(queryNumber(req, "limit") ?? 5)));
+  const expectSourceTransport = queryString(req, "expectSourceTransport") || "morpho_api";
+
+  const query: DefiPoolQuery = {
+    kind,
+    chain: "monad",
+    asset,
+    provider: "morpho",
+    liveMode: "live",
+    liveProvider: "auto",
+    limit,
+    order: "desc",
+    sortBy: "tvlUsd",
+  };
+
+  try {
+    const parsed = await fetchParsedDefiPools(query);
+    const first = parsed.pools[0] || null;
+    const transportMatched = !expectSourceTransport || parsed.sourceTransport === expectSourceTransport;
+    if (!transportMatched) {
+      recordDefiRequestMetric({
+        endpoint: "smoke",
+        kind,
+        status: "invalid",
+        errorType: "validation",
+        durationMs: metricDurationMs(startedAtMs),
+        cache: {
+          backend: parsed.cache.backend,
+          hit: parsed.cache.hit,
+          stale: parsed.cache.stale,
+        },
+      });
+      recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+      recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+      res.status(409).json({
+        status: "transport_mismatch",
+        elapsedMs: metricDurationMs(startedAtMs),
+        expectedSourceTransport: expectSourceTransport,
+        actualSourceTransport: parsed.sourceTransport,
+        query,
+        source: parsed.source,
+        sourceProvider: parsed.sourceProvider,
+        sourceUrl: parsed.sourceUrl,
+        cache: parsed.cache,
+        count: parsed.pools.length,
+        first,
+      });
+      return;
+    }
+
+    recordDefiRequestMetric({
+      endpoint: "smoke",
+      kind,
+      status: "ok",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+      cache: {
+        backend: parsed.cache.backend,
+        hit: parsed.cache.hit,
+        stale: parsed.cache.stale,
+      },
+    });
+    recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+    recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+    res.json({
+      status: "ok",
+      elapsedMs: metricDurationMs(startedAtMs),
+      query,
+      expectedSourceTransport: expectSourceTransport,
+      source: parsed.source,
+      sourceProvider: parsed.sourceProvider,
+      sourceUrl: parsed.sourceUrl,
+      sourceTransport: parsed.sourceTransport,
+      fetchedAtUnix: parsed.fetchedAtUnix,
+      cache: parsed.cache,
+      count: parsed.pools.length,
+      first,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isMorphoLiveConfigError(message)) {
+      recordDefiRequestMetric({
+        endpoint: "smoke",
+        kind,
+        status: "invalid",
+        errorType: "config",
+        durationMs: metricDurationMs(startedAtMs),
+      });
+      res.status(400).json({
+        status: "invalid_config",
+        elapsedMs: metricDurationMs(startedAtMs),
+        message,
+        query,
+      });
+      return;
+    }
+    const upstreamCode = extractUpstreamErrorCode(message);
+    recordDefiRequestMetric({
+      endpoint: "smoke",
+      kind,
+      status: "error",
+      errorType: "upstream",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    recordDefiUpstreamError(upstreamCode);
+    res.status(502).json({
+      status: "error",
+      elapsedMs: metricDurationMs(startedAtMs),
+      message,
+      query,
+    });
+  }
+});
+
 app.get("/api/defi/pools", async (req: express.Request, res: express.Response) => {
   const startedAtMs = Date.now();
   const requestedKind = queryString(req, "kind") === "lend" ? "lend" : "yield";

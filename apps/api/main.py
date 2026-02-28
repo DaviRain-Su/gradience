@@ -202,6 +202,13 @@ async def defi_live_plan(request: Request):
     return JSONResponse(status_code=status, content=body)
 
 
+@app.get("/api/defi/smoke/morpho-live")
+async def defi_smoke_morpho_live(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/smoke/morpho-live", params)
+    return JSONResponse(status_code=status, content=body)
+
+
 @app.get("/api/strategies")
 async def list_strategies():
     with _connect() as conn:

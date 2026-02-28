@@ -398,6 +398,7 @@ DeFi pool parsing API (Node dashboard server):
 - Optional response controls: `includeDiagnostics=1`; `diagnosticsFields=fieldMapping,raw` (whitelist fields to include); `includeRaw=1` remains supported for backward compatibility
 - Detail query param: `deepSearch=0|1` (default `1`, escalates lookup window up to server max)
 - Returns normalized pool rows (`id`, `provider`, `chain`, `asset`, `tvlUsd`, APY fields, utilization, source metadata)
+- Includes `marketId` when available (native field or inferred from Morpho market label)
 - Response includes source metadata: `source`, `sourceProvider`, `sourceUrl`, `sourceTransport`, `fetchedAtUnix`
 - Generated `id` is stable when provider rows do not include a native pool id (`yield_<hash>` / `lend_<hash>`)
 - Detail endpoint includes `diagnostics.fieldMapping` + `diagnostics.raw` to inspect raw provider fields mapped into normalized output
@@ -422,6 +423,12 @@ Live provider plan endpoint:
 
 - `GET /api/defi/live-plan`
 - Returns effective live provider selection for current query (`provider` + `liveProvider` + `liveMode`) and required env key.
+
+Morpho live smoke endpoint:
+
+- `GET /api/defi/smoke/morpho-live`
+- Runs a live check (`provider=morpho`, default `kind=lend`, `chain=monad`, `asset=USDC`) and returns source/caching metadata plus first market.
+- Query params: `kind=lend|yield`, `asset`, `limit` (max 25), `expectSourceTransport` (default `morpho_api`, returns `409` on mismatch).
 
 Example:
 
@@ -455,6 +462,7 @@ FastAPI also proxies both endpoints: `GET /api/defi/pools` and `GET /api/defi/po
 FastAPI also proxies `GET /api/defi/metrics`.
 FastAPI also proxies `GET /api/defi/live-config`.
 FastAPI also proxies `GET /api/defi/live-plan`.
+FastAPI also proxies `GET /api/defi/smoke/morpho-live`.
 
 ## Execution CLI (primary)
 
