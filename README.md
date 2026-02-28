@@ -412,6 +412,11 @@ Metrics endpoint (Prometheus text format):
 - `GET /api/defi/metrics`
 - Includes request counters by endpoint/kind/status/error_type, cache event counters, upstream error counters by code, upstream retry counters, request latency aggregates, and cache-age histogram
 
+Live config preflight endpoint:
+
+- `GET /api/defi/live-config`
+- Returns whether required live provider config (currently `DEFI_MORPHO_POOLS_URL`) is present.
+
 Example:
 
 ```bash
@@ -435,8 +440,13 @@ Parser cache controls:
 - `DEFI_POOL_CURSOR_TTL_SECONDS` (default `300`)
 - `DEFI_POOL_CURSOR_SECRET` (recommended in production; used to sign cursor tokens)
 
+Live-mode config guard:
+
+- For `provider=morpho` in `liveMode=live`, runtime validates `DEFI_MORPHO_POOLS_URL` before calling zig-core and returns a clear config error when unset.
+
 FastAPI also proxies both endpoints: `GET /api/defi/pools` and `GET /api/defi/pools/:id`.
 FastAPI also proxies `GET /api/defi/metrics`.
+FastAPI also proxies `GET /api/defi/live-config`.
 
 ## Execution CLI (primary)
 

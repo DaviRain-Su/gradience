@@ -188,6 +188,13 @@ async def defi_metrics(request: Request):
     return PlainTextResponse(status_code=status, content=body)
 
 
+@app.get("/api/defi/live-config")
+async def defi_live_config(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/live-config", params)
+    return JSONResponse(status_code=status, content=body)
+
+
 @app.get("/api/strategies")
 async def list_strategies():
     with _connect() as conn:

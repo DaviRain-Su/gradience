@@ -10,6 +10,32 @@ type ZigCallOptions = {
   timeoutMs?: number;
 };
 
+function asLowerString(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function validateLiveProviderConfig(request: ZigRequest): void {
+  const action = request.action;
+  if (action !== "lendMarkets" && action !== "yieldOpportunities") return;
+
+  const params = request.params || {};
+  const liveMode = asLowerString(params.liveMode);
+  if (liveMode !== "live") return;
+
+  const provider = asLowerString(params.provider);
+  const liveProvider = asLowerString(params.liveProvider) || "auto";
+  const targetsMorpho =
+    provider === "morpho" || liveProvider === "morpho" || (liveProvider === "auto" && provider === "morpho");
+  if (!targetsMorpho) return;
+
+  const morphoUrl = String(process.env.DEFI_MORPHO_POOLS_URL || "").trim();
+  if (!morphoUrl) {
+    throw new Error(
+      "morpho live source is selected but DEFI_MORPHO_POOLS_URL is unset; set DEFI_MORPHO_POOLS_URL or force liveProvider=defillama",
+    );
+  }
+}
+
 function defaultZigBinaryPath(): string {
   return path.join(process.cwd(), "zig-core", "zig-out", "bin", "gradience-zig");
 }
@@ -28,6 +54,7 @@ export async function callZigCore(
   request: ZigRequest,
   options?: ZigCallOptions,
 ): Promise<Record<string, unknown>> {
+  validateLiveProviderConfig(request);
   const zigBin = process.env.GRADIENCE_ZIG_BIN || defaultZigBinaryPath();
   const timeoutMs = Math.max(1000, options?.timeoutMs ?? defaultTimeoutMs());
   return new Promise((resolve, reject) => {

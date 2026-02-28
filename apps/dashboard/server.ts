@@ -376,6 +376,19 @@ function extractUpstreamErrorCode(message: string): string {
   return match[1] || "unknown";
 }
 
+function isMorphoLiveConfigError(message: string): boolean {
+  return message.includes("DEFI_MORPHO_POOLS_URL is unset");
+}
+
+function liveConfigSnapshot() {
+  return {
+    morpho: {
+      envKey: "DEFI_MORPHO_POOLS_URL",
+      configured: Boolean(String(process.env.DEFI_MORPHO_POOLS_URL || "").trim()),
+    },
+  };
+}
+
 app.use(express.json());
 app.use("/", express.static(path.join(__dirname, "public")));
 app.use("/api", (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -442,6 +455,21 @@ app.get("/api/templates", (_req: express.Request, res: express.Response) => {
 
 app.get("/api/defi/metrics", (_req: express.Request, res: express.Response) => {
   res.type("text/plain; version=0.0.4; charset=utf-8").send(renderDefiMetrics());
+});
+
+app.get("/api/defi/live-config", (_req: express.Request, res: express.Response) => {
+  const config = liveConfigSnapshot();
+  const ok = config.morpho.configured;
+  res.status(ok ? 200 : 503).json({
+    status: ok ? "ok" : "incomplete",
+    config,
+    hints: ok
+      ? []
+      : [
+          "set DEFI_MORPHO_POOLS_URL to enable morpho live provider",
+          "or use liveProvider=defillama for immediate live testing",
+        ],
+  });
 });
 
 app.get("/api/defi/pools", async (req: express.Request, res: express.Response) => {
@@ -598,6 +626,25 @@ app.get("/api/defi/pools", async (req: express.Request, res: express.Response) =
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (isMorphoLiveConfigError(message)) {
+      recordDefiRequestMetric({
+        endpoint: "list",
+        kind: poolQuery.kind,
+        status: "invalid",
+        errorType: "config",
+        durationMs: metricDurationMs(startedAtMs),
+      });
+      res.status(400).json({
+        status: "invalid_config",
+        message,
+        config: liveConfigSnapshot(),
+        hints: [
+          "set DEFI_MORPHO_POOLS_URL for morpho live provider",
+          "or set liveProvider=defillama for temporary testing",
+        ],
+      });
+      return;
+    }
     const upstreamCode = extractUpstreamErrorCode(message);
     recordDefiRequestMetric({
       endpoint: "list",
@@ -741,6 +788,25 @@ app.get("/api/defi/pools/:id", async (req: express.Request, res: express.Respons
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (isMorphoLiveConfigError(message)) {
+      recordDefiRequestMetric({
+        endpoint: "detail",
+        kind: poolQuery.kind,
+        status: "invalid",
+        errorType: "config",
+        durationMs: metricDurationMs(startedAtMs),
+      });
+      res.status(400).json({
+        status: "invalid_config",
+        message,
+        config: liveConfigSnapshot(),
+        hints: [
+          "set DEFI_MORPHO_POOLS_URL for morpho live provider",
+          "or set liveProvider=defillama for temporary testing",
+        ],
+      });
+      return;
+    }
     const upstreamCode = extractUpstreamErrorCode(message);
     recordDefiRequestMetric({
       endpoint: "detail",

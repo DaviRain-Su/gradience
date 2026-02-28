@@ -4,7 +4,7 @@ type RequestMetricInput = {
   endpoint: "list" | "detail";
   kind: "yield" | "lend";
   status: "ok" | "error" | "not_found" | "disabled" | "invalid";
-  errorType?: "none" | "upstream" | "validation" | "cursor_mismatch" | "cursor_expired";
+  errorType?: "none" | "upstream" | "validation" | "cursor_mismatch" | "cursor_expired" | "config";
   durationMs: number;
   cache?: {
     backend: "memory" | "redis";
