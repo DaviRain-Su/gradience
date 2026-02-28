@@ -22,18 +22,8 @@ pub fn resolveLiveSourceInfo(
     live_provider: ?[]const u8,
     provider_filter: ?[]const u8,
 ) !LiveSourceInfo {
-    const selected = try selectLiveProvider(allocator, live_provider);
-    defer allocator.free(selected);
-
-    const provider_name = if (std.mem.eql(u8, selected, "auto")) blk: {
-        if (provider_filter) |provider_name_raw| {
-            const canonical = canonicalProvider(provider_name_raw);
-            if (std.mem.eql(u8, canonical, "morpho") or std.mem.eql(u8, canonical, "aave") or std.mem.eql(u8, canonical, "kamino")) {
-                break :blk canonical;
-            }
-        }
-        break :blk "defillama";
-    } else selected;
+    const provider_name = try resolveDirectProviderName(allocator, live_provider, provider_filter);
+    defer allocator.free(provider_name);
 
     const url = providerUrl(allocator, provider_name) catch try allocator.dupe(u8, "<unset>");
     const transport = try readTransport(allocator);
@@ -224,20 +214,9 @@ fn fetchPools(
     provider_filter: ?[]const u8,
     chain_filter: ?[]const u8,
 ) !LoadedPools {
-    const selected = try selectLiveProvider(allocator, live_provider);
-    defer allocator.free(selected);
-
-    if (std.mem.eql(u8, selected, "auto")) {
-        if (provider_filter) |provider_name| {
-            const canonical_provider = canonicalProvider(provider_name);
-            if (std.mem.eql(u8, canonical_provider, "morpho") or std.mem.eql(u8, canonical_provider, "aave") or std.mem.eql(u8, canonical_provider, "kamino")) {
-                return fetchProviderPools(allocator, canonical_provider, chain_filter) catch fetchProviderPools(allocator, "defillama", chain_filter);
-            }
-        }
-        return fetchProviderPools(allocator, "defillama", chain_filter);
-    }
-
-    return fetchProviderPools(allocator, selected, chain_filter);
+    const provider_name = try resolveDirectProviderName(allocator, live_provider, provider_filter);
+    defer allocator.free(provider_name);
+    return fetchProviderPools(allocator, provider_name, chain_filter);
 }
 
 fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8, chain_filter: ?[]const u8) !LoadedPools {
@@ -315,7 +294,32 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8, c
     };
 }
 
+fn providerUrlWithHints(
+    allocator: std.mem.Allocator,
+    provider_name: []const u8,
+    base_url: []const u8,
+    chain_filter: ?[]const u8,
+) ![]u8 {
+    _ = provider_name;
+
+    const chain = chain_filter orelse return allocator.dupe(u8, base_url);
+    const token = "{chain}";
+    const marker = std.mem.indexOf(u8, base_url, token) orelse return allocator.dupe(u8, base_url);
+
+    const prefix = base_url[0..marker];
+    const suffix = base_url[marker + token.len ..];
+    return std.fmt.allocPrint(allocator, "{s}{s}{s}", .{ prefix, chain, suffix });
+}
+
 fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
+    const tmp_path = try std.fmt.allocPrint(
+        allocator,
+        "/tmp/gradience-live-{d}.json",
+        .{std.time.nanoTimestamp()},
+    );
+    defer allocator.free(tmp_path);
+    defer std.fs.deleteFileAbsolute(tmp_path) catch {};
+
     const argv = [_][]const u8{
         "curl",
         "-sS",
@@ -333,6 +337,10 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
         "accept: application/json",
         "--user-agent",
         "gradience-zig-live/1",
+        "-o",
+        tmp_path,
+        "-w",
+        "%{http_code}",
         url,
     };
 
@@ -343,11 +351,18 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
     }) catch return error.LiveSourceUnavailable;
     defer allocator.free(result.stderr);
 
+    defer allocator.free(result.stdout);
+
     if (result.term.Exited != 0) {
-        allocator.free(result.stdout);
         return error.LiveSourceUnavailable;
     }
-    return result.stdout;
+
+    const http_code_raw = std.mem.trim(u8, result.stdout, " \r\n\t");
+    if (http_code_raw.len < 3 or !std.mem.eql(u8, http_code_raw[0..1], "2")) {
+        return error.LiveSourceUnavailable;
+    }
+
+    return std.fs.cwd().readFileAlloc(allocator, tmp_path, 64 * 1024 * 1024) catch error.LiveSourceUnavailable;
 }
 
 fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
@@ -465,10 +480,6 @@ fn allocProbe(allocator: std.mem.Allocator, msg: []const u8) []u8 {
 }
 
 fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {
-    if (std.mem.eql(u8, provider_name, "defillama")) {
-        return std.process.getEnvVarOwned(allocator, "DEFI_LLAMA_POOLS_URL") catch
-            try allocator.dupe(u8, "https://yields.llama.fi/pools");
-    }
     if (std.mem.eql(u8, provider_name, "morpho")) {
         return std.process.getEnvVarOwned(allocator, "DEFI_MORPHO_POOLS_URL") catch error.LiveSourceUnavailable;
     }
@@ -481,37 +492,6 @@ fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {
     return error.InvalidLiveProvider;
 }
 
-fn providerUrlWithHints(
-    allocator: std.mem.Allocator,
-    provider_name: []const u8,
-    base_url: []const u8,
-    chain_filter: ?[]const u8,
-) ![]u8 {
-    if (!std.mem.eql(u8, provider_name, "defillama")) return allocator.dupe(u8, base_url);
-    const chain = chain_filter orelse return allocator.dupe(u8, base_url);
-    const chain_name = llamaChainHint(chain) orelse return allocator.dupe(u8, base_url);
-
-    if (std.mem.indexOfScalar(u8, base_url, '?') != null) {
-        return std.fmt.allocPrint(allocator, "{s}&chain={s}", .{ base_url, chain_name });
-    }
-    return std.fmt.allocPrint(allocator, "{s}?chain={s}", .{ base_url, chain_name });
-}
-
-fn llamaChainHint(chain_caip2: []const u8) ?[]const u8 {
-    if (std.mem.eql(u8, chain_caip2, "eip155:1")) return "Ethereum";
-    if (std.mem.eql(u8, chain_caip2, "eip155:10")) return "Optimism";
-    if (std.mem.eql(u8, chain_caip2, "eip155:56")) return "BSC";
-    if (std.mem.eql(u8, chain_caip2, "eip155:137")) return "Polygon";
-    if (std.mem.eql(u8, chain_caip2, "eip155:324")) return "zksync-era";
-    if (std.mem.eql(u8, chain_caip2, "eip155:59144")) return "Linea";
-    if (std.mem.eql(u8, chain_caip2, "eip155:42161")) return "Arbitrum";
-    if (std.mem.eql(u8, chain_caip2, "eip155:43114")) return "Avalanche";
-    if (std.mem.eql(u8, chain_caip2, "eip155:8453")) return "Base";
-    if (std.mem.eql(u8, chain_caip2, "eip155:10143")) return "Monad";
-    if (std.mem.eql(u8, chain_caip2, "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")) return "Solana";
-    return null;
-}
-
 fn selectLiveProvider(
     allocator: std.mem.Allocator,
     live_provider: ?[]const u8,
@@ -520,14 +500,51 @@ fn selectLiveProvider(
         const trimmed = std.mem.trim(u8, raw, " \r\n\t");
         if (trimmed.len == 0) return error.InvalidLiveProvider;
         if (std.ascii.eqlIgnoreCase(trimmed, "auto")) return allocator.dupe(u8, "auto");
-        if (std.ascii.eqlIgnoreCase(trimmed, "defillama")) return allocator.dupe(u8, "defillama");
         if (std.ascii.eqlIgnoreCase(trimmed, "morpho")) return allocator.dupe(u8, "morpho");
         if (std.ascii.eqlIgnoreCase(trimmed, "aave")) return allocator.dupe(u8, "aave");
         if (std.ascii.eqlIgnoreCase(trimmed, "kamino")) return allocator.dupe(u8, "kamino");
         return error.InvalidLiveProvider;
     }
 
-    return allocator.dupe(u8, "defillama");
+    return allocator.dupe(u8, "auto");
+}
+
+fn resolveDirectProviderName(
+    allocator: std.mem.Allocator,
+    live_provider: ?[]const u8,
+    provider_filter: ?[]const u8,
+) ![]u8 {
+    const selected = try selectLiveProvider(allocator, live_provider);
+    defer allocator.free(selected);
+
+    if (!std.mem.eql(u8, selected, "auto")) return allocator.dupe(u8, selected);
+
+    if (provider_filter) |provider_name_raw| {
+        const canonical = canonicalProvider(provider_name_raw);
+        if (std.mem.eql(u8, canonical, "morpho") or std.mem.eql(u8, canonical, "aave") or std.mem.eql(u8, canonical, "kamino")) {
+            return allocator.dupe(u8, canonical);
+        }
+    }
+
+    const candidates = [_]struct { name: []const u8, env_key: []const u8 }{
+        .{ .name = "morpho", .env_key = "DEFI_MORPHO_POOLS_URL" },
+        .{ .name = "aave", .env_key = "DEFI_AAVE_POOLS_URL" },
+        .{ .name = "kamino", .env_key = "DEFI_KAMINO_POOLS_URL" },
+    };
+
+    for (candidates) |candidate| {
+        if (envVarConfigured(allocator, candidate.env_key)) {
+            return allocator.dupe(u8, candidate.name);
+        }
+    }
+
+    return error.LiveSourceUnavailable;
+}
+
+fn envVarConfigured(allocator: std.mem.Allocator, key: []const u8) bool {
+    const raw = std.process.getEnvVarOwned(allocator, key) catch return false;
+    defer allocator.free(raw);
+    return std.mem.trim(u8, raw, " \r\n\t").len > 0;
 }
 
 fn getEnvU64(name: []const u8, default_value: u64) u64 {

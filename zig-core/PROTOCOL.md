@@ -78,9 +78,9 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
   - `chain` (alias/id/CAIP-2)
   - `asset` (symbol)
   - `provider` (provider name)
-  - `live` (boolean, when `true` fetches live data from `DEFI_LLAMA_POOLS_URL` or `https://yields.llama.fi/pools`)
+  - `live` (boolean, when `true` fetches live data from direct provider URLs)
   - `liveMode` (`registry` default, `live`, or `auto` where `auto` falls back to bundled registry)
-  - `liveProvider` (`defillama`, `morpho`, `aave`, `kamino`, or `auto`)
+  - `liveProvider` (`morpho`, `aave`, `kamino`, or `auto`)
   - `minTvlUsd` (numeric threshold)
   - `sortBy` (`tvl_usd` default, or `apy`, `provider`, `chain`)
   - `order` (`desc` default, or `asc`)
@@ -91,11 +91,11 @@ Most success-path actions accept `resultsOnly` (boolean). When enabled, action p
 - blank/empty `select` values are rejected (including comma-only token lists)
 - bundled registry includes Monad entries (`chain=monad` / `eip155:10143`) for Morpho markets
 - response includes top-level `source` (`live`, `cache`, `stale_cache`, or `registry`)
-- response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)
+- response includes top-level `sourceProvider` (`registry`, `morpho`, `aave`, `kamino`)
 - response also includes `fetchedAtUnix` and `sourceUrl` (`0`/empty string when using bundled registry)
 - unknown `liveProvider` / `liveMode` values are rejected with validation error (`code=2`)
 - provider-unavailable errors include source context in `error` message (`provider`, `url`, `transport`)
-- when `liveProvider=auto`, provider hint (`provider` param) is preferred first, then falls back to `defillama`
+- when `liveProvider=auto`, provider hint (`provider` param) is preferred first; without a hint, runtime picks the first configured direct provider
 - direct source env overrides:
   - `DEFI_MORPHO_POOLS_URL`
   - `DEFI_AAVE_POOLS_URL`
@@ -115,7 +115,6 @@ DEFI_LIVE_HTTP_TRANSPORT=curl
 # DEFI_MORPHO_POOLS_URL=https://...
 # DEFI_AAVE_POOLS_URL=https://...
 # DEFI_KAMINO_POOLS_URL=https://...
-# DEFI_LLAMA_POOLS_URL=https://yields.llama.fi/pools
 # DEFI_LIVE_MARKETS_TTL_SECONDS=60
 # DEFI_LIVE_MARKETS_ALLOW_STALE=true
 ```
@@ -143,7 +142,7 @@ Priority example:
 }
 ```
 
-Expected source order: provider-hint direct source (`aave`) -> `defillama` -> cache/stale fallback (if enabled) -> registry fallback (only with `liveMode=auto`).
+Expected source order: provider-hint direct source (`aave`) -> cache/stale fallback (if enabled) -> registry fallback (only with `liveMode=auto`).
 If `liveProvider` is forced to a direct source (`aave`/`morpho`/`kamino`) and its `DEFI_*_POOLS_URL` is not configured, action returns provider-unavailable.
 
 Behavior matrix:
@@ -153,30 +152,29 @@ Behavior matrix:
 | `liveProvider=<forced direct provider>` | Yes | `sourceProvider=<forced provider>` |
 | `liveProvider=<forced direct provider>` | No | Error (`code=12`) |
 | `liveProvider=auto` + provider hint | Yes | Prefer hinted direct provider |
-| `liveProvider=auto` + provider hint | No | Fallback to `sourceProvider=defillama` |
-| `liveProvider=defillama` | N/A | Use DefiLlama source |
+| `liveProvider=auto` + provider hint | No | Error (`code=12`) in `liveMode=live`; registry fallback in `liveMode=auto` |
 
 Offline matrix case names (contract regression):
 
 - `forced_morpho_success`
 - `forced_aave_success`
 - `forced_aave_missing_url`
-- `auto_morpho_fallback_defillama`
-- `auto_aave_fallback_defillama`
+- `auto_morpho_missing_url`
+- `auto_aave_missing_url`
 - `forced_kamino_missing_url`
 - `forced_morpho_bad_json`
-- `auto_morpho_bad_json_fallback`
+- `auto_morpho_bad_json`
 
 Case input summary:
 
 - `forced_morpho_success`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho`
 - `forced_aave_success`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave`
 - `forced_aave_missing_url`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave` (without `DEFI_AAVE_POOLS_URL`)
-- `auto_morpho_fallback_defillama`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
-- `auto_aave_fallback_defillama`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
+- `auto_morpho_missing_url`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
+- `auto_aave_missing_url`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
 - `forced_kamino_missing_url`: `chain=solana`, `provider=kamino`, `liveMode=live`, `liveProvider=kamino` (without `DEFI_KAMINO_POOLS_URL`)
 - `forced_morpho_bad_json`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
-- `auto_morpho_bad_json_fallback`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
+- `auto_morpho_bad_json`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
 
 Copy-ready request snippets:
 
@@ -193,11 +191,11 @@ Expected key fields (assertion template):
 - `forced_morpho_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=morpho`
 - `forced_aave_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=aave`
 - `forced_aave_missing_url` -> `status=error`, `code=12`
-- `auto_morpho_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
-- `auto_aave_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
+- `auto_morpho_missing_url` -> `status=error`, `code=12`
+- `auto_aave_missing_url` -> `status=error`, `code=12`
 - `forced_kamino_missing_url` -> `status=error`, `code=12`
 - `forced_morpho_bad_json` -> `status=error`, `code=12`
-- `auto_morpho_bad_json_fallback` -> `status=ok`, `sourceProvider=defillama`
+- `auto_morpho_bad_json` -> `status=error`, `code=12`
 
 `jq` assertion snippets:
 
@@ -208,14 +206,14 @@ jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvid
 # forced provider missing URL -> unavailable
 jq -e '.status=="error" and (.code|tonumber)==12'
 
-# auto fallback to defillama
-jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="defillama"'
+# auto provider missing URL -> unavailable (liveMode=live)
+jq -e '.status=="error" and (.code|tonumber)==12'
 
 # forced provider bad-json response -> unavailable
 jq -e '.status=="error" and (.code|tonumber)==12'
 
-# auto bad-json fallback -> defillama
-jq -e '.status=="ok" and .sourceProvider=="defillama"'
+# auto bad-json response -> unavailable (liveMode=live)
+jq -e '.status=="error" and (.code|tonumber)==12'
 ```
 
 Bash one-liners (request + assert):
@@ -230,9 +228,9 @@ printf '%s\n' '{"action":"yieldOpportunities","params":{"chain":"monad","asset":
 env -u DEFI_AAVE_POOLS_URL \
   sh -c "printf '%s\n' '{\"action\":\"lendRates\",\"params\":{\"chain\":\"ethereum\",\"asset\":\"USDC\",\"provider\":\"aave\",\"liveMode\":\"live\",\"liveProvider\":\"aave\"}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"error\" and (.code|tonumber)==12'"
 
-# auto fallback to defillama
+# auto provider missing URL -> code 12 (liveMode=live)
 env -u DEFI_MORPHO_POOLS_URL \
-  sh -c "printf '%s\n' '{\"action\":\"yieldOpportunities\",\"params\":{\"chain\":\"monad\",\"asset\":\"USDC\",\"provider\":\"morpho\",\"liveMode\":\"live\",\"liveProvider\":\"auto\",\"limit\":1}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"ok\" and (.source==\"live\" or .source==\"cache\") and .sourceProvider==\"defillama\"'"
+  sh -c "printf '%s\n' '{\"action\":\"yieldOpportunities\",\"params\":{\"chain\":\"monad\",\"asset\":\"USDC\",\"provider\":\"morpho\",\"liveMode\":\"live\",\"liveProvider\":\"auto\",\"limit\":1}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"error\" and (.code|tonumber)==12'"
 ```
 - chain aliases include `ethereum`, `base`, `monad`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`, `linea`, `zksync`, `solana`
 
@@ -243,7 +241,7 @@ Example live/cached metadata envelope:
   "status": "ok",
   "source": "cache",
   "fetchedAtUnix": 1760000000,
-  "sourceUrl": "https://yields.llama.fi/pools",
+  "sourceUrl": "https://example.provider/pools",
   "opportunities": [
     {
       "provider": "morpho",
@@ -341,9 +339,9 @@ Example live/cached metadata envelope:
   - `chain` (alias/id/CAIP-2)
   - `asset` (symbol)
   - `provider` (provider name)
-  - `live` (boolean, when `true` fetches live data from `DEFI_LLAMA_POOLS_URL` or `https://yields.llama.fi/pools`)
+  - `live` (boolean, when `true` fetches live data from direct provider URLs)
   - `liveMode` (`registry` default, `live`, or `auto` where `auto` falls back to bundled registry)
-  - `liveProvider` (`defillama`, `morpho`, `aave`, `kamino`, or `auto`)
+  - `liveProvider` (`morpho`, `aave`, `kamino`, or `auto`)
   - `minTvlUsd` (numeric threshold)
   - `sortBy` (`tvl_usd` default, or `supply_apy`, `borrow_apy`, `provider`, `chain`)
   - `order` (`desc` default, or `asc`)
@@ -357,7 +355,7 @@ Example live/cached metadata envelope:
 - live rows include `asset_matched_by` (`exact` or `family`)
 - bundled registry includes Monad entries (`chain=monad` / `eip155:10143`) for Morpho markets
 - response includes top-level `source` (`live`, `cache`, `stale_cache`, or `registry`)
-- response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)
+- response includes top-level `sourceProvider` (`registry`, `morpho`, `aave`, `kamino`)
 - response also includes `fetchedAtUnix` and `sourceUrl` (`0`/empty string when using bundled registry)
 
 ### lendRates Notes
@@ -367,16 +365,16 @@ Example live/cached metadata envelope:
   - `asset` (symbol)
   - `provider` (provider name)
 - Optional params:
-  - `live` (boolean, when `true` fetches live data from `DEFI_LLAMA_POOLS_URL` or `https://yields.llama.fi/pools`)
+  - `live` (boolean, when `true` fetches live data from direct provider URLs)
   - `liveMode` (`registry` default, `live`, or `auto` where `auto` falls back to bundled registry)
-  - `liveProvider` (`defillama`, `morpho`, `aave`, `kamino`, or `auto`)
+  - `liveProvider` (`morpho`, `aave`, `kamino`, or `auto`)
   - `select` (comma-separated fields: `provider`, `chain`, `asset`, `market`, `supplyApy`, `borrowApy`, `tvlUsd`)
 - `select` field names are case-insensitive and duplicate fields are coalesced
 - `select` also accepts snake_case aliases (`supply_apy`, `borrow_apy`, `tvl_usd`)
 - blank/empty `select` values are rejected (including comma-only token lists)
 - Monad chain alias (`monad`) resolves to `eip155:10143` and can be used for Morpho rate lookup
 - response includes top-level `source` (`live`, `cache`, `stale_cache`, or `registry`)
-- response includes top-level `sourceProvider` (`registry`, `defillama`, `morpho`, `aave`, `kamino`)
+- response includes top-level `sourceProvider` (`registry`, `morpho`, `aave`, `kamino`)
 - response also includes `fetchedAtUnix` and `sourceUrl` (`0`/empty string when using bundled registry)
 
 ### providersList Notes

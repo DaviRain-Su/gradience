@@ -154,10 +154,10 @@ Live lending filter notes:
 `lendRates` supports `chain`, `asset`, `provider`, with optional `live`, `liveMode`, `liveProvider`, and `select`.
 
 Set `live=true` for `yieldOpportunities` / `lendMarkets` / `lendRates` to fetch real-time market data
-from `DEFI_LLAMA_POOLS_URL` (defaults to `https://yields.llama.fi/pools`).
+from direct provider URLs (`DEFI_MORPHO_POOLS_URL`, `DEFI_AAVE_POOLS_URL`, `DEFI_KAMINO_POOLS_URL`).
 Set `liveMode=auto` to try live first and safely fall back to bundled registry.
-Set `liveProvider` to force source selection (`defillama`, `morpho`, `aave`, `kamino`, or `auto`).
-`liveProvider=auto` routes by provider hint first (for example `provider=morpho` prefers Morpho source, then falls back).
+Set `liveProvider` to force source selection (`morpho`, `aave`, `kamino`, or `auto`).
+`liveProvider=auto` routes by provider hint first (for example `provider=morpho` prefers Morpho); without a hint it picks the first configured direct provider.
 Responses include `source` (`live`, `cache`, `stale_cache`, or `registry`), `sourceProvider`, plus `fetchedAtUnix` and `sourceUrl`.
 Unknown `liveProvider` / `liveMode` values are rejected as validation errors (`code=2`).
 Live provider-unavailable errors include context in `error` message (`provider`, `url`, `transport`).
@@ -177,7 +177,7 @@ Priority example (`provider` hint + `liveProvider=auto`):
 }
 ```
 
-Expected behavior: prefer Aave direct source first; if unavailable, fall back to DefiLlama; then cache/stale behavior applies.
+Expected behavior: prefer Aave direct source first; if unavailable, return `code=12` in `liveMode=live`.
 If you force `liveProvider=aave` (or `morpho`/`kamino`) without corresponding `DEFI_*_POOLS_URL`, request returns provider-unavailable.
 
 Minimal direct-source request examples:
@@ -195,30 +195,29 @@ Minimal direct-source request examples:
 | `liveProvider=morpho|aave|kamino` | Yes | Direct source (`sourceProvider` = forced provider) |
 | `liveProvider=morpho|aave|kamino` | No | Error `code=12` (provider unavailable) |
 | `liveProvider=auto` + `provider` hint | Yes | Prefer hinted direct source |
-| `liveProvider=auto` + `provider` hint | No | Fallback to `defillama` |
-| `liveProvider=defillama` | N/A | Use DefiLlama source directly |
+| `liveProvider=auto` + `provider` hint | No | Error `code=12` in `liveMode=live`; registry fallback in `liveMode=auto` |
 
 Reference test case names (offline matrix):
 
 - `forced_morpho_success`
 - `forced_aave_success`
 - `forced_aave_missing_url`
-- `auto_morpho_fallback_defillama`
-- `auto_aave_fallback_defillama`
+- `auto_morpho_missing_url`
+- `auto_aave_missing_url`
 - `forced_kamino_missing_url`
 - `forced_morpho_bad_json`
-- `auto_morpho_bad_json_fallback`
+- `auto_morpho_bad_json`
 
 Case input summary:
 
 - `forced_morpho_success`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho`
 - `forced_aave_success`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave`
 - `forced_aave_missing_url`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=aave` (without `DEFI_AAVE_POOLS_URL`)
-- `auto_morpho_fallback_defillama`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
-- `auto_aave_fallback_defillama`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
+- `auto_morpho_missing_url`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (without `DEFI_MORPHO_POOLS_URL`)
+- `auto_aave_missing_url`: `chain=ethereum`, `provider=aave`, `liveMode=live`, `liveProvider=auto` (without `DEFI_AAVE_POOLS_URL`)
 - `forced_kamino_missing_url`: `chain=solana`, `provider=kamino`, `liveMode=live`, `liveProvider=kamino` (without `DEFI_KAMINO_POOLS_URL`)
 - `forced_morpho_bad_json`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=morpho` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
-- `auto_morpho_bad_json_fallback`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
+- `auto_morpho_bad_json`: `chain=monad`, `provider=morpho`, `liveMode=live`, `liveProvider=auto` (`DEFI_MORPHO_POOLS_URL` returns non-JSON body)
 
 Copy-ready request snippets:
 
@@ -235,11 +234,11 @@ Expected key fields (assertion template):
 - `forced_morpho_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=morpho`
 - `forced_aave_success` -> `status=ok`, `source in {live,cache}`, `sourceProvider=aave`
 - `forced_aave_missing_url` -> `status=error`, `code=12`
-- `auto_morpho_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
-- `auto_aave_fallback_defillama` -> `status=ok`, `source in {live,cache}`, `sourceProvider=defillama`
+- `auto_morpho_missing_url` -> `status=error`, `code=12`
+- `auto_aave_missing_url` -> `status=error`, `code=12`
 - `forced_kamino_missing_url` -> `status=error`, `code=12`
 - `forced_morpho_bad_json` -> `status=error`, `code=12`
-- `auto_morpho_bad_json_fallback` -> `status=ok`, `sourceProvider=defillama`
+- `auto_morpho_bad_json` -> `status=error`, `code=12`
 
 `jq` assertion snippets (copy-ready):
 
@@ -250,14 +249,14 @@ jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvid
 # forced provider missing URL -> unavailable
 jq -e '.status=="error" and (.code|tonumber)==12'
 
-# auto fallback to defillama
-jq -e '.status=="ok" and (.source=="live" or .source=="cache") and .sourceProvider=="defillama"'
+# auto provider missing URL -> unavailable (liveMode=live)
+jq -e '.status=="error" and (.code|tonumber)==12'
 
 # forced provider bad-json response -> unavailable
 jq -e '.status=="error" and (.code|tonumber)==12'
 
-# auto bad-json fallback -> defillama
-jq -e '.status=="ok" and .sourceProvider=="defillama"'
+# auto bad-json response -> unavailable (liveMode=live)
+jq -e '.status=="error" and (.code|tonumber)==12'
 ```
 
 Bash one-liners (request + assert):
@@ -272,9 +271,9 @@ printf '%s\n' '{"action":"yieldOpportunities","params":{"chain":"monad","asset":
 env -u DEFI_AAVE_POOLS_URL \
   sh -c "printf '%s\n' '{\"action\":\"lendRates\",\"params\":{\"chain\":\"ethereum\",\"asset\":\"USDC\",\"provider\":\"aave\",\"liveMode\":\"live\",\"liveProvider\":\"aave\"}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"error\" and (.code|tonumber)==12'"
 
-# auto fallback to defillama
+# auto provider missing URL -> code 12 (liveMode=live)
 env -u DEFI_MORPHO_POOLS_URL \
-  sh -c "printf '%s\n' '{\"action\":\"yieldOpportunities\",\"params\":{\"chain\":\"monad\",\"asset\":\"USDC\",\"provider\":\"morpho\",\"liveMode\":\"live\",\"liveProvider\":\"auto\",\"limit\":1}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"ok\" and (.source==\"live\" or .source==\"cache\") and .sourceProvider==\"defillama\"'"
+  sh -c "printf '%s\n' '{\"action\":\"yieldOpportunities\",\"params\":{\"chain\":\"monad\",\"asset\":\"USDC\",\"provider\":\"morpho\",\"liveMode\":\"live\",\"liveProvider\":\"auto\",\"limit\":1}}' | zig-core/zig-out/bin/gradience-zig | jq -e '.status==\"error\" and (.code|tonumber)==12'"
 ```
 Supported chain aliases now include: `ethereum`, `base`, `monad`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`, `linea`, `zksync`, and `solana`.
 Example live metadata envelope:
@@ -284,7 +283,7 @@ Example live metadata envelope:
   "status": "ok",
   "source": "cache",
   "fetchedAtUnix": 1760000000,
-  "sourceUrl": "https://yields.llama.fi/pools",
+  "sourceUrl": "https://example.provider/pools",
   "markets": [
     {
       "provider": "morpho",
@@ -336,9 +335,6 @@ DEFI_LIVE_HTTP_TRANSPORT=curl
 # DEFI_AAVE_POOLS_URL=https://...
 # DEFI_KAMINO_POOLS_URL=https://...
 
-# Optional live source override (default DefiLlama URL is used if unset)
-# DEFI_LLAMA_POOLS_URL=https://yields.llama.fi/pools
-
 # Optional cache knobs
 # DEFI_LIVE_MARKETS_TTL_SECONDS=60
 # DEFI_LIVE_MARKETS_ALLOW_STALE=true
@@ -347,7 +343,7 @@ DEFI_LIVE_HTTP_TRANSPORT=curl
 Startup self-check checklist:
 
 - `curl` is installed and executable in runtime PATH
-- `DEFI_LLAMA_POOLS_URL` (or direct provider URL) is reachable from runtime network
+- at least one direct provider URL (`DEFI_MORPHO_POOLS_URL` / `DEFI_AAVE_POOLS_URL` / `DEFI_KAMINO_POOLS_URL`) is reachable from runtime network
 - `liveMode=registry` request succeeds for your critical chain/provider pair
 - `liveMode=live` returns either `source=live|cache|stale_cache` or a contextual `code=12` error
 - alerts are wired for repeated `source=registry` fallback in `liveMode=auto`

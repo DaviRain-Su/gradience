@@ -146,7 +146,7 @@ def main() -> int:
     env = os.environ.copy()
     env["ZIG_CORE_CACHE_DIR"] = str(ROOT / ".runtime-cache-test")
     # Keep default live-source calls deterministic and fast-fail in offline tests.
-    env["DEFI_LLAMA_POOLS_URL"] = "http://127.0.0.1:1/pools"
+    env["DEFI_MORPHO_POOLS_URL"] = "http://127.0.0.1:1/pools"
 
     class LivePoolsHandler(BaseHTTPRequestHandler):
         request_count = 0
@@ -300,7 +300,6 @@ def main() -> int:
         env_live_cache["ZIG_CORE_CACHE_DIR"] = str(
             ROOT / f".runtime-cache-test-live-{os.getpid()}"
         )
-        env_live_cache["DEFI_LLAMA_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
         env_live_cache["DEFI_MORPHO_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
         env_live_cache["DEFI_AAVE_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
         env_live_cache["DEFI_KAMINO_POOLS_URL"] = f"http://127.0.0.1:{port}/pools"
@@ -323,7 +322,7 @@ def main() -> int:
         )
         assert yield_live_first.get("status") == "ok"
         assert yield_live_first.get("source") == "live"
-        assert yield_live_first.get("sourceProvider") == "defillama"
+        assert yield_live_first.get("sourceProvider") == "morpho"
         assert int(yield_live_first.get("fetchedAtUnix", 0)) > 0
         assert str(yield_live_first.get("sourceUrl", "")).startswith(
             "http://127.0.0.1:"
@@ -384,7 +383,7 @@ def main() -> int:
         env_live_cache_no_aave = env_live_cache.copy()
         env_live_cache_no_aave.pop("DEFI_AAVE_POOLS_URL", None)
 
-        lend_rates_auto_aave_fallback = run(
+        lend_rates_auto_aave_missing_url = run(
             {
                 "action": "lendRates",
                 "params": {
@@ -397,9 +396,11 @@ def main() -> int:
             },
             env_live_cache_no_aave,
         )
-        assert lend_rates_auto_aave_fallback.get("status") == "ok"
-        assert lend_rates_auto_aave_fallback.get("source") in {"live", "cache"}
-        assert lend_rates_auto_aave_fallback.get("sourceProvider") == "defillama"
+        assert_live_unavailable_error_context(
+            lend_rates_auto_aave_missing_url,
+            expected_provider="aave",
+            expected_transport="curl",
+        )
 
         lend_rates_live_aave_missing_url = run(
             {
@@ -443,7 +444,7 @@ def main() -> int:
             expected_transport="curl",
         )
 
-        yield_auto_morpho_fallback = run(
+        yield_auto_morpho_missing_url = run(
             {
                 "action": "yieldOpportunities",
                 "params": {
@@ -457,9 +458,11 @@ def main() -> int:
             },
             env_live_cache_no_morpho,
         )
-        assert yield_auto_morpho_fallback.get("status") == "ok"
-        assert yield_auto_morpho_fallback.get("source") in {"live", "cache"}
-        assert yield_auto_morpho_fallback.get("sourceProvider") == "defillama"
+        assert_live_unavailable_error_context(
+            yield_auto_morpho_missing_url,
+            expected_provider="morpho",
+            expected_transport="curl",
+        )
 
         env_live_cache_no_kamino = env_live_cache.copy()
         env_live_cache_no_kamino.pop("DEFI_KAMINO_POOLS_URL", None)
@@ -506,7 +509,7 @@ def main() -> int:
             expected_transport="zig",
         )
 
-        yield_auto_kamino_fallback = run(
+        yield_auto_kamino_missing_url = run(
             {
                 "action": "yieldOpportunities",
                 "params": {
@@ -520,14 +523,16 @@ def main() -> int:
             },
             env_live_cache_no_kamino,
         )
-        assert yield_auto_kamino_fallback.get("status") == "ok"
-        assert yield_auto_kamino_fallback.get("source") in {"live", "cache"}
-        assert yield_auto_kamino_fallback.get("sourceProvider") == "defillama"
+        assert_live_unavailable_error_context(
+            yield_auto_kamino_missing_url,
+            expected_provider="kamino",
+            expected_transport="curl",
+        )
 
-        # Non-JSON live response should not crash and should fall back in auto mode.
+        # Non-JSON live response should not crash.
         env_live_bad_json = env_live_cache.copy()
         env_live_bad_json["DEFI_MORPHO_POOLS_URL"] = f"http://127.0.0.1:{port}/badjson"
-        yield_auto_bad_json_fallback = run(
+        yield_auto_bad_json_error = run(
             {
                 "action": "yieldOpportunities",
                 "params": {
@@ -541,8 +546,11 @@ def main() -> int:
             },
             env_live_bad_json,
         )
-        assert yield_auto_bad_json_fallback.get("status") == "ok"
-        assert yield_auto_bad_json_fallback.get("sourceProvider") == "defillama"
+        assert_live_unavailable_error_context(
+            yield_auto_bad_json_error,
+            expected_provider="morpho",
+            expected_transport="curl",
+        )
 
         # Forced provider with non-JSON response should fail (no auto provider fallback).
         yield_forced_bad_json_error = run(
@@ -620,7 +628,7 @@ def main() -> int:
                 12,
             ),
             (
-                "auto_morpho_fallback_defillama",
+                "auto_morpho_missing_url",
                 env_live_cache_no_morpho,
                 {
                     "action": "yieldOpportunities",
@@ -633,12 +641,12 @@ def main() -> int:
                         "limit": 1,
                     },
                 },
-                "ok",
-                "defillama",
+                "error",
                 None,
+                12,
             ),
             (
-                "auto_aave_fallback_defillama",
+                "auto_aave_missing_url",
                 env_live_cache_no_aave,
                 {
                     "action": "lendRates",
@@ -650,9 +658,9 @@ def main() -> int:
                         "liveProvider": "auto",
                     },
                 },
-                "ok",
-                "defillama",
+                "error",
                 None,
+                12,
             ),
             (
                 "forced_kamino_missing_url",
@@ -691,7 +699,7 @@ def main() -> int:
                 12,
             ),
             (
-                "auto_morpho_bad_json_fallback",
+                "auto_morpho_bad_json",
                 env_live_bad_json,
                 {
                     "action": "yieldOpportunities",
@@ -704,9 +712,9 @@ def main() -> int:
                         "limit": 1,
                     },
                 },
-                "ok",
-                "defillama",
+                "error",
                 None,
+                12,
             ),
         ]
         for (
@@ -780,7 +788,7 @@ def main() -> int:
         )
         assert yield_live_cache_hit.get("status") == "ok"
         assert yield_live_cache_hit.get("source") == "cache"
-        assert yield_live_cache_hit.get("sourceProvider") == "defillama"
+        assert yield_live_cache_hit.get("sourceProvider") == "morpho"
 
         env_live_cache_no_path = env_live_cache.copy()
         env_live_cache_no_path["DEFI_LIVE_HTTP_TRANSPORT"] = "curl"
@@ -793,7 +801,7 @@ def main() -> int:
                     "asset": "USDC",
                     "provider": "morpho",
                     "liveMode": "live",
-                    "liveProvider": "defillama",
+                    "liveProvider": "morpho",
                     "limit": 1,
                 },
             },
@@ -804,9 +812,7 @@ def main() -> int:
             "live",
             "cache",
         }
-        assert (
-            yield_live_curl_missing_binary_fallback.get("sourceProvider") == "defillama"
-        )
+        assert yield_live_curl_missing_binary_fallback.get("sourceProvider") == "morpho"
 
         if os.environ.get("RUN_EXTENDED_LIVE_MOCK", "0") == "1":
             yield_live_arbitrum = run(
@@ -916,10 +922,8 @@ def main() -> int:
         thread_seed = threading.Thread(target=httpd_seed.serve_forever, daemon=True)
         thread_seed.start()
         seeded_url = f"http://127.0.0.1:{port_seed}/pools"
-        env_live_stale["DEFI_LLAMA_POOLS_URL"] = seeded_url
         env_live_stale["DEFI_MORPHO_POOLS_URL"] = seeded_url
         env_live_stale_seed = env_live_stale.copy()
-        env_live_stale_seed["DEFI_LLAMA_POOLS_URL"] = seeded_url
         env_live_stale_seed["DEFI_MORPHO_POOLS_URL"] = seeded_url
         seeded = run(
             {
@@ -955,7 +959,7 @@ def main() -> int:
     )
     assert stale_hit.get("status") == "ok"
     assert stale_hit.get("source") == "stale_cache"
-    assert stale_hit.get("sourceProvider") == "defillama"
+    assert stale_hit.get("sourceProvider") == "morpho"
 
     lend_markets_stale_hit = run(
         {
@@ -1325,7 +1329,7 @@ def main() -> int:
     assert monad_opp_results[0].get("chain") == "eip155:10143"
 
     env_live_unavailable = env.copy()
-    env_live_unavailable["DEFI_LLAMA_POOLS_URL"] = "http://127.0.0.1:1/pools"
+    env_live_unavailable["DEFI_MORPHO_POOLS_URL"] = "http://127.0.0.1:1/pools"
 
     yield_auto_fallback = run(
         {
