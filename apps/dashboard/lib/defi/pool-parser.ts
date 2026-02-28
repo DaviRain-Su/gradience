@@ -233,7 +233,7 @@ function normalizePool(
     "lpToken",
   ]);
   const providerInfo = firstStringWithKey(row, ["provider", "protocol"]);
-  const marketIdInfo = firstStringWithKey(row, ["marketId", "uniqueKey", "pool", "id"]);
+  const marketIdInfo = firstStringWithKey(row, ["marketId", "market_id", "uniqueKey", "pool", "id"]);
   const marketLabelInfo = firstStringWithKey(row, ["market", "poolMeta", "name"]);
   const chainInfo = firstStringWithKey(row, ["chain", "chainId"]);
   const assetInfo = firstStringWithKey(row, ["asset", "underlying", "underlyingSymbol"]);

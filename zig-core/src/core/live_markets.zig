@@ -106,6 +106,7 @@ pub fn appendYieldEntriesLive(
             try allocator.dupe(u8, market_label)
         else
             try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ provider, chain, asset });
+        const market_id = getString(obj, "marketId") orelse getString(obj, "pool") orelse "";
 
         try rows.append(allocator, .{
             .provider = try allocator.dupe(u8, provider),
@@ -113,6 +114,7 @@ pub fn appendYieldEntriesLive(
             .asset = try allocator.dupe(u8, asset),
             .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
+            .market_id = try allocator.dupe(u8, market_id),
             .apy = apy,
             .tvl_usd = tvl_usd,
         });
@@ -197,6 +199,8 @@ pub fn appendLendEntriesLive(
             try allocator.dupe(u8, market_label)
         else
             try std.fmt.allocPrint(allocator, "{s} {s} {s}", .{ provider, chain, asset });
+        const market_id = getString(obj, "marketId") orelse getString(obj, "pool") orelse "";
+        const utilization = getF64(obj, "utilization") orelse getF64(obj, "utilizationRate") orelse 0;
 
         try rows.append(allocator, .{
             .provider = try allocator.dupe(u8, provider),
@@ -204,8 +208,10 @@ pub fn appendLendEntriesLive(
             .asset = try allocator.dupe(u8, asset),
             .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
+            .market_id = try allocator.dupe(u8, market_id),
             .supply_apy = supply_apy,
             .borrow_apy = borrow_apy,
+            .utilization = utilization,
             .tvl_usd = tvl_usd,
         });
     }
@@ -323,7 +329,7 @@ fn fetchMorphoApiPools(allocator: std.mem.Allocator, chain_filter: ?[]const u8) 
     const payload = try morphoApiMarketsQueryPayload(allocator, chain_id);
     defer allocator.free(payload);
 
-    const ttl_seconds = getEnvU64("DEFI_LIVE_MARKETS_TTL_SECONDS", 60);
+    const ttl_seconds = morphoApiTtlSeconds();
     const allow_stale = getEnvBool("DEFI_LIVE_MARKETS_ALLOW_STALE", true);
     const key_hash = std.hash.Wyhash.hash(0, endpoint) ^ std.hash.Wyhash.hash(0, payload);
     const cache_key = try std.fmt.allocPrint(allocator, "live_markets:morpho_api:{x}", .{key_hash});
@@ -346,7 +352,7 @@ fn fetchMorphoApiPools(allocator: std.mem.Allocator, chain_filter: ?[]const u8) 
         }
     }
 
-    const body = fetchHttpJsonPost(allocator, endpoint, payload) catch {
+    const body = fetchHttpJsonPostWithRetry(allocator, endpoint, payload) catch {
         if (allow_stale and cached != null) {
             const stale = cached.?;
             const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
@@ -391,6 +397,36 @@ fn fetchMorphoApiPools(allocator: std.mem.Allocator, chain_filter: ?[]const u8) 
     };
 }
 
+fn morphoApiTtlSeconds() u64 {
+    const default_ttl = getEnvU64("DEFI_LIVE_MARKETS_TTL_SECONDS", 60);
+    return getEnvU64("DEFI_MORPHO_API_TTL_SECONDS", default_ttl);
+}
+
+fn morphoApiRetryCount() usize {
+    const retries = getEnvU64("DEFI_MORPHO_API_RETRIES", 1);
+    return @as(usize, @intCast(@min(retries, 5)));
+}
+
+fn morphoApiRetryBackoffMs() u64 {
+    return @max(50, getEnvU64("DEFI_MORPHO_API_RETRY_BACKOFF_MS", 200));
+}
+
+fn fetchHttpJsonPostWithRetry(allocator: std.mem.Allocator, url: []const u8, payload: []const u8) ![]u8 {
+    const retries = morphoApiRetryCount();
+    const backoff_ms = morphoApiRetryBackoffMs();
+
+    var attempt: usize = 0;
+    while (true) {
+        const body = fetchHttpJsonPost(allocator, url, payload) catch {
+            if (attempt >= retries) return error.LiveSourceUnavailable;
+            attempt += 1;
+            std.Thread.sleep(backoff_ms * std.time.ns_per_ms * attempt);
+            continue;
+        };
+        return body;
+    }
+}
+
 fn morphoApiEndpoint(allocator: std.mem.Allocator) ![]u8 {
     const raw = std.process.getEnvVarOwned(allocator, "DEFI_MORPHO_API_URL") catch null;
     if (raw) |value| {
@@ -421,7 +457,7 @@ fn morphoApiMarketsQueryPayload(allocator: std.mem.Allocator, chain_id: i64) ![]
     const query =
         "query Markets($chainId: Int!, $first: Int!) { " ++
         "markets(first: $first, where: { chainId_in: [$chainId] }) { " ++
-        "items { uniqueKey loanAsset { symbol } state { supplyApy borrowApy supplyAssetsUsd } } " ++
+        "items { uniqueKey loanAsset { symbol } state { supplyApy borrowApy utilization supplyAssetsUsd } } " ++
         "} }";
     return std.fmt.allocPrint(
         allocator,
@@ -843,6 +879,7 @@ fn appendYieldEntriesMorphoApi(
             .asset = try allocator.dupe(u8, asset),
             .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
+            .market_id = try allocator.dupe(u8, unique_key),
             .apy = apy,
             .tvl_usd = tvl_usd,
         });
@@ -885,6 +922,7 @@ fn appendLendEntriesMorphoApi(
 
         const supply_apy = getF64(state, "supplyApy") orelse continue;
         const borrow_apy = getF64(state, "borrowApy") orelse 0;
+        const utilization = getF64(state, "utilization") orelse 0;
         const tvl_usd = getF64(state, "supplyAssetsUsd") orelse 0;
         const unique_key = getString(obj, "uniqueKey") orelse "";
         const market = if (unique_key.len > 0)
@@ -898,8 +936,10 @@ fn appendLendEntriesMorphoApi(
             .asset = try allocator.dupe(u8, asset),
             .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
             .market = market,
+            .market_id = try allocator.dupe(u8, unique_key),
             .supply_apy = supply_apy,
             .borrow_apy = borrow_apy,
+            .utilization = utilization,
             .tvl_usd = tvl_usd,
         });
     }

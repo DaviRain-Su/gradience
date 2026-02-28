@@ -4,6 +4,7 @@ pub const YieldEntry = struct {
     asset: []const u8,
     asset_matched_by: []const u8 = "exact",
     market: []const u8,
+    market_id: []const u8 = "",
     apy: f64,
     tvl_usd: f64,
 };

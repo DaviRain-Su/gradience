@@ -32,8 +32,11 @@ import {
   type DefiPoolQuery,
 } from "./lib/defi/pool-parser.js";
 import {
+  recordDefiPrewarmAlertWebhookEvent,
   recordDefiCacheAge,
   recordDefiRequestMetric,
+  setDefiHealthGauge,
+  setDefiPrewarmGauge,
   recordDefiUpstreamError,
   recordDefiUpstreamRetries,
   renderDefiMetrics,
@@ -44,6 +47,114 @@ const PORT = Number(process.env.DASHBOARD_PORT || 4173);
 const MAX_DEFI_POOL_FETCH_LIMIT = 5000;
 const CURRENT_CURSOR_VERSION = 1;
 const dbHandle = await openDb(process.env.STRATEGY_DB_PATH);
+
+type StartupSmokeStatus = {
+  enabled: boolean;
+  status: "idle" | "ok" | "error" | "skipped";
+  lastRunAtIso: string | null;
+  elapsedMs: number | null;
+  message: string | null;
+  details: Record<string, unknown> | null;
+};
+
+type DefiPrewarmStatus = {
+  enabled: boolean;
+  running: boolean;
+  intervalSeconds: number;
+  assets: string[];
+  kinds: Array<"lend" | "yield">;
+  nextRunAtIso: string | null;
+  lastRunAtIso: string | null;
+  lastRunElapsedMs: number | null;
+  lastRunStatus: "idle" | "ok" | "error";
+  lastRunMessage: string | null;
+  lastRunSummary: Record<string, unknown> | null;
+  totalRuns: number;
+  totalChecks: number;
+  totalCheckOk: number;
+  totalCheckError: number;
+  cumulativeSuccessRate: number;
+  recentWindowSize: number;
+  recentRuns: number;
+  recentChecks: number;
+  recentCheckOk: number;
+  recentCheckError: number;
+  recentSuccessRate: number;
+  consecutiveFailureRuns: number;
+  maxConsecutiveFailureRuns: number;
+  alertThresholdRuns: number;
+  alertActive: boolean;
+  recommendedAlert: string;
+  alertCooldownSeconds: number;
+  alertWebhookConfigured: boolean;
+  alertLastTriggeredAtIso: string | null;
+  alertLastWebhookStatus: "idle" | "sent" | "failed" | "suppressed";
+  alertLastWebhookError: string | null;
+  alertSuppressedCount: number;
+};
+
+const startupSmokeStatus: StartupSmokeStatus = {
+  enabled: true,
+  status: "idle",
+  lastRunAtIso: null,
+  elapsedMs: null,
+  message: null,
+  details: null,
+};
+const defiPrewarmStatus: DefiPrewarmStatus = {
+  enabled: true,
+  running: false,
+  intervalSeconds: 90,
+  assets: ["USDC"],
+  kinds: ["lend"],
+  nextRunAtIso: null,
+  lastRunAtIso: null,
+  lastRunElapsedMs: null,
+  lastRunStatus: "idle",
+  lastRunMessage: null,
+  lastRunSummary: null,
+  totalRuns: 0,
+  totalChecks: 0,
+  totalCheckOk: 0,
+  totalCheckError: 0,
+  cumulativeSuccessRate: 0,
+  recentWindowSize: 20,
+  recentRuns: 0,
+  recentChecks: 0,
+  recentCheckOk: 0,
+  recentCheckError: 0,
+  recentSuccessRate: 0,
+  consecutiveFailureRuns: 0,
+  maxConsecutiveFailureRuns: 0,
+  alertThresholdRuns: 3,
+  alertActive: false,
+  recommendedAlert: "consecutiveFailureRuns>=3",
+  alertCooldownSeconds: 600,
+  alertWebhookConfigured: false,
+  alertLastTriggeredAtIso: null,
+  alertLastWebhookStatus: "idle",
+  alertLastWebhookError: null,
+  alertSuppressedCount: 0,
+};
+let defiPrewarmTimer: NodeJS.Timeout | null = null;
+
+type PrewarmAggregateSample = {
+  okChecks: number;
+  errorChecks: number;
+};
+
+const prewarmRecentSamples: PrewarmAggregateSample[] = [];
+
+type DefiPrewarmRunOptions = {
+  force?: boolean;
+  assets?: string[];
+  kinds?: Array<"lend" | "yield">;
+};
+
+type PrewarmAlertDecision = {
+  shouldNotify: boolean;
+  reason: "not_active" | "just_activated" | "cooldown_elapsed" | "cooldown_active";
+};
 const dashboardObserveOnly = process.env.DASHBOARD_OBSERVE_ONLY !== "0";
 const dashboardMutationApiEnabled = process.env.DASHBOARD_ENABLE_MUTATION_API === "1";
 const executeApiEnabled = process.env.DASHBOARD_ENABLE_EXECUTE_API === "1";
@@ -370,6 +481,556 @@ function metricDurationMs(startedAtMs: number): number {
   return Date.now() - startedAtMs;
 }
 
+function envBool(name: string, defaultValue: boolean): boolean {
+  const raw = String(process.env[name] || "").trim().toLowerCase();
+  if (!raw) return defaultValue;
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function startupSmokeEnabled(): boolean {
+  return envBool("DEFI_STARTUP_SMOKE_ENABLED", true);
+}
+
+function startupSmokeExpectTransport(): string {
+  return String(process.env.DEFI_STARTUP_SMOKE_EXPECT_TRANSPORT || "morpho_api").trim() || "morpho_api";
+}
+
+function readyStrictMode(): boolean {
+  return envBool("DEFI_READY_STRICT", false);
+}
+
+function refreshDefiHealthGauges(): {
+  hasAnyLiveProviderConfigured: boolean;
+  startupOk: boolean;
+  startupStrictOk: boolean;
+  prewarmOk: boolean;
+  overall: "ok" | "degraded";
+  overallStrict: "ok" | "degraded";
+  config: ReturnType<typeof liveConfigSnapshot>;
+} {
+  const config = liveConfigSnapshot();
+  const hasAnyLiveProviderConfigured = config.morpho.configured || config.aave.configured || config.kamino.configured;
+  const startupOk = startupSmokeStatus.status === "ok" || startupSmokeStatus.status === "skipped";
+  const startupStrictOk = startupSmokeStatus.status === "ok";
+  const prewarmOk = defiPrewarmStatus.lastRunStatus === "ok" || defiPrewarmStatus.lastRunStatus === "idle";
+  const overall: "ok" | "degraded" = hasAnyLiveProviderConfigured && startupOk && prewarmOk ? "ok" : "degraded";
+  const overallStrict: "ok" | "degraded" =
+    hasAnyLiveProviderConfigured && startupStrictOk && prewarmOk ? "ok" : "degraded";
+
+  setDefiHealthGauge("live_config", hasAnyLiveProviderConfigured ? "ok" : "error");
+  setDefiHealthGauge("startup_smoke", startupOk ? "ok" : "error");
+  setDefiHealthGauge("prewarm", prewarmOk ? "ok" : "error");
+  setDefiHealthGauge("overall", overall === "ok" ? "ok" : "error");
+  setDefiHealthGauge("overall_strict", overallStrict === "ok" ? "ok" : "error");
+
+  return {
+    hasAnyLiveProviderConfigured,
+    startupOk,
+    startupStrictOk,
+    prewarmOk,
+    overall,
+    overallStrict,
+    config,
+  };
+}
+
+function buildMorphoLiveQuery(input?: { kind?: "lend" | "yield"; asset?: string; limit?: number }): DefiPoolQuery {
+  return {
+    kind: input?.kind || "lend",
+    chain: "monad",
+    asset: input?.asset || "USDC",
+    provider: "morpho",
+    liveMode: "live",
+    liveProvider: "auto",
+    limit: input?.limit ?? 5,
+    order: "desc",
+    sortBy: "tvlUsd",
+  };
+}
+
+function prewarmEnabled(): boolean {
+  return envBool("DEFI_PREWARM_ENABLED", true);
+}
+
+function prewarmIntervalSeconds(): number {
+  const parsed = Number(process.env.DEFI_PREWARM_INTERVAL_SECONDS || 90);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 90;
+  return Math.max(10, Math.trunc(parsed));
+}
+
+function prewarmAssets(): string[] {
+  const raw = String(process.env.DEFI_PREWARM_ASSETS || "USDC").trim();
+  const items = raw
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean);
+  return items.length > 0 ? Array.from(new Set(items)) : ["USDC"];
+}
+
+function prewarmKinds(): Array<"lend" | "yield"> {
+  const raw = String(process.env.DEFI_PREWARM_KINDS || "lend").trim();
+  const kinds = raw
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item): item is "lend" | "yield" => item === "lend" || item === "yield");
+  return kinds.length > 0 ? Array.from(new Set(kinds)) : ["lend"];
+}
+
+function normalizePrewarmAssets(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => (typeof item === "string" ? item.trim().toUpperCase() : ""))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function normalizePrewarmKinds(value: unknown): Array<"lend" | "yield"> {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => (typeof item === "string" ? item.trim().toLowerCase() : ""))
+        .filter((item): item is "lend" | "yield" => item === "lend" || item === "yield"),
+    ),
+  );
+}
+
+function prewarmStatsWindowSize(): number {
+  const parsed = Number(process.env.DEFI_PREWARM_STATS_WINDOW || 20);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 20;
+  return Math.max(1, Math.trunc(parsed));
+}
+
+function prewarmAlertThresholdRuns(): number {
+  const parsed = Number(process.env.DEFI_PREWARM_ALERT_THRESHOLD || 3);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 3;
+  return Math.max(1, Math.trunc(parsed));
+}
+
+function prewarmAlertCooldownSeconds(): number {
+  const parsed = Number(process.env.DEFI_PREWARM_ALERT_COOLDOWN_SECONDS || 600);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 600;
+  return Math.max(30, Math.trunc(parsed));
+}
+
+function prewarmAlertWebhookUrl(): string | null {
+  const value = String(process.env.DEFI_PREWARM_ALERT_WEBHOOK_URL || "").trim();
+  return value ? value : null;
+}
+
+function recalculatePrewarmRecentAggregates(): void {
+  const runs = prewarmRecentSamples.length;
+  const checkOk = prewarmRecentSamples.reduce((sum, item) => sum + item.okChecks, 0);
+  const checkError = prewarmRecentSamples.reduce((sum, item) => sum + item.errorChecks, 0);
+  const checks = checkOk + checkError;
+  defiPrewarmStatus.recentRuns = runs;
+  defiPrewarmStatus.recentChecks = checks;
+  defiPrewarmStatus.recentCheckOk = checkOk;
+  defiPrewarmStatus.recentCheckError = checkError;
+  defiPrewarmStatus.recentSuccessRate = checks > 0 ? checkOk / checks : 0;
+}
+
+function syncPrewarmRecentWindow(): void {
+  const windowSize = prewarmStatsWindowSize();
+  defiPrewarmStatus.recentWindowSize = windowSize;
+  defiPrewarmStatus.alertThresholdRuns = prewarmAlertThresholdRuns();
+  defiPrewarmStatus.alertCooldownSeconds = prewarmAlertCooldownSeconds();
+  defiPrewarmStatus.alertWebhookConfigured = Boolean(prewarmAlertWebhookUrl());
+  defiPrewarmStatus.alertActive = defiPrewarmStatus.consecutiveFailureRuns >= defiPrewarmStatus.alertThresholdRuns;
+  defiPrewarmStatus.recommendedAlert = `consecutiveFailureRuns>=${defiPrewarmStatus.alertThresholdRuns}`;
+  while (prewarmRecentSamples.length > windowSize) {
+    prewarmRecentSamples.shift();
+  }
+  recalculatePrewarmRecentAggregates();
+  setDefiPrewarmGauge("gradience_defi_prewarm_alert_active", defiPrewarmStatus.alertActive ? 1 : 0);
+}
+
+function decidePrewarmAlertNotification(nowMs: number, wasAlertActive: boolean): PrewarmAlertDecision {
+  if (!defiPrewarmStatus.alertActive) {
+    return { shouldNotify: false, reason: "not_active" };
+  }
+  if (!wasAlertActive) {
+    return { shouldNotify: true, reason: "just_activated" };
+  }
+
+  const lastTriggeredAt = defiPrewarmStatus.alertLastTriggeredAtIso
+    ? new Date(defiPrewarmStatus.alertLastTriggeredAtIso).getTime()
+    : 0;
+  if (!Number.isFinite(lastTriggeredAt) || lastTriggeredAt <= 0) {
+    return { shouldNotify: true, reason: "cooldown_elapsed" };
+  }
+
+  const elapsedMs = nowMs - lastTriggeredAt;
+  const cooldownMs = defiPrewarmStatus.alertCooldownSeconds * 1000;
+  if (elapsedMs >= cooldownMs) {
+    return { shouldNotify: true, reason: "cooldown_elapsed" };
+  }
+  return { shouldNotify: false, reason: "cooldown_active" };
+}
+
+async function sendPrewarmAlertWebhook(payload: Record<string, unknown>): Promise<void> {
+  const url = prewarmAlertWebhookUrl();
+  if (!url) return;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`webhook failed with status ${response.status}`);
+  }
+}
+
+function updatePrewarmAggregate(
+  okChecks: number,
+  errorChecks: number,
+  outcome: "ok" | "error" | "skipped",
+): PrewarmAlertDecision {
+  const nowMs = Date.now();
+  const wasAlertActive = defiPrewarmStatus.alertActive;
+  const totalChecks = Math.max(0, okChecks) + Math.max(0, errorChecks);
+  defiPrewarmStatus.totalRuns += 1;
+  defiPrewarmStatus.totalChecks += totalChecks;
+  defiPrewarmStatus.totalCheckOk += Math.max(0, okChecks);
+  defiPrewarmStatus.totalCheckError += Math.max(0, errorChecks);
+  if (defiPrewarmStatus.totalChecks > 0) {
+    defiPrewarmStatus.cumulativeSuccessRate = defiPrewarmStatus.totalCheckOk / defiPrewarmStatus.totalChecks;
+  }
+
+  const windowSize = prewarmStatsWindowSize();
+  defiPrewarmStatus.recentWindowSize = windowSize;
+  prewarmRecentSamples.push({
+    okChecks: Math.max(0, okChecks),
+    errorChecks: Math.max(0, errorChecks),
+  });
+  while (prewarmRecentSamples.length > windowSize) {
+    prewarmRecentSamples.shift();
+  }
+  recalculatePrewarmRecentAggregates();
+
+  if (outcome === "error") {
+    defiPrewarmStatus.consecutiveFailureRuns += 1;
+    if (defiPrewarmStatus.consecutiveFailureRuns > defiPrewarmStatus.maxConsecutiveFailureRuns) {
+      defiPrewarmStatus.maxConsecutiveFailureRuns = defiPrewarmStatus.consecutiveFailureRuns;
+    }
+  } else if (outcome === "ok") {
+    defiPrewarmStatus.consecutiveFailureRuns = 0;
+  }
+
+  defiPrewarmStatus.alertThresholdRuns = prewarmAlertThresholdRuns();
+  defiPrewarmStatus.alertActive = defiPrewarmStatus.consecutiveFailureRuns >= defiPrewarmStatus.alertThresholdRuns;
+  defiPrewarmStatus.recommendedAlert = `consecutiveFailureRuns>=${defiPrewarmStatus.alertThresholdRuns}`;
+
+  setDefiPrewarmGauge("gradience_defi_prewarm_recent_success_rate", defiPrewarmStatus.recentSuccessRate);
+  setDefiPrewarmGauge("gradience_defi_prewarm_total_runs", defiPrewarmStatus.totalRuns);
+  setDefiPrewarmGauge("gradience_defi_prewarm_total_checks", defiPrewarmStatus.totalChecks);
+  setDefiPrewarmGauge("gradience_defi_prewarm_total_check_error", defiPrewarmStatus.totalCheckError);
+  setDefiPrewarmGauge("gradience_defi_prewarm_consecutive_failure_runs", defiPrewarmStatus.consecutiveFailureRuns);
+  setDefiPrewarmGauge("gradience_defi_prewarm_max_consecutive_failure_runs", defiPrewarmStatus.maxConsecutiveFailureRuns);
+  setDefiPrewarmGauge("gradience_defi_prewarm_alert_active", defiPrewarmStatus.alertActive ? 1 : 0);
+
+  return decidePrewarmAlertNotification(nowMs, wasAlertActive);
+}
+
+async function runStartupDefiSmokeCheck(): Promise<void> {
+  startupSmokeStatus.enabled = startupSmokeEnabled();
+  const startedAtMs = Date.now();
+  if (!startupSmokeStatus.enabled) {
+    startupSmokeStatus.status = "skipped";
+    startupSmokeStatus.lastRunAtIso = new Date().toISOString();
+    startupSmokeStatus.elapsedMs = 0;
+    startupSmokeStatus.message = "startup smoke disabled by DEFI_STARTUP_SMOKE_ENABLED=0";
+    startupSmokeStatus.details = null;
+    refreshDefiHealthGauges();
+    return;
+  }
+
+  if (!zigDefiEnabled()) {
+    startupSmokeStatus.status = "skipped";
+    startupSmokeStatus.lastRunAtIso = new Date().toISOString();
+    startupSmokeStatus.elapsedMs = 0;
+    startupSmokeStatus.message = "zig core disabled; startup smoke skipped";
+    startupSmokeStatus.details = null;
+    refreshDefiHealthGauges();
+    return;
+  }
+
+  const query = buildMorphoLiveQuery({ kind: "lend", asset: "USDC", limit: 5 });
+  const expectedTransport = startupSmokeExpectTransport();
+
+  try {
+    const parsed = await fetchParsedDefiPools(query);
+    const elapsedMs = metricDurationMs(startedAtMs);
+    const transportMatched = !expectedTransport || parsed.sourceTransport === expectedTransport;
+
+    if (!transportMatched) {
+      startupSmokeStatus.status = "error";
+      startupSmokeStatus.lastRunAtIso = new Date().toISOString();
+      startupSmokeStatus.elapsedMs = elapsedMs;
+      startupSmokeStatus.message = `startup smoke transport mismatch: expected=${expectedTransport} actual=${parsed.sourceTransport}`;
+      startupSmokeStatus.details = {
+        query,
+        expectedSourceTransport: expectedTransport,
+        source: parsed.source,
+        sourceProvider: parsed.sourceProvider,
+        sourceUrl: parsed.sourceUrl,
+        sourceTransport: parsed.sourceTransport,
+      };
+      recordDefiRequestMetric({
+        endpoint: "smoke",
+        kind: "lend",
+        status: "invalid",
+        errorType: "validation",
+        durationMs: elapsedMs,
+        cache: {
+          backend: parsed.cache.backend,
+          hit: parsed.cache.hit,
+          stale: parsed.cache.stale,
+        },
+      });
+      recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+      recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+      refreshDefiHealthGauges();
+      return;
+    }
+
+    startupSmokeStatus.status = "ok";
+    startupSmokeStatus.lastRunAtIso = new Date().toISOString();
+    startupSmokeStatus.elapsedMs = elapsedMs;
+    startupSmokeStatus.message = null;
+    startupSmokeStatus.details = {
+      query,
+      expectedSourceTransport: expectedTransport,
+      source: parsed.source,
+      sourceProvider: parsed.sourceProvider,
+      sourceUrl: parsed.sourceUrl,
+      sourceTransport: parsed.sourceTransport,
+      fetchedAtUnix: parsed.fetchedAtUnix,
+      count: parsed.pools.length,
+      first: parsed.pools[0] || null,
+    };
+    recordDefiRequestMetric({
+      endpoint: "smoke",
+      kind: "lend",
+      status: "ok",
+      errorType: "none",
+      durationMs: elapsedMs,
+      cache: {
+        backend: parsed.cache.backend,
+        hit: parsed.cache.hit,
+        stale: parsed.cache.stale,
+      },
+    });
+    recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+    recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+    refreshDefiHealthGauges();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const elapsedMs = metricDurationMs(startedAtMs);
+    startupSmokeStatus.status = "error";
+    startupSmokeStatus.lastRunAtIso = new Date().toISOString();
+    startupSmokeStatus.elapsedMs = elapsedMs;
+    startupSmokeStatus.message = message;
+    startupSmokeStatus.details = { query, expectedSourceTransport: expectedTransport };
+
+    if (isMorphoLiveConfigError(message)) {
+      recordDefiRequestMetric({
+        endpoint: "smoke",
+        kind: "lend",
+        status: "invalid",
+        errorType: "config",
+        durationMs: elapsedMs,
+      });
+      refreshDefiHealthGauges();
+      return;
+    }
+
+    const upstreamCode = extractUpstreamErrorCode(message);
+    recordDefiRequestMetric({
+      endpoint: "smoke",
+      kind: "lend",
+      status: "error",
+      errorType: "upstream",
+      durationMs: elapsedMs,
+    });
+    recordDefiUpstreamError(upstreamCode);
+    refreshDefiHealthGauges();
+  }
+}
+
+async function runDefiPrewarmOnce(options?: DefiPrewarmRunOptions): Promise<void> {
+  const startedAtMs = Date.now();
+  if (defiPrewarmStatus.running) return;
+  defiPrewarmStatus.running = true;
+  try {
+    const forced = options?.force === true;
+    const overrideAssets = options?.assets && options.assets.length > 0 ? options.assets : null;
+    const overrideKinds = options?.kinds && options.kinds.length > 0 ? options.kinds : null;
+
+    defiPrewarmStatus.enabled = prewarmEnabled();
+    defiPrewarmStatus.intervalSeconds = prewarmIntervalSeconds();
+    defiPrewarmStatus.assets = overrideAssets || prewarmAssets();
+    defiPrewarmStatus.kinds = overrideKinds || prewarmKinds();
+
+    if ((!defiPrewarmStatus.enabled && !forced) || !zigDefiEnabled()) {
+      defiPrewarmStatus.lastRunAtIso = new Date().toISOString();
+      defiPrewarmStatus.lastRunElapsedMs = metricDurationMs(startedAtMs);
+      defiPrewarmStatus.lastRunStatus = "ok";
+      defiPrewarmStatus.lastRunMessage = !defiPrewarmStatus.enabled && !forced
+        ? "prewarm disabled by DEFI_PREWARM_ENABLED=0"
+        : "zig core disabled; prewarm skipped";
+      defiPrewarmStatus.lastRunSummary = { skipped: true, forced };
+      updatePrewarmAggregate(0, 0, "skipped");
+      refreshDefiHealthGauges();
+      return;
+    }
+
+    const checks: Array<Record<string, unknown>> = [];
+    for (const kind of defiPrewarmStatus.kinds) {
+      for (const asset of defiPrewarmStatus.assets) {
+        const query = buildMorphoLiveQuery({ kind, asset, limit: 5 });
+        const oneStart = Date.now();
+        try {
+          const parsed = await fetchParsedDefiPools(query);
+          const elapsed = metricDurationMs(oneStart);
+          recordDefiRequestMetric({
+            endpoint: "prewarm",
+            kind,
+            status: "ok",
+            errorType: "none",
+            durationMs: elapsed,
+            cache: {
+              backend: parsed.cache.backend,
+              hit: parsed.cache.hit,
+              stale: parsed.cache.stale,
+            },
+          });
+          recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+          recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+          checks.push({
+            kind,
+            asset,
+            status: "ok",
+            elapsedMs: elapsed,
+            source: parsed.source,
+            sourceProvider: parsed.sourceProvider,
+            sourceTransport: parsed.sourceTransport,
+            count: parsed.pools.length,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          const elapsed = metricDurationMs(oneStart);
+          if (isMorphoLiveConfigError(message)) {
+            recordDefiRequestMetric({
+              endpoint: "prewarm",
+              kind,
+              status: "invalid",
+              errorType: "config",
+              durationMs: elapsed,
+            });
+          } else {
+            const code = extractUpstreamErrorCode(message);
+            recordDefiRequestMetric({
+              endpoint: "prewarm",
+              kind,
+              status: "error",
+              errorType: "upstream",
+              durationMs: elapsed,
+            });
+            recordDefiUpstreamError(code);
+          }
+          checks.push({ kind, asset, status: "error", elapsedMs: elapsed, message });
+        }
+      }
+    }
+
+    const anyError = checks.some((entry) => entry.status === "error");
+    const okChecks = checks.filter((entry) => entry.status === "ok").length;
+    const errorChecks = checks.filter((entry) => entry.status === "error").length;
+    defiPrewarmStatus.lastRunAtIso = new Date().toISOString();
+    defiPrewarmStatus.lastRunElapsedMs = metricDurationMs(startedAtMs);
+    defiPrewarmStatus.lastRunStatus = anyError ? "error" : "ok";
+    defiPrewarmStatus.lastRunMessage = anyError ? "one or more prewarm checks failed" : null;
+    defiPrewarmStatus.lastRunSummary = {
+      checks,
+      forced,
+      okChecks,
+      errorChecks,
+      successRate: checks.length > 0 ? okChecks / checks.length : 1,
+    };
+    const alertDecision = updatePrewarmAggregate(okChecks, errorChecks, anyError ? "error" : "ok");
+    if (alertDecision.shouldNotify && defiPrewarmStatus.alertActive && prewarmAlertWebhookUrl()) {
+      const payload = {
+        status: "prewarm_alert",
+        reason: alertDecision.reason,
+        triggeredAtIso: new Date().toISOString(),
+        checks: {
+          consecutiveFailureRuns: defiPrewarmStatus.consecutiveFailureRuns,
+          maxConsecutiveFailureRuns: defiPrewarmStatus.maxConsecutiveFailureRuns,
+          alertThresholdRuns: defiPrewarmStatus.alertThresholdRuns,
+        },
+        latest: {
+          lastRunAtIso: defiPrewarmStatus.lastRunAtIso,
+          lastRunStatus: defiPrewarmStatus.lastRunStatus,
+          lastRunSummary: defiPrewarmStatus.lastRunSummary,
+        },
+      };
+      try {
+        await sendPrewarmAlertWebhook(payload);
+        defiPrewarmStatus.alertLastTriggeredAtIso = new Date().toISOString();
+        defiPrewarmStatus.alertLastWebhookStatus = "sent";
+        defiPrewarmStatus.alertLastWebhookError = null;
+        recordDefiPrewarmAlertWebhookEvent("sent");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        defiPrewarmStatus.alertLastWebhookStatus = "failed";
+        defiPrewarmStatus.alertLastWebhookError = message;
+        recordDefiPrewarmAlertWebhookEvent("failed");
+      }
+    } else if (defiPrewarmStatus.alertActive && prewarmAlertWebhookUrl()) {
+      if (alertDecision.reason === "cooldown_active") {
+        defiPrewarmStatus.alertSuppressedCount += 1;
+        defiPrewarmStatus.alertLastWebhookStatus = "suppressed";
+        defiPrewarmStatus.alertLastWebhookError = null;
+        recordDefiPrewarmAlertWebhookEvent("suppressed");
+      }
+    }
+    refreshDefiHealthGauges();
+  } finally {
+    defiPrewarmStatus.running = false;
+  }
+}
+
+function scheduleDefiPrewarm(): void {
+  defiPrewarmStatus.enabled = prewarmEnabled();
+  defiPrewarmStatus.intervalSeconds = prewarmIntervalSeconds();
+  defiPrewarmStatus.assets = prewarmAssets();
+  defiPrewarmStatus.kinds = prewarmKinds();
+  syncPrewarmRecentWindow();
+  if (!defiPrewarmStatus.enabled) {
+    defiPrewarmStatus.nextRunAtIso = null;
+    return;
+  }
+
+  if (defiPrewarmTimer) {
+    clearInterval(defiPrewarmTimer);
+    defiPrewarmTimer = null;
+  }
+
+  const intervalMs = defiPrewarmStatus.intervalSeconds * 1000;
+  defiPrewarmStatus.nextRunAtIso = new Date(Date.now() + intervalMs).toISOString();
+  void runDefiPrewarmOnce();
+  defiPrewarmTimer = setInterval(() => {
+    defiPrewarmStatus.nextRunAtIso = new Date(Date.now() + intervalMs).toISOString();
+    void runDefiPrewarmOnce();
+  }, intervalMs);
+}
+
 function extractUpstreamErrorCode(message: string): string {
   const match = /\(code=(\d+)\)/.exec(message);
   if (!match) return "unknown";
@@ -556,6 +1217,99 @@ app.get("/api/defi/live-plan", (req: express.Request, res: express.Response) => 
   });
 });
 
+app.get("/api/defi/startup-smoke-status", (_req: express.Request, res: express.Response) => {
+  const statusCode = startupSmokeStatus.status === "error" ? 503 : 200;
+  res.status(statusCode).json(startupSmokeStatus);
+});
+
+app.get("/api/defi/health", (_req: express.Request, res: express.Response) => {
+  const { config, hasAnyLiveProviderConfigured, startupOk, startupStrictOk, prewarmOk, overall, overallStrict } =
+    refreshDefiHealthGauges();
+  const statusCode = overall === "ok" ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: overall,
+    checks: {
+      liveConfig: {
+        status: hasAnyLiveProviderConfigured ? "ok" : "error",
+        details: config,
+      },
+      startupSmoke: {
+        status: startupOk ? "ok" : "error",
+        details: startupSmokeStatus,
+      },
+      prewarm: {
+        status: prewarmOk ? "ok" : "error",
+        details: defiPrewarmStatus,
+      },
+      strictReady: {
+        status: overallStrict === "ok" ? "ok" : "error",
+      },
+    },
+  });
+});
+
+app.get("/api/defi/ready", (req: express.Request, res: express.Response) => {
+  const { hasAnyLiveProviderConfigured, startupOk, startupStrictOk, prewarmOk, overall } = refreshDefiHealthGauges();
+  const strictParam = queryString(req, "strict");
+  const strict =
+    strictParam === undefined
+      ? readyStrictMode()
+      : ["1", "true", "yes", "on"].includes(strictParam.trim().toLowerCase());
+  const ready = strict ? hasAnyLiveProviderConfigured && startupStrictOk && prewarmOk : overall === "ok";
+  const statusCode = ready ? 200 : 503;
+  res.status(statusCode).json({
+    status: ready ? "ready" : "not_ready",
+    strict,
+    checks: {
+      liveConfig: hasAnyLiveProviderConfigured ? "ok" : "error",
+      startupSmoke: startupOk ? "ok" : "error",
+      startupSmokeStrict: startupStrictOk ? "ok" : "error",
+      prewarm: prewarmOk ? "ok" : "error",
+    },
+  });
+});
+
+app.get("/api/defi/ready-matrix", (_req: express.Request, res: express.Response) => {
+  const { hasAnyLiveProviderConfigured, startupOk, startupStrictOk, prewarmOk, overall, overallStrict } =
+    refreshDefiHealthGauges();
+  const defaultReady = overall === "ok";
+  const strictReady = overallStrict === "ok";
+  const statusCode = defaultReady ? 200 : 503;
+  res.status(statusCode).json({
+    status: defaultReady ? "ready" : "not_ready",
+    defaultReady,
+    strictReady,
+    checks: {
+      liveConfig: hasAnyLiveProviderConfigured ? "ok" : "error",
+      startupSmoke: startupOk ? "ok" : "error",
+      startupSmokeStrict: startupStrictOk ? "ok" : "error",
+      prewarm: prewarmOk ? "ok" : "error",
+    },
+  });
+});
+
+app.get("/api/defi/prewarm-status", (_req: express.Request, res: express.Response) => {
+  syncPrewarmRecentWindow();
+  const statusCode = defiPrewarmStatus.lastRunStatus === "error" ? 503 : 200;
+  res.status(statusCode).json(defiPrewarmStatus);
+});
+
+app.post("/api/defi/prewarm/run", async (req: express.Request, res: express.Response) => {
+  const body = (req.body || {}) as Record<string, unknown>;
+  const force = body.force === true;
+  const assets = normalizePrewarmAssets(body.assets);
+  const kinds = normalizePrewarmKinds(body.kinds);
+
+  await runDefiPrewarmOnce({
+    force,
+    assets: assets.length > 0 ? assets : undefined,
+    kinds: kinds.length > 0 ? kinds : undefined,
+  });
+  const statusCode = defiPrewarmStatus.lastRunStatus === "error" ? 503 : 200;
+  res.status(statusCode).json(defiPrewarmStatus);
+});
+
 app.get("/api/defi/smoke/morpho-live", async (req: express.Request, res: express.Response) => {
   const startedAtMs = Date.now();
   if (!zigDefiEnabled()) {
@@ -575,17 +1329,7 @@ app.get("/api/defi/smoke/morpho-live", async (req: express.Request, res: express
   const limit = Math.max(1, Math.min(25, Math.trunc(queryNumber(req, "limit") ?? 5)));
   const expectSourceTransport = queryString(req, "expectSourceTransport") || "morpho_api";
 
-  const query: DefiPoolQuery = {
-    kind,
-    chain: "monad",
-    asset,
-    provider: "morpho",
-    liveMode: "live",
-    liveProvider: "auto",
-    limit,
-    order: "desc",
-    sortBy: "tvlUsd",
-  };
+  const query = buildMorphoLiveQuery({ kind, asset, limit });
 
   try {
     const parsed = await fetchParsedDefiPools(query);
@@ -1590,4 +2334,17 @@ app.post("/api/executions/:id/watch", async (req: express.Request, res: express.
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Dashboard listening on http://127.0.0.1:${PORT}`);
+  refreshDefiHealthGauges();
+  void runStartupDefiSmokeCheck()
+    .then(() => {
+      const status = startupSmokeStatus.status;
+      // eslint-disable-next-line no-console
+      console.log(`DeFi startup smoke status: ${status}`);
+    })
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.error(`DeFi startup smoke crashed: ${message}`);
+    });
+  scheduleDefiPrewarm();
 });

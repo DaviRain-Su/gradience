@@ -1464,6 +1464,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
+                    if (std.mem.eql(u8, field, "market_id")) {
+                        try obj.put("market_id", .{ .string = entry.market_id });
+                        continue;
+                    }
                     if (std.mem.eql(u8, field, "apy")) {
                         try obj.put("apy", .{ .float = entry.apy });
                         continue;
@@ -1781,6 +1785,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
+                    if (std.mem.eql(u8, field, "market_id")) {
+                        try obj.put("market_id", .{ .string = entry.market_id });
+                        continue;
+                    }
                     if (std.mem.eql(u8, field, "supply_apy")) {
                         try obj.put("supply_apy", .{ .float = entry.supply_apy });
                         continue;
@@ -1791,6 +1799,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     }
                     if (std.mem.eql(u8, field, "tvl_usd")) {
                         try obj.put("tvl_usd", .{ .float = entry.tvl_usd });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "utilization")) {
+                        try obj.put("utilization", .{ .float = entry.utilization });
                         continue;
                     }
                 }
@@ -1927,6 +1939,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         try obj.put("market", .{ .string = entry.market });
                         continue;
                     }
+                    if (std.mem.eql(u8, field, "marketId")) {
+                        try obj.put("marketId", .{ .string = entry.market_id });
+                        continue;
+                    }
                     if (std.mem.eql(u8, field, "supplyApy")) {
                         try obj.put("supplyApy", .{ .float = entry.supply_apy });
                         continue;
@@ -1937,6 +1953,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     }
                     if (std.mem.eql(u8, field, "tvlUsd")) {
                         try obj.put("tvlUsd", .{ .float = entry.tvl_usd });
+                        continue;
+                    }
+                    if (std.mem.eql(u8, field, "utilization")) {
+                        try obj.put("utilization", .{ .float = entry.utilization });
                         continue;
                     }
                 }
@@ -1962,8 +1982,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                         .asset = entry.asset,
                         .assetMatchedBy = entry.asset_matched_by,
                         .market = entry.market,
+                        .marketId = entry.market_id,
                         .supplyApy = entry.supply_apy,
                         .borrowApy = entry.borrow_apy,
+                        .utilization = entry.utilization,
                         .tvlUsd = entry.tvl_usd,
                     },
                 });
@@ -1979,8 +2001,10 @@ pub fn run(action: []const u8, allocator: std.mem.Allocator, params: std.json.Ob
                     .asset = entry.asset,
                     .assetMatchedBy = entry.asset_matched_by,
                     .market = entry.market,
+                    .marketId = entry.market_id,
                     .supplyApy = entry.supply_apy,
                     .borrowApy = entry.borrow_apy,
+                    .utilization = entry.utilization,
                     .tvlUsd = entry.tvl_usd,
                 });
             }
@@ -3059,6 +3083,7 @@ const yield_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "asset", .aliases = &.{"asset"} },
     .{ .canonical = "asset_matched_by", .aliases = &.{ "asset_matched_by", "assetMatchedBy" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "market_id", .aliases = &.{ "market_id", "marketId" } },
     .{ .canonical = "apy", .aliases = &.{"apy"} },
     .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
 };
@@ -3069,8 +3094,10 @@ const lend_markets_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "asset", .aliases = &.{"asset"} },
     .{ .canonical = "asset_matched_by", .aliases = &.{ "asset_matched_by", "assetMatchedBy" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "market_id", .aliases = &.{ "market_id", "marketId" } },
     .{ .canonical = "supply_apy", .aliases = &.{ "supply_apy", "supplyApy" } },
     .{ .canonical = "borrow_apy", .aliases = &.{ "borrow_apy", "borrowApy" } },
+    .{ .canonical = "utilization", .aliases = &.{ "utilization", "utilizationPct", "utilizationRate" } },
     .{ .canonical = "tvl_usd", .aliases = &.{ "tvl_usd", "tvlUsd" } },
 };
 
@@ -3080,8 +3107,10 @@ const lend_rates_select_aliases = [_]SelectAliasEntry{
     .{ .canonical = "asset", .aliases = &.{"asset"} },
     .{ .canonical = "assetMatchedBy", .aliases = &.{ "assetMatchedBy", "asset_matched_by" } },
     .{ .canonical = "market", .aliases = &.{"market"} },
+    .{ .canonical = "marketId", .aliases = &.{ "marketId", "market_id" } },
     .{ .canonical = "supplyApy", .aliases = &.{ "supplyApy", "supply_apy" } },
     .{ .canonical = "borrowApy", .aliases = &.{ "borrowApy", "borrow_apy" } },
+    .{ .canonical = "utilization", .aliases = &.{ "utilization", "utilizationPct", "utilizationRate" } },
     .{ .canonical = "tvlUsd", .aliases = &.{ "tvlUsd", "tvl_usd" } },
 };
 

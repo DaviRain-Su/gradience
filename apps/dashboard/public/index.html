@@ -264,6 +264,14 @@
         <button onclick="loadExecutions()">Refresh</button>
         <pre id="executionEvidence"></pre>
       </section>
+
+      <section>
+        <h2>DeFi Live Observability</h2>
+        <button onclick="loadDefiObservability()">Refresh</button>
+        <button onclick="runDefiPrewarmNow()">Run Prewarm</button>
+        <button onclick="copyDefiObservability()">Copy</button>
+        <pre id="defiObservability"></pre>
+      </section>
     </div>
 
     <script>
@@ -1145,6 +1153,93 @@
         const summaryElement = document.getElementById("executionSummary");
         summaryElement.textContent = JSON.stringify(filtered, null, 2);
         renderSummaryList(filtered);
+      }
+
+      async function loadDefiObservability() {
+        const output = {
+          fetchedAt: new Date().toISOString(),
+          ready: null,
+          readyMatrix: null,
+          health: null,
+          startupSmoke: null,
+          liveConfig: null,
+          prewarmStatus: null,
+          smokeMorphoLive: null,
+        };
+        try {
+          const readyRes = await apiFetch("/api/defi/ready");
+          output.ready = await readyRes.json();
+        } catch (error) {
+          output.ready = { status: "error", message: String(error) };
+        }
+
+        try {
+          const readyMatrixRes = await apiFetch("/api/defi/ready-matrix");
+          output.readyMatrix = await readyMatrixRes.json();
+        } catch (error) {
+          output.readyMatrix = { status: "error", message: String(error) };
+        }
+
+        try {
+          const healthRes = await apiFetch("/api/defi/health");
+          output.health = await healthRes.json();
+        } catch (error) {
+          output.health = { status: "error", message: String(error) };
+        }
+
+        try {
+          const startupRes = await apiFetch("/api/defi/startup-smoke-status");
+          output.startupSmoke = await startupRes.json();
+        } catch (error) {
+          output.startupSmoke = { status: "error", message: String(error) };
+        }
+
+        try {
+          const cfgRes = await apiFetch("/api/defi/live-config");
+          output.liveConfig = await cfgRes.json();
+        } catch (error) {
+          output.liveConfig = { status: "error", message: String(error) };
+        }
+
+        try {
+          const prewarmRes = await apiFetch("/api/defi/prewarm-status");
+          output.prewarmStatus = await prewarmRes.json();
+        } catch (error) {
+          output.prewarmStatus = { status: "error", message: String(error) };
+        }
+
+        try {
+          const smokeRes = await apiFetch("/api/defi/smoke/morpho-live?expectSourceTransport=morpho_api");
+          output.smokeMorphoLive = await smokeRes.json();
+        } catch (error) {
+          output.smokeMorphoLive = { status: "error", message: String(error) };
+        }
+
+        document.getElementById("defiObservability").textContent = JSON.stringify(output, null, 2);
+      }
+
+      async function runDefiPrewarmNow() {
+        try {
+          await apiFetch("/api/defi/prewarm/run", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ force: true }),
+          });
+        } catch {
+          // ignore
+        }
+        await loadDefiObservability();
+      }
+
+      async function copyDefiObservability() {
+        const el = document.getElementById("defiObservability");
+        const text = el.textContent || "";
+        if (!text.trim()) return;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          // ignore clipboard failures in dashboard
+        }
       }
 
       function renderSummaryList(summary) {
@@ -2170,6 +2265,7 @@
       loadApiHealthErrorsVisibility();
       loadApiSettingsVisibility();
       loadApiBaseHistory();
+      loadDefiObservability();
     </script>
   </body>
 </html>

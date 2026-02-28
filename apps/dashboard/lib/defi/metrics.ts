@@ -1,7 +1,7 @@
 type MetricLabels = Record<string, string>;
 
 type RequestMetricInput = {
-  endpoint: "list" | "detail" | "smoke";
+  endpoint: "list" | "detail" | "smoke" | "prewarm";
   kind: "yield" | "lend";
   status: "ok" | "error" | "not_found" | "disabled" | "invalid";
   errorType?: "none" | "upstream" | "validation" | "cursor_mismatch" | "cursor_expired" | "config";
@@ -28,6 +28,8 @@ type CacheAgeState = {
 const counters = new Map<string, number>();
 const durations = new Map<string, DurationState>();
 const cacheAgeByBackend = new Map<string, CacheAgeState>();
+const healthGauges = new Map<string, number>();
+const prewarmGauges = new Map<string, number>();
 const CACHE_AGE_BUCKETS_MS = [100, 500, 1_000, 5_000, 15_000, 60_000, 300_000];
 
 function labelsKey(labels: MetricLabels): string {
@@ -135,6 +137,30 @@ export function recordDefiCacheAge(ageMs: number, backend: "memory" | "redis"): 
   cacheAgeByBackend.set(key, current);
 }
 
+export function setDefiHealthGauge(
+  check: "live_config" | "startup_smoke" | "prewarm" | "overall" | "overall_strict",
+  status: "ok" | "error",
+): void {
+  const key = `gradience_defi_health_status|check=${check}`;
+  healthGauges.set(key, status === "ok" ? 1 : 0);
+}
+
+export function setDefiPrewarmGauge(name: string, value: number): void {
+  if (!Number.isFinite(value)) return;
+  const normalized = Math.max(0, value);
+  prewarmGauges.set(name, normalized);
+}
+
+export function recordDefiPrewarmAlertWebhookEvent(status: "sent" | "failed" | "suppressed"): void {
+  incrementCounter(
+    "gradience_defi_prewarm_alert_webhook_total",
+    {
+      status,
+    },
+    1,
+  );
+}
+
 function renderCounterMetric(name: string): string[] {
   const lines: string[] = [];
   for (const [key, value] of counters.entries()) {
@@ -192,6 +218,43 @@ export function renderDefiMetrics(): string {
     lines.push(`gradience_defi_cache_age_ms_bucket{backend="${backend}",le="+Inf"} ${cumulative}`);
     lines.push(`gradience_defi_cache_age_ms_sum{backend="${backend}"} ${formatFloat(state.sumMs)}`);
     lines.push(`gradience_defi_cache_age_ms_count{backend="${backend}"} ${state.count}`);
+  }
+
+  lines.push("# HELP gradience_defi_health_status DeFi health status by check (1=ok,0=error)");
+  lines.push("# TYPE gradience_defi_health_status gauge");
+  for (const [key, value] of healthGauges.entries()) {
+    const [metricName, labelsRaw] = key.split("|");
+    const labels = Object.fromEntries(
+      labelsRaw
+        .split(",")
+        .filter(Boolean)
+        .map((entry) => {
+          const [k, v] = entry.split("=");
+          return [k, v];
+        }),
+    );
+    lines.push(`${metricName}${labelsText(labels)} ${value}`);
+  }
+
+  lines.push("# HELP gradience_defi_prewarm_recent_success_rate Recent prewarm success rate in [0,1]");
+  lines.push("# TYPE gradience_defi_prewarm_recent_success_rate gauge");
+  lines.push("# HELP gradience_defi_prewarm_total_runs Total prewarm runs observed");
+  lines.push("# TYPE gradience_defi_prewarm_total_runs gauge");
+  lines.push("# HELP gradience_defi_prewarm_total_checks Total prewarm checks observed");
+  lines.push("# TYPE gradience_defi_prewarm_total_checks gauge");
+  lines.push("# HELP gradience_defi_prewarm_total_check_error Total prewarm check failures observed");
+  lines.push("# TYPE gradience_defi_prewarm_total_check_error gauge");
+  lines.push("# HELP gradience_defi_prewarm_consecutive_failure_runs Current consecutive prewarm failure runs");
+  lines.push("# TYPE gradience_defi_prewarm_consecutive_failure_runs gauge");
+  lines.push("# HELP gradience_defi_prewarm_max_consecutive_failure_runs Maximum observed consecutive prewarm failure runs");
+  lines.push("# TYPE gradience_defi_prewarm_max_consecutive_failure_runs gauge");
+  lines.push("# HELP gradience_defi_prewarm_alert_active Prewarm alert state (1=active,0=inactive)");
+  lines.push("# TYPE gradience_defi_prewarm_alert_active gauge");
+  lines.push("# HELP gradience_defi_prewarm_alert_webhook_total Prewarm alert webhook events by status");
+  lines.push("# TYPE gradience_defi_prewarm_alert_webhook_total counter");
+  lines.push(...renderCounterMetric("gradience_defi_prewarm_alert_webhook_total"));
+  for (const [name, value] of prewarmGauges.entries()) {
+    lines.push(`${name} ${formatFloat(value)}`);
   }
 
   lines.push("# HELP gradience_defi_request_duration_ms_sum Total DeFi request latency in milliseconds");

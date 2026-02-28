@@ -4,8 +4,10 @@ pub const LendMarket = struct {
     asset: []const u8,
     asset_matched_by: []const u8 = "exact",
     market: []const u8,
+    market_id: []const u8 = "",
     supply_apy: f64,
     borrow_apy: f64,
+    utilization: f64 = 0,
     tvl_usd: f64,
 };
 

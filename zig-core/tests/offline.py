@@ -151,6 +151,79 @@ def main() -> int:
     class LivePoolsHandler(BaseHTTPRequestHandler):
         request_count = 0
 
+        @staticmethod
+        def _llama_payload() -> JsonDict:
+            return {
+                "status": "success",
+                "data": [
+                    {
+                        "chain": "Monad",
+                        "project": "Morpho",
+                        "symbol": "USDC",
+                        "poolMeta": "Morpho Monad USDC live",
+                        "marketId": "0x" + "1" * 64,
+                        "apy": 6.2,
+                        "apyBase": 6.2,
+                        "apyBaseBorrow": 7.5,
+                        "utilization": 0.74,
+                        "tvlUsd": 151000000,
+                    },
+                    {
+                        "chain": "Monad",
+                        "project": "Morpho",
+                        "symbol": "BBQUSDC",
+                        "poolMeta": "Morpho Monad BBQUSDC live",
+                        "apy": 6.1,
+                        "apyBase": 6.1,
+                        "apyBaseBorrow": None,
+                        "tvlUsd": 8700000,
+                    },
+                    {
+                        "chain": "Ethereum",
+                        "project": "Aave",
+                        "symbol": "USDC",
+                        "poolMeta": "Aave Ethereum USDC live",
+                        "apy": 4.4,
+                        "apyBase": 4.4,
+                        "apyBaseBorrow": 5.2,
+                        "utilization": 0.79,
+                        "tvlUsd": 1900000000,
+                    },
+                    {
+                        "chain": "Solana",
+                        "project": "Kamino",
+                        "symbol": "USDC",
+                        "poolMeta": "Kamino Solana USDC live",
+                        "apy": 6.0,
+                        "apyBase": 6.0,
+                        "apyBaseBorrow": 7.2,
+                        "utilization": 0.62,
+                        "tvlUsd": 410000000,
+                    },
+                ],
+            }
+
+        @staticmethod
+        def _morpho_graphql_payload() -> JsonDict:
+            return {
+                "data": {
+                    "markets": {
+                        "items": [
+                            {
+                                "uniqueKey": "0x" + "2" * 64,
+                                "loanAsset": {"symbol": "USDC"},
+                                "state": {
+                                    "supplyApy": 0.0362,
+                                    "borrowApy": 0.0438,
+                                    "utilization": 0.68,
+                                    "supplyAssetsUsd": 13565006.72,
+                                },
+                            }
+                        ]
+                    }
+                }
+            }
+
         def do_GET(self) -> None:  # noqa: N802
             if self.path.startswith("/badjson"):
                 body = b"not-json"
@@ -166,121 +239,23 @@ def main() -> int:
                 self.end_headers()
                 return
             LivePoolsHandler.request_count += 1
-            payload = {
-                "status": "success",
-                "data": [
-                    {
-                        "chain": "Monad",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Monad USDC live",
-                        "apy": 6.2,
-                        "apyBase": 6.2,
-                        "apyBaseBorrow": 7.5,
-                        "tvlUsd": 151000000,
-                    },
-                    {
-                        "chain": "Monad",
-                        "project": "Morpho",
-                        "symbol": "BBQUSDC",
-                        "poolMeta": "Morpho Monad BBQUSDC live",
-                        "apy": 6.1,
-                        "apyBase": 6.1,
-                        "apyBaseBorrow": None,
-                        "tvlUsd": 8700000,
-                    },
-                    {
-                        "chain": "Arbitrum",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Arbitrum USDC live",
-                        "apy": 5.8,
-                        "apyBase": 5.8,
-                        "apyBaseBorrow": 6.9,
-                        "tvlUsd": 420000000,
-                    },
-                    {
-                        "chain": "Optimism",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Optimism USDC live",
-                        "apy": 5.4,
-                        "apyBase": 5.4,
-                        "apyBaseBorrow": 6.5,
-                        "tvlUsd": 280000000,
-                    },
-                    {
-                        "chain": "Polygon",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Polygon USDC live",
-                        "apy": 5.2,
-                        "apyBase": 5.2,
-                        "apyBaseBorrow": 6.3,
-                        "tvlUsd": 310000000,
-                    },
-                    {
-                        "chain": "BSC",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho BSC USDC live",
-                        "apy": 5.0,
-                        "apyBase": 5.0,
-                        "apyBaseBorrow": 6.1,
-                        "tvlUsd": 260000000,
-                    },
-                    {
-                        "chain": "Avalanche",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Avalanche USDC live",
-                        "apy": 4.9,
-                        "apyBase": 4.9,
-                        "apyBaseBorrow": 6.0,
-                        "tvlUsd": 190000000,
-                    },
-                    {
-                        "chain": "Linea",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho Linea USDC live",
-                        "apy": 5.1,
-                        "apyBase": 5.1,
-                        "apyBaseBorrow": 6.2,
-                        "tvlUsd": 170000000,
-                    },
-                    {
-                        "chain": "zksync-era",
-                        "project": "Morpho",
-                        "symbol": "USDC",
-                        "poolMeta": "Morpho zkSync USDC live",
-                        "apy": 5.3,
-                        "apyBase": 5.3,
-                        "apyBaseBorrow": 6.4,
-                        "tvlUsd": 160000000,
-                    },
-                    {
-                        "chain": "Ethereum",
-                        "project": "Aave",
-                        "symbol": "USDC",
-                        "poolMeta": "Aave Ethereum USDC live",
-                        "apy": 4.4,
-                        "apyBase": 4.4,
-                        "apyBaseBorrow": 5.2,
-                        "tvlUsd": 1900000000,
-                    },
-                    {
-                        "chain": "Solana",
-                        "project": "Kamino",
-                        "symbol": "USDC",
-                        "poolMeta": "Kamino Solana USDC live",
-                        "apy": 6.0,
-                        "apyBase": 6.0,
-                        "apyBaseBorrow": 7.2,
-                        "tvlUsd": 410000000,
-                    },
-                ],
-            }
+            payload = LivePoolsHandler._llama_payload()
+            body = json.dumps(payload).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self) -> None:  # noqa: N802
+            if not self.path.startswith("/graphql"):
+                self.send_response(404)
+                self.end_headers()
+                return
+            content_len = int(self.headers.get("Content-Length", "0"))
+            if content_len > 0:
+                _ = self.rfile.read(content_len)
+            payload = LivePoolsHandler._morpho_graphql_payload()
             body = json.dumps(payload).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -324,6 +299,8 @@ def main() -> int:
         assert yield_live_first.get("source") == "live"
         assert yield_live_first.get("sourceProvider") == "morpho"
         assert int(yield_live_first.get("fetchedAtUnix", 0)) > 0
+        first_yield_row = first_row(yield_live_first.get("opportunities", []))
+        assert isinstance(first_yield_row.get("market_id"), str)
         assert str(yield_live_first.get("sourceUrl", "")).startswith(
             "http://127.0.0.1:"
         )
@@ -362,6 +339,10 @@ def main() -> int:
         assert lend_rates_live_morpho_provider.get("status") == "ok"
         assert lend_rates_live_morpho_provider.get("source") in {"live", "cache"}
         assert lend_rates_live_morpho_provider.get("sourceProvider") == "morpho"
+        assert isinstance(lend_rates_live_morpho_provider.get("marketId"), str)
+        assert isinstance(
+            lend_rates_live_morpho_provider.get("utilization"), (int, float)
+        )
 
         lend_rates_live_aave_provider = run(
             {
@@ -423,6 +404,9 @@ def main() -> int:
 
         env_live_cache_no_morpho = env_live_cache.copy()
         env_live_cache_no_morpho.pop("DEFI_MORPHO_POOLS_URL", None)
+        env_live_cache_no_morpho["DEFI_MORPHO_API_URL"] = (
+            f"http://127.0.0.1:{port}/graphql"
+        )
 
         yield_live_morpho_missing_url = run(
             {
@@ -438,10 +422,10 @@ def main() -> int:
             },
             env_live_cache_no_morpho,
         )
-        assert_live_unavailable_error_context(
-            yield_live_morpho_missing_url,
-            expected_provider="morpho",
-            expected_transport="curl",
+        assert yield_live_morpho_missing_url.get("status") == "ok"
+        assert yield_live_morpho_missing_url.get("sourceProvider") == "morpho"
+        assert str(yield_live_morpho_missing_url.get("sourceUrl", "")).startswith(
+            f"http://127.0.0.1:{port}/graphql"
         )
 
         yield_auto_morpho_missing_url = run(
@@ -458,10 +442,10 @@ def main() -> int:
             },
             env_live_cache_no_morpho,
         )
-        assert_live_unavailable_error_context(
-            yield_auto_morpho_missing_url,
-            expected_provider="morpho",
-            expected_transport="curl",
+        assert yield_auto_morpho_missing_url.get("status") == "ok"
+        assert yield_auto_morpho_missing_url.get("sourceProvider") == "morpho"
+        assert str(yield_auto_morpho_missing_url.get("sourceUrl", "")).startswith(
+            f"http://127.0.0.1:{port}/graphql"
         )
 
         env_live_cache_no_kamino = env_live_cache.copy()
@@ -503,11 +487,14 @@ def main() -> int:
             },
             env_live_cache_no_morpho_zig,
         )
-        assert_live_unavailable_error_context(
-            yield_live_morpho_missing_url_zig_transport,
-            expected_provider="morpho",
-            expected_transport="zig",
+        assert yield_live_morpho_missing_url_zig_transport.get("status") == "ok"
+        assert (
+            yield_live_morpho_missing_url_zig_transport.get("sourceProvider")
+            == "morpho"
         )
+        assert str(
+            yield_live_morpho_missing_url_zig_transport.get("sourceUrl", "")
+        ).startswith(f"http://127.0.0.1:{port}/graphql")
 
         yield_auto_kamino_missing_url = run(
             {
@@ -628,7 +615,7 @@ def main() -> int:
                 12,
             ),
             (
-                "auto_morpho_missing_url",
+                "auto_morpho_api_fallback",
                 env_live_cache_no_morpho,
                 {
                     "action": "yieldOpportunities",
@@ -641,9 +628,9 @@ def main() -> int:
                         "limit": 1,
                     },
                 },
-                "error",
+                "ok",
+                "morpho",
                 None,
-                12,
             ),
             (
                 "auto_aave_missing_url",

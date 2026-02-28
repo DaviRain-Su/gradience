@@ -412,7 +412,7 @@ DeFi pool parsing API (Node dashboard server):
 Metrics endpoint (Prometheus text format):
 
 - `GET /api/defi/metrics`
-- Includes request counters by endpoint/kind/status/error_type, cache event counters, upstream error counters by code, upstream retry counters, request latency aggregates, and cache-age histogram
+- Includes request counters by endpoint/kind/status/error_type, cache event counters, upstream error counters by code, upstream retry counters, request latency aggregates, cache-age histogram, health gauges (`gradience_defi_health_status`, including `check=overall_strict`), prewarm gauges (`gradience_defi_prewarm_recent_success_rate`, totals, consecutive-failure gauges, alert-active gauge), and webhook event counter (`gradience_defi_prewarm_alert_webhook_total`)
 
 Live config preflight endpoint:
 
@@ -429,6 +429,41 @@ Morpho live smoke endpoint:
 - `GET /api/defi/smoke/morpho-live`
 - Runs a live check (`provider=morpho`, default `kind=lend`, `chain=monad`, `asset=USDC`) and returns source/caching metadata plus first market.
 - Query params: `kind=lend|yield`, `asset`, `limit` (max 25), `expectSourceTransport` (default `morpho_api`, returns `409` on mismatch).
+
+Startup smoke status endpoint:
+
+- `GET /api/defi/startup-smoke-status`
+- Reports startup-time Morpho live smoke result (`ok|error|skipped`) with details.
+
+DeFi health endpoint:
+
+- `GET /api/defi/health`
+- Aggregates live-config, startup-smoke, and prewarm checks into an overall `ok|degraded` status.
+
+DeFi readiness endpoint:
+
+- `GET /api/defi/ready`
+- Minimal readiness signal for automation (`ready|not_ready`) derived from DeFi health checks.
+- `DEFI_READY_STRICT=1` requires startup smoke to be explicitly `ok` (does not treat `skipped` as ready).
+- `?strict=1` on the request can override readiness strictness per call.
+
+DeFi readiness matrix endpoint:
+
+- `GET /api/defi/ready-matrix`
+- Returns both default and strict readiness booleans in one call.
+
+Prewarm endpoints:
+
+- `GET /api/defi/prewarm-status`
+- `POST /api/defi/prewarm/run`
+- Exposes/executes scheduled prewarm checks for configured Morpho live query matrix.
+- `prewarm-status` includes `nextRunAtIso` for scheduler visibility.
+- `prewarm-status` includes cumulative reliability stats (`totalRuns`, `totalChecks`, `totalCheckOk`, `totalCheckError`, `cumulativeSuccessRate`).
+- `prewarm-status` also includes recent-window reliability stats (`recentRuns`, `recentChecks`, `recentCheckOk`, `recentCheckError`, `recentSuccessRate`, `recentWindowSize`).
+- `prewarm-status` includes streak stats (`consecutiveFailureRuns`, `maxConsecutiveFailureRuns`).
+- `prewarm-status` includes alert hints (`alertThresholdRuns`, `alertActive`, `recommendedAlert`).
+- `prewarm-status` includes alert delivery state (`alertWebhookConfigured`, `alertLastTriggeredAtIso`, `alertLastWebhookStatus`, `alertLastWebhookError`, `alertSuppressedCount`).
+- `prewarm/run` accepts optional JSON body: `{ "force": true, "assets": ["USDC"], "kinds": ["lend", "yield"] }`.
 
 Example:
 
@@ -453,6 +488,19 @@ Parser cache controls:
 - `DEFI_POOL_CURSOR_TTL_SECONDS` (default `300`)
 - `DEFI_POOL_CURSOR_SECRET` (recommended in production; used to sign cursor tokens)
 - `DEFI_MORPHO_API_URL` (optional, defaults to `https://api.morpho.org/graphql`)
+- `DEFI_MORPHO_API_TTL_SECONDS` (optional; overrides Morpho API cache TTL)
+- `DEFI_MORPHO_API_RETRIES` (default `1`, max `5`)
+- `DEFI_MORPHO_API_RETRY_BACKOFF_MS` (default `200`)
+- `DEFI_STARTUP_SMOKE_ENABLED` (default `true`)
+- `DEFI_STARTUP_SMOKE_EXPECT_TRANSPORT` (default `morpho_api`)
+- `DEFI_PREWARM_ENABLED` (default `true`)
+- `DEFI_PREWARM_INTERVAL_SECONDS` (default `90`)
+- `DEFI_PREWARM_ASSETS` (default `USDC`, comma-separated)
+- `DEFI_PREWARM_KINDS` (default `lend`, comma-separated `lend|yield`)
+- `DEFI_PREWARM_STATS_WINDOW` (default `20` runs)
+- `DEFI_PREWARM_ALERT_THRESHOLD` (default `3` consecutive failing runs)
+- `DEFI_PREWARM_ALERT_COOLDOWN_SECONDS` (default `600`)
+- `DEFI_PREWARM_ALERT_WEBHOOK_URL` (optional webhook URL for alert notifications)
 
 Live-mode config guard:
 
@@ -463,6 +511,13 @@ FastAPI also proxies `GET /api/defi/metrics`.
 FastAPI also proxies `GET /api/defi/live-config`.
 FastAPI also proxies `GET /api/defi/live-plan`.
 FastAPI also proxies `GET /api/defi/smoke/morpho-live`.
+FastAPI also proxies `GET /api/defi/startup-smoke-status`.
+FastAPI also proxies `GET /api/defi/health`.
+FastAPI also proxies `GET /api/defi/ready`.
+FastAPI also proxies `GET /api/defi/ready-matrix`.
+FastAPI also proxies `GET /api/defi/prewarm-status` and `POST /api/defi/prewarm/run`.
+
+Dashboard UI includes a "DeFi Live Observability" panel that aggregates `ready`, `ready-matrix`, `health`, `startup-smoke-status`, `live-config`, `prewarm-status`, and `smoke/morpho-live` outputs.
 
 ## Execution CLI (primary)
 

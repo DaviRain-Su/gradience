@@ -209,6 +209,52 @@ async def defi_smoke_morpho_live(request: Request):
     return JSONResponse(status_code=status, content=body)
 
 
+@app.get("/api/defi/startup-smoke-status")
+async def defi_startup_smoke_status(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/startup-smoke-status", params)
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.get("/api/defi/health")
+async def defi_health(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/health", params)
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.get("/api/defi/ready")
+async def defi_ready(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/ready", params)
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.get("/api/defi/ready-matrix")
+async def defi_ready_matrix(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/ready-matrix", params)
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.get("/api/defi/prewarm-status")
+async def defi_prewarm_status(request: Request):
+    params = dict(request.query_params)
+    status, body = _proxy_get("/api/defi/prewarm-status", params)
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.post("/api/defi/prewarm/run")
+async def defi_prewarm_run(request: Request):
+    payload = (
+        await request.json()
+        if request.headers.get("content-type", "").startswith("application/json")
+        else {}
+    )
+    status, body = _proxy_post("/api/defi/prewarm/run", payload)
+    return JSONResponse(status_code=status, content=body)
+
+
 @app.get("/api/strategies")
 async def list_strategies():
     with _connect() as conn:
