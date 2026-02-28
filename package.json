@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
+    "redis": "^4.7.1",
     "sql.js": "^1.10.2"
   },
   "devDependencies": {

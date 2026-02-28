@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash, createHmac } from "node:crypto";
 import { compileStrategy } from "./lib/strategy/compiler.js";
 import { validateStrategy } from "./lib/strategy/validator.js";
 import { runStrategy } from "./lib/strategy/runner.js";
@@ -23,9 +24,25 @@ import {
   signAndSendTxRequest,
 } from "../execution/zig-executor.js";
 import type { SignerAdapter } from "../execution/signer-adapter.js";
+import {
+  type DefiPool,
+  type DefiPoolEntry,
+  fetchParsedDefiPools,
+  zigDefiEnabled,
+  type DefiPoolQuery,
+} from "./lib/defi/pool-parser.js";
+import {
+  recordDefiCacheAge,
+  recordDefiRequestMetric,
+  recordDefiUpstreamError,
+  recordDefiUpstreamRetries,
+  renderDefiMetrics,
+} from "./lib/defi/metrics.js";
 
 const app = express();
 const PORT = Number(process.env.DASHBOARD_PORT || 4173);
+const MAX_DEFI_POOL_FETCH_LIMIT = 5000;
+const CURRENT_CURSOR_VERSION = 1;
 const dbHandle = await openDb(process.env.STRATEGY_DB_PATH);
 const dashboardObserveOnly = process.env.DASHBOARD_OBSERVE_ONLY !== "0";
 const dashboardMutationApiEnabled = process.env.DASHBOARD_ENABLE_MUTATION_API === "1";
@@ -95,6 +112,270 @@ function isLocalExecuteRequest(req: express.Request): boolean {
   return isLoopbackAddress(remoteAddress) || isLoopbackAddress(ip);
 }
 
+function queryString(req: express.Request, key: string): string | undefined {
+  const value = req.query[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function queryNumber(req: express.Request, key: string): number | undefined {
+  const value = queryString(req, key);
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parsePoolsQuery(req: express.Request, defaults?: { limit?: number }): DefiPoolQuery {
+  const kind = queryString(req, "kind") === "lend" ? "lend" : "yield";
+  const chain = queryString(req, "chain");
+  const asset = queryString(req, "asset");
+  const provider = queryString(req, "provider");
+  const liveMode = queryString(req, "liveMode") || "auto";
+  const liveProvider = queryString(req, "liveProvider") || "auto";
+  const sortBy = queryString(req, "sortBy");
+  const order = queryString(req, "order") === "asc" ? "asc" : "desc";
+  const rawLimit = queryNumber(req, "limit");
+  const limit = Math.max(1, Math.min(MAX_DEFI_POOL_FETCH_LIMIT, Math.trunc(rawLimit ?? defaults?.limit ?? 100)));
+  const minTvlUsd = queryNumber(req, "minTvlUsd");
+  return {
+    kind,
+    chain,
+    asset,
+    provider,
+    liveMode,
+    liveProvider,
+    sortBy,
+    order,
+    limit,
+    minTvlUsd,
+  };
+}
+
+function poolsQuerySignature(query: DefiPoolQuery): string {
+  const payload = JSON.stringify({
+    kind: query.kind,
+    chain: query.chain || null,
+    asset: query.asset || null,
+    provider: query.provider || null,
+    minTvlUsd: query.minTvlUsd ?? null,
+    liveMode: query.liveMode || "auto",
+    liveProvider: query.liveProvider || "auto",
+    sortBy: query.sortBy || null,
+    order: query.order || "desc",
+  });
+  return createHash("sha256").update(payload).digest("hex").slice(0, 24);
+}
+
+function parsePageSize(req: express.Request, fallback = 50): number {
+  const raw = queryNumber(req, "pageSize");
+  const value = raw ?? fallback;
+  return Math.max(1, Math.min(500, Math.trunc(value)));
+}
+
+function cursorTtlSeconds(): number {
+  const parsed = Number(process.env.DEFI_POOL_CURSOR_TTL_SECONDS || 300);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 300;
+  return Math.max(30, Math.trunc(parsed));
+}
+
+function cursorSecret(): string {
+  const configured = String(process.env.DEFI_POOL_CURSOR_SECRET || "").trim();
+  if (configured) return configured;
+  return "gradience-cursor-dev-secret";
+}
+
+function cursorPayloadString(payload: { o: number; q: string; p: number; i: number }): string {
+  return JSON.stringify(payload);
+}
+
+function cursorMacV0(payload: { o: number; q: string; p: number; i: number }): string {
+  return createHmac("sha256", cursorSecret()).update(cursorPayloadString(payload)).digest("hex");
+}
+
+function cursorPayloadStringV1(payload: { v: number; o: number; q: string; p: number; i: number }): string {
+  return JSON.stringify(payload);
+}
+
+function cursorMacV1(payload: { v: number; o: number; q: string; p: number; i: number }): string {
+  return createHmac("sha256", cursorSecret()).update(cursorPayloadStringV1(payload)).digest("hex");
+}
+
+function encodeCursor(offset: number, signature: string, pageSize: number): string {
+  const payload = { v: CURRENT_CURSOR_VERSION, o: offset, q: signature, p: pageSize, i: Date.now() };
+  const token = JSON.stringify({ ...payload, m: cursorMacV1(payload) });
+  return Buffer.from(token).toString("base64url");
+}
+
+function decodeCursor(
+  token: string,
+): { offset: number; signature: string; pageSize: number; issuedAtMs: number; version: number } | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(token, "base64url").toString("utf8")) as {
+      v?: unknown;
+      o?: unknown;
+      q?: unknown;
+      p?: unknown;
+      i?: unknown;
+      m?: unknown;
+    };
+    const version = Number(parsed.v ?? 0);
+    const offset = Number(parsed.o);
+    const signature = typeof parsed.q === "string" ? parsed.q : "";
+    const pageSize = Number(parsed.p);
+    const issuedAtMs = Number(parsed.i);
+    const mac = typeof parsed.m === "string" ? parsed.m : "";
+    if (!Number.isFinite(version) || version < 0) return null;
+    if (!Number.isFinite(offset) || offset < 0) return null;
+    if (!signature) return null;
+    if (!Number.isFinite(pageSize) || pageSize <= 0) return null;
+    if (!Number.isFinite(issuedAtMs) || issuedAtMs <= 0) return null;
+
+    const normalizedVersion = Math.trunc(version);
+    const o = Math.trunc(offset);
+    const p = Math.trunc(pageSize);
+    const i = Math.trunc(issuedAtMs);
+
+    if (normalizedVersion === 0) {
+      const payloadV0 = { o, q: signature, p, i };
+      if (mac !== cursorMacV0(payloadV0)) return null;
+    } else if (normalizedVersion === 1) {
+      const payloadV1 = { v: normalizedVersion, o, q: signature, p, i };
+      if (mac !== cursorMacV1(payloadV1)) return null;
+    } else {
+      return null;
+    }
+
+    return {
+      offset: o,
+      signature,
+      pageSize: p,
+      issuedAtMs: i,
+      version: normalizedVersion,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isCursorExpired(cursor: { issuedAtMs: number }): boolean {
+  const ttlMs = cursorTtlSeconds() * 1000;
+  return Date.now() - cursor.issuedAtMs > ttlMs;
+}
+
+function compareNullableNumber(a: number | null | undefined, b: number | null | undefined, order: "asc" | "desc"): number {
+  const av = a ?? (order === "asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+  const bv = b ?? (order === "asc" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+  return order === "asc" ? av - bv : bv - av;
+}
+
+function compareNullableString(a: string | null | undefined, b: string | null | undefined, order: "asc" | "desc"): number {
+  const av = (a || "").toLowerCase();
+  const bv = (b || "").toLowerCase();
+  if (av === bv) return 0;
+  const result = av < bv ? -1 : 1;
+  return order === "asc" ? result : -result;
+}
+
+function applyLocalPoolSort(pools: DefiPool[], sortBy: string | undefined, order: "asc" | "desc" | undefined): DefiPool[] {
+  const normalizedOrder = order === "asc" ? "asc" : "desc";
+  const key = String(sortBy || "apyPct").trim();
+  const sorted = [...pools].sort((left, right) => {
+    let result = 0;
+    if (key === "tvlUsd") {
+      result = compareNullableNumber(left.tvlUsd, right.tvlUsd, normalizedOrder);
+    } else if (key === "apyPct") {
+      result = compareNullableNumber(left.apyPct, right.apyPct, normalizedOrder);
+    } else if (key === "baseApyPct") {
+      result = compareNullableNumber(left.baseApyPct, right.baseApyPct, normalizedOrder);
+    } else if (key === "rewardApyPct") {
+      result = compareNullableNumber(left.rewardApyPct, right.rewardApyPct, normalizedOrder);
+    } else if (key === "borrowApyPct") {
+      result = compareNullableNumber(left.borrowApyPct, right.borrowApyPct, normalizedOrder);
+    } else if (key === "utilizationPct") {
+      result = compareNullableNumber(left.utilizationPct, right.utilizationPct, normalizedOrder);
+    } else if (key === "fetchedAtUnix") {
+      result = compareNullableNumber(left.fetchedAtUnix, right.fetchedAtUnix, normalizedOrder);
+    } else if (key === "provider") {
+      result = compareNullableString(left.provider, right.provider, normalizedOrder);
+    } else if (key === "chain") {
+      result = compareNullableString(left.chain, right.chain, normalizedOrder);
+    } else if (key === "asset") {
+      result = compareNullableString(left.asset, right.asset, normalizedOrder);
+    } else {
+      result = compareNullableNumber(left.apyPct, right.apyPct, normalizedOrder);
+    }
+    if (result !== 0) return result;
+    return compareNullableString(left.id, right.id, "asc");
+  });
+  return sorted;
+}
+
+function sortPoolEntries(
+  entries: DefiPoolEntry[],
+  sortBy: string | undefined,
+  order: "asc" | "desc" | undefined,
+): DefiPoolEntry[] {
+  const sortedPools = applyLocalPoolSort(
+    entries.map((entry) => entry.pool),
+    sortBy,
+    order,
+  );
+  const queueByPoolId = new Map<string, DefiPoolEntry[]>();
+  for (const entry of entries) {
+    const key = entry.pool.id;
+    const queue = queueByPoolId.get(key) || [];
+    queue.push(entry);
+    queueByPoolId.set(key, queue);
+  }
+  const sortedEntries: DefiPoolEntry[] = [];
+  for (const pool of sortedPools) {
+    const queue = queueByPoolId.get(pool.id);
+    if (!queue || queue.length === 0) continue;
+    const next = queue.shift();
+    if (next) sortedEntries.push(next);
+  }
+  return sortedEntries;
+}
+
+function parseDiagnosticsSelection(req: express.Request): {
+  includeDiagnostics: boolean;
+  includeFieldMapping: boolean;
+  includeRaw: boolean;
+} {
+  const includeDiagnostics = queryString(req, "includeDiagnostics") === "1";
+  if (!includeDiagnostics) {
+    return {
+      includeDiagnostics: false,
+      includeFieldMapping: false,
+      includeRaw: false,
+    };
+  }
+
+  const rawFields = queryString(req, "diagnosticsFields") || "fieldMapping";
+  const fields = new Set(
+    rawFields
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+
+  const includeRawFromLegacy = queryString(req, "includeRaw") === "1";
+  return {
+    includeDiagnostics: true,
+    includeFieldMapping: fields.has("fieldMapping") || fields.size === 0,
+    includeRaw: includeRawFromLegacy || fields.has("raw"),
+  };
+}
+
+function metricDurationMs(startedAtMs: number): number {
+  return Date.now() - startedAtMs;
+}
+
+function extractUpstreamErrorCode(message: string): string {
+  const match = /\(code=(\d+)\)/.exec(message);
+  if (!match) return "unknown";
+  return match[1] || "unknown";
+}
+
 app.use(express.json());
 app.use("/", express.static(path.join(__dirname, "public")));
 app.use("/api", (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -157,6 +438,320 @@ app.get("/api/runtime/capabilities", (_req: express.Request, res: express.Respon
 
 app.get("/api/templates", (_req: express.Request, res: express.Response) => {
   res.json({ status: "ok", templates: STRATEGY_TEMPLATES });
+});
+
+app.get("/api/defi/metrics", (_req: express.Request, res: express.Response) => {
+  res.type("text/plain; version=0.0.4; charset=utf-8").send(renderDefiMetrics());
+});
+
+app.get("/api/defi/pools", async (req: express.Request, res: express.Response) => {
+  const startedAtMs = Date.now();
+  const requestedKind = queryString(req, "kind") === "lend" ? "lend" : "yield";
+  if (!zigDefiEnabled()) {
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: requestedKind,
+      status: "disabled",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(503).json({
+      status: "disabled",
+      message: "DeFi pool parsing requires zig core; set MONAD_USE_ZIG_CORE=1",
+    });
+    return;
+  }
+
+  const cursorRaw = queryString(req, "cursor");
+  const pageSize = parsePageSize(req, 50);
+  const diagnosticsSelection = parseDiagnosticsSelection(req);
+  const parsedCursor = cursorRaw ? decodeCursor(cursorRaw) : null;
+  if (cursorRaw && !parsedCursor) {
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: requestedKind,
+      status: "invalid",
+      errorType: "validation",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(400).json({
+      status: "invalid",
+      message: "invalid cursor",
+      expectedCursorVersion: CURRENT_CURSOR_VERSION,
+    });
+    return;
+  }
+  if (parsedCursor && isCursorExpired(parsedCursor)) {
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: requestedKind,
+      status: "invalid",
+      errorType: "cursor_expired",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(400).json({
+      status: "invalid",
+      message: "cursor expired",
+      cursorTtlSeconds: cursorTtlSeconds(),
+    });
+    return;
+  }
+  if (parsedCursor && parsedCursor.pageSize !== pageSize) {
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: requestedKind,
+      status: "invalid",
+      errorType: "validation",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(400).json({
+      status: "invalid",
+      message: "cursor pageSize does not match requested pageSize",
+    });
+    return;
+  }
+
+  const offset = parsedCursor?.offset || 0;
+  const baseQuery = parsePoolsQuery(req, { limit: Math.max(100, pageSize) });
+  const signature = poolsQuerySignature(baseQuery);
+  if (parsedCursor && parsedCursor.signature !== signature) {
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: baseQuery.kind,
+      status: "invalid",
+      errorType: "cursor_mismatch",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(400).json({ status: "invalid", message: "cursor does not match current query" });
+    return;
+  }
+
+  const poolQuery: DefiPoolQuery = {
+    ...baseQuery,
+    limit: Math.max(baseQuery.limit, Math.min(MAX_DEFI_POOL_FETCH_LIMIT, offset + pageSize)),
+  };
+
+  try {
+    const parsed = await fetchParsedDefiPools(poolQuery);
+    const sortedEntries = sortPoolEntries(parsed.entries, poolQuery.sortBy, poolQuery.order);
+    const pagedEntries = sortedEntries.slice(offset, offset + pageSize);
+    const pagedPools = pagedEntries.map((entry) => entry.pool);
+    const hasMore = sortedEntries.length > offset + pageSize;
+    const truncatedByLimit = parsed.pools.length >= poolQuery.limit && poolQuery.limit >= MAX_DEFI_POOL_FETCH_LIMIT;
+    const exhausted = !hasMore && !truncatedByLimit;
+    const nextCursor = hasMore ? encodeCursor(offset + pageSize, signature, pageSize) : null;
+
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: poolQuery.kind,
+      status: "ok",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+      cache: {
+        backend: parsed.cache.backend,
+        hit: parsed.cache.hit,
+        stale: parsed.cache.stale,
+      },
+    });
+    recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+    recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+
+    res.json({
+      status: "ok",
+      query: {
+        kind: poolQuery.kind,
+        chain: poolQuery.chain || null,
+        asset: poolQuery.asset || null,
+        provider: poolQuery.provider || null,
+        limit: poolQuery.limit,
+        minTvlUsd: poolQuery.minTvlUsd ?? null,
+        liveMode: poolQuery.liveMode,
+        liveProvider: poolQuery.liveProvider,
+        sortBy: poolQuery.sortBy || null,
+        order: poolQuery.order,
+      },
+      pagination: {
+        pageSize,
+        offset,
+        totalAvailable: sortedEntries.length,
+        totalReturned: pagedPools.length,
+        exhausted,
+        truncatedByLimit,
+        querySignature: signature,
+        cursorVersion: CURRENT_CURSOR_VERSION,
+        cursorTtlSeconds: cursorTtlSeconds(),
+        nextCursor,
+      },
+      source: parsed.source,
+      sourceProvider: parsed.sourceProvider,
+      fetchedAtUnix: parsed.fetchedAtUnix,
+      cache: parsed.cache,
+      rawCount: parsed.rawCount,
+      pools: pagedPools,
+      diagnostics: diagnosticsSelection.includeDiagnostics
+        ? pagedEntries.map((entry) => ({
+            id: entry.pool.id,
+            fieldMapping: diagnosticsSelection.includeFieldMapping ? entry.fieldMapping : undefined,
+            raw: diagnosticsSelection.includeRaw ? entry.raw : undefined,
+          }))
+        : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const upstreamCode = extractUpstreamErrorCode(message);
+    recordDefiRequestMetric({
+      endpoint: "list",
+      kind: poolQuery.kind,
+      status: "error",
+      errorType: "upstream",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    recordDefiUpstreamError(upstreamCode);
+    res.status(502).json({ status: "error", message });
+  }
+});
+
+app.get("/api/defi/pools/:id", async (req: express.Request, res: express.Response) => {
+  const startedAtMs = Date.now();
+  const requestedKind = queryString(req, "kind") === "lend" ? "lend" : "yield";
+  if (!zigDefiEnabled()) {
+    recordDefiRequestMetric({
+      endpoint: "detail",
+      kind: requestedKind,
+      status: "disabled",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(503).json({
+      status: "disabled",
+      message: "DeFi pool parsing requires zig core; set MONAD_USE_ZIG_CORE=1",
+    });
+    return;
+  }
+
+  const poolId = String(req.params.id || "").trim();
+  if (!poolId) {
+    recordDefiRequestMetric({
+      endpoint: "detail",
+      kind: requestedKind,
+      status: "invalid",
+      errorType: "validation",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    res.status(400).json({ status: "invalid", message: "pool id is required" });
+    return;
+  }
+
+  const deepSearchEnabled = queryString(req, "deepSearch") !== "0";
+  const poolQuery = parsePoolsQuery(req, { limit: 2000 });
+
+  try {
+    const primary = await fetchParsedDefiPools(poolQuery);
+    let parsed = primary;
+    let entry = parsed.entries.find((item) => item.pool.id.toLowerCase() === poolId.toLowerCase());
+    let escalatedSearch = false;
+    let initialLimit = poolQuery.limit;
+    let finalLimit = poolQuery.limit;
+
+    if (!entry && deepSearchEnabled && poolQuery.limit < MAX_DEFI_POOL_FETCH_LIMIT) {
+      const expandedQuery: DefiPoolQuery = {
+        ...poolQuery,
+        limit: MAX_DEFI_POOL_FETCH_LIMIT,
+      };
+      parsed = await fetchParsedDefiPools(expandedQuery);
+      entry = parsed.entries.find((item) => item.pool.id.toLowerCase() === poolId.toLowerCase());
+      escalatedSearch = true;
+      finalLimit = expandedQuery.limit;
+    }
+
+    if (!entry) {
+      recordDefiRequestMetric({
+        endpoint: "detail",
+        kind: poolQuery.kind,
+        status: "not_found",
+        errorType: "none",
+        durationMs: metricDurationMs(startedAtMs),
+        cache: {
+          backend: parsed.cache.backend,
+          hit: parsed.cache.hit,
+          stale: parsed.cache.stale,
+        },
+      });
+      recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+      recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+      res.status(404).json({
+        status: "not_found",
+        message: `pool not found in current result set: ${poolId}`,
+        query: {
+          kind: poolQuery.kind,
+          chain: poolQuery.chain || null,
+          asset: poolQuery.asset || null,
+          provider: poolQuery.provider || null,
+          limit: poolQuery.limit,
+          minTvlUsd: poolQuery.minTvlUsd ?? null,
+          liveMode: poolQuery.liveMode,
+          liveProvider: poolQuery.liveProvider,
+          sortBy: poolQuery.sortBy || null,
+          order: poolQuery.order,
+        },
+        lookup: {
+          deepSearchEnabled,
+          escalatedSearch,
+          initialLimit,
+          finalLimit,
+          searchedLimit: parsed.pools.length,
+        },
+        rawCount: parsed.rawCount,
+      });
+      return;
+    }
+
+    recordDefiRequestMetric({
+      endpoint: "detail",
+      kind: poolQuery.kind,
+      status: "ok",
+      errorType: "none",
+      durationMs: metricDurationMs(startedAtMs),
+      cache: {
+        backend: parsed.cache.backend,
+        hit: parsed.cache.hit,
+        stale: parsed.cache.stale,
+      },
+    });
+    recordDefiUpstreamRetries(parsed.cache.retryCount, parsed.cache.backend);
+    recordDefiCacheAge(parsed.cache.ageMs, parsed.cache.backend);
+
+    res.json({
+      status: "ok",
+      pool: entry.pool,
+      diagnostics: {
+        fieldMapping: entry.fieldMapping,
+        raw: entry.raw,
+      },
+      source: parsed.source,
+      sourceProvider: parsed.sourceProvider,
+      fetchedAtUnix: parsed.fetchedAtUnix,
+      cache: parsed.cache,
+      lookupTrace: {
+        deepSearchEnabled,
+        escalatedSearch,
+        initialLimit,
+        finalLimit,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const upstreamCode = extractUpstreamErrorCode(message);
+    recordDefiRequestMetric({
+      endpoint: "detail",
+      kind: poolQuery.kind,
+      status: "error",
+      errorType: "upstream",
+      durationMs: metricDurationMs(startedAtMs),
+    });
+    recordDefiUpstreamError(upstreamCode);
+    res.status(502).json({ status: "error", message });
+  }
 });
 
 app.get("/api/strategies", (_req: express.Request, res: express.Response) => {

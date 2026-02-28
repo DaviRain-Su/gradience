@@ -388,6 +388,56 @@ npm run dashboard:dev:mutate
 
 Open `http://127.0.0.1:4173` to view strategies and execution logs.
 
+DeFi pool parsing API (Node dashboard server):
+
+- `GET /api/defi/pools`
+- `GET /api/defi/pools/:id`
+- Query params: `kind=yield|lend`, `chain`, `asset`, `provider`, `limit`, `minTvlUsd`, `liveMode`, `liveProvider`, `sortBy`, `order`
+- Pagination query params: `pageSize`, `cursor` (opaque token returned in response)
+- `cursor` is bound to query signature + `pageSize`, and expires by TTL
+- Optional response controls: `includeDiagnostics=1`; `diagnosticsFields=fieldMapping,raw` (whitelist fields to include); `includeRaw=1` remains supported for backward compatibility
+- Detail query param: `deepSearch=0|1` (default `1`, escalates lookup window up to server max)
+- Returns normalized pool rows (`id`, `provider`, `chain`, `asset`, `tvlUsd`, APY fields, utilization, source metadata)
+- Generated `id` is stable when provider rows do not include a native pool id (`yield_<hash>` / `lend_<hash>`)
+- Detail endpoint includes `diagnostics.fieldMapping` + `diagnostics.raw` to inspect raw provider fields mapped into normalized output
+- Detail endpoint includes `lookupTrace` (`deepSearchEnabled`, `escalatedSearch`, `initialLimit`, `finalLimit`)
+- Response includes parser cache metadata under `cache` (`hit`, `stale`, `ttlSeconds`, `ageMs`, `backend`, `retryCount`)
+- Response includes pagination metadata (`pageSize`, `offset`, `totalAvailable`, `totalReturned`, `exhausted`, `truncatedByLimit`, `querySignature`, `nextCursor`)
+- Pagination metadata also includes `cursorVersion` and `cursorTtlSeconds`
+- Server max fetch window for one query is `5000` rows (`limit` is capped)
+- Server applies local stable sort fallback (`sortBy` + `order`) before slicing pages
+
+Metrics endpoint (Prometheus text format):
+
+- `GET /api/defi/metrics`
+- Includes request counters by endpoint/kind/status/error_type, cache event counters, upstream error counters by code, upstream retry counters, request latency aggregates, and cache-age histogram
+
+Example:
+
+```bash
+curl "http://127.0.0.1:4173/api/defi/pools?kind=yield&chain=monad&asset=USDC&provider=morpho&liveMode=auto&liveProvider=auto&limit=5"
+```
+
+Example detail lookup:
+
+Use an `id` returned by the list endpoint, then call `GET /api/defi/pools/:id`.
+
+Parser cache controls:
+
+- `DEFI_POOL_PARSER_TTL_SECONDS` (default `20`)
+- `DEFI_POOL_PARSER_ALLOW_STALE` (default `true`)
+- `DEFI_POOL_CACHE_BACKEND` (`memory` default, optional `redis`)
+- `DEFI_POOL_REDIS_URL` (required when backend is `redis`)
+- `DEFI_POOL_REDIS_PREFIX` (default `defi-pool-parser`)
+- `DEFI_POOL_PARSER_STALE_TTL_SECONDS` (optional stale-cache retention for redis)
+- `DEFI_POOL_PARSER_UPSTREAM_RETRIES` (default `1`)
+- `DEFI_POOL_PARSER_RETRY_BACKOFF_MS` (default `250`)
+- `DEFI_POOL_CURSOR_TTL_SECONDS` (default `300`)
+- `DEFI_POOL_CURSOR_SECRET` (recommended in production; used to sign cursor tokens)
+
+FastAPI also proxies both endpoints: `GET /api/defi/pools` and `GET /api/defi/pools/:id`.
+FastAPI also proxies `GET /api/defi/metrics`.
+
 ## Execution CLI (primary)
 
 Use the execution CLI for real transaction flow (build -> sign -> send):
