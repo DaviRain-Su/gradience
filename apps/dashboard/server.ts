@@ -377,15 +377,79 @@ function extractUpstreamErrorCode(message: string): string {
 }
 
 function isMorphoLiveConfigError(message: string): boolean {
-  return message.includes("DEFI_MORPHO_POOLS_URL is unset");
+  return message.includes("no source is configured") || message.includes("DEFI_MORPHO_POOLS_URL is unset");
 }
 
 function liveConfigSnapshot() {
+  const morphoPoolsUrl = String(process.env.DEFI_MORPHO_POOLS_URL || "").trim();
+  const morphoApiUrl = String(process.env.DEFI_MORPHO_API_URL || "https://api.morpho.org/graphql").trim();
   return {
     morpho: {
-      envKey: "DEFI_MORPHO_POOLS_URL",
-      configured: Boolean(String(process.env.DEFI_MORPHO_POOLS_URL || "").trim()),
+      envKey: "DEFI_MORPHO_POOLS_URL|DEFI_MORPHO_API_URL",
+      configured: Boolean(morphoPoolsUrl || morphoApiUrl),
+      source: morphoPoolsUrl ? "direct_url" : "morpho_api",
+      endpoint: morphoPoolsUrl || morphoApiUrl || null,
     },
+    aave: {
+      envKey: "DEFI_AAVE_POOLS_URL",
+      configured: Boolean(String(process.env.DEFI_AAVE_POOLS_URL || "").trim()),
+    },
+    kamino: {
+      envKey: "DEFI_KAMINO_POOLS_URL",
+      configured: Boolean(String(process.env.DEFI_KAMINO_POOLS_URL || "").trim()),
+    },
+  };
+}
+
+function canonicalDirectProvider(value: string | undefined): "morpho" | "aave" | "kamino" | null {
+  const v = String(value || "").trim().toLowerCase();
+  if (v.includes("morpho")) return "morpho";
+  if (v.includes("aave")) return "aave";
+  if (v.includes("kamino")) return "kamino";
+  return null;
+}
+
+function resolveEffectiveDirectProvider(poolQuery: DefiPoolQuery): "morpho" | "aave" | "kamino" | null {
+  const requestedLiveProvider = String(poolQuery.liveProvider || "auto").trim().toLowerCase();
+  if (requestedLiveProvider && requestedLiveProvider !== "auto") {
+    return canonicalDirectProvider(requestedLiveProvider);
+  }
+
+  const providerHint = canonicalDirectProvider(poolQuery.provider || undefined);
+  if (providerHint) return providerHint;
+
+  const cfg = liveConfigSnapshot();
+  if (cfg.morpho.configured) return "morpho";
+  if (cfg.aave.configured) return "aave";
+  if (cfg.kamino.configured) return "kamino";
+  return null;
+}
+
+function livePlan(poolQuery: DefiPoolQuery) {
+  const cfg = liveConfigSnapshot();
+  const requestedLiveMode = String(poolQuery.liveMode || "auto").trim().toLowerCase() || "auto";
+  const requestedLiveProvider = String(poolQuery.liveProvider || "auto").trim().toLowerCase() || "auto";
+  const effectiveProvider = resolveEffectiveDirectProvider(poolQuery);
+  const envByProvider = {
+    morpho: cfg.morpho,
+    aave: cfg.aave,
+    kamino: cfg.kamino,
+  };
+  const requiredEnvKey = effectiveProvider ? envByProvider[effectiveProvider].envKey : null;
+  const readyForLive =
+    requestedLiveMode !== "live"
+      ? true
+      : effectiveProvider
+        ? envByProvider[effectiveProvider].configured
+        : false;
+
+  return {
+    requestedLiveMode,
+    requestedLiveProvider,
+    effectiveProvider,
+    requiredEnvKey,
+    readyForLive,
+    config: cfg,
   };
 }
 
@@ -459,15 +523,35 @@ app.get("/api/defi/metrics", (_req: express.Request, res: express.Response) => {
 
 app.get("/api/defi/live-config", (_req: express.Request, res: express.Response) => {
   const config = liveConfigSnapshot();
-  const ok = config.morpho.configured;
+  const ok = config.morpho.configured || config.aave.configured || config.kamino.configured;
   res.status(ok ? 200 : 503).json({
     status: ok ? "ok" : "incomplete",
     config,
     hints: ok
       ? []
       : [
-          "set DEFI_MORPHO_POOLS_URL to enable morpho live provider",
-          "or use liveProvider=defillama for immediate live testing",
+          "set DEFI_MORPHO_POOLS_URL or DEFI_MORPHO_API_URL to enable morpho live provider",
+          "or force another provider with liveProvider=morpho|aave|kamino",
+        ],
+  });
+});
+
+app.get("/api/defi/live-plan", (req: express.Request, res: express.Response) => {
+  const poolQuery = parsePoolsQuery(req, { limit: 5 });
+  const plan = livePlan(poolQuery);
+  res.status(plan.readyForLive ? 200 : 503).json({
+    status: plan.readyForLive ? "ok" : "incomplete",
+    query: {
+      provider: poolQuery.provider || null,
+      liveMode: poolQuery.liveMode || null,
+      liveProvider: poolQuery.liveProvider || null,
+    },
+    plan,
+    hints: plan.readyForLive
+      ? []
+      : [
+          `set ${plan.requiredEnvKey || "a direct provider URL env"} for current live selection`,
+          "or force another provider with liveProvider=morpho|aave|kamino",
         ],
   });
 });
@@ -612,6 +696,8 @@ app.get("/api/defi/pools", async (req: express.Request, res: express.Response) =
       },
       source: parsed.source,
       sourceProvider: parsed.sourceProvider,
+      sourceUrl: parsed.sourceUrl,
+      sourceTransport: parsed.sourceTransport,
       fetchedAtUnix: parsed.fetchedAtUnix,
       cache: parsed.cache,
       rawCount: parsed.rawCount,
@@ -627,6 +713,7 @@ app.get("/api/defi/pools", async (req: express.Request, res: express.Response) =
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (isMorphoLiveConfigError(message)) {
+      const plan = livePlan(poolQuery);
       recordDefiRequestMetric({
         endpoint: "list",
         kind: poolQuery.kind,
@@ -637,10 +724,10 @@ app.get("/api/defi/pools", async (req: express.Request, res: express.Response) =
       res.status(400).json({
         status: "invalid_config",
         message,
-        config: liveConfigSnapshot(),
+        plan,
         hints: [
-          "set DEFI_MORPHO_POOLS_URL for morpho live provider",
-          "or set liveProvider=defillama for temporary testing",
+          `set ${plan.requiredEnvKey || "DEFI_MORPHO_POOLS_URL"} for current live provider`,
+          "or set liveProvider=morpho|aave|kamino explicitly",
         ],
       });
       return;
@@ -777,6 +864,8 @@ app.get("/api/defi/pools/:id", async (req: express.Request, res: express.Respons
       },
       source: parsed.source,
       sourceProvider: parsed.sourceProvider,
+      sourceUrl: parsed.sourceUrl,
+      sourceTransport: parsed.sourceTransport,
       fetchedAtUnix: parsed.fetchedAtUnix,
       cache: parsed.cache,
       lookupTrace: {
@@ -789,6 +878,7 @@ app.get("/api/defi/pools/:id", async (req: express.Request, res: express.Respons
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (isMorphoLiveConfigError(message)) {
+      const plan = livePlan(poolQuery);
       recordDefiRequestMetric({
         endpoint: "detail",
         kind: poolQuery.kind,
@@ -799,10 +889,10 @@ app.get("/api/defi/pools/:id", async (req: express.Request, res: express.Respons
       res.status(400).json({
         status: "invalid_config",
         message,
-        config: liveConfigSnapshot(),
+        plan,
         hints: [
-          "set DEFI_MORPHO_POOLS_URL for morpho live provider",
-          "or set liveProvider=defillama for temporary testing",
+          `set ${plan.requiredEnvKey || "DEFI_MORPHO_POOLS_URL"} for current live provider`,
+          "or set liveProvider=morpho|aave|kamino explicitly",
         ],
       });
       return;

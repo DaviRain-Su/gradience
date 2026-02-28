@@ -398,6 +398,7 @@ DeFi pool parsing API (Node dashboard server):
 - Optional response controls: `includeDiagnostics=1`; `diagnosticsFields=fieldMapping,raw` (whitelist fields to include); `includeRaw=1` remains supported for backward compatibility
 - Detail query param: `deepSearch=0|1` (default `1`, escalates lookup window up to server max)
 - Returns normalized pool rows (`id`, `provider`, `chain`, `asset`, `tvlUsd`, APY fields, utilization, source metadata)
+- Response includes source metadata: `source`, `sourceProvider`, `sourceUrl`, `sourceTransport`, `fetchedAtUnix`
 - Generated `id` is stable when provider rows do not include a native pool id (`yield_<hash>` / `lend_<hash>`)
 - Detail endpoint includes `diagnostics.fieldMapping` + `diagnostics.raw` to inspect raw provider fields mapped into normalized output
 - Detail endpoint includes `lookupTrace` (`deepSearchEnabled`, `escalatedSearch`, `initialLimit`, `finalLimit`)
@@ -415,7 +416,12 @@ Metrics endpoint (Prometheus text format):
 Live config preflight endpoint:
 
 - `GET /api/defi/live-config`
-- Returns whether required live provider config (currently `DEFI_MORPHO_POOLS_URL`) is present.
+- Returns live source config snapshot (Morpho direct URL vs Morpho API endpoint, Aave/Kamino direct URL presence).
+
+Live provider plan endpoint:
+
+- `GET /api/defi/live-plan`
+- Returns effective live provider selection for current query (`provider` + `liveProvider` + `liveMode`) and required env key.
 
 Example:
 
@@ -439,14 +445,16 @@ Parser cache controls:
 - `DEFI_POOL_PARSER_RETRY_BACKOFF_MS` (default `250`)
 - `DEFI_POOL_CURSOR_TTL_SECONDS` (default `300`)
 - `DEFI_POOL_CURSOR_SECRET` (recommended in production; used to sign cursor tokens)
+- `DEFI_MORPHO_API_URL` (optional, defaults to `https://api.morpho.org/graphql`)
 
 Live-mode config guard:
 
-- For `provider=morpho` in `liveMode=live`, runtime validates `DEFI_MORPHO_POOLS_URL` before calling zig-core and returns a clear config error when unset.
+- For `provider=morpho` in `liveMode=live`, runtime validates Morpho source config before calling zig-core (`DEFI_MORPHO_POOLS_URL` or `DEFI_MORPHO_API_URL`, defaulting to `https://api.morpho.org/graphql`).
 
 FastAPI also proxies both endpoints: `GET /api/defi/pools` and `GET /api/defi/pools/:id`.
 FastAPI also proxies `GET /api/defi/metrics`.
 FastAPI also proxies `GET /api/defi/live-config`.
+FastAPI also proxies `GET /api/defi/live-plan`.
 
 ## Execution CLI (primary)
 

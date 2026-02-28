@@ -29,9 +29,10 @@ function validateLiveProviderConfig(request: ZigRequest): void {
   if (!targetsMorpho) return;
 
   const morphoUrl = String(process.env.DEFI_MORPHO_POOLS_URL || "").trim();
-  if (!morphoUrl) {
+  const morphoApiUrl = String(process.env.DEFI_MORPHO_API_URL || "https://api.morpho.org/graphql").trim();
+  if (!morphoUrl && !morphoApiUrl) {
     throw new Error(
-      "morpho live source is selected but DEFI_MORPHO_POOLS_URL is unset; set DEFI_MORPHO_POOLS_URL or force liveProvider=defillama",
+      "morpho live source is selected but no source is configured; set DEFI_MORPHO_POOLS_URL or DEFI_MORPHO_API_URL",
     );
   }
 }

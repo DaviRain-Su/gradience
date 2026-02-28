@@ -58,6 +58,15 @@ pub fn appendYieldEntriesLive(
             .source_url = try allocator.dupe(u8, loaded.source_url),
         };
     };
+    if (data == .object) {
+        try appendYieldEntriesMorphoApi(allocator, rows, data.object, chain_filter, asset_filter, provider_filter);
+        return .{
+            .source = loaded.source,
+            .source_provider = try allocator.dupe(u8, loaded.source_provider),
+            .fetched_at_unix = loaded.fetched_at_unix,
+            .source_url = try allocator.dupe(u8, loaded.source_url),
+        };
+    }
     if (data != .array) {
         return .{
             .source = loaded.source,
@@ -139,6 +148,15 @@ pub fn appendLendEntriesLive(
             .source_url = try allocator.dupe(u8, loaded.source_url),
         };
     };
+    if (data == .object) {
+        try appendLendEntriesMorphoApi(allocator, rows, data.object, chain_filter, asset_filter, provider_filter);
+        return .{
+            .source = loaded.source,
+            .source_provider = try allocator.dupe(u8, loaded.source_provider),
+            .fetched_at_unix = loaded.fetched_at_unix,
+            .source_url = try allocator.dupe(u8, loaded.source_url),
+        };
+    }
     if (data != .array) {
         return .{
             .source = loaded.source,
@@ -220,6 +238,10 @@ fn fetchPools(
 }
 
 fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8, chain_filter: ?[]const u8) !LoadedPools {
+    if (std.mem.eql(u8, provider_name, "morpho") and !envVarConfigured(allocator, "DEFI_MORPHO_POOLS_URL")) {
+        return fetchMorphoApiPools(allocator, chain_filter);
+    }
+
     const base_url = try providerUrl(allocator, provider_name);
     defer allocator.free(base_url);
     const url = try providerUrlWithHints(allocator, provider_name, base_url, chain_filter);
@@ -294,6 +316,120 @@ fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8, c
     };
 }
 
+fn fetchMorphoApiPools(allocator: std.mem.Allocator, chain_filter: ?[]const u8) !LoadedPools {
+    const endpoint = try morphoApiEndpoint(allocator);
+    errdefer allocator.free(endpoint);
+    const chain_id = morphoApiChainId(chain_filter);
+    const payload = try morphoApiMarketsQueryPayload(allocator, chain_id);
+    defer allocator.free(payload);
+
+    const ttl_seconds = getEnvU64("DEFI_LIVE_MARKETS_TTL_SECONDS", 60);
+    const allow_stale = getEnvBool("DEFI_LIVE_MARKETS_ALLOW_STALE", true);
+    const key_hash = std.hash.Wyhash.hash(0, endpoint) ^ std.hash.Wyhash.hash(0, payload);
+    const cache_key = try std.fmt.allocPrint(allocator, "live_markets:morpho_api:{x}", .{key_hash});
+    defer allocator.free(cache_key);
+    const now = std.time.timestamp();
+
+    const cached = try core_cache.get(allocator, cache_key);
+    if (cached) |record| {
+        if (now <= record.expiresAtUnix) {
+            const parsed_cached = std.json.parseFromSlice(std.json.Value, allocator, record.valueJson, .{}) catch null;
+            if (parsed_cached) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "cache",
+                    .source_provider = try allocator.dupe(u8, "morpho"),
+                    .fetched_at_unix = record.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = endpoint,
+                };
+            }
+        }
+    }
+
+    const body = fetchHttpJsonPost(allocator, endpoint, payload) catch {
+        if (allow_stale and cached != null) {
+            const stale = cached.?;
+            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
+            if (parsed_stale) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "stale_cache",
+                    .source_provider = try allocator.dupe(u8, "morpho"),
+                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = endpoint,
+                };
+            }
+        }
+        return error.LiveSourceUnavailable;
+    };
+    defer allocator.free(body);
+
+    try core_cache.put(allocator, cache_key, ttl_seconds, body);
+    const parsed_live = std.json.parseFromSlice(std.json.Value, allocator, body, .{}) catch {
+        if (allow_stale and cached != null) {
+            const stale = cached.?;
+            const parsed_stale = std.json.parseFromSlice(std.json.Value, allocator, stale.valueJson, .{}) catch null;
+            if (parsed_stale) |parsed| {
+                return .{
+                    .parsed = parsed,
+                    .source = "stale_cache",
+                    .source_provider = try allocator.dupe(u8, "morpho"),
+                    .fetched_at_unix = stale.expiresAtUnix - @as(i64, @intCast(ttl_seconds)),
+                    .source_url = endpoint,
+                };
+            }
+        }
+        return error.LiveSourceUnavailable;
+    };
+
+    return .{
+        .parsed = parsed_live,
+        .source = "live",
+        .source_provider = try allocator.dupe(u8, "morpho"),
+        .fetched_at_unix = now,
+        .source_url = endpoint,
+    };
+}
+
+fn morphoApiEndpoint(allocator: std.mem.Allocator) ![]u8 {
+    const raw = std.process.getEnvVarOwned(allocator, "DEFI_MORPHO_API_URL") catch null;
+    if (raw) |value| {
+        const trimmed = std.mem.trim(u8, value, " \r\n\t");
+        if (trimmed.len == 0) {
+            allocator.free(value);
+        } else if (trimmed.len == value.len) {
+            return value;
+        } else {
+            defer allocator.free(value);
+            return allocator.dupe(u8, trimmed);
+        }
+    }
+    return allocator.dupe(u8, "https://api.morpho.org/graphql");
+}
+
+fn morphoApiChainId(chain_filter: ?[]const u8) i64 {
+    if (chain_filter) |chain| {
+        if (std.mem.eql(u8, chain, "eip155:10143")) return 143;
+        if (std.mem.startsWith(u8, chain, "eip155:")) {
+            return std.fmt.parseInt(i64, chain[7..], 10) catch 143;
+        }
+    }
+    return 143;
+}
+
+fn morphoApiMarketsQueryPayload(allocator: std.mem.Allocator, chain_id: i64) ![]u8 {
+    const query =
+        "query Markets($chainId: Int!, $first: Int!) { " ++
+        "markets(first: $first, where: { chainId_in: [$chainId] }) { " ++
+        "items { uniqueKey loanAsset { symbol } state { supplyApy borrowApy supplyAssetsUsd } } " ++
+        "} }";
+    return std.fmt.allocPrint(
+        allocator,
+        "{{\"query\":\"{s}\",\"variables\":{{\"chainId\":{d},\"first\":500}}}}",
+        .{ query, chain_id },
+    );
+}
+
 fn providerUrlWithHints(
     allocator: std.mem.Allocator,
     provider_name: []const u8,
@@ -363,6 +499,64 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
     }
 
     return std.fs.cwd().readFileAlloc(allocator, tmp_path, 64 * 1024 * 1024) catch error.LiveSourceUnavailable;
+}
+
+fn fetchHttpJsonPostWithCurl(allocator: std.mem.Allocator, url: []const u8, payload: []const u8) ![]u8 {
+    const tmp_path = try std.fmt.allocPrint(
+        allocator,
+        "/tmp/gradience-live-post-{d}.json",
+        .{std.time.nanoTimestamp()},
+    );
+    defer allocator.free(tmp_path);
+    defer std.fs.deleteFileAbsolute(tmp_path) catch {};
+
+    const argv = [_][]const u8{
+        "curl",
+        "-sS",
+        "-L",
+        "--fail",
+        "--compressed",
+        "--retry",
+        "1",
+        "--retry-all-errors",
+        "--connect-timeout",
+        "3",
+        "--max-time",
+        "10",
+        "--header",
+        "accept: application/json",
+        "--header",
+        "content-type: application/json",
+        "--request",
+        "POST",
+        "--data-binary",
+        payload,
+        "-o",
+        tmp_path,
+        "-w",
+        "%{http_code}",
+        url,
+    };
+
+    const result = std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &argv,
+        .max_output_bytes = 16 * 1024 * 1024,
+    }) catch return error.LiveSourceUnavailable;
+    defer allocator.free(result.stderr);
+    defer allocator.free(result.stdout);
+
+    if (result.term.Exited != 0) return error.LiveSourceUnavailable;
+    const http_code_raw = std.mem.trim(u8, result.stdout, " \r\n\t");
+    if (http_code_raw.len < 3 or !std.mem.eql(u8, http_code_raw[0..1], "2")) {
+        return error.LiveSourceUnavailable;
+    }
+
+    return std.fs.cwd().readFileAlloc(allocator, tmp_path, 64 * 1024 * 1024) catch error.LiveSourceUnavailable;
+}
+
+fn fetchHttpJsonPost(allocator: std.mem.Allocator, url: []const u8, payload: []const u8) ![]u8 {
+    return fetchHttpJsonPostWithCurl(allocator, url, payload);
 }
 
 fn fetchHttpBody(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
@@ -481,7 +675,9 @@ fn allocProbe(allocator: std.mem.Allocator, msg: []const u8) []u8 {
 
 fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {
     if (std.mem.eql(u8, provider_name, "morpho")) {
-        return std.process.getEnvVarOwned(allocator, "DEFI_MORPHO_POOLS_URL") catch error.LiveSourceUnavailable;
+        const legacy = std.process.getEnvVarOwned(allocator, "DEFI_MORPHO_POOLS_URL") catch null;
+        if (legacy) |value| return value;
+        return morphoApiEndpoint(allocator);
     }
     if (std.mem.eql(u8, provider_name, "aave")) {
         return std.process.getEnvVarOwned(allocator, "DEFI_AAVE_POOLS_URL") catch error.LiveSourceUnavailable;
@@ -597,6 +793,116 @@ fn getF64(obj: std.json.ObjectMap, key: []const u8) ?f64 {
         .integer => @as(f64, @floatFromInt(value.integer)),
         else => null,
     };
+}
+
+fn appendYieldEntriesMorphoApi(
+    allocator: std.mem.Allocator,
+    rows: *std.ArrayList(yield_registry.YieldEntry),
+    data_obj: std.json.ObjectMap,
+    chain_filter: ?[]const u8,
+    asset_filter: ?[]const u8,
+    provider_filter: ?[]const u8,
+) !void {
+    if (provider_filter) |required| {
+        if (!std.ascii.eqlIgnoreCase("morpho", required)) return;
+    }
+
+    const markets = data_obj.get("markets") orelse return;
+    if (markets != .object) return;
+    const items = markets.object.get("items") orelse return;
+    if (items != .array) return;
+
+    const chain = chain_filter orelse "eip155:10143";
+    for (items.array.items) |item| {
+        if (item != .object) continue;
+        const obj = item.object;
+        const state_value = obj.get("state") orelse continue;
+        if (state_value != .object) continue;
+        const state = state_value.object;
+        const loan_value = obj.get("loanAsset") orelse continue;
+        if (loan_value != .object) continue;
+        const loan = loan_value.object;
+
+        const asset = getString(loan, "symbol") orelse continue;
+        const asset_matched_by = if (asset_filter) |required|
+            (assetMatchKind(asset, required) orelse continue)
+        else
+            "exact";
+
+        const apy = getF64(state, "supplyApy") orelse continue;
+        const tvl_usd = getF64(state, "supplyAssetsUsd") orelse 0;
+        const unique_key = getString(obj, "uniqueKey") orelse "";
+        const market = if (unique_key.len > 0)
+            try std.fmt.allocPrint(allocator, "morpho {s}", .{unique_key})
+        else
+            try std.fmt.allocPrint(allocator, "morpho {s} {s}", .{ chain, asset });
+
+        try rows.append(allocator, .{
+            .provider = try allocator.dupe(u8, "morpho"),
+            .chain = try allocator.dupe(u8, chain),
+            .asset = try allocator.dupe(u8, asset),
+            .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
+            .market = market,
+            .apy = apy,
+            .tvl_usd = tvl_usd,
+        });
+    }
+}
+
+fn appendLendEntriesMorphoApi(
+    allocator: std.mem.Allocator,
+    rows: *std.ArrayList(lend_registry.LendMarket),
+    data_obj: std.json.ObjectMap,
+    chain_filter: ?[]const u8,
+    asset_filter: ?[]const u8,
+    provider_filter: ?[]const u8,
+) !void {
+    if (provider_filter) |required| {
+        if (!std.ascii.eqlIgnoreCase("morpho", required)) return;
+    }
+
+    const markets = data_obj.get("markets") orelse return;
+    if (markets != .object) return;
+    const items = markets.object.get("items") orelse return;
+    if (items != .array) return;
+
+    const chain = chain_filter orelse "eip155:10143";
+    for (items.array.items) |item| {
+        if (item != .object) continue;
+        const obj = item.object;
+        const state_value = obj.get("state") orelse continue;
+        if (state_value != .object) continue;
+        const state = state_value.object;
+        const loan_value = obj.get("loanAsset") orelse continue;
+        if (loan_value != .object) continue;
+        const loan = loan_value.object;
+
+        const asset = getString(loan, "symbol") orelse continue;
+        const asset_matched_by = if (asset_filter) |required|
+            (assetMatchKind(asset, required) orelse continue)
+        else
+            "exact";
+
+        const supply_apy = getF64(state, "supplyApy") orelse continue;
+        const borrow_apy = getF64(state, "borrowApy") orelse 0;
+        const tvl_usd = getF64(state, "supplyAssetsUsd") orelse 0;
+        const unique_key = getString(obj, "uniqueKey") orelse "";
+        const market = if (unique_key.len > 0)
+            try std.fmt.allocPrint(allocator, "morpho {s}", .{unique_key})
+        else
+            try std.fmt.allocPrint(allocator, "morpho {s} {s}", .{ chain, asset });
+
+        try rows.append(allocator, .{
+            .provider = try allocator.dupe(u8, "morpho"),
+            .chain = try allocator.dupe(u8, chain),
+            .asset = try allocator.dupe(u8, asset),
+            .asset_matched_by = try allocator.dupe(u8, asset_matched_by),
+            .market = market,
+            .supply_apy = supply_apy,
+            .borrow_apy = borrow_apy,
+            .tvl_usd = tvl_usd,
+        });
+    }
 }
 
 fn assetMatchKind(symbol: []const u8, filter: []const u8) ?[]const u8 {

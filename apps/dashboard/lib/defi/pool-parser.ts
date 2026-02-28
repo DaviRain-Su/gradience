@@ -78,6 +78,8 @@ type ParsedPoolsResponse = {
   entries: DefiPoolEntry[];
   source: string | null;
   sourceProvider: string | null;
+  sourceUrl: string | null;
+  sourceTransport: "registry" | "direct_url" | "morpho_api" | "unknown";
   fetchedAtUnix: number | null;
   rawCount: number;
   cache: CacheInfo;
@@ -284,6 +286,25 @@ function pickAction(kind: DefiKind): string {
 
 export function zigDefiEnabled(): boolean {
   return isZigCoreEnabled();
+}
+
+function inferSourceTransport(input: { source: string | null; sourceProvider: string | null; sourceUrl: string | null }):
+  | "registry"
+  | "direct_url"
+  | "morpho_api"
+  | "unknown" {
+  const source = String(input.source || "").toLowerCase();
+  if (source === "registry") return "registry";
+
+  const sourceProvider = String(input.sourceProvider || "").toLowerCase();
+  const sourceUrl = String(input.sourceUrl || "").toLowerCase();
+  if (sourceProvider === "morpho" && sourceUrl.includes("api.morpho.org/graphql")) {
+    return "morpho_api";
+  }
+  if (sourceUrl.startsWith("http://") || sourceUrl.startsWith("https://")) {
+    return "direct_url";
+  }
+  return "unknown";
 }
 
 function getCacheTtlSeconds(): number {
@@ -538,6 +559,8 @@ export async function fetchParsedDefiPools(query: DefiPoolQuery): Promise<Parsed
 
   const source = asString(response.source) || null;
   const sourceProvider = asString(response.sourceProvider) || null;
+  const sourceUrl = asString(response.sourceUrl) || null;
+  const sourceTransport = inferSourceTransport({ source, sourceProvider, sourceUrl });
   const fetchedAtUnix = asNumber(response.fetchedAtUnix) ?? null;
 
   const rows = extractRows(response);
@@ -555,6 +578,8 @@ export async function fetchParsedDefiPools(query: DefiPoolQuery): Promise<Parsed
     entries,
     source,
     sourceProvider,
+    sourceUrl,
+    sourceTransport,
     fetchedAtUnix,
     rawCount: rows.length,
     cache,
