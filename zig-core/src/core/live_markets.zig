@@ -54,7 +54,7 @@ pub fn appendYieldEntriesLive(
     asset_filter: ?[]const u8,
     provider_filter: ?[]const u8,
 ) !LiveFetchInfo {
-    const loaded = try fetchPools(allocator, live_provider, provider_filter);
+    const loaded = try fetchPools(allocator, live_provider, provider_filter, chain_filter);
     defer allocator.free(loaded.source_url);
     defer allocator.free(loaded.source_provider);
     var parsed = loaded.parsed;
@@ -135,7 +135,7 @@ pub fn appendLendEntriesLive(
     asset_filter: ?[]const u8,
     provider_filter: ?[]const u8,
 ) !LiveFetchInfo {
-    const loaded = try fetchPools(allocator, live_provider, provider_filter);
+    const loaded = try fetchPools(allocator, live_provider, provider_filter, chain_filter);
     defer allocator.free(loaded.source_url);
     defer allocator.free(loaded.source_provider);
     var parsed = loaded.parsed;
@@ -222,6 +222,7 @@ fn fetchPools(
     allocator: std.mem.Allocator,
     live_provider: ?[]const u8,
     provider_filter: ?[]const u8,
+    chain_filter: ?[]const u8,
 ) !LoadedPools {
     const selected = try selectLiveProvider(allocator, live_provider);
     defer allocator.free(selected);
@@ -230,17 +231,19 @@ fn fetchPools(
         if (provider_filter) |provider_name| {
             const canonical_provider = canonicalProvider(provider_name);
             if (std.mem.eql(u8, canonical_provider, "morpho") or std.mem.eql(u8, canonical_provider, "aave") or std.mem.eql(u8, canonical_provider, "kamino")) {
-                return fetchProviderPools(allocator, canonical_provider) catch fetchProviderPools(allocator, "defillama");
+                return fetchProviderPools(allocator, canonical_provider, chain_filter) catch fetchProviderPools(allocator, "defillama", chain_filter);
             }
         }
-        return fetchProviderPools(allocator, "defillama");
+        return fetchProviderPools(allocator, "defillama", chain_filter);
     }
 
-    return fetchProviderPools(allocator, selected);
+    return fetchProviderPools(allocator, selected, chain_filter);
 }
 
-fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8) !LoadedPools {
-    const url = try providerUrl(allocator, provider_name);
+fn fetchProviderPools(allocator: std.mem.Allocator, provider_name: []const u8, chain_filter: ?[]const u8) !LoadedPools {
+    const base_url = try providerUrl(allocator, provider_name);
+    defer allocator.free(base_url);
+    const url = try providerUrlWithHints(allocator, provider_name, base_url, chain_filter);
     errdefer allocator.free(url);
 
     const ttl_seconds = getEnvU64("DEFI_LIVE_MARKETS_TTL_SECONDS", 60);
@@ -318,17 +321,16 @@ fn fetchHttpBodyWithCurl(allocator: std.mem.Allocator, url: []const u8) ![]u8 {
         "-sS",
         "-L",
         "--fail",
+        "--compressed",
         "--retry",
-        "2",
+        "1",
         "--retry-all-errors",
         "--connect-timeout",
-        "5",
+        "3",
         "--max-time",
-        "30",
+        "10",
         "--header",
         "accept: application/json",
-        "--header",
-        "accept-encoding: identity",
         "--user-agent",
         "gradience-zig-live/1",
         url,
@@ -396,32 +398,41 @@ fn probeUrlWithCurl(allocator: std.mem.Allocator, url: []const u8) []u8 {
         "curl",
         "-sS",
         "-L",
+        "--fail",
+        "--compressed",
         "--max-time",
         "10",
         "--header",
         "accept: application/json",
-        "--header",
-        "accept-encoding: identity",
-        "-o",
-        "/dev/null",
-        "-w",
-        "%{http_code} %{size_download}",
         url,
     };
 
     const result = std.process.Child.run(.{
         .allocator = allocator,
         .argv = &argv,
+        .max_output_bytes = 16 * 1024 * 1024,
     }) catch return allocProbe(allocator, "probe=spawn-failed");
 
-    const stdout_trimmed = std.mem.trim(u8, result.stdout, " \r\n\t");
+    const body = result.stdout;
+    const body_len = body.len;
+    const preview = bodyPreview(allocator, body, 160);
+    defer allocator.free(preview);
+
+    const json_status: []const u8 = blk: {
+        var parsed = std.json.parseFromSlice(std.json.Value, allocator, body, .{}) catch break :blk "invalid";
+        defer parsed.deinit();
+        if (parsed.value != .object) break :blk "invalid";
+        if (parsed.value.object.get("data") == null) break :blk "invalid";
+        break :blk "ok";
+    };
+
     const stderr_trimmed = std.mem.trim(u8, result.stderr, " \r\n\t");
 
     if (result.term.Exited == 0) {
         const probe_msg = std.fmt.allocPrint(
             allocator,
-            "probe=ok http_size='{s}' stderr='{s}'",
-            .{ stdout_trimmed, stderr_trimmed },
+            "probe=ok body_len='{d}' json='{s}' preview='{s}' stderr='{s}'",
+            .{ body_len, json_status, preview, stderr_trimmed },
         ) catch allocProbe(allocator, "probe=ok");
         allocator.free(result.stdout);
         allocator.free(result.stderr);
@@ -430,12 +441,23 @@ fn probeUrlWithCurl(allocator: std.mem.Allocator, url: []const u8) []u8 {
 
     const probe_err = std.fmt.allocPrint(
         allocator,
-        "probe=failed term={any} stdout='{s}' stderr='{s}'",
-        .{ result.term, stdout_trimmed, stderr_trimmed },
+        "probe=failed term={any} body_len='{d}' json='{s}' preview='{s}' stderr='{s}'",
+        .{ result.term, body_len, json_status, preview, stderr_trimmed },
     ) catch allocProbe(allocator, "probe=failed");
     allocator.free(result.stdout);
     allocator.free(result.stderr);
     return probe_err;
+}
+
+fn bodyPreview(allocator: std.mem.Allocator, body: []const u8, max_len: usize) []u8 {
+    const len = @min(body.len, max_len);
+    var out = allocator.alloc(u8, len) catch return allocProbe(allocator, "<oom>");
+    var i: usize = 0;
+    while (i < len) : (i += 1) {
+        const b = body[i];
+        out[i] = if (b >= 32 and b <= 126) b else '.';
+    }
+    return out;
 }
 
 fn allocProbe(allocator: std.mem.Allocator, msg: []const u8) []u8 {
@@ -457,6 +479,37 @@ fn providerUrl(allocator: std.mem.Allocator, provider_name: []const u8) ![]u8 {
         return std.process.getEnvVarOwned(allocator, "DEFI_KAMINO_POOLS_URL") catch error.LiveSourceUnavailable;
     }
     return error.InvalidLiveProvider;
+}
+
+fn providerUrlWithHints(
+    allocator: std.mem.Allocator,
+    provider_name: []const u8,
+    base_url: []const u8,
+    chain_filter: ?[]const u8,
+) ![]u8 {
+    if (!std.mem.eql(u8, provider_name, "defillama")) return allocator.dupe(u8, base_url);
+    const chain = chain_filter orelse return allocator.dupe(u8, base_url);
+    const chain_name = llamaChainHint(chain) orelse return allocator.dupe(u8, base_url);
+
+    if (std.mem.indexOfScalar(u8, base_url, '?') != null) {
+        return std.fmt.allocPrint(allocator, "{s}&chain={s}", .{ base_url, chain_name });
+    }
+    return std.fmt.allocPrint(allocator, "{s}?chain={s}", .{ base_url, chain_name });
+}
+
+fn llamaChainHint(chain_caip2: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, chain_caip2, "eip155:1")) return "Ethereum";
+    if (std.mem.eql(u8, chain_caip2, "eip155:10")) return "Optimism";
+    if (std.mem.eql(u8, chain_caip2, "eip155:56")) return "BSC";
+    if (std.mem.eql(u8, chain_caip2, "eip155:137")) return "Polygon";
+    if (std.mem.eql(u8, chain_caip2, "eip155:324")) return "zksync-era";
+    if (std.mem.eql(u8, chain_caip2, "eip155:59144")) return "Linea";
+    if (std.mem.eql(u8, chain_caip2, "eip155:42161")) return "Arbitrum";
+    if (std.mem.eql(u8, chain_caip2, "eip155:43114")) return "Avalanche";
+    if (std.mem.eql(u8, chain_caip2, "eip155:8453")) return "Base";
+    if (std.mem.eql(u8, chain_caip2, "eip155:10143")) return "Monad";
+    if (std.mem.eql(u8, chain_caip2, "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")) return "Solana";
+    return null;
 }
 
 fn selectLiveProvider(
