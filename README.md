@@ -435,6 +435,10 @@ Parser cache controls:
 - `DEFI_POOL_CURSOR_TTL_SECONDS` (default `300`)
 - `DEFI_POOL_CURSOR_SECRET` (recommended in production; used to sign cursor tokens)
 
+Live provider fallback note:
+
+- For `provider=morpho` with `liveMode=live`, when `liveProvider` is unset/`auto` and `DEFI_MORPHO_POOLS_URL` is missing, runtime will auto-fallback to `liveProvider=defillama`.
+
 FastAPI also proxies both endpoints: `GET /api/defi/pools` and `GET /api/defi/pools/:id`.
 FastAPI also proxies `GET /api/defi/metrics`.
 

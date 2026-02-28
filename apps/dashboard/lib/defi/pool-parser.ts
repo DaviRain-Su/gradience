@@ -282,6 +282,24 @@ function pickAction(kind: DefiKind): string {
   return kind === "lend" ? "lendMarkets" : "yieldOpportunities";
 }
 
+function resolveLiveProvider(query: DefiPoolQuery): string | undefined {
+  const requested = (query.liveProvider || "").trim().toLowerCase();
+  const mode = (query.liveMode || "").trim().toLowerCase();
+  const provider = (query.provider || "").trim().toLowerCase();
+
+  if (!requested || requested === "auto") {
+    if (mode === "live" && provider === "morpho") {
+      const morphoUrl = String(process.env.DEFI_MORPHO_POOLS_URL || "").trim();
+      if (!morphoUrl) {
+        return "defillama";
+      }
+    }
+    return requested || undefined;
+  }
+
+  return requested;
+}
+
 export function zigDefiEnabled(): boolean {
   return isZigCoreEnabled();
 }
@@ -522,7 +540,7 @@ export async function fetchParsedDefiPools(query: DefiPoolQuery): Promise<Parsed
     limit: query.limit,
     minTvlUsd: query.minTvlUsd,
     liveMode: query.liveMode,
-    liveProvider: query.liveProvider,
+    liveProvider: resolveLiveProvider(query),
     sortBy: query.sortBy,
     order: query.order,
     resultsOnly: true,
