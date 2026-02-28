@@ -10,44 +10,6 @@ type ZigCallOptions = {
   timeoutMs?: number;
 };
 
-function asLowerString(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function normalizeLiveProviderForMorpho(request: ZigRequest): ZigRequest {
-  const action = request.action;
-  if (action !== "lendMarkets" && action !== "yieldOpportunities") {
-    return request;
-  }
-
-  const params = request.params || {};
-  const mode = asLowerString(params.liveMode);
-  const provider = asLowerString(params.provider);
-  const liveProvider = asLowerString(params.liveProvider);
-
-  if (mode !== "live" || provider !== "morpho") {
-    return request;
-  }
-
-  const isAutoProvider = !liveProvider || liveProvider === "auto";
-  if (!isAutoProvider) {
-    return request;
-  }
-
-  const morphoUrl = String(process.env.DEFI_MORPHO_POOLS_URL || "").trim();
-  if (morphoUrl) {
-    return request;
-  }
-
-  return {
-    ...request,
-    params: {
-      ...params,
-      liveProvider: "defillama",
-    },
-  };
-}
-
 function defaultZigBinaryPath(): string {
   return path.join(process.cwd(), "zig-core", "zig-out", "bin", "gradience-zig");
 }
@@ -66,7 +28,6 @@ export async function callZigCore(
   request: ZigRequest,
   options?: ZigCallOptions,
 ): Promise<Record<string, unknown>> {
-  const normalizedRequest = normalizeLiveProviderForMorpho(request);
   const zigBin = process.env.GRADIENCE_ZIG_BIN || defaultZigBinaryPath();
   const timeoutMs = Math.max(1000, options?.timeoutMs ?? defaultTimeoutMs());
   return new Promise((resolve, reject) => {
@@ -112,7 +73,7 @@ export async function callZigCore(
       });
     });
 
-    child.stdin.write(JSON.stringify(normalizedRequest));
+    child.stdin.write(JSON.stringify(request));
     child.stdin.end();
   });
 }
