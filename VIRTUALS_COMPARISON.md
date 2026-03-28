@@ -251,19 +251,33 @@
 ## 八、市场定位对比
 
 ```mermaid
-quadrantChart
-    title AI Agent 市场地图
-    x-axis 低投资属性 --> 高投资属性
-    y-axis 低技术门槛 --> 高技术门槛
-    quadrant-1 投机型平台
-    quadrant-2 专业投资
-    quadrant-3 消费级工具
-    quadrant-4 主权基础设施
+flowchart TB
+    subgraph MarketMap["AI Agent 市场地图"]
+        direction TB
+        
+        subgraph HighInvest["高投资/投机属性 🔼"]
+            direction LR
+            pump["🎰 Pump.fun\n纯投机"]
+            virtuals["💎 Virtuals Protocol\nAgent 代币化"]
+        end
+        
+        subgraph LowTech["低技术门槛 ◀────────────────────────▶ 高技术门槛"]
+            direction LR
+            chatgpt["💬 ChatGPT/Claude\n消费者工具"]
+            gradience["🛡️ Gradience\n开发者/专业 Agent"]
+        end
+        
+        subgraph HighSovereignty["高主权/专业能力 🔽"]
+        end
+    end
     
-    "Pump.fun": [0.9, 0.1]
-    "Virtuals Protocol": [0.8, 0.3]
-    "ChatGPT/Claude": [0.1, 0.1]
-    "Gradience": [0.2, 0.9]
+    pump --> virtuals
+    chatgpt --> gradience
+    
+    style pump fill:#ffebee
+    style virtuals fill:#e3f2fd
+    style chatgpt fill:#f3e5f5
+    style gradience fill:#e8f5e9
 ```
 
 ---
