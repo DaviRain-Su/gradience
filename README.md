@@ -130,8 +130,14 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - 📐 语音优先 — STT + WebRTC 全双工
 - 📐 主动推送 — 不是等你问，是主动找你
 - 📐 Skill 管理 — 本命功法 + 习得功法
+- 📐 **执行优化** — 50-200ms响应，感知级延迟
 
-**文档：** [agent-me.md](agent-me.md)
+**文档：**
+- [agent-me.md](agent-me.md) — 数字分身基础设计
+- [agentme/README.md](agentme/README.md) — **AgentMe 完整愿景（新增）**
+- [task-intelligence-learning-system.md](task-intelligence-learning-system.md) — 用户习惯学习机制
+- [openclaw-tool-chain-optimization.md](openclaw-tool-chain-optimization.md) — 执行层优化架构
+- [agentme-companion-vision.md](agentme-companion-vision.md) — 从工具到伴侣的进化
 
 ---
 
@@ -146,10 +152,15 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [Virtuals Comparison](VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 | [Asset Philosophy](asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [AutoResearch Analysis](AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
-| [Reputation Feedback Loop](reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | 🆕 新增 |
-| [Arcium Analysis](arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | 🆕 新增 |
-| [Solana Hackathon Prep](solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | 🆕 新增 |
-| [Chain Selection Analysis](chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | 🆕 新增 |
+| [Reputation Feedback Loop](reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
+| [Arcium Analysis](arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | ✅ 完成 |
+| [Solana Hackathon Prep](solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | ✅ 完成 |
+| [Chain Selection Analysis](chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | ✅ 完成 |
+| **AgentMe 系列（新增）** | | |
+| [AgentMe 愿景](agentme/README.md) | **AgentMe 完整架构与愿景** | 🆕 新增 |
+| [执行优化全景](execution-optimization-landscape.md) | **执行层优化：学术研究与竞品分析** | 🆕 新增 |
+| **架构补充（重要）** | | |
+| [缺失组件分析](missing-components-analysis.md) | **🔴 识别架构缺口与优先级** | 🆕 新增 |
 
 ---
 
