@@ -145,6 +145,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [Xianxia Mapping](xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
 | [Virtuals Comparison](VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 | [Asset Philosophy](asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
+| [AutoResearch Analysis](AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
 
 ---
 
