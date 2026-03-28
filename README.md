@@ -66,11 +66,15 @@ _@DaviRain-Su — 2026-03-27_
 
 | 项目 | 层次 | 状态 | 链接 |
 |------|------|------|------|
-| Agent Arena | 市场层 | ✅ MVP完成（Hackathon提交） | [agent-arena](https://github.com/DaviRain-Su/agent-arena) |
-| Chain Hub | 工具层 | 📐 设计完成，Rust CLI待开发 | [chain-hub](https://github.com/DaviRain-Su/chain-hub) |
-| Agent Social | 社交层 | 📐 设计完成，待开发 | agent-social/ |
-| Agent Me | 人口层 | 📐 设计完成，待开发 | agent-me/ |
-| AgentX | — | 🗃️ 已归档（原始概念探索） | [agentx](https://github.com/DaviRain-Su/agentx) |
+| **Agent Arena** | 市场层 | ✅ MVP完成（Hackathon提交） | [DaviRain-Su/agent-arena](https://github.com/DaviRain-Su/agent-arena) |
+| **Chain Hub** | 工具层 | 📐 设计完成，Rust CLI开发中 | [DaviRain-Su/chain-hub](https://github.com/DaviRain-Su/chain-hub) |
+| **Agent Social** | 社交层 | 📐 设计完成，待开发 | （计划创建 agent-social） |
+| **Agent Me** | 人口层 | 📐 设计完成，待开发 | （计划创建 agent-me） |
+| **AgentX** | — | 🗃️ 已归档（原始概念探索） | [DaviRain-Su/agentx](https://github.com/DaviRain-Su/agentx) |
+
+**快速导航：**
+- 🏟️ [Agent Arena](https://github.com/DaviRain-Su/agent-arena) - 去中心化任务市场
+- 🔗 [Chain Hub](https://github.com/DaviRain-Su/chain-hub) - 全链服务统一入口
 
 ---
 
