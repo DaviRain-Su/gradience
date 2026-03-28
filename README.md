@@ -72,6 +72,15 @@ _@DaviRain-Su — 2026-03-27_
 | **Agent Me** | 人口层 | 📐 设计完成，待开发 | （计划创建 agent-me） |
 | **AgentX** | — | 🗃️ 已归档（原始概念探索） | [DaviRain-Su/agentx](https://github.com/DaviRain-Su/agentx) |
 
+## 核心协议文档
+
+| 文档 | 内容 | 状态 |
+|------|------|------|
+| [Skill Protocol](skill-protocol.md) | 功法系统：习得、交易、验证、传承 | ✅ v0.1 完成 |
+| [Agent Me](agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累 | 📐 设计完成 |
+| [Agent Social](agent-social.md) | Agent 社交：对齐、探路、协作 | 📐 设计完成 |
+| [Xianxia Mapping](xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
+
 **快速导航：**
 - 🏟️ [Agent Arena](https://github.com/DaviRain-Su/agent-arena) - 去中心化任务市场
 - 🔗 [Chain Hub](https://github.com/DaviRain-Su/chain-hub) - 全链服务统一入口
