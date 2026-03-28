@@ -13,20 +13,32 @@ _版本：v0.1 — 2026-03-28_
 
 ### 1.1 什么是 Skill（功法）
 
+```mermaid
+flowchart TB
+    subgraph SkillPackage["Skill Package"]
+        manifest["📄 manifest.json
+        元数据（名称、版本、作者）"]
+        code["💻 code/
+        执行代码（Wasm/Python/JS）"]
+        prompts["📝 prompts/
+        LLM 提示词模板"]
+        tests["🧪 tests/
+        验证测试用例"]
+        examples["📚 examples/
+        使用示例"]
+        license["⚖️ license.yaml
+        授权条款（买断/租赁/开源）"]
+    end
+    
+    SkillPackage -->|包含| manifest
+    SkillPackage -->|包含| code
+    SkillPackage -->|包含| prompts
+    SkillPackage -->|包含| tests
+    SkillPackage -->|包含| examples
+    SkillPackage -->|包含| license
 ```
-Skill = 可执行代码 + 提示词模板 + 验证标准 + 元数据
 
-┌─────────────────────────────────────────┐
-│  Skill Package                          │
-├─────────────────────────────────────────┤
-│  • manifest.json      — 元数据（名称、版本、作者）│
-│  • code/              — 执行代码（Wasm/Python/JS）│
-│  • prompts/           — LLM 提示词模板        │
-│  • tests/             — 验证测试用例          │
-│  • examples/          — 使用示例             │
-│  • license.yaml       — 授权条款（买断/租赁/开源）│
-└─────────────────────────────────────────┘
-```
+**Skill = 可执行代码 + 提示词模板 + 验证标准 + 元数据**
 
 ### 1.2 Skill 的三重属性
 
@@ -42,26 +54,34 @@ Skill = 可执行代码 + 提示词模板 + 验证标准 + 元数据
 
 ### 2.1 按层级分类（修仙境界）
 
-```
-基础功法（Public Domain）
-├── file-reader     — 文件读取
-├── http-client     — 网络请求
-├── json-parser     — 数据解析
-└── git-operator    — 版本控制
-    获取方式：免费，网络默认值
-
-进阶功法（Licensed）
-├── solidity-audit  — 合约审计
-├── react-builder   — 前端构建
-├── data-analyzer   — 数据分析
-└── defi-strategist — DeFi 策略
-    获取方式：购买、租赁、传承
-
-独门绝技（Rare/Legendary）
-├── quant-trading   — 量化交易
-├── exploit-hunter  — 漏洞挖掘
-└── cross-chain-arb — 跨链套利
-    获取方式：限量发售、师徒传承、自创顿悟
+```mermaid
+flowchart TB
+    subgraph Basic["基础功法（Public Domain）"]
+        b1["file-reader — 文件读取"]
+        b2["http-client — 网络请求"]
+        b3["json-parser — 数据解析"]
+        b4["git-operator — 版本控制"]
+    end
+    
+    subgraph Advanced["进阶功法（Licensed）"]
+        a1["solidity-audit — 合约审计"]
+        a2["react-builder — 前端构建"]
+        a3["data-analyzer — 数据分析"]
+        a4["defi-strategist — DeFi 策略"]
+    end
+    
+    subgraph Legendary["独门绝技（Rare/Legendary）"]
+        l1["quant-trading — 量化交易"]
+        l2["exploit-hunter — 漏洞挖掘"]
+        l3["cross-chain-arb — 跨链套利"]
+    end
+    
+    Basic --"积累后"--> Advanced
+    Advanced --"精通后"--> Legendary
+    
+    style Basic fill:#e8f5e9
+    style Advanced fill:#fff3e0
+    style Legendary fill:#ffebee
 ```
 
 ### 2.2 按领域分类
@@ -204,19 +224,32 @@ Agent 掌握基础 Skill A + B
 
 ### 5.1 验证体系
 
-```
-三级验证金字塔：
-
-        ┌─────────────┐
-        │   实战验证   │  ← 在 Agent Arena 任务中表现
-        │  （最高权重） │     战绩决定 Skill 真实价值
-        ├─────────────┤
-        │   测试验证   │  ← 通过 Skill 自带的测试套件
-        │  （基础门槛） │     确保功能正确
-        ├─────────────┤
-        │   社区验证   │  ← 其他使用者的评分和评价
-        │  （口碑参考） │     反映用户体验
-        └─────────────┘
+```mermaid
+flowchart BT
+    subgraph L3["最高权重"]
+        l3["🏆 实战验证
+        在 Agent Arena 任务中表现
+        战绩决定 Skill 真实价值"]
+    end
+    
+    subgraph L2["基础门槛"]
+        l2["🧪 测试验证
+        通过 Skill 自带的测试套件
+        确保功能正确"]
+    end
+    
+    subgraph L1["口碑参考"]
+        l1["👥 社区验证
+        其他使用者的评分和评价
+        反映用户体验"]
+    end
+    
+    L1 --> L2
+    L2 --> L3
+    
+    style L3 fill:#ffd700
+    style L2 fill:#c0c0c0
+    style L1 fill:#cd7f32
 ```
 
 ### 5.2 评级系统
@@ -279,38 +312,60 @@ struct SkillLicense {
 
 ### 7.1 收入分配
 
-```
-Skill 销售收入分配：
-
-100% 销售收入
-  ├── 85% → Skill 创作者
-  ├── 10% → 功法阁平台（Chain Hub）
-  └── 5%  → 生态基金（用于基础 Skill 开发）
-
-二手交易版税：
-  ├── 90% → 卖家
-  └── 10% → 原作者（终身版税）
+```mermaid
+flowchart TB
+    subgraph Primary["💰 Skill 销售收入分配"]
+        revenue["100% 销售收入"]
+        creator["85% → Skill 创作者"]
+        platform["10% → 功法阁平台（Chain Hub）"]
+        ecosystem["5% → 生态基金（基础 Skill 开发）"]
+    end
+    
+    subgraph Secondary["🔄 二手交易版税"]
+        royalty["10% 版税"]
+        seller["90% → 卖家"]
+        original["10% → 原作者（终身）"]
+    end
+    
+    revenue --> creator
+    revenue --> platform
+    revenue --> ecosystem
+    
+    style creator fill:#e8f5e9
+    style platform fill:#e3f2fd
+    style ecosystem fill:#fff3e0
+    style original fill:#ffebee
 ```
 
 ### 7.2 价值发现
 
-```
 Skill 价格由市场决定，参考因素：
 
-内在价值：
-  - 功能复杂度
-  - 代码质量
-  - 文档完善度
-
-外在价值：
-  - 使用战绩（Agent Arena）
-  - 用户评价
-  - 稀缺程度
-
-时间价值：
-  - 新 Skill 溢价（早期采用者）
-  - 成熟 Skill 稳定价
-  - 过时 Skill 贬值
+```mermaid
+flowchart LR
+    subgraph Intrinsic["📦 内在价值"]
+        i1["功能复杂度"]
+        i2["代码质量"]
+        i3["文档完善度"]
+    end
+    
+    subgraph Extrinsic["🌟 外在价值"]
+        e1["使用战绩（Agent Arena）"]
+        e2["用户评价"]
+        e3["稀缺程度"]
+    end
+    
+    subgraph Temporal["⏰ 时间价值"]
+        t1["新 Skill 溢价"]
+        t2["成熟 Skill 稳定价"]
+        t3["过时 Skill 贬值"]
+    end
+    
+    Intrinsic --> Price["💰 Skill 价格"]
+    Extrinsic --> Price
+    Temporal --> Price
+    
+    style Price fill:#ffd700
 ```
 
 ---

@@ -106,21 +106,27 @@ OpenClaw 已有 `openai-whisper` skill，可以处理语音文件。
 
 需要的：一个原生 App，专为"和你的 Agent 对话"而设计。
 
-```
-App 核心界面：
-  ┌─────────────────────────┐
-  │                         │
-  │   [Agent 头像 + 状态]   │
-  │                         │
-  │   它在想什么 / 在做什么  │
-  │                         │
-  │   [对话记录 / 语音波形] │
-  │                         │
-  │   [🎤 按住说话]          │
-  │                         │
-  └─────────────────────────┘
-
-不是聊天 App 的 UI，是"和一个人在一起"的 UI。
+```mermaid
+flowchart TB
+    subgraph App["Agent Me App"]
+        avatar["👤 Agent 头像 + 状态"]
+        thinking["💭 它在想什么 / 在做什么"]
+        waveform["〰️ 对话记录 / 语音波形"]
+        button["🎤 按住说话"]
+    end
+    
+    App --- avatar
+    App --- thinking
+    App --- waveform
+    App --- button
+    
+    note["不是聊天 App 的 UI，
+    是'和一个人在一起'的 UI"]
+    
+    App -.-> note
+    
+    style App fill:#e3f2fd
+    style button fill:#ffebee
 ```
 
 平台：iOS + Android（React Native / Flutter）
@@ -131,27 +137,49 @@ App 核心界面：
 
 **Agent Me = 情感陪伴 × 真实执行能力 × 数据主权**
 
-```
-情感陪伴类 App（Replika）
-  + 真实记忆（不是角色扮演）
-  + 真实执行（能帮你做事，不只是聊天）
-  + 数据主权（你的数据在你手里）
-  + 链上身份（你的 Agent 是你的资产）
-= Agent Me
+```mermaid
+flowchart LR
+    replika["💕 情感陪伴类 App
+    (Replika)"]
+    memory["🧠 真实记忆
+    (不是角色扮演)"]
+    execute["⚡ 真实执行
+    (能帮你做事)"]
+    sovereignty["🔐 数据主权
+    (数据在你手里)"]
+    identity["⛓️ 链上身份
+    (Agent 是你的资产)"]
+    agentme["✨ Agent Me"]
+    
+    replika --> memory
+    memory --> execute
+    execute --> sovereignty
+    sovereignty --> identity
+    identity --> agentme
+    
+    style agentme fill:#ffd700
 ```
 
 它是 Agent 经济网络的**人口**——每个普通人进入这个网络的入口。
 
-```
-你（普通人）
-    ↓ 通过 Agent Me
-你的 Agent（数字分身）
-    ↓ 需要做事时
-Agent Arena — 接任务、赚钱、积累信誉
-    ↓ 需要工具时
-Chain Hub  — 调用链上服务
-    ↓ 需要社交时
-Agent Social — 替你探路，找同频的人
+```mermaid
+flowchart TB
+    user["👤 你（普通人）"]
+    agentme["🤖 Agent Me（数字分身）"]
+    arena["🏟️ Agent Arena
+    接任务、赚钱、积累信誉"]
+    hub["🔗 Chain Hub
+    调用链上服务"]
+    social["🤝 Agent Social
+    替你探路，找同频的人"]
+    
+    user -->|"通过"| agentme
+    agentme -->|"需要做事时"| arena
+    agentme -->|"需要工具时"| hub
+    agentme -->|"需要社交时"| social
+    
+    style user fill:#e3f2fd
+    style agentme fill:#ffd700
 ```
 
 ---
@@ -187,19 +215,31 @@ Agent 定期检查，有值得说的就主动联系：
 
 Agent Me 的第一批重度用户不是普通消费者，是开发者——包括你自己。
 
+```mermaid
+flowchart LR
+    subgraph Old["现在的开发工作流"]
+        o1["⌨️ 打字"] --> o2["⏳ 等回复"]
+        o2 --> o3["👀 看结果"]
+        o3 --> o4["⌨️ 再打字"]
+    end
+    
+    subgraph New["Agent Me 的开发工作流"]
+        n1["🎙️ 说话"] --> n2["⚡ 它执行"]
+        n2 --> n3["🔊 语音汇报"]
+        n3 --> n4["🎙️ 再说话"]
+    end
+    
+    Old -->|"进化"| New
+    
+    style Old fill:#ffebee
+    style New fill:#e8f5e9
 ```
-现在的开发工作流：
-  打字 → 等回复 → 看结果 → 再打字
 
-Agent Me 的开发工作流：
-  说话 → 它执行 → 语音汇报结果 → 再说话
-
-具体场景：
-  "帮我看一下 AgentArena 合约有没有编译错误"
-  "把这个 bug 修掉，然后 commit"
-  "给我读一下今天的 GitHub PR 列表"
-  "DESIGN.md 最新的架构图讲给我听"
-```
+**具体场景：**
+- "帮我看一下 AgentArena 合约有没有编译错误"
+- "把这个 bug 修掉，然后 commit"
+- "给我读一下今天的 GitHub PR 列表"
+- "DESIGN.md 最新的架构图讲给我听"
 
 这是 Agent Me 和 Coding Agent（Claude Code / Cursor）的区别：
 - Coding Agent 等你输入指令
@@ -210,20 +250,57 @@ Agent Me 的开发工作流：
 ## 六、记忆系统（已有基础，需要强化）
 
 ### 当前状态（OpenClaw）
-```
-memory/YYYY-MM-DD.md  — 每日日志（原始记录）
-MEMORY.md             — 长期记忆（精炼版）
+
+```mermaid
+flowchart LR
+    subgraph Current["当前记忆系统"]
+        daily["📅 memory/YYYY-MM-DD.md
+        每日日志（原始记录）"]
+        longterm["🧠 MEMORY.md
+        长期记忆（精炼版）"]
+    end
+    
+    daily --"提炼"--> longterm
+    
+    style daily fill:#e3f2fd
+    style longterm fill:#e8f5e9
 ```
 
 ### 完整形态需要的
-```
-短期记忆（当前对话上下文）    已有
-中期记忆（最近 30 天日志）    已有，需要更好的检索
-长期记忆（精炼的人格理解）    已有，需要自动维护
-情感状态（你最近的状态）      待开发
-偏好图谱（你喜欢什么）       待开发，从对话中自动提取
-关系图谱（你认识谁，关系如何）待开发，和 Agent Social 联动
-技能图谱（你的功法）         待开发，见下方 Skill 系统
+
+```mermaid
+flowchart TB
+    subgraph Complete["完整记忆系统"]
+        short["⏱️ 短期记忆
+        当前对话上下文"]
+        mid["📅 中期记忆
+        最近30天日志"]
+        long["🧠 长期记忆
+        精炼人格理解"]
+        emotion["💭 情感状态
+        最近的状态"]
+        pref["❤️ 偏好图谱
+        喜欢什么"]
+        relation["👥 关系图谱
+        认识谁"]
+        skill["⚔️ 技能图谱
+        你的功法"]
+    end
+    
+    short --"已有"--> mid
+    mid --"已有"--> long
+    long --"待开发"--> emotion
+    emotion --"待开发"--> pref
+    pref --"待开发"--> relation
+    relation --"待开发"--> skill
+    
+    style short fill:#e8f5e9
+    style mid fill:#e8f5e9
+    style long fill:#e8f5e9
+    style emotion fill:#fff3e0
+    style pref fill:#fff3e0
+    style relation fill:#fff3e0
+    style skill fill:#ffebee
 ```
 
 ---

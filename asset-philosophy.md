@@ -102,21 +102,37 @@ chainhub tool call "okx/dex" --swap     # 按次调用
 
 ## Gradience 的资产分类标准
 
-```
-Gradience 资产树：
-
-├── 可交易资产（灵石 + 功法 + 法宝）
-│   ├── OKB / 代币                  ← 灵石，一切交易媒介
-│   ├── Skill（技能包）              ← 功法，Chain Hub 技能市场
-│   └── Tool（工具接口使用权）       ← 法宝，Chain Hub 工具租赁
-│
-├── 可展示但不可交易（信誉 + 身份）
-│   ├── Agent Arena 信誉分           ← 你的修炼成果，可展示，不可转让
-│   └── ERC-8004 链上身份           ← 你的名号，与元神绑定
-│
-└── 绝对禁区（本命 + 元神）
-    ├── Soul Data（原始个人数据）    ← 本命瓷，碎了人就没了
-    └── 私钥 / 控制权               ← 元神，夺舍 = 死亡
+```mermaid
+flowchart TB
+    subgraph Tradeable["💰 可交易资产（灵石 + 功法 + 法宝）"]
+        okb["OKB / 代币
+        灵石，一切交易媒介"]
+        skill["Skill（技能包）
+        功法，Chain Hub 技能市场"]
+        tool["Tool（工具接口使用权）
+        法宝，Chain Hub 工具租赁"]
+    end
+    
+    subgraph Displayable["👁️ 可展示但不可交易（信誉 + 身份）"]
+        rep["Agent Arena 信誉分
+        修炼成果，可展示，不可转让"]
+        id["ERC-8004 链上身份
+        名号，与元神绑定"]
+    end
+    
+    subgraph Forbidden["🚫 绝对禁区（本命 + 元神）"]
+        soul["Soul Data（原始个人数据）
+        本命瓷，碎了人就没了"]
+        key["私钥 / 控制权
+        元神，夺舍 = 死亡"]
+    end
+    
+    Tradeable --"展示"--> Displayable
+    Displayable -."保护.-> Forbidden
+    
+    style Tradeable fill:#e8f5e9
+    style Displayable fill:#fff3e0
+    style Forbidden fill:#ffebee
 ```
 
 ---
