@@ -10,54 +10,37 @@ _@DaviRain-Su — 2026-03-27_
 
 ## 一张图说清楚所有东西
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        你（普通人）                               │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Agent Me（人口层）                             │
-│                                                                 │
-│  你的数字分身。语音交流 + 主动陪伴 + 真实记忆 + 数据主权          │
-│  三个差距：STT语音输入 / WebRTC全双工 / 独立App                   │
-│                                                                 │
-│  状态：📐 设计中                                                  │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ 你的分身去做事
-          ┌────────────────┼──────────────────┐
-          ▼                ▼                  ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
-│ Agent Arena  │  │  Chain Hub   │  │  Agent Social    │
-│  （市场层）  │  │  （工具层）  │  │  （社交层）      │
-│              │  │              │  │                  │
-│ 任务竞争     │  │ 全链服务     │  │ Agent探路        │
-│ 链上信誉     │  │ 统一入口     │  │ 层次校准         │
-│ OKB自动结算  │  │ 钱包即身份   │  │ 替主人决定       │
-│              │  │              │  │                  │
-│ 状态：✅MVP  │  │ 状态：📐设计 │  │ 状态：📐设计     │
-└──────┬───────┘  └──────┬───────┘  └──────────────────┘
-       │                 │
-       ▼                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     标准与协议层                                  │
-│                                                                 │
-│  ERC-8004    Agent链上身份标准，信誉字段由Arena填入               │
-│  x402        HTTP微支付协议，Agent执行中实时结算                  │
-│  OKX OnchainOS  TEE钱包，私钥永不暴露                            │
-│                                                                 │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   A2A 经济协议（未来网络层）                       │
-│                                                                 │
-│  身份层：链上DID，不可伪造                                        │
-│  信任层：信誉传递 + 质押 + Slash                                  │
-│  支付层：跨Agent分润，自动结算                                    │
-│                                                                 │
-│  状态：🔭 2027年路线                                             │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    User["👤 你（普通人）"]
+    
+    subgraph AgentMe["Agent Me（人口层）"]
+        MeDesc["你的数字分身<br/>语音交流 + 主动陪伴 + 真实记忆 + 数据主权<br/>状态：📐 设计中"]
+    end
+    
+    subgraph MiddleLayer["你的分身去做事"]
+        Arena["🏟️ Agent Arena<br/>（市场层）<br/><br/>任务竞争<br/>链上信誉<br/>OKB自动结算<br/><br/>状态：✅ MVP完成"]
+        Hub["🔗 Chain Hub<br/>（工具层）<br/><br/>全链服务<br/>统一入口<br/>钱包即身份<br/><br/>状态：📐 设计完成"]
+        Social["🤝 Agent Social<br/>（社交层）<br/><br/>Agent探路<br/>层次校准<br/>替主人决定<br/><br/>状态：📐 设计完成"]
+    end
+    
+    subgraph ProtocolLayer["标准与协议层"]
+        ERC["ERC-8004<br/>Agent链上身份标准"]
+        X402["x402<br/>HTTP微支付协议"]
+        TEE["OKX OnchainOS<br/>TEE钱包，私钥永不暴露"]
+    end
+    
+    subgraph A2ALayer["A2A 经济协议（未来网络层）"]
+        A2ADesc["身份层：链上DID<br/>信任层：信誉传递 + 质押 + Slash<br/>支付层：跨Agent分润，自动结算<br/><br/>状态：🔭 2027年路线"]
+    end
+    
+    User --> AgentMe
+    AgentMe --> Arena
+    AgentMe --> Hub
+    AgentMe --> Social
+    Arena --> ProtocolLayer
+    Hub --> ProtocolLayer
+    ProtocolLayer --> A2ALayer
 ```
 
 ---
@@ -120,29 +103,32 @@ Agent Me 决定了网络规模。
 
 ## 时间线
 
-```
-2026 Q1（当前）
-  ✅ Agent Arena MVP — X-Layer Hackathon
-  📐 Chain Hub / Agent Social / Agent Me 设计完成
-
-2026 Q2
-  🚧 Chain Hub MVP — Rust CLI + X-Layer 8个核心命令
-  🚧 Agent Me MVP  — 语音输入接入（Whisper + Telegram）
-  🚧 Agent Arena v1.1 — 并行竞争
-
-2026 Q3
-  🚧 Agent Me 全双工 — WebRTC实时语音
-  🚧 Agent Social MVP — 内测100用户
-  🚧 Chain Hub多链扩展
-
-2026 Q4
-  🚧 Agent Me 独立App — React Native iOS/Android
-  🚧 Key Vault — Lit Protocol MPC接入
-
-2027
-  🔭 A2A经济协议 v0.1
-  🔭 治理代币 ARENA
-  🔭 Agent数量目标：100万+
+```mermaid
+gantt
+    title Gradience 路线图
+    dateFormat YYYY-MM
+    section 2026 Q1
+    Agent Arena MVP      :done, 2026-01, 2026-03
+    设计文档完成        :done, 2026-02, 2026-03
+    
+    section 2026 Q2
+    Chain Hub MVP       :active, 2026-04, 2026-06
+    Agent Me MVP        :active, 2026-04, 2026-06
+    Arena v1.1并行竞争  :active, 2026-04, 2026-06
+    
+    section 2026 Q3
+    Agent Me 全双工语音  :2026-07, 2026-09
+    Agent Social MVP    :2026-07, 2026-09
+    Chain Hub 多链扩展   :2026-07, 2026-09
+    
+    section 2026 Q4
+    Agent Me 独立App    :2026-10, 2026-12
+    Key Vault MPC       :2026-10, 2026-12
+    
+    section 2027
+    A2A 经济协议 v0.1   :crit, 2027-01, 2027-06
+    治理代币 ARENA       :crit, 2027-04, 2027-06
+    目标: 100万+ Agent  :milestone, 2027-12, 0d
 ```
 
 ---
