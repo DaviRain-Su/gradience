@@ -149,6 +149,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [Reputation Feedback Loop](reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | 🆕 新增 |
 | [Arcium Analysis](arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | 🆕 新增 |
 | [Solana Hackathon Prep](solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | 🆕 新增 |
+| [Chain Selection Analysis](chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | 🆕 新增 |
 
 ---
 
