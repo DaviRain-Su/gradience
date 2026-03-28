@@ -250,24 +250,20 @@
 
 ## 八、市场定位对比
 
-```
-AI Agent 市场地图:
-
-                    高投资/投机属性
-                           ↑
-                           │
-    Pump.fun (Meme) ───────┼─────── Virtuals Protocol
-         (纯投机)          │          (Agent 代币化)
-                           │
-                           │
-  低技术门槛 ←─────────────┼─────────────→ 高技术门槛
-                           │
-                           │
-   ChatGPT/Claude ─────────┼─────── Gradience
-    (消费者工具)           │       (开发者/专业 Agent)
-                           │
-                           ↓
-                    高主权/专业能力
+```mermaid
+quadrantChart
+    title AI Agent 市场地图
+    x-axis 低投资属性 --> 高投资属性
+    y-axis 低技术门槛 --> 高技术门槛
+    quadrant-1 投机型平台
+    quadrant-2 专业投资
+    quadrant-3 消费级工具
+    quadrant-4 主权基础设施
+    
+    "Pump.fun": [0.9, 0.1]
+    "Virtuals Protocol": [0.8, 0.3]
+    "ChatGPT/Claude": [0.1, 0.1]
+    "Gradience": [0.2, 0.9]
 ```
 
 ---
