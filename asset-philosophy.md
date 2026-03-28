@@ -128,7 +128,7 @@ flowchart TB
     end
     
     Tradeable --"展示"--> Displayable
-    Displayable -."保护.-> Forbidden
+    Displayable -.->|"保护"| Forbidden
     
     style Tradeable fill:#e8f5e9
     style Displayable fill:#fff3e0
