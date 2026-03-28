@@ -80,6 +80,7 @@ _@DaviRain-Su — 2026-03-27_
 | [Agent Me](agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
 | [Agent Social](agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
 | [Xianxia Mapping](xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
+| [Virtuals Comparison](VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 
 ## 实现仓库
 
