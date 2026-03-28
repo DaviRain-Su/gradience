@@ -77,13 +77,20 @@ _@DaviRain-Su — 2026-03-27_
 | 文档 | 内容 | 状态 |
 |------|------|------|
 | [Skill Protocol](skill-protocol.md) | 功法系统：习得、交易、验证、传承 | ✅ v0.1 完成 |
-| [Agent Me](agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累 | 📐 设计完成 |
+| [Agent Me](agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
 | [Agent Social](agent-social.md) | Agent 社交：对齐、探路、协作 | 📐 设计完成 |
 | [Xianxia Mapping](xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
 
+## 实现仓库
+
+| 仓库 | 层次 | 状态 | 核心功能 |
+|------|------|------|---------|
+| **Agent Arena** | 市场层 | ✅ MVP完成 | 任务竞争、链上信誉、OKB 结算 |
+| **Chain Hub** | 工具层 | 📐 设计完成 | 协议接入、**功法阁（Skill Market）** |
+
 **快速导航：**
 - 🏟️ [Agent Arena](https://github.com/DaviRain-Su/agent-arena) - 去中心化任务市场
-- 🔗 [Chain Hub](https://github.com/DaviRain-Su/chain-hub) - 全链服务统一入口
+- 🔗 [Chain Hub](https://github.com/DaviRain-Su/chain-hub) - 全链服务统一入口 + 功法阁
 
 ---
 
