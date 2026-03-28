@@ -117,7 +117,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - 📐 师徒传承 — Skill 传授 + 版税分成
 - 📐 观摩学习 — 付费观看 Skill 使用，逆向研究
 
-**文档：** [agent-social.md](agent-social.md)
+**文档：** [agent-social/agent-social.md](agent-social/agent-social.md)
 
 ---
 
@@ -133,11 +133,11 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - 📐 **执行优化** — 50-200ms响应，感知级延迟
 
 **文档：**
-- [agent-me.md](agent-me.md) — 数字分身基础设计
-- [agentme/README.md](agentme/README.md) — **AgentMe 完整愿景（新增）**
-- [task-intelligence-learning-system.md](task-intelligence-learning-system.md) — 用户习惯学习机制
-- [openclaw-tool-chain-optimization.md](openclaw-tool-chain-optimization.md) — 执行层优化架构
-- [agentme-companion-vision.md](agentme-companion-vision.md) — 从工具到伴侣的进化
+- [agent-me/agent-me.md](agent-me/agent-me.md) — 数字分身基础设计
+- [agent-me/README.md](agent-me/README.md) — **AgentMe 完整愿景**
+- [agent-me/task-intelligence-learning-system.md](agent-me/task-intelligence-learning-system.md) — 用户习惯学习机制
+- [agent-me/openclaw-tool-chain-optimization.md](agent-me/openclaw-tool-chain-optimization.md) — 执行层优化架构
+- [agent-me/agentme-companion-vision.md](agent-me/agentme-companion-vision.md) — 从工具到伴侣的进化
 
 ---
 
@@ -145,22 +145,22 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 
 | 文档 | 内容 | 状态 |
 |------|------|------|
-| [Skill Protocol](skill-protocol.md) | 功法系统：习得、交易、验证、传承 | ✅ v0.1 完成 |
-| [Agent Me](agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
-| [Agent Social](agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
-| [Xianxia Mapping](xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
-| [Virtuals Comparison](VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
-| [Asset Philosophy](asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
-| [AutoResearch Analysis](AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
-| [Reputation Feedback Loop](reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
-| [Arcium Analysis](arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | ✅ 完成 |
-| [Solana Hackathon Prep](solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | ✅ 完成 |
-| [Chain Selection Analysis](chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | ✅ 完成 |
+| [chain-hub/skill-protocol.md](chain-hub/skill-protocol.md) | 功法系统：习得、交易、验证、传承 | ✅ v0.1 完成 |
+| [agent-me/agent-me.md](agent-me/agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
+| [agent-social/agent-social.md](agent-social/agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
+| [meta/xianxia-mapping.md](meta/xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
+| [research/VIRTUALS_COMPARISON.md](research/VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
+| [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
+| [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
+| [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
+| [agent-arena/arcium-analysis.md](agent-arena/arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | ✅ 完成 |
+| [chain-hub/solana-hackathon-prep.md](chain-hub/solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | ✅ 完成 |
+| [chain-hub/chain-selection-analysis.md](chain-hub/chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | ✅ 完成 |
 | **AgentMe 系列（新增）** | | |
-| [AgentMe 愿景](agentme/README.md) | **AgentMe 完整架构与愿景** | 🆕 新增 |
-| [执行优化全景](execution-optimization-landscape.md) | **执行层优化：学术研究与竞品分析** | 🆕 新增 |
+| [agent-me/README.md](agent-me/README.md) | **AgentMe 完整架构与愿景** | 🆕 新增 |
+| [agent-me/execution-optimization-landscape.md](agent-me/execution-optimization-landscape.md) | **执行层优化：学术研究与竞品分析** | 🆕 新增 |
 | **架构补充（重要）** | | |
-| [缺失组件分析](missing-components-analysis.md) | **🔴 识别架构缺口与优先级** | 🆕 新增 |
+| [meta/missing-components-analysis.md](meta/missing-components-analysis.md) | **🔴 识别架构缺口与优先级** | 🆕 新增 |
 
 ---
 
@@ -180,7 +180,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 
 **一句话区别：** Virtuals 让每个人都能创建 Agent，Gradience 让每个 Agent 都能证明自己的能力并自主交易。
 
-**详细对比：** [VIRTUALS_COMPARISON.md](VIRTUALS_COMPARISON.md)
+**详细对比：** [research/VIRTUALS_COMPARISON.md](research/VIRTUALS_COMPARISON.md)
 
 ---
 
@@ -215,7 +215,7 @@ Agent Me 决定了网络规模。
 
 Agent Arena 中的每一次任务竞争都会产生**可验证的能力证明**。
 
-这些证明通过 [Reputation Feedback Loop](reputation-feedback-loop.md) 写入 ERC-8004 标准，并同步到 Solana Agent Registry：
+这些证明通过 [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) 写入 ERC-8004 标准，并同步到 Solana Agent Registry：
 
 ```
 Agent Arena 任务结果 ──▶ ERC-8004 Attestation ──▶ Solana Agent Registry
@@ -286,7 +286,7 @@ Gradience 使用《剑来》修仙世界观作为产品叙事：
 
 > **功法学了不会死，本命瓷碎了人就没了。**
 
-完整映射：[xianxia-mapping.md](xianxia-mapping.md)
+完整映射：[meta/xianxia-mapping.md](meta/xianxia-mapping.md)
 
 ---
 
