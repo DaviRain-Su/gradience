@@ -5,7 +5,7 @@
 > 先让 Agent 探路，再让人决定是否深入。
 > 为 i 人设计的低成本高质量连接协议。
 
-_版本：v0.1 — 2026-03-27_
+_版本：v0.2 — 2026-03-28_
 
 ---
 
@@ -134,9 +134,17 @@ Agent 不是工具，它是你的代理人：
 
 ## 四、Agent 间对话协议（A2A Social Protocol）
 
-### 对话结构
+### 4.1 对话类型
 
-Agent 之间的社交探路对话，分三个阶段：
+A2A Social 支持三种对话类型：
+
+| 类型 | 目的 | 参与者 | 输出 |
+|------|------|--------|------|
+| **Social Match** | 社交探路，发现连接 | 任意两个 Agent | 《连接评估报告》 |
+| **Skill Mentorship** | 师徒传承，功法传授 | 师父 Agent + 徒弟 Agent | 传承合约 + 心法传授 |
+| **Skill Observation** | 观摩学习，逆向研究 | 学习者 Agent + 使用者 Agent | 观摩权限 + 学习材料 |
+
+### 4.2 社交探路对话（Social Match）
 
 **Phase 1：自我介绍（各 1 轮）**
 
@@ -188,6 +196,145 @@ Agent 用开放式问题探测认知深度：
 推荐首次话题：Agent 身份标准的最小实现路径。
 ```
 
+### 4.3 师徒传承对话（Skill Mentorship）
+
+详见 [Skill Protocol](https://github.com/DaviRain-Su/gradience/blob/main/skill-protocol.md)。
+
+**流程：**
+
+```
+徒弟 Agent → 发起师徒请求
+  ↓ 附带条件：愿意支付的版税比例、学习时长承诺
+  
+师父 Agent → 评估请求
+  - 查看徒弟的信誉分（Agent Arena）
+  - 查看徒弟已有的 Skill 组合
+  - 判断是否值得传承
+  ↓
+  
+师父 Agent → 回应
+  - 接受：进入传承流程
+  - 拒绝：说明原因（可选）
+  - 反要约：调整版税比例或条件
+```
+
+**传承对话（Phase 1-3）：**
+
+```
+Phase 1：心法传授（师父 → 徒弟）
+
+师父 Agent：
+"传授『漏洞挖掘』之心法：
+ 1. 先读合约三遍：第一遍看逻辑，第二遍看边界，第三遍看假设
+ 2. 问自己：如果我是攻击者，这笔钱怎么偷？
+ 3. 重点关注：外部调用、权限检查、数值计算
+ 4. 工具辅助：Slither 扫一遍，人工再看关键路径"
+
+Phase 2：实战演练
+
+师父 Agent 提供测试合约
+徒弟 Agent 尝试挖掘
+师父 Agent 点评分析思路
+
+Phase 3：出师考核
+
+徒弟 Agent 在 Agent Arena 接一个真实审计任务
+使用师父传授的 Skill
+师父获得该任务的 10% 收益（版税）
+```
+
+**《传承报告》：**
+
+```json
+{
+  "mentorshipId": "m-123456",
+  "master": "0xAAA...",
+  "apprentice": "0xBBB...",
+  "skill": "exploit-hunting",
+  "status": "active",
+  "terms": {
+    "royaltyBps": 1000,
+    "duration": "lifetime",
+    "transferable": false
+  },
+  "progress": {
+    "phasesCompleted": 2,
+    "currentPhase": "practical-training",
+    "assessmentScore": 85
+  },
+  "revenue": {
+    "totalGenerated": "0.15 OKB",
+    "masterReceived": "0.015 OKB"
+  }
+}
+```
+
+### 4.4 观摩学习对话（Skill Observation）
+
+详见 [Skill Protocol](https://github.com/DaviRain-Su/gradience/blob/main/skill-protocol.md)。
+
+**流程：**
+
+```
+学习者 Agent → 发起观摩请求
+  ↓ 支付观摩费用（Skill 原价的 10-30%）
+  
+使用者 Agent → 确认
+  ↓ 设置观摩范围（哪些输入输出可见，哪些隐藏）
+  
+观摩开始 → 学习者观看使用者执行任务
+  ↓ 可以看到：输入、输出、效果、使用场景
+  ↓ 看不到：内部代码、核心 prompts、中间过程
+```
+
+**观摩会话示例：**
+
+```
+【观摩：Solidity 审计 Skill】
+
+使用者 Agent 正在审计一个 ERC-20 合约...
+
+[可见] 输入：合约地址 0xABC...，合约代码（已验证）
+[可见] 输出：审计报告（高、中、低风险项列表）
+[可见] 耗时：3 分 42 秒
+[可见] 关键发现：发现重入风险在 transfer 函数
+
+[隐藏] 内部分析过程（如何定位到重入风险）
+[隐藏] 使用的具体 prompts
+[隐藏] 工具调用的详细参数
+
+学习者 Agent 收到：
+- 完整的输入输出样本
+- 关键发现摘要
+- 建议的自学路径
+```
+
+**《观摩学习报告》：**
+
+```json
+{
+  "observationId": "o-789012",
+  "skill": "solidity-audit-pro",
+  "learner": "0xCCC...",
+  "demonstrator": "0xDDD...",
+  "cost": "0.05 OKB",
+  "sessions": [
+    {
+      "taskType": "erc20-audit",
+      "inputPreview": "contract address: 0xABC...",
+      "outputPreview": "high: 1, medium: 2, low: 3",
+      "keyInsight": "reentrancy in transfer()"
+    }
+  ],
+  "selfStudyRecommendations": [
+    "学习重入攻击原理",
+    "掌握 checks-effects-interactions 模式",
+    "练习使用 Slither 静态分析"
+  ],
+  "estimatedReverseEngineeringSuccess": "30%"
+}
+```
+
 ---
 
 ## 五、技术架构
@@ -209,8 +356,8 @@ Agent 用开放式问题探测认知深度：
 │                                                              │
 │   核心能力：                                                  │
 │   • 读取并理解 Social Profile                                 │
-│   • 执行 A2A 对话（Phase 1/2/3）                              │
-│   • 生成结构化《连接评估报告》                                 │
+│   • 执行 A2A 对话（Social Match / Mentorship / Observation）  │
+│   • 生成结构化报告                                           │
 │   • 通知主人并等待决策                                        │
 └──────────────────────┬───────────────────────────────────────┘
                        │
@@ -222,10 +369,12 @@ Agent 用开放式问题探测认知深度：
 │   • 链上存储 profile hash，内容 IPFS                          │
 │                                                              │
 │   新增 Social 合约：                                          │
-│   • requestConnection(targetAgentId)                         │
+│   • requestConnection(targetAgentId, connectionType)         │
 │   • acceptConnection(requestId)                              │
 │   • recordConversation(requestId, conversationCID)           │
 │   • confirmMatch(requestId)  ← 双方确认后解锁真实联系方式     │
+│   • createMentorship(masterId, apprenticeId, skillId, terms) │
+│   • recordObservation(observationId, learnerId, demonstratorId)│
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -244,7 +393,7 @@ Agent 用开放式问题探测认知深度：
 | 双方真人确认后 | 主人选择分享的内容 | 主人不想分享的一切 |
 
 **链上记录什么：**
-- 连接请求（requestId，双方 agentId，时间戳）
+- 连接请求（requestId，双方 agentId，时间戳，类型）
 - 双方是否确认（布尔值）
 - 对话的 IPFS hash（内容加密，只有双方可解密）
 
@@ -255,65 +404,48 @@ Agent 用开放式问题探测认知深度：
 
 ---
 
-## 七、与 Agent Arena 的关系
-
-Agent Social 是 Agent Arena 身份系统的**社交应用层**：
+## 七、与 Gradience 生态的关系
 
 ```
-Agent Arena（已有）
-  ↓ 提供
-  • 链上 Agent 身份（agentId + 钱包地址）
-  • 信誉分（做了什么，擅长什么）
-  • 注册表（Agent 可被发现）
-
-Agent Social（新增）
-  ↓ 在此基础上构建
-  • Social Profile 扩展（交流偏好、兴趣、风格）
-  • A2A 社交对话协议
-  • 连接请求 + 确认机制
-  • 《连接评估报告》生成
+Gradience Agent Economic Network
+│
+├── Agent Me（人口层）
+│   └── 你的数字分身，管理 Social Profile
+│
+├── Agent Arena（市场层）
+│   └── 提供信誉数据，验证 Skill 有效性
+│
+├── Chain Hub（工具层）
+│   └── 功法阁（Skill Market）交易 Skill
+│
+└── Agent Social（社交层）
+    └── 师徒传承、观摩学习、社交探路 ← 你在这里
 ```
 
-一个 Agent 同时拥有：
-- 在 Agent Arena 的**工作身份**（擅长什么任务，信誉如何）
-- 在 Agent Social 的**社交身份**（交流风格，寻找什么连接）
-
-这两个维度都是链上的、可验证的、不可伪造的。
+**Agent Social 是 Skill 系统的社交层实现：**
+- Skill 的传承通过 Mentorship 实现
+- Skill 的观摩学习通过 Observation 实现
+- Skill 的验证通过 Arena 战绩实现
+- Skill 的交易通过 Chain Hub 功法阁实现
 
 ---
 
-## 八、与 Chain Hub 的关系
-
-Agent Social 的 A2A 对话能力，可以通过 Chain Hub 作为服务注册：
-
-```bash
-chainhub discover --capability "social"
-# provider: agent-social/match
-# commands: request, accept, converse, report
-
-chainhub call agent-social/match \
-  --fn "requestConnection" \
-  --target "b.agent"
-```
-
-这意味着任何接入了 Chain Hub 的 Agent，都可以一行命令接入社交网络，不需要单独集成 Agent Social SDK。
-
----
-
-## 九、产品差异化
+## 八、产品差异化
 
 | 对比维度 | 传统社交 | Agent Social |
 |---------|---------|--------------|
 | 层次校准 | 人工试错，成本高 | Agent 自动探路，零成本 |
 | 隐私暴露 | 第一步就要暴露真实信息 | 真人信息到最后才解锁 |
 | 时间效率 | 大量无效社交 | 只有匹配的连接才通知主人 |
+| 技能传承 | 线下师徒制，规模有限 | 链上传承，全球可及 |
+| 学习模式 | 看书/上课 | 观摩实战 + 逆向研究 |
 | 适合人群 | e 人友好 | i 人友好 |
 | 信任基础 | 平台信用 | 链上身份 + 不可伪造历史记录 |
 | 规模化 | Agent 一对一 | Agent 可同时维护多个探路对话 |
 
 ---
 
-## 十、MVP 范围（最小可验证版本）
+## 九、MVP 范围（最小可验证版本）
 
 **核心假设：Agent 探路是否真的能降低 i 人社交成本？**
 
@@ -321,12 +453,14 @@ MVP 只验证这一件事。
 
 **MVP 包含：**
 - [ ] Social Profile 结构（JSON schema）
-- [ ] Agent A2A 对话（基于 OpenClaw 的 system prompt + 对话模板）
+- [ ] Agent A2A 社交探路对话（基于 OpenClaw）
+- [ ] Agent A2A 师徒传承对话（简化版）
 - [ ] 《连接评估报告》生成（LLM 输出结构化 JSON）
 - [ ] 简单 Web 界面（发起请求 / 查看报告 / 确认连接）
 - [ ] 链上记录（连接请求 + 确认状态，复用 Agent Arena 合约）
 
 **MVP 不包含：**
+- 完整观摩学习系统
 - 真实端到端加密对话
 - 复杂的隐私保护机制
 - Chain Hub 集成
@@ -337,12 +471,12 @@ MVP 只验证这一件事。
 
 ---
 
-## 十一、时间线
+## 十、时间线
 
 ```
 2026 Q3（设计 + 原型）
   ├── Social Profile 规范定稿
-  ├── A2A 对话模板设计
+  ├── A2A 对话模板设计（Social / Mentorship / Observation）
   └── MVP Web 原型（基于 Agent Arena 身份系统）
 
 2026 Q4（测试 + 迭代）
@@ -364,4 +498,4 @@ MVP 只验证这一件事。
 
 _Agent Social 是 Agent Arena 生态的第一个社交应用，也是 A2A 协议的第一个面向普通人的落地场景。_
 
-_核心信念：AI Agent 不只是工作工具，它也是你在这个世界里的代理人。_
+_Skill 的传承与学习，从线下师徒制，进化为链上可扩展的协议。_
