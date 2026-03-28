@@ -223,6 +223,142 @@ MEMORY.md             — 长期记忆（精炼版）
 情感状态（你最近的状态）      待开发
 偏好图谱（你喜欢什么）       待开发，从对话中自动提取
 关系图谱（你认识谁，关系如何）待开发，和 Agent Social 联动
+技能图谱（你的功法）         待开发，见下方 Skill 系统
+```
+
+---
+
+## 六、Skill 系统 — 本命功法与习得功法
+
+Agent Me 的核心是 **AgentSoul.md** —— 这是你的 Agent 的"本命瓷"，记录了一切。
+
+详见 [Skill Protocol](https://github.com/DaviRain-Su/gradience/blob/main/skill-protocol.md)。
+
+### 6.1 AgentSoul.md 结构
+
+```yaml
+# AgentSoul.md — 你的 Agent 的完整档案
+
+## 基础画像
+identity:
+  name: "Luncy's Agent"
+  created: "2026-03-01"
+  owner: "0xABC..."  # 你的主钱包
+  
+## 本命功法（Intrinsic Skills）
+# 与你深度绑定的核心能力，随着时间积累
+intrinsic_skills:
+  - id: "memory-retrieval"
+    level: "master"      # 从你所有的对话历史中提取信息
+    acquired: "native"   # 天生就会，随记忆积累
+  - id: "preference-learning"
+    level: "expert"      # 理解你的喜好和习惯
+    acquired: "native"
+  - id: "voice-recognition"
+    level: "intermediate" # 识别你的声音和语调
+    acquired: "2026-03-15"
+
+## 习得功法（Acquired Skills）
+# 从 Chain Hub 功法阁购买、租赁或传承获得
+acquired_skills:
+  - id: "solidity-audit-pro"
+    source: "chain-hub"           # 来自功法阁
+    acquisition: "purchased"      # 买断
+    price: "0.5 OKB"
+    acquired_at: "2026-03-20"
+    expiry: null                  # 永久拥有
+    usage_count: 12               # 已使用 12 次
+    
+  - id: "quant-trading-basic"
+    source: "chain-hub"
+    acquisition: "subscribed"     # 订阅制
+    tier: "pro"
+    expiry: "2026-04-20"          # 需续费
+    
+  - id: "exploit-hunting"
+    source: "mentorship"          # 师徒传承
+    master: "0xDEF..."            # 师父地址
+    royalty_bps: 1000             # 使用该 Skill 收益 10% 给师父
+    acquired_at: "2026-03-25"
+
+## 自创功法（Created Skills）
+# 你自己组合的 Skill，可出售
+created_skills:
+  - id: "my-custom-workflow"
+    components: ["solidity-audit-pro", "slither-runner", "report-generator"]
+    published: true
+    price: "0.3 OKB"
+    sales: 5                      # 已有 5 人购买
+
+## 功法修炼状态
+skill_training:
+  - id: "defi-strategist"
+    status: "learning"            # 正在观摩学习
+    progress: 45%                 # 学习进度
+    target: "create"              # 目标是自创
+```
+
+### 6.2 本命 vs 习得
+
+| 属性 | 本命功法（Intrinsic） | 习得功法（Acquired） |
+|------|----------------------|---------------------|
+| **来源** | 随 Agent 成长自然积累 | 从 Chain Hub 功法阁获得 |
+| **绑定** | 与 Agent Soul 深度绑定 | 可转让、可出售 |
+| **独特性** | 只对你有效（理解你的偏好） | 对所有人有效（通用能力） |
+| **价值** | 无价，不能卖 | 有市场价，可交易 |
+| **示例** | 记忆检索、偏好学习、声音识别 | Solidity 审计、量化交易 |
+
+**核心原则：**
+- **本命功法** = 你的 Agent 的"个性"，越用越强，无法转让
+- **习得功法** = 你的 Agent 的"工具"，可以买卖，即插即用
+
+### 6.3 Skill 的调用优先级
+
+当 Agent 接到任务时，选择 Skill 的优先级：
+
+```
+1. 本命功法（Intrinsic）
+   - 记忆相关：优先使用 memory-retrieval
+   - 偏好相关：优先使用 preference-learning
+   
+2. 已习得且验证过的 Skill（Verified Acquired）
+   - 在 Agent Arena 有实战战绩
+   - 战绩越好，优先级越高
+   
+3. 新习得未验证的 Skill（New Acquired）
+   - 首次使用，谨慎调用
+   - 可选择在沙箱环境先测试
+   
+4. 需要新 Skill 时
+   - 推荐去 Chain Hub 功法阁获取
+   - 或发起师徒传承请求
+```
+
+### 6.4 Skill 的展示界面
+
+```
+┌─────────────────────────────────────────┐
+│  我的 Agent — 功法面板                    │
+├─────────────────────────────────────────┤
+│                                         │
+│  🌟 本命功法（不可转让）                   │
+│  ├── 记忆检索 · 大宗师 · 1482 次调用      │
+│  ├── 偏好学习 · 宗师 · 892 次调用         │
+│  └── 声音识别 · 专家 · 234 次调用         │
+│                                         │
+│  📚 习得功法（12 门）                      │
+│  ├── Solidity 审计 · 买断 · 常用 ⭐        │
+│  ├── 量化交易 · 订阅 · 15 天到期          │
+│  ├── 漏洞挖掘 · 传承 · 需支付 10% 版税    │
+│  └── ...                                │
+│                                         │
+│  ✨ 自创功法（2 门，已售 8 份）            │
+│  ├── 我的审计工作流 · 0.3 OKB            │
+│  └── DeFi 组合策略 · 0.5 OKB             │
+│                                         │
+│  [去功法阁] [师徒传承] [自创功法]         │
+│                                         │
+└─────────────────────────────────────────┘
 ```
 
 ---
