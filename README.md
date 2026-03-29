@@ -154,6 +154,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [agent-social/agent-social.md](agent-social/agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
 | [meta/xianxia-mapping.md](meta/xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
 | [meta/media-reconstruction-theory.md](meta/media-reconstruction-theory.md) | **🔥 媒介重构理论：麦克卢汉+节点革命** | 🆕 新增 |
+| [meta/dual-perspective-product-design.md](meta/dual-perspective-product-design.md) | **👁️ 双重视角设计：Agent执行+人监控** | 🆕 新增 |
 | [research/VIRTUALS_COMPARISON.md](research/VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 | [research/agent-protocol-analysis.md](research/agent-protocol-analysis.md) | **🔌 Agent Protocol 集成分析：A2A经济基础设施** | 🆕 新增 |
 | [research/milady-ai-comparison.md](research/milady-ai-comparison.md) | **🆚 Milady AI 对比：产品 vs 基础设施** | 🆕 新增 |
