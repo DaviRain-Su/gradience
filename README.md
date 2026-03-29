@@ -170,6 +170,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [research/erc8183-substrate-analysis.md](research/erc8183-substrate-analysis.md) | **🎯 ERC-8183 定位：底板协议 vs 通用协议** | 🆕 新增 |
 | [research/greedy-algorithm-design-philosophy.md](research/greedy-algorithm-design-philosophy.md) | **🧠 贪心算法设计哲学：简单高效** | 🆕 新增 |
 | [research/greedy-algorithm-real-world-cases.md](research/greedy-algorithm-real-world-cases.md) | **📚 贪心算法实战案例：现实与区块链** | 🆕 新增 |
+| [research/agent-friendly-blockchain-patterns.md](research/agent-friendly-blockchain-patterns.md) | **🔧 Agent 友好的区块链设计模式大全** | 🆕 新增 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
 | [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
