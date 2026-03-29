@@ -146,6 +146,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - [agent-me/app-vs-obsidian-decision.md](agent-me/app-vs-obsidian-decision.md) — **📱 产品形态决策：独立 App vs Obsidian 插件**
 - [agent-me/agent-me-core-positioning.md](agent-me/agent-me-core-positioning.md) — **🎯 核心定位：你的 OpenClaw 专属连接**
 - [agent-me/agent-me-evolution-roadmap.md](agent-me/agent-me-evolution-roadmap.md) — **🚀 产品演进：从个人工具到社交平台**
+- [agent-me/openclaw-voice-status.md](agent-me/openclaw-voice-status.md) — **🎙️ OpenClaw 语音现状与规划**
 
 ---
 
