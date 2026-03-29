@@ -1,21 +1,17 @@
 import { Hero } from "./components/Hero";
-import { ThreeThings } from "./components/ThreeThings";
-import { HowItWorks } from "./components/HowItWorks";
+import { LiveProtocol } from "./components/LiveProtocol";
 import { Economics } from "./components/Economics";
-import { Comparison } from "./components/Comparison";
 import { Architecture } from "./components/Architecture";
 import { Footer } from "./components/Footer";
 import { Nav } from "./components/Nav";
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen grid-bg">
       <Nav />
       <Hero />
-      <ThreeThings />
-      <HowItWorks />
+      <LiveProtocol />
       <Economics />
-      <Comparison />
       <Architecture />
       <Footer />
     </main>
