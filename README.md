@@ -153,6 +153,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [meta/media-reconstruction-theory.md](meta/media-reconstruction-theory.md) | **🔥 媒介重构理论：麦克卢汉+节点革命** | 🆕 新增 |
 | [research/VIRTUALS_COMPARISON.md](research/VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 | [research/agent-protocol-analysis.md](research/agent-protocol-analysis.md) | **🔌 Agent Protocol 集成分析：A2A经济基础设施** | 🆕 新增 |
+| [research/milady-ai-comparison.md](research/milady-ai-comparison.md) | **🆚 Milady AI 对比：产品 vs 基础设施** | 🆕 新增 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
 | [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
