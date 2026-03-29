@@ -1,18 +1,18 @@
-import { Hero } from "./components/Hero";
-import { LiveProtocol } from "./components/LiveProtocol";
-import { Economics } from "./components/Economics";
-import { Architecture } from "./components/Architecture";
-import { Footer } from "./components/Footer";
 import { Nav } from "./components/Nav";
+import { Hero } from "./components/Hero";
+import { Audiences } from "./components/Audiences";
+import { HowItWorks } from "./components/HowItWorks";
+import { GetStarted } from "./components/GetStarted";
+import { Footer } from "./components/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen grid-bg">
+    <main className="noise">
       <Nav />
       <Hero />
-      <LiveProtocol />
-      <Economics />
-      <Architecture />
+      <Audiences />
+      <HowItWorks />
+      <GetStarted />
       <Footer />
     </main>
   );
