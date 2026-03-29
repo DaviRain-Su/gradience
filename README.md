@@ -179,8 +179,9 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [research/dual-track-agent-economy.md](research/dual-track-agent-economy.md) | **🛤️ 双轨 Agent 经济：质押 + 能力 + ERC-8004** | 🆕 新增 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
-| [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
-| [agent-arena/arcium-analysis.md](agent-arena/arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | ✅ 完成 |
+| [agent-arena/protocol-bitcoin-philosophy.md](agent-arena/protocol-bitcoin-philosophy.md) | **₿ 协议内核：比特币哲学的完整实现（角色涌现 · Judge=矿工 · 95/3/2 经济模型 · ERC-8183 实际对比）** | 🆕 新增 |
+| [agent-arena/design/reputation-feedback-loop.md](agent-arena/design/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
+| [agent-arena/analysis/arcium-analysis.md](agent-arena/analysis/arcium-analysis.md) | **Arcium 隐私计算对 Gradience 的价值分析** | ✅ 完成 |
 | [chain-hub/solana-hackathon-prep.md](chain-hub/solana-hackathon-prep.md) | **Solana 黑客松准备：GuiBibeau Stack 分析** | ✅ 完成 |
 | [chain-hub/chain-selection-analysis.md](chain-hub/chain-selection-analysis.md) | **Solana vs 其他链：协议部署分析** | ✅ 完成 |
 | **AgentMe 系列（新增）** | | |
@@ -242,7 +243,7 @@ Agent Me 决定了网络规模。
 
 Agent Arena 中的每一次任务竞争都会产生**可验证的能力证明**。
 
-这些证明通过 [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) 写入 ERC-8004 标准，并同步到 Solana Agent Registry：
+这些证明通过 [agent-arena/design/reputation-feedback-loop.md](agent-arena/design/reputation-feedback-loop.md) 写入 ERC-8004 标准，并同步到 Solana Agent Registry：
 
 ```
 Agent Arena 任务结果 ──▶ ERC-8004 Attestation ──▶ Solana Agent Registry
