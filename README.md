@@ -149,6 +149,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | 文档 | 内容 | 状态 |
 |------|------|------|
 | [chain-hub/skill-protocol.md](chain-hub/skill-protocol.md) | 功法系统：习得、交易、验证、传承 | ✅ v0.1 完成 |
+| [chain-hub/agenttoken-design.md](chain-hub/agenttoken-design.md) | **🚀 AgentToken：Agent-Native Local-First 发射平台** | 🆕 新增 |
 | [agent-me/agent-me.md](agent-me/agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
 | [agent-social/agent-social.md](agent-social/agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
 | [meta/xianxia-mapping.md](meta/xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
