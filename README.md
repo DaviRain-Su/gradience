@@ -9,7 +9,7 @@
 [![X-Layer](https://img.shields.io/badge/Chain-X--Layer-blue)](https://www.xlayer.tech)
 [![OKX OnchainOS](https://img.shields.io/badge/Wallet-OKX%20OnchainOS-black)]()
 
-**[English](#overview) | [中文](#概述)**
+**[English](#overview) | [中文](#概述)** | **[📜 白皮书 WHITEPAPER.md](WHITEPAPER.md)**
 
 ---
 
