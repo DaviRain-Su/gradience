@@ -143,6 +143,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - [agent-me/agent-me-positioning-clarified.md](agent-me/agent-me-positioning-clarified.md) — **📍 定位澄清：语音入口 + OpenClaw 连接器**
 - [agent-me/obsidian-as-dashboard.md](agent-me/obsidian-as-dashboard.md) — **📝 Obsidian 作为 Dashboard：轻量级实现方案**
 - [agent-me/vibevoice-obsidian-social-analysis.md](agent-me/vibevoice-obsidian-social-analysis.md) — **🎙️ VibeVoice + Obsidian：新时代社交入口分析**
+- [agent-me/app-vs-obsidian-decision.md](agent-me/app-vs-obsidian-decision.md) — **📱 产品形态决策：独立 App vs Obsidian 插件**
 
 ---
 
