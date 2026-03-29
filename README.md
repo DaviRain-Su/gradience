@@ -149,6 +149,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [agent-me/agent-me.md](agent-me/agent-me.md) | 数字分身：语音入口、主动陪伴、记忆积累、Skill 管理 | ✅ v0.2 Skill 系统已更新 |
 | [agent-social/agent-social.md](agent-social/agent-social.md) | Agent 社交：对齐、探路、**师徒传承、观摩学习** | ✅ v0.2 Skill 社交已更新 |
 | [meta/xianxia-mapping.md](meta/xianxia-mapping.md) | 修仙世界观映射与 UI 文案 | ✅ 完成 |
+| [meta/media-reconstruction-theory.md](meta/media-reconstruction-theory.md) | **🔥 媒介重构理论：麦克卢汉+节点革命** | 🆕 新增 |
 | [research/VIRTUALS_COMPARISON.md](research/VIRTUALS_COMPARISON.md) | **与 Virtuals Protocol 的详细对比** | ✅ 完成 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
