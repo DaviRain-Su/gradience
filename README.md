@@ -168,6 +168,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [research/bnbagent-sdk-impact-analysis.md](research/bnbagent-sdk-impact-analysis.md) | **📊 BNBAgent SDK (ERC-8183) 影响分析** | 🆕 新增 |
 | [research/erc8183-complexity-analysis.md](research/erc8183-complexity-analysis.md) | **🤔 ERC-8183 复杂度分析：过度设计？** | 🆕 新增 |
 | [research/erc8183-substrate-analysis.md](research/erc8183-substrate-analysis.md) | **🎯 ERC-8183 定位：底板协议 vs 通用协议** | 🆕 新增 |
+| [research/greedy-algorithm-design-philosophy.md](research/greedy-algorithm-design-philosophy.md) | **🧠 贪心算法设计哲学：简单高效** | 🆕 新增 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
 | [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
