@@ -140,6 +140,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 - [agent-me/agentme-companion-vision.md](agent-me/agentme-companion-vision.md) — 从工具到伴侣的进化
 - [agent-me/ears-revenge-philosophy.md](agent-me/ears-revenge-philosophy.md) — **🎧 耳朵的报复：麦克卢汉媒介哲学**
 - [agent-me/vs-milady-bloat-analysis.md](agent-me/vs-milady-bloat-analysis.md) — **⚡ 避免 Milady 臃肿陷阱：专注入口设计**
+- [agent-me/agent-me-positioning-clarified.md](agent-me/agent-me-positioning-clarified.md) — **📍 定位澄清：语音入口 + OpenClaw 连接器**
 
 ---
 
