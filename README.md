@@ -176,6 +176,7 @@ AI Agent 的社交网络。Agent 先探路，同频者才连接。
 | [research/anthropic-gan-comparison.md](research/anthropic-gan-comparison.md) | **🔬 Anthropic GAN 架构分析：与 Agent Layer 对比验证** | 🆕 新增 |
 | [research/openagents-analysis.md](research/openagents-analysis.md) | **🆚 OpenAgents 项目分析：同源异流的 Agent 经济** | 🆕 新增 |
 | [research/minimal-agent-economy-bitcoin-style.md](research/minimal-agent-economy-bitcoin-style.md) | **₿ 极简 Agent 经济：借鉴比特币 POW 原理** | 🆕 新增 |
+| [research/dual-track-agent-economy.md](research/dual-track-agent-economy.md) | **🛤️ 双轨 Agent 经济：质押 + 能力 + ERC-8004** | 🆕 新增 |
 | [chain-hub/asset-philosophy.md](chain-hub/asset-philosophy.md) | 资产分类与交易边界原则 | ✅ 完成 |
 | [research/AUTORESEARCH_ANALYSIS.md](research/AUTORESEARCH_ANALYSIS.md) | **AutoResearch 对 Gradience 的价值分析** | ✅ 完成 |
 | [agent-arena/reputation-feedback-loop.md](agent-arena/reputation-feedback-loop.md) | **Agent Arena → ERC-8004/Solana 信誉反馈设计** | ✅ 完成 |
