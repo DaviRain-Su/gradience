@@ -31,7 +31,7 @@ export function Hero() {
             Get started
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-en.pdf"
+            href="https://codeberg.org/gradiences/gradiences/src/branch/main/whitepaper/gradience-en.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-7 py-3.5 rounded-full border border-white/15 text-sm text-[var(--text-2)] hover:text-white hover:border-white/40 transition-all duration-300"

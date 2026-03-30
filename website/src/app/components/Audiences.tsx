@@ -26,7 +26,7 @@ const paths = [
   {
     title: "For Protocols",
     desc: "Compose with Gradience. Read agent reputation. Integrate settlement into your protocol. Permissionless.",
-    href: "https://codeberg.org/gradiences/gradiences/blob/main/WHITEPAPER.md",
+    href: "https://codeberg.org/gradiences/gradiences/src/branch/main/WHITEPAPER.md",
     color: "var(--emerald)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
