@@ -101,7 +101,7 @@ flowchart TB
 | **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Pinocchio + TS + OpenWallet | 新建（Week 3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
 | **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
-| **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态） | 不做跨链桥 | Solidity ^0.8.20 + Hardhat | 新建（Week 4） |
+| **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
 
 ---
 
@@ -265,6 +265,10 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Claude API / OpenAI | — | Judge Daemon AI 评分 | 是（任意 LLM） |
 | Next.js | 14+ | 前端框架 | 是 |
 | Hardhat | ^2 | EVM 合约（Week 4） | 是 |
+| LI.FI | — | 跨链价值流：reward token 桥接（Poster 跨链资金）+ Agent 执行资金跨链准备（SOL/USDC → EVM 目标链资产）；覆盖 20+ 链；`@lifi/sdk` 前端/Agent 集成 | 是（仅 W4+ 多链场景需要） |
+| Wormhole | — | 跨链消息流：EVM 执行结果 VAA → Solana 验证（W4 路径）；将 EVM 任务结果的"trusted oracle 模式"升级为链上可验证 | 是（MVP 用链下签名替代，W4 升级） |
+| LayerZero | — | 跨链消息流（备选）：Reputation PDA 状态推送到 EVM，信誉证明无需信任签名者；与 Wormhole 二选一 | 是（远期路线图） |
+| @solana-program/program-metadata | — | 部署工具：上传 Codama IDL 和 security.txt 到链上，Solana Explorer 自动展示程序信息；一次性部署操作 | 是（不影响协议逻辑） |
 
 ---
 
@@ -530,12 +534,144 @@ W4 (04-27 ~ 04-30, Stretch Goals): 全链
 
 ---
 
+## 2.10 多链扩展架构
+
+### 总体原则
+
+**主 Chain Hub 完全基于 Solana**——Pinocchio no_std、400ms 确定性出块、SPL Token 原生支持、SAS/Squads/Helius 生态、multi-delegator 官方参考实现，都在 Solana 体系内。EVM Chain Hub 迁移代价高且意义有限，不在 MVP 范围内。
+
+**多链扩展分两个独立层**，分别解决不同问题：
+
+```
+                     Solana（核心结算层）
+               ┌──────────────────────────┐
+               │  Agent Layer Program      │
+               │  Chain Hub（Delegation）  │
+               │  SAS 能力凭证            │
+               │  Reputation PDA          │
+               │  Staking / JudgePool     │
+               └──────────┬───────────────┘
+                          │
+          ┌───────────────┼──────────────────────┐
+          ▼               ▼                       ▼
+    EVM 执行层      跨链价值层                跨链消息层
+  （Agent 本地     LI.FI                    Wormhole / LayerZero
+   持多链钱包       reward token 桥接         结果验证跨链传递
+   直接执行）       Agent 执行资金准备         信誉证明跨链广播
+```
+
+---
+
+### Layer 1：跨链价值流（LI.FI）
+
+LI.FI 是跨链 token 转移 + DEX 聚合器（覆盖 20+ 链，路由 Wormhole / Hop / Stargate 等多条桥）。在 Gradience 中承担两个场景：
+
+**场景 A：Poster 跨链资金**
+
+Poster 在 Arbitrum 上持有 USDC，想发 Solana 上的任务。前端集成 `@lifi/sdk`，在 `post_task` 表单中自动检测钱包链，若资金在 EVM 链则触发 LI.FI 桥接流程：
+
+```
+Poster（Arbitrum USDC）
+  → LI.FI bridgeTokens(Arbitrum USDC → Solana USDC)
+  → Kora gasless post_task（Poster 无需持 SOL）
+  → Escrow PDA 锁仓
+```
+
+**场景 B：Agent 执行资金准备**
+
+Agent 执行一个"在 Base 上做 DeFi"的任务，但资金在 Solana。Agent 执行运行时（Absurd workflow）集成 LI.FI SDK：
+
+```
+Agent 执行运行时
+  → 检测目标链 = Base，当前资金 = Solana USDC
+  → LI.FI routeTokens(Solana USDC → Base ETH)
+  → 在 Base 上执行 DeFi 操作
+  → 提交 result_ref（含 Base tx hash）到 Solana
+```
+
+LI.FI 仅处理 **token 流动**，不涉及程序执行授权或结果验证。
+
+---
+
+### Layer 2：跨链信息流（Wormhole / LayerZero）
+
+跨链执行后，结果需要传递到 Solana 完成可信结算。分三种场景，按演进路径排列：
+
+**场景 1：EVM 执行结果验证**
+
+| 阶段 | 机制 | 信任模型 |
+|------|------|---------|
+| MVP（W4 初版） | Judge Daemon 链下验证 EVM tx receipt，再提交 `judge_and_pay` 到 Solana | Trusted oracle（信任 Judge Daemon） |
+| W4 升级版 | Wormhole VAA（Verifiable Action Approval）将 EVM tx 状态传递到 Solana；Gradience 合约 CPI 到 Wormhole 验证 VAA | 链上可验证，无需信任 Daemon |
+| 远期 | ZK 证明（RISC Zero）验证 EVM 执行；与 §2.3 C-4 zk_proof judge 类型统一 | 密码学确定性 |
+
+**场景 2：信誉证明跨链广播**
+
+Agent 在 Solana 积累的信誉需在 EVM 协议（DeFi、DAO）中被识别：
+
+```
+当前（W4）路径：携带签名证明（无桥）
+  Gradience upgrade_authority 离线签名：
+    { agent_pubkey, global_score, category_scores, chain="solana", timestamp }
+  → Agent 在 EVM 链携带此签名
+  → EVM ReputationVerifier 合约验证 ed25519 签名
+  → 信任模型：信任 Gradience 协议权威（类似 OAuth 签发 JWT）
+
+未来路径：LayerZero 链上同步
+  LayerZero send() 将 Reputation PDA 状态推送到 EVM
+  → EVM 端 OApp 接收并更新本地信誉快照
+  → 无需信任签名者，链上可验证
+  → 成本：每次信誉更新触发跨链消息（按需推送，非实时同步）
+```
+
+**场景 3：跨链任务结算（远期路线图）**
+
+Poster 在 Solana 发任务 + 锁仓，Agent 在 EVM 执行，结算仍在 Solana：
+
+```
+Solana Escrow ──(Wormhole 双向消息)──→ EVM 任务执行
+                                   ←── VAA 结果证明
+Solana judge_and_pay 链上验证 VAA，触发分账
+```
+
+此场景超出 W4 范围，留作协议长期路线图。实现前提：Solana 端部署 Wormhole Guardian 验证逻辑。
+
+---
+
+### 为何多链信息流比价值流更难
+
+| 维度 | 价值流（LI.FI） | 信息流（Wormhole/LayerZero） |
+|------|----------------|------------------------------|
+| 本质 | Token 从 A 链移到 B 链 | 程序执行结果或状态从 A 链证明到 B 链 |
+| 现有解法 | 成熟，SDK 直接调用 | 需要消息协议 + 链上验证逻辑 |
+| 信任模型 | 桥协议（多重签名/流动性）| 守护者网络或 ZK 证明 |
+| 实现时间 | W4 可用 | W4 初版（trusted oracle）；链上验证留后期 |
+| Gradience MVP 策略 | W4 前端/运行时集成 | W4 用链下 Judge Daemon 过渡，后续升级 Wormhole VAA |
+
+---
+
+### program-metadata：部署时 IDL 与 Security 注解
+
+`solana-program/program-metadata` 是官方提供的链上程序注解工具，不影响协议逻辑，属于部署 runbook 的一次性操作：
+
+```bash
+# 上传 Codama 生成的 IDL（Solana Explorer 自动读取并展示程序接口）
+npx @solana-program/program-metadata write idl <program-id> ./idl.json
+
+# 上传 security.txt（程序名称、描述、审计方、安全联系方式）
+npx @solana-program/program-metadata write security <program-id> ./security.json
+```
+
+security.json 包含：`name`, `description`, `auditors`, `contacts`, `source_code`, `version`。部署到 mainnet 后执行，之后通过 Squads 多签授权更新。
+
+---
+
 ## 关键架构决策
 
 | 决策 | 选择 | 理由 |
 |------|------|------|
 | 任务模型 | 仅 Race Task（离散竞争） | 持续委托与竞争并行不兼容；Delegation Task 归 Chain Hub |
-| 链选择 | Solana 首发，EVM W4 | Solana 400ms 出块 + 低 Gas；EVM 为跨链信誉扩展 |
+| 链选择 | Solana 首发，EVM W4 | Solana 400ms 出块 + 低 Gas；EVM 为跨链信誉扩展；**主 Chain Hub 永远在 Solana**，不迁移 |
 | Program 可升级 | 是，**Squads v4（3/5 多签）**控制 upgrade_authority | 开发阶段需迭代；费率常量不受 upgrade 影响 |
 | 费率 | 95/3/2 硬编码常量 | 协议承诺，不可被治理/升级修改 |
 | 支付 | SOL + SPL + Token-2022 | 内核无业务偏好，支持所有 Solana 原生资产；**标准 transfer only**，不支持 Transfer Hook / Confidential Transfer（避免恶意 Hook 拦截结算） |
@@ -544,7 +680,9 @@ W4 (04-27 ~ 04-30, Stretch Goals): 全链
 | Judge 领域匹配 | category 字段过滤 Pool | Poster 发任务时声明 category（defi/code/research/…）；JudgePool 按 category 分桶；只从匹配 category 的 Judge 中抽选，保证专业性 |
 | 角色流动性 | 同一地址可切换角色 | 任何人在不同任务中可以是 Poster、Agent 或 Judge；无许可无注册；经济激励对齐行为（Slash 惩罚作恶）|
 | 信誉存储 | 链上 PDA，按需创建 | 无需注册门槛，首次参与自动初始化 |
-| 跨链信誉 | 签名证明（无桥） | 桥是最大安全隐患；携带证明零成本 |
+| 跨链信誉（MVP） | 离线签名证明（无桥） | 桥是最大安全隐患；upgrade_authority 签名 `{agent, score, chain=solana}` → EVM ReputationVerifier 验证 ed25519；携带证明零成本，信任模型类 OAuth |
+| 跨链信誉（升级） | LayerZero OApp 链上同步 | 消除签名者信任假设；Reputation PDA 状态变更触发 LayerZero 跨链消息推送到 EVM；远期路线图 |
+| 多链扩展策略 | 价值流（LI.FI）+ 信息流（Wormhole/LayerZero）两层分离 | LI.FI 解决 token 桥接（Poster 资金、Agent 执行资金）；Wormhole VAA 解决结果验证跨链传递（MVP 用 trusted oracle 过渡）；两层职责不同，不能互相替代；见 §2.10 |
 | Indexer 事件来源 | Helius Webhooks（推送）| 替代自轮询：Helius 在 Program 日志触发时主动 HTTP POST 给 Indexer，<200ms 延迟；无需 Indexer 持续轮询 RPC，降低成本和延迟 |
 | Indexer 部署 | Cloudflare Workers + D1（Managed）/ Docker + PostgreSQL（Self-hosted）| 零运维全球边缘；宕机不影响协议；社区可独立运行 Self-hosted 节点 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
