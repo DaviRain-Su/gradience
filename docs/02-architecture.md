@@ -93,9 +93,10 @@ flowchart TB
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
 | **Indexer** | 通过 **Helius Webhooks** 接收 Program 事件推送（替代自轮询，延迟 <200ms），提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 + Helius Webhooks | 已有（重构） |
-| **钱包抽象层（Wallet Adapter）** | SDK 内置钱包适配器接口，屏蔽底层钱包实现，Agent 只调用统一的 `sign / sendTx` 接口；支持三种适配器：OpenWallet、OKX Agentic Wallet、原始 Keypair（开发测试） | 不托管资产；不决定用户用哪种钱包 | TypeScript 接口 + 各 SDK 适配器 | 新建 |
+| **钱包抽象层（Wallet Adapter）** | SDK 内置钱包适配器接口，屏蔽底层钱包实现，Agent 只调用统一的 `sign / sendTx` 接口；支持五种适配器：OpenWallet、OKX Agentic Wallet、Privy、Kite Passport、原始 Keypair（开发测试） | 不托管资产；不决定用户用哪种钱包 | TypeScript 接口 + 各 SDK 适配器 | 新建 |
 | **OpenWallet (OWS) 适配器** | 开放标准，本地自托管；Key 存 `~/.ows/`，AES-256 加密；Policy Engine 控制签名权限；scoped token；MCP 支持；适合个人用户和开发者 | 不支持 TEE 硬件隔离 | OpenWallet SDK（Node.js / Rust） | 外部集成 |
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
+| **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（W4） |
 | **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Anchor + TS + OpenWallet | 新建（W3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（W3） |
@@ -206,6 +207,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Arweave | — | evaluationCID 永久存储 | 是（Avail 可替换） |
 | OpenWallet (OWS) | — | 个人/开发者 Agent 钱包（本地自托管） | 是（钱包抽象层可替换） |
 | OKX Agentic Wallet | — | 企业级 Agent 钱包（TEE 托管，50 子钱包，x402 支持） | 是（钱包抽象层可替换） |
+| Privy | — | 开发者 Agent 钱包 Fleet（TEE + Policy Engine + 无限子钱包，Solana 原生，MPP/x402 支持） | 是（钱包抽象层可替换） |
 | MPP (`@solana/mpp`) | — | Machine Payments Protocol：Agent 执行时调用外部付费 API 的 HTTP 402 支付客户端；Solana 原生（SOL/SPL/Token-2022）；无需 API Key，按需链上付款；IETF 提案开放标准 | 是（Agent 可不调用外部 MPP 服务） |
 | Kite AI (GoKite) | Chain ID 2366 (mainnet) / 2368 (testnet) | EVM 部署目标（AI Agent 原生链）；Agent Passport 身份；x402；ERC-4337 AA | 是（W4 可选链） |
 | Absurd | — | Agent 执行轨迹持久化 + Judge Daemon 工作流引擎（仅需 PostgreSQL） | 是（可替换为其他持久化引擎） |
@@ -492,7 +494,7 @@ W4 (04-22 ~ 04-30): 全链
 | Indexer 事件来源 | Helius Webhooks（推送）| 替代自轮询：Helius 在 Program 日志触发时主动 HTTP POST 给 Indexer，<200ms 延迟；无需 Indexer 持续轮询 RPC，降低成本和延迟 |
 | Indexer 部署 | Cloudflare Workers + D1（Managed）/ Docker + PostgreSQL（Self-hosted）| 零运维全球边缘；宕机不影响协议；社区可独立运行 Self-hosted 节点 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
-| Agent 钱包 | 钱包抽象层（三种适配器） | 个人用户用 OpenWallet（本地自托管 + Policy Engine + MCP）；企业用 OKX Agentic Wallet（TEE + 50 子钱包 + x402 微支付）；SDK 接口统一，用户自选，协议不绑定 |
+| Agent 钱包 | 钱包抽象层（五种适配器） | 个人/本地：OpenWallet（自托管 + Policy Engine + MCP）；企业/OKX 生态：OKX Agentic Wallet（TEE + 50 子钱包 + x402）；**开发者 Fleet**：Privy（TEE + 无限子钱包 + Policy Engine + Solana 原生 + MPP/x402，适合运营多 Agent 并行策略）；Kite 生态：Kite Passport（W4）；开发测试：Keypair；SDK 接口统一，协议不绑定 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
 | 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
