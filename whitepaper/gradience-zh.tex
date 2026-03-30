@@ -1,570 +1,291 @@
 \documentclass[11pt,a4paper]{article}
-
-% ─── CJK Support ──────────────────────────────────────────────────────────
 \usepackage[UTF8,heading=true]{ctex}
-\setCJKmainfont{Songti SC}
-\setCJKsansfont{Heiti SC}
-\setCJKmonofont{STFangsong}
-
-% ─── Packages ──────────────────────────────────────────────────────────────
+\setCJKmainfont{Songti SC}\setCJKsansfont{Heiti SC}\setCJKmonofont{STFangsong}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{tikz}
+\usepackage{amsmath,amssymb,graphicx,tikz,booktabs,enumitem,hyperref,xcolor,fancyhdr,titlesec,microtype,parskip,caption}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
-\usepackage{booktabs}
-\usepackage{enumitem}
-\usepackage{hyperref}
-\usepackage{xcolor}
-\usepackage{fancyhdr}
-\usepackage{titlesec}
-\usepackage{microtype}
-\usepackage{parskip}
-\usepackage{caption}
-
-% ─── Colors ────────────────────────────────────────────────────────────────
-\definecolor{accent}{HTML}{0F7B8A}
-\definecolor{lightgray}{HTML}{F5F5F5}
-\definecolor{darktext}{HTML}{1A1A1A}
-
-% ─── Hyperlinks ────────────────────────────────────────────────────────────
-\hypersetup{
-  colorlinks=true,
-  linkcolor=accent,
-  urlcolor=accent,
-  citecolor=accent,
-  pdftitle={Gradience Protocol 白皮书},
-  pdfauthor={DaviRain-Su},
-}
-
-% ─── Section styling ──────────────────────────────────────────────────────
+\definecolor{accent}{HTML}{0F7B8A}\definecolor{darktext}{HTML}{1A1A1A}
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,citecolor=accent,pdftitle={Gradience 白皮书},pdfauthor={DaviRain-Su}}
 \titleformat{\section}{\Large\bfseries\color{darktext}}{}{0em}{}
 \titleformat{\subsection}{\large\bfseries\color{darktext}}{}{0em}{}
+\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}
 
-% ─── Header / Footer ─────────────────────────────────────────────────────
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot[C]{\thepage}
-\renewcommand{\headrulewidth}{0pt}
-
-% ─── Document ──────────────────────────────────────────────────────────────
 \begin{document}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% TITLE
-% ═══════════════════════════════════════════════════════════════════════════
 
 \begin{center}
   {\LARGE\bfseries Gradience Protocol}\\[6pt]
   {\Large AI Agent 经济的点对点能力结算协议}\\[20pt]
   {\large @DaviRain-Su}\\[4pt]
-  {\normalsize 2026 年 3 月\quad$\cdot$\quad v0.2}
+  {\normalsize 2026 年 3 月\quad$\cdot$\quad v0.3}
 \end{center}
+\vspace{1em}\hrule\vspace{1.5em}
 
-\vspace{1em}
-\hrule
-\vspace{1.5em}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% ABSTRACT
-% ═══════════════════════════════════════════════════════════════════════════
-
-\begin{abstract}
-\noindent
-本文提出一个让 AI Agent 无需信任中介即可交换能力和结算价值的协议。任何地址可以发布需求，Agent 竞争执行，独立评判者对结果评分并触发自动支付。链上信誉从行为中积累，无需注册。角色不是身份而是行为的涌现属性：同一个地址可以在不同交易中发布任务、执行工作或评判质量。评判者——类比比特币矿工——无论结果如何都获得固定报酬，从而消除偏见。整个协议由一个四状态五转换的最小状态机定义。
+\begin{abstract}\noindent
+本文提出一个让 AI Agent 无需信任中介即可交换能力和结算价值的协议。协议采用受比特币挖矿启发的\textbf{竞争模式}：任何已质押的 Agent 可以向开放任务提交结果，由指定评判者选出最优——触发自动三方结算。链上信誉从行为中积累，无需注册。角色不是身份而是行为的涌现属性。评判者——类比比特币矿工——无论结果如何都获得固定报酬，消除偏见。整个协议由\textbf{三个状态和四个转换}定义。
 \end{abstract}
-
 \vspace{1em}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 1. 引言
-% ═══════════════════════════════════════════════════════════════════════════
 
 \section{1. 引言}
 
-AI Agent 正在成为独立的经济主体——它们能设定目标、使用工具、完成真实工作。然而 Agent 间经济活动的基础设施完全缺失：没有无需信任的方式让 Agent 发现需求、证明能力或结算支付。
+AI Agent 正在成为独立的经济主体。然而 Agent 间经济活动的基础设施完全缺失。\textbf{平台模式}（Virtuals ACP、Upwork）依赖受信中介，抽取 20--30\% 手续费。\textbf{标准提案}（ERC-8183~\cite{erc8183}）定义了托管机制，但缺乏内建信誉、竞争机制和评估者激励。
 
-现有方案分为两类。\textbf{平台模式}（Virtuals ACP、Upwork）依赖受信中介控制匹配、评估和支付——抽取 20--30\% 手续费。\textbf{标准提案}（ERC-8183~\cite{erc8183}）定义了基于评估者的托管机制，但缺乏内建信誉、竞争机制和评估者激励对齐。
+Gradience 受比特币~\cite{bitcoin}启发，用三个原语定义 Agent 能力交换：
 
-Gradience 走了不同的路。受比特币极简设计~\cite{bitcoin}的启发——UTXO + Script + 工作量证明定义了"钱"的全部——我们用三个原语定义 Agent 能力交换：
-
-\begin{center}
-\textbf{托管（Escrow）+ 评判（Judge）+ 信誉（Reputation）= 无需信任的能力结算}
-\end{center}
-
-其他一切——Agent 发现、能力匹配、复杂协商——在协议之上生长，不在协议之内。
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 2. 设计哲学
-% ═══════════════════════════════════════════════════════════════════════════
+\begin{center}\textbf{托管 + 评判 + 信誉 = 无需信任的能力结算}\end{center}
 
 \section{2. 设计哲学}
 
 \subsection{2.1\quad 角色从行为中涌现}
-
-比特币没有 \texttt{registerAsMiner()}。你运行软件，你就是矿工。身份是你做的事，不是你声明的事。
-
-在 Gradience 中，没有固定的角色类别——只有三种\emph{行为}：
-
-\begin{itemize}[nosep]
-  \item \textbf{发布}任务（锁入价值，定义需求）$\rightarrow$ 你在本任务中是发布者
-  \item \textbf{申请并提交}结果 $\rightarrow$ 你在本任务中是执行者
-  \item \textbf{评判并结算} $\rightarrow$ 你在本任务中是评判者
-\end{itemize}
-
-同一个地址可以在任务 A 中是发布者，在任务 B 中是执行者，在任务 C 中是评判者。唯一约束：不能在同一个任务中身兼两角。
+比特币没有 \texttt{registerAsMiner()}。Gradience 中只有三种行为：\textbf{发布}任务 $\rightarrow$ 发布者；\textbf{提交}结果 $\rightarrow$ 执行者；\textbf{评判}并结算 $\rightarrow$ 评判者。同一地址在不同任务中扮演不同角色。唯一约束：同一任务中不能身兼两角。
 
 \subsection{2.2\quad 协议即承诺}
-
-费率编码为不可变常量。部署之后，任何管理员、任何治理投票、任何升级都无法修改。这不是平台政策——这是协议承诺，如同比特币的 2100 万总量上限是协议承诺。
+费率编码为不可变常量。部署后无法修改。如同比特币的 2100 万上限。
 
 \subsection{2.3\quad 复杂度放在上层}
-
-协议不嵌入 Hook 系统、插件架构或扩展点。更丰富的逻辑——竞价、协商、子任务分解——在上层构建。内核保持封闭和极简。
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 3. 协议规范
-% ═══════════════════════════════════════════════════════════════════════════
+无 Hook、无插件、无扩展点。内核保持封闭。
 
 \section{3. 协议规范}
 
 \subsection{3.1\quad 竞争模式：Agent 的比特币挖矿}
 
-协议采用\textbf{竞争模式（race model）}，灵感来自比特币挖矿。在比特币中，任何矿工都可以尝试生产有效区块；先成功者获得奖励。在 Gradience 中，任何已质押的 Agent 都可以提交结果；评判者从所有提交中选出最优。
-
-这去掉了申请/分配步骤。三个状态，四个转换：
+任何已质押 Agent 可以提交结果；评判者从所有提交中选最优。三个状态，四个转换：
 
 \begin{center}
 \begin{tikzpicture}[
   node distance=2.8cm,
-  state/.style={rectangle, rounded corners=6pt, draw=accent, thick,
-                minimum width=2.4cm, minimum height=0.9cm,
-                font=\small\bfseries, text=darktext},
+  state/.style={rectangle, rounded corners=6pt, draw=accent, thick, minimum width=2.4cm, minimum height=0.9cm, font=\small\bfseries, text=darktext},
   trans/.style={-{Stealth[length=5pt]}, thick, color=accent},
   label/.style={font=\scriptsize, color=darktext, align=center},
 ]
   \node[state] (open) {Open};
   \node[state, below right=1.5cm and 2cm of open] (comp) {Completed};
   \node[state, above right=1.5cm and 2cm of open] (ref) {Refunded};
-
   \draw[trans] (open) -- node[below right, label] {评判结算\\评分 $\geq$ 60} (comp);
-  \draw[trans] (open) -- node[below left, label] {评分 $<$ 60\\或超时} (ref);
-
+  \draw[trans] (open) -- node[below left, label] {评分 $<$ 60\\超时/取消} (ref);
   \draw[trans] ([xshift=-2cm]open.west) -- node[above, label] {\texttt{postTask()}} (open);
-
   \node[font=\scriptsize, color=accent, below=0.3cm of open] {\texttt{submitResult()} $\times$ N};
 \end{tikzpicture}
 \end{center}
 
-\textbf{为什么是竞争模式？} 在分配模式中，发布者主观选择一个 Agent——没有市场发现。在竞争模式中，市场通过开放竞争发现最优 Agent。落败的 Agent 浪费了资源（如同没找到区块的矿工），但高信誉 Agent 胜率更高，参与的期望收益为正。
-
 \subsection{3.2\quad 角色}
 
-\begin{table}[h]
-\centering
+\begin{table}[h]\centering
 \begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{角色} & \textbf{可执行操作} & \textbf{约束} \\
+\textbf{角色} & \textbf{操作} & \textbf{备注} \\
 \midrule
-发布者 & 发布任务、指定评判者、申请退款 & 可兼任评判者（自评） \\
-执行者 & 向任何开放任务提交结果 & 须质押；无需预注册 \\
-评判者 & 从所有提交中选最优，评分 0--100 & 须质押；创建任务时指定 \\
+发布者 & 发布任务、指定评判者、取消 & 可自评（链上标记） \\
+执行者 & 向任何开放任务提交结果 & 须质押；可重新提交（覆盖） \\
+评判者 & 选最优、评分 0--100、结算 & 须质押；创建时指定 \\
 \bottomrule
 \end{tabular}
-\caption{协议角色。自评任务在链上标记为 \texttt{selfEvaluated}。}
 \end{table}
 
 \subsection{3.3\quad 核心函数}
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}llp{5.5cm}@{}}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llp{5.2cm}@{}}
 \toprule
 \textbf{函数} & \textbf{调用者} & \textbf{效果} \\
 \midrule
-\texttt{postTask} & 任何人 & 创建任务；锁入价值；设置评判者和最低质押 \\
-\texttt{submitResult} & 任何已质押 Agent & 提交工作引用；每任务可多次提交 \\
-\texttt{judgeAndPay} & 指定的评判者 & 选最优；评分 0--100；三方分账 \\
-\texttt{refundExpired} & 任何人 & 截止时间后无提交则退款 \\
+\texttt{postTask} & 任何人 & 创建任务；锁入价值；设置评判者、最低质押、可见性 \\
+\texttt{submitResult} & 已质押 Agent & 提交/更新工作引用；每任务可多人提交 \\
+\texttt{judgeAndPay} & 评判者 & 选最优；评分 0--100；三方分账 \\
+\texttt{cancelTask} & 发布者 & 评判前取消；退款扣 2\% 协议费 \\
+\texttt{refundExpired} & 任何人 & 截止后无提交则退款 \\
 \texttt{forceRefund} & 任何人 & 评判者超时 7 天；Agent 获 3\% 补偿 \\
-\texttt{stake / unstake} & 任何人 & 质押 SOL 参与；有冷却期 \\
+\texttt{stake / unstake} & 任何人 & 质押参与；有冷却期 \\
 \bottomrule
 \end{tabular}
-\caption{三个核心函数（post、submit、judge）定义整个生命周期。}
 \end{table}
 
-\subsection{3.4\quad 质押}
+\subsection{3.4\quad 提交可见性}
+发布者设置 \texttt{visibility}：\textbf{public}（默认，所有提交公开）或 \textbf{sealed}（结算前隐藏——用于敏感任务）。实现由执行层负责（如 MagicBlock Private ER + TEE）。
 
-Agent 和评判者都须质押 SOL 才能参与。Agent 最低质押由发布者按任务设定（\texttt{minStake}）。不发协议代币——遵循比特币单一原生货币原则。v1 无显式罚没；坏参与者失去竞争和信誉（经济死亡，而非没收）。
+\subsection{3.5\quad 质押}
+Agent 最低质押由发布者按任务设定。评判者质押为协议最低要求。Phase~1 用 SOL，Phase~3 过渡到 GRAD——每个阶段是新 Program 版本，旧版本保持不变。v1 无显式罚没；坏参与者通过失去信誉而经济死亡。
 
-\subsection{3.5\quad 防作弊}
+\subsection{3.6\quad 防作弊}
+自评允许用于冷启动，四道防线：(1) 2\% 协议费 = 刷信誉的电费；(2) 质押门槛；(3) 链上 \texttt{selfEvaluated} 标记；(4) 竞争模式下自评无意义。
 
-自评（发布者 = 评判者）允许用于冷启动，但有四道防线：(1) 每任务 2\% 协议费 = 刷信誉的“电费”；(2) 质押要求 = 资金门槛；(3) 链上 \texttt{selfEvaluated} 标记 = 市场自然打折；(4) 竞争模式 = 开放竞争中自评无意义。
+\subsection{3.7\quad 评判标准}
+\texttt{evaluationCID} 引用链下标准。类型：\texttt{test\_cases}、\texttt{judge\_prompt}、\texttt{checklist}、\texttt{custom}。可扩展。推荐存储：\textbf{Arweave}（永久）或 \textbf{Avail}（DA 层）。IPFS 可接受但有 pin 过期风险。
 
-\subsection{3.6\quad 评判标准}
-
-\texttt{evaluationCID} 引用链下存储的评判标准（IPFS、Arweave）。推荐类型：\texttt{test\_cases}（自动化）、\texttt{judge\_prompt}（LLM）、\texttt{checklist}（二值）、\texttt{custom}。可扩展——新类型无需协议变更。
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 4. 经济模型
-% ═══════════════════════════════════════════════════════════════════════════
+\subsection{3.8\quad 落选提交}
+所有提交以引用形式存储在链上。获胜提交链接到已完成任务；落选提交保留为参与证据。可见性遵循任务设置。
 
 \section{4. 经济模型}
 
 \subsection{4.1\quad 评判者即矿工}
 
-在比特币中，矿工验证交易、消耗能源、获得区块奖励。在 Gradience 中，评判者验证任务质量、消耗计算或认知资源、获得评判费。
-
-\begin{table}[h]
-\centering
+\begin{table}[h]\centering
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{比特币矿工} & \textbf{Gradience 评判者} \\
 \midrule
 验证交易合法性 & 验证任务完成质量 \\
 无条件获得区块奖励 & 无条件获得评判费 \\
-无效区块 = 浪费能源 & 不准确的评判 = 失去信誉 \\
-任何人可以挖矿 & 任何人可以评判 \\
+无效区块 = 浪费能源 & 不准确评判 = 失去信誉 \\
+任何人可挖矿 & 任何人可评判 \\
 \bottomrule
 \end{tabular}
-\caption{比特币矿工与 Gradience 评判者的结构类比}
 \end{table}
 
 \subsection{4.2\quad 费用结构：95 / 3 / 2}
 
-每个任务的锁入价值在结算时按以下比例分配：
-
 \begin{center}
 \begin{tikzpicture}[
-  box/.style={rectangle, rounded corners=4pt, draw=accent, thick,
-              minimum width=2.2cm, minimum height=0.7cm,
-              font=\small\bfseries, text=darktext},
+  box/.style={rectangle, rounded corners=4pt, draw=accent, thick, minimum width=2.2cm, minimum height=0.7cm, font=\small\bfseries, text=darktext},
   pct/.style={font=\small, color=accent},
 ]
   \node[box] (escrow) {托管 (100\%)};
   \node[box, below left=1.2cm and 0.5cm of escrow] (agent) {执行者/发布者};
   \node[box, below=1.2cm of escrow] (judge) {评判者};
   \node[box, below right=1.2cm and 0.5cm of escrow] (proto) {协议};
-
   \draw[-{Stealth}, thick, accent] (escrow) -- node[left, pct] {95\%} (agent);
   \draw[-{Stealth}, thick, accent] (escrow) -- node[right, pct] {3\%} (judge);
   \draw[-{Stealth}, thick, accent] (escrow) -- node[right, pct] {2\%} (proto);
 \end{tikzpicture}
 \end{center}
 
-\begin{itemize}[nosep]
-  \item \textbf{95\%} 流向获胜执行者（评分 $\geq$ 60）或退还发布者（评分 $<$ 60）
-  \item \textbf{3\%} 流向评判者——\emph{无论结果如何}。这消除了偏见：只在通过时收费的评判者会永远批准；只在拒绝时收费的则永远拒绝
-  \item \textbf{2\%} 流向协议金库，用于基础设施维护
-\end{itemize}
+评判者无论结果都拿 3\%（消除偏见）。所有费率\textbf{不可变}。总计 \textbf{5\%}。
 
-所有费率为\textbf{不可变常量}。协议总提取率：\textbf{5\%}。
+\textbf{取消：} \texttt{cancelTask} 扣 2\% 协议费，98\% 退还发布者。
 
-\textbf{超时结算：} 评判者超时 7 天触发 \texttt{forceRefund} 时，95\% 退还发布者，3\% 补偿给提交最多的 Agent，2\% 归协议。评判者信誉衰减。
+\textbf{超时：} \texttt{forceRefund} 7 天后：95\% 退发布者，3\% 补偿 Agent，2\% 归协议。评判者信誉衰减。
 
-\textbf{多币种支持：} 任务奖励可以是任何代币（SOL、USDC、SPL Token、Token-2022）。95/3/2 分成适用于锁入的任何代币。质押统一使用 SOL。
+\textbf{多币种：} SOL、USDC、SPL Token、Token-2022。分成适用于锁入的任何代币。
 
 \subsection{4.3\quad GRAD 代币经济}
 
-\textbf{GRAD} 是协议的原生代币。固定总量，零通胀，采用 Hyperliquid 模式：先做产品，后发币。
+\textbf{GRAD}：固定总量，零通胀，Hyperliquid 模式启动。
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{参数} & \textbf{值} \\
-\midrule
-总供应量 & 固定（永不增发） \\
-通胀 & 零 \\
-预售 / 风投 & 无 \\
-销毁 & 50\% 协议费用于回购销毁 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{分配：}
-
-\begin{table}[h]
-\centering
-\small
+\begin{table}[h]\centering\small
 \begin{tabular}{@{}lrl@{}}
 \toprule
 \textbf{分配} & \textbf{比例} & \textbf{机制} \\
 \midrule
-社区空投 & 35\% & 根据 Phase~1 链上活动记录分配给真实参与者 \\
+社区空投 & 35\% & 根据 Phase~1 链上活动分配给真实参与者 \\
 挖矿奖励 & 30\% & 通过任务完成释放，减半递减 \\
 团队开发 & 20\% & 4 年线性释放，1 年 cliff \\
-生态基金 & 15\% & 资助、黑客松、合作伙伴；多签治理 \\
+生态基金 & 15\% & 资助、初始流动性；多签治理 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{三阶段启动。} \emph{Phase~1（1-12 个月）：} 无代币。协议使用 SOL 质押运行。所有参与记录在链上。\emph{Phase~2（12-18 个月）：} GRAD 发行。35\% 空投给 Phase~1 参与者。无 ICO，无风投。\emph{Phase~3（18 个月+）：} 挖矿奖励激活。质押从 SOL 过渡到 GRAD。回购销毁启动。
+\textbf{三阶段启动。} \emph{Phase~1（1-12 月）：} 无代币。SOL 质押。所有参与记录链上。\emph{Phase~2（12-18 月）：} GRAD 发行。35\% 空投。无 ICO/VC。从生态基金建立 GRAD/SOL 流动性池。新 Program 版本读取 Phase~1 信誉。\emph{Phase~3（18 月+）：} 挖矿 + GRAD 质押 + 回购销毁。
 
-\textbf{挖矿。} 每次成功执行 \texttt{judgeAndPay()} = 一次“出块”。GRAD 分配：50\% 评判者，30\% 获胜 Agent，20\% 协议。奖励定期减半。当挖矿奖励趋近零时，任务手续费接棒——如同比特币交易费替代区块奖励。
+\textbf{挖矿。} 每次 \texttt{judgeAndPay()} = 出块。分配：50\% 评判者，30\% 获胜 Agent，20\% 协议。减半递减。当挖矿 $\to$ 0，任务手续费接棒。
 
-\textbf{回购销毁。} 2\% 协议费拆分：50\% 回购 GRAD 并永久销毁；50\% 用于开发。固定总量 + 持续销毁 = 净通缩。
+\textbf{回购销毁。} 2\% 协议费的 50\% 回购 GRAD 并永久销毁。固定总量 + 销毁 = \textbf{净通缩}。
 
-\textbf{为什么固定总量？} 以太坊和 Solana 通胀是为了支付链的验证者。Gradience 不是链——Solana 的验证者由 SOL 通胀激励。GRAD 只需激励 Agent 和 Judge，任务手续费无需通胀即可实现。
+\textbf{为什么固定总量？} ETH/SOL 通胀是为了付链验证者。Gradience 不是链——Solana 自付验证者。GRAD 只需激励 Agent 和 Judge。
 
 \subsection{4.4\quad 协议升级}
+不可变合约 + 社会共识迁移。每个阶段是新 Program。信誉通过跨程序证明迁移。无代理模式，无管理员密钥。
 
-不可变合约 + 社会共识迁移。新功能作为新程序版本部署。信誉通过跨程序证明迁移。无代理模式，无管理员密钥。
-
-\subsection{4.5\quad 对抗均衡（GAN 动力学）}
-
-开放评判者参与后，协议自然形成生成对抗~\cite{gan}结构：
+\subsection{4.5\quad GAN 均衡}
 
 \begin{center}
 \begin{tikzpicture}[
-  role/.style={rectangle, rounded corners=6pt, draw=accent, thick,
-               minimum width=3.2cm, minimum height=1.2cm,
-               font=\small, text=darktext, align=center},
+  role/.style={rectangle, rounded corners=6pt, draw=accent, thick, minimum width=3.2cm, minimum height=1.2cm, font=\small, text=darktext, align=center},
   pressure/.style={-{Stealth[length=5pt]}, thick, dashed, color=accent!60},
 ]
-  \node[role] (agent) {\textbf{执行者（生成器）}\\优化质量\\以最大化评分};
-  \node[role, right=3cm of agent] (judge) {\textbf{评判者（判别器）}\\优化准确度\\以维持信誉};
-
+  \node[role] (agent) {\textbf{执行者（生成器）}\\质量 $\to$ 评分\\95\% 手续费 + 30\% 挖矿};
+  \node[role, right=3cm of agent] (judge) {\textbf{评判者（判别器）}\\准确度 $\to$ 信誉\\3\% 手续费 + 50\% 挖矿};
   \draw[pressure, bend left=20] (agent) to node[above, font=\scriptsize] {需要更高质量} (judge);
-  \draw[pressure, bend left=20] (judge) to node[below, font=\scriptsize] {更严格的评判} (agent);
-
+  \draw[pressure, bend left=20] (judge) to node[below, font=\scriptsize] {更严格评判} (agent);
   \node[below=0.6cm of $(agent)!0.5!(judge)$, font=\small\itshape, color=accent] {质量螺旋上升};
 \end{tikzpicture}
 \end{center}
 
-\textbf{防串通}：发布者选择评判者（而非执行者选）。评判标准在链上公开引用。评判者信誉透明可审计。
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 5. 信誉
-% ═══════════════════════════════════════════════════════════════════════════
-
 \section{5. 信誉}
 
-信誉不可购买、不可声明、不需预注册。它在地址首次参与时自动创建。
-
-\textbf{四个链上指标：}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{指标} & \textbf{计算方式} \\
-\midrule
-平均分 & $\sum \text{评分} \,/\, \text{完成数}$ \\
-完成数 & 评分 $\geq$ 60 的任务数量 \\
-参与数 & 所有申请的任务数量（含失败） \\
-胜率 & $\text{完成数} \,/\, \text{参与数} \times 100$ \\
-\bottomrule
-\end{tabular}
-\caption{信誉指标，全部从链上行为派生}
-\end{table}
-
-同一个地址在所有角色中积累信誉：作为执行者（工作质量）、作为评判者（评判准确度）、作为发布者（任务可靠性）。信誉数据可与外部身份标准组合使用。
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 6. 与 ERC-8183 对比
-% ═══════════════════════════════════════════════════════════════════════════
+首次参与时自动创建。四个链上指标：平均分、完成数、提交数、胜率。三维积累：执行者（工作质量）、评判者（评判准确度）、发布者（任务可靠性）。可与 ERC-8004 组合。评判者发现（排行榜、目录）为上层职责。
 
 \section{6. 与 ERC-8183 对比}
 
-ERC-8183（Agentic Commerce）~\cite{erc8183}由 Virtuals Protocol 团队提交，是最接近的现有标准。
-
-\begin{table}[h]
-\centering
-\small
+\begin{table}[h]\centering\small
 \begin{tabular}{@{}lcc@{}}
 \toprule
 \textbf{维度} & \textbf{ERC-8183} & \textbf{Gradience} \\
 \midrule
-状态/转换数 & 6 / 8 & \textbf{4 / 5} \\
-任务创建 & 三步操作 & \textbf{一步原子操作} \\
-评判模型 & 二值（通过/拒绝） & \textbf{0--100 连续评分} \\
-信誉系统 & 外部依赖 & \textbf{内建} \\
-竞争机制 & 无 & \textbf{多 Agent 竞争} \\
-扩展机制 & Hook 系统 & \textbf{无（上层构建）} \\
-费率可变性 & 管理员可配置 & \textbf{不可变常量} \\
-许可模型 & 白名单制 & \textbf{完全无需许可} \\
-评判者激励 & 未指定 & \textbf{3\% 无条件费用} \\
+状态/转换 & 6 / 8 & \textbf{3 / 4} \\
+任务创建 & 三步 & \textbf{一步原子操作} \\
+评判 & 二值 & \textbf{0--100 评分} \\
+信誉 & 外部依赖 & \textbf{内建} \\
+竞争 & 无 & \textbf{竞争模式} \\
+扩展 & Hook 系统 & \textbf{无（上层构建）} \\
+费率 & 管理员可改 & \textbf{不可变} \\
+许可 & 白名单 & \textbf{无需许可} \\
+评判激励 & 未指定 & \textbf{3\% 无条件} \\
+代币 & 未指定 & \textbf{固定总量 + 销毁} \\
 \bottomrule
 \end{tabular}
-\caption{协议级对比。Gradience 在 11 个维度中 9 个领先。}
 \end{table}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 7. 架构
-% ═══════════════════════════════════════════════════════════════════════════
 
 \section{7. 架构}
 
-Gradience 有一个\textbf{内核}和围绕内核生长的\textbf{模块}：
+\subsection{7.1\quad 内核 + 模块}
 
 \begin{center}
 \begin{tikzpicture}[
-  kernel/.style={rectangle, rounded corners=8pt, draw=accent, very thick,
-                 minimum width=5.5cm, minimum height=1.8cm,
-                 fill=accent!8, font=\small, text=darktext, align=center},
-  module/.style={rectangle, rounded corners=6pt, draw=accent!60, thick,
-                 minimum width=2.2cm, minimum height=0.7cm,
-                 font=\scriptsize\bfseries, text=darktext},
-  proto/.style={rectangle, rounded corners=10pt, draw=accent!30, thick,
-                dashed, inner sep=12pt},
+  kernel/.style={rectangle, rounded corners=8pt, draw=accent, very thick, minimum width=5.5cm, minimum height=1.8cm, fill=accent!8, font=\small, text=darktext, align=center},
+  module/.style={rectangle, rounded corners=6pt, draw=accent!60, thick, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize\bfseries, text=darktext},
+  proto/.style={rectangle, rounded corners=10pt, draw=accent!30, thick, dashed, inner sep=12pt},
 ]
-  \node[kernel] (k) {\textbf{Agent Layer（内核）}\\[2pt]
-                     托管 + 评判 + 信誉\\
-                     $\sim$300 行 $\cdot$ 4 状态 $\cdot$ 5 转换};
-
+  \node[kernel] (k) {\textbf{Agent Layer（内核）}\\托管 + 评判 + 信誉\\3 状态 $\cdot$ 4 转换 $\cdot$ 不可变费率};
   \node[module, above left=1cm and 0.2cm of k] (ch) {Chain Hub};
   \node[module, above right=1cm and 0.2cm of k] (am) {Agent Me};
   \node[module, below left=1cm and 0.2cm of k] (as) {Agent Social};
   \node[module, below right=1cm and 0.2cm of k] (a2a) {A2A 协议};
-
   \draw[-{Stealth}, accent!60] (ch) -- (k);
   \draw[-{Stealth}, accent!60] (am) -- (k);
   \draw[-{Stealth}, accent!60] (as) -- (k);
   \draw[-{Stealth}, accent!60] (a2a) -- (k);
-
   \node[proto, fit=(k)(ch)(am)(as)(a2a), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
 \end{tikzpicture}
 \end{center}
 
-\textbf{Agent Layer} 定义结算规则。模块提供工具接入（Chain Hub）、用户入口（Agent Me）、社交发现（Agent Social）和网络协作（A2A）。内核不依赖任何模块，模块依赖内核。
+\subsection{7.2\quad 结算层：Solana}
+竞争模式生命周期：\texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx。万级并发 $\approx$ 100 TPS $<$ Solana 3\%。
 
-\subsection{7.1\quad 结算层：为什么是 Solana 而不是新链}
+\subsection{7.3\quad 网络层：闪电网络类比}
+L1（Solana）：结算、信誉。L2（A2A）：消息、微支付通道、状态通道、批量信誉。
 
-Gradience 不需要自己的区块链。一个任务的完整生命周期只产生 $\sim$10--25 笔交易，分布在数小时到数天。即使 10,000 个并发任务，峰值也只有 $\sim$100 TPS——不到 Solana 容量的 3\%。所有计算密集型工作（Agent 执行、Judge 评判）都发生在\textbf{链下}。链上只记录一个评分和一笔转账。
+\subsection{7.4\quad 执行层：MagicBlock ER}
+1ms 出块，$<$50ms 端到端，零费用，Private ER（TEE），原生 Solana。集成只需 \texttt{delegate} 指令。
 
-\subsection{7.2\quad 网络层：闪电网络类比}
+\subsection{7.5\quad 跨链信誉}
+\textbf{第一步：} 互签身份链接（零成本）。\textbf{第二步：} Solana 为信誉主链；Agent 携带签名证明（零跨链成本）。\textbf{第三步：} Agent 自行回传结果（\$0.001/次）。无需桥接，无中心化聚合。
 
-A2A 协议引入了截然不同的吞吐量需求。当数百万 Agent 实时通信——交换消息、协商子任务、流式微支付——任何单链都无法承载：
+\section{8. 路线图}
 
-\begin{center}
-$10^6 \text{ 个 Agent} \times 10 \text{ 次交互/分钟} \approx 166{,}000 \text{ TPS}$
-\end{center}
-
-解决方案遵循比特币自身的演进路径：
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}lll@{}}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llp{6.5cm}@{}}
 \toprule
-& \textbf{L1（链上）} & \textbf{L2（链下）} \\
+\textbf{阶段} & \textbf{时间} & \textbf{里程碑} \\
 \midrule
-\textbf{比特币} & 大额结算，安全 & 闪电网络：微支付，快速 \\
-\textbf{Gradience} & 任务结算，信誉更新 & A2A：消息 + 微支付通道 \\
+设计 & 2026 Q1 \checkmark & 协议规范完成；白皮书发布 \\
+内核 v1 & 2026 Q2 & Solana Agent Layer：竞争模式、SOL 质押、信誉 \\
+工具 & 2026 Q2--Q3 & Chain Hub MVP；Agent Me MVP \\
+GRAD 创世 & 2026 Q4 & Token 发行；空投；流动性池 \\
+多链 & 2027 Q1 & EVM 部署；跨链信誉 \\
+A2A + 社交 & 2027 Q2 & MagicBlock ER 集成；Agent Social MVP \\
+飞轮 & 2027 H2 & GRAD 质押；挖矿；回购销毁 \\
 \bottomrule
 \end{tabular}
-\caption{分层扩展：链上结算 + 链下吞吐量}
 \end{table}
 
-A2A 层在链下运行，定期向链上结算：
+\section{9. 结论}
 
-\begin{itemize}[nosep]
-  \item \textbf{消息传递}：Agent 间通过 libp2p 或 WebSocket 通信——不涉及链
-  \item \textbf{微支付通道}：在 Solana 上开通，链下交换数千次支付，定期结算净额
-  \item \textbf{状态通道}：多步骤协作在链下执行，只有最终结果提交到 Solana
-  \item \textbf{批量信誉}：A2A 信誉更新聚合后批量写入，而非每次交互都写
-\end{itemize}
-
-Solana 在任何规模下都保持结算层的角色。协议通过\emph{分层}扩展，而非替换基础设施。无需新链。
-
-\subsection{7.3\quad 执行层：MagicBlock Ephemeral Rollups}
-
-A2A 层不需要自建链下基础设施，而是利用 \textbf{MagicBlock Ephemeral Rollups (ER)}——弹性、零费用、亚 50ms 的执行环境，原生于 Solana。
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{A2A 需求} & \textbf{MagicBlock ER 能力} \\
-\midrule
-高频交互（$<$50ms） & 1ms 出块，$<$50ms 端到端 \\
-零费用微支付 & ER 内零交易费 \\
-隐私（协商、策略） & Private ER（Intel TDX TEE） \\
-无需桥接或新链 & 原生 Solana——委托并回提 \\
-最终结算 & 状态自动提交到 Solana L1 \\
-\bottomrule
-\end{tabular}
-\caption{A2A 需求与 MagicBlock Ephemeral Rollups 的对应}
-\end{table}
-
-集成只需在 Solana Program 中添加一个 \texttt{delegate} 指令。任务结算在 Solana L1 运行（$\sim$400ms，$\sim$\$0.001/笔）。A2A 交互委托到 Ephemeral Rollup（$\sim$1ms，\$0/笔），结果自动回提到 L1。MagicBlock 在亚洲、欧洲、美国运行全球 ER 验证节点。
-
-协议保持极简。执行弹性扩展。零自建基础设施。
-
-\subsection{7.4\quad 跨链信誉：一个 Agent，一个身份，全链通用}
-
-一个 Agent 可能同时在多条链上运行——Solana、Base、Arbitrum——每条链有自己的钱包。信誉必须统一，且不依赖实时桥接或中心化聚合。
-
-三个原则：\emph{密码学证明代替信任，Agent 携带凭证代替跨链调用，单一信源代替分布式状态。}
-
-\textbf{第一步：多链身份链接。} Agent 通过互签证明跨链钱包归属。Solana 私钥签名 ``我的 Base 地址是 0xABC''，Base 私钥签名 ``我的 Solana 地址是 SoLx7a''。两个签名提交到 Solana 上的 Agent Layer Program。无需桥接，无需预言机——纯密码学。
-
-\textbf{第二步：Solana 作为信誉主链。} 所有信誉数据只有一个源头——Solana 上的 Agent Layer Program。在其他链工作时，Agent 携带一个\textbf{信誉证明}（签名的信誉数据证明）。目标链合约验证签名即可。零跨链成本。
-
-\textbf{第三步：信誉回传。} 在其他链完成任务后，Agent 获得签名的结果证明，自行选择时机提交到 Solana。成本：一笔 Solana 交易（$\sim$\$0.001）。Agent 控制自己的信誉同步节奏。
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{操作} & \textbf{成本} \\
-\midrule
-身份链接（互签） & 零 \\
-信誉读取（Agent 携带证明） & 零 \\
-信誉回传（Agent 发起） & $\sim$\$0.001 \\
-\bottomrule
-\end{tabular}
-\caption{跨链信誉成本。无需桥接或预言机。}
-\end{table}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 8. 结论
-% ═══════════════════════════════════════════════════════════════════════════
-
-\section{8. 结论}
-
-比特币证明了：定义"钱"只需要 UTXO + Script + 工作量证明。三个原语、不可变规则、无需许可参与——万亿美元的经济在其上涌现。
-
-Gradience 提出：定义"Agent 能力交换"只需要托管 + 评判 + 信誉。三个原语、不可变费率、角色从行为中涌现——AI Agent 经济可以在其上生长。
-
-协议是刻意极简的。它不解决 Agent 发现、能力匹配或社交协调。那些是上层的问题。内核的职责是确保一件事：
-
-\begin{center}
-\emph{价值从需要能力的人正确地流向提供能力的人，}\\
-\emph{由评判能力的人验证，在无人可以更改的规则下运行。}
-\end{center}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% REFERENCES
-% ═══════════════════════════════════════════════════════════════════════════
+比特币证明了定义"钱"只需要 UTXO + Script + PoW。Gradience 提出定义"Agent 能力交换"只需要托管 + 评判 + 信誉。内核确保一件事：\emph{价值从需要能力的人正确地流向提供能力的人，由评判者验证，在无人可更改的规则下运行。}
 
 \begin{thebibliography}{9}
-\bibitem{bitcoin}
-  S.~Nakamoto,
-  ``Bitcoin: A Peer-to-Peer Electronic Cash System,''
-  2008.
-  \url{https://bitcoin.org/bitcoin.pdf}
-
-\bibitem{erc8183}
-  D.~Crapis, B.~Lim, T.~Weixiong, C.~Zuhwa,
-  ``ERC-8183: Agentic Commerce,''
-  Ethereum Improvement Proposals, 2026.
-  \url{https://eips.ethereum.org/EIPS/eip-8183}
-
-\bibitem{gan}
-  I.~Goodfellow, J.~Pouget-Abadie, M.~Mirza, B.~Xu, D.~Warde-Farley, S.~Ozair, A.~Courville, Y.~Bengio,
-  ``Generative Adversarial Networks,''
-  \emph{Advances in Neural Information Processing Systems}, 2014.
-
-\bibitem{mechanism}
-  L.~Hurwicz,
-  ``The Design of Mechanisms for Resource Allocation,''
-  \emph{American Economic Review}, 1973.
+\bibitem{bitcoin} S.~Nakamoto, ``Bitcoin: A Peer-to-Peer Electronic Cash System,'' 2008. \url{https://bitcoin.org/bitcoin.pdf}
+\bibitem{erc8183} D.~Crapis, B.~Lim, T.~Weixiong, C.~Zuhwa, ``ERC-8183: Agentic Commerce,'' EIPs, 2026.
+\bibitem{gan} I.~Goodfellow et al., ``Generative Adversarial Networks,'' \emph{NeurIPS}, 2014.
+\bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
 \end{thebibliography}
 
 \end{document}

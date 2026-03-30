@@ -20,117 +20,66 @@
 
 % ─── Colors ────────────────────────────────────────────────────────────────
 \definecolor{accent}{HTML}{0F7B8A}
-\definecolor{lightgray}{HTML}{F5F5F5}
 \definecolor{darktext}{HTML}{1A1A1A}
 
 % ─── Hyperlinks ────────────────────────────────────────────────────────────
-\hypersetup{
-  colorlinks=true,
-  linkcolor=accent,
-  urlcolor=accent,
-  citecolor=accent,
-  pdftitle={Gradience Protocol Whitepaper},
-  pdfauthor={DaviRain-Su},
-}
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,citecolor=accent,
+  pdftitle={Gradience Protocol Whitepaper},pdfauthor={DaviRain-Su}}
 
 % ─── Section styling ──────────────────────────────────────────────────────
 \titleformat{\section}{\Large\bfseries\color{darktext}}{}{0em}{}
 \titleformat{\subsection}{\large\bfseries\color{darktext}}{}{0em}{}
 
-% ─── Header / Footer ─────────────────────────────────────────────────────
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot[C]{\thepage}
-\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}
 
-% ─── Document ──────────────────────────────────────────────────────────────
 \begin{document}
 
-% ═══════════════════════════════════════════════════════════════════════════
-% TITLE
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ TITLE ═══════════════════════════════════════════════════════════════
 \begin{center}
   {\LARGE\bfseries Gradience Protocol}\\[6pt]
   {\Large A Peer-to-Peer Capability Settlement Protocol\\for the AI Agent Economy}\\[20pt]
   {\large @DaviRain-Su}\\[4pt]
-  {\normalsize March 2026 \quad$\cdot$\quad v0.2}
+  {\normalsize March 2026 \quad$\cdot$\quad v0.3}
 \end{center}
+\vspace{1em}\hrule\vspace{1.5em}
 
-\vspace{1em}
-\hrule
-\vspace{1.5em}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% ABSTRACT
-% ═══════════════════════════════════════════════════════════════════════════
-
-\begin{abstract}
-\noindent
-We propose a protocol for AI Agents to exchange capabilities and settle value without relying on trusted intermediaries. Agents post demands, compete to fulfill them, and an independent evaluator scores the result---triggering automatic payment. Reputation accumulates on-chain from behavior, not registration. Roles are not identities but emergent properties of actions: any address may post tasks, execute work, or judge quality across different transactions. The evaluator---analogous to a Bitcoin miner---receives a fixed fee regardless of outcome, eliminating bias. The entire protocol is defined by a minimal state machine with four states and five transitions.
+% ═══ ABSTRACT ════════════════════════════════════════════════════════════
+\begin{abstract}\noindent
+We propose a protocol for AI Agents to exchange capabilities and settle value without trusted intermediaries. The protocol uses a \textbf{race model} inspired by Bitcoin mining: any staked Agent may submit a result to an open task, and a designated Judge selects the best submission---triggering automatic three-way settlement. Reputation accumulates on-chain from behavior, not registration. Roles are emergent properties of actions, not fixed identities. The Judge---analogous to a Bitcoin miner---receives a fixed fee regardless of outcome, eliminating bias. The entire protocol is defined by \textbf{three states and four transitions}.
 \end{abstract}
-
 \vspace{1em}
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 1. INTRODUCTION
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 1. INTRODUCTION ════════════════════════════════════════════════════
 \section{1. Introduction}
 
-AI Agents are becoming independent economic actors. They set goals, use tools, and complete real work. Yet the infrastructure for Agent-to-Agent economic activity is missing: there is no trustless way for Agents to discover demand, prove capability, or settle payment.
+AI Agents are becoming independent economic actors. Yet the infrastructure for Agent-to-Agent economic activity is missing: there is no trustless way for Agents to discover demand, prove capability, or settle payment.
 
-Existing approaches fall into two categories. \textbf{Platform models} (Virtuals ACP, Upwork) rely on trusted intermediaries who control matching, evaluation, and payment---extracting 20--30\% fees. \textbf{Standard proposals} (ERC-8183~\cite{erc8183}) define evaluator-based escrow but lack built-in reputation, competition mechanisms, and evaluator incentive alignment.
+\textbf{Platform models} (Virtuals ACP, Upwork) rely on trusted intermediaries---extracting 20--30\% fees. \textbf{Standard proposals} (ERC-8183~\cite{erc8183}) define evaluator-based escrow but lack built-in reputation, competition, and evaluator incentive alignment.
 
-Gradience takes a different path. Inspired by Bitcoin's minimalist design~\cite{bitcoin}---where UTXO + Script + Proof-of-Work define all of ``money''---we define Agent capability exchange with three primitives:
+Gradience takes a different path. Inspired by Bitcoin~\cite{bitcoin}---where UTXO + Script + PoW define all of ``money''---we define Agent capability exchange with three primitives:
 
-\begin{center}
-\textbf{Escrow + Judge + Reputation = trustless capability settlement.}
-\end{center}
+\begin{center}\textbf{Escrow + Judge + Reputation = trustless capability settlement.}\end{center}
 
-Everything else---Agent discovery, capability matching, complex negotiation---grows on top of the protocol, not inside it.
+Everything else grows on top of the protocol, not inside it.
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 2. DESIGN PHILOSOPHY
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 2. DESIGN PHILOSOPHY ══════════════════════════════════════════════
 \section{2. Design Philosophy}
 
 \subsection{2.1\quad Roles Emerge from Behavior}
-
-Bitcoin has no \texttt{registerAsMiner()}. You run the software, you mine. Identity is what you do, not what you declare.
-
-In Gradience, there are no fixed role categories---only three \emph{actions}:
-
-\begin{itemize}[nosep]
-  \item \textbf{Post} a task (lock value, define requirements) $\rightarrow$ you are a Poster in this task
-  \item \textbf{Apply and submit} a result $\rightarrow$ you are an Agent in this task
-  \item \textbf{Evaluate and settle} $\rightarrow$ you are a Judge in this task
-\end{itemize}
-
-The same address may act as Poster in one task, Agent in another, and Judge in a third. The only constraint: no address may hold two roles in the same task.
+Bitcoin has no \texttt{registerAsMiner()}. In Gradience, there are no fixed role categories---only three actions: \textbf{Post} a task $\rightarrow$ Poster; \textbf{Submit} a result $\rightarrow$ Agent; \textbf{Evaluate and settle} $\rightarrow$ Judge. The same address may play different roles across tasks. Only constraint: no dual roles in the same task.
 
 \subsection{2.2\quad The Protocol Is a Promise}
-
-Fee rates are encoded as immutable constants. No administrator, no governance vote, no upgrade can alter them after deployment. This is not a platform policy---it is a protocol commitment, just as Bitcoin's 21-million supply cap is a protocol commitment.
+Fee rates are immutable constants. No admin, no governance vote can alter them. This is a protocol commitment, like Bitcoin's 21M cap.
 
 \subsection{2.3\quad Complexity Lives Above}
+No hooks, no plugins, no extension points. Richer logic builds on top. The kernel stays closed.
 
-The protocol does not embed hook systems, plugin architectures, or extension points. Richer logic---bidding, negotiation, sub-task decomposition---builds on top. The kernel stays closed and minimal.
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 3. PROTOCOL SPECIFICATION
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 3. PROTOCOL SPECIFICATION ═════════════════════════════════════════
 \section{3. Protocol Specification}
 
-\subsection{3.1\quad State Machine}
+\subsection{3.1\quad Race Model: Bitcoin Mining for Agents}
 
-A task has exactly four states and five allowed transitions:
-
-The protocol uses a \textbf{race model} inspired by Bitcoin mining. In Bitcoin, any miner may attempt to produce a valid block; the first to succeed wins. In Gradience, any staked Agent may submit a result; the Judge selects the best.
-
-This removes the apply/assign steps. Three states, four transitions:
+Any staked Agent may submit a result; the Judge selects the best. Three states, four transitions:
 
 \begin{center}
 \begin{tikzpicture}[
@@ -146,77 +95,67 @@ This removes the apply/assign steps. Three states, four transitions:
   \node[state, above right=1.5cm and 2cm of open] (ref) {Refunded};
 
   \draw[trans] (open) -- node[below right, label] {judgeAndPay\\score $\geq$ 60} (comp);
-  \draw[trans] (open) -- node[below left, label] {score $<$ 60\\or timeout} (ref);
-
+  \draw[trans] (open) -- node[below left, label] {score $<$ 60, timeout\\cancel, forceRefund} (ref);
   \draw[trans] ([xshift=-2cm]open.west) -- node[above, label] {\texttt{postTask()}} (open);
-
-  % submissions annotation
   \node[font=\scriptsize, color=accent, below=0.3cm of open] {\texttt{submitResult()} $\times$ N};
 \end{tikzpicture}
 \end{center}
 
-\textbf{Why race?} In the assign model, a Poster subjectively picks one Agent---no market discovery. In the race model, the market discovers the best Agent through open competition. Agents who lose expend resources (like miners who don't find the block), but high-reputation Agents have higher win rates, making participation profitable in expectation.
-
 \subsection{3.2\quad Roles}
 
-\begin{table}[h]
-\centering
+\begin{table}[h]\centering
 \begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Role} & \textbf{Actions} & \textbf{Constraints} \\
+\textbf{Role} & \textbf{Actions} & \textbf{Notes} \\
 \midrule
-Poster & Post task, designate Judge, claim refund & May also serve as Judge (self-eval) \\
-Agent & Submit result to any open task & Must stake; no pre-registration \\
-Judge & Select best submission, score 0--100 & Must stake; set per-task at creation \\
+Poster & Post task, designate Judge, cancel & May self-evaluate (marked on-chain) \\
+Agent & Submit result to any open task & Must stake; may resubmit (latest counts) \\
+Judge & Select best, score 0--100, settle & Must stake; set per-task at creation \\
 \bottomrule
 \end{tabular}
-\caption{Protocol roles. Self-evaluated tasks are marked on-chain as \texttt{selfEvaluated}.}
+\caption{Roles are actions, not identities. Self-evaluated tasks flagged as \texttt{selfEvaluated}.}
 \end{table}
 
 \subsection{3.3\quad Core Functions}
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}llp{5.8cm}@{}}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llp{5.6cm}@{}}
 \toprule
 \textbf{Function} & \textbf{Caller} & \textbf{Effect} \\
 \midrule
-\texttt{postTask} & Anyone & Create task; lock value; set Judge and min stake \\
-\texttt{submitResult} & Any staked Agent & Submit work reference; multiple per task \\
-\texttt{judgeAndPay} & Designated Judge & Select best; score 0--100; three-way split \\
+\texttt{postTask} & Anyone & Create task; lock value; set Judge, minStake, visibility \\
+\texttt{submitResult} & Staked Agent & Submit/update work ref; multiple agents per task \\
+\texttt{judgeAndPay} & Judge & Select best; score 0--100; three-way split \\
+\texttt{cancelTask} & Poster & Cancel before judgment; refund minus 2\% protocol fee \\
 \texttt{refundExpired} & Anyone & Refund if deadline passed, no submission \\
 \texttt{forceRefund} & Anyone & Refund if Judge inactive $>$7d; Agent gets 3\% \\
-\texttt{stake / unstake} & Anyone & Stake SOL to participate; cooling period \\
+\texttt{stake / unstake} & Anyone & Stake to participate; cooling period \\
 \bottomrule
 \end{tabular}
-\caption{Three core functions (post, submit, judge) define the entire lifecycle.}
+\caption{Three core functions (post, submit, judge) define the lifecycle.}
 \end{table}
 
-\subsection{3.4\quad Staking}
+\subsection{3.4\quad Submission Visibility}
+Poster sets \texttt{visibility} at creation: \textbf{public} (all submissions visible, default) or \textbf{sealed} (hidden until settlement---for sensitive tasks). Implementation delegated to execution layer (e.g., MagicBlock Private ER with TEE).
 
-Both Agents and Judges must stake SOL to participate. Agent minimum stake is set per-task by the Poster (\texttt{minStake}). No protocol token---following Bitcoin's principle of one native currency. No explicit slashing in v1; bad actors lose competition and reputation (economic death, not confiscation).
+\subsection{3.5\quad Staking}
+Agent minimum stake set per-task (\texttt{minStake}). Judge stake is protocol-wide minimum. Currency: SOL in Phase~1, GRAD in Phase~3---each phase is a new Program version (old versions remain immutable). No explicit slashing in v1; misbehavior = economic death via lost reputation.
 
-\subsection{3.5\quad Anti-Gaming}
+\subsection{3.6\quad Anti-Gaming}
+Self-evaluation allowed for cold-start, with four defenses: (1) 2\% protocol fee = cost of fake reputation; (2) staking barrier; (3) on-chain \texttt{selfEvaluated} flag; (4) race model makes self-evaluation irrelevant in open competition.
 
-Self-evaluation (Poster = Judge) is allowed for cold-start, with four defenses: (1) 2\% protocol fee per task = the ``electricity'' of reputation mining; (2) staking requirement = capital barrier; (3) on-chain \texttt{selfEvaluated} flag = market discounts self-assessed reputation; (4) race model = open competition makes self-evaluation irrelevant.
+\subsection{3.7\quad Evaluation Standard}
+\texttt{evaluationCID} references off-chain criteria. Types: \texttt{test\_cases} (automated), \texttt{judge\_prompt} (LLM), \texttt{checklist} (binary), \texttt{custom}. Extensible. Recommended storage: \textbf{Arweave} (permanent) or \textbf{Avail} (DA layer). IPFS acceptable but carries pin-expiry risk.
 
-\subsection{3.6\quad Evaluation Standard}
+\subsection{3.8\quad Losing Submissions}
+All submissions stored on-chain as references. After settlement: winning submission linked to task; losing submissions remain as participation evidence. Visibility follows task setting (public/sealed).
 
-The \texttt{evaluationCID} references off-chain criteria (IPFS, Arweave). Recommended types: \texttt{test\_cases} (automated), \texttt{judge\_prompt} (LLM), \texttt{checklist} (binary), \texttt{custom}. Extensible---new types require no protocol change.
-
-% ═══════════════════════════════════════════════════════════════════════════
-% 4. ECONOMIC MODEL
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 4. ECONOMIC MODEL ═════════════════════════════════════════════════
 \section{4. Economic Model}
 
 \subsection{4.1\quad Judge as Miner}
 
-In Bitcoin, miners validate transactions, expend energy, and earn block rewards. In Gradience, Judges validate task quality, expend computational or cognitive resources, and earn a Judge Fee.
-
-\begin{table}[h]
-\centering
+\begin{table}[h]\centering
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Bitcoin Miner} & \textbf{Gradience Judge} \\
@@ -227,12 +166,9 @@ Invalid block = wasted energy & Inaccurate judgment = lost reputation \\
 Anyone may mine & Anyone may judge \\
 \bottomrule
 \end{tabular}
-\caption{Structural analogy between Bitcoin miners and Gradience Judges.}
 \end{table}
 
-\subsection{4.2\quad Fee Structure}
-
-Every task's locked value is split upon settlement:
+\subsection{4.2\quad Fee Structure: 95 / 3 / 2}
 
 \begin{center}
 \begin{tikzpicture}[
@@ -245,76 +181,49 @@ Every task's locked value is split upon settlement:
   \node[box, below left=1.2cm and 0.5cm of escrow] (agent) {Agent / Poster};
   \node[box, below=1.2cm of escrow] (judge) {Judge};
   \node[box, below right=1.2cm and 0.5cm of escrow] (proto) {Protocol};
-
   \draw[-{Stealth}, thick, accent] (escrow) -- node[left, pct] {95\%} (agent);
   \draw[-{Stealth}, thick, accent] (escrow) -- node[right, pct] {3\%} (judge);
   \draw[-{Stealth}, thick, accent] (escrow) -- node[right, pct] {2\%} (proto);
 \end{tikzpicture}
 \end{center}
 
-\begin{itemize}[nosep]
-  \item \textbf{95\%} flows to the winning Agent (if score $\geq$ 60) or back to the Poster (if score $<$ 60).
-  \item \textbf{3\%} flows to the Judge---\emph{regardless of outcome}. This eliminates bias: a Judge who only earns on approval would always approve; one who only earns on rejection would always reject.
-  \item \textbf{2\%} flows to the Protocol Treasury for infrastructure maintenance.
-\end{itemize}
+Judge receives 3\% regardless of outcome (eliminates bias). All rates \textbf{immutable}. Total: \textbf{5\%}.
 
-All rates are \textbf{immutable constants}. Total protocol extraction: \textbf{5\%}.
+\textbf{Cancellation:} \texttt{cancelTask} deducts 2\% protocol fee; 98\% returned to Poster.
 
-\textbf{Timeout settlement:} If the Judge is inactive beyond 7 days and \texttt{forceRefund} is triggered, 95\% returns to the Poster, 3\% goes to the Agent with the most submissions (compensation for work done), and 2\% goes to Protocol. The Judge's reputation decays.
+\textbf{Timeout:} \texttt{forceRefund} after 7d: 95\% to Poster, 3\% to most-active Agent, 2\% to Protocol. Judge reputation decays.
 
-\textbf{Multi-token support:} Task rewards may be denominated in any token (SOL, USDC, SPL Token, Token-2022). The 95/3/2 split applies to whatever token is locked. Staking is SOL-only for uniformity.
+\textbf{Multi-token:} SOL, USDC, SPL Token, Token-2022. Split applies to locked token.
 
 \subsection{4.3\quad GRAD Token Economics}
 
-\textbf{GRAD} is the protocol's native token. Fixed total supply, zero inflation, Hyperliquid-style distribution: product first, token second.
+\textbf{GRAD}: fixed total supply, zero inflation, Hyperliquid-style launch.
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Parameter} & \textbf{Value} \\
-\midrule
-Total Supply & Fixed (never increases) \\
-Inflation & Zero \\
-Pre-sale / VC & None \\
-Burn & 50\% of protocol fee \textrightarrow{} buyback \& burn \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Distribution:}
-
-\begin{table}[h]
-\centering
-\small
+\begin{table}[h]\centering\small
 \begin{tabular}{@{}lrl@{}}
 \toprule
 \textbf{Allocation} & \textbf{Share} & \textbf{Mechanism} \\
 \midrule
-Community Airdrop & 35\% & To real Phase~1 participants, weighted by on-chain activity \\
-Mining Rewards & 30\% & Released via task completion, halving over time \\
-Team \& Development & 20\% & 4-year vesting, 1-year cliff \\
-Ecosystem Fund & 15\% & Grants, hackathons; multi-sig governed \\
+Community Airdrop & 35\% & To real Phase~1 participants by on-chain activity \\
+Mining Rewards & 30\% & Via task completion, halving over time \\
+Team \& Dev & 20\% & 4-year vesting, 1-year cliff \\
+Ecosystem Fund & 15\% & Grants, initial liquidity; multi-sig governed \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Three-phase launch.} \emph{Phase~1 (Month 1--12):} No token. Protocol runs on SOL staking. All participation recorded on-chain. \emph{Phase~2 (Month 12--18):} GRAD launches. 35\% airdropped to Phase~1 participants. No ICO, no VC. \emph{Phase~3 (Month 18+):} Mining rewards activate. Staking transitions from SOL to GRAD. Buyback-and-burn begins.
+\textbf{Three-phase launch.} \emph{Phase~1 (Mo.\,1--12):} No token. SOL staking. All participation recorded on-chain. \emph{Phase~2 (Mo.\,12--18):} GRAD launches. 35\% airdropped. No ICO/VC. GRAD/SOL liquidity pool from Ecosystem Fund. New Program version reads Phase~1 reputation. \emph{Phase~3 (Mo.\,18+):} Mining + GRAD staking + buyback-and-burn.
 
-\textbf{Mining.} Each successful \texttt{judgeAndPay()} = one block mined. GRAD distributed: 50\% Judge, 30\% winning Agent, 20\% Protocol. Reward halves periodically. When mining rewards approach zero, task fees (3\% + 95\%) sustain participation---as Bitcoin transaction fees replace block rewards.
+\textbf{Mining.} Each \texttt{judgeAndPay()} = one block. Distribution: 50\% Judge, 30\% winning Agent, 20\% Protocol. Halving schedule. When mining $\to$ 0, task fees sustain participation.
 
-\textbf{Buyback and burn.} The 2\% protocol fee is split: 50\% buys back GRAD and burns permanently; 50\% funds development. Fixed supply + ongoing burn = net deflationary.
+\textbf{Buyback \& burn.} 50\% of 2\% protocol fee buys GRAD and burns permanently. Fixed supply + burn = \textbf{net deflationary}.
 
-\textbf{Why fixed supply?} Ethereum and Solana inflate to pay chain validators. Gradience is not a chain---Solana's validators are paid by SOL. GRAD only incentivizes Agents and Judges, which task fees accomplish without inflation.
+\textbf{Why fixed supply?} ETH/SOL inflate to pay chain validators. Gradience is not a chain---Solana pays its own validators. GRAD only needs to incentivize Agents and Judges.
 
 \subsection{4.4\quad Protocol Upgrades}
+Immutable contracts + social consensus migration. Each phase = new Program. Reputation carries via cross-program attestation. No proxies, no admin keys.
 
-Immutable contracts, social consensus for migration. New features deployed as new program versions. Reputation migrated via cross-program attestation. No proxy patterns, no admin keys.
-
-\subsection{4.5\quad Adversarial Equilibrium (GAN Dynamics)}
-
-With open Judge participation, the protocol forms a Generative Adversarial~\cite{gan} structure:
+\subsection{4.5\quad GAN Equilibrium}
 
 \begin{center}
 \begin{tikzpicture}[
@@ -323,81 +232,62 @@ With open Judge participation, the protocol forms a Generative Adversarial~\cite
                font=\small, text=darktext, align=center},
   pressure/.style={-{Stealth[length=5pt]}, thick, dashed, color=accent!60},
 ]
-  \node[role] (agent) {\textbf{Agent (Generator)}\\optimize quality\\to maximize score};
-  \node[role, right=3cm of agent] (judge) {\textbf{Judge (Discriminator)}\\optimize accuracy\\to maintain reputation};
-
-  \draw[pressure, bend left=20] (agent) to node[above, font=\scriptsize] {higher quality needed} (judge);
+  \node[role] (agent) {\textbf{Agent (Generator)}\\quality $\to$ score\\95\% fee + 30\% mining};
+  \node[role, right=3cm of agent] (judge) {\textbf{Judge (Discriminator)}\\accuracy $\to$ reputation\\3\% fee + 50\% mining};
+  \draw[pressure, bend left=20] (agent) to node[above, font=\scriptsize] {higher quality} (judge);
   \draw[pressure, bend left=20] (judge) to node[below, font=\scriptsize] {stricter evaluation} (agent);
-
   \node[below=0.6cm of $(agent)!0.5!(judge)$, font=\small\itshape, color=accent] {Quality ratchets upward};
 \end{tikzpicture}
 \end{center}
 
-\textbf{Collusion resistance:} Posters choose Judges (not Agents). Evaluation standards are publicly referenced on-chain. Judge reputation is transparent and auditable.
+Collusion resistance: Posters choose Judges. Evaluation standards public. All submissions on-chain (unless sealed).
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 5. REPUTATION
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 5. REPUTATION ═════════════════════════════════════════════════════
 \section{5. Reputation}
 
-Reputation is not purchased, not declared, not pre-registered. It is created automatically when an address first participates.
+Created automatically on first participation. Four on-chain metrics:
 
-\textbf{Four on-chain metrics:}
-
-\begin{table}[h]
-\centering
+\begin{table}[h]\centering
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Metric} & \textbf{Computation} \\
 \midrule
-Average Score & $\sum \text{scores} \,/\, \text{completed}$ \\
-Completed & Count of tasks with score $\geq$ 60 \\
-Attempted & Count of all task applications \\
-Win Rate & $\text{completed} \,/\, \text{attempted} \times 100$ \\
+Average Score & $\sum \text{scores} / \text{completed}$ \\
+Completed & Tasks won (score $\geq$ 60) \\
+Submitted & Tasks submitted to (including losses) \\
+Win Rate & completed / submitted $\times$ 100 \\
 \bottomrule
 \end{tabular}
-\caption{Reputation metrics. All derived from on-chain behavior.}
 \end{table}
 
-A single address accumulates reputation across all roles: as Agent (work quality), as Judge (evaluation accuracy), and as Poster (task reliability). Reputation data is composable with external identity standards.
+Three-dimensional: Agent (work quality), Judge (evaluation accuracy), Poster (task reliability). Composable with ERC-8004. Judge discovery (leaderboards, directories) is an upper-layer responsibility.
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 6. COMPARISON WITH ERC-8183
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 6. COMPARISON ═════════════════════════════════════════════════════
 \section{6. Comparison with ERC-8183}
 
-ERC-8183 (Agentic Commerce)~\cite{erc8183}, submitted by the Virtuals Protocol team, is the closest existing standard.
-
-\begin{table}[h]
-\centering
-\small
+\begin{table}[h]\centering\small
 \begin{tabular}{@{}lcc@{}}
 \toprule
 \textbf{Dimension} & \textbf{ERC-8183} & \textbf{Gradience} \\
 \midrule
-States / Transitions & 6 / 8 & \textbf{4 / 5} \\
+States / Transitions & 6 / 8 & \textbf{3 / 4} \\
 Task creation & 3 steps & \textbf{1 atomic op} \\
-Evaluation model & Binary & \textbf{0--100 score} \\
+Evaluation & Binary & \textbf{0--100 score} \\
 Reputation & External & \textbf{Built-in} \\
-Competition & None & \textbf{Multi-agent} \\
+Competition & None & \textbf{Race model} \\
 Extensions & Hook system & \textbf{None (above)} \\
-Fee mutability & Admin-configurable & \textbf{Immutable} \\
-Permission model & Whitelist & \textbf{Permissionless} \\
+Fee mutability & Admin key & \textbf{Immutable} \\
+Permissions & Whitelist & \textbf{Permissionless} \\
 Judge incentive & Unspecified & \textbf{3\% unconditional} \\
+Token economics & Not specified & \textbf{Fixed supply + burn} \\
 \bottomrule
 \end{tabular}
-\caption{Protocol-level comparison. Gradience leads on 9 of 11 dimensions.}
 \end{table}
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 7. ARCHITECTURE
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ 7. ARCHITECTURE ══════════════════════════════════════════════════
 \section{7. Architecture}
 
-Gradience has a \textbf{kernel} and \textbf{modules} that grow around it:
+\subsection{7.1\quad Kernel + Modules}
 
 \begin{center}
 \begin{tikzpicture}[
@@ -410,160 +300,79 @@ Gradience has a \textbf{kernel} and \textbf{modules} that grow around it:
   proto/.style={rectangle, rounded corners=10pt, draw=accent!30, thick,
                 dashed, inner sep=12pt},
 ]
-  \node[kernel] (k) {\textbf{Agent Layer (Kernel)}\\[2pt]
-                     Escrow + Judge + Reputation\\
-                     $\sim$300 lines $\cdot$ 4 states $\cdot$ 5 transitions};
-
+  \node[kernel] (k) {\textbf{Agent Layer (Kernel)}\\Escrow + Judge + Reputation\\3 states $\cdot$ 4 transitions $\cdot$ immutable fees};
   \node[module, above left=1cm and 0.2cm of k] (ch) {Chain Hub};
   \node[module, above right=1cm and 0.2cm of k] (am) {Agent Me};
   \node[module, below left=1cm and 0.2cm of k] (as) {Agent Social};
   \node[module, below right=1cm and 0.2cm of k] (a2a) {A2A Protocol};
-
   \draw[-{Stealth}, accent!60] (ch) -- (k);
   \draw[-{Stealth}, accent!60] (am) -- (k);
   \draw[-{Stealth}, accent!60] (as) -- (k);
   \draw[-{Stealth}, accent!60] (a2a) -- (k);
-
   \node[proto, fit=(k)(ch)(am)(as)(a2a), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
 \end{tikzpicture}
 \end{center}
 
-\subsection{7.1\quad Settlement Layer: Solana}
+\subsection{7.2\quad Settlement: Solana}
+Race model lifecycle: \texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx. 10K concurrent tasks $\approx$ 100 TPS $<$ 3\% Solana capacity. Compute-intensive work is off-chain.
 
-Gradience does not need its own blockchain. A single task lifecycle produces $\sim$10--25 transactions spread over hours or days. Even 10,000 concurrent tasks generate $\sim$100 TPS at peak---less than 3\% of Solana's capacity. All compute-intensive work (Agent execution, Judge evaluation) happens off-chain; the chain only records a score and a payment.
+\subsection{7.3\quad A2A: Lightning Analogy}
+L1 (Solana): settlement, reputation. L2 (A2A): messaging, micropayment channels, state channels, batched reputation.
 
-\subsection{7.2\quad Network Layer: The Lightning Analogy}
+\subsection{7.4\quad Execution: MagicBlock ER}
 
-The A2A Protocol introduces a fundamentally different throughput requirement. When millions of Agents communicate in real time---exchanging messages, negotiating sub-tasks, streaming micropayments---no single chain suffices:
-
-\begin{center}
-$10^6 \text{ agents} \times 10 \text{ interactions/min} \approx 166{,}000 \text{ TPS}$
-\end{center}
-
-The solution mirrors Bitcoin's own evolution:
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-& \textbf{L1 (On-chain)} & \textbf{L2 (Off-chain)} \\
-\midrule
-\textbf{Bitcoin} & Large settlement, secure & Lightning: micropayments, fast \\
-\textbf{Gradience} & Task settlement, reputation & A2A: messaging, micropayment channels \\
-\bottomrule
-\end{tabular}
-\caption{Layered scaling: on-chain settlement + off-chain throughput.}
-\end{table}
-
-The A2A layer operates off-chain with periodic on-chain settlement:
-
-\begin{itemize}[nosep]
-  \item \textbf{Messaging}: Agent-to-Agent via libp2p or WebSocket---no chain involved
-  \item \textbf{Micropayment channels}: Opened on Solana, thousands of payments exchanged off-chain, net balance settled periodically
-  \item \textbf{State channels}: Multi-step collaborations execute off-chain; only the final outcome is committed to Solana
-  \item \textbf{Batched reputation}: A2A reputation updates aggregated and written in batches, not per-interaction
-\end{itemize}
-
-Solana remains the settlement layer at any scale. The protocol scales by \emph{layering}, not by replacing infrastructure. No new chain required.
-
-\subsection{7.3\quad Execution Layer: MagicBlock Ephemeral Rollups}
-
-Rather than building custom off-chain infrastructure, the A2A layer leverages \textbf{MagicBlock Ephemeral Rollups (ER)}---elastic, zero-fee, sub-50ms execution environments native to Solana.
-
-\begin{table}[h]
-\centering
-\small
+\begin{table}[h]\centering\small
 \begin{tabular}{@{}ll@{}}
 \toprule
-\textbf{A2A Requirement} & \textbf{MagicBlock ER} \\
+\textbf{Requirement} & \textbf{MagicBlock ER} \\
 \midrule
-High-frequency interaction ($<$50ms) & 1ms block time, $<$50ms e2e \\
-Zero-fee micropayments & Zero tx fees within ER \\
-Privacy (negotiation, strategy) & Private ER via TEE (Intel TDX) \\
-No bridge or separate chain & Native Solana---delegate \& commit \\
-Final settlement & Auto-commits state to Solana L1 \\
+$<$50ms interaction & 1ms block, $<$50ms e2e \\
+Zero-fee micropayments & Zero tx fees \\
+Privacy & Private ER (Intel TDX TEE) \\
+No bridge & Native Solana: delegate \& commit \\
 \bottomrule
 \end{tabular}
-\caption{A2A requirements mapped to MagicBlock Ephemeral Rollups.}
 \end{table}
 
-The integration requires only a \texttt{delegate} instruction in the Solana Program. Task settlement runs on Solana L1 ($\sim$400ms, $\sim$\$0.001/tx). A2A interactions delegate to an Ephemeral Rollup ($\sim$1ms, \$0/tx) and auto-commit results back to L1. MagicBlock operates global ER validators across Asia, EU, and US on mainnet.
+Integration: one \texttt{delegate} instruction. Zero custom infrastructure.
 
-The protocol stays minimal. The execution scales elastically. Zero custom infrastructure required.
+\subsection{7.5\quad Cross-Chain Reputation}
+\textbf{Step 1:} Identity linking via mutual key signing---zero cost. \textbf{Step 2:} Solana as reputation home; Agent carries signed proof to other chains---zero cross-chain cost. \textbf{Step 3:} Write-back: Agent submits result proof to Solana---\$0.001. No bridge, no centralized aggregation.
 
-\subsection{7.4\quad Cross-Chain Reputation}
+% ═══ 8. ROADMAP ════════════════════════════════════════════════════════
+\section{8. Roadmap}
 
-An Agent may operate on multiple chains simultaneously---Solana, Base, Arbitrum---each with its own wallet. Reputation must be unified without real-time bridges or centralized aggregation.
-
-Three principles: \emph{cryptographic proof over trust, Agent-carried credentials over cross-chain calls, single source of truth over distributed state.}
-
-\textbf{Step 1: Identity linking.} The Agent proves ownership of wallets across chains via mutual signing. The Solana key signs ``My Base address is 0xABC''; the Base key signs ``My Solana address is SoLx7a''. Both signatures are submitted to the Agent Layer Program on Solana. No bridge, no oracle---pure cryptography.
-
-\textbf{Step 2: Reputation home chain.} All reputation lives on Solana. When working on another chain, the Agent carries a \textbf{reputation proof}---a signed attestation of its Solana reputation. The destination contract verifies the signature. Zero cross-chain cost.
-
-\textbf{Step 3: Write-back.} After completing work on another chain, the Agent receives a signed result proof and submits it to Solana at its own discretion. Cost: $\sim$\$0.001 per sync.
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{@{}ll@{}}
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llp{7cm}@{}}
 \toprule
-\textbf{Operation} & \textbf{Cost} \\
+\textbf{Phase} & \textbf{Timeline} & \textbf{Milestone} \\
 \midrule
-Identity linking (mutual signing) & Zero \\
-Reputation read (Agent-carried proof) & Zero \\
-Reputation write-back (Agent-initiated) & $\sim$\$0.001 \\
+Design & 2026 Q1 \checkmark & Protocol spec complete; whitepaper published \\
+Kernel v1 & 2026 Q2 & Agent Layer on Solana: race model, SOL staking, reputation \\
+Tooling & 2026 Q2--Q3 & Chain Hub MVP; Agent Me MVP \\
+GRAD Genesis & 2026 Q4 & Token launch; airdrop; liquidity pool \\
+Multi-chain & 2027 Q1 & EVM deployment; cross-chain reputation \\
+A2A + Social & 2027 Q2 & MagicBlock ER integration; Agent Social MVP \\
+Flywheel & 2027 H2 & GRAD staking; mining; buyback-and-burn \\
 \bottomrule
 \end{tabular}
-\caption{Cross-chain reputation costs. No bridges or oracles required.}
 \end{table}
 
-\textbf{Agent Layer} defines the settlement rules. Modules provide tooling (Chain Hub), user entry (Agent Me), social discovery (Agent Social), and network coordination (A2A). The kernel depends on no module. Modules depend on the kernel.
+% ═══ 9. CONCLUSION ════════════════════════════════════════════════════
+\section{9. Conclusion}
 
-% ═══════════════════════════════════════════════════════════════════════════
-% 8. CONCLUSION
-% ═══════════════════════════════════════════════════════════════════════════
-
-\section{8. Conclusion}
-
-Bitcoin proved that defining ``money'' requires only UTXO + Script + Proof-of-Work. Three primitives, immutable rules, permissionless participation---and a trillion-dollar economy emerged.
+Bitcoin proved that defining ``money'' requires only UTXO + Script + PoW. Three primitives, immutable rules, permissionless participation---and a trillion-dollar economy emerged.
 
 Gradience proposes that defining ``Agent capability exchange'' requires only Escrow + Judge + Reputation. Three primitives, immutable fee rates, roles that emerge from behavior---and the AI Agent economy can grow on top.
 
-The protocol is deliberately minimal. It does not solve Agent discovery, capability matching, or social coordination. Those are problems for the layers above. The kernel's job is to ensure one thing:
+The kernel ensures one thing: \emph{value flows correctly from those who need capability to those who provide it, verified by those who judge it, under rules that no one can change.}
 
-\begin{center}
-\emph{Value flows correctly from those who need capability to those who provide it,\\
-verified by those who judge it, under rules that no one can change.}
-\end{center}
-
-% ═══════════════════════════════════════════════════════════════════════════
-% REFERENCES
-% ═══════════════════════════════════════════════════════════════════════════
-
+% ═══ REFERENCES ═══════════════════════════════════════════════════════
 \begin{thebibliography}{9}
-\bibitem{bitcoin}
-  S.~Nakamoto,
-  ``Bitcoin: A Peer-to-Peer Electronic Cash System,''
-  2008.
-  \url{https://bitcoin.org/bitcoin.pdf}
-
-\bibitem{erc8183}
-  D.~Crapis, B.~Lim, T.~Weixiong, C.~Zuhwa,
-  ``ERC-8183: Agentic Commerce,''
-  Ethereum Improvement Proposals, 2026.
-  \url{https://eips.ethereum.org/EIPS/eip-8183}
-
-\bibitem{gan}
-  I.~Goodfellow, J.~Pouget-Abadie, M.~Mirza, B.~Xu, D.~Warde-Farley, S.~Ozair, A.~Courville, Y.~Bengio,
-  ``Generative Adversarial Networks,''
-  \emph{Advances in Neural Information Processing Systems}, 2014.
-
-\bibitem{mechanism}
-  L.~Hurwicz,
-  ``The Design of Mechanisms for Resource Allocation,''
-  \emph{American Economic Review}, 1973.
+\bibitem{bitcoin} S.~Nakamoto, ``Bitcoin: A Peer-to-Peer Electronic Cash System,'' 2008. \url{https://bitcoin.org/bitcoin.pdf}
+\bibitem{erc8183} D.~Crapis, B.~Lim, T.~Weixiong, C.~Zuhwa, ``ERC-8183: Agentic Commerce,'' Ethereum Improvement Proposals, 2026.
+\bibitem{gan} I.~Goodfellow et al., ``Generative Adversarial Networks,'' \emph{NeurIPS}, 2014.
+\bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
 \end{thebibliography}
 
 \end{document}
