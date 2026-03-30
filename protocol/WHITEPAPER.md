@@ -205,16 +205,16 @@ All fee rates are **immutable constants**. Total extraction: **5%**. Compare: Vi
 
 | Allocation | Share | Mechanism |
 |------------|-------|-----------|
-| Community Airdrop | 35% | To real Phase 1 participants, weighted by on-chain activity |
+| Community Airdrop | 30% | To real Phase 1 participants, weighted by on-chain activity |
 | Mining Rewards | 30% | Released via task completion, halving over time |
-| Team & Development | 20% | 4-year linear vesting, 1-year cliff |
+| Team & Development | 25% | 4-year linear vesting, 1-year cliff |
 | Ecosystem Fund | 15% | Grants, hackathons, initial liquidity; multi-sig governed |
 
 **Three-phase launch (build first, distribute later):**
 
 *Phase 1 — Build (Month 1–12).* No token exists. Protocol runs with SOL staking. Every participation event is recorded on-chain: tasks posted, results submitted, judgments made, scores earned. This data becomes the basis for the airdrop. Like Hyperliquid, the product proves itself before any token is issued.
 
-*Phase 2 — Genesis Distribution (Month 12–18).* GRAD token launches. 35% airdropped to Phase 1 participants weighted by contribution. No ICO, no VC. Initial GRAD/SOL liquidity pool established from the Ecosystem Fund allocation. This is a **new Program version**—Phase 1's SOL-staking Program remains live and immutable; Phase 2 is a new deployment that reads Phase 1 reputation via cross-program attestation.
+*Phase 2 — Genesis Distribution (Month 12–18).* GRAD token launches. 30% airdropped to Phase 1 participants weighted by contribution. No ICO, no VC. Initial GRAD/SOL liquidity pool established from the Ecosystem Fund allocation. This is a **new Program version**—Phase 1's SOL-staking Program remains live and immutable; Phase 2 is a new deployment that reads Phase 1 reputation via cross-program attestation.
 
 *Phase 3 — Mining + Flywheel (Month 18+).* Ongoing mining rewards for task participation. Staking transitions to GRAD (again, a new Program version). Protocol fees fund buyback-and-burn from the established liquidity pool. The flywheel activates.
 
