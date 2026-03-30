@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Active](https://img.shields.io/badge/Status-Active%20Development-green)]()
 
-**[📜 Whitepaper (EN)](whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](whitepaper/gradience-zh.pdf)** · **[🌐 Website](https://www.gradiences.xyz)** · **[中文 README](docs/README-zh.md)**
+**[📜 Whitepaper (EN)](protocol/whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](protocol/whitepaper/gradience-zh.pdf)** · **[🌐 Website](https://www.gradiences.xyz)** · **[中文 README](README.zh.md)**
 
 ---
 
@@ -410,9 +410,9 @@ Not because "Web3 is trendy" — because it's technically necessary:
 
 | Document | Description |
 |----------|-------------|
-| [agent-arena/protocol-bitcoin-philosophy.md](agent-arena/protocol-bitcoin-philosophy.md) | Protocol kernel: Bitcoin philosophy, role emergence, 95/3/2 model, ERC-8183 comparison |
-| [agent-arena/design/reputation-feedback-loop.md](agent-arena/design/reputation-feedback-loop.md) | Reputation → ERC-8004 feedback loop design |
-| [WHITEPAPER.md](WHITEPAPER.md) | Full whitepaper (Markdown version) |
+| [protocol/protocol-bitcoin-philosophy.md](protocol/protocol-bitcoin-philosophy.md) | Protocol kernel: Bitcoin philosophy, role emergence, 95/3/2 model, ERC-8183 comparison |
+| [protocol/design/reputation-feedback-loop.md](protocol/design/reputation-feedback-loop.md) | Reputation → ERC-8004 feedback loop design |
+| [WHITEPAPER.md](protocol/WHITEPAPER.md) | Full whitepaper (Markdown version) |
 
 ### Research
 
@@ -429,10 +429,10 @@ Not because "Web3 is trendy" — because it's technically necessary:
 
 | Document | Description |
 |----------|-------------|
-| [agent-me/README.md](agent-me/README.md) | Agent Me: complete architecture and vision |
-| [agent-social/agent-social.md](agent-social/agent-social.md) | Agent Social: alignment, scouting, mentorship |
-| [chain-hub/skill-protocol.md](chain-hub/skill-protocol.md) | Skill system: acquire, trade, verify, inherit |
-| [chain-hub/chain-selection-analysis.md](chain-hub/chain-selection-analysis.md) | Chain selection analysis for deployment |
+| [apps/agent-me/README.md](apps/agent-me/README.md) | Agent Me: complete architecture and vision |
+| [apps/agent-social/agent-social.md](apps/agent-social/agent-social.md) | Agent Social: alignment, scouting, mentorship |
+| [apps/chain-hub/skill-protocol.md](apps/chain-hub/skill-protocol.md) | Skill system: acquire, trade, verify, inherit |
+| [apps/chain-hub/chain-selection-analysis.md](apps/chain-hub/chain-selection-analysis.md) | Chain selection analysis for deployment |
 
 ---
 
