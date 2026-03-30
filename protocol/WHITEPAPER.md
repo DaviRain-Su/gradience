@@ -212,11 +212,11 @@ All fee rates are **immutable constants**. Total extraction: **5%**. Compare: Vi
 
 **Three-phase launch (build first, distribute later):**
 
-*Phase 1 — Build (Month 1–12).* No token exists. Protocol runs with SOL staking. Every participation event is recorded on-chain: tasks posted, results submitted, judgments made, scores earned. This data becomes the basis for the airdrop. Like Hyperliquid, the product proves itself before any token is issued.
+*Phase 1 — Build (Week 1–2, April 2026).* No token exists. Protocol runs with SOL staking. Every participation event is recorded on-chain: tasks posted, results submitted, judgments made, scores earned. This data becomes the basis for the airdrop. Like Hyperliquid, the product proves itself before any token is issued.
 
-*Phase 2 — Genesis Distribution (Month 12–18).* GRAD token launches. 30% airdropped to Phase 1 participants weighted by contribution. No ICO, no VC. Initial GRAD/SOL liquidity pool established from the Ecosystem Fund allocation. This is a **new Program version**—Phase 1's SOL-staking Program remains live and immutable; Phase 2 is a new deployment that reads Phase 1 reputation via cross-program attestation.
+*Phase 2 — Genesis Distribution (Week 3, April 2026).* GRAD token launches. 30% airdropped to Phase 1 participants weighted by contribution. No ICO, no VC. Initial GRAD/SOL liquidity pool established from the Ecosystem Fund allocation. This is a **new Program version**—Phase 1's SOL-staking Program remains live and immutable; Phase 2 is a new deployment that reads Phase 1 reputation via cross-program attestation.
 
-*Phase 3 — Mining + Flywheel (Month 18+).* Ongoing mining rewards for task participation. Staking transitions to GRAD (again, a new Program version). Protocol fees fund buyback-and-burn from the established liquidity pool. The flywheel activates.
+*Phase 3 — Mining + Flywheel (Week 4+, April 2026).* Ongoing mining rewards for task participation. Staking transitions to GRAD (again, a new Program version). Protocol fees fund buyback-and-burn from the established liquidity pool. The flywheel activates. AI-accelerated development enables the full protocol to ship within one month.
 
 **Mining rewards (Bitcoin-style halving):**
 
@@ -483,16 +483,15 @@ No real-time bridge. No centralized aggregation. No full reputation system on ev
 
 ## 8. Roadmap
 
+AI-accelerated development — entire protocol ships within one month (April 2026).
+
 | Phase | Timeline | Milestone |
 |-------|----------|-----------|
-| Design | 2026 Q1 ✅ | Protocol specification complete; whitepaper published |
-| Kernel v1 (Solana) | 2026 Q2 | Agent Layer Program: race model, SOL staking, reputation |
-| Tooling | 2026 Q2–Q3 | Chain Hub MVP; Agent Me MVP |
-| Open Judge Market | 2026 Q3 | Judge reputation tracking; automated Judge contracts |
-| GRAD Genesis | 2026 Q4 | Token launch; airdrop to Phase 1 participants; liquidity pool |
-| Multi-chain | 2027 Q1 | EVM deployment (Base/Arbitrum); cross-chain reputation |
-| A2A Protocol | 2027 Q2 | MagicBlock ER integration; Agent Social MVP |
-| Mining + Flywheel | 2027 H2 | GRAD staking; mining rewards; buyback-and-burn |
+| Design | 2026-03 ✅ | Protocol specification complete; whitepaper published |
+| Week 1 | 2026-04-01 ~ 04-07 | Agent Layer v2 (Solana): race model, SOL/SPL/Token2022, reputation |
+| Week 2 | 2026-04-08 ~ 04-14 | Chain Hub MVP; Agent Me MVP |
+| Week 3 | 2026-04-15 ~ 04-21 | Agent Social MVP; Open Judge Market; GRAD Genesis |
+| Week 4 | 2026-04-22 ~ 04-30 | Multi-chain EVM; A2A Protocol (MagicBlock ER); Mining + Flywheel; 1M+ Agents |
 
 ---
 

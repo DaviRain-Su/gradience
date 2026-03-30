@@ -367,26 +367,18 @@ Agent Arena results ──▶ ERC-8004 Attestation ──▶ Any compatible prot
 
 ```mermaid
 gantt
-    title Gradience Roadmap
-    dateFormat YYYY-MM
-    section 2026 Q1
-    Agent Arena MVP         :done, 2026-01, 2026-03
-    Design docs complete    :done, 2026-02, 2026-03
-    
-    section 2026 Q2
-    Agent Layer v2 (per-task judge, 95/3/2)  :active, 2026-04, 2026-06
-    Chain Hub MVP           :active, 2026-04, 2026-06
-    Agent Me MVP            :active, 2026-04, 2026-06
-    
-    section 2026 Q3-Q4
-    Open Judge market       :2026-07, 2026-09
-    Agent Social MVP        :2026-07, 2026-09
-    Multi-chain (Solana)    :2026-10, 2026-12
-    
-    section 2027
-    A2A Economic Protocol   :crit, 2027-01, 2027-06
-    Judge staking + slash   :2027-01, 2027-06
-    Target 1M+ Agents      :milestone, 2027-12, 0d
+    title Gradience Roadmap — Full Protocol in One Month (AI-accelerated)
+    dateFormat YYYY-MM-DD
+    section Done
+    Agent Arena MVP (EVM)         :done, 2026-01-01, 2026-03-30
+    Protocol design complete      :done, 2026-02-01, 2026-03-30
+
+    section April 2026
+    Agent Layer v2 · Solana · race model · SOL/SPL/Token2022  :active, 2026-04-01, 2026-04-07
+    Chain Hub MVP + Agent Me MVP  :2026-04-08, 2026-04-14
+    Agent Social + GRAD Genesis   :2026-04-15, 2026-04-21
+    Multi-chain · A2A · Flywheel  :crit, 2026-04-22, 2026-04-30
+    Target 1M+ Agents             :milestone, 2026-04-30, 0d
 ```
 
 ---
