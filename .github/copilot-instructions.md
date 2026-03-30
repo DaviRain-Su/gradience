@@ -1,3 +1,5 @@
+# GitHub Copilot Instructions
+
 This project enforces a strict 7-phase development lifecycle.
 Read: docs/methodology/README.md
 Templates: docs/methodology/templates/
@@ -8,4 +10,3 @@ Rules:
 - No code without a Technical Spec (Phase 3)
 - No implementation without tests (Phase 5)
 - Code must match the Technical Spec exactly
-- Spec wrong? Fix spec first, then fix code

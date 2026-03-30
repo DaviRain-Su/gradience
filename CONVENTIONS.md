@@ -1,6 +1,9 @@
-This project enforces a strict 7-phase development lifecycle.
-Read: docs/methodology/README.md
-Templates: docs/methodology/templates/
+# Project Conventions
+
+## Development Lifecycle
+
+This project uses a mandatory 7-phase development lifecycle.
+Full specification: docs/methodology/README.md
 
 Phases: PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review & Deploy
 
@@ -8,4 +11,4 @@ Rules:
 - No code without a Technical Spec (Phase 3)
 - No implementation without tests (Phase 5)
 - Code must match the Technical Spec exactly
-- Spec wrong? Fix spec first, then fix code
+- Templates: docs/methodology/templates/
