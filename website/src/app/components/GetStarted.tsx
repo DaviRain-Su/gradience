@@ -9,7 +9,7 @@ export function GetStarted() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="https://github.com/DaviRain-Su/gradience/blob/main/whitepaper/gradience-en.pdf"
+            href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-en.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
@@ -17,7 +17,7 @@ export function GetStarted() {
             📄 White paper
           </a>
           <a
-            href="https://github.com/DaviRain-Su/agent-arena"
+            href="https://codeberg.org/gradiences/agent-arena"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
@@ -25,7 +25,7 @@ export function GetStarted() {
             💻 Source code
           </a>
           <a
-            href="https://github.com/DaviRain-Su/gradience/blob/main/whitepaper/gradience-zh.pdf"
+            href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-zh.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"

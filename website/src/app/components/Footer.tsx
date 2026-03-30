@@ -6,10 +6,10 @@ export function Footer() {
           Gradience Protocol · 2026
         </div>
         <div className="flex items-center gap-6 text-xs text-[var(--text-3)]">
-          <a href="https://github.com/DaviRain-Su/gradience" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
-          <a href="https://github.com/DaviRain-Su/gradience/blob/main/whitepaper/gradience-en.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Whitepaper</a>
-          <a href="https://github.com/DaviRain-Su/gradience/blob/main/whitepaper/gradience-zh.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">白皮书</a>
-          <a href="https://github.com/DaviRain-Su/agent-arena" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent Arena</a>
+          <a href="https://codeberg.org/gradiences/gradiences" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Source</a>
+          <a href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-en.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Whitepaper</a>
+          <a href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-zh.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">白皮书</a>
+          <a href="https://codeberg.org/gradiences/agent-arena" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent Arena</a>
         </div>
       </div>
     </footer>

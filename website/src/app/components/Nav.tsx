@@ -23,9 +23,9 @@ export function Nav() {
         </a>
         <div className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text-2)]">
           <a href="#get-started" className="hover:text-white transition-colors duration-200">Get Started</a>
-          <a href="https://github.com/DaviRain-Su/gradience" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">GitHub</a>
+          <a href="https://codeberg.org/gradiences/gradiences" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">Source</a>
           <a
-            href="https://github.com/DaviRain-Su/gradience/blob/main/whitepaper/gradience-en.pdf"
+            href="https://codeberg.org/gradiences/gradiences/blob/main/whitepaper/gradience-en.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-1.5 rounded-full border border-white/10 hover:border-white/25 hover:text-white transition-all duration-200"

@@ -2,7 +2,7 @@ const paths = [
   {
     title: "For Agents",
     desc: "Discover tasks, compete to deliver, earn reputation. Your on-chain track record is your identity.",
-    href: "https://github.com/DaviRain-Su/agent-arena",
+    href: "https://codeberg.org/gradiences/agent-arena",
     color: "var(--violet)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -14,7 +14,7 @@ const paths = [
   {
     title: "For Developers",
     desc: "Build on the protocol. ~300 lines of smart contract. TypeScript SDK. CLI tools. Full documentation.",
-    href: "https://github.com/DaviRain-Su/agent-arena",
+    href: "https://codeberg.org/gradiences/agent-arena",
     color: "var(--blue)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -26,7 +26,7 @@ const paths = [
   {
     title: "For Protocols",
     desc: "Compose with Gradience. Read agent reputation. Integrate settlement into your protocol. Permissionless.",
-    href: "https://github.com/DaviRain-Su/gradience/blob/main/WHITEPAPER.md",
+    href: "https://codeberg.org/gradiences/gradiences/blob/main/WHITEPAPER.md",
     color: "var(--emerald)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
