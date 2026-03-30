@@ -124,16 +124,184 @@
     ],
     "errors": [
       {
-        "code": 0,
+        "code": 6000,
         "kind": "errorNode",
-        "message": "Authority invalid or does not match counter authority",
-        "name": "invalidAuthority"
+        "message": "Task is not open",
+        "name": "taskNotOpen"
       },
       {
-        "code": 1,
+        "code": 6001,
         "kind": "errorNode",
-        "message": "Event authority PDA is invalid",
-        "name": "invalidEventAuthority"
+        "message": "Task deadline has passed",
+        "name": "deadlinePassed"
+      },
+      {
+        "code": 6002,
+        "kind": "errorNode",
+        "message": "Judge deadline has not passed",
+        "name": "judgeDeadlineNotPassed"
+      },
+      {
+        "code": 6003,
+        "kind": "errorNode",
+        "message": "Force-refund delay has not elapsed",
+        "name": "forceRefundDelayNotPassed"
+      },
+      {
+        "code": 6004,
+        "kind": "errorNode",
+        "message": "Task has submissions and cannot be cancelled",
+        "name": "hasSubmissions"
+      },
+      {
+        "code": 6005,
+        "kind": "errorNode",
+        "message": "No submissions for task",
+        "name": "noSubmissions"
+      },
+      {
+        "code": 6006,
+        "kind": "errorNode",
+        "message": "Deadline has not passed yet",
+        "name": "deadlineNotPassed"
+      },
+      {
+        "code": 6010,
+        "kind": "errorNode",
+        "message": "Caller is not the task poster",
+        "name": "notTaskPoster"
+      },
+      {
+        "code": 6011,
+        "kind": "errorNode",
+        "message": "Caller is not the task judge",
+        "name": "notTaskJudge"
+      },
+      {
+        "code": 6012,
+        "kind": "errorNode",
+        "message": "Caller is not the upgrade authority",
+        "name": "notUpgradeAuthority"
+      },
+      {
+        "code": 6013,
+        "kind": "errorNode",
+        "message": "Agent has not applied for this task",
+        "name": "agentNotApplied"
+      },
+      {
+        "code": 6014,
+        "kind": "errorNode",
+        "message": "Winner has no submission for this task",
+        "name": "winnerNoSubmission"
+      },
+      {
+        "code": 6020,
+        "kind": "errorNode",
+        "message": "Agent stake amount is below the required minimum",
+        "name": "insufficientAgentStake"
+      },
+      {
+        "code": 6021,
+        "kind": "errorNode",
+        "message": "Judge stake is below the protocol minimum",
+        "name": "insufficientJudgeStake"
+      },
+      {
+        "code": 6022,
+        "kind": "errorNode",
+        "message": "Agent already applied for this task",
+        "name": "alreadyApplied"
+      },
+      {
+        "code": 6023,
+        "kind": "errorNode",
+        "message": "Judge already in pool",
+        "name": "alreadyInPool"
+      },
+      {
+        "code": 6024,
+        "kind": "errorNode",
+        "message": "Unstake cooldown has not expired",
+        "name": "cooldownNotExpired"
+      },
+      {
+        "code": 6025,
+        "kind": "errorNode",
+        "message": "JudgePool is full",
+        "name": "judgePoolFull"
+      },
+      {
+        "code": 6030,
+        "kind": "errorNode",
+        "message": "Score is out of valid range",
+        "name": "invalidScore"
+      },
+      {
+        "code": 6031,
+        "kind": "errorNode",
+        "message": "Invalid task category",
+        "name": "invalidCategory"
+      },
+      {
+        "code": 6032,
+        "kind": "errorNode",
+        "message": "Reference field is empty",
+        "name": "emptyRef"
+      },
+      {
+        "code": 6033,
+        "kind": "errorNode",
+        "message": "RuntimeEnv field is invalid",
+        "name": "invalidRuntimeEnv"
+      },
+      {
+        "code": 6034,
+        "kind": "errorNode",
+        "message": "Reference string exceeds maximum length",
+        "name": "refTooLong"
+      },
+      {
+        "code": 6035,
+        "kind": "errorNode",
+        "message": "Invalid categories list",
+        "name": "invalidCategories"
+      },
+      {
+        "code": 6036,
+        "kind": "errorNode",
+        "message": "JudgePool is empty for this category",
+        "name": "judgePoolEmpty"
+      },
+      {
+        "code": 6037,
+        "kind": "errorNode",
+        "message": "Task reward cannot be zero",
+        "name": "zeroReward"
+      },
+      {
+        "code": 6038,
+        "kind": "errorNode",
+        "message": "Invalid deadline",
+        "name": "invalidDeadline"
+      },
+      {
+        "code": 6039,
+        "kind": "errorNode",
+        "message": "Invalid judge deadline",
+        "name": "invalidJudgeDeadline"
+      },
+      {
+        "code": 6040,
+        "kind": "errorNode",
+        "message": "Arithmetic overflow",
+        "name": "overflow"
+      },
+      {
+        "code": 6041,
+        "kind": "errorNode",
+        "message": "Mint extension is not supported",
+        "name": "unsupportedMintExtension"
       }
     ],
     "instructions": [
@@ -322,6 +490,84 @@
         ],
         "kind": "instructionNode",
         "name": "closeCounter"
+      },
+      {
+        "accounts": [
+          {
+            "isSigner": true,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "payer"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "config"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "treasury"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "systemProgram"
+          }
+        ],
+        "arguments": [
+          {
+            "defaultValue": {
+              "kind": "numberValueNode",
+              "number": 3
+            },
+            "defaultValueStrategy": "omitted",
+            "kind": "instructionArgumentNode",
+            "name": "discriminator",
+            "type": {
+              "endian": "le",
+              "format": "u8",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "upgradeAuthority",
+            "type": {
+              "count": {
+                "kind": "fixedCountNode",
+                "value": 32
+              },
+              "item": {
+                "endian": "le",
+                "format": "u8",
+                "kind": "numberTypeNode"
+              },
+              "kind": "arrayTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "minJudgeStake",
+            "type": {
+              "endian": "le",
+              "format": "u64",
+              "kind": "numberTypeNode"
+            }
+          }
+        ],
+        "discriminators": [
+          {
+            "kind": "fieldDiscriminatorNode",
+            "name": "discriminator",
+            "offset": 0
+          }
+        ],
+        "kind": "instructionNode",
+        "name": "initialize"
       },
       {
         "accounts": [

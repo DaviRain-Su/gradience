@@ -3,6 +3,7 @@ use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address, 
 use crate::{
     instructions::{
         process_close_counter, process_create_counter, process_emit_event, process_increment,
+        process_initialize,
     },
     traits::PinocchioCounterInstructionDiscriminators,
 };
@@ -29,6 +30,9 @@ pub fn process_instruction(
         }
         PinocchioCounterInstructionDiscriminators::CloseCounter => {
             process_close_counter(program_id, accounts, instruction_data)
+        }
+        PinocchioCounterInstructionDiscriminators::Initialize => {
+            process_initialize(program_id, accounts, instruction_data)
         }
         PinocchioCounterInstructionDiscriminators::EmitEvent => {
             process_emit_event(program_id, accounts)
