@@ -31,11 +31,11 @@
 | T05 | 账户结构体 — Reputation / Stake / JudgePool / Treasury / ProgramConfig | `Reputation`（INIT_SPACE=109，总 117B）、`Stake`（INIT_SPACE=66，总 74B）、`JudgePool`（INIT_SPACE=7210，总 7218B）、`Treasury`（INIT_SPACE=1，总 9B）、`ProgramConfig`（INIT_SPACE=81，总 89B）；枚举 `TaskState` / `JudgeMode` / `Category`（含完整 derive 宏） | T02 | 2h | P0 | `assert_eq!(Reputation::INIT_SPACE, 109)` 通过；`assert_eq!(JudgePool::INIT_SPACE, 7210)` 通过；所有枚举 `repr(u8)` 正确 |
 | T06 | `initialize` 指令 | 初始化 `ProgramConfig`（upgrade_authority、min_judge_stake）和 `Treasury` PDA；一次性调用 | T05 | 2h | P0 | 测试：`initialize` → ProgramConfig 字段值正确；二次调用返回 `AlreadyInitialized` |
 | T07 | `post_task` — SOL 路径 | Task PDA 创建，SOL reward 转入 Escrow，`config.task_count++`；Pool 模式链上加权随机（sha256 seed）抽 Judge；**emit! TaskCreated** | T06, T16 | 3h | P0 | 测试：发 SOL 任务 → `Task.state=Open`，Escrow 余额 = reward；Pool 模式 judge 字段被协议填写；reward=0 → `ZeroReward`；TaskCreated 事件被 emit |
-| T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07, T08a | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
 | T08a | SPL Token ATA 工具函数 | 封装 `create_associated_token_account` 工具函数；验证 ATA owner（authority = escrow PDA）；统一处理 Poster / Agent / Judge / Treasury 的 ATA 初始化逻辑；供 T08 / T09 / T11 / T13-T15 复用 | T06 | 2h | P0 | 工具函数编译通过；单元测试：创建 ATA → owner 正确；已存在 ATA 时幂等不报错 |
+| T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07, T08a | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
 | T09 | `apply_for_task` — SOL + SPL 路径 | Application PDA init，Reputation PDA `init_if_needed`，SOL / SPL 质押转入 Escrow（调用 T08a 工具函数）；前置条件：state=Open，deadline 未过，未重复申请；**emit! TaskApplied** | T08a, T07, T08 | 3h | P0 | 测试：apply → Application created，stake 锁入 Escrow；重复申请 → `AlreadyApplied`；`min_stake=0` 无需质押；TaskApplied 事件被 emit |
 | T10 | `submit_result` | Submission PDA 创建（或覆盖更新），RuntimeEnv 四字段长度 `require!` 验证；前置条件：agent 已申请、deadline 未过；**emit! SubmissionReceived** | T09 | 2h | P0 | 测试：submit → Submission 字段正确；二次 submit → 覆盖；model 超长 → `InvalidRuntimeEnv`；未申请 → `AgentNotApplied`；SubmissionReceived 事件被 emit |
-| T11 | `judge_and_pay` — SOL 路径 + 分账 | 分数验证（≥ MIN_SCORE）；赢家选取（highest score ≥ 60，tie→earliest slot）；整数除法费用计算（95/3/2 BPS）；三路 lamport 转账；`Task.state=Completed`；所有申请者 stake 退回 | T10 | 3h | P0 | 测试：2 Agent 竞争 → 赢家得 95%，Judge 得 3%，Treasury 得 2%；余额精确到 lamport；非 Judge 调用 → `NotTaskJudge` |
+| T11 | `judge_and_pay` — SOL 路径 + 分账 | 分数验证（≥ MIN_SCORE）；赢家选取（highest score ≥ 60，tie→earliest slot）；整数除法费用计算（95/3/2 BPS）；三路 lamport 转账；`Task.state=Completed`；**全部申请者（含落败者）stake 原路退回**（stake 是准入押金，非奖励） | T10 | 3h | P0 | 测试：2 Agent 竞争 → 赢家得 95%，Judge 得 3%，Treasury 得 2%；**落败者 stake 原路退回**；余额精确到 lamport；非 Judge 调用 → `NotTaskJudge` |
 | T12 | `judge_and_pay` — SPL + 信誉更新 | SPL Token 三路 CPI 转账；`Reputation` 全局统计更新（avg_score 滚动平均、win_rate）；`CategoryStats[category]` 更新；**emit! TaskJudged** | T11 | 3h | P0 | 测试：SPL 任务评判 → token 余额正确；全局 + category 信誉均更新；score < MIN_SCORE → TaskRefunded emit；TaskJudged 含 winner/payout/fees |
 | T13 | `cancel_task` | 仅 Poster 可调用；state=Open 验证；2% 取消费到 Treasury，98% 退还 Poster；所有 Agent 质押退回；`Task.state=Refunded`；**emit! TaskCancelled** | T08a, T07, T09 | 2h | P0 | 测试：cancel（无申请）→ Poster 得 98%，Treasury 得 2%；cancel（有申请）→ stakes 退回；非 Poster → `NotTaskPoster`；TaskCancelled 事件被 emit |
 | T14 | `refund_expired` | 任何人调用；clock > task.deadline 且 state=Open；全额退还 Poster；Agent stakes 退回；`Task.state=Refunded`；**emit! TaskRefunded（reason=Expired）** | T08a, T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；未过期 → `JudgeDeadlineNotPassed`；TaskRefunded 事件携带 reason=Expired |
@@ -71,7 +71,7 @@
 | T32 | CLI — task post / apply / submit / status | `gradience task post --eval-ref <cid> --reward <lamports> ...`；`apply`；`submit`；`status <task_id>` | T31, T28 | 3h | P0 | 每条命令在 devnet 创建正确的链上交易；`status` 显示当前状态和提交数 |
 | T33 | CLI — task judge / cancel / refund + judge register | `gradience task judge`；`cancel`；`refund`；`gradience judge register --category defi`；`gradience judge unstake` | T32 | 2h | P0 | 命令在 devnet 正确执行；judge register 后 JudgePool 有记录；help 文本覆盖所有参数 |
 | T34 | Judge Daemon — Absurd 工作流 + LaserStream 监听 | Absurd（PostgreSQL 持久化 workflow engine）初始化；Helius LaserStream gRPC 连接（fallback: polling 5s）；监听 TaskCreated / SubmissionReceived → 触发 evaluate workflow；崩溃可续 | T22 | 3h | P1 | Daemon 启动；mock TaskCreated → workflow 触发，延迟 < 200ms；LaserStream 断连时自动降级为 polling |
-| T35 | Judge Daemon — Type A（人工存根）+ Type B（AI Claude API） | **Type A**：等待 CLI 手动打分输入；**Type B**：下载 result_ref + trace_ref，构造 prompt 发给 Claude API（对照 evaluationCID），解析 0-100 分，指数退避重试（Rate Limit），调用 SDK `task.judge()` 上链 | T34 | 4h | P1 | Type B E2E：测试任务经 Claude API 自动评判并上链；judge_and_pay 被触发；Rate Limit 时排队重试而非丢失 |
+| T35 | Judge Daemon — Type A（人工存根）+ Type B（AI Claude API） | **Type A**：等待 CLI 手动打分输入；**Type B**：① 下载 `result_ref`（Agent 最终输出）+ `trace_ref`（执行 trace）；② 以 `evaluationCID` 中的评判标准构造 prompt；③ 发送 Claude API 做 AI trace replay 分析 → 解析 0-100 分；④ 指数退避重试（Rate Limit）；⑤ 调用 SDK `task.judge()` 上链 | T34 | 4h | P1 | Type B E2E：测试任务经 Claude API 自动评判并上链；judge_and_pay 被触发；Rate Limit 时排队重试而非丢失 |
 | T36 | Judge Daemon — Type C-1（test_cases oracle） | IJudge wasm_exec：下载 evaluationCID 内 WASM 字节码，沙箱执行（wasm32-wasi deterministic subset），解析分数，调用 `task.judge()` | T35 | 3h | P1 | 示例 WASM 模块被正确沙箱执行并给分；浮点运算禁用验证通过 |
 | T37 | 前端 — 任务列表 + 发任务表单 | Next.js 14 App Router；任务列表（调 Indexer REST API）；发任务表单（钱包连接 + SDK `task.post()`） | T23, T28 | 4h | P0 | `localhost:3000` 显示任务列表；表单提交在 devnet 创建任务；无钱包时提示连接 |
 | T38 | 前端 — 任务详情 + 提交列表 + 评判 | 任务详情页（状态、deadline、Judge 地址）；提交列表（按 score 排序）；Judge 触发按钮（仅 Task.judge == 当前钱包） | T37 | 4h | P0 | 完整生命周期（发→申请→提交→评判）可在浏览器操作；非 Judge 不显示评判按钮 |
@@ -108,19 +108,28 @@
 flowchart LR
     T01 --> T02 --> T03 --> T04 --> T05
     T05 --> T06
-    T06 --> T07 --> T08
-    T07 --> T09 --> T10 --> T11 --> T12
+    T06 --> T07
+    T06 --> T08a
+    T07 --> T08
+    T08a --> T08
+    T08a --> T09
+    T07 --> T09
+    T08 --> T09
+    T09 --> T10 --> T11 --> T12
     T07 --> T13
+    T08a --> T13
     T07 --> T14
+    T08a --> T14
     T05 --> T16
     T16 -.->|Pool 模式需要 JudgePool 有 Judge| T07
-    T16 --> T15
+    T08a --> T15
     T07 --> T15
-    T06 --> T17
-    T05 --> T18
-    T12 & T13 & T14 & T15 & T17 & T18 --> T19a --> T19b --> T19c --> T19d
+    T16 --> T15
 
     subgraph W2["W2 工具链"]
+        T06 --> T17
+        T05 --> T18
+        T12 & T13 & T14 & T15 & T17 & T18 --> T19a --> T19b --> T19c --> T19d
         T19d --> T21 --> T22 --> T23 --> T24
         T23 --> T25
         T23 --> T25a
