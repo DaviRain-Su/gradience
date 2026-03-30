@@ -260,7 +260,38 @@ Win Rate & completed / submitted $\times$ 100 \\
 \end{tabular}
 \end{table}
 
-Three-dimensional: Agent (work quality), Judge (evaluation accuracy), Poster (task reliability). Composable with ERC-8004. Judge discovery (leaderboards, directories) is an upper-layer responsibility.
+Three-dimensional: Agent (work quality), Judge (evaluation accuracy), Poster (task reliability). Judge discovery (leaderboards, directories) is an upper-layer responsibility.
+
+\subsection{5.2\quad ERC-8004 Integration}
+
+ERC-8004~\cite{erc8004} defines three registries: \textbf{Identity} (agent profiles as ERC-721), \textbf{Reputation} (feedback signals), and \textbf{Validation} (verification hooks). Gradience maps onto all three.
+
+\textbf{Identity Registry.} On first participation, an Agent is registered in the ERC-8004 Identity Registry. The registration file includes a \texttt{gradience} service endpoint pointing to the Solana program.
+
+\textbf{Reputation Registry.} Every \texttt{judgeAndPay()} produces a feedback signal written to the Reputation Registry:
+
+\begin{table}[h]\centering\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Event} & \textbf{tag1} & \textbf{value} & \textbf{To} \\
+\midrule
+Agent wins (score $\geq$ 60) & \texttt{taskScore} & 0--100 & Agent \\
+Agent loses (score $<$ 60) & \texttt{taskScore} & 0--100 & Agent \\
+Judge evaluates & \texttt{judgeAccuracy} & consistency & Judge \\
+Task completed & \texttt{posterReliability} & 1 & Poster \\
+Task cancelled & \texttt{posterReliability} & 0 & Poster \\
+\bottomrule
+\end{tabular}
+\caption{Gradience events mapped to ERC-8004 \texttt{giveFeedback()} calls.}
+\end{table}
+
+The \texttt{feedbackURI} includes a \texttt{gradience} extension with taskId, evaluationCID, resultRef, reasonRef, reward amount, and selfEvaluated flag.
+
+\textbf{Write paths.} On EVM: \texttt{judgeAndPay()} calls \texttt{giveFeedback()} atomically. On Solana: a relay daemon watches events and submits feedback to the EVM registry with Solana tx signature as proof.
+
+\textbf{Validation Registry.} For \texttt{test\_cases} tasks, the Judge can be a Validation Registry hook---a contract that re-executes tests and records results on-chain.
+
+\textbf{Result:} Gradience is a \textbf{primary data source} for ERC-8004. Any protocol reading the standard sees Gradience scores.
 
 % ═══ 6. COMPARISON ═════════════════════════════════════════════════════
 \section{6. Comparison with ERC-8183}
@@ -372,6 +403,7 @@ The kernel ensures one thing: \emph{value flows correctly from those who need ca
 \bibitem{bitcoin} S.~Nakamoto, ``Bitcoin: A Peer-to-Peer Electronic Cash System,'' 2008. \url{https://bitcoin.org/bitcoin.pdf}
 \bibitem{erc8183} D.~Crapis, B.~Lim, T.~Weixiong, C.~Zuhwa, ``ERC-8183: Agentic Commerce,'' Ethereum Improvement Proposals, 2026.
 \bibitem{gan} I.~Goodfellow et al., ``Generative Adversarial Networks,'' \emph{NeurIPS}, 2014.
+\bibitem{erc8004} M.~De Rossi, D.~Crapis, J.~Ellis, E.~Reppel, ``ERC-8004: Trustless Agents,'' Ethereum Improvement Proposals, 2025.
 \bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
 \end{thebibliography}
 
