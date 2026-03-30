@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Active](https://img.shields.io/badge/Status-Active%20Development-green)]()
 
-**[📜 Whitepaper (EN)](protocol/whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](protocol/whitepaper/gradience-zh.pdf)** · **[🌐 Website](https://www.gradiences.xyz)** · **[中文 README](README.zh.md)**
+**[📜 Whitepaper (EN)](protocol/whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](protocol/whitepaper/gradience-zh.pdf)** · **[🌐 Website](https://www.gradiences.xyz)** · **[中文 README](protocol/README-zh.md)**
 
 ---
 
