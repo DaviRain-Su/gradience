@@ -91,7 +91,7 @@ flowchart TB
 | **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + @coral-xyz/anchor | 新建 |
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
-| **Indexer** | 监听 Program 事件，提供 REST API + WebSocket | 不是共识的一部分，宕机不影响协议 | Cloudflare Workers + D1 | 已有（升级） |
+| **Indexer** | 监听 Program 事件，提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 | 已有（重构） |
 | **Chain Hub** | Delegation Task、Skill 市场、Key Vault（W3） | 不修改 Agent Layer 内核 | Rust + Anchor + TS | 新建（W3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储（W3） | 不上传用户私有记忆 | Next.js / Tauri | 新建（W3） |
 | **Agent Social** | Agent 发现 + 匹配（W3） | 不做结算 | Next.js + Indexer | 新建（W3） |
@@ -185,8 +185,10 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Anchor | ^0.31 | Solana Program 框架 | 否 |
 | @solana/web3.js | ^2.0 | RPC 交互 | 否 |
 | @solana/spl-token | ^0.4 | SPL Token + Token2022 转账 CPI | 否 |
-| Cloudflare Workers | — | Indexer 运行时 | 是（可自建） |
-| Cloudflare D1 | — | Indexer 数据库 | 是（PostgreSQL 可替换） |
+| Cloudflare Workers | — | Indexer Managed 模式运行时 | 是（Self-hosted 模式不需要） |
+| Cloudflare D1 | — | Indexer Managed 模式数据库 | 是（Self-hosted 用 PostgreSQL） |
+| PostgreSQL | ≥ 15 | Indexer Self-hosted 模式数据库 | 是（Managed 模式用 D1） |
+| Docker | — | Self-hosted Indexer 容器化部署 | 是（可直接跑二进制） |
 | Arweave | — | evaluationCID 永久存储 | 是（Avail 可替换） |
 | Claude API / OpenAI | — | Judge Daemon AI 评分 | 是（任意 LLM） |
 | Next.js | 14+ | 前端框架 | 是 |
@@ -290,6 +292,7 @@ grad.task.forceRefund(taskId)    // 强制退款
 grad.reputation.get(pubkey)      // 查询信誉
 grad.task.list(filter)           // 查询任务列表（走 Indexer）
 grad.task.submissions(taskId)    // 查询提交列表（走 Indexer，按信誉排序）
+grad.indexer.endpoint(url)       // 切换 Indexer 端点（Managed / Self-hosted）
 ```
 
 ### Judge Daemon 接口
@@ -365,21 +368,28 @@ WS   /ws                                  实时事件订阅
 │  │ Program (W1)    │  │ Program(s)   │  │ Program(W3) │  │
 │  └─────────────────┘  └──────────────┘  └─────────────┘  │
 └───────────────────────────┬──────────────────────────────┘
-                            │ Program 事件
-              ┌─────────────┴────────────┐
-              ▼                          ▼
-┌─────────────────────┐    ┌──────────────────────────┐
-│ Cloudflare          │    │ Arweave / Avail           │
-│ Workers (Indexer)   │    │ evaluationCID             │
-│ D1 (Database)       │    │ resultRef                 │
-│ Pages (Frontend)    │    │ judgeReasonRef            │
-└──────────┬──────────┘    └──────────────────────────┘
-           │ REST / WebSocket
-┌──────────┴──────────────────────────────────────────┐
-│              客户端层                                 │
-│  gradiences.xyz (前端)  @gradience/sdk  gradience CLI│
-│  Judge Daemon (AI + Oracle)                          │
-└─────────────────────────────────────────────────────┘
+                            │ Program 事件（gRPC / WebSocket）
+              ┌─────────────┴──────────────────────────┐
+              ▼                                         ▼
+┌────────────────────────────────┐   ┌───────────────────────────┐
+│ Indexer — Managed 模式          │   │ Arweave / Avail           │
+│ Cloudflare Workers             │   │ evaluationCID             │
+│ D1 (SQLite)                    │   │ resultRef                 │
+│ Cloudflare Pages (前端)         │   │ judgeReasonRef            │
+└───────────────┬────────────────┘   └───────────────────────────┘
+                │
+┌───────────────┴────────────────┐
+│ Indexer — Self-hosted 模式      │  ← 任何人都可以运行
+│ Docker 容器 / 裸二进制          │
+│ PostgreSQL                     │
+│ 暴露相同的 REST / WebSocket API │
+└───────────────┬────────────────┘
+                │ REST / WebSocket（接口完全一致）
+┌───────────────┴──────────────────────────────────────┐
+│              客户端层                                  │
+│  gradiences.xyz (前端)  @gradience/sdk  gradience CLI │
+│  Judge Daemon (AI + Oracle)                           │
+└───────────────────────────────────────────────────────┘
 
 EVM 层（W4）:
 ┌──────────────────────────────────────────────────┐
@@ -388,6 +398,12 @@ EVM 层（W4）:
 │  Reputation Proof Verifier（验 Solana 签名）       │
 └──────────────────────────────────────────────────┘
 ```
+
+**Indexer 设计原则**：
+- 两种模式暴露**完全相同的 REST / WebSocket API**，SDK 和前端无感知切换
+- 链上数据是唯一真相，Indexer 是可重建的只读视图——任何 Indexer 随时可从创世块重新同步
+- 官方运行 Managed 模式（Cloudflare）作为默认端点；社区可运行 Self-hosted 作为备用或独立服务
+- `gradience indexer start` CLI 命令一键启动 Self-hosted 节点
 
 ### 按周上线计划
 
