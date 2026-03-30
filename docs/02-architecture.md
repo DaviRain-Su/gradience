@@ -92,8 +92,9 @@ flowchart TB
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
 | **Indexer** | 监听 Program 事件，提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 | 已有（重构） |
-| **Chain Hub** | Delegation Task、Skill 市场、Key Vault（W3） | 不修改 Agent Layer 内核 | Rust + Anchor + TS | 新建（W3） |
-| **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储（W3） | 不上传用户私有记忆 | Next.js / Tauri | 新建（W3） |
+| **OpenWallet (OWS)** | 多链 Agent 钱包管理：本地加密存储 Key、Policy Engine 控制签名权限、scoped token 给 Agent 用、支持 Solana + 全 EVM | 不托管用户资产；不做链上结算 | OpenWallet Standard（Node.js / Rust / Python SDK + MCP） | 外部集成 |
+| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Anchor + TS + OpenWallet | 新建（W3） |
+| **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（W3） |
 | **Agent Social** | Agent 发现 + 匹配（W3） | 不做结算 | Next.js + Indexer | 新建（W3） |
 | **Agent Layer EVM** | Base/Arbitrum 上的协议移植，含信誉证明验证（W4） | 不做跨链桥 | Solidity ^0.8.20 + Hardhat | 新建（W4） |
 
@@ -197,6 +198,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | PostgreSQL | ≥ 15 | Indexer Self-hosted 模式数据库 | 是（Managed 模式用 D1） |
 | Docker | — | Self-hosted Indexer 容器化部署 | 是（可直接跑二进制） |
 | Arweave | — | evaluationCID 永久存储 | 是（Avail 可替换） |
+| OpenWallet (OWS) | — | 多链 Agent 钱包：本地 Key 存储 + Policy Engine + scoped token | 是（可替换为其他自托管钱包） |
 | Claude API / OpenAI | — | Judge Daemon AI 评分 | 是（任意 LLM） |
 | Next.js | 14+ | 前端框架 | 是 |
 | Hardhat | ^2 | EVM 合约（W4） | 是 |
@@ -300,6 +302,7 @@ grad.reputation.get(pubkey)      // 查询信誉
 grad.task.list(filter)           // 查询任务列表（走 Indexer）
 grad.task.submissions(taskId)    // 查询提交列表（走 Indexer，按信誉排序）
 grad.indexer.endpoint(url)       // 切换 Indexer 端点（Managed / Self-hosted）
+grad.wallet.connect(owsToken)    // 连接 OpenWallet scoped token（Agent 从不接触明文 Key）
 ```
 
 ### Judge Daemon 接口
@@ -466,6 +469,7 @@ W4 (04-22 ~ 04-30): 全链
 | 跨链信誉 | 签名证明（无桥） | 桥是最大安全隐患；携带证明零成本 |
 | Indexer | Cloudflare Workers + D1 | 零运维、全球边缘、低成本；宕机不影响协议 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
+| Agent 钱包 | OpenWallet (OWS) | 本地加密存储，Zero-trust scoped token；Policy Engine 直接实现 Chain Hub Key Vault 的执行权限约束；MCP 原生支持与 Claude Code 生态集成 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
 | 模型透明 | model_id 链上公开 | Agent 声明使用的模型，trace 内容寻址防篡改，任何人可审计推理过程 |
