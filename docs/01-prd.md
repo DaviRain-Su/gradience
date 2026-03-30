@@ -11,6 +11,7 @@
 |------|------|---------|
 | v0.1 | 2026-03-30 | 初稿 |
 | v0.2 | 2026-03-30 | 扩展 Scope：EVM、Judge Staking/Slash、治理、可升级、SDK/CLI/前端、AI Judge、多 Agent 自动排序；整体时间线压缩至 2026-04 单月 |
+| v0.3 | 2026-03-30 | Review 修正：W1 延至 2 周（04-14）；澄清"无注册"≠无质押；Token2022 启用 Hook 时返回错误；信誉证明由 upgrade_authority 多签；代码行数上限改 ≤1000；串通检测推后；治理权限表格；用户故事 #15/#16 阶段注释；新增 #18 cancel_task |
 
 ---
 
@@ -48,7 +49,7 @@
 **Agent Layer v2 = 完整协议栈，从链上内核到开发者工具全覆盖：**
 
 - **链上内核（Solana）**：仅支持 **Race Task**（离散竞争结算）——多 Agent 并行提交，Judge 选最优，一次性结算；持续委托类任务（Delegation Task）由 Chain Hub 在上层实现，不进入内核
-- **Staking + Slash**：Agent/Judge 质押防 Sybil，恶意行为触发 Slash
+- **Staking + Slash**：Agent/Judge 质押防 Sybil，恶意行为触发 Slash；**"无注册门槛"= 无需显式 `registerAgent()` 调用，但 `apply_for_task` 时仍须质押 `min_stake`，首次调用自动初始化 Reputation PDA**
 - **多币种**：原生 SOL + SPL Token + Token2022 三路兼容
 - **可升级 Program**：多签治理升级权，协议成熟后可主动关闭升级权实现永久不可变
 - **AI Judge + Oracle**：Judge Daemon 支持 AI 打分和链下预言机，实现自动化评判
@@ -85,7 +86,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 |---|------|------|------|--------|--------|
 | 1 | Poster | 发布任务时指定专属 Judge 地址（EOA / Program / 多签） | 为不同任务选择最合适的评判者 | P0 | W1 |
 | 2 | Judge | 每次评判获得 3% 费用（与任务同币种），无论通过还是拒绝 | 有经济动机参与，不存在结果偏见 | P0 | W1 |
-| 3 | Agent | 无需预先注册，直接申请任务自动建立链上信誉 | 降低门槛，让自主 Agent 无缝接入 | P0 | W1 |
+| 3 | Agent | 无需显式注册（无 `registerAgent()`），直接申请任务自动初始化 Reputation PDA（质押 `min_stake` 仍是前提） | 降低门槛，让自主 Agent 无缝接入 | P0 | W1 |
 | 4 | Agent | 质押一定数量的 SOL/Token 才能参与任务 | 防止 Sybil 攻击，证明参与诚意 | P0 | W1 |
 | 5 | 协议方 | 每笔结算收取 2% 协议费（写入合约常量） | 维持长期运营，向参与者承诺费率永不涨 | P0 | W1 |
 | 6 | 开发者 | 用 TypeScript SDK 在 3 行代码内发布一个任务 | 快速接入协议，无需理解底层 Anchor 细节 | P0 | W2 |
@@ -97,9 +98,10 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 | 12 | DAO 成员 | 通过多签治理投票升级 Program | 修复 Bug 或迭代功能，同时保持去中心化控制 | P1 | W3 |
 | 13 | EVM 开发者 | 在 Base/Arbitrum 上调用 Agent Layer，携带 Solana 信誉证明 | 一个 Agent 在所有链上使用同一套信誉 | P1 | W4 |
 | 14 | 用户 | 通过产品前端发布任务、查看竞争状态、触发评判 | 无需编写代码即可参与协议 | P0 | W2 |
-| 15 | DeFi LP 管理人（Poster） | 用竞争模型选出最佳 LP 管理 Agent：发布"提交你的 LP 策略方案 + 历史信誉证明"任务，多个 Agent 竞争提交，Judge（预言机合约）评判方案质量 | Agent Layer 的竞争模型用于**选人**，不用于执行；胜者拿到信誉 + 委托授权资格 | P1 | W2 |
-| 16 | LP Agent（执行者） | 提交策略方案和链上历史业绩作为竞争结果，在选人阶段赢得委托 | 通过竞争把 LP 管理能力变成链上可信信誉，不需要主观信任 | P1 | W2 |
+| 15 | DeFi LP 管理人（Poster） | 用竞争模型选出最佳 LP 管理 Agent：发布"提交你的 LP 策略方案 + 历史信誉证明"任务，多个 Agent 竞争提交，Judge（预言机合约）评判方案质量 | Agent Layer 的竞争模型用于**选人**，不用于执行；胜者拿到信誉 + 委托授权资格（**注：选人阶段 W2 完成，执行阶段依赖 W3 Chain Hub Key Vault**） | P1 | W2 |
+| 16 | LP Agent（执行者） | 提交策略方案和链上历史业绩作为竞争结果，在选人阶段赢得委托 | 通过竞争把 LP 管理能力变成链上可信信誉，不需要主观信任（**注：选人阶段 W2 完成，实际执行授权依赖 W3 Chain Hub**） | P1 | W2 |
 | 17 | DeFi LP 管理人（Poster） | 赢得选人竞争的 Agent，通过 Chain Hub Key Vault 获得仓位操作权，在约定参数内持续执行，按周绩效结算 | 执行阶段是持续委托，不是竞争，由 Chain Hub Delegation Task 处理，Agent Layer 只管选人这一次竞争 | P1 | W3（Chain Hub） |
+| 18 | Poster | 主动取消无提交（或截止前）的任务，拿回 98% 资金（2% 作为取消费归协议） | 任务方向调整时不被永久锁定资金 | P0 | W1 |
 
 ---
 
@@ -107,7 +109,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 
 ### 做什么（In Scope）
 
-#### 🔴 W1（2026-04-01 ~ 04-07）— Solana 核心 Program
+#### 🔴 W1（2026-04-01 ~ 04-14，**2 周**）— Solana 核心 Program
 
 - **Per-task Judge**: `Task` 账户新增 `judge` 字段，`post_task` 时指定
 - **Judge Fee 常量**: `JUDGE_FEE_BPS = 300`（3%，硬编码）
@@ -119,10 +121,10 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 - **多币种支付**: 原生 SOL（lamport）+ SPL Token + Token2022 三路兼容，`post_task` 时指定 mint
 - **Agent Staking**: 每任务 Poster 设定 `min_stake`，Agent 必须质押才能 apply
 - **Judge Staking**: 协议级最低 Judge 质押要求
-- **基础 Slash**: Judge 超时未评判 → 质押扣减；串通检测（同 Agent+Judge 多次异常）→ 扣减
+- **基础 Slash**: Judge 超时未评判 → 质押扣减（`force_refund` 触发时执行）；**串通检测（Collusion Detection）暂不在 W1 实现**——判定条件和 Slash 比例需在 Phase 3 技术规格中精确定义后再执行，MVP 阶段仅做超时 Slash
 - **全量 Anchor 测试**: 所有状态转换、边界条件、SOL/SPL/Token2022 三路路径
 
-#### 🟠 W2（2026-04-08 ~ 04-14）— 工具链
+#### 🟠 W2（2026-04-15 ~ 04-21）— 工具链
 
 - **TypeScript SDK**: `@gradience/sdk`，封装所有 Program 指令，3 行代码发任务
 - **CLI 工具**: `gradience` 命令行，支持 `post`、`apply`、`submit`、`judge`、`refund`、`status` 等子命令
@@ -134,15 +136,25 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 - **第三方开发者 SDK**: 面向外部开发者的 SDK 文档和示例代码
 - **DeFi 委托任务示例**: 以 LP 管理场景为 E2E 示例——Poster 发布周期性 LP 管理任务，预言机 Judge 读取 Orca/Raydium 链上 PnL 自动打分，Agent 信誉随绩效积累；**完全无信任的仓位授权由 W3 Chain Hub Key Vault 处理**
 
-#### 🟡 W3（2026-04-15 ~ 04-21）— 生态扩展
+#### 🟡 W3（2026-04-22 ~ 04-26）— 生态扩展
 
 - **Chain Hub MVP**: 技能市场 + 协议注册表 MVP
 - **Agent Me MVP**: 用户个人 Agent 界面 MVP
 - **Agent Social MVP**: Agent 发现 + 匹配 MVP
 - **GRAD 创世**: Token 发行 + 空投 + GRAD/SOL 流动性池
-- **链上治理（多签 DAO）**: 控制 Program 升级权，管理 Protocol Treasury；**注意：费率常量 `JUDGE_FEE_BPS` / `PROTOCOL_FEE_BPS` 不在治理范围内，永久硬编码**
+- **链上治理（多签 DAO）**: 控制 Program 升级权，管理 Protocol Treasury
 
-#### 🔵 W4（2026-04-22 ~ 04-30）— 全链扩展
+  **治理权限边界（重要）**：
+
+  | 参数 | 可治理？ | 说明 |
+  |------|---------|------|
+  | `treasury` 地址 | ✅ 可治理 | 通过 `upgrade_config` 更新 |
+  | `min_judge_stake` | ✅ 可治理 | 通过 `upgrade_config` 更新 |
+  | `JUDGE_FEE_BPS` (300) | ❌ **永久硬编码** | 代码常量，不受任何治理/升级影响 |
+  | `PROTOCOL_FEE_BPS` (200) | ❌ **永久硬编码** | 代码常量，不受任何治理/升级影响 |
+  | `AGENT_FEE_BPS` (9500) | ❌ **永久硬编码** | 派生值，不受任何治理/升级影响 |
+
+#### 🔵 W4（2026-04-27 ~ 04-30，best effort）— 全链扩展
 
 - **EVM 部署**: 将 Agent Layer v2 协议逻辑移植到 Solidity，部署到 Base 和 Arbitrum
 - **跨链信誉证明**: Agent 在 Solana 上的信誉可以生成签名证明，在 EVM 合约中验证
@@ -152,7 +164,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 
 ### 不做什么（Out of Scope）
 
-- **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；仅保证基础 Token2022 mint 的 `transfer` 兼容
+- **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；`post_task` 会检测 mint 是否启用了 Transfer Hook 扩展——**若已启用，指令返回 `Token2022NotSupported` 错误，任务拒绝创建**；仅支持未启用任何高级扩展的标准 Token2022 mint
 - **跨链桥**: 不构建实时跨链桥，信誉通过签名证明传递，不依赖桥协议
 - **Delegation Task（持续委托任务）**: Agent Layer 内核**只支持 Race Task**（离散竞争）；LP 管理、交易机器人等持续委托场景的执行阶段，由 Chain Hub 在上层实现 Delegation Task 原语，不进入内核状态机——这是架构边界决策，不是功能缺失
 
@@ -164,7 +176,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 |------|------|--------|
 | 核心功能 | 所有 P0 用户故事测试通过 | 100% |
 | 费率正确性 | 每笔结算 Judge:Protocol:Agent/Poster 分账比例 | 精确 3:2:95 |
-| 代码规模 | Solana Program 总行数（不含注释） | ≤ 400 行 |
+| 代码规模 | Solana Program 总行数（不含注释） | ≤ 1000 行 |
 | 测试覆盖 | Anchor 测试分支覆盖率 | ≥ 95% |
 | 安全性 | Slash、重入、串通、超时绕过等攻击测试 | 0 Critical 漏洞 |
 | Compute 效率 | `post_task` + `judge_and_pay` 单指令 CU 消耗 | ≤ 200,000 CU |
@@ -184,12 +196,13 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 | 技术约束 | **费率常量不可修改**：`JUDGE_FEE_BPS = 300`、`PROTOCOL_FEE_BPS = 200` 硬编码，不受治理控制 |
 | 技术约束 | **Program 可升级**：部署时保留 upgrade authority，由多签 DAO 控制；协议成熟后可主动关闭 upgrade authority 实现永久不可变 |
 | 技术约束 | 支付层：SOL（lamport）+ SPL Token + Token2022（基础兼容）；Token 任务用 ATA + CPI |
-| 技术约束 | Token2022 只支持标准 transfer，不支持 Transfer Hook / Confidential Transfer 扩展 |
+| 技术约束 | Token2022 只支持标准 transfer；若 mint 已启用 Transfer Hook / Confidential Transfer 扩展，`post_task` 返回 `Token2022NotSupported` 错误拒绝创建 |
 | 时间约束 | 整个协议（含 EVM、A2A、飞轮）在 **2026-04-30** 前全部完成，AI 辅助加速 |
-| 时间约束 | Solana 核心 Program 在 **2026-04-07**（W1）交付 |
+| 时间约束 | Solana 核心 Program 在 **2026-04-14**（W1，2 周）交付 |
 | 资源约束 | 单人开发 + AI 辅助，遵循 dev-lifecycle 7 阶段 TDD 流程 |
 | 依赖约束 | Agent Arena v1（EVM）作为功能基线参考，v2 Solana Program 为全新实现 |
 | 依赖约束 | EVM 版本（W4）依赖 Solana Program（W1）的协议逻辑稳定 |
+| 技术约束 | 跨链信誉证明由 **upgrade_authority（Squads v4 多签）离线签名**，EVM 合约 `ReputationVerifier` 验证 ed25519 签名；PDA 本身不持有私钥，无法直接签名链下消息 |
 | 依赖约束 | Judge Daemon AI 模式依赖 Claude/GPT API 可用性（链下） |
 
 ---
@@ -210,7 +223,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 ## ✅ Phase 1 验收标准
 
 - [x] 1.1–1.6 所有必填部分已完成
-- [x] 用户故事 ≥ 3 个（共 17 个，按交付周标注，含 DeFi LP 委托场景）
+- [x] 用户故事 ≥ 3 个（共 18 个，按交付周标注，含 DeFi LP 委托场景 + cancel_task）
 - [x] 「不做什么」已明确（仅 Token2022 高级扩展 + 跨链桥）
 - [x] 成功标准可量化（11 项指标）
 - [x] 技术约束、时间约束、依赖约束均已定义
