@@ -409,6 +409,31 @@ A2A 层在链下运行，定期向链上结算：
 
 Solana 在任何规模下都保持结算层的角色。协议通过\emph{分层}扩展，而非替换基础设施。无需新链。
 
+\subsection{7.3\quad 执行层：MagicBlock Ephemeral Rollups}
+
+A2A 层不需要自建链下基础设施，而是利用 \textbf{MagicBlock Ephemeral Rollups (ER)}——弹性、零费用、亚 50ms 的执行环境，原生于 Solana。
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{A2A 需求} & \textbf{MagicBlock ER 能力} \\
+\midrule
+高频交互（$<$50ms） & 1ms 出块，$<$50ms 端到端 \\
+零费用微支付 & ER 内零交易费 \\
+隐私（协商、策略） & Private ER（Intel TDX TEE） \\
+无需桥接或新链 & 原生 Solana——委托并回提 \\
+最终结算 & 状态自动提交到 Solana L1 \\
+\bottomrule
+\end{tabular}
+\caption{A2A 需求与 MagicBlock Ephemeral Rollups 的对应}
+\end{table}
+
+集成只需在 Solana Program 中添加一个 \texttt{delegate} 指令。任务结算在 Solana L1 运行（$\sim$400ms，$\sim$\$0.001/笔）。A2A 交互委托到 Ephemeral Rollup（$\sim$1ms，\$0/笔），结果自动回提到 L1。MagicBlock 在亚洲、欧洲、美国运行全球 ER 验证节点。
+
+协议保持极简。执行弹性扩展。零自建基础设施。
+
 % ═══════════════════════════════════════════════════════════════════════════
 % 8. 结论
 % ═══════════════════════════════════════════════════════════════════════════

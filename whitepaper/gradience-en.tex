@@ -406,6 +406,31 @@ The A2A layer operates off-chain with periodic on-chain settlement:
 
 Solana remains the settlement layer at any scale. The protocol scales by \emph{layering}, not by replacing infrastructure. No new chain required.
 
+\subsection{7.3\quad Execution Layer: MagicBlock Ephemeral Rollups}
+
+Rather than building custom off-chain infrastructure, the A2A layer leverages \textbf{MagicBlock Ephemeral Rollups (ER)}---elastic, zero-fee, sub-50ms execution environments native to Solana.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{A2A Requirement} & \textbf{MagicBlock ER} \\
+\midrule
+High-frequency interaction ($<$50ms) & 1ms block time, $<$50ms e2e \\
+Zero-fee micropayments & Zero tx fees within ER \\
+Privacy (negotiation, strategy) & Private ER via TEE (Intel TDX) \\
+No bridge or separate chain & Native Solana---delegate \& commit \\
+Final settlement & Auto-commits state to Solana L1 \\
+\bottomrule
+\end{tabular}
+\caption{A2A requirements mapped to MagicBlock Ephemeral Rollups.}
+\end{table}
+
+The integration requires only a \texttt{delegate} instruction in the Solana Program. Task settlement runs on Solana L1 ($\sim$400ms, $\sim$\$0.001/tx). A2A interactions delegate to an Ephemeral Rollup ($\sim$1ms, \$0/tx) and auto-commit results back to L1. MagicBlock operates global ER validators across Asia, EU, and US on mainnet.
+
+The protocol stays minimal. The execution scales elastically. Zero custom infrastructure required.
+
 \textbf{Agent Layer} defines the settlement rules. Modules provide tooling (Chain Hub), user entry (Agent Me), social discovery (Agent Social), and network coordination (A2A). The kernel depends on no module. Modules depend on the kernel.
 
 % ═══════════════════════════════════════════════════════════════════════════

@@ -277,6 +277,35 @@ This means Solana remains the settlement layer even at massive scale. The A2A Pr
 
 No new chain required. The protocol scales by **layering**, not by **replacing infrastructure**.
 
+### 7.4 Execution Layer: MagicBlock Ephemeral Rollups
+
+Rather than building custom off-chain infrastructure, Gradience's A2A layer leverages **MagicBlock Ephemeral Rollups (ER)**—elastic, zero-fee, sub-50ms execution environments that remain native to Solana (no bridging required).
+
+| A2A Requirement | MagicBlock ER Capability |
+|---|---|
+| High-frequency Agent interaction (<50ms) | 1ms block time, <50ms end-to-end |
+| Zero-fee micropayments | Zero transaction fees within ER |
+| Privacy (Agent negotiation, strategy) | Private ER via TEE (Intel TDX) |
+| No separate chain or bridge | Still Solana—state delegates to ER, settles back to L1 |
+| Final settlement on Solana | Automatic state commitment to Solana mainnet |
+
+The integration model:
+
+```
+Agent Layer (Solana Program)
+  │
+  ├─ Task lifecycle (postTask, judgeAndPay)
+  │   → Runs on Solana L1 (~400ms, ~$0.001/tx)
+  │
+  └─ A2A interactions (delegate to Ephemeral Rollup)
+      → Runs on MagicBlock ER (~1ms, $0/tx)
+      → Agent messaging, micropayments, negotiation
+      → Private ER for sensitive operations (TEE)
+      → Final state auto-commits back to Solana L1
+```
+
+This means Gradience needs **zero custom infrastructure** for the A2A layer. MagicBlock operates global ER validators (Asia, EU, US) on both mainnet and devnet. Integration requires only a `delegate` instruction in the Solana Program—the protocol stays minimal, the execution scales elastically.
+
 ---
 
 ## 8. Roadmap

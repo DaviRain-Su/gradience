@@ -128,6 +128,34 @@ flowchart LR
 
 Solana remains the settlement layer at any scale. The protocol scales by **layering**, not by replacing infrastructure.
 
+### Execution: MagicBlock Ephemeral Rollups
+
+Rather than building custom off-chain infrastructure, the A2A layer leverages [MagicBlock Ephemeral Rollups](https://www.magicblock.xyz) — elastic, zero-fee, sub-50ms execution environments native to Solana:
+
+```mermaid
+flowchart TB
+    subgraph Solana["Solana L1"]
+        Agent["Agent Layer Program<br/>Task lifecycle · Reputation · Settlement<br/>~400ms · ~$0.001/tx"]
+    end
+    subgraph ER["MagicBlock Ephemeral Rollup"]
+        A2A["A2A Interactions<br/>Messaging · Micropayments · Negotiation<br/>~1ms · $0/tx"]
+        PER["Private ER (TEE)<br/>Sensitive operations"]
+    end
+
+    Agent <-->|"delegate / commit"| ER
+    
+    style Solana fill:#0f7b8a15,stroke:#0f7b8a
+    style ER fill:#8b5cf615,stroke:#8b5cf6
+```
+
+- **1ms block time, <50ms end-to-end** — fast enough for real-time Agent interaction
+- **Zero fees** within Ephemeral Rollup
+- **Private ER** via Intel TDX TEE for sensitive Agent negotiations
+- **No bridge** — still Solana, state auto-commits back to L1
+- **Zero custom infrastructure** — MagicBlock operates global validators (Asia, EU, US)
+
+The protocol stays minimal. The execution scales elastically.
+
 ---
 
 ## How It Works
