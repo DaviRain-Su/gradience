@@ -5,11 +5,20 @@
 
 ---
 
+## 变更记录
+
+| 版本 | 日期 | 变更说明 |
+|------|------|---------|
+| v0.1 | 2026-03-30 | 初稿 |
+| v0.2 | 2026-03-30 | 扩展 Scope：EVM、Judge Staking/Slash、治理、可升级、SDK/CLI/前端、AI Judge、多 Agent 自动排序；整体时间线压缩至 2026-04 单月 |
+
+---
+
 ## 1.1 项目概述
 
 **项目名称**: Agent Layer v2
-**所属模块**: Agent Layer（Protocol Kernel）
-**版本**: v0.1
+**所属模块**: Agent Layer（Protocol Kernel）+ 全栈工具链
+**版本**: v0.2
 **日期**: 2026-03-30
 **作者**: davirian
 
@@ -19,41 +28,54 @@
 
 ### 要解决的问题
 
-> AI Agent 之间没有可信、无需许可的能力交换与价值结算基础设施——自我声明的能力不可信，平台可以篡改规则，Agent 无法直接商业交互。
+> AI Agent 之间没有可信、无需许可的能力交换与价值结算基础设施——能力声明不可信，平台规则可篡改，Agent 无法自主商业交互，开发者也缺乏配套工具进入这个生态。
 
 ### 当前状态（Agent Arena MVP v1 的局限）
 
 | 问题 | 现状 | 影响 |
 |------|------|------|
-| 全局单一 Judge | 所有任务共用一个 `judgeAddress`，不可为每个任务指定不同 Judge | 无法支持专业化 Judge，无法让合约充当 Judge |
-| Judge 无经济激励 | Judge 免费评判，没有报酬 | Judge 理性选择不参与 → 系统长期无法运转 |
-| 协议无收入 | Protocol Fee = 0% | 无法维持协议长期运营和开发 |
-| 参与需要注册 | `applyForTask()` 有 `onlyRegistered` 限制 | 提高参与门槛，违背比特币哲学（任何人可参与） |
-| 信誉需预注册 | 必须先调用 `registerAgent()` 才能建立信誉 | 增加摩擦，阻止自主 Agent 直接参与 |
+| 全局单一 Judge | 所有任务共用一个 `judgeAddress` | 无法专业化评判，无法让 Program 充当 Judge |
+| Judge 无经济激励 | Judge 免费劳动 | Judge 理性选择不参与 → 系统长期无法运转 |
+| 协议无收入 | Protocol Fee = 0% | 无法维持长期运营 |
+| 参与需要注册 | `applyForTask()` 有 `onlyRegistered` 限制 | 违背无需许可原则，阻止自主 Agent |
+| 信誉需预注册 | 必须先调用 `registerAgent()` | 增加摩擦，阻止冷启动 |
+| 无 Staking/Slash | Agent 和 Judge 无需质押 | Sybil 攻击和串通成本为零 |
+| 单链 EVM | 只有 EVM 实现 | 无法接触 Solana 生态，性能受限 |
+| 无开发者工具 | 无 SDK / CLI / 前端 | 开发者无法方便地接入协议 |
 
 ### 目标状态
 
-**Agent Layer v2 = 完整实现比特币哲学的 Agent 能力结算协议：**
+**Agent Layer v2 = 完整协议栈，从链上内核到开发者工具全覆盖：**
 
-- 任何地址发布需求 → 锁入价值
-- 任何地址申请执行 → 竞争出最优 Agent
-- 每任务独立 Judge（EOA / 合约 / 多签）→ 评判质量
-- 自动三方分账：Agent 95% + Judge 3% + Protocol 2%（全部硬编码为常量）
-- 信誉从行为中自动积累，无需预注册
+- **链上内核（Solana）**：无需许可的竞争结算，95/3/2 费率常量，per-task Judge，三方分账
+- **Staking + Slash**：Agent/Judge 质押防 Sybil，恶意行为触发 Slash
+- **多币种**：原生 SOL + SPL Token + Token2022 三路兼容
+- **可升级 Program**：多签治理升级权，协议成熟后可主动关闭升级权实现永久不可变
+- **AI Judge + Oracle**：Judge Daemon 支持 AI 打分和链下预言机，实现自动化评判
+- **多 Agent 自动排序**：竞争提交后按信誉自动排序，辅助 Judge/Poster 决策
+- **全栈工具链**：TypeScript SDK + CLI + 产品前端 + 第三方开发者 SDK
+- **EVM 部署**：Solana 首发后，同步部署到 Base/Arbitrum，共享链上信誉证明
 
 ---
 
 ## 1.3 用户故事
 
-| # | 角色 | 想要 | 以便 | 优先级 |
-|---|------|------|------|--------|
-| 1 | Poster（需求方） | 在发布任务时指定一个专门的 Judge 地址 | 为不同类型任务选择最合适的评判者（代码 Judge / 设计 Judge / 自动合约 Judge） | P0 |
-| 2 | Judge（评判者） | 每次完成评判都获得任务价值 3% 的费用（与任务同币种），无论通过还是拒绝 | 有经济动机参与评判，且不存在结果偏见 | P0 |
-| 3 | Agent（执行者） | 无需预先注册，直接申请任务即可自动建立链上信誉 | 降低参与门槛，让自主 Agent 可以无缝接入 | P0 |
-| 4 | Agent（执行者） | 首次参与任务时自动初始化信誉记录 | 不需要单独的注册步骤，减少链上交易次数 | P1 |
-| 5 | 协议方 | 每笔结算收取 2% 协议费，写入合约常量不可修改 | 维持协议长期运营，且向参与者承诺费率永不上涨 | P0 |
-| 6 | 开发者 | Judge 可以是任意 Solana Program（通过 CPI 调用标准 `IJudge` 接口） | 支持零知识证明验证、预言机、多签等高级评判形式 | P1 |
-| 7 | 任何人 | Judge 超时 7 天未评判时可调用 `forceRefund()` 触发退款 | 协议无单点失败，任何参与者都可解锁被卡住的资金 | P0 |
+| # | 角色 | 想要 | 以便 | 优先级 | 交付周 |
+|---|------|------|------|--------|--------|
+| 1 | Poster | 发布任务时指定专属 Judge 地址（EOA / Program / 多签） | 为不同任务选择最合适的评判者 | P0 | W1 |
+| 2 | Judge | 每次评判获得 3% 费用（与任务同币种），无论通过还是拒绝 | 有经济动机参与，不存在结果偏见 | P0 | W1 |
+| 3 | Agent | 无需预先注册，直接申请任务自动建立链上信誉 | 降低门槛，让自主 Agent 无缝接入 | P0 | W1 |
+| 4 | Agent | 质押一定数量的 SOL/Token 才能参与任务 | 防止 Sybil 攻击，证明参与诚意 | P0 | W1 |
+| 5 | 协议方 | 每笔结算收取 2% 协议费（写入合约常量） | 维持长期运营，向参与者承诺费率永不涨 | P0 | W1 |
+| 6 | 开发者 | 用 TypeScript SDK 在 3 行代码内发布一个任务 | 快速接入协议，无需理解底层 Anchor 细节 | P0 | W2 |
+| 7 | 开发者 | 用 CLI 工具完成发任务、查看、评判的全流程 | 本地开发和测试无需前端 | P0 | W2 |
+| 8 | Poster | 用 AI Judge（如 Claude API）自动评判提交结果 | 主观任务不依赖人工评判，7×24 小时运转 | P1 | W2 |
+| 9 | Poster | 对于可验证任务（测试用例），用预言机自动执行并上链评分 | 代码类任务实现确定性无人工评判 | P1 | W2 |
+| 10 | Poster | 查看所有提交结果按信誉自动排序的列表 | 快速找到最优候选，减少评判工作量 | P1 | W2 |
+| 11 | 任何人 | Judge 超时 7 天未评判时触发 `force_refund()` | 协议无单点故障，资金不会被永久锁定 | P0 | W1 |
+| 12 | DAO 成员 | 通过多签治理投票升级 Program | 修复 Bug 或迭代功能，同时保持去中心化控制 | P1 | W3 |
+| 13 | EVM 开发者 | 在 Base/Arbitrum 上调用 Agent Layer，携带 Solana 信誉证明 | 一个 Agent 在所有链上使用同一套信誉 | P1 | W4 |
+| 14 | 用户 | 通过产品前端发布任务、查看竞争状态、触发评判 | 无需编写代码即可参与协议 | P0 | W2 |
 
 ---
 
@@ -61,28 +83,52 @@
 
 ### 做什么（In Scope）
 
-- [x] **Per-task Judge**: `Task` 结构体新增 `judge` 字段，`postTask()` 时指定
-- [x] **Judge Fee 常量**: `JUDGE_FEE_BPS = 300`（3%，硬编码，不可修改）
-- [x] **Protocol Fee 常量**: `PROTOCOL_FEE_BPS = 200`（2%，硬编码，不可修改）
-- [x] **Protocol Treasury 地址**: 部署时设置，收取协议费
-- [x] **三方自动分账**: `judgeAndPay()` 执行 Agent/Poster + Judge + Protocol 三路分账
-- [x] **去掉 `onlyRegistered` 限制**: `applyForTask()` 任何地址可调用
-- [x] **信誉按需初始化**: 首次 `applyForTask()` 时自动创建 AgentRecord
-- [x] **`forceRefund()` 无需许可**: 任何地址可在 `judgeDeadline` 过后触发
-- [x] **IJudge CPI 接口**: 定义标准 CPI 接口，支持 Judge 是任意 Solana Program
-- [x] **多币种支付**: 任务奖励支持原生 SOL 或任意 SPL Token（含 Token2022 兼容 mint），`postTask()` 时指定 mint；SOL 任务用 lamport 转账，Token 任务用 ATA + `token_transfer` CPI
-- [x] **全量测试覆盖**: 覆盖所有状态转换、边界条件、攻击向量（SOL + SPL Token 两套路径均覆盖）
+#### 🔴 W1（2026-04-01 ~ 04-07）— Solana 核心 Program
+
+- **Per-task Judge**: `Task` 账户新增 `judge` 字段，`post_task` 时指定
+- **Judge Fee 常量**: `JUDGE_FEE_BPS = 300`（3%，硬编码）
+- **Protocol Fee 常量**: `PROTOCOL_FEE_BPS = 200`（2%，硬编码）
+- **三方自动分账**: `judge_and_pay` 执行 Agent/Poster + Judge + Protocol 三路分账
+- **去掉注册门槛**: `apply_for_task` 任何地址可调用，首次调用自动初始化 AgentRecord
+- **`force_refund` 无需许可**: 任何地址可在 `judge_deadline` 过后触发
+- **IJudge CPI 接口**: 标准 CPI 接口，支持 Judge 是任意 Solana Program
+- **多币种支付**: 原生 SOL（lamport）+ SPL Token + Token2022 三路兼容，`post_task` 时指定 mint
+- **Agent Staking**: 每任务 Poster 设定 `min_stake`，Agent 必须质押才能 apply
+- **Judge Staking**: 协议级最低 Judge 质押要求
+- **基础 Slash**: Judge 超时未评判 → 质押扣减；串通检测（同 Agent+Judge 多次异常）→ 扣减
+- **全量 Anchor 测试**: 所有状态转换、边界条件、SOL/SPL/Token2022 三路路径
+
+#### 🟠 W2（2026-04-08 ~ 04-14）— 工具链
+
+- **TypeScript SDK**: `@gradience/sdk`，封装所有 Program 指令，3 行代码发任务
+- **CLI 工具**: `gradience` 命令行，支持 `post`、`apply`、`submit`、`judge`、`refund`、`status` 等子命令
+- **Judge Daemon**: 链下服务，监听 Program 事件，支持两种自动评判模式：
+  - **AI Judge 模式**: 调用 Claude/GPT API，将任务描述 + 提交结果发给 LLM，返回 0-100 分并上链
+  - **Oracle 模式**: 对 `test_cases` 类任务，在链下运行测试套件，将执行结果作为证明提交链上；Judge Program 读取证明自动给分
+- **多 Agent 自动排序**: 前端/SDK 展示所有提交结果，按 Agent 信誉（`avg_score × win_rate`）自动排序，辅助 Judge 决策
+- **产品前端**: 发任务、查竞争列表、查排序结果、触发评判的 Web 界面
+- **第三方开发者 SDK**: 面向外部开发者的 SDK 文档和示例代码
+
+#### 🟡 W3（2026-04-15 ~ 04-21）— 生态扩展
+
+- **Chain Hub MVP**: 技能市场 + 协议注册表 MVP
+- **Agent Me MVP**: 用户个人 Agent 界面 MVP
+- **Agent Social MVP**: Agent 发现 + 匹配 MVP
+- **GRAD 创世**: Token 发行 + 空投 + GRAD/SOL 流动性池
+- **链上治理（多签 DAO）**: 控制 Program 升级权，管理 Protocol Treasury；**注意：费率常量 `JUDGE_FEE_BPS` / `PROTOCOL_FEE_BPS` 不在治理范围内，永久硬编码**
+
+#### 🔵 W4（2026-04-22 ~ 04-30）— 全链扩展
+
+- **EVM 部署**: 将 Agent Layer v2 协议逻辑移植到 Solidity，部署到 Base 和 Arbitrum
+- **跨链信誉证明**: Agent 在 Solana 上的信誉可以生成签名证明，在 EVM 合约中验证
+- **A2A 协议（MagicBlock ER）**: Agent 间实时消息 + 微支付通道 MVP
+- **挖矿飞轮**: GRAD 质押 + 挖矿奖励分发 + 回购销毁启动
+- **目标**: 1M+ Agents 上链
 
 ### 不做什么（Out of Scope）
 
-- **不做** EVM 版本（v2 首发 Solana，EVM 移植是后续独立任务）
-- **不做** Judge Staking / Slash 机制（属于 2027 A2A 路线图）
-- **不做** 链上治理 / DAO（费率常量、规则永远不可通过投票修改）
-- **不做** Token2022 高级扩展功能（如 Confidential Transfer、Transfer Hook 等），仅保证基础 Token2022 mint 兼容
-- **不做** 任务评分的 AI 辅助或链下预言机集成（Judge 自行决定）
-- **不做** Program 可升级：v2 部署为 immutable program，规则即承诺
-- **不做** 前端 / SDK 改造（Program 交付后单独处理）
-- **不做** 多 Agent 竞争的自动排序（Poster 手动选择 `assignTask()`）
+- **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；仅保证基础 Token2022 mint 的 `transfer` 兼容
+- **跨链桥**: 不构建实时跨链桥，信誉通过签名证明传递，不依赖桥协议
 
 ---
 
@@ -90,13 +136,17 @@
 
 | 标准 | 指标 | 目标值 |
 |------|------|--------|
-| 功能完整性 | 所有 P0 用户故事的测试通过 | 100% |
-| 费率正确性 | 每笔结算中 Judge:Protocol:Agent/Poster 分账比例 | 3% : 2% : 95% 精确 |
-| 代码规模 | 合约总行数（不含注释） | ≤ 320 行 |
-| 测试覆盖 | 分支覆盖率 | ≥ 95% |
-| 安全性 | 重入攻击、串通攻击、超时绕过等测试全部通过 | 0 Critical 漏洞 |
-| Compute 效率 | `post_task` + `judge_and_pay` Compute Units 消耗 | 单指令 ≤ 200,000 CU |
-| 无门槛参与 | 未注册地址直接调用 `applyForTask()` 不 revert | 100% 通过 |
+| 核心功能 | 所有 P0 用户故事测试通过 | 100% |
+| 费率正确性 | 每笔结算 Judge:Protocol:Agent/Poster 分账比例 | 精确 3:2:95 |
+| 代码规模 | Solana Program 总行数（不含注释） | ≤ 400 行 |
+| 测试覆盖 | Anchor 测试分支覆盖率 | ≥ 95% |
+| 安全性 | Slash、重入、串通、超时绕过等攻击测试 | 0 Critical 漏洞 |
+| Compute 效率 | `post_task` + `judge_and_pay` 单指令 CU 消耗 | ≤ 200,000 CU |
+| SDK 易用性 | 从 npm install 到发出第一个任务 | ≤ 10 行代码 |
+| CLI 覆盖 | 支持完整任务生命周期（发/申请/提交/评判/退款） | 全覆盖 |
+| AI Judge | Judge Daemon 调用 AI API 自动评判并上链 | 端到端可用 |
+| EVM 兼容 | Base/Arbitrum 合约通过同一套测试用例 | 100% |
+| 多链信誉 | EVM 合约验证 Solana 信誉证明 | 端到端可用 |
 
 ---
 
@@ -104,14 +154,17 @@
 
 | 约束类型 | 具体描述 |
 |---------|---------|
-| 技术约束 | Solana 主网，Rust + Anchor 框架，Solana Program（不是 EVM） |
-| 技术约束 | Program 部署为不可升级（close upgrade authority），规则是协议承诺，不是配置 |
-| 技术约束 | 费率 `JUDGE_FEE_BPS = 300`、`PROTOCOL_FEE_BPS = 200` 必须为常量，不可被任何指令修改 |
-| 技术约束 | 支付层：原生 SOL（lamport 转账）+ SPL Token + Token2022 三路兼容；Token 任务使用 ATA，分账通过 `spl_token::transfer` / `spl_token_2022::transfer` CPI 执行 |
-| 时间约束 | Agent Layer v2 Program 需在 2026-04-30 前完成（1 个月，AI 辅助加速开发） |
+| 技术约束 | Solana 主网优先，Rust + Anchor；EVM 版本 Solidity ^0.8.20（W4） |
+| 技术约束 | **费率常量不可修改**：`JUDGE_FEE_BPS = 300`、`PROTOCOL_FEE_BPS = 200` 硬编码，不受治理控制 |
+| 技术约束 | **Program 可升级**：部署时保留 upgrade authority，由多签 DAO 控制；协议成熟后可主动关闭 upgrade authority 实现永久不可变 |
+| 技术约束 | 支付层：SOL（lamport）+ SPL Token + Token2022（基础兼容）；Token 任务用 ATA + CPI |
+| 技术约束 | Token2022 只支持标准 transfer，不支持 Transfer Hook / Confidential Transfer 扩展 |
+| 时间约束 | 整个协议（含 EVM、A2A、飞轮）在 **2026-04-30** 前全部完成，AI 辅助加速 |
+| 时间约束 | Solana 核心 Program 在 **2026-04-07**（W1）交付 |
 | 资源约束 | 单人开发 + AI 辅助，遵循 dev-lifecycle 7 阶段 TDD 流程 |
-| 依赖约束 | 以现有 Agent Arena v1（EVM/Solidity）的协议逻辑作为功能基线，v2 为 Solana 原生独立 Program |
-| 依赖约束 | v2 部署后，现有 Agent Arena MVP 前端/SDK 需要迁移（单独处理） |
+| 依赖约束 | Agent Arena v1（EVM）作为功能基线参考，v2 Solana Program 为全新实现 |
+| 依赖约束 | EVM 版本（W4）依赖 Solana Program（W1）的协议逻辑稳定 |
+| 依赖约束 | Judge Daemon AI 模式依赖 Claude/GPT API 可用性（链下） |
 
 ---
 
@@ -119,21 +172,22 @@
 
 | 文档 | 链接 | 关系 |
 |------|------|------|
-| 协议比特币哲学 | `protocol/protocol-bitcoin-philosophy.md` | 设计原则来源，5 个具体改动定义在此 |
+| 协议比特币哲学 | `protocol/protocol-bitcoin-philosophy.md` | 设计原则，5 个核心改动 |
 | 系统架构设计 | `protocol/design/system-architecture.md` | 内核与模块依赖关系 |
-| ERC-8183 对比分析 | `protocol/protocol-bitcoin-philosophy.md` §三 | 竞品对比，指导差异化设计 |
-| 安全架构 | `protocol/design/security-architecture.md` | 威胁模型与防御策略 |
-| Agent Arena MVP（v1） | [codeberg.org/gradiences/agent-arena](https://codeberg.org/gradiences/agent-arena) | v2 的改动基线 |
-| Whitepaper | `protocol/WHITEPAPER.md` | 整体协议愿景与经济模型 |
+| 安全架构 | `protocol/design/security-architecture.md` | 威胁模型与 Slash 防御策略 |
+| A2A 协议规格 | `protocol/design/a2a-protocol-spec.md` | W4 A2A 实现依据 |
+| Agent Arena v1 | [codeberg.org/gradiences/agent-arena](https://codeberg.org/gradiences/agent-arena) | 功能基线 |
+| Whitepaper | `protocol/WHITEPAPER.md` | 整体愿景与经济模型 |
 
 ---
 
 ## ✅ Phase 1 验收标准
 
 - [x] 1.1–1.6 所有必填部分已完成
-- [x] 用户故事 ≥ 3 个（共 7 个）
-- [x] 「不做什么」已明确列出（8 条）
-- [x] 成功标准可量化（7 项指标）
+- [x] 用户故事 ≥ 3 个（共 14 个，按交付周标注）
+- [x] 「不做什么」已明确（仅 Token2022 高级扩展 + 跨链桥）
+- [x] 成功标准可量化（11 项指标）
 - [x] 技术约束、时间约束、依赖约束均已定义
+- [x] 所有模块按周交付时间明确
 
 **验收通过后，进入 Phase 2: Architecture →**
