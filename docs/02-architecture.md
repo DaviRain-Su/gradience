@@ -86,7 +86,7 @@ flowchart TB
 | 组件 | 职责 | 不做什么 | 技术选型 | 状态 |
 |------|------|---------|---------|------|
 | **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Anchor | 新建 |
-| **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge | 不内嵌 AI 逻辑 | Anchor CPI | 新建 |
+| **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge；内置四种实现类型：**test_cases**（跑测试用例，通过率即分数，适合算法竞技/代码任务）、**oracle_hash**（输出哈希对比，适合数据转换/ETL）、**wasm_exec**（链下 WASM 沙箱执行，确定性重现，适合量化回测/DeFi计算/游戏AI）、**zk_proof**（链上零知识证明验证，适合隐私数据分析/zkML模型身份证明/外包大规模计算）；W4 扩展 zkML（RISC Zero / EZKL 集成），可密码学确定性验证 Agent 使用了声明的 AI 模型 | 不内嵌 AI 逻辑；不托管资金 | Anchor CPI | 新建 |
 | **Judge Daemon** | 链下持久化评测工作流：通过 **Helius LaserStream gRPC** 超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd（PostgreSQL 持久化工作流引擎）+ Helius LaserStream | 新建 |
 | **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave；内置 **MPP 客户端**（`@solana/mpp`），Agent 调用外部付费 API（LLM / 数据 / 搜索）时自动处理 HTTP 402 挑战，用 Solana 钱包按需付款，无需管理 API Key | 不是链上组件；trace 内容不上链，只有 CID 引用上链；MPP 仅用于调用外部服务，不影响任务悬赏结算 | TypeScript + Absurd + LLM SDK + @solana/mpp | 新建 |
 | **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + @coral-xyz/anchor | 新建 |
@@ -134,14 +134,53 @@ flowchart TB
                             Judge 凭此复现相同环境重放 trace，验证有无作恶
          → trace 内容存入 Arweave（内容寻址，防篡改）
 
-4. Judge 评判（三种方式，均可访问完整 trace）
-   方式 A（人工）:  Judge → 前端/CLI 查看 result_ref + trace_ref → SDK.task.judge(taskId, winner, score, reasonRef)
-   方式 B（AI白盒）: Judge Daemon 监听到 SubmissionReceived
-                    → 下载 result_ref（最终产出）
-                    → 下载 trace_ref（执行 Prompt + 推理日志）
-                    → 将 trace 回放给 Judge 自己的 AI 运行时（用户自己配置的 Open Cloud）
-                    → 对比推理一致性 + 产出质量 → 综合评分 → 自动提交
-   方式 C（合约）:  IJudge Program → CPI 调用 judge_and_pay，score 由合约计算（适合 oracle 类确定性任务）
+4. Judge 评判（三种方式 / 六类标准，评判标准由 evaluationCID 定义）
+
+   赢家判定规则：① 所有提交按 evaluationCID 评分 → ② 过滤 score < minScore → ③ 最高分胜
+   同分平局：取最早 Solana slot（链上客观时间戳）
+
+   方式 A（人工）— 适合创意/主观/治理类任务
+     Judge → 前端/CLI 查看 result_ref + trace_ref → SDK.task.judge(taskId, winner, score, reasonRef)
+     评判标准：Judge 主观打分（evaluationCID 定义加权维度），结算最慢（小时～天）
+
+   方式 B（AI白盒）— 适合推理密集型/过程验证类任务
+     Judge Daemon 监听到 SubmissionReceived（Helius LaserStream）
+     → 下载 result_ref + trace_ref + runtime_env
+     → 按 runtime_env 起相同环境，重放 Agent 执行轨迹
+     → 评判推理一致性（防止 Agent 用弱模型冒充强模型）+ 产出质量 → 综合评分 → 自动提交
+     评判标准：trace 重放一致性 + 产出质量（AI 打分 0-100），结算分钟级
+
+   方式 C（合约/IJudge CPI）— 适合确定性可验证任务，结算秒级
+     IJudge Program → CPI 调用 judge_and_pay，score 由合约代码计算，无人干预
+
+     C-1 test_cases（算法竞技 / 代码实现）
+       评判标准：测试用例通过率 × 100 = score
+       业务：排序算法、动态规划、合约功能实现
+
+     C-2 oracle_hash（数据转换 / ETL）
+       评判标准：输出哈希匹配 = 100，不匹配 = 0
+       业务：数据清洗、格式转换、确定性数据处理
+
+     C-3 wasm_exec（确定性重现计算）— W2
+       评判标准：链下 WASM 沙箱重跑相同程序，对比执行结果
+       业务场景：
+         · 量化回测：给定历史数据 + 策略逻辑，对比收益曲线
+         · DeFi 计算：给定池子状态，验证最优 LP 再平衡方案
+         · 游戏 AI：给定棋局，验证最优解步数
+         · 科学模拟：物理/金融模拟确定性输出验证
+       特点：输入数据公开，任何节点可独立验证，无需信任 Agent
+
+     C-4 zk_proof（零知识证明验证）— W4
+       评判标准：链上验证 ZK proof，valid = 100，invalid = 0
+       业务场景：
+         · zkML 模型身份：Agent 证明推理由指定模型产生（无法伪造），
+                          将方式 B 的"概率性验证"升级为"密码学确定性"
+         · 隐私数据分析：分析医疗/金融私有数据，只证明"分析正确"，不暴露原始数据
+         · 外包大规模计算：ML 训练 / 渲染 / 科学模拟，计算量太大无法重跑，
+                           ZK proof 提供轻量链上验证（O(1) 验证成本）
+         · 专有算法保护：私有交易策略执行，不暴露算法，只证明结果正确
+         · 合规证明：证明操作满足监管条件，不暴露具体数据
+       基础设施：RISC Zero（通用 zkVM）/ EZKL（zkML）/ Light Protocol（Solana ZK 压缩）
          → Agent Layer Program: judge_and_pay 指令
          → 链上三方分账：
              Agent(winner)  95% of reward
@@ -497,6 +536,9 @@ W4 (04-22 ~ 04-30): 全链
 | Agent 钱包 | 钱包抽象层（五种适配器） | 个人/本地：OpenWallet（自托管 + Policy Engine + MCP）；企业/OKX 生态：OKX Agentic Wallet（TEE + 50 子钱包 + x402）；**开发者 Fleet**：Privy（TEE + 无限子钱包 + Policy Engine + Solana 原生 + MPP/x402，适合运营多 Agent 并行策略）；Kite 生态：Kite Passport（W4）；开发测试：Keypair；SDK 接口统一，协议不绑定 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
+| 赢家判定标准 | 每任务独立，由 evaluationCID 定义 | 不同于比特币（单一全局哈希难度），Gradience 每个任务有独立评判规则；方式 A 主观打分，方式 B AI 重放评分，方式 C 合约确定性计算；同分平局取最早 Solana slot |
+| WASM 执行验证 | IJudge wasm_exec（W2）| 链下 WASM 沙箱确定性重跑，输入公开、任何节点可验证；适合量化回测、DeFi计算、游戏AI、科学模拟等"公开可重现计算"任务 |
+| ZK 证明验证 | IJudge zk_proof（W4）| 链上验证 ZK proof，O(1) 验证成本；核心价值：zkML 将 runtime_env 的"概率性"声明升级为"密码学确定性"；同时支持隐私数据分析、外包大规模计算、专有算法保护、合规证明等场景 |
 | 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
 | 运行时透明 | runtime_env 链上公开 | Agent 提交时声明完整运行时环境（provider / model / runtime / version）；Judge 切换到 Judge 角色后，凭 runtime_env 起相同环境重放 trace_ref，验证结果真实性；trace 内容寻址防篡改，任何人可审计 |
 | Kite AI 集成定位 | 基础设施层，不竞争 | Kite = 链层（支付+身份+PoAI）；Gradience = 协议层（竞争结算+能力信誉）；Kite AI 链作为 W4 第三条 EVM 部署目标，面向 AI Agent 原生受众 |
