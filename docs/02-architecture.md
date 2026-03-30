@@ -87,7 +87,8 @@ flowchart TB
 |------|------|---------|---------|------|
 | **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Anchor | 新建 |
 | **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge | 不内嵌 AI 逻辑 | Anchor CPI | 新建 |
-| **Judge Daemon** | 链下服务：监听任务事件，支持 AI Judge（调用 LLM API）和 Oracle Judge（执行测试套件），将评分提交链上 | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript / Node.js | 新建 |
+| **Judge Daemon** | 链下持久化评测工作流：监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd（PostgreSQL 持久化工作流引擎） | 新建 |
+| **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave | 不是链上组件；trace 内容不上链，只有 CID 引用上链 | TypeScript + Absurd + LLM SDK | 新建 |
 | **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + @coral-xyz/anchor | 新建 |
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
@@ -202,6 +203,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Arweave | — | evaluationCID 永久存储 | 是（Avail 可替换） |
 | OpenWallet (OWS) | — | 个人/开发者 Agent 钱包（本地自托管） | 是（钱包抽象层可替换） |
 | OKX Agentic Wallet | — | 企业级 Agent 钱包（TEE 托管，50 子钱包，x402 支持） | 是（钱包抽象层可替换） |
+| Absurd | — | Agent 执行轨迹持久化 + Judge Daemon 工作流引擎（仅需 PostgreSQL） | 是（可替换为其他持久化引擎） |
 | Claude API / OpenAI | — | Judge Daemon AI 评分 | 是（任意 LLM） |
 | Next.js | 14+ | 前端框架 | 是 |
 | Hardhat | ^2 | EVM 合约（W4） | 是 |
@@ -309,6 +311,14 @@ grad.indexer.endpoint(url)       // 切换 Indexer 端点（Managed / Self-hoste
 grad.wallet.use(new OpenWalletAdapter(owsToken))      // 个人/开发者：本地自托管
 grad.wallet.use(new OKXAgentWalletAdapter(config))    // 企业：TEE 托管，50 子钱包，x402
 grad.wallet.use(new KeypairAdapter(keypair))          // 开发测试用
+
+// CLI 命令（gradience CLI，底层集成 Absurd）
+// gradience agent start   — 启动 Agent 执行 worker（Absurd task，自动捕获 trace）
+// gradience judge start   — 启动 Judge Daemon worker（Absurd task，白盒回放评测）
+// gradience trace dump <taskId>  — 查看 Agent 完整执行轨迹（prompt/response/决策事件）
+// gradience indexer start — 启动自托管 Indexer（Cloudflare Workers 替代方案）
+// gradience judge ai      — 以 AI 白盒模式评判一个任务
+// gradience judge oracle  — 以 Oracle 模式评判一个任务（test_cases 类型）
 ```
 
 ### Judge Daemon 接口
@@ -478,6 +488,7 @@ W4 (04-22 ~ 04-30): 全链
 | Agent 钱包 | 钱包抽象层（三种适配器） | 个人用户用 OpenWallet（本地自托管 + Policy Engine + MCP）；企业用 OKX Agentic Wallet（TEE + 50 子钱包 + x402 微支付）；SDK 接口统一，用户自选，协议不绑定 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
+| 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
 | 模型透明 | model_id 链上公开 | Agent 声明使用的模型，trace 内容寻址防篡改，任何人可审计推理过程 |
 
 ---
