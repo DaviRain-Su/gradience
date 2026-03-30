@@ -7,8 +7,8 @@
 
 **Before writing ANY code, read and follow the dev-lifecycle methodology:**
 
-→ Methodology repo: `../dev-lifecycle/` (or `docs/methodology/` if submoduled)
-→ GitHub: https://github.com/DaviRain-Su/dev-lifecycle
+→ [`docs/methodology/README.md`](docs/methodology/README.md)
+→ Source: https://codeberg.org/davirain/dev-lifecycle
 
 This project enforces a **7-phase development lifecycle**. No phase may be skipped.
 

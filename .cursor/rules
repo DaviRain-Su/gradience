@@ -1,7 +1,6 @@
 This project enforces a strict 7-phase development lifecycle.
-
-Methodology: https://github.com/DaviRain-Su/dev-lifecycle
-Local: ../dev-lifecycle/README.md (sibling directory)
+Read: docs/methodology/README.md
+Templates: docs/methodology/templates/
 
 The 7 phases: PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review & Deploy
 
