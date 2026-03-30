@@ -265,11 +265,55 @@ Agent 和评判者都须质押 SOL 才能参与。Agent 最低质押由发布者
 
 \textbf{多币种支持：} 任务奖励可以是任何代币（SOL、USDC、SPL Token、Token-2022）。95/3/2 分成适用于锁入的任何代币。质押统一使用 SOL。
 
-\subsection{4.3\quad 协议升级}
+\subsection{4.3\quad GRAD 代币经济}
 
-协议遵循比特币的升级模式：不可变程序 + 社会共识迁移。修复或新功能作为新版本部署。信誉数据通过跨程序证明迁移。无代理模式，无管理员密钥。
+\textbf{GRAD} 是协议的原生代币。固定总量，零通胀，采用 Hyperliquid 模式：先做产品，后发币。
 
-\subsection{4.4\quad 对抗均衡（GAN 动力学）}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{参数} & \textbf{值} \\
+\midrule
+总供应量 & 固定（永不增发） \\
+通胀 & 零 \\
+预售 / 风投 & 无 \\
+销毁 & 50\% 协议费用于回购销毁 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{分配：}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{分配} & \textbf{比例} & \textbf{机制} \\
+\midrule
+社区空投 & 35\% & 根据 Phase~1 链上活动记录分配给真实参与者 \\
+挖矿奖励 & 30\% & 通过任务完成释放，减半递减 \\
+团队开发 & 20\% & 4 年线性释放，1 年 cliff \\
+生态基金 & 15\% & 资助、黑客松、合作伙伴；多签治理 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{三阶段启动。} \emph{Phase~1（1-12 个月）：} 无代币。协议使用 SOL 质押运行。所有参与记录在链上。\emph{Phase~2（12-18 个月）：} GRAD 发行。35\% 空投给 Phase~1 参与者。无 ICO，无风投。\emph{Phase~3（18 个月+）：} 挖矿奖励激活。质押从 SOL 过渡到 GRAD。回购销毁启动。
+
+\textbf{挖矿。} 每次成功执行 \texttt{judgeAndPay()} = 一次“出块”。GRAD 分配：50\% 评判者，30\% 获胜 Agent，20\% 协议。奖励定期减半。当挖矿奖励趋近零时，任务手续费接棒——如同比特币交易费替代区块奖励。
+
+\textbf{回购销毁。} 2\% 协议费拆分：50\% 回购 GRAD 并永久销毁；50\% 用于开发。固定总量 + 持续销毁 = 净通缩。
+
+\textbf{为什么固定总量？} 以太坊和 Solana 通胀是为了支付链的验证者。Gradience 不是链——Solana 的验证者由 SOL 通胀激励。GRAD 只需激励 Agent 和 Judge，任务手续费无需通胀即可实现。
+
+\subsection{4.4\quad 协议升级}
+
+不可变合约 + 社会共识迁移。新功能作为新程序版本部署。信誉通过跨程序证明迁移。无代理模式，无管理员密钥。
+
+\subsection{4.5\quad 对抗均衡（GAN 动力学）}
 
 开放评判者参与后，协议自然形成生成对抗~\cite{gan}结构：
 

@@ -264,11 +264,55 @@ All rates are \textbf{immutable constants}. Total protocol extraction: \textbf{5
 
 \textbf{Multi-token support:} Task rewards may be denominated in any token (SOL, USDC, SPL Token, Token-2022). The 95/3/2 split applies to whatever token is locked. Staking is SOL-only for uniformity.
 
-\subsection{4.3\quad Protocol Upgrades}
+\subsection{4.3\quad GRAD Token Economics}
 
-The protocol follows Bitcoin's upgrade model: immutable programs, social consensus for migration. Bug fixes or new features are deployed as new program versions. Reputation data is migrated via cross-program attestation. No proxy patterns, no admin keys.
+\textbf{GRAD} is the protocol's native token. Fixed total supply, zero inflation, Hyperliquid-style distribution: product first, token second.
 
-\subsection{4.4\quad Adversarial Equilibrium (GAN Dynamics)}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Total Supply & Fixed (never increases) \\
+Inflation & Zero \\
+Pre-sale / VC & None \\
+Burn & 50\% of protocol fee \textrightarrow{} buyback \& burn \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Distribution:}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Allocation} & \textbf{Share} & \textbf{Mechanism} \\
+\midrule
+Community Airdrop & 35\% & To real Phase~1 participants, weighted by on-chain activity \\
+Mining Rewards & 30\% & Released via task completion, halving over time \\
+Team \& Development & 20\% & 4-year vesting, 1-year cliff \\
+Ecosystem Fund & 15\% & Grants, hackathons; multi-sig governed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Three-phase launch.} \emph{Phase~1 (Month 1--12):} No token. Protocol runs on SOL staking. All participation recorded on-chain. \emph{Phase~2 (Month 12--18):} GRAD launches. 35\% airdropped to Phase~1 participants. No ICO, no VC. \emph{Phase~3 (Month 18+):} Mining rewards activate. Staking transitions from SOL to GRAD. Buyback-and-burn begins.
+
+\textbf{Mining.} Each successful \texttt{judgeAndPay()} = one block mined. GRAD distributed: 50\% Judge, 30\% winning Agent, 20\% Protocol. Reward halves periodically. When mining rewards approach zero, task fees (3\% + 95\%) sustain participation---as Bitcoin transaction fees replace block rewards.
+
+\textbf{Buyback and burn.} The 2\% protocol fee is split: 50\% buys back GRAD and burns permanently; 50\% funds development. Fixed supply + ongoing burn = net deflationary.
+
+\textbf{Why fixed supply?} Ethereum and Solana inflate to pay chain validators. Gradience is not a chain---Solana's validators are paid by SOL. GRAD only incentivizes Agents and Judges, which task fees accomplish without inflation.
+
+\subsection{4.4\quad Protocol Upgrades}
+
+Immutable contracts, social consensus for migration. New features deployed as new program versions. Reputation migrated via cross-program attestation. No proxy patterns, no admin keys.
+
+\subsection{4.5\quad Adversarial Equilibrium (GAN Dynamics)}
 
 With open Judge participation, the protocol forms a Generative Adversarial~\cite{gan} structure:
 

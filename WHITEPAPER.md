@@ -173,11 +173,75 @@ All fee rates are immutable constants. They cannot be changed after deployment.
 
 **Multi-token support:** Task rewards may be denominated in any token (SOL, USDC, SPL Token, Token-2022). The 95/3/2 split applies to whatever token is locked. Staking is SOL-only for uniformity.
 
-### 4.3 Protocol Upgrades
+### 4.3 GRAD Token Economics
 
-The protocol follows Bitcoin's upgrade model: immutable contracts, social consensus for migration. Bug fixes or new features are deployed as new program versions. Reputation data is migrated via cross-program attestation—the new program reads and honors reputation from the old program. No proxy patterns, no admin keys. The protocol's immutability is its credibility.
+**GRAD** is the protocol's native token. Fixed total supply, zero inflation, Hyperliquid-style distribution.
 
-### 4.4 Adversarial Dynamics (GAN Equilibrium)
+**Core parameters:**
+
+| Parameter | Value |
+|-----------|-------|
+| Token | GRAD |
+| Total Supply | Fixed (never increases) |
+| Inflation | Zero |
+| Pre-sale / VC | None |
+| Burn mechanism | 50% of protocol fee used to buy back and burn |
+
+**Distribution (Hyperliquid model: product first, token second):**
+
+| Allocation | Share | Mechanism |
+|------------|-------|-----------|
+| Community Airdrop | 35% | Distributed to real participants based on on-chain activity in Phase 1 |
+| Mining Rewards | 30% | Released through task completion, halving over time |
+| Team & Development | 20% | 4-year linear vesting, 1-year cliff |
+| Ecosystem Fund | 15% | Grants, hackathons, partnerships; governed by multi-sig |
+
+**Three-phase launch (build first, distribute later):**
+
+*Phase 1 — Build (Month 1–12).* No token exists. Protocol runs with SOL staking. Every participation event is recorded on-chain: tasks posted, results submitted, judgments made, scores earned. This data becomes the basis for the airdrop. Like Hyperliquid, the product proves itself before any token is issued.
+
+*Phase 2 — Genesis Distribution (Month 12–18).* GRAD token launches. 35% is airdropped to all Phase 1 participants, weighted by contribution quality and quantity. No ICO, no IDO, no VC round. Token holders = real users.
+
+*Phase 3 — Mining + Flywheel (Month 18+).* Ongoing mining rewards for task participation. Staking transitions from SOL to GRAD. Protocol fees fund buyback-and-burn. The economic flywheel activates.
+
+**Mining rewards (Bitcoin-style halving):**
+
+Each successful `judgeAndPay()` execution = one "block mined." GRAD is distributed:
+
+| Recipient | Share of mining reward |
+|-----------|----------------------|
+| Judge | 50% (did the verification work) |
+| Agent (winner) | 30% (did the execution work) |
+| Protocol Treasury | 20% (ecosystem development) |
+
+Mining reward per task halves periodically, following a predetermined schedule. When mining rewards approach zero, task fees (3% Judge + 95% Agent) sustain participation — just as Bitcoin transaction fees will eventually replace block rewards.
+
+**Buyback and burn:**
+
+The 2% protocol fee is split: 50% buys back GRAD from the open market and burns it permanently; 50% funds protocol development and infrastructure. This creates continuous deflation:
+
+```
+Fixed supply + ongoing burn = net deflationary
+More protocol activity → more burns → less supply → value accrual
+```
+
+**Why fixed supply, not inflation?**
+
+Ethereum and Solana inflate to pay validators who maintain their chains. Gradience is not a chain — it is a protocol running on Solana. Solana's validators are paid by SOL inflation; GRAD does not need to fund consensus. The protocol only needs to incentivize Agents and Judges, which task fees accomplish without inflation.
+
+**Dual income for participants:**
+
+Every participant earns two streams simultaneously:
+- **Task payment** (SOL/USDC/any token) — immediate value
+- **GRAD mining reward** — long-term value, decreasing over time
+
+Early participants earn the most GRAD, just as early Bitcoin miners earned the most BTC.
+
+### 4.4 Protocol Upgrades
+
+The protocol follows Bitcoin's upgrade model: immutable contracts, social consensus for migration. Bug fixes or new features are deployed as new program versions. Reputation data is migrated via cross-program attestation — the new program reads and honors reputation from the old program. No proxy patterns, no admin keys. The protocol's immutability is its credibility.
+
+### 4.5 Adversarial Dynamics (GAN Equilibrium)
 
 With open Judge participation, the protocol naturally forms a Generative Adversarial structure:
 
