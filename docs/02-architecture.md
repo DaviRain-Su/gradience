@@ -124,12 +124,13 @@ flowchart TB
          → 首次参与自动创建 Reputation PDA
 
 3. Agent 提交结果（白盒提交）
-   Agent → SDK.task.submit(taskId, resultRef, traceRef, modelId)
+   Agent → SDK.task.submit(taskId, resultRef, traceRef, runtimeEnv)
          → Agent Layer Program: submit_result 指令
          → 链上：更新 Submission PDA（可多次覆盖），记录：
              result_ref   — 最终产出的 CID（Arweave）
-             trace_ref    — 完整执行轨迹 CID（Prompt 序列 + 中间推理 + 模型声明）
-             model_id     — 声明使用的模型（e.g. "claude-opus-4-6"，公开可查）
+             trace_ref    — 完整执行轨迹 CID（Prompt 序列 + 中间推理 + 决策事件）
+             runtime_env  — Agent 运行时环境声明（provider / model / runtime / version），
+                            Judge 凭此复现相同环境重放 trace，验证有无作恶
          → trace 内容存入 Arweave（内容寻址，防篡改）
 
 4. Judge 评判（三种方式，均可访问完整 trace）
@@ -162,7 +163,7 @@ flowchart TB
 | 1 | 任务参数 + 锁仓 | Poster | Agent Layer PDA | Anchor Account |
 | 1 | evaluationCID | Poster | Arweave | Content-addressed |
 | 2 | 质押 + 申请 | Agent | Agent Layer PDA | Anchor Account |
-| 3 | result_ref（最终产出 CID）+ trace_ref（执行轨迹 CID）+ model_id | Agent | Agent Layer PDA + Arweave | Content-addressed |
+| 3 | result_ref（最终产出 CID）+ trace_ref（执行轨迹 CID）+ runtime_env（环境声明） | Agent | Agent Layer PDA + Arweave | Content-addressed |
 | 4 | score(0-100) + winner | Judge / Daemon / Contract | Agent Layer | Anchor Instruction |
 | 4 | 分账转账 | Escrow PDA | Agent / Judge / Treasury | SOL lamport / SPL Token |
 | 4 | 信誉更新 | Agent Layer | Reputation PDA | Anchor Account |
@@ -223,7 +224,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge、deadline | Agent Layer Program |
 | `Escrow` | `["escrow", task_id]` | 锁仓资金（SOL）或 ATA（SPL Token） | Agent Layer Program |
 | `Application` | `["application", task_id, agent]` | Agent 申请记录 + 质押 | Agent Layer Program |
-| `Submission` | `["submission", task_id, agent]` | 最新提交：result_ref + trace_ref + model_id（可覆盖） | Agent Layer Program |
+| `Submission` | `["submission", task_id, agent]` | 最新提交：result_ref + trace_ref + runtime_env（可覆盖） | Agent Layer Program |
 | `Reputation` | `["reputation", agent]` | 信誉数据，按需创建 | Agent Layer Program |
 | `Stake` | `["stake", agent]` | Judge 协议级质押 | Agent Layer Program |
 | `Treasury` | `["treasury"]` | 协议收入账户 | Agent Layer Program |
@@ -495,7 +496,7 @@ W4 (04-22 ~ 04-30): 全链
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
 | 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
-| 模型透明 | model_id 链上公开 | Agent 声明使用的模型，trace 内容寻址防篡改，任何人可审计推理过程 |
+| 运行时透明 | runtime_env 链上公开 | Agent 提交时声明完整运行时环境（provider / model / runtime / version）；Judge 切换到 Judge 角色后，凭 runtime_env 起相同环境重放 trace_ref，验证结果真实性；trace 内容寻址防篡改，任何人可审计 |
 | Kite AI 集成定位 | 基础设施层，不竞争 | Kite = 链层（支付+身份+PoAI）；Gradience = 协议层（竞争结算+能力信誉）；Kite AI 链作为 W4 第三条 EVM 部署目标，面向 AI Agent 原生受众 |
 | Agent 外部服务付款 | MPP（Solana 侧）/ x402（EVM 侧） | MPP 是 IETF 提案开放标准，Solana 原生，支持 SOL/SPL/Token-2022，MCP transport；x402 是 Coinbase 方案，EVM 侧已由 OKX Agentic Wallet 和 Kite Passport 原生支持；两者定位不同，互补而非竞争；Gradience 协议内核的 95/3/2 结算仍在 Anchor 链上完成，MPP/x402 仅用于 Agent 调用外部付费服务 |
 
