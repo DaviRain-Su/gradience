@@ -10,7 +10,7 @@
 
 ### 一句话描述
 
-> Agent Layer v2 是一个运行在 Solana 上的能力结算协议栈：链上 Program 提供无需许可的竞争结算内核，链下工具链（SDK / CLI / Judge Daemon / 前端）提供完整开发者体验，EVM 合约（W4）提供跨链信誉验证。
+> Agent Layer v2 是一个运行在 Solana 上的能力结算协议栈：链上 Program 提供无需许可的竞争结算内核，链下工具链（SDK / CLI / Judge Daemon / 前端）提供完整开发者体验，EVM 合约（Week 4）提供跨链信誉验证。
 
 ### 全栈架构图
 
@@ -40,7 +40,7 @@ flowchart TB
         AgentSocial["🤝 Agent Social<br/>Agent 发现 + 匹配"]
     end
 
-    subgraph EVMLayer["EVM 层（W4）"]
+    subgraph EVMLayer["EVM 层（Week 4）"]
         EVMContract["📜 Agent Layer EVM<br/>Base / Arbitrum"]
         ReputationBridge["🔐 信誉证明验证<br/>签名验证，无桥"]
     end
@@ -97,11 +97,11 @@ flowchart TB
 | **OpenWallet (OWS) 适配器** | 开放标准，本地自托管；Key 存 `~/.ows/`，AES-256 加密；Policy Engine 控制签名权限；scoped token；MCP 支持；适合个人用户和开发者 | 不支持 TEE 硬件隔离 | OpenWallet SDK（Node.js / Rust） | 外部集成 |
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
-| **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（W4） |
-| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Anchor + TS + OpenWallet | 新建（W3） |
-| **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（W3） |
-| **Agent Social** | Agent 发现 + 匹配（W3） | 不做结算 | Next.js + Indexer | 新建（W3） |
-| **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（W4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态） | 不做跨链桥 | Solidity ^0.8.20 + Hardhat | 新建（W4） |
+| **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
+| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Anchor + TS + OpenWallet | 新建（Week 3） |
+| **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
+| **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
+| **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态） | 不做跨链桥 | Solidity ^0.8.20 + Hardhat | 新建（Week 4） |
 
 ---
 
@@ -256,7 +256,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Absurd | — | Agent 执行轨迹持久化 + Judge Daemon 工作流引擎（仅需 PostgreSQL） | 是（可替换为其他持久化引擎） |
 | Claude API / OpenAI | — | Judge Daemon AI 评分 | 是（任意 LLM） |
 | Next.js | 14+ | 前端框架 | 是 |
-| Hardhat | ^2 | EVM 合约（W4） | 是 |
+| Hardhat | ^2 | EVM 合约（Week 4） | 是 |
 
 ---
 
@@ -266,7 +266,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 
 | 账户 | seeds | 含义 | 所有者 |
 |------|-------|------|--------|
-| `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge（指定或 Pool 随机）、deadline、category | Agent Layer Program |
+| `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge（指定或 Pool 随机）、deadline、category（约 323 bytes） | Agent Layer Program |
 | `Escrow` | `["escrow", task_id]` | 锁仓资金（SOL）或 ATA（SPL Token） | Agent Layer Program |
 | `Application` | `["application", task_id, agent]` | Agent 申请记录 + 质押 | Agent Layer Program |
 | `Submission` | `["submission", task_id, agent]` | 最新提交：result_ref + trace_ref + runtime_env（可覆盖） | Agent Layer Program |
@@ -321,7 +321,7 @@ stateDiagram-v2
 |------|------|--------|------|
 | `post_task` | Anchor Instruction | 任何人 | 发布任务，锁入奖励 |
 | `apply_for_task` | Anchor Instruction | 任何 Agent | 申请任务，质押 minStake |
-| `submit_result` | Anchor Instruction | 已申请 Agent | 提交/更新结果引用 |
+| `submit_result` | Anchor Instruction | 已申请 Agent | 提交/更新结果引用（runtime_env 各字段长度在指令中验证，超限返回 InvalidRuntimeEnv） |
 | `judge_and_pay` | Anchor Instruction | Task.judge | 评判并触发三方结算 |
 | `cancel_task` | Anchor Instruction | Task.poster | 主动取消任务 |
 | `refund_expired` | Anchor Instruction | 任何人 | 超时退款 |
@@ -406,7 +406,7 @@ daemon.oracle.start({
 ```
 GET  /api/tasks?status=Open&mint=SOL     任务列表（支持筛选）
 GET  /api/tasks/:id                       任务详情
-GET  /api/tasks/:id/submissions?sort=rep  提交列表（按信誉排序）
+GET  /api/tasks/:id/submissions?sort=score  提交列表（按评分排序）
 GET  /api/agents/:pubkey/reputation       Agent 信誉
 GET  /api/leaderboard                     信誉排行榜
 GET  /api/stats                           协议全局统计
@@ -453,7 +453,7 @@ WS   /ws                                  实时事件订阅
 │                     Solana 主网                           │
 │  ┌─────────────────┐  ┌──────────────┐  ┌─────────────┐  │
 │  │ Agent Layer     │  │ IJudge       │  │ Chain Hub   │  │
-│  │ Program (W1)    │  │ Program(s)   │  │ Program(W3) │  │
+│  │ Program (Week 1)│  │ Program(s)   │  │ Program(Week3)│ │
 │  └─────────────────┘  └──────────────┘  └─────────────┘  │
 └───────────────────────────┬──────────────────────────────┘
                             │ Program 事件（gRPC / WebSocket）
@@ -479,7 +479,7 @@ WS   /ws                                  实时事件订阅
 │  Judge Daemon (AI + Oracle)                           │
 └───────────────────────────────────────────────────────┘
 
-EVM 层（W4）:
+EVM 层（Week 4）:
 ┌──────────────────────────────────────────────────┐
 │  Base / Arbitrum                                  │
 │  Agent Layer EVM Contract                         │
@@ -529,11 +529,11 @@ W4 (04-22 ~ 04-30): 全链
 |------|------|------|
 | 任务模型 | 仅 Race Task（离散竞争） | 持续委托与竞争并行不兼容；Delegation Task 归 Chain Hub |
 | 链选择 | Solana 首发，EVM W4 | Solana 400ms 出块 + 低 Gas；EVM 为跨链信誉扩展 |
-| Program 可升级 | 是，多签 DAO 控制 | 开发阶段需迭代；费率常量不受 upgrade 影响 |
+| Program 可升级 | 是，**Squads v4（3/5 多签）**控制 upgrade_authority | 开发阶段需迭代；费率常量不受 upgrade 影响 |
 | 费率 | 95/3/2 硬编码常量 | 协议承诺，不可被治理/升级修改 |
-| 支付 | SOL + SPL + Token2022 | 内核无业务偏好，支持所有 Solana 原生资产 |
+| 支付 | SOL + SPL + Token-2022 | 内核无业务偏好，支持所有 Solana 原生资产；**标准 transfer only**，不支持 Transfer Hook / Confidential Transfer（避免恶意 Hook 拦截结算） |
 | Judge 激励 | 3% 无条件 | 消除结果偏见，比特币矿工类比 |
-| Judge 选取机制 | JudgePool + 加权随机（Switchboard VRF） | 任何人质押 ≥ minJudgeStake + 声明 category → 进入 JudgePool；Poster 可指定 Judge 或留空由协议随机抽选；按质押量×信誉加权，质押越多被抽中概率越高——与比特币算力正比出块完全类比；VRF 保证链上随机不可预测、不可操控 |
+| Judge 选取机制 | JudgePool + 加权随机（Switchboard VRF） | 任何人质押 ≥ minJudgeStake + 声明 category → 进入 JudgePool；Poster 可指定 Judge 或留空由协议随机抽选；按质押量×信誉加权，质押越多被抽中概率越高——与比特币算力正比出块完全类比；VRF 保证链上随机不可预测、不可操控；**Pool 满员（MAX_JUDGES_PER_POOL=200）后新 Judge 注册返回 JudgePoolFull 错误，需等待现有 Judge unstake 后方可加入** |
 | Judge 领域匹配 | category 字段过滤 Pool | Poster 发任务时声明 category（defi/code/research/…）；JudgePool 按 category 分桶；只从匹配 category 的 Judge 中抽选，保证专业性 |
 | 角色流动性 | 同一地址可切换角色 | 任何人在不同任务中可以是 Poster、Agent 或 Judge；无许可无注册；经济激励对齐行为（Slash 惩罚作恶）|
 | 信誉存储 | 链上 PDA，按需创建 | 无需注册门槛，首次参与自动初始化 |
@@ -541,12 +541,12 @@ W4 (04-22 ~ 04-30): 全链
 | Indexer 事件来源 | Helius Webhooks（推送）| 替代自轮询：Helius 在 Program 日志触发时主动 HTTP POST 给 Indexer，<200ms 延迟；无需 Indexer 持续轮询 RPC，降低成本和延迟 |
 | Indexer 部署 | Cloudflare Workers + D1（Managed）/ Docker + PostgreSQL（Self-hosted）| 零运维全球边缘；宕机不影响协议；社区可独立运行 Self-hosted 节点 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
-| Agent 钱包 | 钱包抽象层（五种适配器） | 个人/本地：OpenWallet（自托管 + Policy Engine + MCP）；企业/OKX 生态：OKX Agentic Wallet（TEE + 50 子钱包 + x402）；**开发者 Fleet**：Privy（TEE + 无限子钱包 + Policy Engine + Solana 原生 + MPP/x402，适合运营多 Agent 并行策略）；Kite 生态：Kite Passport（W4）；开发测试：Keypair；SDK 接口统一，协议不绑定 |
+| Agent 钱包 | 钱包抽象层（五种适配器） | 个人/本地：OpenWallet（自托管 + Policy Engine + MCP）；企业/OKX 生态：OKX Agentic Wallet（TEE + 50 子钱包 + x402）；**开发者 Fleet**：Privy（TEE + 无限子钱包 + Policy Engine + Solana 原生 + MPP/x402，适合运营多 Agent 并行策略）；Kite 生态：Kite Passport（Week 4）；开发测试：Keypair；SDK 接口统一，协议不绑定 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
 | 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
 | 赢家判定标准 | 每任务独立，由 evaluationCID 定义 | 不同于比特币（单一全局哈希难度），Gradience 每个任务有独立评判规则；方式 A 主观打分，方式 B AI 重放评分，方式 C 合约确定性计算；同分平局取最早 Solana slot |
-| WASM 执行验证 | IJudge wasm_exec（W2）| 链下 WASM 沙箱确定性重跑，输入公开、任何节点可验证；适合量化回测、DeFi计算、游戏AI、科学模拟等"公开可重现计算"任务 |
-| ZK 证明验证 | IJudge zk_proof（W4）| 链上验证 ZK proof，O(1) 验证成本；核心价值：zkML 将 runtime_env 的"概率性"声明升级为"密码学确定性"；同时支持隐私数据分析、外包大规模计算、专有算法保护、合规证明等场景 |
+| WASM 执行验证 | IJudge wasm_exec（Week 2）| 链下 WASM 沙箱确定性重跑，输入公开、任何节点可验证；适合量化回测、DeFi计算、游戏AI、科学模拟等"公开可重现计算"任务；**确定性保证：禁用浮点运算（改用定点数）、使用确定性标准库（wasm32-wasi deterministic subset）；输入数据来源于任务 evaluationCID（Arweave 不可篡改）** |
+| ZK 证明验证 | IJudge zk_proof（Week 4）| 链上验证 ZK proof，O(1) 验证成本；核心价值：zkML 将 runtime_env 的"概率性"声明升级为"密码学确定性"；同时支持隐私数据分析、外包大规模计算、专有算法保护、合规证明等场景 |
 | 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
 | 运行时透明 | runtime_env 链上公开 | Agent 提交时声明完整运行时环境（provider / model / runtime / version）；Judge 切换到 Judge 角色后，凭 runtime_env 起相同环境重放 trace_ref，验证结果真实性；trace 内容寻址防篡改，任何人可审计 |
 | Kite AI 集成定位 | 基础设施层，不竞争 | Kite = 链层（支付+身份+PoAI）；Gradience = 协议层（竞争结算+能力信誉）；Kite AI 链作为 W4 第三条 EVM 部署目标，面向 AI Agent 原生受众 |
