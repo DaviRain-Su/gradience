@@ -72,7 +72,8 @@
 | T32 | CLI — task post / apply / submit / status | `gradience task post --eval-ref <cid> --reward <lamports> ...`；`apply`；`submit`；`status <task_id>`；**`NO_DNA` 模式**：所有命令输出 `{"signature":"...","taskId":N}` 等结构化 JSON，`status` 返回 `{"taskId":N,"state":"Open","submissionCount":N}` | T31, T28 | 3h | P0 | 每条命令在 devnet 创建正确的链上交易；`status` 显示当前状态和提交数；`NO_DNA=1 gradience task status 1` → 纯 JSON 无装饰输出 |
 | T33 | CLI — task judge / cancel / refund + judge register | `gradience task judge`；`cancel`；`refund`；`gradience judge register --category defi`；`gradience judge unstake`；**`NO_DNA` 模式**：judge 命令输出 `{"signature":"...","winner":"...","score":N}` | T32 | 2h | P0 | 命令在 devnet 正确执行；judge register 后 JudgePool 有记录；help 文本覆盖所有参数；`NO_DNA=1` 时 judge 命令不等待用户确认直接执行 |
 | T34 | Judge Daemon — Absurd 工作流 + LaserStream 监听 | Absurd（PostgreSQL 持久化 workflow engine）初始化；Helius LaserStream gRPC 连接（fallback: polling 5s）；监听 TaskCreated / SubmissionReceived → 触发 evaluate workflow；崩溃可续；MCP 集成参考：`gh:solana-foundation/templates/community/solana-chatgpt-kit`（AI Agent + x402 + MCP 调用模式） | T22 | 3h | P1 | Daemon 启动；mock TaskCreated → workflow 触发，延迟 < 200ms；LaserStream 断连时自动降级为 polling |
-| T35 | Judge Daemon — Type A（人工存根）+ Type B（DSPy LLMScoreEvaluator） | **Type A**：等待 CLI 手动打分输入；**Type B（DSPy 实现）**：① 下载 `result_ref` + `trace_ref` + `evaluationCID`；② 调用 DSPy Python 微服务（HTTP RPC）：`LLMScoreEvaluator.forward(task_desc, criteria, result, trace)` → `{score, reasoning, dimension_scores, confidence}`；③ `confidence < 0.7` 时降级为 Type A（人工复核）；④ 指数退避重试（Rate Limit）；⑤ 调用 SDK `task.judge()` 上链，`reasonRef` = 评判结果 CID（上传 Arweave）；**DSPy 微服务**：Python 进程，`dspy.configure(lm=...)` + `LLMScoreEvaluator` 实例，HTTP `/evaluate` 端点；x402 外部 API 调用参考：`gh:solana-foundation/templates/community/kit-node-solanax402` | T34 | 5h | P1 | Type B E2E：测试任务经 DSPy 自动评判并上链；dimension_scores 包含所有维度；confidence < 0.7 时正确触发人工复核；judge_and_pay 被触发；Rate Limit 时排队重试而非丢失 |
+| T35a | Judge Daemon — Type A（人工存根）+ DSPy Python 微服务 | **Type A**：等待 CLI 手动打分输入（存根模式）；**DSPy 微服务**：Python 进程，`dspy.configure(lm=...)` + `LLMScoreEvaluator` 实例，HTTP `/evaluate` 端点；接受 `{task_desc, criteria, result, trace}` → 返回 `{score, reasoning, dimension_scores, confidence}` | T34 | 2h | P1 | DSPy 微服务启动；`POST /evaluate` 返回正确 JSON；Type A 存根可手动输入打分 |
+| T35b | Judge Daemon — Type B（DSPy LLMScoreEvaluator）TS 集成 + E2E | ① 下载 `result_ref` + `trace_ref` + `evaluationCID`；② HTTP RPC 调用 T35a 微服务；③ `confidence < 0.7` 时降级 Type A（人工复核）；④ 指数退避重试（Rate Limit）；⑤ 调用 SDK `task.judge()` 上链，`reasonRef` = 评判结果 CID（上传 Arweave）；x402 外部 API 调用参考：`gh:solana-foundation/templates/community/kit-node-solanax402` | T35a | 3h | P1 | Type B E2E：测试任务经 DSPy 自动评判并上链；dimension_scores 包含所有维度；confidence < 0.7 时正确触发人工复核；judge_and_pay 被触发；Rate Limit 时排队重试而非丢失 |
 | T36 | Judge Daemon — Type C-1（test_cases oracle） | IJudge wasm_exec：下载 evaluationCID 内 WASM 字节码，沙箱执行（wasm32-wasi deterministic subset），解析分数，调用 `task.judge()` | T35 | 3h | P1 | 示例 WASM 模块被正确沙箱执行并给分；浮点运算禁用验证通过 |
 | T37 | 前端 — 任务列表 + 发任务表单 | 以 `gh:solana-foundation/templates/kit/nextjs` 初始化（Next.js + Tailwind + @solana/kit，与 Codama 生成客户端天然匹配）；任务列表（调 Indexer REST API）；发任务表单（钱包连接 + SDK `task.post()`） | T23, T28 | 4h | P0 | `localhost:3000` 显示任务列表；表单提交在 devnet 创建任务；无钱包时提示连接 |
 | T38 | 前端 — 任务详情 + 提交列表 + 评判 | 任务详情页（状态、deadline、Judge 地址）；提交列表（按 score 排序）；Judge 触发按钮（仅 Task.judge == 当前钱包） | T37 | 4h | P0 | 完整生命周期（发→申请→提交→评判）可在浏览器操作；非 Judge 不显示评判按钮 |
@@ -132,6 +133,8 @@ flowchart LR
     subgraph W2["W2 工具链"]
         T06 --> T17
         T05 --> T18
+        T18 --> T18a
+        T26 --> T18a
         T12 & T13 & T14 & T15 & T16 & T17 & T18 & T08 --> T19a --> T19b --> T19c --> T19d
         T19d --> T21 --> T22 --> T23 --> T24
         T23 --> T25
@@ -139,8 +142,8 @@ flowchart LR
         T19d --> T26 --> T27 --> T28 --> T29
         T26 --> T30
         T26 --> T31 --> T32 --> T33
-        T22 --> T34 --> T35 --> T36
-        T23 --> T37 --> T38
+        T22 --> T34 --> T35a --> T35b --> T36
+        T23 --> T37 --> T37a --> T38
     end
 
     subgraph W3["W3 生态"]
@@ -176,7 +179,7 @@ flowchart LR
 ### Milestone 2：开发者工具链可用（2026-04-21）
 **交付物**：SDK + CLI + Indexer + Judge Daemon + 前端产品 MVP，所有工具联通 devnet
 
-包含任务：T17, T18, T19a ~ T19d, T21 ~ T25a, T26 ~ T38
+包含任务：T17, T18, T18a, T19a ~ T19d, T21 ~ T25a, T26 ~ T35a, T35b, T36 ~ T37, T37a, T38
 
 **验收条件**：
 - `npm install @gradience/sdk` → 3 行代码发任务成功
@@ -234,6 +237,6 @@ flowchart LR
 - [x] 每个任务有 Done 定义
 - [x] 依赖关系已标明，无循环依赖
 - [x] 划分为 4 个里程碑，每个均有可演示交付物
-- [x] 风险已识别（9 项）
+- [x] 风险已识别（10 项）
 
 **验收通过后，进入 Phase 5: Test Spec →**

@@ -1439,8 +1439,8 @@ program/src/
 // 零拷贝示例（Escrow）
 #[derive(Clone, CodamaAccount)]
 #[repr(C)]
-pub struct Escrow { pub amount: u64, pub mint: Address, pub bump: u8 }
-assert_no_padding!(Escrow, 8 + 32 + 1);
+pub struct Escrow { pub task_id: u64, pub amount: u64, pub mint: Address, pub bump: u8 }
+assert_no_padding!(Escrow, 8 + 8 + 32 + 1);
 
 // 手动序列化示例（Task，含 String）
 impl AccountSerialize for Task {

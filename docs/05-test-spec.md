@@ -400,6 +400,8 @@ const C = {
 | I8 | **低分退款** | post → apply → submit → judge_and_pay(score=59) | Poster 全额退款；所有 stakes returned；emit TaskRefunded(LowScore) |
 | I9 | **Judge 解质押后无法被选** | register → warp(cooldown+1) → unstake → post_task(Pool) → pool empty | `JudgePoolEmpty` (6036) |
 | I10 | **upgrade_config 影响后续注册** | initialize(min_judge_stake=1e9) → upgrade_config(min_judge_stake=2e9) → register_judge(stake=1.5e9) | `InsufficientJudgeStake` |
+| I11 | **SAS Attestation 颁发（score≥60）** | post_task → apply → submit → judge_and_pay(score=80) → fetchAllAttestation(agent) | 返回 1 条 TaskCompletion Attestation；taskId/score/rewardAmount 字段与链上记录一致 |
+| I12 | **SAS Attestation 不颁发（score<60）** | post_task → apply → submit → judge_and_pay(score=59) → fetchAllAttestation(agent) | 返回 0 条 Attestation；任务以低分退款结束 |
 
 ---
 
