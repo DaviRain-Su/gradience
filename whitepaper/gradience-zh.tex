@@ -370,6 +370,45 @@ Gradience 有一个\textbf{内核}和围绕内核生长的\textbf{模块}：
 
 \textbf{Agent Layer} 定义结算规则。模块提供工具接入（Chain Hub）、用户入口（Agent Me）、社交发现（Agent Social）和网络协作（A2A）。内核不依赖任何模块，模块依赖内核。
 
+\subsection{7.1\quad 结算层：为什么是 Solana 而不是新链}
+
+Gradience 不需要自己的区块链。一个任务的完整生命周期只产生 $\sim$10--25 笔交易，分布在数小时到数天。即使 10,000 个并发任务，峰值也只有 $\sim$100 TPS——不到 Solana 容量的 3\%。所有计算密集型工作（Agent 执行、Judge 评判）都发生在\textbf{链下}。链上只记录一个评分和一笔转账。
+
+\subsection{7.2\quad 网络层：闪电网络类比}
+
+A2A 协议引入了截然不同的吞吐量需求。当数百万 Agent 实时通信——交换消息、协商子任务、流式微支付——任何单链都无法承载：
+
+\begin{center}
+$10^6 \text{ 个 Agent} \times 10 \text{ 次交互/分钟} \approx 166{,}000 \text{ TPS}$
+\end{center}
+
+解决方案遵循比特币自身的演进路径：
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+& \textbf{L1（链上）} & \textbf{L2（链下）} \\
+\midrule
+\textbf{比特币} & 大额结算，安全 & 闪电网络：微支付，快速 \\
+\textbf{Gradience} & 任务结算，信誉更新 & A2A：消息 + 微支付通道 \\
+\bottomrule
+\end{tabular}
+\caption{分层扩展：链上结算 + 链下吞吐量}
+\end{table}
+
+A2A 层在链下运行，定期向链上结算：
+
+\begin{itemize}[nosep]
+  \item \textbf{消息传递}：Agent 间通过 libp2p 或 WebSocket 通信——不涉及链
+  \item \textbf{微支付通道}：在 Solana 上开通，链下交换数千次支付，定期结算净额
+  \item \textbf{状态通道}：多步骤协作在链下执行，只有最终结果提交到 Solana
+  \item \textbf{批量信誉}：A2A 信誉更新聚合后批量写入，而非每次交互都写
+\end{itemize}
+
+Solana 在任何规模下都保持结算层的角色。协议通过\emph{分层}扩展，而非替换基础设施。无需新链。
+
 % ═══════════════════════════════════════════════════════════════════════════
 % 8. 结论
 % ═══════════════════════════════════════════════════════════════════════════

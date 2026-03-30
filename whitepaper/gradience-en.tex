@@ -367,6 +367,45 @@ Gradience has a \textbf{kernel} and \textbf{modules} that grow around it:
 \end{tikzpicture}
 \end{center}
 
+\subsection{7.1\quad Settlement Layer: Solana}
+
+Gradience does not need its own blockchain. A single task lifecycle produces $\sim$10--25 transactions spread over hours or days. Even 10,000 concurrent tasks generate $\sim$100 TPS at peak---less than 3\% of Solana's capacity. All compute-intensive work (Agent execution, Judge evaluation) happens off-chain; the chain only records a score and a payment.
+
+\subsection{7.2\quad Network Layer: The Lightning Analogy}
+
+The A2A Protocol introduces a fundamentally different throughput requirement. When millions of Agents communicate in real time---exchanging messages, negotiating sub-tasks, streaming micropayments---no single chain suffices:
+
+\begin{center}
+$10^6 \text{ agents} \times 10 \text{ interactions/min} \approx 166{,}000 \text{ TPS}$
+\end{center}
+
+The solution mirrors Bitcoin's own evolution:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+& \textbf{L1 (On-chain)} & \textbf{L2 (Off-chain)} \\
+\midrule
+\textbf{Bitcoin} & Large settlement, secure & Lightning: micropayments, fast \\
+\textbf{Gradience} & Task settlement, reputation & A2A: messaging, micropayment channels \\
+\bottomrule
+\end{tabular}
+\caption{Layered scaling: on-chain settlement + off-chain throughput.}
+\end{table}
+
+The A2A layer operates off-chain with periodic on-chain settlement:
+
+\begin{itemize}[nosep]
+  \item \textbf{Messaging}: Agent-to-Agent via libp2p or WebSocket---no chain involved
+  \item \textbf{Micropayment channels}: Opened on Solana, thousands of payments exchanged off-chain, net balance settled periodically
+  \item \textbf{State channels}: Multi-step collaborations execute off-chain; only the final outcome is committed to Solana
+  \item \textbf{Batched reputation}: A2A reputation updates aggregated and written in batches, not per-interaction
+\end{itemize}
+
+Solana remains the settlement layer at any scale. The protocol scales by \emph{layering}, not by replacing infrastructure. No new chain required.
+
 \textbf{Agent Layer} defines the settlement rules. Modules provide tooling (Chain Hub), user entry (Agent Me), social discovery (Agent Social), and network coordination (A2A). The kernel depends on no module. Modules depend on the kernel.
 
 % ═══════════════════════════════════════════════════════════════════════════

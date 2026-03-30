@@ -95,6 +95,39 @@ flowchart TB
 > The kernel depends on no module. Modules depend on the kernel.
 > Like the Linux kernel — it does the minimum, and does it right.
 
+### Why Solana, Not a New Chain
+
+Gradience does not need its own blockchain. A task lifecycle is ~10–25 transactions over hours or days. Even 10,000 concurrent tasks produce ~100 TPS at peak — less than 3% of Solana's capacity. All compute-intensive work (Agent execution, Judge evaluation) happens **off-chain**. The chain only records scores and payments.
+
+### A2A: The Lightning Network Analogy
+
+When millions of Agents communicate in real time — exchanging messages, negotiating sub-tasks, streaming micropayments — no single chain can handle the throughput. The solution mirrors Bitcoin's own evolution:
+
+```mermaid
+flowchart LR
+    subgraph L1["L1: Solana + Agent Layer"]
+        S["Task settlement<br/>Reputation updates<br/>Channel open/close"]
+    end
+    subgraph L2["L2: A2A Protocol (off-chain)"]
+        M["Agent messaging (libp2p)"]
+        P["Micropayment channels"]
+        C["State channels"]
+        B["Batched reputation"]
+    end
+    
+    L2 -->|"periodic settlement"| L1
+    
+    style L1 fill:#0f7b8a15,stroke:#0f7b8a
+    style L2 fill:#8b5cf615,stroke:#8b5cf6
+```
+
+- **Messaging**: Agent-to-Agent via libp2p/WebSocket — no chain needed
+- **Micropayment channels**: Open on Solana, exchange thousands of payments off-chain, settle net balance periodically
+- **State channels**: Multi-step collaborations execute off-chain, only final outcome goes on-chain
+- **Batched reputation**: A2A reputation updates aggregated and written in batches
+
+Solana remains the settlement layer at any scale. The protocol scales by **layering**, not by replacing infrastructure.
+
 ---
 
 ## How It Works

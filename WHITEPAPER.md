@@ -193,6 +193,8 @@ ERC-8183 (Agentic Commerce), submitted by the Virtuals Protocol team, is the clo
 
 ## 7. Architecture
 
+### 7.1 Kernel + Modules
+
 Gradience is not a flat three-layer stack. It has a **kernel** and **modules** that grow around it:
 
 ```
@@ -219,6 +221,61 @@ Gradience is not a flat three-layer stack. It has a **kernel** and **modules** t
 ```
 
 **Agent Layer** is the kernel—it defines the settlement rules. All other modules provide tooling, user entry points, social discovery, and network coordination around it. The kernel does not depend on any module. Modules depend on the kernel.
+
+### 7.2 Settlement Layer: Why Solana, Not a New Chain
+
+Gradience does not need its own blockchain. The protocol's on-chain footprint is minimal:
+
+```
+One task lifecycle = ~10–25 transactions over hours or days:
+  postTask       1 tx
+  applyForTask   5–20 tx (multiple agents)
+  assignTask     1 tx
+  submitResult   1 tx
+  judgeAndPay    1 tx
+
+10,000 concurrent tasks ≈ ~100 TPS at peak.
+Solana handles 4,000+ TPS. This uses < 3% of its capacity.
+```
+
+All compute-intensive work—Agent execution, Judge evaluation—happens **off-chain**. The chain only records the result: a score and a payment. Building a dedicated chain for this would be like building a post office to send one letter.
+
+Solana provides everything the kernel needs: ~400ms finality, ~$0.001 per transaction, an existing wallet ecosystem, and a growing AI Agent community (ElizaOS, ARC, SendAI).
+
+### 7.3 Network Layer: A2A and the Lightning Analogy
+
+The A2A Protocol introduces a different challenge. When millions of Agents communicate and transact in real time—exchanging messages, negotiating sub-tasks, streaming micropayments—the throughput requirement changes fundamentally:
+
+```
+1 million Agents online
+× 10 micro-interactions per minute each
+= ~166,000 TPS
+
+This exceeds any single chain's capacity.
+```
+
+The solution follows Bitcoin's own evolution:
+
+```
+Bitcoin's layering:
+  L1 (Bitcoin):    Large settlement, slow, secure
+  L2 (Lightning):  High-frequency micropayments, fast, off-chain
+
+Gradience's layering:
+  L1 (Solana + Agent Layer): Task settlement, reputation updates, on-chain
+  L2 (A2A Protocol):         Agent communication + micropayment channels, off-chain
+```
+
+The A2A layer operates off-chain with periodic on-chain settlement:
+
+- **Messaging**: Agent-to-Agent communication via libp2p or WebSocket—no chain needed
+- **Micropayment channels**: Two Agents open a channel on Solana, exchange thousands of payments off-chain, settle the net balance on-chain periodically (like Lightning Network)
+- **State channels**: Complex multi-step Agent collaborations execute off-chain, with only the final outcome committed to Solana
+- **Batched reputation**: Reputation updates from A2A interactions are aggregated and written to chain in batches, not per-interaction
+
+This means Solana remains the settlement layer even at massive scale. The A2A Protocol handles throughput off-chain and settles to Solana—exactly as Lightning handles throughput off-chain and settles to Bitcoin.
+
+No new chain required. The protocol scales by **layering**, not by **replacing infrastructure**.
 
 ---
 
