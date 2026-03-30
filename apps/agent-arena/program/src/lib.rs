@@ -1,11 +1,6 @@
-//! # Pinocchio Counter
+//! # Gradience Protocol
 //!
-//! A counter Solana program demonstrating Pinocchio patterns.
-//!
-//! ## Features
-//! - Counter PDA per authority
-//! - Increment counter functionality
-//! - Event emission via CPI
+//! Decentralized AI Agent credit protocol on Solana.
 //!
 //! ## Architecture
 //! Built with Pinocchio (no_std). Clients auto-generated via Codama.
@@ -16,6 +11,7 @@ extern crate alloc;
 
 use pinocchio::address::declare_id;
 
+pub mod constants;
 pub mod errors;
 pub mod traits;
 pub mod utils;

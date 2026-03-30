@@ -100,7 +100,7 @@ impl Counter {
     #[inline(always)]
     pub fn validate_authority(&self, provided_authority: &Address) -> Result<(), ProgramError> {
         if self.authority != *provided_authority {
-            return Err(GradienceProgramError::InvalidAuthority.into());
+            return Err(GradienceProgramError::NotUpgradeAuthority.into());
         }
         Ok(())
     }
@@ -146,7 +146,7 @@ mod tests {
         let result = counter.validate_authority(&invalid_authority);
         assert_eq!(
             result,
-            Err(GradienceProgramError::InvalidAuthority.into())
+            Err(GradienceProgramError::NotUpgradeAuthority.into())
         );
     }
 

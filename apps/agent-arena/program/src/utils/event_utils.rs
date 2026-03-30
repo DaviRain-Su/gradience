@@ -1,4 +1,4 @@
-use crate::errors::GradienceProgramError::InvalidEventAuthority;
+use crate::errors::GradienceProgramError;
 use pinocchio::{
     account::AccountView,
     cpi::{invoke_signed, Seed, Signer},
@@ -19,7 +19,7 @@ use crate::events::{event_authority_pda, EVENT_AUTHORITY_SEED};
 #[inline(always)]
 pub fn verify_event_authority(account: &AccountView) -> Result<(), ProgramError> {
     if account.address() != &event_authority_pda::ID {
-        return Err(InvalidEventAuthority.into());
+        return Err(GradienceProgramError::InvalidPda.into());
     }
 
     Ok(())
