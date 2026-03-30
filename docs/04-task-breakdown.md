@@ -22,10 +22,10 @@
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T01 | Anchor 工作区脚手架 | `anchor init`，配置 Cargo.toml workspace，设置 program ID，`.github/ci.yml` | 无 | 1h | P0 | `anchor build` 通过，目录结构符合规范 |
-| T02 | 常量 + 错误码模块 | `constants.rs` 所有 14 个常量，`errors.rs` 41 个错误码（6000-6040） | T01 | 1h | P0 | 编译通过，所有常量类型正确，41 个错误码已定义 |
+| T02 | 常量 + 错误码模块 | `constants.rs` 所有 14 个常量，`errors.rs` 42 个错误码（6000-6040 共 41 个 + 6041 UnsupportedMintExtension） | T01 | 1h | P0 | 编译通过，所有常量类型正确，42 个错误码已定义 |
 | T03 | 账户结构体 — Task / Escrow / Application | `Task`（323B）、`Escrow` PDA（SOL 原生账户）、`Application` struct；所有 `#[account]` 宏 | T02 | 2h | P0 | `assert_eq!(Task::SIZE, 323)` 编译通过；字段类型与规格 100% 一致 |
-| T04 | 账户结构体 — Submission / RuntimeEnv | `Submission`（497B）嵌套 `RuntimeEnv`（160B）；所有字段、String 最大长度注解 | T02 | 2h | P0 | `assert_eq!(Submission::SIZE, 497)` 通过；RuntimeEnv 字段全部 present |
-| T05 | 账户结构体 — Reputation / Stake / JudgePool / Treasury / ProgramConfig | `Reputation`（113B）含 `CategoryStats[8]`，`Stake`，`JudgePool`（7226B max）含 `JudgePoolEntry[200]`，`Treasury`，`ProgramConfig`；枚举 `TaskState` / `JudgeMode` / `Category` | T02 | 2h | P0 | 所有账户 SIZE 常量与规格一致，枚举 `repr(u8)` 正确 |
+| T04 | 账户结构体 — Submission / RuntimeEnv | `Submission`（总 505B：discriminator 8B + data 497B）嵌套 `RuntimeEnv`（176B，MAX_VERSION_LEN=32）；所有字段、String 最大长度注解 | T02 | 2h | P0 | `assert_eq!(Submission::SIZE, 505)` 通过；RuntimeEnv 4 字段字节和 = 36+68+36+36=176 |
+| T05 | 账户结构体 — Reputation / Stake / JudgePool / Treasury / ProgramConfig | `Reputation`（总 117B：data 109B = agent32+global20+by_category56+bump1），`Stake`（74B），`JudgePool`（总 7218B：data 7210B = category1+total_weight4+vec_len4+200×36+bump1），`Treasury`（9B），`ProgramConfig`（89B）；枚举 `TaskState` / `JudgeMode` / `Category`（含 derive 宏） | T02 | 2h | P0 | 所有账户 SIZE assert 通过；JudgePool 7218B = 8+7210 验证正确 |
 | T06 | `initialize` 指令 | 初始化 `ProgramConfig`（upgrade_authority、min_judge_stake）和 `Treasury` PDA；一次性调用 | T05 | 2h | P0 | 测试：`initialize` → ProgramConfig 字段值正确；二次调用返回 `AlreadyInitialized` |
 | T07 | `post_task` — SOL 路径 | Task PDA 创建，SOL reward 转入 Escrow，`config.task_count++`；Pool 模式链上加权随机（sha256 seed）抽 Judge | T06 | 3h | P0 | 测试：发 SOL 任务 → `Task.state=Open`，Escrow 余额 = reward；Pool 模式 judge 字段被协议填写 |
 | T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07 | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
@@ -36,7 +36,7 @@
 | T13 | `cancel_task` | 仅 Poster 可调用；state=Open 验证；2% 取消费到 Treasury，98% 退还 Poster；所有 Agent 质押退回；`Task.state=Refunded` | T07 | 2h | P0 | 测试：cancel → Poster 得 98%，Treasury 得 2%；已有申请时 stakes 退回；非 Poster 调用 → `Unauthorized` |
 | T14 | `refund_expired` | 任何人调用；clock > task.deadline 且 state=Open；全额退还 Poster；Agent stakes 退回；`Task.state=Refunded` | T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；未过期 → `DeadlineNotPassed` |
 | T15 | `force_refund` + Slash 逻辑 | 任何人调用；clock > judge_deadline + FORCE_REFUND_DELAY；Slash：从 Stake 扣 `min_judge_stake`；若剩余 < `min_judge_stake` → 从 JudgePool 移除 + 关闭 Stake PDA；否则更新权重；全额退还 Poster；Agent stakes 退回 | T07, T16 | 3h | P0 | 测试：force_refund → Poster 退款；Judge stake 扣减；stake 不足时从 Pool 移除 |
-| T16 | `register_judge` + `unstake_judge` | `register_judge`：质押 ≥ min_judge_stake，声明 category，添加到 JudgePool（pool 满 200 → `JudgePoolFull`），计算初始权重；`unstake_judge`：冷却期 7 天检查，从 JudgePool 移除，退还质押 | T06 | 2h | P0 | 测试：register → 进 JudgePool；200 人后注册 → `JudgePoolFull`；unstake 冷却前 → `CooldownNotMet` |
+| T16 | `register_judge` + `unstake_judge` | `register_judge`：质押 ≥ min_judge_stake，声明 category，**首次调用通过 `init_if_needed` 创建 JudgePool PDA（预分配 7218B，无需单独 initialize_judge_pool 指令）**，添加 entry（pool 满 200 → `JudgePoolFull`），计算初始权重；`unstake_judge`：冷却期 7 天检查，从 JudgePool 移除，退还质押 | T06 | 2h | P0 | 测试：首次 register → JudgePool 自动创建且 SIZE=7218；已有 pool 时 register 添加 entry；200 人后注册 → `JudgePoolFull`；unstake 冷却前 → `CooldownNotExpired` |
 | T17 | `upgrade_config` | 仅 upgrade_authority 可调用；更新 `treasury` 地址和 `min_judge_stake` | T06 | 1h | P1 | 测试：upgrade_config 更新两字段；非 authority 调用 → `Unauthorized` |
 | T18 | IJudge CPI 接口定义 | 定义 `IJudge` trait 和 CPI 接口；实现 `test_cases` evaluator 存根（Type C-1）；接口注释文档 | T05 | 2h | P1 | 编译通过；CPI 接口可被外部 Program 实现 |
 | T19 | 测试套件 Part 1 — Happy Path | 完整 E2E：initialize → post(SOL) → apply → submit → judge_and_pay；所有 P0 状态转换验证；SOL / SPL 双路径 | T12, T13, T14, T15, T16, T17, T18 | 4h | P0 | `anchor test` 全绿；所有 P0 用户故事对应测试通过 |
@@ -49,7 +49,7 @@
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T21 | Indexer — PostgreSQL Schema | 4 张表（tasks / submissions / reputations / reputation_by_category）+ 5 个索引；migration 文件 | T20 | 2h | P0 | `psql` 运行 migration 无报错；schema 与规格完全一致 |
-| T22 | Indexer — Helius Webhook 接收 + 事件解析 | HTTP 端点接收 Helius 推送；解析 8 个 Program 事件（TaskCreated, TaskApplied, ResultSubmitted, TaskJudged, TaskCancelled, TaskRefunded, JudgeRegistered, JudgeUnstaked）；upsert 到 DB | T21 | 3h | P0 | Mock webhook POST → DB 行创建 / 更新正确；延迟 < 200ms |
+| T22 | Indexer — Helius Webhook 接收 + 事件解析 | HTTP 端点接收 Helius 推送；解析 5 个 Program 事件（**TaskCreated, SubmissionReceived, TaskJudged, TaskRefunded, JudgeRegistered**）；upsert 到 DB | T21 | 3h | P0 | Mock webhook POST → DB 行创建 / 更新正确；延迟 < 200ms |
 | T23 | Indexer — REST API 端点 | `GET /api/tasks?state=&category=&page=`；`GET /api/tasks/:id`；`GET /api/tasks/:id/submissions?sort=score`；`GET /api/reputation/:agent`；`GET /api/reputation/:agent/category/:cat` | T22 | 3h | P0 | curl 每个端点 → 正确 JSON；分页正确；无效参数 → 4xx |
 | T24 | Indexer — WebSocket 服务器 | WS 连接 ws://indexer/ws；事件广播：TaskCreated / ResultSubmitted / TaskJudged；客户端可 filter by task_id | T22 | 2h | P1 | WS 客户端订阅 → 收到 DB upsert 触发的事件；连接断开自动清理 |
 | T25 | Indexer — Cloudflare Workers + D1 适配层 | CF Workers wrapper；D1 SQLite schema（与 PG schema 对齐）；`wrangler deploy` 到 CF；REST API 路径一致 | T23 | 3h | P1 | Managed 模式 CF 部署成功；相同 curl 命令返回相同格式 |
@@ -61,8 +61,8 @@
 | T31 | CLI — 脚手架 + config 命令 | `gradience` binary（Node.js / Bun）；`config set rpc <url>`；`config set keypair <path>`；`--help` 所有子命令 | T26 | 1h | P0 | `gradience --help` 显示所有子命令；config 写入 `~/.gradience/config.json` |
 | T32 | CLI — task post / apply / submit / status | `gradience task post --eval-ref <cid> --reward <lamports> --deadline <ts> ...`；`apply`；`submit --result-ref <cid> --trace-ref <cid> ...`；`status <task_id>` | T31, T28 | 3h | P0 | 每条命令在 devnet 创建正确的链上交易 |
 | T33 | CLI — task judge / cancel / refund + judge register | `gradience task judge <task_id> <agent> <score>`；`cancel`；`refund`；`gradience judge register --category defi` | T32 | 2h | P0 | 命令在 devnet 正确执行；judge register 后 JudgePool 有记录 |
-| T34 | Judge Daemon — Absurd 工作流 + LaserStream 监听 | Absurd（PostgreSQL 持久化 workflow engine）初始化；Helius LaserStream gRPC 连接；TaskCreated 事件 → 触发 evaluate workflow；崩溃可续 | T22 | 3h | P1 | Daemon 启动，模拟 TaskCreated 事件 → workflow 触发，延迟 < 200ms |
-| T35 | Judge Daemon — Type A（人工存根）+ Type B（AI Claude API） | Type A：等待 CLI 手动打分输入；Type B：task_desc + result_ref 发给 Claude API，解析 0-100 分，调用 SDK `task.judge()` 上链 | T34 | 4h | P1 | Type B：测试任务 E2E 经 Claude API 自动评判并上链；judge_and_pay 被触发 |
+| T34 | Judge Daemon — Absurd 工作流 + LaserStream 监听 | Absurd（PostgreSQL 持久化 workflow engine）初始化；Helius LaserStream gRPC 连接；监听 **TaskCreated / SubmissionReceived** 事件 → 触发 evaluate workflow；崩溃可续（**Judge 评测类型说明**：Type A=人工打分，Type B=AI 白盒 trace replay，Type C-1=test_cases oracle，对应架构 doc 3 类评测方法） | T22 | 3h | P1 | Daemon 启动，模拟 TaskCreated 事件 → workflow 触发，延迟 < 200ms |
+| T35 | Judge Daemon — Type A（人工存根）+ Type B（AI Claude API） | **Type A**：等待 CLI 手动打分输入（人工评判）；**Type B**：下载 result_ref + trace_ref，构造 prompt 发给 Claude API（对照 evaluationCID 评判标准），解析 0-100 分，调用 SDK `task.judge()` 上链 | T34 | 4h | P1 | Type B：测试任务 E2E 经 Claude API 自动评判并上链；judge_and_pay 被触发；score ≥ 60 |
 | T36 | Judge Daemon — Type C-1（test_cases oracle） | IJudge wasm_exec：下载 evaluationCID 内 WASM 字节码，沙箱执行，解析分数，调用 `task.judge()` | T35 | 3h | P1 | 示例 WASM 模块（Rust→wasm32-wasi）被正确执行并给分 |
 | T37 | 前端 — 任务列表 + 发任务表单 | Next.js 14 App Router；任务列表（调 Indexer REST API）；发任务表单（钱包连接 + SDK `task.post()`） | T23, T28 | 4h | P0 | `localhost:3000` 显示任务列表；表单提交在 devnet 创建任务 |
 | T38 | 前端 — 任务详情 + 提交列表 + 评判 | 任务详情页（状态、deadline、Judge 地址）；提交列表（按 score 排序）；Judge 触发按钮（仅 Task.judge == 当前钱包时显示） | T37 | 4h | P0 | 完整生命周期（发→申请→提交→评判）可在浏览器操作 |
@@ -101,7 +101,7 @@ flowchart LR
     T07 --> T13
     T07 --> T14
     T05 --> T16
-    T16 --> T07
+    T16 -.->|Pool 模式需要 JudgePool 有 Judge| T07
     T16 --> T15
     T07 --> T15
     T06 --> T17

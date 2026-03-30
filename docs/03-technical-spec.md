@@ -52,7 +52,7 @@
 /// 总大小: 8 + 315 = 323 bytes（含 Anchor discriminator）
 #[account]
 pub struct Task {
-    pub task_id:        u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
+    pub task_id:          u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
     pub poster:           Pubkey,        // 32 — 发布者地址
     pub judge:            Pubkey,        // 32 — 评判者地址（pool 模式下由协议填写）
     pub judge_mode:       JudgeMode,     // 1  — 0=Designated(Poster指定), 1=Pool(随机抽选)
@@ -242,7 +242,7 @@ pub struct Stake {
 ///
 /// **Vec 容量说明**：
 /// - Anchor 使用 Borsh 序列化 Vec：4 bytes (len) + len × element_size
-/// - 账户空间在 `initialize_judge_pool` 时按 MAX_JUDGES_PER_POOL (200) 预分配
+/// - 账户空间在首次 `register_judge` 时通过 `init_if_needed` 创建，预分配 7218 bytes（按 MAX_JUDGES_PER_POOL=200 计算），无需单独的 initialize_judge_pool 指令
 /// - 空间 = 8(discriminator) + 1(category) + 4(total_weight) + 4(vec_len) + 200×36(entries) + 1(bump)
 ///        = 8 + 7210 = 7218 bytes
 /// - Vec 动态增长，不超过预分配空间；若 entries.len() = MAX_JUDGES_PER_POOL，
