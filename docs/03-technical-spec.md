@@ -964,6 +964,29 @@ pub struct JudgeRegistered {
     pub stake:      u64,
     pub categories: Vec<u8>,
 }
+
+#[event]
+pub struct TaskApplied {
+    pub task_id: u64,
+    pub agent:   Pubkey,
+    pub stake:   u64,        // 质押量（与 task.mint 同单位）
+    pub slot:    u64,        // 申请时的 Solana slot
+}
+
+#[event]
+pub struct TaskCancelled {
+    pub task_id:      u64,
+    pub poster:       Pubkey,
+    pub refund_amount: u64,  // 退还 Poster 的金额（98%）
+    pub protocol_fee:  u64,  // 进 Treasury 的金额（2%）
+}
+
+#[event]
+pub struct JudgeUnstaked {
+    pub judge:          Pubkey,
+    pub returned_stake: u64,    // 退还质押量
+    pub categories:     Vec<u8>, // 退出的 category pool 列表
+}
 ```
 
 ---
