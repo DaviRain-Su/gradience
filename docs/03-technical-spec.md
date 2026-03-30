@@ -645,6 +645,7 @@ for entry in judge_pool.entries:
 | `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
 | `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | 成对传入：`[application_pda, agent_system_account]` × N（N = 申请者数量，可为 0） |
 
 账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
 
@@ -659,6 +660,14 @@ for entry in judge_pool.entries:
 | `mint` | Mint | ❌ | ❌ | token mint |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | 成对传入：`[application_pda, agent_token_account]` × N |
+
+**`remaining_accounts` 约定**（cancel_task / refund_expired / force_refund 通用）：
+- 每对 = `(application_pda: mut, agent_account: mut)`
+- 指令内验证 `application.task_id == task.task_id`；验证通过后退还 `application.stake_amount`
+- SOL 版本：`agent_account` 为 SystemAccount；SPL 版本：`agent_account` 为 agent 的 token_account
+- 调用者负责传入全部申请者账户；遗漏不会报错，但对应 stake 会被锁死（实现时文档警告）
+- `submission_count = 0` 前置保证申请者质押未被 judge_and_pay 处理过
 
 ---
 
@@ -681,6 +690,7 @@ for entry in judge_pool.entries:
 | `task` | Task PDA | ✅ | ❌ | 状态更新 |
 | `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_system_account]` × N |
 
 账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
 
@@ -694,6 +704,7 @@ for entry in judge_pool.entries:
 | `mint` | Mint | ❌ | ❌ | token mint |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_token_account]` × N |
 
 ---
 
@@ -1009,6 +1020,8 @@ pub enum GradienceError {
     HasSubmissions,                 // 6004
     #[msg("No submissions found for this task")]
     NoSubmissions,                  // 6005
+    #[msg("Task deadline has not passed yet")]
+    DeadlineNotPassed,              // 6006 — 用于 refund_expired：截止时间未到不可退款
 
     // 权限错误 6010-6019
     #[msg("Signer is not the task poster")]
@@ -1232,7 +1245,7 @@ rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
 
 - [x] 所有 9 个 PDA 精确到字段类型和字节大小
 - [x] 所有 10 条指令有完整参数、账户、前后置条件
-- [x] 错误码统一编号（6000-6041），共 42 个（含 UnsupportedMintExtension）
+- [x] 错误码统一编号（6000-6041），共 **30 个命名码**（含 DeadlineNotPassed 6006、UnsupportedMintExtension 6041；组间有意留间隔）
 - [x] 状态机转换条件精确，无歧义，覆盖所有终态
 - [x] 费用计算有伪代码，精度处理（余数归 Agent）已说明
 - [x] JudgePool 加权随机算法有伪代码，随机源明确

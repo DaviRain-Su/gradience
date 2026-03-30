@@ -25,20 +25,20 @@
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T01 | Anchor 工作区脚手架 | `anchor init`，配置 Cargo.toml workspace，设置 program ID，`.github/ci.yml` | 无 | 1h | P0 | `anchor build` 通过；目录结构符合规范；CI 配置可触发构建 |
-| T02 | 常量 + 错误码模块 | `constants.rs` 所有 **15 个**不可变常量（JUDGE_FEE_BPS/PROTOCOL_FEE_BPS/AGENT_FEE_BPS/CANCEL_FEE_BPS/FORCE_REFUND_DELAY/UNSTAKE_COOLDOWN/MAX_JUDGES_PER_POOL/MAX_CATEGORIES/MIN_SCORE/MAX_SCORE/MAX_REF_LEN/MAX_PROVIDER_LEN/MAX_MODEL_LEN/MAX_RUNTIME_LEN/MAX_VERSION_LEN）+ 1 个可配置常量（min_judge_stake）；`errors.rs` **29 个命名错误码**，编号分布在 6000-6041 范围内（组间有意留间隔）：状态组 6000-6005（6个），权限组 6010-6014（5个），质押组 6020-6025（6个），验证组 6030-6039（10个），算术 6040（1个），Token 6041（1个） | T01 | 1h | P0 | 编译通过；15 个不可变常量类型正确；29 个错误码名称与规格 100% 一致 |
+| T02 | 常量 + 错误码模块 | `constants.rs` 所有 **15 个**不可变常量（JUDGE_FEE_BPS/PROTOCOL_FEE_BPS/AGENT_FEE_BPS/CANCEL_FEE_BPS/FORCE_REFUND_DELAY/UNSTAKE_COOLDOWN/MAX_JUDGES_PER_POOL/MAX_CATEGORIES/MIN_SCORE/MAX_SCORE/MAX_REF_LEN/MAX_PROVIDER_LEN/MAX_MODEL_LEN/MAX_RUNTIME_LEN/MAX_VERSION_LEN）+ 1 个可配置常量（min_judge_stake）；`errors.rs` **30 个命名错误码**，编号分布在 6000-6041 范围内（组间有意留间隔）：状态组 6000-6006（7个，含 DeadlineNotPassed 6006），权限组 6010-6014（5个），质押组 6020-6025（6个），验证组 6030-6039（10个），算术 6040（1个），Token 6041（1个） | T01 | 1h | P0 | 编译通过；15 个不可变常量类型正确；30 个错误码名称与规格 100% 一致 |
 | T03 | 账户结构体 — Task / Escrow / Application | `Task`（INIT_SPACE=315，总 323B）、`Escrow`（INIT_SPACE=49，总 57B）、`Application`（INIT_SPACE=57，总 65B）；所有 `#[account]` 宏；使用 `8 + T::INIT_SPACE` 分配空间 | T02 | 2h | P0 | `assert_eq!(Task::INIT_SPACE, 315)` 通过；`assert_eq!(Escrow::INIT_SPACE, 49)` 通过；字段类型与规格 100% 一致 |
 | T04 | 账户结构体 — Submission / RuntimeEnv | `Submission`（INIT_SPACE=497，总 505B）嵌套 `RuntimeEnv`（176B，MAX_VERSION_LEN=32）；所有字段、String 最大长度注解；空间 = 8 + 497 = 505B | T02 | 2h | P0 | `assert_eq!(Submission::INIT_SPACE, 497)` 通过；RuntimeEnv 4 字段 Borsh 总和 = 36+68+36+36=176 |
 | T05 | 账户结构体 — Reputation / Stake / JudgePool / Treasury / ProgramConfig | `Reputation`（INIT_SPACE=109，总 117B）、`Stake`（INIT_SPACE=66，总 74B）、`JudgePool`（INIT_SPACE=7210，总 7218B）、`Treasury`（INIT_SPACE=1，总 9B）、`ProgramConfig`（INIT_SPACE=81，总 89B）；枚举 `TaskState` / `JudgeMode` / `Category`（含完整 derive 宏） | T02 | 2h | P0 | `assert_eq!(Reputation::INIT_SPACE, 109)` 通过；`assert_eq!(JudgePool::INIT_SPACE, 7210)` 通过；所有枚举 `repr(u8)` 正确 |
-| T06 | `initialize` 指令 | 初始化 `ProgramConfig`（upgrade_authority、min_judge_stake）和 `Treasury` PDA；一次性调用 | T05 | 2h | P0 | 测试：`initialize` → ProgramConfig 字段值正确；二次调用返回 `AlreadyInitialized` |
+| T06 | `initialize` 指令 | 初始化 `ProgramConfig`（upgrade_authority、min_judge_stake）和 `Treasury` PDA；一次性调用 | T05 | 2h | P0 | 测试：`initialize` → ProgramConfig 字段值正确；二次调用因 PDA 已存在而失败（Anchor `ConstraintSeeds` / `AccountAlreadyInUse` 内置错误，非自定义码） |
 | T07 | `post_task` — SOL 路径 | Task PDA 创建，SOL reward 转入 Escrow，`config.task_count++`；Pool 模式链上加权随机（sha256 seed）抽 Judge；**emit! TaskCreated** | T06, T16 | 3h | P0 | 测试：发 SOL 任务 → `Task.state=Open`，Escrow 余额 = reward；Pool 模式 judge 字段被协议填写；reward=0 → `ZeroReward`；TaskCreated 事件被 emit |
 | T08a | SPL Token ATA 工具函数 | 封装 `create_associated_token_account` 工具函数；验证 ATA owner（authority = escrow PDA）；统一处理 Poster / Agent / Judge / Treasury 的 ATA 初始化逻辑；供 T08 / T09 / T11 / T13-T15 复用 | T06 | 2h | P0 | 工具函数编译通过；单元测试：创建 ATA → owner 正确；已存在 ATA 时幂等不报错 |
 | T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07, T08a | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
-| T09 | `apply_for_task` — SOL + SPL 路径 | Application PDA init，Reputation PDA `init_if_needed`，SOL / SPL 质押转入 Escrow（调用 T08a 工具函数）；前置条件：state=Open，deadline 未过，未重复申请；**emit! TaskApplied** | T08a, T07, T08 | 3h | P0 | 测试：apply → Application created，stake 锁入 Escrow；重复申请 → `AlreadyApplied`；`min_stake=0` 无需质押；TaskApplied 事件被 emit |
+| T09 | `apply_for_task` — SOL + SPL 路径 | Application PDA init，Reputation PDA `init_if_needed`，SOL / SPL 质押转入 Escrow（调用 T08a 工具函数）；**`rep.global.total_applied++`**（win_rate 分母）；前置条件：state=Open，deadline 未过，未重复申请；**emit! TaskApplied** | T08a, T07, T08 | 3h | P0 | 测试：apply → Application created，stake 锁入 Escrow，**`reputation.global.total_applied` 递增**；重复申请 → `AlreadyApplied`；`min_stake=0` 无需质押；TaskApplied 事件被 emit |
 | T10 | `submit_result` | Submission PDA 创建（或覆盖更新），RuntimeEnv 四字段长度 `require!` 验证；前置条件：agent 已申请、deadline 未过；**emit! SubmissionReceived** | T09 | 2h | P0 | 测试：submit → Submission 字段正确；二次 submit → 覆盖；model 超长 → `InvalidRuntimeEnv`；未申请 → `AgentNotApplied`；SubmissionReceived 事件被 emit |
 | T11 | `judge_and_pay` — SOL 路径 + 分账 | 分数验证（≥ MIN_SCORE）；赢家选取（highest score ≥ 60，tie→earliest slot）；整数除法费用计算（95/3/2 BPS）；三路 lamport 转账；`Task.state=Completed`；**全部申请者（含落败者）stake 原路退回**（stake 是准入押金，非奖励） | T10 | 3h | P0 | 测试：2 Agent 竞争 → 赢家得 95%，Judge 得 3%，Treasury 得 2%；**落败者 stake 原路退回**；余额精确到 lamport；非 Judge 调用 → `NotTaskJudge` |
 | T12 | `judge_and_pay` — SPL + 信誉更新 | SPL Token 三路 CPI 转账；`Reputation` 全局统计更新（avg_score 滚动平均、win_rate）；`CategoryStats[category]` 更新；**emit! TaskJudged** | T11 | 3h | P0 | 测试：SPL 任务评判 → token 余额正确；全局 + category 信誉均更新；score < MIN_SCORE → TaskRefunded emit；TaskJudged 含 winner/payout/fees |
-| T13 | `cancel_task` | 仅 Poster 可调用；state=Open 验证；2% 取消费到 Treasury，98% 退还 Poster；所有 Agent 质押退回（无论是否有申请者）；`Task.state=Refunded`；**emit! TaskCancelled** | T08a, T07 | 2h | P0 | 测试：cancel（无申请）→ Poster 得 98%，Treasury 得 2%；cancel（有申请）→ stakes 退回；非 Poster → `NotTaskPoster`；TaskCancelled 事件被 emit |
-| T14 | `refund_expired` | 任何人调用；clock > task.deadline 且 state=Open；全额退还 Poster；Agent stakes 退回；`Task.state=Refunded`；**emit! TaskRefunded（reason=Expired）** | T08a, T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；未过期 → `JudgeDeadlineNotPassed`；TaskRefunded 事件携带 reason=Expired |
+| T13 | `cancel_task` | 仅 Poster 可调用；前置条件：state=Open、**submission_count = 0**（已有提交不可取消）；2% 取消费到 Treasury，98% 退还 Poster；通过 `remaining_accounts` 批量退回 Agent 质押；`Task.state=Refunded`；**emit! TaskCancelled** | T08a, T07, T09 | 2h | P0 | 测试：cancel（无申请）→ Poster 得 98%，Treasury 得 2%；**已有提交时 cancel → `HasSubmissions`**；非 Poster → `NotTaskPoster`；TaskCancelled 事件被 emit；"cancel 有申请时 stakes 退回" 场景在 T19c 集成测试验证 |
+| T14 | `refund_expired` | 任何人调用；前置条件：state=Open、**clock > task.deadline**（提交截止，非 judge_deadline）；通过 `remaining_accounts` 批量退回 Agent 质押；全额退还 Poster；`Task.state=Refunded`；**emit! TaskRefunded（reason=Expired）** | T08a, T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；**截止时间未到 → `DeadlineNotPassed`**（6006，非 JudgeDeadlineNotPassed）；TaskRefunded 事件携带 reason=Expired |
 | T15 | `force_refund` + Slash 逻辑 | **T16 完成并通过测试后方可开始**；任何人调用；clock > judge_deadline + FORCE_REFUND_DELAY；Slash 三步；**资金分配：95% → Poster，3% → 提交数最多的 Agent，2% → Treasury**（非全额退款）；所有申请者 stakes 退回；**emit! TaskRefunded（reason=ForceRefund）** | T08a, T07, T16 | 3h | P0 | 测试：force_refund → Poster 得 95%，最活跃 Agent 得 3%，Treasury 得 2%；Judge stake 扣减；stake 不足时从 Pool 移除；延迟未过 → `ForceRefundDelayNotPassed` |
 | T16 | `register_judge` + `unstake_judge` | `register_judge`：质押 ≥ min_judge_stake，声明 category，首次调用通过 `init_if_needed` 创建 JudgePool PDA（INIT_SPACE=7210），计算初始权重；**emit! JudgeRegistered**；`unstake_judge`：冷却期检查，从 JudgePool 移除，退还质押；**emit! JudgeUnstaked** | T06 | 2h | P0 | 测试：首次 register → JudgePool 创建，JudgeRegistered 事件 emit；200 人后注册 → `JudgePoolFull`；unstake → Stake PDA 关闭，JudgeUnstaked 事件 emit；冷却前 unstake → `CooldownNotExpired` |
 
@@ -52,9 +52,9 @@
 |---|---------|------|------|------|--------|----------|
 | T17 | `upgrade_config` 指令 | 仅 upgrade_authority 可调用；更新 `treasury` 地址和 `min_judge_stake` | T06 | 1h | P1 | 测试：upgrade_config 更新两字段后值正确；非 authority 调用 → `NotUpgradeAuthority` |
 | T18 | IJudge CPI 接口定义 | 定义 `IJudge` trait 和 CPI 接口；实现 `test_cases` evaluator 存根（Type C-1）；接口注释文档 | T05 | 2h | P1 | 编译通过；CPI 接口可被外部 Program 实现；存根返回固定分数 80 |
-| T19a | 集成测试 — initialize + post_task | devnet 部署后：`initialize` → `post_task`（SOL Designated 模式）→ `post_task`（SOL Pool 模式）→ `post_task`（SPL）→ `post_task`（Token-2022 带 Hook → 拒绝）；升级路径：`upgrade_config` | T17, T18, T16, T08 | 3h | P0 | `anchor test` 5 个 post_task 场景全绿；Pool 模式 judge 字段由协议填写；TaskCreated 事件验证 |
-| T19b | 集成测试 — apply + submit | `apply_for_task`（SOL stake、SPL stake、min_stake=0）→ `submit_result`（首次、覆盖）；RuntimeEnv 字段验证；重复申请 | T19a, T08 | 3h | P0 | 申请 + 提交 6 个场景全绿；`AlreadyApplied`、`InvalidRuntimeEnv` 错误码正确触发 |
-| T19c | 集成测试 — judge_and_pay + cancel + refund | `judge_and_pay`（SOL + SPL，正常赢家；tie-break by slot；score < MIN_SCORE 退款）；`cancel_task`（有/无提交）；`refund_expired` | T19b, T08 | 3h | P0 | 分账精度逐 lamport 验证；3 条退款路径全绿；信誉 global + category 更新验证 |
+| T19a | 集成测试 — initialize + post_task | devnet 部署后：`initialize` → `post_task`（SOL Designated 模式）→ `post_task`（SOL Pool 模式）→ `post_task`（SPL）→ `post_task`（Token-2022 带 Hook → 拒绝）；升级路径：`upgrade_config` | T12, T13, T14, T15, T16, T17, T18, T08 | 3h | P0 | `anchor test` 5 个 post_task 场景全绿；Pool 模式 judge 字段由协议填写；TaskCreated 事件验证 |
+| T19b | 集成测试 — apply + submit | `apply_for_task`（SOL stake、SPL stake、min_stake=0）→ `submit_result`（首次、覆盖）；RuntimeEnv 字段验证；重复申请；**验证 `total_applied` 每次 apply 递增** | T19a | 3h | P0 | 申请 + 提交 6 个场景全绿；`AlreadyApplied`、`InvalidRuntimeEnv` 错误码正确触发；total_applied 计数正确 |
+| T19c | 集成测试 — judge_and_pay + cancel + refund | `judge_and_pay`（SOL + SPL，正常赢家；tie-break by slot；score < MIN_SCORE 退款）；`cancel_task`（**无申请 + 有申请两路径，验证 remaining_accounts 质押退回**）；`refund_expired`；`HasSubmissions` 错误验证 | T19b | 3h | P0 | 分账精度逐 lamport 验证；3 条退款路径全绿；cancel 有申请时 remaining_accounts 质押退回正确；信誉 global + category 更新验证 |
 | T19d | 集成测试 — force_refund/slash + 安全测试 | `force_refund`（slash 充足 / slash 不足两路径）；JudgePoolFull（200 人）；重入攻击模拟；CU 消耗验证（`post_task` ≤ 200k、`judge_and_pay` ≤ 200k） | T19c | 3h | P0 | 15 个边界用例全绿；分支覆盖率 ≥ 95%；0 Critical 漏洞；CU 未超限 |
 | T21 | Indexer — PostgreSQL Schema | 4 张表（tasks / submissions / reputations / reputation_by_category）+ 5 个索引；migration 文件 | T19d | 2h | P0 | `psql` 运行 migration 无报错；schema 与规格完全一致 |
 | T22 | Indexer — Helius Webhook + 事件解析 | HTTP 端点接收 Helius 推送；解析 **8 个 Program 事件**（TaskCreated, TaskApplied, SubmissionReceived, TaskJudged, TaskCancelled, TaskRefunded, JudgeRegistered, JudgeUnstaked）；upsert 到 DB；**内置 mock 模式**（`MOCK_WEBHOOK=true` 时用本地文件模拟推送，无需真实 Helius 连接） | T21 | 3h | P0 | Mock 模式：8 类事件 JSON → DB 行正确创建；真实模式：延迟 < 200ms |
@@ -118,9 +118,10 @@ flowchart LR
     T09 --> T10 --> T11 --> T12
     T07 --> T13
     T08a --> T13
+    T09 --> T13
     T07 --> T14
     T08a --> T14
-    T05 --> T16
+    T06 --> T16
     T16 -.->|Pool 模式需要 JudgePool 有 Judge| T07
     T08a --> T15
     T07 --> T15
@@ -129,7 +130,7 @@ flowchart LR
     subgraph W2["W2 工具链"]
         T06 --> T17
         T05 --> T18
-        T12 & T13 & T14 & T15 & T17 & T18 --> T19a --> T19b --> T19c --> T19d
+        T12 & T13 & T14 & T15 & T16 & T17 & T18 & T08 --> T19a --> T19b --> T19c --> T19d
         T19d --> T21 --> T22 --> T23 --> T24
         T23 --> T25
         T23 --> T25a
@@ -213,6 +214,7 @@ flowchart LR
 | 风险 | 概率 | 影响 | 缓解措施 |
 |------|------|------|---------|
 | W1 实际工时超出估算（当前 38h，缓冲 18h） | 中 | 中 | 若调试超时，优先保障 T01-T12（核心结算路径）；T13-T16 可推入 W2 前两天完成 |
+| `remaining_accounts` 质押退回在 CU 预算超限（申请者数量多时） | 中 | 中 | T13/T14 阶段测试 20+ 申请者场景的 CU 消耗；超限时拆分为多笔 tx |
 | `judge_and_pay` SOL + SPL 分账计算有 off-by-one 整数精度 bug | 高 | 高 | T11/T12 专项精度测试（验证每笔转账余额精确到 lamport） |
 | Token-2022 扩展检测 API 在 Anchor 版本中不稳定 | 中 | 高 | T08 阶段提前验证 Anchor 的 `ExtensionType` API，必要时手动解析 mint account data |
 | JudgePool 加权随机在 Solana CU 预算内超限 | 中 | 中 | T07 测量 `post_task` CU 消耗（≤ 200k），若超限改为 VRF 异步方案 |
@@ -229,6 +231,6 @@ flowchart LR
 - [x] 每个任务有 Done 定义
 - [x] 依赖关系已标明，无循环依赖
 - [x] 划分为 4 个里程碑，每个均有可演示交付物
-- [x] 风险已识别（8 项）
+- [x] 风险已识别（9 项）
 
 **验收通过后，进入 Phase 5: Test Spec →**
