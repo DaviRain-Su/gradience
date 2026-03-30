@@ -111,7 +111,11 @@ flowchart TB
 
 ```
 1. 发布任务
-   Poster → SDK.task.post(desc, evalRef, deadline, judge, mint, minStake)
+   Poster → SDK.task.post(desc, evalRef, deadline, judge, mint, minStake, category)
+         → judge 字段两种模式：
+             指定模式：judge = <Pubkey>（Poster 信任特定 Judge）
+             Pool 模式：judge = null → 链上从 JudgePool[category] 按质押量加权随机抽选
+                        随机源：Switchboard VRF（可验证随机，防操控）
          → Agent Layer Program: post_task 指令
          → 链上：创建 Task PDA，锁入 SOL/SPL Token 到 Escrow PDA
          → Indexer 捕获 TaskCreated 事件
@@ -262,14 +266,15 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 
 | 账户 | seeds | 含义 | 所有者 |
 |------|-------|------|--------|
-| `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge、deadline | Agent Layer Program |
+| `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge（指定或 Pool 随机）、deadline、category | Agent Layer Program |
 | `Escrow` | `["escrow", task_id]` | 锁仓资金（SOL）或 ATA（SPL Token） | Agent Layer Program |
 | `Application` | `["application", task_id, agent]` | Agent 申请记录 + 质押 | Agent Layer Program |
 | `Submission` | `["submission", task_id, agent]` | 最新提交：result_ref + trace_ref + runtime_env（可覆盖） | Agent Layer Program |
-| `Reputation` | `["reputation", agent]` | 信誉数据，按需创建 | Agent Layer Program |
-| `Stake` | `["stake", agent]` | Judge 协议级质押 | Agent Layer Program |
+| `Reputation` | `["reputation", agent]` | 信誉数据（全局 + 按 category），按需创建 | Agent Layer Program |
+| `Stake` | `["stake", agent]` | Judge 质押记录：质押量、注册 category、加权随机权重 | Agent Layer Program |
+| `JudgePool` | `["judge_pool", category]` | 各 category 的合格 Judge 列表（stake ≥ minJudgeStake） | Agent Layer Program |
 | `Treasury` | `["treasury"]` | 协议收入账户 | Agent Layer Program |
-| `ProgramConfig` | `["config"]` | treasury 地址、upgrade_authority | Agent Layer Program |
+| `ProgramConfig` | `["config"]` | treasury 地址、upgrade_authority、minJudgeStake | Agent Layer Program |
 
 ### Task 状态机
 
@@ -298,7 +303,7 @@ stateDiagram-v2
 
 | 指令 | 前置状态 | 调用方 | 后置状态 | 副作用 |
 |------|---------|--------|---------|--------|
-| `post_task` | — | 任何人 | Open | 创建 Task PDA，锁仓 |
+| `post_task` | — | 任何人 | Open | 创建 Task PDA，锁仓；judge 字段可指定地址或留空（留空则从 JudgePool 随机抽选） |
 | `apply_for_task` | Open | 任何人（质押 ≥ minStake） | Open | 创建 Application PDA，按需创建 Reputation PDA |
 | `submit_result` | Open | 已申请的 Agent | Open | 更新 Submission PDA |
 | `judge_and_pay` | Open | Task.judge | Completed / Refunded | 三方分账，信誉更新，Application 质押退回 |
@@ -321,8 +326,8 @@ stateDiagram-v2
 | `cancel_task` | Anchor Instruction | Task.poster | 主动取消任务 |
 | `refund_expired` | Anchor Instruction | 任何人 | 超时退款 |
 | `force_refund` | Anchor Instruction | 任何人 | Judge 超时强制退款 |
-| `stake_judge` | Anchor Instruction | 任何人 | 质押成为 Judge 候选 |
-| `unstake_judge` | Anchor Instruction | Judge | 解质押（冷却期） |
+| `register_judge` | Anchor Instruction | 任何人 | 质押 ≥ minJudgeStake，声明擅长 category，加入对应 JudgePool |
+| `unstake_judge` | Anchor Instruction | Judge | 解质押（冷却期），退出 JudgePool |
 | `initialize` | Anchor Instruction | 部署者（一次性） | 初始化 ProgramConfig |
 | `upgrade_config` | Anchor Instruction | upgrade_authority | 更新 treasury 地址 |
 
@@ -528,6 +533,9 @@ W4 (04-22 ~ 04-30): 全链
 | 费率 | 95/3/2 硬编码常量 | 协议承诺，不可被治理/升级修改 |
 | 支付 | SOL + SPL + Token2022 | 内核无业务偏好，支持所有 Solana 原生资产 |
 | Judge 激励 | 3% 无条件 | 消除结果偏见，比特币矿工类比 |
+| Judge 选取机制 | JudgePool + 加权随机（Switchboard VRF） | 任何人质押 ≥ minJudgeStake + 声明 category → 进入 JudgePool；Poster 可指定 Judge 或留空由协议随机抽选；按质押量×信誉加权，质押越多被抽中概率越高——与比特币算力正比出块完全类比；VRF 保证链上随机不可预测、不可操控 |
+| Judge 领域匹配 | category 字段过滤 Pool | Poster 发任务时声明 category（defi/code/research/…）；JudgePool 按 category 分桶；只从匹配 category 的 Judge 中抽选，保证专业性 |
+| 角色流动性 | 同一地址可切换角色 | 任何人在不同任务中可以是 Poster、Agent 或 Judge；无许可无注册；经济激励对齐行为（Slash 惩罚作恶）|
 | 信誉存储 | 链上 PDA，按需创建 | 无需注册门槛，首次参与自动初始化 |
 | 跨链信誉 | 签名证明（无桥） | 桥是最大安全隐患；携带证明零成本 |
 | Indexer 事件来源 | Helius Webhooks（推送）| 替代自轮询：Helius 在 Program 日志触发时主动 HTTP POST 给 Indexer，<200ms 延迟；无需 Indexer 持续轮询 RPC，降低成本和延迟 |
