@@ -164,7 +164,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 
 ### 不做什么（Out of Scope）
 
-- **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；`post_task` 会检测 mint 是否启用了 Transfer Hook 扩展——**若已启用，指令返回 `Token2022NotSupported` 错误，任务拒绝创建**；仅支持未启用任何高级扩展的标准 Token2022 mint
+- **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；`post_task` 会检测 mint 是否启用了 Transfer Hook 扩展——**若已启用，指令返回 `UnsupportedMintExtension` 错误，任务拒绝创建**；仅支持未启用任何高级扩展的标准 Token2022 mint
 - **跨链桥**: 不构建实时跨链桥，信誉通过签名证明传递，不依赖桥协议
 - **Delegation Task（持续委托任务）**: Agent Layer 内核**只支持 Race Task**（离散竞争）；LP 管理、交易机器人等持续委托场景的执行阶段，由 Chain Hub 在上层实现 Delegation Task 原语，不进入内核状态机——这是架构边界决策，不是功能缺失
 
@@ -196,7 +196,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 | 技术约束 | **费率常量不可修改**：`JUDGE_FEE_BPS = 300`、`PROTOCOL_FEE_BPS = 200` 硬编码，不受治理控制 |
 | 技术约束 | **Program 可升级**：部署时保留 upgrade authority，由多签 DAO 控制；协议成熟后可主动关闭 upgrade authority 实现永久不可变 |
 | 技术约束 | 支付层：SOL（lamport）+ SPL Token + Token2022（基础兼容）；Token 任务用 ATA + CPI |
-| 技术约束 | Token2022 只支持标准 transfer；若 mint 已启用 Transfer Hook / Confidential Transfer 扩展，`post_task` 返回 `Token2022NotSupported` 错误拒绝创建 |
+| 技术约束 | Token2022 只支持标准 transfer；若 mint 已启用 Transfer Hook / Confidential Transfer 扩展，`post_task` 返回 `UnsupportedMintExtension` 错误拒绝创建 |
 | 时间约束 | 整个协议（含 EVM、A2A、飞轮）在 **2026-04-30** 前全部完成，AI 辅助加速 |
 | 时间约束 | Solana 核心 Program 在 **2026-04-14**（W1，2 周）交付 |
 | 资源约束 | 单人开发 + AI 辅助，遵循 dev-lifecycle 7 阶段 TDD 流程 |

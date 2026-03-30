@@ -115,7 +115,7 @@ flowchart TB
          → judge 字段两种模式：
              指定模式：judge = <Pubkey>（Poster 信任特定 Judge）
              Pool 模式：judge = null → 链上从 JudgePool[category] 按质押量加权随机抽选
-                        随机源：Switchboard VRF（可验证随机，防操控）
+                        随机源：sha256(recent_blockhash ‖ task_id ‖ clock.slot)（MVP 链上伪随机，无外部依赖；后续可升级为 Switchboard VRF）
          → Agent Layer Program: post_task 指令
          → 链上：创建 Task PDA，锁入 SOL/SPL Token 到 Escrow PDA
          → Indexer 捕获 TaskCreated 事件
@@ -496,29 +496,28 @@ EVM 层（Week 4）:
 ### 按周上线计划
 
 ```
-W1 (04-01 ~ 04-07): 内核
+W1 (04-01 ~ 04-14, 2 周): 内核
   ✅ Agent Layer Program (Solana devnet → mainnet)
   ✅ Anchor 测试套件（全状态路径覆盖）
+  （W1 延长为 2 周以保证充分的集成测试缓冲）
 
-W2 (04-08 ~ 04-14): 工具链
+W2 (04-15 ~ 04-21): 工具链
   ✅ @gradience/sdk
   ✅ gradience CLI
   ✅ Judge Daemon（AI + Oracle 两种模式）
   ✅ 产品前端（Cloudflare Pages）
   ✅ Indexer 升级（支持 Staking / Slash 事件）
 
-W3 (04-15 ~ 04-21): 模块层
+W3 (04-22 ~ 04-26): 模块层
   ✅ Chain Hub MVP（Skill 市场 + Key Vault 基础）
   ✅ Agent Me MVP
   ✅ Agent Social MVP
-  ✅ GRAD 创世 + 流动性池
-  ✅ 链上治理 DAO（多签 upgrade_authority）
+  ✅ GRAD 创世 + 链上治理 DAO（多签 upgrade_authority）
 
-W4 (04-22 ~ 04-30): 全链
-  ✅ Agent Layer EVM（Base + Arbitrum）
+W4 (04-27 ~ 04-30, Stretch Goals): 全链
+  ✅ Agent Layer EVM（Base Sepolia）
   ✅ 跨链信誉证明验证
   ✅ A2A 协议 MVP（MagicBlock ER）
-  ✅ GRAD 挖矿 + 回购销毁启动
 ```
 
 ---
@@ -533,7 +532,7 @@ W4 (04-22 ~ 04-30): 全链
 | 费率 | 95/3/2 硬编码常量 | 协议承诺，不可被治理/升级修改 |
 | 支付 | SOL + SPL + Token-2022 | 内核无业务偏好，支持所有 Solana 原生资产；**标准 transfer only**，不支持 Transfer Hook / Confidential Transfer（避免恶意 Hook 拦截结算） |
 | Judge 激励 | 3% 无条件 | 消除结果偏见，比特币矿工类比 |
-| Judge 选取机制 | JudgePool + 加权随机（Switchboard VRF） | 任何人质押 ≥ minJudgeStake + 声明 category → 进入 JudgePool；Poster 可指定 Judge 或留空由协议随机抽选；按质押量×信誉加权，质押越多被抽中概率越高——与比特币算力正比出块完全类比；VRF 保证链上随机不可预测、不可操控；**Pool 满员（MAX_JUDGES_PER_POOL=200）后新 Judge 注册返回 JudgePoolFull 错误，需等待现有 Judge unstake 后方可加入** |
+| Judge 选取机制 | JudgePool + 加权随机（sha256 伪随机，MVP） | 任何人质押 ≥ minJudgeStake + 声明 category → 进入 JudgePool；Poster 可指定 Judge 或留空由协议随机抽选；按质押量×信誉加权，质押越多被抽中概率越高——与比特币算力正比出块完全类比；VRF 保证链上随机不可预测、不可操控；**Pool 满员（MAX_JUDGES_PER_POOL=200）后新 Judge 注册返回 JudgePoolFull 错误，需等待现有 Judge unstake 后方可加入** |
 | Judge 领域匹配 | category 字段过滤 Pool | Poster 发任务时声明 category（defi/code/research/…）；JudgePool 按 category 分桶；只从匹配 category 的 Judge 中抽选，保证专业性 |
 | 角色流动性 | 同一地址可切换角色 | 任何人在不同任务中可以是 Poster、Agent 或 Judge；无许可无注册；经济激励对齐行为（Slash 惩罚作恶）|
 | 信誉存储 | 链上 PDA，按需创建 | 无需注册门槛，首次参与自动初始化 |
