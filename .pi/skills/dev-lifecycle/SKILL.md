@@ -11,7 +11,9 @@
 
 ## 核心规则
 
-**在写任何代码之前，先读：** `docs/methodology/README.md`
+**在写任何代码之前，先读方法论文档：**
+- 本地: `../dev-lifecycle/README.md`（兄弟目录）
+- 远程: https://github.com/DaviRain-Su/dev-lifecycle
 
 本项目执行 7 阶段开发流程（PRD → 架构 → 技术规格 → 任务拆解 → 测试规格 → 实现 → 审查部署）。不可跳过任何阶段。
 
@@ -23,7 +25,7 @@
 
 ## 模板位置
 
-`docs/methodology/templates/` — 7 个阶段的模板文件
+`dev-lifecycle/templates/` — 独立仓库中的 7 个阶段模板
 
 ## 输出位置
 

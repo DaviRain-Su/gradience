@@ -5,8 +5,9 @@
 This project enforces a strict 7-phase development lifecycle.
 **You MUST follow it. No exceptions.**
 
-→ Read: `docs/methodology/README.md`
-→ Templates: `docs/methodology/templates/`
+→ Methodology repo: `../dev-lifecycle/README.md` (sibling directory)
+→ Or if submoduled: `docs/methodology/README.md`
+→ GitHub: https://github.com/DaviRain-Su/dev-lifecycle
 
 ## The Rule
 

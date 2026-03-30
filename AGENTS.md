@@ -5,11 +5,12 @@
 
 ## Mandatory Development Lifecycle
 
-**Before writing ANY code, read and follow:**
+**Before writing ANY code, read and follow the dev-lifecycle methodology:**
 
-→ [`docs/methodology/README.md`](docs/methodology/README.md)
+→ Methodology repo: `../dev-lifecycle/` (or `docs/methodology/` if submoduled)
+→ GitHub: https://github.com/DaviRain-Su/dev-lifecycle
 
-This project enforces a 7-phase development lifecycle. No phase may be skipped.
+This project enforces a **7-phase development lifecycle**. No phase may be skipped.
 
 ```
 Phase 1: PRD → Phase 2: Architecture → Phase 3: Technical Spec
@@ -17,14 +18,13 @@ Phase 1: PRD → Phase 2: Architecture → Phase 3: Technical Spec
 → Phase 7: Review & Deploy
 ```
 
-**Templates are at:** `docs/methodology/templates/`
-
 ### Key Rules
 
 1. **No code without a Technical Spec** (Phase 3). If it doesn't exist, create it first.
 2. **No implementation without tests** (Phase 5). Write test skeletons before production code.
 3. **Code must match the Technical Spec exactly.** If the spec is wrong, fix the spec first, then fix the code.
 4. **All docs go in `<project>/docs/`** following the naming convention `01-prd.md` through `07-review-report.md`.
+5. **Templates are in the dev-lifecycle repo** under `templates/01-07.md`.
 
 ### Quick Reference
 

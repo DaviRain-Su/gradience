@@ -1,15 +1,15 @@
 This project enforces a strict 7-phase development lifecycle.
-Before writing ANY code, read: docs/methodology/README.md
+
+Methodology: https://github.com/DaviRain-Su/dev-lifecycle
+Local: ../dev-lifecycle/README.md (sibling directory)
 
 The 7 phases: PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review & Deploy
 
 KEY RULES:
-- No code without a Technical Spec (docs/methodology/templates/03-technical-spec.md)
+- No code without a Technical Spec (Phase 3)
 - No implementation without tests (write test skeletons first)
 - Code must match the Technical Spec exactly
 - If the spec is wrong, fix the spec first, then fix the code
-
-Templates: docs/methodology/templates/
 
 Project: Gradience Protocol — peer-to-peer capability settlement for AI Agents
 Tech: Solana (Anchor/Rust), TypeScript SDK, Cloudflare Workers, Next.js
