@@ -1,11 +1,8 @@
 use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address, ProgramResult};
 
 use crate::{
-    instructions::{
-        process_close_counter, process_create_counter, process_emit_event, process_increment,
-        process_initialize,
-    },
-    traits::PinocchioCounterInstructionDiscriminators,
+    instructions::{process_emit_event, process_initialize},
+    traits::GradienceInstructionDiscriminators,
 };
 
 entrypoint!(process_instruction);
@@ -19,22 +16,13 @@ pub fn process_instruction(
         .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
 
-    let ix_discriminator = PinocchioCounterInstructionDiscriminators::try_from(*discriminator)?;
+    let ix_discriminator = GradienceInstructionDiscriminators::try_from(*discriminator)?;
 
     match ix_discriminator {
-        PinocchioCounterInstructionDiscriminators::CreateCounter => {
-            process_create_counter(program_id, accounts, instruction_data)
-        }
-        PinocchioCounterInstructionDiscriminators::Increment => {
-            process_increment(program_id, accounts, instruction_data)
-        }
-        PinocchioCounterInstructionDiscriminators::CloseCounter => {
-            process_close_counter(program_id, accounts, instruction_data)
-        }
-        PinocchioCounterInstructionDiscriminators::Initialize => {
+        GradienceInstructionDiscriminators::Initialize => {
             process_initialize(program_id, accounts, instruction_data)
         }
-        PinocchioCounterInstructionDiscriminators::EmitEvent => {
+        GradienceInstructionDiscriminators::EmitEvent => {
             process_emit_event(program_id, accounts)
         }
     }

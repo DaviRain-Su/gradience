@@ -2,9 +2,11 @@ use borsh::BorshSerialize;
 use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
 
 use crate::{
-    constants::MIN_JUDGE_STAKE,
     instructions::Initialize,
-    state::{ProgramConfig, Treasury, PROGRAM_CONFIG_DATA_LEN, TREASURY_DATA_LEN},
+    state::{
+        ACCOUNT_VERSION_V1, PROGRAM_CONFIG_DISCRIMINATOR, PROGRAM_CONFIG_LEN,
+        TREASURY_DISCRIMINATOR, TREASURY_LEN, ProgramConfig, Treasury,
+    },
     utils::create_pda_account,
 };
 
@@ -46,7 +48,7 @@ pub fn process_initialize(
     let config_bump_seed = [config_bump];
     create_pda_account(
         ix.accounts.payer,
-        PROGRAM_CONFIG_DATA_LEN,
+        PROGRAM_CONFIG_LEN,
         program_id,
         ix.accounts.config,
         [
@@ -58,7 +60,7 @@ pub fn process_initialize(
     let treasury_bump_seed = [treasury_bump];
     create_pda_account(
         ix.accounts.payer,
-        TREASURY_DATA_LEN,
+        TREASURY_LEN,
         program_id,
         ix.accounts.treasury,
         [
@@ -70,11 +72,7 @@ pub fn process_initialize(
     let config = ProgramConfig {
         treasury: address_to_bytes(ix.accounts.treasury.address()),
         upgrade_authority: ix.data.upgrade_authority,
-        min_judge_stake: if ix.data.min_judge_stake == 0 {
-            MIN_JUDGE_STAKE
-        } else {
-            ix.data.min_judge_stake
-        },
+        min_judge_stake: ix.data.min_judge_stake,
         task_count: 0,
         bump: config_bump,
     };
@@ -85,15 +83,19 @@ pub fn process_initialize(
 
     {
         let mut data = ix.accounts.config.try_borrow_mut()?;
+        data[0] = PROGRAM_CONFIG_DISCRIMINATOR;
+        data[1] = ACCOUNT_VERSION_V1;
         config
-            .serialize(&mut &mut data[..])
+            .serialize(&mut &mut data[2..])
             .map_err(|_| ProgramError::InvalidAccountData)?;
     }
 
     {
         let mut data = ix.accounts.treasury.try_borrow_mut()?;
+        data[0] = TREASURY_DISCRIMINATOR;
+        data[1] = ACCOUNT_VERSION_V1;
         treasury
-            .serialize(&mut &mut data[..])
+            .serialize(&mut &mut data[2..])
             .map_err(|_| ProgramError::InvalidAccountData)?;
     }
 

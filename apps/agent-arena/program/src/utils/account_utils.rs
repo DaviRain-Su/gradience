@@ -28,7 +28,7 @@ pub fn verify_writable(account: &AccountView) -> Result<(), ProgramError> {
 #[inline(always)]
 pub fn verify_readonly(account: &AccountView) -> Result<(), ProgramError> {
     if account.is_writable() {
-        return Err(ProgramError::AccountBorrowFailed);
+        return Err(ProgramError::InvalidArgument);
     }
     Ok(())
 }

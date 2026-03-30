@@ -7,6 +7,8 @@ use crate::constants::{
 };
 
 pub type PubkeyBytes = [u8; 32];
+pub const ACCOUNT_HEADER_LEN: usize = 2;
+pub const ACCOUNT_VERSION_V1: u8 = 1;
 
 const BORSH_STRING_PREFIX_LEN: usize = 4;
 const BORSH_VEC_PREFIX_LEN: usize = 4;
@@ -82,6 +84,8 @@ pub const TASK_DATA_LEN: usize = 8
     + PUBKEY_BYTES_LEN
     + 8
     + 1;
+pub const TASK_DISCRIMINATOR: u8 = 0x01;
+pub const TASK_LEN: usize = ACCOUNT_HEADER_LEN + TASK_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Escrow {
@@ -92,6 +96,8 @@ pub struct Escrow {
 }
 
 pub const ESCROW_DATA_LEN: usize = 8 + PUBKEY_BYTES_LEN + 8 + 1;
+pub const ESCROW_DISCRIMINATOR: u8 = 0x02;
+pub const ESCROW_LEN: usize = ACCOUNT_HEADER_LEN + ESCROW_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Application {
@@ -103,6 +109,8 @@ pub struct Application {
 }
 
 pub const APPLICATION_DATA_LEN: usize = 8 + PUBKEY_BYTES_LEN + 8 + 8 + 1;
+pub const APPLICATION_DISCRIMINATOR: u8 = 0x03;
+pub const APPLICATION_LEN: usize = ACCOUNT_HEADER_LEN + APPLICATION_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RuntimeEnv {
@@ -137,6 +145,8 @@ pub const SUBMISSION_DATA_LEN: usize = 8
     + 8
     + 8
     + 1;
+pub const SUBMISSION_DISCRIMINATOR: u8 = 0x04;
+pub const SUBMISSION_LEN: usize = ACCOUNT_HEADER_LEN + SUBMISSION_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct ReputationStats {
@@ -170,6 +180,8 @@ pub const REPUTATION_DATA_LEN: usize = PUBKEY_BYTES_LEN
     + REPUTATION_STATS_DATA_LEN
     + (CATEGORY_STATS_DATA_LEN * MAX_CATEGORIES)
     + 1;
+pub const REPUTATION_DISCRIMINATOR: u8 = 0x05;
+pub const REPUTATION_LEN: usize = ACCOUNT_HEADER_LEN + REPUTATION_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Stake {
@@ -183,6 +195,8 @@ pub struct Stake {
 }
 
 pub const STAKE_DATA_LEN: usize = PUBKEY_BYTES_LEN + 8 + MAX_CATEGORIES + 1 + 8 + 8 + 1;
+pub const STAKE_DISCRIMINATOR: u8 = 0x06;
+pub const STAKE_LEN: usize = ACCOUNT_HEADER_LEN + STAKE_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct JudgePoolEntry {
@@ -205,6 +219,8 @@ pub const JUDGE_POOL_DATA_LEN: usize = 1
     + BORSH_VEC_PREFIX_LEN
     + (MAX_JUDGES_PER_POOL * JUDGE_POOL_ENTRY_DATA_LEN)
     + 1;
+pub const JUDGE_POOL_DISCRIMINATOR: u8 = 0x07;
+pub const JUDGE_POOL_LEN: usize = ACCOUNT_HEADER_LEN + JUDGE_POOL_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Treasury {
@@ -212,6 +228,8 @@ pub struct Treasury {
 }
 
 pub const TREASURY_DATA_LEN: usize = 1;
+pub const TREASURY_DISCRIMINATOR: u8 = 0x08;
+pub const TREASURY_LEN: usize = ACCOUNT_HEADER_LEN + TREASURY_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ProgramConfig {
@@ -223,6 +241,8 @@ pub struct ProgramConfig {
 }
 
 pub const PROGRAM_CONFIG_DATA_LEN: usize = PUBKEY_BYTES_LEN + PUBKEY_BYTES_LEN + 8 + 8 + 1;
+pub const PROGRAM_CONFIG_DISCRIMINATOR: u8 = 0x09;
+pub const PROGRAM_CONFIG_LEN: usize = ACCOUNT_HEADER_LEN + PROGRAM_CONFIG_DATA_LEN;
 
 #[cfg(test)]
 mod tests {
@@ -231,18 +251,27 @@ mod tests {
     #[test]
     fn test_account_data_lengths_match_spec() {
         assert_eq!(TASK_DATA_LEN, 315);
+        assert_eq!(TASK_LEN, 317);
         assert_eq!(ESCROW_DATA_LEN, 49);
+        assert_eq!(ESCROW_LEN, 51);
         assert_eq!(APPLICATION_DATA_LEN, 57);
+        assert_eq!(APPLICATION_LEN, 59);
         assert_eq!(RUNTIME_ENV_DATA_LEN, 176);
         assert_eq!(SUBMISSION_DATA_LEN, 497);
+        assert_eq!(SUBMISSION_LEN, 499);
         assert_eq!(REPUTATION_STATS_DATA_LEN, 20);
         assert_eq!(CATEGORY_STATS_DATA_LEN, 7);
         assert_eq!(REPUTATION_DATA_LEN, 109);
+        assert_eq!(REPUTATION_LEN, 111);
         assert_eq!(STAKE_DATA_LEN, 66);
+        assert_eq!(STAKE_LEN, 68);
         assert_eq!(JUDGE_POOL_ENTRY_DATA_LEN, 36);
         assert_eq!(JUDGE_POOL_DATA_LEN, 7210);
+        assert_eq!(JUDGE_POOL_LEN, 7212);
         assert_eq!(TREASURY_DATA_LEN, 1);
+        assert_eq!(TREASURY_LEN, 3);
         assert_eq!(PROGRAM_CONFIG_DATA_LEN, 81);
+        assert_eq!(PROGRAM_CONFIG_LEN, 83);
     }
 
     #[test]

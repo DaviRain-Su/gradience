@@ -2,7 +2,7 @@ use pinocchio::{account::AccountView, error::ProgramError};
 
 use crate::{
     traits::InstructionAccounts,
-    utils::{verify_signer, verify_system_account, verify_system_program, verify_writable},
+    utils::{verify_signer, verify_system_program, verify_writable},
 };
 
 /// Accounts for the Initialize instruction.
@@ -31,10 +31,8 @@ impl<'a> TryFrom<&'a [AccountView]> for InitializeAccounts<'a> {
         verify_writable(payer)?;
 
         verify_writable(config)?;
-        verify_system_account(config)?;
 
         verify_writable(treasury)?;
-        verify_system_account(treasury)?;
 
         verify_system_program(system_program)?;
 
