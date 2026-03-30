@@ -28,7 +28,7 @@
 | `MAX_PROVIDER_LEN` | 32 | usize | runtime_env.provider 最大字节数 | immutable |
 | `MAX_MODEL_LEN` | 64 | usize | runtime_env.model 最大字节数 | immutable |
 | `MAX_RUNTIME_LEN` | 32 | usize | runtime_env.runtime 最大字节数 | immutable |
-| `MAX_VERSION_LEN` | 16 | usize | runtime_env.version 最大字节数 | immutable |
+| `MAX_VERSION_LEN` | 32 | usize | runtime_env.version 最大字节数 | immutable |
 
 可配置常量（通过 `upgrade_config` 指令更新）：
 
@@ -52,7 +52,7 @@
 /// 总大小: 8 + 315 = 323 bytes（含 Anchor discriminator）
 #[account]
 pub struct Task {
-    pub task_id:          u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
+    pub task_id:        u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
     pub poster:           Pubkey,        // 32 — 发布者地址
     pub judge:            Pubkey,        // 32 — 评判者地址（pool 模式下由协议填写）
     pub judge_mode:       JudgeMode,     // 1  — 0=Designated(Poster指定), 1=Pool(随机抽选)
@@ -106,7 +106,7 @@ pub struct Task {
 /// PDA seeds: [b"escrow", task_id.to_le_bytes()]
 /// SOL: PDA 直接持有 lamports（无 token account）
 /// SPL: PDA 作为 ATA authority，escrow_ata 持有代币
-/// 总大小: 8 + 42 = 50 bytes
+/// 总大小: 8 + 49 = 57 bytes
 #[account]
 pub struct Escrow {
     pub task_id: u64,    // 8  — 关联任务
@@ -114,6 +114,7 @@ pub struct Escrow {
     pub amount:  u64,    // 8  — 锁入总量（含 judge + protocol 份额）
     pub bump:    u8,     // 1  — PDA bump
 }
+// Escrow data: 8+32+8+1 = 49 bytes
 ```
 
 ---
@@ -141,14 +142,16 @@ pub struct Application {
 ```rust
 /// Agent 最新提交（可覆盖）
 /// PDA seeds: [b"submission", task_id.to_le_bytes(), agent.as_ref()]
-/// 总大小: 8 + 489 = 497 bytes
+/// 总大小: 8 + 497 = 505 bytes
+/// data = task_id(8)+agent(32)+result_ref(132)+trace_ref(132)
+///      + runtime_env(176)+submission_slot(8)+submitted_at(8)+bump(1) = 497
 #[account]
 pub struct Submission {
     pub task_id:         u64,        // 8   — 关联任务
     pub agent:           Pubkey,     // 32  — 提交的 Agent
     pub result_ref:      String,     // 132 — 最终产出 CID（Arweave）
     pub trace_ref:       String,     // 132 — 执行轨迹 CID（Arweave）
-    pub runtime_env:     RuntimeEnv, // 160 — 运行时环境声明
+    pub runtime_env:     RuntimeEnv, // 176 — 运行时环境声明
     pub submission_slot: u64,        // 8   — 提交时的 Solana slot（平局用）
     pub submitted_at:    i64,        // 8   — 提交时间（Unix timestamp）
     pub bump:            u8,         // 1   — PDA bump
@@ -160,9 +163,9 @@ pub struct RuntimeEnv {
     pub provider: String, // 4+32=36 — AI 供应商（"anthropic"/"openai"/"google"）
     pub model:    String, // 4+64=68 — 模型 ID（"claude-sonnet-4-6"）
     pub runtime:  String, // 4+32=36 — 运行时（"opencloud"/"local"/"privy"）
-    pub version:  String, // 4+16=20 — 模型版本（"20251001"）
+    pub version:  String, // 4+32=36 — 模型版本（"20251001"）
 }
-// RuntimeEnv 总计: 36+68+36+20 = 160 bytes
+// RuntimeEnv 总计: 36+68+36+36 = 176 bytes
 ```
 
 ---
@@ -172,24 +175,25 @@ pub struct RuntimeEnv {
 ```rust
 /// Agent / Judge 信誉数据（按需创建，首次参与自动初始化）
 /// PDA seeds: [b"reputation", agent.as_ref()]
-/// 总大小: 8 + 105 = 113 bytes
-/// data = agent(32) + global(16) + by_category(56) + bump(1) = 105
+/// 总大小: 8 + 109 = 117 bytes
+/// data = agent(32) + global(20) + by_category(56) + bump(1) = 109
 #[account]
 pub struct Reputation {
     pub agent:       Pubkey,                          // 32 — 地址
-    pub global:      ReputationStats,                 // 18 — 全局统计
+    pub global:      ReputationStats,                 // 20 — 全局统计
     pub by_category: [CategoryStats; MAX_CATEGORIES], // 56 — 按领域统计（8个）
     pub bump:        u8,                              // 1  — PDA bump
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
 pub struct ReputationStats {
-    pub avg_score:    u16, // 2 — 0-10000（实际分数×100，保留2位小数）
-    pub win_rate:     u16, // 2 — 0-10000（实际比率×10000）
-    pub completed:    u32, // 4 — 完成任务数
-    pub total_earned: u64, // 8 — 累计收益（lamports）
+    pub total_earned:  u64, // 8 — 累计收益（lamports）
+    pub completed:     u32, // 4 — 完成任务数（作为 winner）
+    pub total_applied: u32, // 4 — 总申请数（用于计算 win_rate）
+    pub avg_score:     u16, // 2 — 0-10000（实际分数×100，保留2位小数）
+    pub win_rate:      u16, // 2 — 0-10000（实际比率×10000，= completed * 10000 / total_applied）
 }
-// ReputationStats 总计: 2+2+4+8 = 16 bytes，无 padding（已是 8 的倍数）
+// ReputationStats 总计: 8+4+4+2+2 = 20 bytes（Anchor borsh 序列化，无 padding）
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
 pub struct CategoryStats {
@@ -197,7 +201,10 @@ pub struct CategoryStats {
     pub avg_score: u16, // 2 — 0-10000
     pub completed: u32, // 4 — 完成数
 }
-// CategoryStats 总计: 7 bytes × 8 = 56 bytes
+// CategoryStats 单个: 1+2+4 = 7 bytes（Anchor borsh 序列化，无 padding）
+// CategoryStats × 8 = 56 bytes
+// 注意：Anchor 使用 Borsh 序列化（紧凑排列，无对齐 padding），
+// 而非 Rust 原生内存布局。所有大小计算基于 Borsh 序列化后的字节数。
 ```
 
 ---
@@ -208,6 +215,8 @@ pub struct CategoryStats {
 /// Judge 质押记录
 /// PDA seeds: [b"stake", judge.as_ref()]
 /// 总大小: 8 + 66 = 74 bytes
+/// Borsh 序列化: judge(32) + amount(8) + categories(8) + category_count(1)
+///              + registered_at(8) + cooldown_until(8) + bump(1) = 66
 #[account]
 pub struct Stake {
     pub judge:          Pubkey,              // 32 — Judge 地址
@@ -218,6 +227,8 @@ pub struct Stake {
     pub cooldown_until: i64,                 // 8  — 解质押冷却期结束时间（0 = 无冷却）
     pub bump:           u8,                  // 1  — PDA bump
 }
+// 注意：Anchor 使用 Borsh 序列化（紧凑排列，无对齐 padding），
+// 因此大小为字段字节总和 = 66 bytes，不受 Rust 原生内存对齐影响。
 ```
 
 ---
@@ -227,7 +238,16 @@ pub struct Stake {
 ```rust
 /// 每个 category 的 Judge 候选池
 /// PDA seeds: [b"judge_pool", &[category]]
-/// 总大小: 8 + 7218 = 7226 bytes（max 200 judges）
+/// 总大小: 8 + 7210 = 7218 bytes（max 200 judges）
+///
+/// **Vec 容量说明**：
+/// - Anchor 使用 Borsh 序列化 Vec：4 bytes (len) + len × element_size
+/// - 账户空间在 `initialize_judge_pool` 时按 MAX_JUDGES_PER_POOL (200) 预分配
+/// - 空间 = 8(discriminator) + 1(category) + 4(total_weight) + 4(vec_len) + 200×36(entries) + 1(bump)
+///        = 8 + 7210 = 7218 bytes
+/// - Vec 动态增长，不超过预分配空间；若 entries.len() = MAX_JUDGES_PER_POOL，
+///   register_judge 返回 JudgePoolFull 错误
+/// - 无需 realloc——200 上限在 MVP 阶段足够，未来可通过 JudgePool 分片扩容
 #[account]
 pub struct JudgePool {
     pub category:     u8,                              // 1  — 领域 ID
@@ -235,6 +255,7 @@ pub struct JudgePool {
     pub entries:      Vec<JudgePoolEntry>,             // 4+200×36=7204 — 候选列表
     pub bump:         u8,                              // 1  — PDA bump
 }
+// JudgePool data 部分: 1 + 4 + 4 + 200×36 + 1 = 7210 bytes
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct JudgePoolEntry {
@@ -295,6 +316,8 @@ pub enum JudgeMode {
 }
 
 /// 任务领域分类
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Copy)]
+#[repr(u8)]
 pub enum Category {
     General  = 0, // 通用
     Defi     = 1, // DeFi / 量化 / 金融
@@ -349,17 +372,20 @@ CREATE TABLE submissions (
 
 -- 信誉快照
 CREATE TABLE reputations (
-    agent            TEXT PRIMARY KEY,
-    global_avg_score INTEGER NOT NULL DEFAULT 0,  -- 0-10000
-    global_win_rate  INTEGER NOT NULL DEFAULT 0,  -- 0-10000
-    global_completed INTEGER NOT NULL DEFAULT 0,
-    total_earned     BIGINT  NOT NULL DEFAULT 0,  -- lamports 数量，u64 范围（0 ~ 2^64-1）
-    updated_slot     BIGINT  NOT NULL DEFAULT 0
+    agent             TEXT PRIMARY KEY,
+    global_avg_score  INTEGER NOT NULL DEFAULT 0,  -- 0-10000
+    global_win_rate   INTEGER NOT NULL DEFAULT 0,  -- 0-10000
+    global_completed  INTEGER NOT NULL DEFAULT 0,
+    global_total_applied INTEGER NOT NULL DEFAULT 0, -- 总申请数（对应链上 ReputationStats.total_applied）
+    total_earned      BIGINT  NOT NULL DEFAULT 0,  -- lamports 数量，u64 范围（0 ~ 2^64-1）
+    updated_slot      BIGINT  NOT NULL DEFAULT 0
 );
+-- 注意：category SMALLINT 对应 Rust u8，PostgreSQL 无 unsigned
+-- SMALLINT 范围 -32768~32767，存储 u8 (0-255) 无问题，索引器应确保只写入非负值。
 
 CREATE TABLE reputation_by_category (
     agent      TEXT NOT NULL,
-    category   SMALLINT NOT NULL,
+    category   SMALLINT NOT NULL,    -- 对应 Rust u8，值范围 0-7
     avg_score  INTEGER NOT NULL DEFAULT 0,
     completed  INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (agent, category)
@@ -438,6 +464,26 @@ CREATE INDEX idx_submissions_agent ON submissions(agent);
 | `judge_pool` | JudgePool PDA | ❌ | ❌ | 仅 Pool 模式需要，seeds: [b"judge_pool", &[category]] |
 | `system_program` | Program | ❌ | ❌ | — |
 
+账户（SPL Token 版本，当 mint ≠ Pubkey::default()）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `poster` | SystemAccount | ✅ | ✅ | 发布者，支付租金 |
+| `poster_token_account` | TokenAccount | ✅ | ❌ | Poster 的 token account（mint 匹配），reward 扣款来源 |
+| `config` | ProgramConfig | ✅ | ❌ | task_count++ |
+| `task` | Task PDA | ✅ | ❌ | seeds: [b"task", task_id] |
+| `escrow` | Escrow PDA | ✅ | ❌ | seeds: [b"escrow", task_id] |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（authority = escrow PDA，mint 匹配）init_if_needed |
+| `mint` | Mint | ❌ | ❌ | SPL Token / Token-2022 mint。不支持 Confidential Transfer 和 Transfer Hook 扩展——指令内 `require!` mint 无这些扩展（通过检查 mint 的 extension 字段） |
+| `judge_pool` | JudgePool PDA | ❌ | ❌ | 仅 Pool 模式需要 |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
+| `associated_token_program` | Program | ❌ | ❌ | ATA program |
+| `system_program` | Program | ❌ | ❌ | — |
+
+> **Token-2022 兼容说明**：程序同时支持 SPL Token 和 Token-2022 的基础转账。
+> 不支持的扩展：Confidential Transfer、Transfer Hook、Permanent Delegate。
+> 检测方式：在 `post_task` 时检查 mint account 的 extensions，若包含不支持的扩展则返回 `UnsupportedMintExtension` 错误（需新增错误码）。
+
 Pool 模式随机抽选逻辑（链上执行）：
 ```
 seed = hash(recent_blockhash || task_id || clock.slot)
@@ -457,19 +503,44 @@ for entry in judge_pool.entries:
 | 属性 | 值 |
 |------|------|
 | 调用者 | 任何 Agent |
-| 前置条件 | Task.state = Open；clock < task.deadline；agent 未申请过该任务；agent 质押量 ≥ task.min_stake |
-| 后置条件 | Application PDA 创建；质押锁入；Reputation PDA 按需创建 |
+| 前置条件 | Task.state = Open；clock < task.deadline；agent 未申请过该任务（Application PDA 不存在）；若 task.min_stake > 0，agent 需通过 `agent_stake_source` 账户提供质押（SOL: 从 SystemAccount 转入 Escrow；SPL: 从 token account 转入 escrow_ata） |
+| 后置条件 | Application PDA 创建（stake_amount 记录锁入金额）；质押从 agent 转入 Escrow PDA（与 task 奖励共享 Escrow）；Reputation PDA 按需创建 |
 
 参数：无（task_id 通过 PDA seeds 传入）
+
+**质押机制说明**：
+- 若 `task.min_stake = 0`，无需质押，`agent_stake_source` 可省略
+- 若 `task.min_stake > 0`：
+  - SOL 任务：agent 需持有 ≥ min_stake 的 SOL，指令内通过 `system_program::transfer` 从 agent → escrow 转入
+  - SPL 任务：agent 需持有 ≥ min_stake 的对应代币，指令内通过 `token::transfer` 从 agent_token_account → escrow_ata 转入
+- 质押在 `judge_and_pay` 完成后退回 agent（无论胜负）
+- 质押在 `force_refund` / `refund_expired` / `cancel_task` 后退回 agent
+- Application.stake_amount 记录实际锁入量
 
 账户：
 
 | 账户 | 类型 | mut | signer | 说明 |
 |------|------|-----|--------|------|
-| `agent` | SystemAccount | ✅ | ✅ | 申请者 |
+| `agent` | SystemAccount | ✅ | ✅ | 申请者（SOL 质押来源） |
 | `task` | Task PDA | ✅ | ❌ | 状态检查 + submission_count++ |
+| `escrow` | Escrow PDA | ✅ | ❌ | 接收 agent 质押（seeds: [b"escrow", task_id]） |
 | `application` | Application PDA | ✅ | ❌ | seeds: [b"application", task_id, agent] init |
 | `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] init_if_needed |
+| `system_program` | Program | ❌ | ❌ | — |
+
+账户（SPL Token 版本，当 task.mint ≠ Pubkey::default() 且 task.min_stake > 0）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `agent` | SystemAccount | ✅ | ✅ | 申请者 |
+| `agent_token_account` | TokenAccount | ✅ | ❌ | Agent 的 token account（质押来源，mint 匹配） |
+| `task` | Task PDA | ✅ | ❌ | 状态检查 + submission_count++ |
+| `escrow` | Escrow PDA | ✅ | ❌ | seeds: [b"escrow", task_id] |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（接收质押，authority = escrow PDA） |
+| `mint` | Mint | ❌ | ❌ | token mint（验证匹配） |
+| `application` | Application PDA | ✅ | ❌ | seeds: [b"application", task_id, agent] init |
+| `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] init_if_needed |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
 | `system_program` | Program | ❌ | ❌ | — |
 
 ---
@@ -488,7 +559,7 @@ for entry in judge_pool.entries:
 |------|------|------|------|
 | `result_ref` | String | len ≤ 128, 非空 | 最终产出 CID |
 | `trace_ref` | String | len ≤ 128, 非空 | 执行轨迹 CID |
-| `runtime_env` | RuntimeEnv | 各字段非空；provider.len() ≤ 32；model.len() ≤ 64；runtime.len() ≤ 32；version.len() ≤ 16 | 运行时环境声明（Anchor String 不自动校验长度，需指令内 require! 手动验证） |
+| `runtime_env` | RuntimeEnv | 各字段非空；provider.len() ≤ 32；model.len() ≤ 64；runtime.len() ≤ 32；version.len() ≤ 32 | 运行时环境声明。Anchor Borsh 反序列化不校验 String 长度上限——只要账户空间足够就能存入超长字符串。因此**必须**在指令处理函数中手动 `require!` 校验每个字段长度 ≤ 对应 MAX_*_LEN 常量，防止恶意写入超大数据。 |
 
 账户：
 
@@ -532,6 +603,27 @@ for entry in judge_pool.entries:
 | `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% |
 | `system_program` | Program | ❌ | ❌ | — |
 
+账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `judge` | SystemAccount | ✅ | ✅ | 评判者 |
+| `judge_token_account` | TokenAccount | ✅ | ❌ | Judge 的 token account（接收 3%） |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | 释放资金（作为 ATA authority） |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（持有代币） |
+| `winner_account` | SystemAccount | ❌ | ❌ | Agent 的系统账户 |
+| `winner_token_account` | TokenAccount | ✅ | ❌ | Agent 的 token account（接收 95%） |
+| `winner_application` | Application PDA | ✅ | ❌ | 质押退回 |
+| `winner_reputation` | Reputation PDA | ✅ | ❌ | 信誉更新 |
+| `judge_stake` | Stake PDA | ❌ | ❌ | 验证 Judge 已质押 |
+| `poster_token_account` | TokenAccount | ✅ | ❌ | Poster 的 token account（score < MIN_SCORE 时退款目标） |
+| `treasury_ata` | TokenAccount | ✅ | ❌ | Treasury 的 ATA（接收 2%）init_if_needed |
+| `mint` | Mint | ❌ | ❌ | token mint |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
+| `associated_token_program` | Program | ❌ | ❌ | ATA program |
+| `system_program` | Program | ❌ | ❌ | — |
+
 ---
 
 #### `cancel_task`
@@ -544,6 +636,30 @@ for entry in judge_pool.entries:
 
 参数：无
 
+账户（SOL 版本）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `poster` | SystemAccount | ✅ | ✅ | signer = task.poster |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
+| `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% |
+| `system_program` | Program | ❌ | ❌ | — |
+
+账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `poster` | SystemAccount | ✅ | ✅ | signer = task.poster |
+| `poster_token_account` | TokenAccount | ✅ | ❌ | 接收 98% 退款 |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | ATA authority |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | 释放代币 |
+| `treasury_ata` | TokenAccount | ✅ | ❌ | 接收 2% |
+| `mint` | Mint | ❌ | ❌ | token mint |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
+| `system_program` | Program | ❌ | ❌ | — |
+
 ---
 
 #### `refund_expired`
@@ -555,6 +671,29 @@ for entry in judge_pool.entries:
 | 后置条件 | Task.state = Refunded；100% 退还 Poster |
 
 参数：无
+
+账户（SOL 版本）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `anyone` | SystemAccount | ✅ | ✅ | 任何人触发（支付 tx 费） |
+| `poster` | SystemAccount | ✅ | ❌ | 接收 100% 退款 |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
+| `system_program` | Program | ❌ | ❌ | — |
+
+账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `anyone` | SystemAccount | ✅ | ✅ | 任何人触发 |
+| `poster_token_account` | TokenAccount | ✅ | ❌ | 接收 100% 退款 |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | ATA authority |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | 释放代币 |
+| `mint` | Mint | ❌ | ❌ | token mint |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
+| `system_program` | Program | ❌ | ❌ | — |
 
 ---
 
@@ -569,16 +708,63 @@ for entry in judge_pool.entries:
 **force_refund Slash 逻辑（精确）：**
 ```
 1. slash_amount = config.min_judge_stake
-2. 从 judge_stake.amount 扣除 slash_amount，转入 Treasury
-3. 若 judge_stake.amount - slash_amount >= config.min_judge_stake:
-     → Judge 留在 Pool 中，更新 weight（质押减少，weight 重算）
-   否则:
-     → 从所有 JudgePool 中移除该 Judge
-     → 关闭 Stake PDA，剩余 lamports 退回 Judge
-     → Judge 需重新 register_judge 才能再次参与
+2. remaining = judge_stake.amount - slash_amount
+3. 将 slash_amount 从 Stake PDA lamports 转入 Treasury
+4. 若 remaining >= config.min_judge_stake:
+     → judge_stake.amount = remaining
+     → 对 Judge 所在的每个 JudgePool，重新计算 weight:
+       stake_weight = min(remaining / LAMPORTS_PER_SOL, 1000)
+       reputation_weight = min(reputation.global.avg_score / 100, 100)
+       entry.weight = stake_weight + reputation_weight
+     → 更新每个 pool.total_weight（减去旧 weight，加上新 weight）
+   否则（remaining < config.min_judge_stake）:
+     → 从 Judge 注册的所有 JudgePool 中移除该 Judge 的 entry
+     → 更新每个 pool.total_weight（减去该 entry 的 weight）
+     → 将 remaining lamports 退回 Judge 的 SystemAccount
+     → 关闭 Stake PDA（lamports 归零，由 Solana 运行时回收）
+     → Judge 需重新调用 register_judge 才能再次参与
 ``` |
 
 参数：无
+
+账户（SOL 版本）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `anyone` | SystemAccount | ✅ | ✅ | 任何人触发 |
+| `poster` | SystemAccount | ✅ | ❌ | 接收 95% |
+| `most_active_agent` | SystemAccount | ✅ | ❌ | 接收 3%（提交数最多的 Agent） |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
+| `judge_stake` | Stake PDA | ✅ | ❌ | Slash 操作 |
+| `judge_account` | SystemAccount | ✅ | ❌ | 接收 Stake 剩余（若被移除） |
+| `judge_reputation` | Reputation PDA | ❌ | ❌ | 读取信誉（重算 weight） |
+| `judge_pool_*` | JudgePool PDA(s) | ✅ | ❌ | Judge 注册的每个 category pool（最多 8 个） |
+| `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% + slash_amount |
+| `system_program` | Program | ❌ | ❌ | — |
+
+账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
+
+| 账户 | 类型 | mut | signer | 说明 |
+|------|------|-----|--------|------|
+| `anyone` | SystemAccount | ✅ | ✅ | 任何人触发 |
+| `poster_token_account` | TokenAccount | ✅ | ❌ | 接收 95% |
+| `most_active_agent_token_account` | TokenAccount | ✅ | ❌ | 接收 3% |
+| `task` | Task PDA | ✅ | ❌ | 状态更新 |
+| `escrow` | Escrow PDA | ✅ | ❌ | ATA authority |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | 释放代币 |
+| `judge_stake` | Stake PDA | ✅ | ❌ | Slash 操作（质押始终为 SOL） |
+| `judge_account` | SystemAccount | ✅ | ❌ | 接收 Stake 剩余 |
+| `judge_reputation` | Reputation PDA | ❌ | ❌ | 读取信誉 |
+| `judge_pool_*` | JudgePool PDA(s) | ✅ | ❌ | 每个 category pool |
+| `treasury` | Treasury PDA | ✅ | ❌ | 接收 slash_amount (SOL) |
+| `treasury_ata` | TokenAccount | ✅ | ❌ | 接收 2% (代币) |
+| `mint` | Mint | ❌ | ❌ | token mint |
+| `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
+| `system_program` | Program | ❌ | ❌ | — |
+
+> **注意**：Judge Slash 始终操作 SOL（Stake 质押为 SOL），与任务 mint 无关。
+> SPL Token 版本仅影响奖励分配，Slash 逻辑不变。
 
 ---
 
@@ -820,8 +1006,8 @@ pub enum GradienceError {
     InsufficientJudgeStake,         // 6021
     #[msg("Agent has already applied for this task")]
     AlreadyApplied,                 // 6022
-    #[msg("Judge is already registered in this pool")]
-    AlreadyInPool,                  // 6023
+    #[msg("Judge is already registered in this category pool")]
+    AlreadyInPool,                  // 6023 — 用于 Judge 增加 category 时检测重复（未来扩展）
     #[msg("Judge unstake cooldown has not expired")]
     CooldownNotExpired,             // 6024
     #[msg("Judge pool is full")]
@@ -852,6 +1038,10 @@ pub enum GradienceError {
     // 算术错误 6040
     #[msg("Arithmetic overflow")]
     Overflow,                       // 6040
+
+    // Token 错误 6041-6049
+    #[msg("Mint has unsupported Token-2022 extensions (Confidential Transfer / Transfer Hook / Permanent Delegate)")]
+    UnsupportedMintExtension,       // 6041
 }
 ```
 
@@ -862,7 +1052,7 @@ pub enum GradienceError {
 | 当前状态 | 触发指令 | 前置条件 | 新状态 | 副作用 |
 |---------|---------|----------|--------|--------|
 | —（不存在）| `post_task` | reward > 0；deadline > now | Open | 创建 Task + Escrow；锁入 reward；若 Pool 模式则抽选 judge |
-| Open | `apply_for_task` | clock < deadline；未申请过；stake ≥ minStake | Open | 创建 Application；质押锁入；按需创建 Reputation |
+| Open | `apply_for_task` | clock < deadline；未申请过；stake ≥ minStake | Open | 创建 Application；质押锁入 Escrow；按需创建 Reputation；rep.global.total_applied++ |
 | Open | `submit_result` | clock < deadline；已申请 | Open | 更新 Submission（可多次覆盖）；记录 slot |
 | Open | `judge_and_pay` | signer = judge；score ≥ MIN_SCORE | **Completed** | 三方分账；Reputation 更新；Application 质押退回 |
 | Open | `judge_and_pay` | signer = judge；score < MIN_SCORE | **Refunded** | 全额退 Poster；Application 质押退回 |
@@ -944,7 +1134,10 @@ prev_count = rep.global.completed
 new_avg    = (prev_avg * prev_count + score * 100) / (prev_count + 1)
 rep.global.avg_score  = new_avg
 rep.global.completed  = prev_count + 1
-rep.global.win_rate   = completed * 10000 / total_applied  // 需要额外记录 total_applied
+rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
+
+// 注意：total_applied 在 apply_for_task 时递增（无论最终是否获胜）
+// completed 仅在 judge_and_pay 且作为 winner 时递增
 
 // 更新 category 信誉（同逻辑，对应 category 的 CategoryStats）
 // 更新 Judge 的 weight（在对应 JudgePool 中更新 entry.weight）
@@ -1016,14 +1209,17 @@ rep.global.win_rate   = completed * 10000 / total_applied  // 需要额外记录
 
 - [x] 所有 9 个 PDA 精确到字段类型和字节大小
 - [x] 所有 10 条指令有完整参数、账户、前后置条件
-- [x] 错误码统一编号（6000-6040），共 41 个
+- [x] 错误码统一编号（6000-6041），共 42 个（含 UnsupportedMintExtension）
 - [x] 状态机转换条件精确，无歧义，覆盖所有终态
 - [x] 费用计算有伪代码，精度处理（余数归 Agent）已说明
 - [x] JudgePool 加权随机算法有伪代码，随机源明确
-- [x] Reputation 更新公式完整
+- [x] Reputation 更新公式完整（含 total_applied 字段）
 - [x] PDA Seeds 无冲突，全部列出
 - [x] 安全规则 10 条，均有验证方法
 - [x] 边界条件 15 个，覆盖溢出、空池、覆盖提交、精度等场景
+- [x] 所有大小计算基于 Borsh 序列化（紧凑排列，无 padding），已标注说明
+- [x] SPL Token / Token-2022 版本账户完整列出（post_task、judge_and_pay）
+- [x] apply_for_task 质押机制明确（SOL/SPL 路径、Escrow 存储、退回时机）
 - [x] 本文档可以直接交给任何开发者（或 AI），不需要额外口头解释即可实现
 
 **Phase 3 验收通过后，进入 Phase 4: Task Breakdown →**
