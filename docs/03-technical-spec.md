@@ -757,6 +757,7 @@ for entry in judge_pool.entries:
 | `judge_pool_*` | JudgePool PDA(s) | ✅ | ❌ | Judge 注册的每个 category pool（最多 8 个） |
 | `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% + slash_amount |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_system_account]` × N（全部申请者质押退回） |
 
 账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
 
@@ -777,6 +778,7 @@ for entry in judge_pool.entries:
 | `mint` | Mint | ❌ | ❌ | token mint |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_token_account]` × N（全部申请者质押退回） |
 
 > **注意**：Judge Slash 始终操作 SOL（Stake 质押为 SOL），与任务 mint 无关。
 > SPL Token 版本仅影响奖励分配，Slash 逻辑不变。
