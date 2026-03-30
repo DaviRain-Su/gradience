@@ -128,34 +128,34 @@ The protocol does not embed hook systems, plugin architectures, or extension poi
 
 A task has exactly four states and five allowed transitions:
 
+The protocol uses a \textbf{race model} inspired by Bitcoin mining. In Bitcoin, any miner may attempt to produce a valid block; the first to succeed wins. In Gradience, any staked Agent may submit a result; the Judge selects the best.
+
+This removes the apply/assign steps. Three states, four transitions:
+
 \begin{center}
 \begin{tikzpicture}[
-  node distance=2.2cm,
+  node distance=2.8cm,
   state/.style={rectangle, rounded corners=6pt, draw=accent, thick,
                 minimum width=2.4cm, minimum height=0.9cm,
                 font=\small\bfseries, text=darktext},
   trans/.style={-{Stealth[length=5pt]}, thick, color=accent},
   label/.style={font=\scriptsize, color=darktext, align=center},
 ]
-  % States
   \node[state] (open) {Open};
-  \node[state, right=of open] (prog) {InProgress};
-  \node[state, below right=1.5cm and 0.5cm of prog] (comp) {Completed};
-  \node[state, above right=1.5cm and 0.5cm of prog] (ref) {Refunded};
+  \node[state, below right=1.5cm and 2cm of open] (comp) {Completed};
+  \node[state, above right=1.5cm and 2cm of open] (ref) {Refunded};
 
-  % Transitions
-  \draw[trans] (open) -- node[above, label] {assign} (prog);
-  \draw[trans] (open) -- node[above left, label] {timeout} (ref);
-  \draw[trans] (prog) -- node[right, label] {score $\geq$ 60} (comp);
-  \draw[trans] (prog) -- node[right, label] {score $<$ 60} (ref);
-  \draw[trans] (prog) -- node[above right, label] {judge\\timeout 7d} (ref);
+  \draw[trans] (open) -- node[below right, label] {judgeAndPay\\score $\geq$ 60} (comp);
+  \draw[trans] (open) -- node[below left, label] {score $<$ 60\\or timeout} (ref);
 
-  % Entry
-  \draw[trans] ([xshift=-1.8cm]open.west) -- node[above, label] {\texttt{postTask()}} (open);
+  \draw[trans] ([xshift=-2cm]open.west) -- node[above, label] {\texttt{postTask()}} (open);
+
+  % submissions annotation
+  \node[font=\scriptsize, color=accent, below=0.3cm of open] {\texttt{submitResult()} $\times$ N};
 \end{tikzpicture}
 \end{center}
 
-\textbf{Terminal states} (Completed, Refunded) are irreversible. The \texttt{forceRefund} transition is \emph{permissionless}---any address may trigger it after the 7-day Judge timeout, eliminating the Judge as a single point of failure.
+\textbf{Why race?} In the assign model, a Poster subjectively picks one Agent---no market discovery. In the race model, the market discovers the best Agent through open competition. Agents who lose expend resources (like miners who don't find the block), but high-reputation Agents have higher win rates, making participation profitable in expectation.
 
 \subsection{3.2\quad Roles}
 
@@ -165,36 +165,45 @@ A task has exactly four states and five allowed transitions:
 \toprule
 \textbf{Role} & \textbf{Actions} & \textbf{Constraints} \\
 \midrule
-Poster & Post task, assign Agent, claim refund & Cannot apply for own task \\
-Agent & Apply, submit result & Cannot judge own submission \\
-Judge & Score (0--100), trigger settlement & Set per-task at creation \\
+Poster & Post task, designate Judge, claim refund & May also serve as Judge (self-eval) \\
+Agent & Submit result to any open task & Must stake; no pre-registration \\
+Judge & Select best submission, score 0--100 & Must stake; set per-task at creation \\
 \bottomrule
 \end{tabular}
-\caption{Protocol roles and their permitted actions.}
+\caption{Protocol roles. Self-evaluated tasks are marked on-chain as \texttt{selfEvaluated}.}
 \end{table}
-
-The Judge may be an externally-owned account (human evaluation), a smart contract (automated verification, ZK proofs), or a multi-signature wallet (committee judgment). The protocol is agnostic.
 
 \subsection{3.3\quad Core Functions}
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}llp{6.5cm}@{}}
+\begin{tabular}{@{}llp{5.8cm}@{}}
 \toprule
 \textbf{Function} & \textbf{Caller} & \textbf{Effect} \\
 \midrule
-\texttt{postTask} & Anyone & Create task; lock value in escrow; designate Judge \\
-\texttt{applyForTask} & Anyone & Register interest; auto-initialize reputation \\
-\texttt{assignTask} & Poster & Select Agent from applicants \\
-\texttt{submitResult} & Assigned Agent & Submit work reference (hash or CID) \\
-\texttt{judgeAndPay} & Designated Judge & Score 0--100; three-way settlement \\
-\texttt{refundExpired} & Anyone & Refund if Open past deadline \\
-\texttt{forceRefund} & Anyone & Refund if Judge inactive $>$ 7 days \\
+\texttt{postTask} & Anyone & Create task; lock value; set Judge and min stake \\
+\texttt{submitResult} & Any staked Agent & Submit work reference; multiple per task \\
+\texttt{judgeAndPay} & Designated Judge & Select best; score 0--100; three-way split \\
+\texttt{refundExpired} & Anyone & Refund if deadline passed, no submission \\
+\texttt{forceRefund} & Anyone & Refund if Judge inactive $>$7d; Agent gets 3\% \\
+\texttt{stake / unstake} & Anyone & Stake SOL to participate; cooling period \\
 \bottomrule
 \end{tabular}
-\caption{Core protocol functions.}
+\caption{Three core functions (post, submit, judge) define the entire lifecycle.}
 \end{table}
+
+\subsection{3.4\quad Staking}
+
+Both Agents and Judges must stake SOL to participate. Agent minimum stake is set per-task by the Poster (\texttt{minStake}). No protocol token---following Bitcoin's principle of one native currency. No explicit slashing in v1; bad actors lose competition and reputation (economic death, not confiscation).
+
+\subsection{3.5\quad Anti-Gaming}
+
+Self-evaluation (Poster = Judge) is allowed for cold-start, with four defenses: (1) 2\% protocol fee per task = the ``electricity'' of reputation mining; (2) staking requirement = capital barrier; (3) on-chain \texttt{selfEvaluated} flag = market discounts self-assessed reputation; (4) race model = open competition makes self-evaluation irrelevant.
+
+\subsection{3.6\quad Evaluation Standard}
+
+The \texttt{evaluationCID} references off-chain criteria (IPFS, Arweave). Recommended types: \texttt{test\_cases} (automated), \texttt{judge\_prompt} (LLM), \texttt{checklist} (binary), \texttt{custom}. Extensible---new types require no protocol change.
 
 % ═══════════════════════════════════════════════════════════════════════════
 % 4. ECONOMIC MODEL
@@ -251,7 +260,15 @@ Every task's locked value is split upon settlement:
 
 All rates are \textbf{immutable constants}. Total protocol extraction: \textbf{5\%}.
 
-\subsection{4.3\quad Adversarial Equilibrium (GAN Dynamics)}
+\textbf{Timeout settlement:} If the Judge is inactive beyond 7 days and \texttt{forceRefund} is triggered, 95\% returns to the Poster, 3\% goes to the Agent with the most submissions (compensation for work done), and 2\% goes to Protocol. The Judge's reputation decays.
+
+\textbf{Multi-token support:} Task rewards may be denominated in any token (SOL, USDC, SPL Token, Token-2022). The 95/3/2 split applies to whatever token is locked. Staking is SOL-only for uniformity.
+
+\subsection{4.3\quad Protocol Upgrades}
+
+The protocol follows Bitcoin's upgrade model: immutable programs, social consensus for migration. Bug fixes or new features are deployed as new program versions. Reputation data is migrated via cross-program attestation. No proxy patterns, no admin keys.
+
+\subsection{4.4\quad Adversarial Equilibrium (GAN Dynamics)}
 
 With open Judge participation, the protocol forms a Generative Adversarial~\cite{gan} structure:
 
