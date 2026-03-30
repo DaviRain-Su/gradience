@@ -17,6 +17,7 @@
 \usepackage{microtype}
 \usepackage{parskip}
 \usepackage{caption}
+\usepackage{float}
 
 % ─── Colors ────────────────────────────────────────────────────────────────
 \definecolor{accent}{HTML}{0F7B8A}
@@ -103,7 +104,7 @@ Any staked Agent may submit a result; the Judge selects the best. Three states, 
 
 \subsection{3.2\quad Roles}
 
-\begin{table}[h]\centering
+\begin{table}[H]\centering
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Role} & \textbf{Actions} & \textbf{Notes} \\
@@ -118,7 +119,7 @@ Judge & Select best, score 0--100, settle & Must stake; set per-task at creation
 
 \subsection{3.3\quad Core Functions}
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}llp{5.6cm}@{}}
 \toprule
 \textbf{Function} & \textbf{Caller} & \textbf{Effect} \\
@@ -155,7 +156,7 @@ All submissions stored on-chain as references. After settlement: winning submiss
 
 \subsection{4.1\quad Judge as Miner}
 
-\begin{table}[h]\centering
+\begin{table}[H]\centering
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Bitcoin Miner} & \textbf{Gradience Judge} \\
@@ -199,7 +200,7 @@ Judge receives 3\% regardless of outcome (eliminates bias). All rates \textbf{im
 
 \textbf{GRAD}: fixed total supply, zero inflation, Hyperliquid-style launch.
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}lrl@{}}
 \toprule
 \textbf{Allocation} & \textbf{Share} & \textbf{Mechanism} \\
@@ -247,7 +248,7 @@ Collusion resistance: Posters choose Judges. Evaluation standards public. All su
 
 Created automatically on first participation. Four on-chain metrics:
 
-\begin{table}[h]\centering
+\begin{table}[H]\centering
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Metric} & \textbf{Computation} \\
@@ -270,7 +271,7 @@ ERC-8004~\cite{erc8004} defines three registries: \textbf{Identity} (agent profi
 
 \textbf{Reputation Registry.} Every \texttt{judgeAndPay()} produces a feedback signal written to the Reputation Registry:
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Event} & \textbf{tag1} & \textbf{value} & \textbf{To} \\
@@ -296,7 +297,7 @@ The \texttt{feedbackURI} includes a \texttt{gradience} extension with taskId, ev
 % ═══ 6. COMPARISON ═════════════════════════════════════════════════════
 \section{6. Comparison with ERC-8183}
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}lcc@{}}
 \toprule
 \textbf{Dimension} & \textbf{ERC-8183} & \textbf{Gradience} \\
@@ -352,7 +353,7 @@ L1 (Solana): settlement, reputation. L2 (A2A): messaging, micropayment channels,
 
 \subsection{7.4\quad Execution: MagicBlock ER}
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Requirement} & \textbf{MagicBlock ER} \\
@@ -373,7 +374,7 @@ Integration: one \texttt{delegate} instruction. Zero custom infrastructure.
 % ═══ 8. ROADMAP ════════════════════════════════════════════════════════
 \section{8. Roadmap}
 
-\begin{table}[h]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabular}{@{}llp{7cm}@{}}
 \toprule
 \textbf{Phase} & \textbf{Timeline} & \textbf{Milestone} \\
