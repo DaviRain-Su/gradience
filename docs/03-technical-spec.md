@@ -49,8 +49,11 @@
 ```rust
 /// 任务主体
 /// PDA seeds: [b"task", task_id.to_le_bytes()]
-/// 总大小: 8 + 315 = 323 bytes（含 Anchor discriminator）
-#[account]
+/// DATA_LEN = 315 bytes（纯字段）
+/// LEN = DATA_LEN + 2 = 317 bytes（含 1-byte discriminator + 1-byte version）
+/// 参考 solana-program/rewards：账户 data 前两字节为 [DISCRIMINATOR, VERSION]，
+/// 其余字节为字段序列化内容（小端序，无 padding）
+#[derive(Clone)]
 pub struct Task {
     pub task_id:          u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
     pub poster:           Pubkey,        // 32 — 发布者地址
@@ -69,16 +72,23 @@ pub struct Task {
     pub created_at:       i64,           // 8  — 创建时间（Unix timestamp）
     pub bump:             u8,            // 1  — PDA bump
 }
-// 正确计算:
+// DATA_LEN 计算（纯字段，不含头部）:
 // task_id(8)+poster(32)+judge(32)+judge_mode(1)+reward(8)+mint(32)+min_stake(8)
 // +state(1)+category(1)+eval_ref(132)+deadline(8)+judge_deadline(8)
 // +submission_count(2)+winner(33)+created_at(8)+bump(1) = 315
-// 315 + 8(discriminator) = 323
+// LEN = 315 + 2 = 317
+impl AccountSize for Task {
+    const DATA_LEN: usize = 315;
+    // LEN = DATA_LEN + 2 (discriminator + version)
+}
+impl Discriminator for Task { const DISCRIMINATOR: u8 = 0x01; }
+impl Versioned   for Task { const VERSION: u8 = 1; }
 ```
 
 | 字段 | 类型 | 大小 (bytes) | 约束 | 说明 |
 |------|------|-------------|------|------|
-| discriminator | [u8; 8] | 8 | Anchor 自动 | 账户类型标识 |
+| [discriminator] | u8 | 1 | = 0x01 | 账户类型头（存储时前置，不是结构体字段） |
+| [version] | u8 | 1 | = 1 | 格式版本（支持未来升级） |
 | task_id | u64 | 8 | 唯一，单调递增 | 由 ProgramConfig.task_count++ 派生 |
 | poster | Pubkey | 32 | 非零 | 发布者 |
 | judge | Pubkey | 32 | 非零（pool模式下由协议写入） | 评判者 |
@@ -95,7 +105,8 @@ pub struct Task {
 | winner | Option\<Pubkey\> | 33 | — | None = 未评判 |
 | created_at | i64 | 8 | — | Unix timestamp |
 | bump | u8 | 1 | — | PDA bump |
-| **总计** | | **323** | | |
+| **DATA_LEN** | | **315** | | 纯字段 |
+| **LEN** | | **317** | | 含 discriminator + version |
 
 ---
 
@@ -106,15 +117,15 @@ pub struct Task {
 /// PDA seeds: [b"escrow", task_id.to_le_bytes()]
 /// SOL: PDA 直接持有 lamports（无 token account）
 /// SPL: PDA 作为 ATA authority，escrow_ata 持有代币
-/// 总大小: 8 + 49 = 57 bytes
-#[account]
+/// DATA_LEN = 49 bytes，LEN = 51 bytes（含 discriminator + version）
+#[derive(Clone)]
 pub struct Escrow {
     pub task_id: u64,    // 8  — 关联任务
     pub mint:    Pubkey, // 32 — SOL = Pubkey::default()
     pub amount:  u64,    // 8  — 锁入总量（含 judge + protocol 份额）
     pub bump:    u8,     // 1  — PDA bump
 }
-// Escrow data: 8+32+8+1 = 49 bytes
+// Escrow data: task_id(8)+mint(32)+amount(8)+bump(1) = 49 bytes
 ```
 
 ---
@@ -124,8 +135,8 @@ pub struct Escrow {
 ```rust
 /// Agent 申请记录
 /// PDA seeds: [b"application", task_id.to_le_bytes(), agent.as_ref()]
-/// 总大小: 8 + 57 = 65 bytes
-#[account]
+/// DATA_LEN = 57 bytes，LEN = 59 bytes（含 discriminator + version）
+#[derive(Clone)]
 pub struct Application {
     pub task_id:      u64,    // 8  — 关联任务
     pub agent:        Pubkey, // 32 — 申请的 Agent 地址
@@ -142,10 +153,10 @@ pub struct Application {
 ```rust
 /// Agent 最新提交（可覆盖）
 /// PDA seeds: [b"submission", task_id.to_le_bytes(), agent.as_ref()]
-/// 总大小: 8 + 497 = 505 bytes
+/// DATA_LEN = 497 bytes，LEN = 499 bytes（含 discriminator + version）
 /// data = task_id(8)+agent(32)+result_ref(132)+trace_ref(132)
 ///      + runtime_env(176)+submission_slot(8)+submitted_at(8)+bump(1) = 497
-#[account]
+#[derive(Clone)]
 pub struct Submission {
     pub task_id:         u64,        // 8   — 关联任务
     pub agent:           Pubkey,     // 32  — 提交的 Agent
@@ -158,7 +169,7 @@ pub struct Submission {
 }
 
 /// Agent 运行时环境声明（Judge 凭此复现环境验证）
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
 pub struct RuntimeEnv {
     pub provider: String, // 4+32=36 — AI 供应商（"anthropic"/"openai"/"google"）
     pub model:    String, // 4+64=68 — 模型 ID（"claude-sonnet-4-6"）
@@ -175,9 +186,9 @@ pub struct RuntimeEnv {
 ```rust
 /// Agent / Judge 信誉数据（按需创建，首次参与自动初始化）
 /// PDA seeds: [b"reputation", agent.as_ref()]
-/// 总大小: 8 + 109 = 117 bytes
+/// DATA_LEN = 109 bytes，LEN = 111 bytes（含 discriminator + version）
 /// data = agent(32) + global(20) + by_category(56) + bump(1) = 109
-#[account]
+#[derive(Clone)]
 pub struct Reputation {
     pub agent:       Pubkey,                          // 32 — 地址
     pub global:      ReputationStats,                 // 20 — 全局统计
@@ -185,7 +196,7 @@ pub struct Reputation {
     pub bump:        u8,                              // 1  — PDA bump
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Default)]
 pub struct ReputationStats {
     pub total_earned:  u64, // 8 — 累计收益（lamports）
     pub completed:     u32, // 4 — 完成任务数（作为 winner）
@@ -193,17 +204,17 @@ pub struct ReputationStats {
     pub avg_score:     u16, // 2 — 0-10000（实际分数×100，保留2位小数）
     pub win_rate:      u16, // 2 — 0-10000（实际比率×10000，= completed * 10000 / total_applied）
 }
-// ReputationStats 总计: 8+4+4+2+2 = 20 bytes（Anchor borsh 序列化，无 padding）
+// ReputationStats 总计: 8+4+4+2+2 = 20 bytes（Borsh 序列化，无 padding）
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Default, Copy)]
 pub struct CategoryStats {
     pub category:  u8,  // 1 — category ID
     pub avg_score: u16, // 2 — 0-10000
     pub completed: u32, // 4 — 完成数
 }
-// CategoryStats 单个: 1+2+4 = 7 bytes（Anchor borsh 序列化，无 padding）
+// CategoryStats 单个: 1+2+4 = 7 bytes（Borsh 序列化，无 padding）
 // CategoryStats × 8 = 56 bytes
-// 注意：Anchor 使用 Borsh 序列化（紧凑排列，无对齐 padding），
+// 注意：Borsh 序列化（紧凑排列，无对齐 padding），
 // 而非 Rust 原生内存布局。所有大小计算基于 Borsh 序列化后的字节数。
 ```
 
@@ -214,10 +225,10 @@ pub struct CategoryStats {
 ```rust
 /// Judge 质押记录
 /// PDA seeds: [b"stake", judge.as_ref()]
-/// 总大小: 8 + 66 = 74 bytes
-/// Borsh 序列化: judge(32) + amount(8) + categories(8) + category_count(1)
-///              + registered_at(8) + cooldown_until(8) + bump(1) = 66
-#[account]
+/// DATA_LEN = 66 bytes，LEN = 68 bytes（含 discriminator + version）
+/// 字段: judge(32)+amount(8)+categories(8)+category_count(1)
+///      +registered_at(8)+cooldown_until(8)+bump(1) = 66
+#[derive(Clone)]
 pub struct Stake {
     pub judge:          Pubkey,              // 32 — Judge 地址
     pub amount:         u64,                 // 8  — 质押量（lamports）
@@ -227,8 +238,8 @@ pub struct Stake {
     pub cooldown_until: i64,                 // 8  — 解质押冷却期结束时间（0 = 无冷却）
     pub bump:           u8,                  // 1  — PDA bump
 }
-// 注意：Anchor 使用 Borsh 序列化（紧凑排列，无对齐 padding），
-// 因此大小为字段字节总和 = 66 bytes，不受 Rust 原生内存对齐影响。
+// 注意：Borsh 序列化（紧凑排列，无对齐 padding），
+// 大小为字段字节总和 = 66 bytes，不受 Rust 原生内存对齐影响。
 ```
 
 ---
@@ -238,17 +249,17 @@ pub struct Stake {
 ```rust
 /// 每个 category 的 Judge 候选池
 /// PDA seeds: [b"judge_pool", &[category]]
-/// 总大小: 8 + 7210 = 7218 bytes（max 200 judges）
+/// DATA_LEN = 7210 bytes，LEN = 7212 bytes（含 discriminator + version，max 200 judges）
 ///
-/// **Vec 容量说明**：
-/// - Anchor 使用 Borsh 序列化 Vec：4 bytes (len) + len × element_size
-/// - 账户空间在首次 `register_judge` 时通过 `init_if_needed` 创建，预分配 7218 bytes（按 MAX_JUDGES_PER_POOL=200 计算），无需单独的 initialize_judge_pool 指令
-/// - 空间 = 8(discriminator) + 1(category) + 4(total_weight) + 4(vec_len) + 200×36(entries) + 1(bump)
-///        = 8 + 7210 = 7218 bytes
+/// **账户空间说明**：
+/// - Vec 序列化：4 bytes (len) + len × element_size
+/// - 账户空间在首次 `register_judge` 时通过 system_program CPI 创建（手动检查是否已初始化），预分配 LEN = 7212 bytes
+/// - DATA_LEN = 1(category) + 4(total_weight) + 4(vec_len) + 200×36(entries) + 1(bump) = 7210 bytes
 /// - Vec 动态增长，不超过预分配空间；若 entries.len() = MAX_JUDGES_PER_POOL，
 ///   register_judge 返回 JudgePoolFull 错误
 /// - 无需 realloc——200 上限在 MVP 阶段足够，未来可通过 JudgePool 分片扩容
-#[account]
+// Pinocchio: 通过检查 account.data_len() == 0 判断是否首次创建（替代 Anchor init_if_needed）
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
 pub struct JudgePool {
     pub category:     u8,                              // 1  — 领域 ID
     pub total_weight: u32,                             // 4  — 所有 Judge 权重之和（用于加权随机）
@@ -257,7 +268,7 @@ pub struct JudgePool {
 }
 // JudgePool data 部分: 1 + 4 + 4 + 200×36 + 1 = 7210 bytes
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, Clone)]
 pub struct JudgePoolEntry {
     pub judge:  Pubkey, // 32 — Judge 地址
     pub weight: u32,    // 4  — 权重 = min(stake/1e9, 1000) + min(reputation/10, 100)
@@ -272,8 +283,8 @@ pub struct JudgePoolEntry {
 ```rust
 /// 协议收入账户（持有 lamports）
 /// PDA seeds: [b"treasury"]
-/// 总大小: 8 + 1 = 9 bytes
-#[account]
+/// DATA_LEN = 1 byte，LEN = 3 bytes（含 discriminator + version）
+#[derive(Clone)]
 pub struct Treasury {
     pub bump: u8, // 1
 }
@@ -286,8 +297,8 @@ pub struct Treasury {
 ```rust
 /// 全局配置，仅 upgrade_authority 可修改
 /// PDA seeds: [b"config"]
-/// 总大小: 8 + 81 = 89 bytes
-#[account]
+/// DATA_LEN = 81 bytes，LEN = 83 bytes（含 discriminator + version）
+#[derive(Clone)]
 pub struct ProgramConfig {
     pub treasury:          Pubkey, // 32 — Treasury PDA 地址
     pub upgrade_authority: Pubkey, // 32 — 多签 DAO 地址（使用 Squads v4 多签，M-of-N 阈值由 DAO 治理决定；upgrade_authority 本身可通过 upgrade_config 转移给新的多签地址）
@@ -302,21 +313,23 @@ pub struct ProgramConfig {
 ### 3.2.2 枚举定义
 
 ```rust
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, PartialEq)]
+#[repr(u8)]
 pub enum TaskState {
     Open      = 0,
     Completed = 1,
     Refunded  = 2,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, PartialEq)]
+#[repr(u8)]
 pub enum JudgeMode {
     Designated = 0, // Poster 指定特定 Judge 地址
     Pool       = 1, // 协议从 JudgePool 随机抽选
 }
 
 /// 任务领域分类
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Copy)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, PartialEq, Copy)]
 #[repr(u8)]
 pub enum Category {
     General  = 0, // 通用
@@ -473,7 +486,7 @@ CREATE INDEX idx_submissions_agent ON submissions(agent);
 | `config` | ProgramConfig | ✅ | ❌ | task_count++ |
 | `task` | Task PDA | ✅ | ❌ | seeds: [b"task", task_id] |
 | `escrow` | Escrow PDA | ✅ | ❌ | seeds: [b"escrow", task_id] |
-| `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（authority = escrow PDA，mint 匹配）init_if_needed |
+| `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（authority = escrow PDA，mint 匹配）按需创建（手动检查 data_len == 0） |
 | `mint` | Mint | ❌ | ❌ | SPL Token / Token-2022 mint。不支持 Confidential Transfer 和 Transfer Hook 扩展——指令内 `require!` mint 无这些扩展（通过检查 mint 的 extension 字段） |
 | `judge_pool` | JudgePool PDA | ❌ | ❌ | 仅 Pool 模式需要 |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
@@ -525,7 +538,7 @@ for entry in judge_pool.entries:
 | `task` | Task PDA | ✅ | ❌ | 状态检查 + submission_count++ |
 | `escrow` | Escrow PDA | ✅ | ❌ | 接收 agent 质押（seeds: [b"escrow", task_id]） |
 | `application` | Application PDA | ✅ | ❌ | seeds: [b"application", task_id, agent] init |
-| `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] init_if_needed |
+| `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] 按需创建（手动检查 data_len == 0） |
 | `system_program` | Program | ❌ | ❌ | — |
 
 账户（SPL Token 版本，当 task.mint ≠ Pubkey::default() 且 task.min_stake > 0）：
@@ -539,7 +552,7 @@ for entry in judge_pool.entries:
 | `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（接收质押，authority = escrow PDA） |
 | `mint` | Mint | ❌ | ❌ | token mint（验证匹配） |
 | `application` | Application PDA | ✅ | ❌ | seeds: [b"application", task_id, agent] init |
-| `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] init_if_needed |
+| `reputation` | Reputation PDA | ✅ | ❌ | seeds: [b"reputation", agent] 按需创建（手动检查 data_len == 0） |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
 | `system_program` | Program | ❌ | ❌ | — |
 
@@ -559,7 +572,7 @@ for entry in judge_pool.entries:
 |------|------|------|------|
 | `result_ref` | String | len ≤ 128, 非空 | 最终产出 CID |
 | `trace_ref` | String | len ≤ 128, 非空 | 执行轨迹 CID |
-| `runtime_env` | RuntimeEnv | 各字段非空；provider.len() ≤ 32；model.len() ≤ 64；runtime.len() ≤ 32；version.len() ≤ 32 | 运行时环境声明。Anchor Borsh 反序列化不校验 String 长度上限——只要账户空间足够就能存入超长字符串。因此**必须**在指令处理函数中手动 `require!` 校验每个字段长度 ≤ 对应 MAX_*_LEN 常量，防止恶意写入超大数据。 |
+| `runtime_env` | RuntimeEnv | 各字段非空；provider.len() ≤ 32；model.len() ≤ 64；runtime.len() ≤ 32；version.len() ≤ 32 | 运行时环境声明。Borsh 反序列化不校验 String 长度上限——只要账户空间足够就能存入超长字符串。因此**必须**在指令处理函数中手动校验每个字段长度 ≤ 对应 MAX_*_LEN 常量，防止恶意写入超大数据。 |
 
 账户：
 
@@ -568,7 +581,7 @@ for entry in judge_pool.entries:
 | `agent` | SystemAccount | ✅ | ✅ | 提交者 |
 | `task` | Task PDA | ❌ | ❌ | 状态 + deadline 检查 |
 | `application` | Application PDA | ❌ | ❌ | 验证 agent 已申请 |
-| `submission` | Submission PDA | ✅ | ❌ | seeds: [b"submission", task_id, agent] init_if_needed |
+| `submission` | Submission PDA | ✅ | ❌ | seeds: [b"submission", task_id, agent] 按需创建（手动检查 data_len == 0） |
 | `system_program` | Program | ❌ | ❌ | — |
 
 ---
@@ -579,7 +592,7 @@ for entry in judge_pool.entries:
 |------|------|
 | 调用者 | Task.judge |
 | 前置条件 | Task.state = Open；signer = task.judge；winner 的 Submission 存在；score ≤ 100；winner 的 Application 存在 |
-| 后置条件 | 若 score ≥ MIN_SCORE：三方分账，Task.state = Completed，Reputation 更新，质押退回；若 score < MIN_SCORE：退款给 Poster，Task.state = Refunded |
+| 后置条件 | 若 score ≥ MIN_SCORE：三方分账，Task.state = Completed，Reputation 更新，质押退回，**Judge Daemon 链上确认后 CPI 到 SAS 为 winner 颁发 TaskCompletion Attestation（见 §3.12）**；若 score < MIN_SCORE：退款给 Poster，Task.state = Refunded；**两种情况均执行**：`judge_stake.cooldown_until = clock.unix_timestamp + UNSTAKE_COOLDOWN`（评判完成后重置冷却期，防止 Judge 立即 unstake 退出池） |
 
 参数：
 
@@ -619,7 +632,7 @@ for entry in judge_pool.entries:
 | `winner_reputation` | Reputation PDA | ✅ | ❌ | 信誉更新 |
 | `judge_stake` | Stake PDA | ❌ | ❌ | 验证 Judge 已质押 |
 | `poster_token_account` | TokenAccount | ✅ | ❌ | Poster 的 token account（score < MIN_SCORE 时退款目标） |
-| `treasury_ata` | TokenAccount | ✅ | ❌ | Treasury 的 ATA（接收 2%）init_if_needed |
+| `treasury_ata` | TokenAccount | ✅ | ❌ | Treasury 的 ATA（接收 2%）按需创建（手动检查 data_len == 0） |
 | `mint` | Mint | ❌ | ❌ | token mint |
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
 | `associated_token_program` | Program | ❌ | ❌ | ATA program |
@@ -673,6 +686,23 @@ for entry in judge_pool.entries:
 - `cancel_task / refund_expired`：仅在 `Task.state = Open` 时执行（judge_and_pay 尚未运行），传入全部申请者
 - `force_refund`：任务已有提交，传入全部有提交的申请者（winner 不存在，全部退回）
 
+**Address Lookup Table（ALT）约定**（SDK 层，链上合约无感知）：
+
+Solana 单笔交易上限 1232 字节，每个 `remaining_accounts` 账户占 32 字节（未使用 ALT 时）。当落败者数量 N > 20 时，固定账户 + 落败者列表可能超限。SDK 的 `task.judge()` / `task.cancel()` / `task.forceRefund()` 方法内部自动处理：
+
+```
+if (remainingAccounts.length > 20) {
+  // 1. 查找或创建该 Task 对应的 ALT（seeds: [task_id]）
+  // 2. 将所有 Application PDA + Agent Account 地址扩展进 ALT
+  // 3. 用 AddressLookupTableAccount 构建 VersionedTransaction（v0）
+  //    → 每个已在 ALT 中的地址压缩为 1 字节索引，节省 31 字节/账户
+} else {
+  // 普通 Legacy Transaction 即可
+}
+```
+
+依赖：`@solana-program/address-lookup-table`（官方 TypeScript 客户端，`gh:solana-program/address-lookup-table`）
+
 ---
 
 #### `refund_expired`
@@ -717,7 +747,7 @@ for entry in judge_pool.entries:
 | 属性 | 值 |
 |------|------|
 | 调用者 | 任何人 |
-| 前置条件 | Task.state = Open；clock > task.judge_deadline + FORCE_REFUND_DELAY；至少有一个有效提交 |
+| 前置条件 | Task.state = Open；**① clock > task.judge_deadline**（`JudgeDeadlineNotPassed` 6002）；**② clock > task.judge_deadline + FORCE_REFUND_DELAY**（`ForceRefundDelayNotPassed` 6003）；至少有一个有效提交 |
 | 后置条件 | Task.state = Refunded；95% → Poster；3% → 提交数最多的 Agent；2% → Treasury；Judge Slash 执行（见下方） |
 
 **force_refund Slash 逻辑（精确）：**
@@ -791,7 +821,7 @@ for entry in judge_pool.entries:
 |------|------|
 | 调用者 | 任何人 |
 | 前置条件 | 质押量 ≥ config.min_judge_stake；categories 非空且每个值在 0-7；Stake PDA 未存在；JudgePool 未满（< MAX_JUDGES_PER_POOL） |
-| 后置条件 | Stake PDA 创建；质押锁入；加入每个 category 的 JudgePool；weight 计算并累加到 pool.total_weight |
+| 后置条件 | Stake PDA 创建（`cooldown_until = 0`，即首次注册无冷却期，可立即 unstake）；质押锁入；加入每个 category 的 JudgePool；weight 计算并累加到 pool.total_weight |
 
 参数：
 
@@ -936,73 +966,110 @@ WebSocket  /ws/tasks
 
 ---
 
-### 3.3.4 Program 事件（Anchor Event）
+### 3.3.4 Program 事件（Pinocchio sol_log_data）
+
+Pinocchio 无 `#[event]` 宏。事件通过 `sol_log_data` syscall 发出，Indexer 解析 transaction log 中的 `Program data: <base64>` 条目。
+
+**发出协议**（参考 solana-program/rewards 模式，兼容 Codama / Anchor Indexer）：
+
+```
+[EVENT_IX_TAG_LE: 8 bytes][event_discriminator: 1 byte][payload: N bytes]
+```
+
+- `EVENT_IX_TAG_LE` = `0xe445a52e51cb9a1d` 的小端字节（固定魔数，Indexer 用于识别事件 log）
+- `event_discriminator` = 1 byte，见下表
+- `payload` = 字段手动序列化（小端序）
+
+事件通过专用 `emit_event` 指令发出（需传入 event_authority PDA），由 Codama 自动生成对应 TypeScript 事件解码器。
+
+| discriminator | 事件名 | 说明 |
+|--------------|-------|------|
+| `0x01` | TaskCreated | 任务创建 |
+| `0x02` | SubmissionReceived | 提交收到 |
+| `0x03` | TaskJudged | 评判完成 |
+| `0x04` | TaskRefunded | 任务退款 |
+| `0x05` | JudgeRegistered | Judge 注册 |
+| `0x06` | TaskApplied | Agent 申请 |
+| `0x07` | TaskCancelled | Poster 取消 |
+| `0x08` | JudgeUnstaked | Judge 解质押 |
 
 ```rust
-#[event]
+// 事件魔数（与 Anchor/Codama 兼容）
+pub const EVENT_IX_TAG_LE: [u8; 8] = 0xe445a52e51cb9a1d_u64.to_le_bytes();
+
+pub const EVENT_TASK_CREATED:        u8 = 0x01;
+pub const EVENT_SUBMISSION_RECEIVED: u8 = 0x02;
+pub const EVENT_TASK_JUDGED:         u8 = 0x03;
+pub const EVENT_TASK_REFUNDED:       u8 = 0x04;
+pub const EVENT_JUDGE_REGISTERED:    u8 = 0x05;
+pub const EVENT_TASK_APPLIED:        u8 = 0x06;
+pub const EVENT_TASK_CANCELLED:      u8 = 0x07;
+pub const EVENT_JUDGE_UNSTAKED:      u8 = 0x08;
+
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TaskCreated {
     pub task_id:  u64,
-    pub poster:   Pubkey,
-    pub judge:    Pubkey,
+    pub poster:   [u8; 32],  // Address / Pubkey
+    pub judge:    [u8; 32],
     pub reward:   u64,
     pub category: u8,
     pub deadline: i64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct SubmissionReceived {
     pub task_id:         u64,
-    pub agent:           Pubkey,
+    pub agent:           [u8; 32],
     pub result_ref:      String,
     pub trace_ref:       String,
     pub submission_slot: u64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TaskJudged {
     pub task_id:      u64,
-    pub winner:       Pubkey,
+    pub winner:       [u8; 32],
     pub score:        u8,
     pub agent_payout: u64,
     pub judge_fee:    u64,
     pub protocol_fee: u64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TaskRefunded {
     pub task_id: u64,
-    pub reason:  RefundReason, // Expired | Cancelled | LowScore | ForceRefund
+    pub reason:  u8, // 0=Expired, 1=Cancelled, 2=LowScore, 3=ForceRefund
     pub amount:  u64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct JudgeRegistered {
-    pub judge:      Pubkey,
+    pub judge:      [u8; 32],
     pub stake:      u64,
     pub categories: Vec<u8>,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TaskApplied {
     pub task_id: u64,
-    pub agent:   Pubkey,
-    pub stake:   u64,        // 质押量（与 task.mint 同单位）
-    pub slot:    u64,        // 申请时的 Solana slot
+    pub agent:   [u8; 32],
+    pub stake:   u64,
+    pub slot:    u64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TaskCancelled {
-    pub task_id:      u64,
-    pub poster:       Pubkey,
-    pub refund_amount: u64,  // 退还 Poster 的金额（98%）
-    pub protocol_fee:  u64,  // 进 Treasury 的金额（2%）
+    pub task_id:       u64,
+    pub poster:        [u8; 32],
+    pub refund_amount: u64,
+    pub protocol_fee:  u64,
 }
 
-#[event]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct JudgeUnstaked {
-    pub judge:          Pubkey,
-    pub returned_stake: u64,    // 退还质押量
-    pub categories:     Vec<u8>, // 退出的 category pool 列表
+    pub judge:          [u8; 32],
+    pub returned_stake: u64,
+    pub categories:     Vec<u8>,
 }
 ```
 
@@ -1010,80 +1077,65 @@ pub struct JudgeUnstaked {
 
 ## 3.4 错误码定义
 
+Pinocchio 使用 `ProgramError::Custom(u32)` 传递自定义错误。所有错误码定义为常量，对应 `ProgramError::Custom(N)` 中的 N 值。
+
 ```rust
-#[error_code]
+// Pinocchio 错误码定义：thiserror + CodamaErrors，生成 IDL 错误元数据
+// 返回方式：return Err(GradienceError::TaskNotOpen.into())
+//   => ProgramError::Custom(6000)
+
+#[derive(thiserror::Error, Debug)]
+#[repr(u32)]
 pub enum GradienceError {
     // 任务状态错误 6000-6009
-    #[msg("Task is not in Open state")]
-    TaskNotOpen,                    // 6000
-    #[msg("Task deadline has passed")]
-    DeadlinePassed,                 // 6001
-    #[msg("Judge deadline has not passed yet")]
-    JudgeDeadlineNotPassed,         // 6002
-    #[msg("Force refund delay has not passed yet")]
-    ForceRefundDelayNotPassed,      // 6003
-    #[msg("Task already has submissions, cannot cancel")]
-    HasSubmissions,                 // 6004
-    #[msg("No submissions found for this task")]
-    NoSubmissions,                  // 6005
-    #[msg("Task deadline has not passed yet")]
-    DeadlineNotPassed,              // 6006 — 用于 refund_expired：截止时间未到不可退款
+    #[error("Task is not in Open state")]
+    TaskNotOpen              = 6000,
+    #[error("Task deadline has passed")]
+    DeadlinePassed           = 6001, // 以下各项同理，省略 #[error(...)] 注释
+    JudgeDeadlineNotPassed   = 6002, // Judge deadline has not passed yet
+    ForceRefundDelayNotPassed = 6003, // Force refund delay has not passed yet
+    HasSubmissions           = 6004, // Task already has submissions, cannot cancel
+    NoSubmissions            = 6005, // No submissions found for this task
+    DeadlineNotPassed        = 6006, // Task deadline has not passed yet (refund_expired)
 
     // 权限错误 6010-6019
-    #[msg("Signer is not the task poster")]
-    NotTaskPoster,                  // 6010
-    #[msg("Signer is not the task judge")]
-    NotTaskJudge,                   // 6011
-    #[msg("Signer is not the config upgrade authority")]
-    NotUpgradeAuthority,            // 6012
-    #[msg("Agent has not applied for this task")]
-    AgentNotApplied,                // 6013
-    #[msg("Winner has no submission for this task")]
-    WinnerNoSubmission,             // 6014
+    NotTaskPoster            = 6010, // Signer is not the task poster
+    NotTaskJudge             = 6011, // Signer is not the task judge
+    NotUpgradeAuthority      = 6012, // Signer is not the config upgrade authority
+    AgentNotApplied          = 6013, // Agent has not applied for this task
+    WinnerNoSubmission       = 6014, // Winner has no submission for this task
 
     // 质押 / 数量错误 6020-6029
-    #[msg("Insufficient agent stake amount")]
-    InsufficientAgentStake,         // 6020
-    #[msg("Insufficient judge stake amount")]
-    InsufficientJudgeStake,         // 6021
-    #[msg("Agent has already applied for this task")]
-    AlreadyApplied,                 // 6022
-    #[msg("Judge is already registered in this category pool")]
-    AlreadyInPool,                  // 6023 — 用于 Judge 增加 category 时检测重复（未来扩展）
-    #[msg("Judge unstake cooldown has not expired")]
-    CooldownNotExpired,             // 6024
-    #[msg("Judge pool is full")]
-    JudgePoolFull,                  // 6025
+    InsufficientAgentStake   = 6020, // Insufficient agent stake amount
+    InsufficientJudgeStake   = 6021, // Insufficient judge stake amount
+    AlreadyApplied           = 6022, // Agent has already applied for this task
+    AlreadyInPool            = 6023, // Judge already registered in this category pool
+    CooldownNotExpired       = 6024, // Judge unstake cooldown has not expired
+    JudgePoolFull            = 6025, // Judge pool is full
 
     // 数据验证错误 6030-6039
-    #[msg("Score must be between 0 and 100")]
-    InvalidScore,                   // 6030
-    #[msg("Category must be between 0 and 7")]
-    InvalidCategory,                // 6031
-    #[msg("CID reference field is empty")]
-    EmptyRef,                       // 6032
-    #[msg("RuntimeEnv fields must not be empty")]
-    InvalidRuntimeEnv,              // 6033
-    #[msg("CID reference exceeds maximum length")]
-    RefTooLong,                     // 6034
-    #[msg("Categories list is empty or has duplicates")]
-    InvalidCategories,              // 6035
-    #[msg("Judge pool is empty for this category")]
-    JudgePoolEmpty,                 // 6036
-    #[msg("Reward amount must be greater than zero")]
-    ZeroReward,                     // 6037
-    #[msg("Deadline must be in the future")]
-    InvalidDeadline,                // 6038
-    #[msg("Judge deadline must be after task deadline")]
-    InvalidJudgeDeadline,           // 6039
+    InvalidScore             = 6030, // Score must be between 0 and 100
+    InvalidCategory          = 6031, // Category must be between 0 and 7
+    EmptyRef                 = 6032, // CID reference field is empty
+    InvalidRuntimeEnv        = 6033, // RuntimeEnv fields must not be empty
+    RefTooLong               = 6034, // CID reference exceeds maximum length
+    InvalidCategories        = 6035, // Categories list is empty or has duplicates
+    JudgePoolEmpty           = 6036, // Judge pool is empty for this category
+    ZeroReward               = 6037, // Reward amount must be greater than zero
+    InvalidDeadline          = 6038, // Deadline must be in the future
+    InvalidJudgeDeadline     = 6039, // Judge deadline must be after task deadline
 
     // 算术错误 6040
-    #[msg("Arithmetic overflow")]
-    Overflow,                       // 6040
+    Overflow                 = 6040, // Arithmetic overflow
 
     // Token 错误 6041-6049
-    #[msg("Mint has unsupported Token-2022 extensions (Confidential Transfer / Transfer Hook / Permanent Delegate)")]
-    UnsupportedMintExtension,       // 6041
+    UnsupportedMintExtension = 6041, // Unsupported Token-2022 extensions
+}
+
+impl From<GradienceError> for ProgramError {
+    fn from(e: GradienceError) -> Self {
+        ProgramError::Custom(e as u32)
+    }
 }
 ```
 
@@ -1208,13 +1260,266 @@ rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
 
 ---
 
-## 3.8 安全规则
+## 3.8 Pinocchio 框架适配说明
+
+### Entrypoint
+
+```rust
+use pinocchio::{entrypoint, AccountView, Address, ProgramResult};
+use pinocchio::program_error::ProgramError;
+
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Address,
+    accounts: &mut [AccountView],
+    instruction_data: &[u8],
+) -> ProgramResult {
+    let (discriminator, rest) = instruction_data.split_first()
+        .ok_or(ProgramError::InvalidInstructionData)?;
+    match discriminator {
+        0 => instructions::initialize::process(accounts, rest),
+        1 => instructions::post_task::process(accounts, rest),
+        // ... 11 instructions total
+        _ => Err(ProgramError::InvalidInstructionData),
+    }
+}
+```
+
+### 账户访问
+
+```rust
+// Pinocchio: accounts 是 &mut [AccountView]，按位置索引
+// 替代 Anchor 的 #[derive(Accounts)] 结构体
+let [payer, config, task, escrow, system_program] = accounts else {
+    return Err(ProgramError::NotEnoughAccountKeys);
+};
+
+// 读取账户数据
+let config_data = config.try_borrow_data()?;
+let program_config: ProgramConfig = ProgramConfig::try_from_slice(&config_data)?;
+
+// 写入账户数据
+let mut task_data = task.try_borrow_mut_data()?;
+task_struct.serialize(&mut &mut task_data[..])?;
+```
+
+### PDA 验证
+
+```rust
+// Pinocchio: 手动验证 PDA，替代 Anchor 的 constraint seeds
+use pinocchio::pubkey::find_program_address;
+let (expected_pda, bump) = find_program_address(
+    &[b"task", &task_id.to_le_bytes()],
+    program_id,
+);
+if task.key() != &expected_pda {
+    return Err(ProgramError::InvalidAccountData);
+}
+```
+
+### CPI（SOL 转账）
+
+使用 `pinocchio-system` crate，替代手动 12-byte 编码：
+
+```rust
+use pinocchio_system::instructions::Transfer;
+
+// SOL 转账：pinocchio-system 封装，无需手动构造 12 字节
+Transfer {
+    from,
+    to,
+    lamports: amount,
+}.invoke_signed(signers)?;
+```
+
+### CPI（SPL Token 转账）
+
+使用 `pinocchio-token` crate，替代手动 9-byte 编码：
+
+```rust
+use pinocchio_token::instructions::Transfer;
+
+// SPL Token 转账：pinocchio-token 封装，无需手动构造 9 字节
+Transfer {
+    from: src,
+    to: dst,
+    authority,
+    amount,
+}.invoke_signed(signers)?;
+```
+
+### CPI（创建 ATA）
+
+使用 `pinocchio-associated-token-account` crate：
+
+```rust
+use pinocchio_associated_token_account::instructions::Create;
+
+Create {
+    funding_account: payer,
+    associated_token_account: ata,
+    wallet: owner,
+    token_mint: mint,
+    system_program,
+    token_program,
+}.invoke()?;
+```
+
+### 账户初始化（替代 Anchor init_if_needed）
+
+```rust
+// 检查账户是否已初始化（data_len == 0 表示未分配空间）
+if judge_pool.data_len() == 0 {
+    // 通过 system_program CPI 分配空间
+    create_account_with_minimum_balance_signed(
+        payer, judge_pool, JUDGE_POOL_SIZE, system_program, signers,
+    )?;
+}
+```
+
+### 事件发出
+
+事件格式：`[EVENT_IX_TAG_LE: 8 bytes][event_discriminator: 1 byte][payload: N bytes]`，与 Anchor/Codama 索引器兼容。
+
+```rust
+use pinocchio_log::sol_log_data;
+use borsh::BorshSerialize;
+
+// EVENT_IX_TAG_LE = 0xe445a52e51cb9a1d LE（固定 magic，Anchor/Codama 兼容）
+pub const EVENT_IX_TAG_LE: [u8; 8] = 0xe445a52e51cb9a1du64.to_le_bytes();
+
+fn emit_event<T: BorshSerialize>(discriminator: u8, event: &T) -> ProgramResult {
+    let mut data = Vec::with_capacity(9 + 64);
+    data.extend_from_slice(&EVENT_IX_TAG_LE); // 8 bytes magic
+    data.push(discriminator);                  // 1 byte 鉴别符
+    event.serialize(&mut data)?;
+    sol_log_data(&[&data]);
+    Ok(())
+}
+
+// 使用示例
+let event = TaskCreated { task_id, poster: *poster.key(), reward, deadline };
+emit_event(EVENT_TASK_CREATED, &event)?;
+```
+
+### 时钟获取
+
+```rust
+use pinocchio::sysvars::clock::Clock;
+use pinocchio::sysvars::Sysvar;
+
+let clock = Clock::get()?;
+let now = clock.unix_timestamp;
+```
+
+### 项目结构（参照 solana-foundation/templates pinocchio-counter）
+
+```
+program/src/
+├── instructions/
+│   └── post_task/
+│       ├── accounts.rs    ← 账户列表 + 验证
+│       ├── data.rs        ← 参数解析
+│       ├── instruction.rs ← 组合 accounts + data
+│       └── processor.rs   ← 业务逻辑
+├── state/                 ← 9 个 PDA 账户结构体
+├── events/                ← 8 个事件定义
+├── traits/                ← Discriminator/AccountSize/PdaSeeds 等
+├── utils/                 ← create_pda_account / emit_event
+└── errors.rs
+```
+
+### 零拷贝 vs 手动序列化策略
+
+- **纯数字字段账户**（Escrow、Stake、Treasury、ProgramConfig）：`#[repr(C)]` + unsafe 零拷贝，搭配 `assert_no_padding!` 宏编译期验证
+- **含 String/Vec 字段账户**（Task、Application、Submission、Reputation、JudgePool）：手动 `to_bytes_inner()` 序列化，不用 `#[repr(C)]`
+
+```rust
+// 零拷贝示例（Escrow）
+#[derive(Clone, CodamaAccount)]
+#[repr(C)]
+pub struct Escrow { pub amount: u64, pub mint: Address, pub bump: u8 }
+assert_no_padding!(Escrow, 8 + 32 + 1);
+
+// 手动序列化示例（Task，含 String）
+impl AccountSerialize for Task {
+    fn to_bytes_inner(&self) -> Vec<u8> {
+        let mut data = Vec::with_capacity(Self::DATA_LEN);
+        data.extend_from_slice(&self.task_id.to_le_bytes());
+        // ... 其余字段
+        data
+    }
+}
+```
+
+### Cargo.toml 配置
+
+版本基准来自 `solana-foundation/templates/pinocchio/pinocchio-counter`（2026-03）：
+
+```toml
+[workspace]
+members = ["program", "clients/rust", "tests/integration-tests"]
+resolver = "2"
+
+[workspace.dependencies]
+pinocchio                          = { version = "^0.10.1", features = ["copy"] }
+pinocchio-system                   = "^0.5.0"
+pinocchio-token                    = "^0.6"
+pinocchio-token-2022               = "^0.5"
+pinocchio-associated-token-account = "^0.3"
+pinocchio-log                      = "^0.5.1"
+codama                             = "^0.7.2"
+const-crypto                       = "^0.3.0"
+thiserror                          = "^2.0"
+borsh                              = { version = "^1.6", features = ["derive"] }
+num-derive                         = "^0.4"
+num-traits                         = "^0.2"
+solana-security-txt                = "^1"
+
+# program/Cargo.toml
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+no-entrypoint = []   # 供 Rust 集成测试 crate 引用时禁用 entrypoint
+```
+
+### 构建 & 测试
+
+使用 `justfile`（参照模板）统一构建命令：
+
+```bash
+# 安装依赖
+just install        # pnpm install + cargo fetch
+
+# 构建 program + 生成 Codama IDL + 生成 TypeScript/Rust 客户端
+just build
+
+# 单元测试（纯 Rust，不上链）
+just unit-test      # cargo test -p agent-layer
+
+# 集成测试（LiteSVM，内存模拟器）
+just integration-test  # cargo test -p integration-tests
+
+# 格式化 + lint
+just fmt && just check
+
+# 单独重新生成客户端
+just generate-idl      # Codama → idl/
+just generate-clients  # idl/ → clients/typescript/ + clients/rust/
+```
+```
+
+---
+
+## 3.9 安全规则
 
 | 规则 | 实现方式 | 验证方法 |
 |------|---------|---------|
 | 防重入 | CEI 模式（先检查，再更新状态，最后转账） | 代码审查 + 测试 |
-| Poster 权限校验 | `constraint = task.poster == poster.key()` | 单元测试 |
-| Judge 权限校验 | `constraint = task.judge == judge.key()` | 单元测试 |
+| Poster 权限校验 | 手动比较 `task.poster == *poster.key()` | 单元测试 |
+| Judge 权限校验 | 手动比较 `task.judge == *judge.key()` | 单元测试 |
 | 费用常量不可升级 | 定义为 `const`，不存储在 ProgramConfig | 代码审查 |
 | Judge Pool 随机不可预测 | 使用 `recent_blockhash + task_id + slot` 作为种子 | 统计测试 |
 | Judge Slash | force_refund 时扣除 Judge Stake 的 min_judge_stake | 集成测试 |
@@ -1225,7 +1530,7 @@ rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
 
 ---
 
-## 3.9 边界条件清单
+## 3.10 边界条件清单
 
 | # | 边界条件 | 预期行为 |
 |---|---------|---------|
@@ -1247,11 +1552,280 @@ rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
 
 ---
 
+## 3.11 IJudge 三层评判架构
+
+### 概述：Gradience 是 AI Agent 能力凭证协议
+
+任何 Agent 通过完成真实任务、接受可验证评判，在链上积累不可伪造的能力信誉。
+评判不是非黑即白——不同任务类型需要不同的评判层：
+
+| 层 | 名称 | 评判方式 | 适用任务 | 工具 |
+|----|------|---------|---------|------|
+| L1 | **TestCasesEvaluator** | 跑测试用例 / 哈希对比 / WASM 沙箱 | 代码、算法、数据转换、DeFi 回测 | C-1/C-2/C-3 IJudge CPI |
+| L2 | **LLMScoreEvaluator** | DSPy 标准化 LLM 打分 | 报告、策略分析、创作、主观评估 | DSPy + Claude/GPT-4o |
+| L3 | **OnChainEvaluator** | 链上 ZK 证明验证 | zkML 模型身份、隐私计算、大规模外包计算 | C-4 zk_proof（W4） |
+
+Poster 在 `evaluationCID`（Arweave）中声明使用哪一层，以及评判参数。
+
+---
+
+### L1 TestCasesEvaluator 数据结构
+
+`evaluationCID` 指向的 JSON 格式（Arweave）：
+
+```json
+{
+  "type": "test_cases",
+  "version": 1,
+  "test_cases": [
+    { "input": "...", "expected_output": "...", "weight": 1.0 },
+    { "input": "...", "expected_output": "...", "weight": 2.0 }
+  ],
+  "min_pass_rate": 0.6
+}
+```
+
+评分公式：`score = (∑ passed_weight / ∑ total_weight) × 100`，取整数，≥ `MIN_SCORE(60)` 方可获奖。
+
+---
+
+### L2 LLMScoreEvaluator — DSPy 标准化评分
+
+#### 为什么用 DSPy 而不是裸 Claude API
+
+| 维度 | 裸 API 调用 | DSPy LLMScoreEvaluator |
+|------|------------|----------------------|
+| 输出格式 | 自己解析字符串，脆弱 | 声明 `score: int`，框架保证 |
+| 换模型 | 要重写 prompt | 重新 compile，逻辑不变 |
+| 改进机制 | 手动试 prompt | 积累数据后 MIPROv2 自动优化 |
+| 可审计 | reasoning 嵌在文本里 | `reasoning` 字段独立输出 |
+
+#### DSPy Signature 定义
+
+```python
+import dspy
+from typing import Optional
+
+class EvaluationCriteria(dspy.Signature):
+    """Evaluate an AI Agent's submission against task requirements.
+    Score 0-100 where >= 60 is passing. Be rigorous and consistent."""
+
+    # 输入
+    task_description: str   = dspy.InputField(desc="任务要求的完整描述")
+    evaluation_criteria: str = dspy.InputField(desc="Poster 定义的评分维度和权重（来自 evaluationCID）")
+    result_ref_content: str  = dspy.InputField(desc="Agent 的最终产出（从 result_ref 下载）")
+    trace_summary: Optional[str] = dspy.InputField(desc="Agent 执行轨迹摘要（可选，白盒验证用）")
+
+    # 输出
+    score: int              = dspy.OutputField(desc="0-100 整数评分，< 60 视为不合格")
+    reasoning: str          = dspy.OutputField(desc="评判理由，需覆盖每个评分维度")
+    dimension_scores: dict  = dspy.OutputField(desc="每个评分维度的得分，键为维度名")
+    confidence: float       = dspy.OutputField(desc="评判置信度 0.0-1.0，低于 0.7 时建议人工复核")
+
+class LLMScoreEvaluator(dspy.Module):
+    def __init__(self):
+        self.judge = dspy.ChainOfThought(EvaluationCriteria)
+
+    def forward(self, task_description, evaluation_criteria, result_ref_content, trace_summary=None):
+        return self.judge(
+            task_description=task_description,
+            evaluation_criteria=evaluation_criteria,
+            result_ref_content=result_ref_content,
+            trace_summary=trace_summary or "",
+        )
+```
+
+#### `evaluationCID` JSON 格式（L2 类型）
+
+```json
+{
+  "type": "llm_score",
+  "version": 1,
+  "model": "claude-sonnet-4-6",       // 默认评判模型，可被 Judge 覆盖
+  "dimensions": [
+    { "name": "completeness",  "weight": 0.4, "description": "是否覆盖所有要求" },
+    { "name": "accuracy",      "weight": 0.4, "description": "信息准确无误" },
+    { "name": "clarity",       "weight": 0.2, "description": "表达清晰，结构合理" }
+  ],
+  "min_confidence": 0.7              // 低于此置信度时触发人工复核
+}
+```
+
+#### 运行位置
+
+DSPy 运行在 **Judge Daemon 侧（链下）**，以 Python 微服务形式暴露 RPC 接口：
+
+```
+Judge Daemon (TypeScript)
+    ↓ HTTP RPC
+DSPy 评分服务 (Python)
+    ↓ LLM API
+Claude / GPT-4o / Llama
+    ↓
+{ score: 82, reasoning: "...", dimension_scores: {...}, confidence: 0.91 }
+    ↓
+Judge Daemon → SDK.task.judge(taskId, winner, 82, reasonRef) → 链上
+```
+
+#### 后期优化路径（有数据后）
+
+```python
+# 积累 N 条历史评分后，用 MIPROv2 自动优化 prompt
+optimizer = dspy.MIPROv2(
+    metric=human_agreement_rate,  # 与人工评分的一致率
+    auto="medium",
+    num_threads=8,
+)
+optimized_evaluator = optimizer.compile(
+    LLMScoreEvaluator(),
+    trainset=historical_judgements,  # 历史 (submission, human_score) 对
+)
+optimized_evaluator.save("judge_daemon/models/llm_score_v2.json")
+```
+
+---
+
+### L3 OnChainEvaluator（W4，见 §2.3 C-4）
+
+基于 ZK proof 的链上验证，MVP 阶段不实现，接口预留。
+
+---
+
+## 3.12 SAS（Solana Attestation Service）集成规格
+
+> **定位**：SAS 是 Gradience "AI Agent 能力凭证协议" 的对外输出层。链上 `ReputationAccount` 存累计内部信誉分（Judge Pool 准入用），SAS Attestation 是每次任务完成后颁发的**可携带能力凭证**——任何外部协议、DAO、雇主可独立验证，无需理解 Gradience 内部账户结构。
+
+### 3.12.1 Credential 定义
+
+协议凭证由 upgrade_authority 在协议初始化后一次性创建：
+
+```
+name:      "Gradience Protocol"
+authority: <upgrade_authority 公钥>
+signers:   [<judge_daemon_keypair_1>, <judge_daemon_keypair_2>, ...]
+           // Judge Daemon 运营者密钥对；可通过 SAS addSigner 指令动态增删
+```
+
+- `authority` 控制 Credential 生命周期和签名者列表
+- 每个 Judge Daemon 节点的运营密钥对需提前注册为 `signer`
+- 可为不同任务类别注册不同的 Daemon 签名者（可选扩展）
+
+### 3.12.2 Schema 定义
+
+**Schema 名称**：`TaskCompletion`
+
+```
+name:        "TaskCompletion"
+description: "Verifiable proof that an AI Agent completed a Gradience task"
+fieldNames:  ["taskId", "taskCategory", "judgeMethod", "score", "rewardAmount", "completedAt"]
+layout:      [3, 0, 0, 0, 3, 8]
+```
+
+Layout 类型对照（SAS 编码）：`3 = U64 | 0 = U8 | 8 = I64`
+
+| 字段 | SAS 类型 | 值域 | 说明 |
+|------|---------|------|------|
+| `taskId` | U64 | — | Gradience Task ID（与链上 Task PDA 关联） |
+| `taskCategory` | U8 | 0-7 | 任务类别（与 §3.1 CATEGORY_* 常量一致） |
+| `judgeMethod` | U8 | 0=TestCases / 1=LLMScore / 2=OnChain | 评判方式（三层 IJudge 对应） |
+| `score` | U8 | 60-100 | 最终评分（仅 score ≥ MIN_SCORE 时颁发 Attestation） |
+| `rewardAmount` | U64 | — | 奖励金额（lamports 或 token 最小单位） |
+| `completedAt` | I64 | — | 链上确认时的 `clock.unix_timestamp` |
+
+### 3.12.3 Attestation 颁发流程
+
+**触发时机**：Judge Daemon 调用 `judge_and_pay` 后，等待 confirmed 确认（1 个区块），然后发起 SAS `create_attestation` 交易。
+
+**颁发条件**：`score ≥ MIN_SCORE`（任务 Completed 状态）。score < MIN_SCORE（Refunded）不颁发。
+
+**expiry**：`0n`（永不过期）——能力凭证不应有时限。
+
+```typescript
+// Judge Daemon — 伪代码（TypeScript + sas-lib）
+import { getCreateAttestationInstruction } from "sas-lib";
+
+// 1. 提交 judge_and_pay，等待确认
+const sig = await sdk.task.judge({ taskId, winner, score, reasonRef });
+await rpc.confirmTransaction(sig, "confirmed");
+
+// 2. 仅 score ≥ MIN_SCORE 时颁发能力凭证
+if (score >= MIN_SCORE) {
+  const data = encodeTaskCompletionData({
+    taskId, taskCategory, judgeMethod, score, rewardAmount,
+    completedAt: BigInt(Math.floor(Date.now() / 1000)),
+  });
+
+  const nonce = Keypair.generate().publicKey; // 每次唯一
+  const attestationPda = deriveAttestationPda(nonce); // SAS 内部派生
+
+  await getCreateAttestationInstruction({
+    payer:       daemonKeypair,
+    authority:   daemonKeypair,           // Credential 的 authorized signer
+    credential:  GRADIENCE_CREDENTIAL_PDA,
+    schema:      TASK_COMPLETION_SCHEMA_PDA,
+    attestation: attestationPda,
+    nonce:       nonce,
+    data:        data,
+    expiry:      0n,                      // 永不过期
+  }).sendAndConfirm();
+}
+```
+
+**失败处理**：
+- SAS CPI 失败（网络抖动）→ Absurd workflow 重试，最多 5 次，指数退避
+- judge_and_pay 已上链、Attestation 颁发失败 → 重试不影响链上结算，Attestation 事后补发
+- 重复颁发（Daemon 重启）→ nonce 唯一，SAS 同一 nonce 第二次调用会失败（幂等保护，忽略错误）
+
+### 3.12.4 SDK 查询接口
+
+```typescript
+// @gradience/sdk — agentAttestations 查询
+
+import { fetchAllAttestation } from "sas-lib";
+import type { Address } from "@solana/kit";
+
+/**
+ * 查询某 Agent 获得的全部能力凭证（TaskCompletion Attestations）
+ * 可用于：Agent Me 页面展示、外部协议验证 Agent 能力
+ */
+export async function getAgentAttestations(agentAddress: Address) {
+  // sas-lib 支持按 signer 过滤（signer = 颁发该 Attestation 的 Daemon 公钥）
+  // 或按 credential + schema 过滤后在客户端匹配 tokenAccount = agentAddress
+  return await fetchAllAttestation(rpc, {
+    filter: { credential: GRADIENCE_CREDENTIAL_PDA }
+  });
+}
+
+// 解码单条 Attestation 数据
+export function decodeTaskCompletionAttestation(raw: Uint8Array): TaskCompletionData {
+  // 按 fieldNames 顺序 Borsh 解码：[U64, U8, U8, U8, U64, I64]
+  // 对应：taskId, taskCategory, judgeMethod, score, rewardAmount, completedAt
+}
+```
+
+### 3.12.5 依赖
+
+| 环境 | 包 | 用途 |
+|------|----|------|
+| TypeScript（SDK + Judge Daemon） | `sas-lib` (latest) | 颁发 + 查询 Attestation |
+| Rust（链上 Program） | 无 | SAS CPI 由链下 Daemon 发起，不在合约内执行 |
+
+**常量（部署后固化到 SDK 配置）**：
+
+```typescript
+// 部署时由 upgrade_authority 创建，PDA 地址固化到 SDK 配置
+export const GRADIENCE_CREDENTIAL_PDA = address("...");
+export const TASK_COMPLETION_SCHEMA_PDA = address("...");
+export const SAS_PROGRAM_ID = address("22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq");
+```
+
+---
+
 ## ✅ Phase 3 验收标准
 
-- [x] 所有 9 个 PDA 精确到字段类型和字节大小
+- [x] 所有 9 个 PDA 精确到字段类型和字节大小（含 1-byte discriminator + 1-byte version 前缀，DATA_LEN + 2 = LEN）
 - [x] 所有 10 条指令有完整参数、账户、前后置条件
-- [x] 错误码统一编号（6000-6041），共 **30 个命名码**（含 DeadlineNotPassed 6006、UnsupportedMintExtension 6041；组间有意留间隔）
+- [x] 错误码统一编号（6000-6041），共 **30 个命名码**（`ProgramError::Custom(N)` 形式，无 Anchor `#[error_code]`）
 - [x] 状态机转换条件精确，无歧义，覆盖所有终态
 - [x] 费用计算有伪代码，精度处理（余数归 Agent）已说明
 - [x] JudgePool 加权随机算法有伪代码，随机源明确
@@ -1262,6 +1836,7 @@ rep.global.win_rate   = rep.global.completed * 10000 / rep.global.total_applied
 - [x] 所有大小计算基于 Borsh 序列化（紧凑排列，无 padding），已标注说明
 - [x] SPL Token / Token-2022 版本账户完整列出（post_task、judge_and_pay）
 - [x] apply_for_task 质押机制明确（SOL/SPL 路径、Escrow 存储、退回时机）
+- [x] SAS 集成规格完整（Credential / Schema / 颁发流程 / SDK 查询接口 / 依赖）
 - [x] 本文档可以直接交给任何开发者（或 AI），不需要额外口头解释即可实现
 
 **Phase 3 验收通过后，进入 Phase 4: Task Breakdown →**

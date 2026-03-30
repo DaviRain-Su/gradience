@@ -10,18 +10,22 @@
 
 | 测试类型 | 覆盖范围 | 工具 | 运行环境 |
 |---------|---------|------|---------|
-| 单元测试 | 11 条指令各自独立 | `anchor test` + BankrunProvider | localnet（内存，支持时钟快进） |
-| 集成测试 | 跨指令完整生命周期 | `anchor test` + devnet | devnet（真实 RPC） |
-| 安全测试 | 权限绕过 / 算术溢出 / 账户伪造 | `anchor test` | localnet |
-| 事件验证 | 8 个 Anchor Event emit 正确性 | `program.addEventListener` | localnet |
+| 单元测试 | 11 条指令各自独立 | `litesvm` + TypeScript bindings | 内存模拟器（速度快于 bankrun，支持时钟快进） |
+| 集成测试 | 跨指令完整生命周期 | `litesvm` / `cargo test-sbf` | localnet / devnet |
+| 安全测试 | 权限绕过 / 算术溢出 / 账户伪造 | `litesvm` | localnet |
+| 事件验证 | 8 个链上事件（sol_log_data 格式）| 解析 tx logs `Program data:` 条目 | localnet |
 | 精度测试 | 分账精确到 lamport | 余额断言 | localnet |
 | 性能测试 | CU 消耗 ≤ 200k | `simulateTransaction` | localnet |
 
 **关键工具**：
-- `@coral-xyz/anchor` v0.30+
-- `solana-bankrun` — 时钟快进（`warp_to_slot`）用于 deadline/cooldown 测试
+- `@solana/web3.js` — 交易构建、账户查询
+- `litesvm` — 高速内存 Solana 模拟器，时钟快进（`warpToSlot`）用于 deadline/cooldown 测试；替代 `solana-bankrun`
 - `@solana/spl-token` — SPL Token / Token-2022 路径
+- `borsh` — 手动序列化/反序列化账户数据（无 Anchor 自动解码；可选用 Codama 生成的客户端）
 - `chai` + `mocha` — 断言框架
+- Codama 生成的 TypeScript 客户端（`sdk/src/generated`）— 可选，替代手写 borsh schema
+
+**注意：不使用 `@coral-xyz/anchor`**。测试直接通过 `TransactionInstruction` 构建指令，通过 `borsh.deserialize` 解码账户数据，通过 log 解析验证事件。
 
 **常量基准**（与 Tech Spec 锁定）：
 
@@ -68,7 +72,7 @@ const C = {
 
 | # | 测试名称 | 操作 | 预期错误 |
 |---|---------|------|---------|
-| E1 | 二次调用 | 已初始化后再次 initialize | Anchor `AccountAlreadyInUse` 内置错误（非自定义码） |
+| E1 | 二次调用 | 已初始化后再次 initialize | `ProgramError::AccountAlreadyInUse` 或自定义保护检测 |
 
 ---
 
@@ -131,7 +135,7 @@ const C = {
 | H1 | SOL 质押申请 | stake=1e9, agent=A | tx 成功；emit TaskApplied | Application PDA 创建；Escrow+=1e9；Reputation.global.total_applied++ |
 | H2 | SPL Token 质押 | stake=100(token), mint=SPL | tx 成功 | escrow_ata+=100；Application.stake_amount=100 |
 | H3 | min_stake=0 无需质押 | stake=0, min_stake=0 | tx 成功 | Application 创建；total_applied++ |
-| H4 | Reputation PDA 首次创建 | agent 无历史 | tx 成功 | Reputation PDA init_if_needed |
+| H4 | Reputation PDA 首次创建 | agent 无历史 | tx 成功 | Reputation PDA 首次按需创建 |
 | H5 | total_applied 累计 | 3 个 agent 依次申请 | 第 3 次后 reputation.global.total_applied=3 | 每次递增 1 |
 
 **边界条件**
@@ -167,8 +171,10 @@ const C = {
 |---|---------|------|---------|
 | B1 | model 长度=64（MAX_MODEL_LEN） | 64字节 model | tx 成功 |
 | B2 | provider 长度=32（MAX_PROVIDER_LEN） | 32字节 | tx 成功 |
-| B3 | reason_ref=None | Option::None | tx 成功 |
-| B4 | deadline - 1 slot 提交 | clock=deadline-1 | tx 成功 |
+| B3 | result_ref 长度=128（MAX_REF_LEN） | 128字节字符串 | tx 成功 |
+| B4 | runtime 长度=32（MAX_RUNTIME_LEN） | 32字节字符串 | tx 成功 |
+| B5 | version 长度=32（MAX_VERSION_LEN） | 32字节字符串 | tx 成功 |
+| B6 | deadline - 1 slot 提交 | clock=deadline-1 | tx 成功 |
 
 **异常/攻击**
 
@@ -180,6 +186,11 @@ const C = {
 | E4 | provider 超长 | provider=33字节 | `InvalidRuntimeEnv` (6033) |
 | E5 | result_ref 为空 | result_ref="" | `EmptyRef` (6032) |
 | E6 | Task 非 Open | Task.state=Refunded | `TaskNotOpen` (6000) |
+| E7 | runtime 超长 | runtime=33字节 | `InvalidRuntimeEnv` (6033) |
+| E8 | version 超长 | version=33字节 | `InvalidRuntimeEnv` (6033) |
+| E9 | runtime 为空字符串 | runtime="" | `InvalidRuntimeEnv` (6033)（边界条件#13） |
+| E10 | provider 为空字符串 | provider="" | `InvalidRuntimeEnv` (6033) |
+| E11 | model 为空字符串 | model="" | `InvalidRuntimeEnv` (6033) |
 
 ---
 
@@ -298,9 +309,10 @@ const C = {
 
 | # | 测试名称 | 操作 | 预期错误码 |
 |---|---------|------|-----------|
-| E1 | 冷却期未到 | clock=judge_deadline+FORCE_REFUND_DELAY-1 | `ForceRefundDelayNotPassed` (6003) |
-| E2 | 无提交（需要至少 1 个） | submission_count=0 | `NoSubmissions` (6005) |
-| E3 | Task 非 Open | Task.state=Completed | `TaskNotOpen` (6000) |
+| E1 | judge_deadline 未到 | clock=judge_deadline-1 | `JudgeDeadlineNotPassed` (6002) |
+| E2 | judge_deadline 已过但 FORCE_REFUND_DELAY 未到 | clock=judge_deadline+FORCE_REFUND_DELAY-1 | `ForceRefundDelayNotPassed` (6003) |
+| E3 | 无提交（需要至少 1 个） | submission_count=0 | `NoSubmissions` (6005) |
+| E4 | Task 非 Open | Task.state=Completed | `TaskNotOpen` (6000) |
 
 ---
 
@@ -310,7 +322,7 @@ const C = {
 
 | # | 测试名称 | 输入 | 预期输出 | 状态变化 |
 |---|---------|------|---------|---------|
-| H1 | 首次注册（JudgePool 不存在） | judge=J, stake=1e9, categories=[0] | tx 成功；emit JudgeRegistered；JudgePool init_if_needed | Stake PDA 创建；JudgePool[0].entries 增加 1；weight=(1000+0)（初始 reputation=0） |
+| H1 | 首次注册（JudgePool 不存在） | judge=J, stake=1e9, categories=[0] | tx 成功；emit JudgeRegistered；JudgePool 首次按需创建 | Stake PDA 创建；JudgePool[0].entries 增加 1；weight=(1000+0)（初始 reputation=0） |
 | H2 | 同 category 第 2 个 Judge | 已有 1 Judge | tx 成功 | JudgePool[0].entries.len()=2；total_weight 更新 |
 | H3 | 多 category 注册 | categories=[0,1,2] | tx 成功 | 加入 3 个 pool |
 
@@ -339,19 +351,21 @@ const C = {
 
 | # | 测试名称 | 输入 | 预期输出 | 状态变化 |
 |---|---------|------|---------|---------|
-| H1 | 冷却期后解质押 | warp to register_slot + UNSTAKE_COOLDOWN + 1 | tx 成功；emit JudgeUnstaked | Stake PDA 关闭；stake_amount 退还 judge；JudgePool entries 移除 |
+| H1 | 首次注册后立即解质押（无冷却） | register_judge → unstake（cooldown_until=0） | tx 成功；emit JudgeUnstaked | Stake PDA 关闭；stake_amount 退还 judge；JudgePool entries 移除 |
+| H2 | 完成评判后等待冷却期解质押 | register → judge_and_pay → warp(UNSTAKE_COOLDOWN+1) → unstake | tx 成功 | Stake PDA 关闭；judge_and_pay 设置的 cooldown_until 已过 |
 
 **边界条件**
 
 | # | 测试名称 | 输入 | 预期行为 |
 |---|---------|------|---------|
-| B1 | 冷却期刚好到期 | clock=register_slot + UNSTAKE_COOLDOWN | tx 成功 |
+| B1 | 冷却期刚好到期（clock = cooldown_until） | clock=judge_and_pay_time + UNSTAKE_COOLDOWN | tx 成功（`clock > cooldown_until` 为严格大于，此处正好等于应失败——验证边界为严格 `>` 还是 `>=`） |
+| B2 | judge_and_pay 后 cooldown_until 被正确设置 | 完成 judge_and_pay 后读 stake.cooldown_until | `= judge_and_pay_timestamp + UNSTAKE_COOLDOWN` |
 
 **异常/攻击**
 
 | # | 测试名称 | 操作 | 预期错误码 |
 |---|---------|------|-----------|
-| E1 | 冷却期未到 | clock < register_slot + UNSTAKE_COOLDOWN | `CooldownNotExpired` (6024) |
+| E1 | 完成评判后冷却期内尝试 unstake | judge_and_pay → unstake（clock < cooldown_until） | `CooldownNotExpired` (6024) |
 
 ---
 
@@ -398,9 +412,9 @@ const C = {
 | S3 | **伪造 Application PDA** | remaining_accounts 中传入错误 task_id 的 Application | 验证 `application.task_id == task.task_id` 失败 | 构造错误 PDA |
 | S4 | **双重退款** | judge_and_pay 后再调 refund_expired | `TaskNotOpen` (6000)（Task.state=Completed） | 顺序攻击 |
 | S5 | **算术溢出** | reward=u64::MAX | `Overflow` (6040) 或安全整数运算（checked_mul） | 极大值输入 |
-| S6 | **重复申请** | 同一 agent apply 两次 | `AlreadyApplied` (6022) | Anchor 账户唯一性约束 |
+| S6 | **重复申请** | 同一 agent apply 两次 | `AlreadyApplied` (6022) | 手动检查 Application PDA 是否已存在 |
 | S7 | **提前 force_refund** | 冷却期未到触发 force_refund | `ForceRefundDelayNotPassed` (6003) | 时间戳操控 |
-| S8 | **Slash 逃避** | force_refund 时传入错误 judge_stake PDA | PDA seeds 验证失败 | Anchor ConstraintSeeds |
+| S8 | **Slash 逃避** | force_refund 时传入错误 judge_stake PDA | PDA seeds 验证失败 | 手动 PDA seeds 验证 |
 | S9 | **Token-2022 扩展绕过** | 先创建普通 mint，后添加 Transfer Hook，然后 post_task | 每次 post_task 实时检查 mint extensions | 动态扩展检测 |
 | S10 | **Pool 随机操控** | Poster 尝试通过选择特定 slot 影响 sha256 选 Judge** | sha256 混入 task_id + blockhash，攻击者无法完全控制输出 | 统计分布验证（100 次选取分布均匀） |
 | S11 | **未申请 Agent 提交** | 无 Application PDA 直接调 submit_result | `AgentNotApplied` (6013) | PDA 缺失 |
@@ -439,10 +453,12 @@ tests/
 ### `tests/fixtures/helpers.ts`
 
 ```typescript
-import * as anchor from "@coral-xyz/anchor";
-import { BankrunProvider, startAnchor } from "solana-bankrun";
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { PROGRAM_ID } from "../target/types/gradience";
+// Pinocchio program — no Anchor SDK. Use @solana/web3.js + litesvm directly.
+import { LiteSVM } from "litesvm";
+import { PublicKey, Keypair, SystemProgram, TransactionInstruction, Transaction } from "@solana/web3.js";
+import * as borsh from "borsh";
+
+export const PROGRAM_ID = new PublicKey("GrAdN7..."); // fill in deployed program ID
 
 // ── PDA 推导 ────────────────────────────────────────────
 export function findProgramConfigPDA(): [PublicKey, number] {
@@ -516,26 +532,52 @@ export function findJudgePoolPDA(category: number): [PublicKey, number] {
   );
 }
 
-// ── 时钟工具（BankrunProvider） ────────────────────────
-export async function warpSeconds(context: any, seconds: number) {
-  const clock = await context.banksClient.getClock();
-  await context.setClock({
-    ...clock,
-    unixTimestamp: clock.unixTimestamp + BigInt(seconds),
-  });
+// ── 时钟工具（litesvm） ────────────────────────────────
+export function warpSeconds(svm: LiteSVM, seconds: number) {
+  // litesvm: 直接设置 clock sysvar
+  const clock = svm.getClock();
+  svm.setClock({ ...clock, unixTimestamp: clock.unixTimestamp + BigInt(seconds) });
 }
 
 // ── 余额断言精度（lamport 级） ─────────────────────────
-export async function assertLamports(
-  provider: anchor.AnchorProvider,
+export function assertLamports(
+  svm: LiteSVM,
   account: PublicKey,
   expected: bigint,
   msg = ""
 ) {
-  const bal = await provider.connection.getBalance(account);
-  if (BigInt(bal) !== expected) {
+  const acctInfo = svm.getAccount(account);
+  const bal = BigInt(acctInfo?.lamports ?? 0);
+  if (bal !== expected) {
     throw new Error(`${msg} expected=${expected} actual=${bal}`);
   }
+}
+
+// ── 账户数据解码（Borsh，含 1-byte discriminator + 1-byte version 前缀） ──────
+export function decodeAccount<T>(data: Uint8Array, schema: borsh.Schema): T {
+  // Pinocchio 账户结构：[discriminator: 1B][version: 1B][payload: N B]
+  // 跳过前 2 个字节后再 borsh 解码
+  return borsh.deserialize(schema, data.slice(2)) as T;
+}
+
+// ── 事件解析（sol_log_data，Anchor/Codama 兼容格式） ─────
+// 事件编码: [EVENT_IX_TAG_LE: 8B][event_discriminator: 1B][borsh_payload: N B]
+// EVENT_IX_TAG_LE = 0xe445a52e51cb9a1d（小端，固定 magic）
+// 位于 tx logs 中的 "Program data: <base64>" 行
+const EVENT_IX_TAG = Buffer.from("1d9acb512ea545e4", "hex"); // LE bytes of 0xe445a52e51cb9a1d
+export function parseEvents(logs: string[]): Array<{ type: number; data: Uint8Array }> {
+  const events: Array<{ type: number; data: Uint8Array }> = [];
+  for (const log of logs) {
+    const match = log.match(/^Program data: (.+)$/);
+    if (match) {
+      const bytes = Buffer.from(match[1], "base64");
+      // 验证 8-byte magic 前缀
+      if (bytes.length >= 9 && bytes.slice(0, 8).equals(EVENT_IX_TAG)) {
+        events.push({ type: bytes[8], data: bytes.slice(9) });
+      }
+    }
+  }
+  return events;
 }
 
 // ── 常量 ──────────────────────────────────────────────
@@ -564,24 +606,30 @@ export const VALID_RUNTIME_ENV = {
 ### `tests/unit/01-initialize.test.ts`
 
 ```typescript
-import * as anchor from "@coral-xyz/anchor";
+import { LiteSVM } from "litesvm";
+import { Keypair, PublicKey, SystemProgram, TransactionInstruction, Transaction } from "@solana/web3.js";
 import { expect } from "chai";
-import { findProgramConfigPDA, findTreasuryPDA } from "../fixtures/helpers";
+import {
+  PROGRAM_ID, findProgramConfigPDA, findTreasuryPDA,
+  decodeAccount, warpSeconds,
+} from "../fixtures/helpers";
 
 describe("initialize", () => {
-  let program: anchor.Program;
-  let authority: anchor.web3.Keypair;
+  let svm: LiteSVM;
+  let authority: Keypair;
 
   before(async () => {
-    // TODO: setup bankrun context, program, authority keypair
+    svm = new LiteSVM();
+    svm.addProgram(PROGRAM_ID, "target/deploy/agent_layer.so");
+    authority = new Keypair();
+    svm.airdrop(authority.publicKey, BigInt(10e9));
   });
 
   // ── Happy Path ────────────────────────────────────────
   it("H1: should initialize ProgramConfig with correct fields", async () => {
-    // TODO: call program.methods.initialize(minJudgeStake).accounts({...}).rpc()
-    // assert ProgramConfig.upgrade_authority == authority.publicKey
-    // assert ProgramConfig.min_judge_stake == minJudgeStake
-    // assert Treasury PDA exists
+    // TODO: build TransactionInstruction with discriminator=0, params=(minJudgeStake=1e9)
+    // send via svm.sendTransaction(tx)
+    // fetch ProgramConfig PDA, borsh.deserialize (skip 2-byte header), assert fields
   });
 
   it("H2: should allow min_judge_stake = 0", async () => {
@@ -594,9 +642,10 @@ describe("initialize", () => {
   });
 
   // ── Error ─────────────────────────────────────────────
-  it("E1: should fail with Anchor built-in error on second initialize", async () => {
-    // TODO: call initialize twice, expect anchor AccountAlreadyInUse
-    // assert error is NOT a custom GradienceError
+  it("E1: should fail with ProgramError on second initialize", async () => {
+    // TODO: call initialize twice
+    // expect second tx to fail (account already has data)
+    // Pinocchio: 手动检查 account.data_len() > 0，返回 ProgramError::AccountAlreadyInUse 或自定义错误
   });
 });
 ```
@@ -604,17 +653,23 @@ describe("initialize", () => {
 ### `tests/unit/02-post-task-sol.test.ts`
 
 ```typescript
-import * as anchor from "@coral-xyz/anchor";
+import { LiteSVM } from "litesvm";
+import { Keypair } from "@solana/web3.js";
 import { expect } from "chai";
-import { findTaskPDA, findEscrowPDA, C } from "../fixtures/helpers";
+import { PROGRAM_ID, findTaskPDA, findEscrowPDA, C, decodeAccount, parseEvents } from "../fixtures/helpers";
 
 describe("post_task (SOL)", () => {
-  let program: anchor.Program;
-  let poster: anchor.web3.Keypair;
-  let judge: anchor.web3.Keypair;
+  let svm: LiteSVM;
+  let poster: Keypair;
+  let judge: Keypair;
 
   before(async () => {
-    // TODO: setup, initialize program
+    svm = new LiteSVM();
+    svm.addProgram(PROGRAM_ID, "target/deploy/agent_layer.so");
+    poster = new Keypair();
+    judge = new Keypair();
+    svm.airdrop(poster.publicKey, BigInt(10e9));
+    // TODO: call initialize before post_task tests
   });
 
   // ── Happy Path ────────────────────────────────────────
@@ -782,7 +837,7 @@ describe("judge_and_pay (SOL)", () => {
 describe("register_judge", () => {
   it("H1: should create JudgePool on first registration and emit JudgeRegistered", async () => {
     // TODO: register first judge
-    // assert JudgePool PDA created (init_if_needed)
+    // assert JudgePool PDA created (first registration, manual init check)
     // assert Stake PDA created
     // assert JudgePool.entries.len() == 1
     // assert weight = min(stake_sol, 1000) + min(avg_score/10, 100)
@@ -865,7 +920,7 @@ describe("Security: Attack Scenarios", () => {
   it("S3: force_refund — fake Application PDA should fail validation", async () => {
     // TODO: construct Application PDA with wrong task_id
     // pass in remaining_accounts
-    // expect Anchor constraint error
+    // expect PDA seeds mismatch → ProgramError::InvalidAccountData
   });
 
   it("S4: double-refund — refund_expired after judge_and_pay should fail", async () => {
@@ -899,15 +954,15 @@ describe("Security: Attack Scenarios", () => {
 | 指标 | 目标 | 验证方法 |
 |------|------|---------|
 | 指令覆盖率 | 100%（11/11 条指令均有测试） | 人工核对 |
-| 分支覆盖率 | ≥ 95% | `anchor test --coverage`（llvm-cov） |
-| 语句覆盖率 | ≥ 90% | llvm-cov |
+| 分支覆盖率 | ≥ 95% | `cargo llvm-cov` |
+| 语句覆盖率 | ≥ 90% | `cargo llvm-cov` |
 | Happy Path | 每条指令 ≥ 1 个 | 本文档 §5.2 |
 | Boundary | 每条指令 ≥ 1 个边界值 | 本文档 §5.2 |
 | Error/Attack | 每个错误码至少触发 1 次 | 30 个错误码全覆盖 |
 | 安全场景 | 12 个攻击向量全测通 | §5.4 |
 | 集成场景 | 10 个端到端场景全绿 | §5.3 |
 | CU 性能 | post_task ≤ 200k；judge_and_pay ≤ 200k | `simulateTransaction` |
-| 事件验证 | 8 个 Anchor Event 全部验证 emit | `program.addEventListener` |
+| 事件验证 | 8 个链上事件（sol_log_data，8-byte EVENT_IX_TAG_LE 格式）全部验证 emit | `parseEvents(tx.meta.logMessages)` |
 
 ---
 
@@ -915,12 +970,12 @@ describe("Security: Attack Scenarios", () => {
 
 - [x] Tech Spec 中的 11 条指令均有对应测试用例（Happy + Boundary + Error）
 - [x] 30 个错误码在 Error 场景中至少触发 1 次
-- [x] 8 个 Anchor Event 在集成测试中验证 emit
+- [x] 8 个链上事件（sol_log_data，8-byte EVENT_IX_TAG_LE + 1-byte discriminator 格式）在集成测试中验证 emit（通过 parseEvents 解析 tx logs）
 - [x] remaining_accounts 质押退回（judge_and_pay / cancel / refund / force_refund）有专项测试
 - [x] 安全测试场景 12 个（覆盖权限 / 溢出 / 账户伪造 / 重入 / 时间操控）
 - [x] 集成测试 10 个完整端到端场景
-- [x] 测试代码骨架已编写（可编译，TODO 标记实现位置）
+- [x] 测试代码骨架已编写（使用 litesvm + @solana/web3.js，无 Anchor SDK）
 - [x] CU 性能目标已定义（≤ 200k per instruction）
-- [x] 覆盖目标已量化（分支 ≥ 95%，语句 ≥ 90%）
+- [x] 覆盖目标已量化（分支 ≥ 95%，语句 ≥ 90%，通过 cargo llvm-cov 验证）
 
 **验收通过后，进入 Phase 6: Implementation →**

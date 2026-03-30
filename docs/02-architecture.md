@@ -10,7 +10,7 @@
 
 ### 一句话描述
 
-> Agent Layer v2 是一个运行在 Solana 上的能力结算协议栈：链上 Program 提供无需许可的竞争结算内核，链下工具链（SDK / CLI / Judge Daemon / 前端）提供完整开发者体验，EVM 合约（Week 4）提供跨链信誉验证。
+> Gradience 是一个 **AI Agent 能力凭证协议**：任何 Agent 通过完成真实任务、接受可验证评判，在链上积累不可伪造的能力信誉。链上 Program 提供无需许可的竞争结算内核，可插拔的三层评判体系（测试用例 / DSPy 标准化 LLM 评分 / 链上确定性验证）覆盖所有任务类型，EVM 合约（Week 4）提供跨链信誉验证。
 
 ### 全栈架构图
 
@@ -85,20 +85,20 @@ flowchart TB
 
 | 组件 | 职责 | 不做什么 | 技术选型 | 状态 |
 |------|------|---------|---------|------|
-| **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Anchor | 新建 |
-| **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge；内置四种实现类型：**test_cases**（跑测试用例，通过率即分数，适合算法竞技/代码任务）、**oracle_hash**（输出哈希对比，适合数据转换/ETL）、**wasm_exec**（链下 WASM 沙箱执行，确定性重现，适合量化回测/DeFi计算/游戏AI）、**zk_proof**（链上零知识证明验证，适合隐私数据分析/zkML模型身份证明/外包大规模计算）；W4 扩展 zkML（RISC Zero / EZKL 集成），可密码学确定性验证 Agent 使用了声明的 AI 模型 | 不内嵌 AI 逻辑；不托管资金 | Anchor CPI | 新建 |
-| **Judge Daemon** | 链下持久化评测工作流：通过 **Helius LaserStream gRPC** 超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd（PostgreSQL 持久化工作流引擎）+ Helius LaserStream | 新建 |
-| **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave；内置 **MPP 客户端**（`@solana/mpp`），Agent 调用外部付费 API（LLM / 数据 / 搜索）时自动处理 HTTP 402 挑战，用 Solana 钱包按需付款，无需管理 API Key | 不是链上组件；trace 内容不上链，只有 CID 引用上链；MPP 仅用于调用外部服务，不影响任务悬赏结算 | TypeScript + Absurd + LLM SDK + @solana/mpp | 新建 |
-| **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + @coral-xyz/anchor | 新建 |
-| **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
-| **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
-| **Indexer** | 通过 **Helius Webhooks** 接收 Program 事件推送（替代自轮询，延迟 <200ms），提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 + Helius Webhooks | 已有（重构） |
+| **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Pinocchio（no_std，无 Anchor） | 新建 |
+| **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge；**三层可插拔评判架构**：① **TestCasesEvaluator**（链下测试用例跑分，客观确定性，适合代码/算法/DeFi验证）；② **LLMScoreEvaluator**（DSPy 标准化 LLM 打分，结构化 I/O + 跨模型可移植 + 可用历史数据优化，适合报告/策略分析/创作类任务）；③ **OnChainEvaluator**（链上/链下确定性验证，含 oracle_hash / wasm_exec / zk_proof，适合量化回测/DeFi计算/zkML证明/隐私计算）；W4 扩展 zkML（RISC Zero / EZKL 集成），可密码学确定性验证 Agent 使用了声明的 AI 模型 | 不内嵌 AI 逻辑；不托管资金 | Pinocchio CPI + DSPy（Python，Judge Daemon 侧） | 新建 |
+| **Judge Daemon** | 链下持久化评测工作流：通过 **Helius LaserStream gRPC** 超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL；Type B 评分通过 **DSPy LLMScoreEvaluator** 实现（结构化评分、跨模型可移植、可用历史数据用 MIPROv2 自动优化） | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd + Helius LaserStream + **DSPy（Python 微服务 / RPC）** | 新建 |
+| **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave；内置 **MPP/x402 客户端**（`@solana/kit`），Agent 调用外部付费 API（LLM / 数据 / 搜索）时自动处理 HTTP 402 挑战，用 Solana 钱包按需付款，无需管理 API Key | 不是链上组件；trace 内容不上链，只有 CID 引用上链；MPP 仅用于调用外部服务，不影响任务悬赏结算 | TypeScript + Absurd + LLM SDK + **@solana/kit**；x402 参考：`gh:solana-foundation/templates/community/kit-node-solanax402`（Facilitator + Server 完整实现）；AI Agent + x402 集成参考：`gh:solana-foundation/templates/community/solana-chatgpt-kit`（MCP + Jupiter + 自然语言调用模式） | 新建 |
+| **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + **@solana/kit** + Codama 生成客户端（无 Anchor SDK，无旧版 @solana/web3.js） | 新建 |
+| **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动；**原生支持 `NO_DNA` 标准**（`no-dna.org`）：检测 `NO_DNA=1` 环境变量，切换为 Agent 模式——所有输出为 JSON、不交互式提示、绝对时间戳、stderr 机器可解析错误；与 Anchor / Surfpool 等 Solana 工具链统一约定，使 AI Agent 可直接调用 CLI 无需人工干预 | 不提供 GUI | TypeScript / Commander.js | 新建 |
+| **产品前端** | 任务浏览、发布、竞争状态、评判触发；Agent 能力凭证展示（SAS Attestations） | 不存储链下私有数据 | Next.js + Tailwind + **@solana/kit** + Cloudflare Pages；脚手架：`gh:solana-foundation/templates/kit/nextjs`（与 Codama 生成客户端天然匹配，非旧 wallet-adapter 体系）；**Kora gasless**（`@solana/kora` + `createKitKoraClient`，用户用 USDC 支付 Gas，无需持有 SOL） | 新建 |
+| **Indexer** | 通过 **Helius Webhooks** 接收 Program 事件推送（替代自轮询，延迟 <200ms），提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行）；若需对高级 API 端点收费，可用 x402 保护 | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 + Helius Webhooks；Rust x402 服务端参考：`gh:solana-foundation/templates/community/x402-solana-rust`（Axum/Actix/Rocket） | 已有（重构） |
 | **钱包抽象层（Wallet Adapter）** | SDK 内置钱包适配器接口，屏蔽底层钱包实现，Agent 只调用统一的 `sign / sendTx` 接口；支持五种适配器：OpenWallet、OKX Agentic Wallet、Privy、Kite Passport、原始 Keypair（开发测试） | 不托管资产；不决定用户用哪种钱包 | TypeScript 接口 + 各 SDK 适配器 | 新建 |
 | **OpenWallet (OWS) 适配器** | 开放标准，本地自托管；Key 存 `~/.ows/`，AES-256 加密；Policy Engine 控制签名权限；scoped token；MCP 支持；适合个人用户和开发者 | 不支持 TEE 硬件隔离 | OpenWallet SDK（Node.js / Rust） | 外部集成 |
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
-| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Anchor + TS + OpenWallet | 新建（Week 3） |
+| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Pinocchio + TS + OpenWallet | 新建（Week 3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
 | **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态） | 不做跨链桥 | Solidity ^0.8.20 + Hardhat | 新建（Week 4） |
@@ -147,12 +147,14 @@ flowchart TB
      Judge → 前端/CLI 查看 result_ref + trace_ref → SDK.task.judge(taskId, winner, score, reasonRef)
      评判标准：Judge 主观打分（evaluationCID 定义加权维度），结算最慢（小时～天）
 
-   方式 B（AI白盒）— 适合推理密集型/过程验证类任务
+   方式 B（AI白盒 + DSPy 标准化评分）— 适合推理密集型/过程验证类/主观创作类任务
      Judge Daemon 监听到 SubmissionReceived（Helius LaserStream）
      → 下载 result_ref + trace_ref + runtime_env
      → 按 runtime_env 起相同环境，重放 Agent 执行轨迹
-     → 评判推理一致性（防止 Agent 用弱模型冒充强模型）+ 产出质量 → 综合评分 → 自动提交
-     评判标准：trace 重放一致性 + 产出质量（AI 打分 0-100），结算分钟级
+     → 通过 DSPy LLMScoreEvaluator 评判（标准化 Signature，可跨模型复用，可用历史数据优化）
+     → 评判维度：trace 重放一致性 + 产出质量 → 结构化输出（score: int, reasoning: str, dimensions: dict）→ 自动提交
+     评判标准：DSPy Signature 即评判契约，Poster 在 evaluationCID 中定义评分维度权重，结算分钟级
+     **与裸 Claude API 的区别**：① 结构化输出保证格式稳定；② 换模型无需改逻辑；③ 积累数据后可用 MIPROv2 自动优化评分质量
 
    方式 C（合约/IJudge CPI）— 适合确定性可验证任务，结算秒级
      IJudge Program → CPI 调用 judge_and_pay，score 由合约代码计算，无人干预
@@ -192,6 +194,11 @@ flowchart TB
              Protocol       2%  of reward → Treasury PDA
          → 信誉更新：winner.avgScore、winRate、completed
          → Indexer 捕获 TaskJudged 事件
+         → **（仅 score ≥ MIN_SCORE）Judge Daemon 链上确认后调用 SAS `create_attestation`：
+             为 winner 颁发 TaskCompletion Attestation
+             字段：taskId / taskCategory / judgeMethod / score / rewardAmount / completedAt
+             expiry = 0（永不过期）
+             → Attestation 存储在 Solana，任何外部协议可独立验证 Agent 能力**
 
 5. 超时退款（任何人触发）
    任何人 → SDK.task.forceRefund(taskId)   （judge_deadline + 7d 后）
@@ -204,13 +211,14 @@ flowchart TB
 
 | 步骤 | 数据 | 从 | 到 | 格式 |
 |------|------|----|----|------|
-| 1 | 任务参数 + 锁仓 | Poster | Agent Layer PDA | Anchor Account |
+| 1 | 任务参数 + 锁仓 | Poster | Agent Layer PDA | Pinocchio PDA（Borsh 序列化） |
 | 1 | evaluationCID | Poster | Arweave | Content-addressed |
-| 2 | 质押 + 申请 | Agent | Agent Layer PDA | Anchor Account |
+| 2 | 质押 + 申请 | Agent | Agent Layer PDA | Pinocchio PDA（Borsh 序列化） |
 | 3 | result_ref（最终产出 CID）+ trace_ref（执行轨迹 CID）+ runtime_env（环境声明） | Agent | Agent Layer PDA + Arweave | Content-addressed |
-| 4 | score(0-100) + winner | Judge / Daemon / Contract | Agent Layer | Anchor Instruction |
+| 4 | score(0-100) + winner | Judge / Daemon / Contract | Agent Layer | Pinocchio Instruction（手动构建 TransactionInstruction） |
 | 4 | 分账转账 | Escrow PDA | Agent / Judge / Treasury | SOL lamport / SPL Token |
-| 4 | 信誉更新 | Agent Layer | Reputation PDA | Anchor Account |
+| 4 | 信誉更新 | Agent Layer | Reputation PDA | Pinocchio PDA（Borsh 序列化） |
+| 4 | 能力凭证（score ≥ MIN_SCORE） | Judge Daemon → SAS Program | Attestation PDA（Solana） | SAS TaskCompletion Schema（U64/U8/I64） |
 | * | 所有事件 | Agent Layer | Indexer | Program Event Log |
 
 ---
@@ -239,7 +247,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | 依赖 | 版本 | 用途 | 可替换 |
 |------|------|------|--------|
 | Solana | mainnet-beta | 链上共识 + 结算 | 否（核心约束） |
-| Anchor | ^0.31 | Solana Program 框架 | 否 |
+| Pinocchio | 0.10.2 | Solana Program 框架（no_std，零外部依赖，替代 Anchor） | 否 |
 | @solana/web3.js | ^2.0 | RPC 交互 | 否 |
 | @solana/spl-token | ^0.4 | SPL Token + Token2022 转账 CPI | 否 |
 | Helius | — | Solana RPC 基础设施（99.99% 可用，<100ms）；Webhooks 推送 Program 事件给 Indexer；LaserStream gRPC 给 Judge Daemon 超低延迟触发；MCP Server（60+ 工具，与 Claude Code 集成）；TypeScript + Rust SDK | 否（Solana RPC 核心依赖） |
@@ -319,17 +327,17 @@ stateDiagram-v2
 
 | 指令 | 类型 | 调用方 | 说明 |
 |------|------|--------|------|
-| `post_task` | Anchor Instruction | 任何人 | 发布任务，锁入奖励 |
-| `apply_for_task` | Anchor Instruction | 任何 Agent | 申请任务，质押 minStake |
-| `submit_result` | Anchor Instruction | 已申请 Agent | 提交/更新结果引用（runtime_env 各字段长度在指令中验证，超限返回 InvalidRuntimeEnv） |
-| `judge_and_pay` | Anchor Instruction | Task.judge | 评判并触发三方结算 |
-| `cancel_task` | Anchor Instruction | Task.poster | 主动取消任务 |
-| `refund_expired` | Anchor Instruction | 任何人 | 超时退款 |
-| `force_refund` | Anchor Instruction | 任何人 | Judge 超时强制退款 |
-| `register_judge` | Anchor Instruction | 任何人 | 质押 ≥ minJudgeStake，声明擅长 category，加入对应 JudgePool |
-| `unstake_judge` | Anchor Instruction | Judge | 解质押（冷却期），退出 JudgePool |
-| `initialize` | Anchor Instruction | 部署者（一次性） | 初始化 ProgramConfig |
-| `upgrade_config` | Anchor Instruction | upgrade_authority | 更新 treasury 地址 |
+| `post_task` | Pinocchio Instruction | 任何人 | 发布任务，锁入奖励 |
+| `apply_for_task` | Pinocchio Instruction | 任何 Agent | 申请任务，质押 minStake |
+| `submit_result` | Pinocchio Instruction | 已申请 Agent | 提交/更新结果引用（runtime_env 各字段长度在指令中验证，超限返回 InvalidRuntimeEnv） |
+| `judge_and_pay` | Pinocchio Instruction | Task.judge | 评判并触发三方结算 |
+| `cancel_task` | Pinocchio Instruction | Task.poster | 主动取消任务 |
+| `refund_expired` | Pinocchio Instruction | 任何人 | 超时退款 |
+| `force_refund` | Pinocchio Instruction | 任何人 | Judge 超时强制退款 |
+| `register_judge` | Pinocchio Instruction | 任何人 | 质押 ≥ minJudgeStake，声明擅长 category，加入对应 JudgePool |
+| `unstake_judge` | Pinocchio Instruction | Judge | 解质押（冷却期），退出 JudgePool |
+| `initialize` | Pinocchio Instruction | 部署者（一次性） | 初始化 ProgramConfig |
+| `upgrade_config` | Pinocchio Instruction | upgrade_authority | 更新 treasury 地址 |
 
 ### IJudge CPI 接口
 
@@ -419,7 +427,7 @@ WS   /ws                                  实时事件订阅
 
 | 威胁 | 影响 | 缓解措施 |
 |------|------|---------|
-| 重入攻击 | 重复提取资金 | Anchor 账户约束 + 原子指令；状态变更先于转账 |
+| 重入攻击 | 重复提取资金 | 手动 PDA seeds 验证 + CEI 模式（状态变更先于转账） |
 | Sybil 攻击 | 刷信誉 | Agent 申请需质押 minStake；自评任务链上标记 `self_evaluated=true` |
 | Judge 串通 | Agent+Judge 合谋刷高分 | Poster 指定 Judge（不是 Agent 选）；Judge 信誉公开可查；evaluationCID 公开可审计 |
 | Judge 超时 | 资金永久锁死 | force_refund（7 天后任何人可触发）；Judge 质押 Slash |
@@ -498,7 +506,7 @@ EVM 层（Week 4）:
 ```
 W1 (04-01 ~ 04-14, 2 周): 内核
   ✅ Agent Layer Program (Solana devnet → mainnet)
-  ✅ Anchor 测试套件（全状态路径覆盖）
+  ✅ cargo test-sbf + bankrun 测试套件（全状态路径覆盖）
   （W1 延长为 2 周以保证充分的集成测试缓冲）
 
 W2 (04-15 ~ 04-21): 工具链
@@ -549,7 +557,7 @@ W4 (04-27 ~ 04-30, Stretch Goals): 全链
 | 执行轨迹引擎 | Absurd（PostgreSQL 持久化工作流） | Agent 每步 LLM 调用用 ctx.step() 存 checkpoint，崩溃可续；Judge Daemon 也是 Absurd worker，评测过程可中断恢复；仅需 PostgreSQL，无额外基础设施 |
 | 运行时透明 | runtime_env 链上公开 | Agent 提交时声明完整运行时环境（provider / model / runtime / version）；Judge 切换到 Judge 角色后，凭 runtime_env 起相同环境重放 trace_ref，验证结果真实性；trace 内容寻址防篡改，任何人可审计 |
 | Kite AI 集成定位 | 基础设施层，不竞争 | Kite = 链层（支付+身份+PoAI）；Gradience = 协议层（竞争结算+能力信誉）；Kite AI 链作为 W4 第三条 EVM 部署目标，面向 AI Agent 原生受众 |
-| Agent 外部服务付款 | MPP（Solana 侧）/ x402（EVM 侧） | MPP 是 IETF 提案开放标准，Solana 原生，支持 SOL/SPL/Token-2022，MCP transport；x402 是 Coinbase 方案，EVM 侧已由 OKX Agentic Wallet 和 Kite Passport 原生支持；两者定位不同，互补而非竞争；Gradience 协议内核的 95/3/2 结算仍在 Anchor 链上完成，MPP/x402 仅用于 Agent 调用外部付费服务 |
+| Agent 外部服务付款 | MPP（Solana 侧）/ x402（EVM 侧） | MPP 是 IETF 提案开放标准，Solana 原生，支持 SOL/SPL/Token-2022，MCP transport；x402 是 Coinbase 方案，EVM 侧已由 OKX Agentic Wallet 和 Kite Passport 原生支持；两者定位不同，互补而非竞争；Gradience 协议内核的 95/3/2 结算仍在 Pinocchio 链上完成，MPP/x402 仅用于 Agent 调用外部付费服务 |
 
 ---
 

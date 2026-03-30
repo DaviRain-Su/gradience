@@ -89,7 +89,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 | 3 | Agent | 无需显式注册（无 `registerAgent()`），直接申请任务自动初始化 Reputation PDA（质押 `min_stake` 仍是前提） | 降低门槛，让自主 Agent 无缝接入 | P0 | W1 |
 | 4 | Agent | 质押一定数量的 SOL/Token 才能参与任务 | 防止 Sybil 攻击，证明参与诚意 | P0 | W1 |
 | 5 | 协议方 | 每笔结算收取 2% 协议费（写入合约常量） | 维持长期运营，向参与者承诺费率永不涨 | P0 | W1 |
-| 6 | 开发者 | 用 TypeScript SDK 在 3 行代码内发布一个任务 | 快速接入协议，无需理解底层 Anchor 细节 | P0 | W2 |
+| 6 | 开发者 | 用 TypeScript SDK 在 3 行代码内发布一个任务 | 快速接入协议，无需理解底层 Pinocchio / Borsh 细节 | P0 | W2 |
 | 7 | 开发者 | 用 CLI 工具完成发任务、查看、评判的全流程 | 本地开发和测试无需前端 | P0 | W2 |
 | 8 | Poster | 用 AI Judge（如 Claude API）自动评判提交结果 | 主观任务不依赖人工评判，7×24 小时运转 | P1 | W2 |
 | 9 | Poster | 对于可验证任务（测试用例），用预言机自动执行并上链评分 | 代码类任务实现确定性无人工评判 | P1 | W2 |
@@ -122,7 +122,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 - **Agent Staking**: 每任务 Poster 设定 `min_stake`，Agent 必须质押才能 apply
 - **Judge Staking**: 协议级最低 Judge 质押要求
 - **基础 Slash**: Judge 超时未评判 → 质押扣减（`force_refund` 触发时执行）；**串通检测（Collusion Detection）暂不在 W1 实现**——判定条件和 Slash 比例需在 Phase 3 技术规格中精确定义后再执行，MVP 阶段仅做超时 Slash
-- **全量 Anchor 测试**: 所有状态转换、边界条件、SOL/SPL/Token2022 三路路径
+- **全量集成测试（litesvm + cargo test-sbf）**: 所有状态转换、边界条件、SOL/SPL/Token2022 三路路径
 
 #### 🟠 W2（2026-04-15 ~ 04-21）— 工具链
 
@@ -177,7 +177,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 | 核心功能 | 所有 P0 用户故事测试通过 | 100% |
 | 费率正确性 | 每笔结算 Judge:Protocol:Agent/Poster 分账比例 | 精确 3:2:95 |
 | 代码规模 | Solana Program 总行数（不含注释） | ≤ 1000 行 |
-| 测试覆盖 | Anchor 测试分支覆盖率 | ≥ 95% |
+| 测试覆盖 | litesvm + cargo test-sbf 分支覆盖率（cargo llvm-cov） | ≥ 95% |
 | 安全性 | Slash、重入、串通、超时绕过等攻击测试 | 0 Critical 漏洞 |
 | Compute 效率 | `post_task` + `judge_and_pay` 单指令 CU 消耗 | ≤ 200,000 CU |
 | SDK 易用性 | 从 npm install 到发出第一个任务 | ≤ 10 行代码 |
@@ -192,7 +192,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 
 | 约束类型 | 具体描述 |
 |---------|---------|
-| 技术约束 | Solana 主网优先，Rust + Anchor；EVM 版本 Solidity ^0.8.20（W4） |
+| 技术约束 | Solana 主网优先，Rust + Pinocchio（no_std，无 Anchor）；EVM 版本 Solidity ^0.8.20（W4） |
 | 技术约束 | **费率常量不可修改**：`JUDGE_FEE_BPS = 300`、`PROTOCOL_FEE_BPS = 200` 硬编码，不受治理控制 |
 | 技术约束 | **Program 可升级**：部署时保留 upgrade authority，由多签 DAO 控制；协议成熟后可主动关闭 upgrade authority 实现永久不可变 |
 | 技术约束 | 支付层：SOL（lamport）+ SPL Token + Token2022（基础兼容）；Token 任务用 ATA + CPI |
