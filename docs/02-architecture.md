@@ -23,32 +23,32 @@ flowchart TB
     end
 
     subgraph Toolchain["工具链层（链下）"]
-        Frontend["🌐 产品前端\ngradiences.xyz"]
-        SDK["📦 @gradience/sdk\nTypeScript SDK"]
+        Frontend["🌐 产品前端<br/>gradiences.xyz"]
+        SDK["📦 @gradience/sdk<br/>TypeScript SDK"]
         CLI["⌨️ gradience CLI"]
-        JudgeDaemon["🔮 Judge Daemon\nAI Judge · Oracle Judge"]
+        JudgeDaemon["🔮 Judge Daemon<br/>AI Judge · Oracle Judge"]
     end
 
     subgraph Kernel["内核层（Solana）"]
-        AgentLayer["⚙️ Agent Layer Program\nEscrow · Judge · Reputation · Staking · Slash"]
-        IJudge["📋 IJudge CPI 接口\n合约 Judge 标准"]
+        AgentLayer["⚙️ Agent Layer Program<br/>Escrow · Judge · Reputation · Staking · Slash"]
+        IJudge["📋 IJudge CPI 接口<br/>合约 Judge 标准"]
     end
 
     subgraph Modules["模块层（上层，W3+）"]
-        ChainHub["🔗 Chain Hub\nSkill 市场 · Key Vault · Delegation Task"]
-        AgentMe["🧑‍💻 Agent Me\n个人 Agent 界面"]
-        AgentSocial["🤝 Agent Social\nAgent 发现 + 匹配"]
+        ChainHub["🔗 Chain Hub<br/>Skill 市场 · Key Vault · Delegation Task"]
+        AgentMe["🧑‍💻 Agent Me<br/>个人 Agent 界面"]
+        AgentSocial["🤝 Agent Social<br/>Agent 发现 + 匹配"]
     end
 
     subgraph EVMLayer["EVM 层（W4）"]
-        EVMContract["📜 Agent Layer EVM\nBase / Arbitrum"]
-        ReputationBridge["🔐 信誉证明验证\n签名验证，无桥"]
+        EVMContract["📜 Agent Layer EVM<br/>Base / Arbitrum"]
+        ReputationBridge["🔐 信誉证明验证<br/>签名验证，无桥"]
     end
 
     subgraph Infra["基础设施"]
         Solana["⛓️ Solana 主网"]
-        Indexer["📡 Indexer\nCloudflare Workers + D1"]
-        Storage["💾 Arweave / Avail\nevaluationCID · resultRef"]
+        Indexer["📡 Indexer<br/>Cloudflare Workers + D1"]
+        Storage["💾 Arweave / Avail<br/>evaluationCID · resultRef"]
     end
 
     Human --> Frontend
