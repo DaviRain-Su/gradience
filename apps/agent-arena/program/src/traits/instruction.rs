@@ -4,6 +4,7 @@ use pinocchio::{account::AccountView, error::ProgramError};
 #[repr(u8)]
 pub enum GradienceInstructionDiscriminators {
     Initialize = 0,
+    PostTask = 1,
     /// 228 is the Anchor event instruction discriminator used for CPI-based event emission.
     /// Events are emitted by invoking CPI to this instruction with serialized event data.
     EmitEvent = 228,
@@ -15,6 +16,7 @@ impl TryFrom<u8> for GradienceInstructionDiscriminators {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Initialize),
+            1 => Ok(Self::PostTask),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }

@@ -6,63 +6,74 @@
     "definedTypes": [
       {
         "kind": "definedTypeNode",
-        "name": "counterClosedEvent",
+        "name": "taskCreatedEvent",
         "type": {
           "fields": [
             {
               "kind": "structFieldTypeNode",
-              "name": "authority",
+              "name": "taskId",
               "type": {
-                "kind": "publicKeyTypeNode"
+                "endian": "le",
+                "format": "u64",
+                "kind": "numberTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
-              "name": "finalCount",
+              "name": "poster",
+              "type": {
+                "count": {
+                  "kind": "fixedCountNode",
+                  "value": 32
+                },
+                "item": {
+                  "endian": "le",
+                  "format": "u8",
+                  "kind": "numberTypeNode"
+                },
+                "kind": "arrayTypeNode"
+              }
+            },
+            {
+              "kind": "structFieldTypeNode",
+              "name": "judge",
+              "type": {
+                "count": {
+                  "kind": "fixedCountNode",
+                  "value": 32
+                },
+                "item": {
+                  "endian": "le",
+                  "format": "u8",
+                  "kind": "numberTypeNode"
+                },
+                "kind": "arrayTypeNode"
+              }
+            },
+            {
+              "kind": "structFieldTypeNode",
+              "name": "reward",
+              "type": {
+                "endian": "le",
+                "format": "u64",
+                "kind": "numberTypeNode"
+              }
+            },
+            {
+              "kind": "structFieldTypeNode",
+              "name": "category",
               "type": {
                 "endian": "le",
                 "format": "u8",
                 "kind": "numberTypeNode"
               }
-            }
-          ],
-          "kind": "structTypeNode"
-        }
-      },
-      {
-        "kind": "definedTypeNode",
-        "name": "counterCreatedEvent",
-        "type": {
-          "fields": [
-            {
-              "kind": "structFieldTypeNode",
-              "name": "authority",
-              "type": {
-                "kind": "publicKeyTypeNode"
-              }
-            }
-          ],
-          "kind": "structTypeNode"
-        }
-      },
-      {
-        "kind": "definedTypeNode",
-        "name": "counterIncrementedEvent",
-        "type": {
-          "fields": [
-            {
-              "kind": "structFieldTypeNode",
-              "name": "authority",
-              "type": {
-                "kind": "publicKeyTypeNode"
-              }
             },
             {
               "kind": "structFieldTypeNode",
-              "name": "newCount",
+              "name": "deadline",
               "type": {
                 "endian": "le",
-                "format": "u8",
+                "format": "i64",
                 "kind": "numberTypeNode"
               }
             }
@@ -331,6 +342,169 @@
         ],
         "kind": "instructionNode",
         "name": "initialize"
+      },
+      {
+        "accounts": [
+          {
+            "isSigner": true,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "poster"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "config"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "task"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "escrow"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "judgePool"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "systemProgram"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "eventAuthority"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "gradienceProgram"
+          }
+        ],
+        "arguments": [
+          {
+            "defaultValue": {
+              "kind": "numberValueNode",
+              "number": 1
+            },
+            "defaultValueStrategy": "omitted",
+            "kind": "instructionArgumentNode",
+            "name": "discriminator",
+            "type": {
+              "endian": "le",
+              "format": "u8",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "evalRef",
+            "type": {
+              "kind": "sizePrefixTypeNode",
+              "prefix": {
+                "endian": "le",
+                "format": "u32",
+                "kind": "numberTypeNode"
+              },
+              "type": {
+                "encoding": "utf8",
+                "kind": "stringTypeNode"
+              }
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "deadline",
+            "type": {
+              "endian": "le",
+              "format": "i64",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "judgeDeadline",
+            "type": {
+              "endian": "le",
+              "format": "i64",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "judgeMode",
+            "type": {
+              "endian": "le",
+              "format": "u8",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "judge",
+            "type": {
+              "count": {
+                "kind": "fixedCountNode",
+                "value": 32
+              },
+              "item": {
+                "endian": "le",
+                "format": "u8",
+                "kind": "numberTypeNode"
+              },
+              "kind": "arrayTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "category",
+            "type": {
+              "endian": "le",
+              "format": "u8",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "minStake",
+            "type": {
+              "endian": "le",
+              "format": "u64",
+              "kind": "numberTypeNode"
+            }
+          },
+          {
+            "kind": "instructionArgumentNode",
+            "name": "reward",
+            "type": {
+              "endian": "le",
+              "format": "u64",
+              "kind": "numberTypeNode"
+            }
+          }
+        ],
+        "discriminators": [
+          {
+            "kind": "fieldDiscriminatorNode",
+            "name": "discriminator",
+            "offset": 0
+          }
+        ],
+        "kind": "instructionNode",
+        "name": "postTask"
       },
       {
         "accounts": [

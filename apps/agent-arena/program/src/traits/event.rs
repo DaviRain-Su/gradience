@@ -8,9 +8,14 @@ pub const EVENT_DISCRIMINATOR_LEN: usize = 8 + 1;
 /// Event discriminator values for this program
 #[repr(u8)]
 pub enum EventDiscriminators {
-    CounterCreated = 0,
-    CounterIncremented = 1,
-    CounterClosed = 2,
+    TaskCreated = 1,
+    SubmissionReceived = 2,
+    TaskJudged = 3,
+    TaskRefunded = 4,
+    JudgeRegistered = 5,
+    TaskApplied = 6,
+    TaskCancelled = 7,
+    JudgeUnstaked = 8,
 }
 
 /// Event discriminator with Anchor-compatible prefix
