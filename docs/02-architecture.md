@@ -87,12 +87,12 @@ flowchart TB
 |------|------|---------|---------|------|
 | **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Anchor | 新建 |
 | **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge | 不内嵌 AI 逻辑 | Anchor CPI | 新建 |
-| **Judge Daemon** | 链下持久化评测工作流：监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd（PostgreSQL 持久化工作流引擎） | 新建 |
+| **Judge Daemon** | 链下持久化评测工作流：通过 **Helius LaserStream gRPC** 超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd（PostgreSQL 持久化工作流引擎）+ Helius LaserStream | 新建 |
 | **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave | 不是链上组件；trace 内容不上链，只有 CID 引用上链 | TypeScript + Absurd + LLM SDK | 新建 |
 | **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + @coral-xyz/anchor | 新建 |
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发 | 不存储链下私有数据 | Next.js + Cloudflare Pages | 新建 |
-| **Indexer** | 监听 Program 事件，提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 | 已有（重构） |
+| **Indexer** | 通过 **Helius Webhooks** 接收 Program 事件推送（替代自轮询，延迟 <200ms），提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 + Helius Webhooks | 已有（重构） |
 | **钱包抽象层（Wallet Adapter）** | SDK 内置钱包适配器接口，屏蔽底层钱包实现，Agent 只调用统一的 `sign / sendTx` 接口；支持三种适配器：OpenWallet、OKX Agentic Wallet、原始 Keypair（开发测试） | 不托管资产；不决定用户用哪种钱包 | TypeScript 接口 + 各 SDK 适配器 | 新建 |
 | **OpenWallet (OWS) 适配器** | 开放标准，本地自托管；Key 存 `~/.ows/`，AES-256 加密；Policy Engine 控制签名权限；scoped token；MCP 支持；适合个人用户和开发者 | 不支持 TEE 硬件隔离 | OpenWallet SDK（Node.js / Rust） | 外部集成 |
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
@@ -197,6 +197,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | Anchor | ^0.31 | Solana Program 框架 | 否 |
 | @solana/web3.js | ^2.0 | RPC 交互 | 否 |
 | @solana/spl-token | ^0.4 | SPL Token + Token2022 转账 CPI | 否 |
+| Helius | — | Solana RPC 基础设施（99.99% 可用，<100ms）；Webhooks 推送 Program 事件给 Indexer；LaserStream gRPC 给 Judge Daemon 超低延迟触发；MCP Server（60+ 工具，与 Claude Code 集成）；TypeScript + Rust SDK | 否（Solana RPC 核心依赖） |
 | Cloudflare Workers | — | Indexer Managed 模式运行时 | 是（Self-hosted 模式不需要） |
 | Cloudflare D1 | — | Indexer Managed 模式数据库 | 是（Self-hosted 用 PostgreSQL） |
 | PostgreSQL | ≥ 15 | Indexer Self-hosted 模式数据库 | 是（Managed 模式用 D1） |
@@ -486,7 +487,8 @@ W4 (04-22 ~ 04-30): 全链
 | Judge 激励 | 3% 无条件 | 消除结果偏见，比特币矿工类比 |
 | 信誉存储 | 链上 PDA，按需创建 | 无需注册门槛，首次参与自动初始化 |
 | 跨链信誉 | 签名证明（无桥） | 桥是最大安全隐患；携带证明零成本 |
-| Indexer | Cloudflare Workers + D1 | 零运维、全球边缘、低成本；宕机不影响协议 |
+| Indexer 事件来源 | Helius Webhooks（推送）| 替代自轮询：Helius 在 Program 日志触发时主动 HTTP POST 给 Indexer，<200ms 延迟；无需 Indexer 持续轮询 RPC，降低成本和延迟 |
+| Indexer 部署 | Cloudflare Workers + D1（Managed）/ Docker + PostgreSQL（Self-hosted）| 零运维全球边缘；宕机不影响协议；社区可独立运行 Self-hosted 节点 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
 | Agent 钱包 | 钱包抽象层（三种适配器） | 个人用户用 OpenWallet（本地自托管 + Policy Engine + MCP）；企业用 OKX Agentic Wallet（TEE + 50 子钱包 + x402 微支付）；SDK 接口统一，用户自选，协议不绑定 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
