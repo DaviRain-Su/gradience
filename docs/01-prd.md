@@ -47,7 +47,7 @@
 
 **Agent Layer v2 = 完整协议栈，从链上内核到开发者工具全覆盖：**
 
-- **链上内核（Solana）**：无需许可的竞争结算，95/3/2 费率常量，per-task Judge，三方分账
+- **链上内核（Solana）**：仅支持 **Race Task**（离散竞争结算）——多 Agent 并行提交，Judge 选最优，一次性结算；持续委托类任务（Delegation Task）由 Chain Hub 在上层实现，不进入内核
 - **Staking + Slash**：Agent/Judge 质押防 Sybil，恶意行为触发 Slash
 - **多币种**：原生 SOL + SPL Token + Token2022 三路兼容
 - **可升级 Program**：多签治理升级权，协议成熟后可主动关闭升级权实现永久不可变
@@ -76,9 +76,9 @@
 | 12 | DAO 成员 | 通过多签治理投票升级 Program | 修复 Bug 或迭代功能，同时保持去中心化控制 | P1 | W3 |
 | 13 | EVM 开发者 | 在 Base/Arbitrum 上调用 Agent Layer，携带 Solana 信誉证明 | 一个 Agent 在所有链上使用同一套信誉 | P1 | W4 |
 | 14 | 用户 | 通过产品前端发布任务、查看竞争状态、触发评判 | 无需编写代码即可参与协议 | P0 | W2 |
-| 15 | DeFi LP 管理人（Poster） | 发布"管理我的 USDC/SOL LP 仓位 1 周"任务，并指定一个预言机合约作为 Judge | 让专业 LP Agent 竞争上岗，用链上 PnL 数据客观评判，不依赖主观判断 | P1 | W2 |
-| 16 | LP Agent（执行者） | 申请 LP 管理任务后，在约定参数内执行 rebalance / 复投操作，1 周后由预言机 Judge 读取链上超额收益打分 | 把 LP 管理能力变成可量化的链上信誉，吸引更多 Poster 选择自己 | P1 | W2 |
-| 17 | DeFi LP 管理人（Poster） | 通过 Chain Hub Key Vault 将 LP 仓位操作权限原子化托管，只允许 winning Agent 在约定滑点/频率范围内操作 | 无需手动转移权限，Agent 不能超出约定参数操作，实现全自动无需信任的 LP 委托 | P1 | W3 |
+| 15 | DeFi LP 管理人（Poster） | 用竞争模型选出最佳 LP 管理 Agent：发布"提交你的 LP 策略方案 + 历史信誉证明"任务，多个 Agent 竞争提交，Judge（预言机合约）评判方案质量 | Agent Layer 的竞争模型用于**选人**，不用于执行；胜者拿到信誉 + 委托授权资格 | P1 | W2 |
+| 16 | LP Agent（执行者） | 提交策略方案和链上历史业绩作为竞争结果，在选人阶段赢得委托 | 通过竞争把 LP 管理能力变成链上可信信誉，不需要主观信任 | P1 | W2 |
+| 17 | DeFi LP 管理人（Poster） | 赢得选人竞争的 Agent，通过 Chain Hub Key Vault 获得仓位操作权，在约定参数内持续执行，按周绩效结算 | 执行阶段是持续委托，不是竞争，由 Chain Hub Delegation Task 处理，Agent Layer 只管选人这一次竞争 | P1 | W3（Chain Hub） |
 
 ---
 
@@ -133,6 +133,7 @@
 
 - **Token2022 高级扩展**: Confidential Transfer、Transfer Hook、Permanent Delegate 等扩展能力；仅保证基础 Token2022 mint 的 `transfer` 兼容
 - **跨链桥**: 不构建实时跨链桥，信誉通过签名证明传递，不依赖桥协议
+- **Delegation Task（持续委托任务）**: Agent Layer 内核**只支持 Race Task**（离散竞争）；LP 管理、交易机器人等持续委托场景的执行阶段，由 Chain Hub 在上层实现 Delegation Task 原语，不进入内核状态机——这是架构边界决策，不是功能缺失
 
 ---
 
