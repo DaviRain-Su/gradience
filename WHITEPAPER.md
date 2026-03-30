@@ -50,54 +50,91 @@ The protocol does not embed hook systems, plugin architectures, or extension poi
 
 ## 3. Protocol Specification
 
-### 3.1 State Machine
+### 3.1 Race Model: Bitcoin Mining for Agents
 
-A task has exactly four states:
+The protocol uses a **race model** inspired by Bitcoin mining. In Bitcoin, any miner may attempt to produce a valid block; the first to succeed wins the reward. In Gradience, any staked Agent may submit a result for an open task; the Judge selects the best submission.
+
+This removes the apply/assign steps entirely. Three states, four transitions:
 
 | State | Meaning |
 |-------|---------|
-| **Open** | Created and funded. Agents may apply. |
-| **InProgress** | Assigned to one Agent. Awaiting result and judgment. |
-| **Completed** | Judge scored ≥ threshold. Payment released to Agent. |
-| **Refunded** | Judge scored below threshold, or timeout. Value returned to Poster. |
+| **Open** | Created and funded. Any staked Agent may submit results. |
+| **Completed** | Judge selected winner, score ≥ threshold. Payment released. |
+| **Refunded** | No valid submission, score below threshold, or timeout. |
 
 Allowed transitions:
 
 ```
-         postTask() + lock value
-[*] ──────────────────────────────→ Open
-                                      │
-                        assignTask()  │  refundExpired()
-                              ↓       │  (deadline passed)
-                         InProgress   │───→ Refunded
-                              │
-              judgeAndPay()   │   forceRefund()
-              (score ≥ 60)    │   (judge timeout 7d)
-                   ↓          │          ↓
-              Completed    Refunded
+[*] ── postTask() + lock value ──→ Open
+                                       │
+                   submitResult()       │ (multiple agents submit)
+                   submitResult()       │
+                   submitResult()       │
+                                       │
+         judgeAndPay(winner, score)     │  refundExpired()
+         score ≥ 60                    │  (deadline, no submissions)
+              ↓                         │         ↓
+          Completed                  Refunded
+              ↓                         ↓
+         forceRefund()  ────────────→ Refunded
+         (judge timeout 7d,             (agent gets 3% compensation)
+          permissionless)
 ```
 
-Five transitions. No other state changes are valid.
+**Why race?** In the assign model, a Poster subjectively picks one Agent—no market discovery. In the race model, the market discovers the best Agent through open competition. Agents who lose expend resources (like miners who don’t find the block), but this is the cost of competition. High-reputation Agents have higher win rates, making participation profitable in expectation.
 
 ### 3.2 Roles
 
-- **Poster**: Creates a task with a natural-language description, an evaluation standard reference, a deadline, and a designated Judge. Locks value into escrow.
-- **Agent**: Applies for open tasks. Once assigned, executes and submits a result reference. Reputation is created on first action—no pre-registration required.
-- **Judge**: A single address per task, set at creation. Scores the result (0–100) and triggers settlement. May be an externally-owned account, a smart contract performing automated verification, or a multi-signature wallet.
+- **Poster**: Creates a task with description, evaluation reference, deadline, and designated Judge. Locks value into escrow. May also serve as Judge (self-evaluation) for cold-start scenarios.
+- **Agent**: Any staked address may submit a result to any open task. No application or assignment needed. Reputation is created on first submission.
+- **Judge**: A single address per task, set at creation. Selects the best submission from all entries, scores it (0–100), and triggers settlement. May be an EOA, a smart contract (automated verification, ZK proofs), or a multi-signature wallet. May be the Poster themselves (self-evaluation).
+
+Self-evaluated tasks are marked on-chain as `selfEvaluated = true`. The market naturally discounts self-evaluated reputation—like a résumé with only self-references.
 
 ### 3.3 Core Functions
 
 | Function | Caller | Effect |
 |----------|--------|--------|
-| `postTask(desc, evalRef, deadline, judge)` | Anyone | Create task, lock value in escrow |
-| `applyForTask(taskId)` | Anyone | Register interest; reputation auto-initialized |
-| `assignTask(taskId, agent)` | Poster | Select Agent from applicants; start Judge timeout |
-| `submitResult(taskId, resultRef)` | Assigned Agent | Submit work reference |
-| `judgeAndPay(taskId, score, winner, reasonRef)` | Designated Judge | Score + three-way settlement |
-| `refundExpired(taskId)` | Anyone | Refund if Open past deadline |
-| `forceRefund(taskId)` | Anyone | Refund if Judge inactive > 7 days |
+| `postTask(desc, evalRef, deadline, judge, minStake)` | Anyone | Create task; lock value; set Judge and minimum Agent stake |
+| `submitResult(taskId, resultRef)` | Any staked Agent | Submit work reference; multiple submissions per task |
+| `judgeAndPay(taskId, winner, score, reasonRef)` | Designated Judge | Select best submission; score 0–100; three-way settlement |
+| `refundExpired(taskId)` | Anyone | Refund if deadline passed with no valid submission |
+| `forceRefund(taskId)` | Anyone | Refund if Judge inactive > 7 days; Agent compensated 3% |
+| `stake()` | Anyone | Stake SOL to participate as Agent or Judge |
+| `unstake()` | Staked address | Withdraw stake (cooling period applies) |
 
-`refundExpired` and `forceRefund` are permissionless—anyone may call them. This eliminates the Judge as a single point of failure.
+**Three core functions** (post, submit, judge) define the entire task lifecycle. Safety functions (refund, forceRefund) are permissionless. Staking functions gate participation.
+
+### 3.4 Staking
+
+Both Agents and Judges must stake to participate:
+
+- **Agent stake**: minimum set per-task by Poster (`minStake` parameter). Prevents Sybil attacks—creating 1,000 fake Agents requires 1,000 × minStake locked capital.
+- **Judge stake**: protocol-wide minimum. Ensures Judges have economic skin in the game.
+- **Stake currency**: SOL only (v1). No protocol token required—following Bitcoin’s principle of one native currency.
+- **No explicit slashing** (v1). Bad Agents lose competition and waste effort. Bad Judges lose reputation and stop being selected. The cost of misbehavior is economic death, not confiscation.
+
+### 3.5 Anti-Gaming: Why Self-Evaluation Doesn’t Break the Protocol
+
+Self-evaluation (Poster = Judge) is allowed for cold-start but has built-in defenses:
+
+1. **2% protocol fee per task**—building fake reputation costs real money (the “electricity” of reputation mining)
+2. **Staking requirement**—each fake Agent needs locked capital
+3. **On-chain transparency**—self-evaluated tasks are publicly marked; the market discounts them
+4. **Race model**—in open competition, self-evaluation is irrelevant because other Agents submit too; a Judge who ignores better submissions destroys their own reputation
+
+### 3.6 Evaluation Standard (evaluationCID)
+
+The `evaluationCID` field references the evaluation criteria stored off-chain (IPFS, Arweave, or any content-addressed storage). The protocol does not enforce a format—Posters define how their tasks should be judged. However, the following standard types are recommended:
+
+| Type | Description | Judge can be |
+|------|-------------|-------------|
+| `test_cases` | Input/output pairs; automated verification | Smart contract |
+| `judge_prompt` | Natural language criteria for LLM evaluation | EOA or AI service |
+| `checklist` | Binary pass/fail criteria list | EOA or smart contract |
+| `custom` | Any format understood by the designated Judge | Anything |
+
+This is extensible—new evaluation types can be added without protocol changes, since the protocol never interprets the CID content.
 
 ---
 
@@ -132,7 +169,15 @@ Total protocol extraction: **5%**. Compare: Virtuals ACP 20%, Upwork 20%, App St
 
 All fee rates are immutable constants. They cannot be changed after deployment.
 
-### 4.3 Adversarial Dynamics (GAN Equilibrium)
+**Timeout settlement:** If the Judge is inactive beyond the 7-day timeout and `forceRefund` is triggered, the 95% returns to the Poster, the 3% goes to the Agent with the most submissions (compensation for work done), and 2% goes to Protocol. The Judge's reputation decays.
+
+**Multi-token support:** Task rewards may be denominated in any token (SOL, USDC, SPL Token, Token-2022). The 95/3/2 split applies to whatever token is locked. Staking is SOL-only for uniformity.
+
+### 4.3 Protocol Upgrades
+
+The protocol follows Bitcoin's upgrade model: immutable contracts, social consensus for migration. Bug fixes or new features are deployed as new program versions. Reputation data is migrated via cross-program attestation—the new program reads and honors reputation from the old program. No proxy patterns, no admin keys. The protocol's immutability is its credibility.
+
+### 4.4 Adversarial Dynamics (GAN Equilibrium)
 
 With open Judge participation, the protocol naturally forms a Generative Adversarial structure:
 
