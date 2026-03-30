@@ -38,15 +38,15 @@
 % ═══ TITLE ═══════════════════════════════════════════════════════════════
 \begin{center}
   {\LARGE\bfseries Gradience Protocol}\\[6pt]
-  {\Large A Peer-to-Peer Capability Settlement Protocol\\for the AI Agent Economy}\\[20pt]
+  {\Large A Decentralized AI Agent Credit Protocol}\\[20pt]
   {\large @DaviRain-Su}\\[4pt]
-  {\normalsize March 2026 \quad$\cdot$\quad v0.3}
+  {\normalsize March 2026 \quad$\cdot$\quad v0.4}
 \end{center}
 \vspace{1em}\hrule\vspace{1.5em}
 
 % ═══ ABSTRACT ════════════════════════════════════════════════════════════
 \begin{abstract}\noindent
-We propose a protocol for AI Agents to exchange capabilities and settle value without trusted intermediaries. The protocol uses a \textbf{race model} inspired by Bitcoin mining: any staked Agent may submit a result to an open task, and a designated Judge selects the best submission---triggering automatic three-way settlement. Reputation accumulates on-chain from behavior, not registration. Roles are emergent properties of actions, not fixed identities. The Judge---analogous to a Bitcoin miner---receives a fixed fee regardless of outcome, eliminating bias. The entire protocol is defined by \textbf{three states and four transitions}.
+We propose a protocol for AI Agents to exchange capabilities and settle value without trusted intermediaries. The protocol uses a \textbf{race model} inspired by Bitcoin mining: any staked Agent may submit a result to an open task, and a designated Judge selects the best submission---triggering automatic three-way settlement. Reputation accumulates on-chain from behavior, not registration. Roles are emergent properties of actions, not fixed identities. The Judge---analogous to a Bitcoin miner---receives a fixed fee regardless of outcome, eliminating bias. The entire protocol is defined by \textbf{three states and four transitions}. The on-chain work history that emerges from this protocol forms a verifiable credit layer---enabling future applications including under-collateralized Agent lending and credit-backed stablecoins (see §8).
 \end{abstract}
 \vspace{1em}
 
@@ -372,7 +372,30 @@ Integration: one \texttt{delegate} instruction. Zero custom infrastructure.
 \textbf{Step 1:} Identity linking via mutual key signing---zero cost. \textbf{Step 2:} Solana as reputation home; Agent carries signed proof to other chains---zero cross-chain cost. \textbf{Step 3:} Write-back: Agent submits result proof to Solana---\$0.001. No bridge, no centralized aggregation.
 
 % ═══ 8. ROADMAP ════════════════════════════════════════════════════════
-\section{8. Roadmap}
+\section{8. Protocol Vision: Three-Layer Stack}
+
+Gradience's boundary extends beyond task settlement. On-chain work history is the natural proof of creditworthiness---and a full Agent financial system can grow on top of the credit layer.
+
+\begin{center}
+\begin{tikzpicture}[
+  layer/.style={rectangle, rounded corners=6pt, draw=accent, thick, minimum width=9cm, minimum height=0.95cm, font=\small, text=darktext, align=center},
+  arrow/.style={-{Stealth[length=5pt]}, thick, color=accent!70},
+]
+  \node[layer, fill=accent!18] (l3) {\textbf{Layer 3: gUSD --- Credit-Backed Stablecoin}\\[-2pt]{\scriptsize\color{darktext!70} Minted from Agents' collective work capacity; no over-collateralization required}};
+  \node[layer, fill=accent!10, below=0.45cm of l3] (l2) {\textbf{Layer 2: Agent Lending Protocol}\\[-2pt]{\scriptsize\color{darktext!70} Under-collateralized credit loans; on-chain work history replaces excess collateral}};
+  \node[layer, fill=accent!4, below=0.45cm of l2] (l1) {\textbf{Layer 1: Gradience Core (this protocol)}\\[-2pt]{\scriptsize\color{darktext!70} Race settlement + on-chain reputation = verifiable work history}};
+  \draw[arrow] (l2) -- (l3);
+  \draw[arrow] (l1) -- (l2);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Traditional finance analogy:} Payment history $\to$ credit score $\to$ credit lending. Gradience realizes the decentralized version of this path---fully open, independently verifiable by anyone, with no black-box scoring from any centralized institution. This is the Web3 equivalent of Sesame Credit (Ant Financial), but built on cryptography and on-chain data.
+
+\textbf{gUSD vs.\ GRAD:} GRAD is the protocol's governance and incentive token (fixed supply, see §4.3). gUSD is a credit-backed stablecoin issued by the Layer~3 independent protocol---analogous to MKR (governance) vs.\ DAI (stablecoin) in MakerDAO. Their roles are distinct and non-conflicting. Unlike DAI, which requires over-collateralized crypto assets, gUSD is backed by Agents' verifiable on-chain work capacity---the first true ``credit money'' in Web3 history.
+
+Layers~2 and~3 are \textbf{future independent protocols} built on top of this protocol and outside the current roadmap. The core protocol is designed with reputation data composability in mind, exposing standard CPI interfaces for upper-layer protocols.
+
+\section{9. Roadmap}
 
 \begin{itemize}[nosep]
   \item \textbf{Design (2026-03 \checkmark)} --- Protocol spec complete; whitepaper published
@@ -383,7 +406,7 @@ Integration: one \texttt{delegate} instruction. Zero custom infrastructure.
 \end{itemize}
 
 % ═══ 9. CONCLUSION ════════════════════════════════════════════════════
-\section{9. Conclusion}
+\section{10. Conclusion}
 
 Bitcoin proved that defining ``money'' requires only UTXO + Script + PoW. Three primitives, immutable rules, permissionless participation---and a trillion-dollar economy emerged.
 

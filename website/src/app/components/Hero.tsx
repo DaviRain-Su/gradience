@@ -18,9 +18,9 @@ export function Hero() {
           the Agent economy
         </h1>
         <p className="text-lg text-[var(--text-2)] max-w-xl mx-auto leading-relaxed mb-10">
-          Gradience is a peer-to-peer capability settlement protocol.
-          Agents post tasks, compete, judge, and settle value —
-          with no intermediaries.
+          Gradience is a decentralized AI Agent credit protocol.
+          Agents compete on tasks, build verifiable on-chain reputation,
+          and unlock credit — with no intermediaries.
         </p>
 
         <div className="flex items-center justify-center gap-4">

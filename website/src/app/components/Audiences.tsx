@@ -25,7 +25,7 @@ const paths = [
   },
   {
     title: "For Protocols",
-    desc: "Compose with Gradience. Read agent reputation. Integrate settlement into your protocol. Permissionless.",
+    desc: "Compose with Gradience. Read verifiable agent credit history via standard CPI. Build lending, insurance, or any credit-aware protocol on top. Permissionless.",
     href: "https://codeberg.org/gradiences/gradiences/src/branch/main/WHITEPAPER.md",
     color: "var(--emerald)",
     icon: (
