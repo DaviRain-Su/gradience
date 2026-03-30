@@ -35,7 +35,7 @@
 | T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07, T08a | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
 | T09 | `apply_for_task` — SOL + SPL 路径 | Application PDA init，Reputation PDA `init_if_needed`，SOL / SPL 质押转入 Escrow（调用 T08a 工具函数）；**`rep.global.total_applied++`**（win_rate 分母）；前置条件：state=Open，deadline 未过，未重复申请；**emit! TaskApplied** | T08a, T07, T08 | 3h | P0 | 测试：apply → Application created，stake 锁入 Escrow，**`reputation.global.total_applied` 递增**；重复申请 → `AlreadyApplied`；`min_stake=0` 无需质押；TaskApplied 事件被 emit |
 | T10 | `submit_result` | Submission PDA 创建（或覆盖更新），RuntimeEnv 四字段长度 `require!` 验证；前置条件：agent 已申请、deadline 未过；**emit! SubmissionReceived** | T09 | 2h | P0 | 测试：submit → Submission 字段正确；二次 submit → 覆盖；model 超长 → `InvalidRuntimeEnv`；未申请 → `AgentNotApplied`；SubmissionReceived 事件被 emit |
-| T11 | `judge_and_pay` — SOL 路径 + 分账 | 分数验证（≥ MIN_SCORE）；赢家选取（highest score ≥ 60，tie→earliest slot）；整数除法费用计算（95/3/2 BPS）；三路 lamport 转账；`Task.state=Completed`；**全部申请者（含落败者）stake 原路退回**（stake 是准入押金，非奖励） | T10 | 3h | P0 | 测试：2 Agent 竞争 → 赢家得 95%，Judge 得 3%，Treasury 得 2%；**落败者 stake 原路退回**；余额精确到 lamport；非 Judge 调用 → `NotTaskJudge` |
+| T11 | `judge_and_pay` — SOL 路径 + 分账 | 分数验证（≥ MIN_SCORE）；赢家选取（highest score ≥ 60，tie→earliest slot）；整数除法费用计算（95/3/2 BPS）；三路 lamport 转账；`Task.state=Completed`；winner stake 走固定账户 `winner_application`；**落败者 stake 通过 `remaining_accounts` 批量退回**（同 cancel/refund 机制） | T10 | 3h | P0 | 测试：2 Agent 竞争 → 赢家得 95%，Judge 得 3%，Treasury 得 2%；**落败者 stake 原路退回**（remaining_accounts 验证）；余额精确到 lamport；非 Judge 调用 → `NotTaskJudge` |
 | T12 | `judge_and_pay` — SPL + 信誉更新 | SPL Token 三路 CPI 转账；`Reputation` 全局统计更新（avg_score 滚动平均、win_rate）；`CategoryStats[category]` 更新；**emit! TaskJudged** | T11 | 3h | P0 | 测试：SPL 任务评判 → token 余额正确；全局 + category 信誉均更新；score < MIN_SCORE → TaskRefunded emit；TaskJudged 含 winner/payout/fees |
 | T13 | `cancel_task` | 仅 Poster 可调用；前置条件：state=Open、**submission_count = 0**（已有提交不可取消）；2% 取消费到 Treasury，98% 退还 Poster；通过 `remaining_accounts` 批量退回 Agent 质押；`Task.state=Refunded`；**emit! TaskCancelled** | T08a, T07, T09 | 2h | P0 | 测试：cancel（无申请）→ Poster 得 98%，Treasury 得 2%；**已有提交时 cancel → `HasSubmissions`**；非 Poster → `NotTaskPoster`；TaskCancelled 事件被 emit；"cancel 有申请时 stakes 退回" 场景在 T19c 集成测试验证 |
 | T14 | `refund_expired` | 任何人调用；前置条件：state=Open、**clock > task.deadline**（提交截止，非 judge_deadline）；通过 `remaining_accounts` 批量退回 Agent 质押；全额退还 Poster；`Task.state=Refunded`；**emit! TaskRefunded（reason=Expired）** | T08a, T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；**截止时间未到 → `DeadlineNotPassed`**（6006，非 JudgeDeadlineNotPassed）；TaskRefunded 事件携带 reason=Expired |
@@ -64,7 +64,7 @@
 | T25a | Indexer — Docker 镜像 + compose 文件 | `Dockerfile`（Self-hosted Rust 二进制）；`docker-compose.yml`（Indexer + PostgreSQL）；`README.md` 一键启动说明 | T23 | 2h | P1 | `docker compose up` → 服务启动；`curl localhost:3001/api/tasks` → 正确响应；镜像大小 < 100MB |
 | T26 | SDK — TypeScript 类型 + IDL 绑定 | `@gradience/sdk` 包初始化；从 Anchor IDL 生成类型；`GradienceSDK` class + 配置接口；`SDK_README.md` 快速开始文档 | T19d | 2h | P0 | `import { GradienceSDK } from '@gradience/sdk'` 编译通过；所有 IDL 类型正确导出；README 3 行代码示例可运行 |
 | T27 | SDK — task.post / apply / submit | 三个核心方法；SOL + SPL 双路径；wallet adapter 调用 sign/sendTx | T26 | 3h | P0 | 单元测试（mock Program）：3 方法返回 tx signature；devnet 端测通过 |
-| T28 | SDK — task.judge / cancel / refund / forceRefund | 4 个方法包装剩余指令；正确传递账户列表 | T27 | 2h | P0 | 单元测试通过；devnet 端到端可用；`Unauthorized` 时抛出带错误码的异常 |
+| T28 | SDK — task.judge / cancel / refund / forceRefund | 4 个方法包装剩余指令；正确传递账户列表；**`remaining_accounts` 自动组装落败者 Application PDA 列表** | T27 | 2h | P0 | 单元测试通过；devnet 端到端可用；权限错误（`NotTaskJudge` / `NotTaskPoster` / `NotUpgradeAuthority` 等）时抛出含 Gradience 错误码的异常 |
 | T29 | SDK — reputation / JudgePool 查询 | `reputation.get(agent)`（读链上 PDA）；`judgePool.list(category)`；`task.submissions(taskId, {sort})`（查 Indexer） | T26 | 2h | P1 | 查询返回带类型的响应；未找到时返回 null 而非抛出；JSDoc 注释完整 |
 | T30 | SDK — 钱包适配器（5 种） | `WalletAdapter` 接口（sign/sendTx）；`KeypairAdapter`（开发测试用）**完整实现**；`OpenWalletAdapter` / `OKXAdapter` / `PrivyAdapter` / `KiteAdapter` **接口存根（interface only）**，完整实现留 W3+；存根实现 `sign()` 时抛出 `NotImplemented` | T26 | 3h | P1 | KeypairAdapter devnet 端测通过；4 个存根接口通过 TypeScript 类型检查；调用存根 `sign()` → 清晰的 `NotImplemented` 错误提示 |
 | T31 | CLI — 脚手架 + config 命令 | `gradience` binary（Bun）；`config set rpc <url>`；`config set keypair <path>`；`--help` 所有子命令；CLI 帮助文本内联文档 | T26 | 1h | P0 | `gradience --help` 显示所有子命令和说明；config 写入 `~/.gradience/config.json`；无效参数 → 清晰错误提示 |
@@ -122,7 +122,7 @@ flowchart LR
     T07 --> T14
     T08a --> T14
     T06 --> T16
-    T16 -.->|Pool 模式需要 JudgePool 有 Judge| T07
+    T16 -->|Pool 模式需要 JudgePool 有 Judge| T07
     T08a --> T15
     T07 --> T15
     T16 --> T15

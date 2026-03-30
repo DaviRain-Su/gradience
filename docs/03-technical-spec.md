@@ -597,11 +597,12 @@ for entry in judge_pool.entries:
 | `task` | Task PDA | ✅ | ❌ | 状态更新 |
 | `escrow` | Escrow PDA | ✅ | ❌ | 释放资金 |
 | `winner_account` | SystemAccount | ✅ | ❌ | Agent，接收 95% |
-| `winner_application` | Application PDA | ✅ | ❌ | 质押退回 |
+| `winner_application` | Application PDA | ✅ | ❌ | winner 质押退回 |
 | `winner_reputation` | Reputation PDA | ✅ | ❌ | 信誉更新 |
 | `judge_stake` | Stake PDA | ❌ | ❌ | 验证 Judge 已质押 |
 | `treasury` | Treasury PDA | ✅ | ❌ | 接收 2% |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_system_account]` × N（落败者，N = 申请者数 - 1，可为 0） |
 
 账户（SPL Token 版本，当 task.mint ≠ Pubkey::default()）：
 
@@ -614,7 +615,7 @@ for entry in judge_pool.entries:
 | `escrow_ata` | TokenAccount | ✅ | ❌ | Escrow 的 ATA（持有代币） |
 | `winner_account` | SystemAccount | ❌ | ❌ | Agent 的系统账户 |
 | `winner_token_account` | TokenAccount | ✅ | ❌ | Agent 的 token account（接收 95%） |
-| `winner_application` | Application PDA | ✅ | ❌ | 质押退回 |
+| `winner_application` | Application PDA | ✅ | ❌ | winner 质押退回 |
 | `winner_reputation` | Reputation PDA | ✅ | ❌ | 信誉更新 |
 | `judge_stake` | Stake PDA | ❌ | ❌ | 验证 Judge 已质押 |
 | `poster_token_account` | TokenAccount | ✅ | ❌ | Poster 的 token account（score < MIN_SCORE 时退款目标） |
@@ -623,6 +624,7 @@ for entry in judge_pool.entries:
 | `token_program` | Program | ❌ | ❌ | SPL Token 或 Token-2022 program |
 | `associated_token_program` | Program | ❌ | ❌ | ATA program |
 | `system_program` | Program | ❌ | ❌ | — |
+| `remaining_accounts` | — | — | — | `[application_pda, agent_token_account]` × N（落败者） |
 
 ---
 
@@ -662,12 +664,14 @@ for entry in judge_pool.entries:
 | `system_program` | Program | ❌ | ❌ | — |
 | `remaining_accounts` | — | — | — | 成对传入：`[application_pda, agent_token_account]` × N |
 
-**`remaining_accounts` 约定**（cancel_task / refund_expired / force_refund 通用）：
+**`remaining_accounts` 约定**（judge_and_pay / cancel_task / refund_expired / force_refund 通用）：
 - 每对 = `(application_pda: mut, agent_account: mut)`
 - 指令内验证 `application.task_id == task.task_id`；验证通过后退还 `application.stake_amount`
 - SOL 版本：`agent_account` 为 SystemAccount；SPL 版本：`agent_account` 为 agent 的 token_account
-- 调用者负责传入全部申请者账户；遗漏不会报错，但对应 stake 会被锁死（实现时文档警告）
-- `submission_count = 0` 前置保证申请者质押未被 judge_and_pay 处理过
+- 调用者负责传入全部目标申请者账户；遗漏不会报错，但对应 stake 会被锁死（实现时 SDK 层文档警告）
+- `judge_and_pay`：传入全部**落败者** Application（不含 winner，winner 走固定账户 `winner_application`）
+- `cancel_task / refund_expired`：仅在 `Task.state = Open` 时执行（judge_and_pay 尚未运行），传入全部申请者
+- `force_refund`：任务已有提交，传入全部有提交的申请者（winner 不存在，全部退回）
 
 ---
 
