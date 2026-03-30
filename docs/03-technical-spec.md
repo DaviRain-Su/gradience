@@ -20,7 +20,7 @@
 | `CANCEL_FEE_BPS` | 200 | u16 | Poster 主动取消扣除 2% | immutable |
 | `FORCE_REFUND_DELAY` | 604800 | i64 | judge_deadline 后 7 天（秒），任何人可触发强退 | immutable |
 | `UNSTAKE_COOLDOWN` | 604800 | i64 | Judge 解质押冷却期 7 天（秒） | immutable |
-| `MAX_JUDGES_PER_POOL` | 200 | usize | 每个 category JudgePool 最大 Judge 数量 | immutable |
+| `MAX_JUDGES_PER_POOL` | 200 | usize | 每个 category JudgePool 最大 Judge 数量；200 × 36 + header ≈ 7.2KB，在 Solana 10KB 账户上限内；若需扩容可通过分页（JudgePool shard）实现，当前 MVP 阶段 200 足够 | immutable |
 | `MAX_CATEGORIES` | 8 | usize | 支持的最大 category 数量 | immutable |
 | `MIN_SCORE` | 60 | u8 | 有效提交的最低分数门槛 | immutable |
 | `MAX_SCORE` | 100 | u8 | 最高分数 | immutable |
@@ -49,7 +49,7 @@
 ```rust
 /// 任务主体
 /// PDA seeds: [b"task", task_id.to_le_bytes()]
-/// 总大小: 8 + 283 = 291 bytes（含 Anchor discriminator）
+/// 总大小: 8 + 315 = 323 bytes（含 Anchor discriminator）
 #[account]
 pub struct Task {
     pub task_id:          u64,           // 8  — 任务唯一 ID，单调递增，由 ProgramConfig.task_count 派生
@@ -57,7 +57,7 @@ pub struct Task {
     pub judge:            Pubkey,        // 32 — 评判者地址（pool 模式下由协议填写）
     pub judge_mode:       JudgeMode,     // 1  — 0=Designated(Poster指定), 1=Pool(随机抽选)
     pub reward:           u64,           // 8  — 奖励总量（lamports 或 SPL token 最小单位）
-    pub mint:             Pubkey,        // 32 — SOL = Pubkey::default()，SPL = token mint
+    pub mint:             Pubkey,        // 32 — SOL = Pubkey::default()，SPL Token = token mint，Token-2022 = token-2022 mint（支持基础转账，不支持 Confidential Transfer / Transfer Hook 等高级扩展）；每个任务固定一种 mint，不支持混合支付
     pub min_stake:        u64,           // 8  — Agent 申请所需最低质押（与 reward 同单位）
     pub state:            TaskState,     // 1  — Open / Completed / Refunded
     pub category:         u8,           // 1  — 任务领域（见 Category 枚举）
@@ -69,7 +69,11 @@ pub struct Task {
     pub created_at:       i64,           // 8  — 创建时间（Unix timestamp）
     pub bump:             u8,            // 1  — PDA bump
 }
-// 总计: 8+32+32+1+8+32+8+1+1+132+8+8+2+33+8+1 = 275 + 8(discriminator) = 283
+// 正确计算:
+// task_id(8)+poster(32)+judge(32)+judge_mode(1)+reward(8)+mint(32)+min_stake(8)
+// +state(1)+category(1)+eval_ref(132)+deadline(8)+judge_deadline(8)
+// +submission_count(2)+winner(33)+created_at(8)+bump(1) = 315
+// 315 + 8(discriminator) = 323
 ```
 
 | 字段 | 类型 | 大小 (bytes) | 约束 | 说明 |
@@ -91,7 +95,7 @@ pub struct Task {
 | winner | Option\<Pubkey\> | 33 | — | None = 未评判 |
 | created_at | i64 | 8 | — | Unix timestamp |
 | bump | u8 | 1 | — | PDA bump |
-| **总计** | | **291** | | |
+| **总计** | | **323** | | |
 
 ---
 
@@ -168,7 +172,8 @@ pub struct RuntimeEnv {
 ```rust
 /// Agent / Judge 信誉数据（按需创建，首次参与自动初始化）
 /// PDA seeds: [b"reputation", agent.as_ref()]
-/// 总大小: 8 + 113 = 121 bytes
+/// 总大小: 8 + 105 = 113 bytes
+/// data = agent(32) + global(16) + by_category(56) + bump(1) = 105
 #[account]
 pub struct Reputation {
     pub agent:       Pubkey,                          // 32 — 地址
@@ -184,7 +189,7 @@ pub struct ReputationStats {
     pub completed:    u32, // 4 — 完成任务数
     pub total_earned: u64, // 8 — 累计收益（lamports）
 }
-// ReputationStats 总计: 2+2+4+8 = 16 bytes（含2字节padding = 18）
+// ReputationStats 总计: 2+2+4+8 = 16 bytes，无 padding（已是 8 的倍数）
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
 pub struct CategoryStats {
@@ -264,7 +269,7 @@ pub struct Treasury {
 #[account]
 pub struct ProgramConfig {
     pub treasury:          Pubkey, // 32 — Treasury PDA 地址
-    pub upgrade_authority: Pubkey, // 32 — 多签 DAO 地址
+    pub upgrade_authority: Pubkey, // 32 — 多签 DAO 地址（使用 Squads v4 多签，M-of-N 阈值由 DAO 治理决定；upgrade_authority 本身可通过 upgrade_config 转移给新的多签地址）
     pub min_judge_stake:   u64,    // 8  — 成为 Judge 的最低质押（可配置，初始 1 SOL）
     pub task_count:        u64,    // 8  — 已创建任务数（用于生成 task_id）
     pub bump:              u8,     // 1
@@ -348,7 +353,7 @@ CREATE TABLE reputations (
     global_avg_score INTEGER NOT NULL DEFAULT 0,  -- 0-10000
     global_win_rate  INTEGER NOT NULL DEFAULT 0,  -- 0-10000
     global_completed INTEGER NOT NULL DEFAULT 0,
-    total_earned     BIGINT  NOT NULL DEFAULT 0,
+    total_earned     BIGINT  NOT NULL DEFAULT 0,  -- lamports 数量，u64 范围（0 ~ 2^64-1）
     updated_slot     BIGINT  NOT NULL DEFAULT 0
 );
 
@@ -483,7 +488,7 @@ for entry in judge_pool.entries:
 |------|------|------|------|
 | `result_ref` | String | len ≤ 128, 非空 | 最终产出 CID |
 | `trace_ref` | String | len ≤ 128, 非空 | 执行轨迹 CID |
-| `runtime_env` | RuntimeEnv | 各字段非空 | 运行时环境声明 |
+| `runtime_env` | RuntimeEnv | 各字段非空；provider.len() ≤ 32；model.len() ≤ 64；runtime.len() ≤ 32；version.len() ≤ 16 | 运行时环境声明（Anchor String 不自动校验长度，需指令内 require! 手动验证） |
 
 账户：
 
@@ -559,7 +564,19 @@ for entry in judge_pool.entries:
 |------|------|
 | 调用者 | 任何人 |
 | 前置条件 | Task.state = Open；clock > task.judge_deadline + FORCE_REFUND_DELAY；至少有一个有效提交 |
-| 后置条件 | Task.state = Refunded；95% → Poster；3% → 提交数最多的 Agent；2% → Treasury；Judge 的 Stake 被 Slash（扣除 min_judge_stake，转入 Treasury） |
+| 后置条件 | Task.state = Refunded；95% → Poster；3% → 提交数最多的 Agent；2% → Treasury；Judge Slash 执行（见下方） |
+
+**force_refund Slash 逻辑（精确）：**
+```
+1. slash_amount = config.min_judge_stake
+2. 从 judge_stake.amount 扣除 slash_amount，转入 Treasury
+3. 若 judge_stake.amount - slash_amount >= config.min_judge_stake:
+     → Judge 留在 Pool 中，更新 weight（质押减少，weight 重算）
+   否则:
+     → 从所有 JudgePool 中移除该 Judge
+     → 关闭 Stake PDA，剩余 lamports 退回 Judge
+     → Judge 需重新 register_judge 才能再次参与
+``` |
 
 参数：无
 
