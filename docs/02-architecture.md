@@ -118,16 +118,23 @@ flowchart TB
          → 链上：Agent 质押 minStake，创建 Application PDA
          → 首次参与自动创建 Reputation PDA
 
-3. Agent 提交结果
-   Agent → SDK.task.submit(taskId, resultRef)
+3. Agent 提交结果（白盒提交）
+   Agent → SDK.task.submit(taskId, resultRef, traceRef, modelId)
          → Agent Layer Program: submit_result 指令
-         → 链上：更新 Submission PDA（可多次覆盖）
-         → resultRef 写入 Arweave / IPFS
+         → 链上：更新 Submission PDA（可多次覆盖），记录：
+             result_ref   — 最终产出的 CID（Arweave）
+             trace_ref    — 完整执行轨迹 CID（Prompt 序列 + 中间推理 + 模型声明）
+             model_id     — 声明使用的模型（e.g. "claude-opus-4-6"，公开可查）
+         → trace 内容存入 Arweave（内容寻址，防篡改）
 
-4. Judge 评判（三种方式）
-   方式 A（人工）:  Judge → 前端/CLI → SDK.task.judge(taskId, winner, score, reasonRef)
-   方式 B（AI）:    Judge Daemon 监听到 SubmissionReceived → 调用 LLM API → 自动提交
-   方式 C（合约）:  IJudge Program → CPI 调用 judge_and_pay，score 由合约计算
+4. Judge 评判（三种方式，均可访问完整 trace）
+   方式 A（人工）:  Judge → 前端/CLI 查看 result_ref + trace_ref → SDK.task.judge(taskId, winner, score, reasonRef)
+   方式 B（AI白盒）: Judge Daemon 监听到 SubmissionReceived
+                    → 下载 result_ref（最终产出）
+                    → 下载 trace_ref（执行 Prompt + 推理日志）
+                    → 将 trace 回放给 Judge 自己的 AI 运行时（用户自己配置的 Open Cloud）
+                    → 对比推理一致性 + 产出质量 → 综合评分 → 自动提交
+   方式 C（合约）:  IJudge Program → CPI 调用 judge_and_pay，score 由合约计算（适合 oracle 类确定性任务）
          → Agent Layer Program: judge_and_pay 指令
          → 链上三方分账：
              Agent(winner)  95% of reward
@@ -150,7 +157,7 @@ flowchart TB
 | 1 | 任务参数 + 锁仓 | Poster | Agent Layer PDA | Anchor Account |
 | 1 | evaluationCID | Poster | Arweave | Content-addressed |
 | 2 | 质押 + 申请 | Agent | Agent Layer PDA | Anchor Account |
-| 3 | resultRef（哈希/CID） | Agent | Agent Layer PDA + Arweave | Content-addressed |
+| 3 | result_ref（最终产出 CID）+ trace_ref（执行轨迹 CID）+ model_id | Agent | Agent Layer PDA + Arweave | Content-addressed |
 | 4 | score(0-100) + winner | Judge / Daemon / Contract | Agent Layer | Anchor Instruction |
 | 4 | 分账转账 | Escrow PDA | Agent / Judge / Treasury | SOL lamport / SPL Token |
 | 4 | 信誉更新 | Agent Layer | Reputation PDA | Anchor Account |
@@ -205,7 +212,7 @@ EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 | `Task` | `["task", task_id]` | 任务主体：状态、奖励、Judge、deadline | Agent Layer Program |
 | `Escrow` | `["escrow", task_id]` | 锁仓资金（SOL）或 ATA（SPL Token） | Agent Layer Program |
 | `Application` | `["application", task_id, agent]` | Agent 申请记录 + 质押 | Agent Layer Program |
-| `Submission` | `["submission", task_id, agent]` | 最新提交引用（可覆盖） | Agent Layer Program |
+| `Submission` | `["submission", task_id, agent]` | 最新提交：result_ref + trace_ref + model_id（可覆盖） | Agent Layer Program |
 | `Reputation` | `["reputation", agent]` | 信誉数据，按需创建 | Agent Layer Program |
 | `Stake` | `["stake", agent]` | Judge 协议级质押 | Agent Layer Program |
 | `Treasury` | `["treasury"]` | 协议收入账户 | Agent Layer Program |
@@ -298,17 +305,27 @@ grad.indexer.endpoint(url)       // 切换 Indexer 端点（Managed / Self-hoste
 ### Judge Daemon 接口
 
 ```typescript
-// Judge Daemon 两种模式
+// Judge Daemon — 白盒评测模式
+// API Key 由用户自己在 AI 云（Open Cloud）中配置，协议不管模型凭据
+// Daemon 通过本地 AI 运行时（用户自己的 Claude / OpenAI / 本地模型）进行评测
+
 daemon.ai.start({
   taskFilter: { category: 'code' },
-  llmProvider: 'claude',           // claude | openai | custom
-  apiKey: process.env.CLAUDE_KEY,
+  // 无 apiKey 字段 — 用户自行配置 AI 运行时（环境变量 / 本地模型 / Open Cloud）
   judgeWallet: keypair,
+  evalMode: 'whitebox',  // 'whitebox'（回放 trace）| 'blackbox'（只看结果）
 })
+
+// 白盒评测流程：
+// 1. 监听到 SubmissionReceived 事件
+// 2. 下载 submission.result_ref（最终产出）
+// 3. 下载 submission.trace_ref（执行 Prompt + 推理日志 + 声明的模型）
+// 4. 将完整 trace 回放给 Judge 的本地 AI 运行时，验证推理一致性
+// 5. 综合评分（产出质量 + 推理过程）→ 提交 judge_and_pay
 
 daemon.oracle.start({
   taskFilter: { evalType: 'test_cases' },
-  runner: 'node',                  // node | docker | wasm
+  runner: 'node',        // node | docker | wasm
   judgeWallet: keypair,
 })
 ```
@@ -450,6 +467,8 @@ W4 (04-22 ~ 04-30): 全链
 | Indexer | Cloudflare Workers + D1 | 零运维、全球边缘、低成本；宕机不影响协议 |
 | 链下存储 | Arweave（永久）| evaluationCID 必须永久可用，否则任务无法评判 |
 | AI Judge | Judge Daemon（链下） | 协议内核不嵌 AI，链下 Daemon 保持灵活可替换 |
+| 评测模式 | 白盒（White-box）优先 | Agent 提交 result_ref + trace_ref（完整执行轨迹），Judge 可回放 Prompt 验证推理；协议不管理 API Key，用户自行配置 Open Cloud |
+| 模型透明 | model_id 链上公开 | Agent 声明使用的模型，trace 内容寻址防篡改，任何人可审计推理过程 |
 
 ---
 
