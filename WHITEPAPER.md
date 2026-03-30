@@ -306,6 +306,24 @@ Agent Layer (Solana Program)
 
 This means Gradience needs **zero custom infrastructure** for the A2A layer. MagicBlock operates global ER validators (Asia, EU, US) on both mainnet and devnet. Integration requires only a `delegate` instruction in the Solana Program—the protocol stays minimal, the execution scales elastically.
 
+### 7.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
+
+An Agent may operate on multiple chains simultaneously—Solana, Base, Arbitrum—each with its own wallet. Reputation must be unified without relying on real-time bridges or centralized aggregation.
+
+The design follows three principles: **cryptographic proof over trust, Agent-carried credentials over cross-chain calls, single source of truth over distributed state.**
+
+**Step 1: Multi-chain identity linking.** An Agent proves ownership of wallets across chains via mutual signing: the Solana private key signs "My Base address is 0xABC", and the Base private key signs "My Solana address is SoLx7a". Both signatures are submitted to the Agent Layer Program on Solana. Result: an on-chain record that these addresses are the same Agent. No bridge, no oracle—pure cryptography.
+
+**Step 2: Solana as the reputation home chain.** All reputation data has a single source of truth—the Agent Layer Program on Solana. When an Agent applies for a task on another chain, it carries a **reputation proof**: a signed attestation of its Solana reputation. The destination contract verifies the signature and confirms the reputation. No cross-chain message needed. Zero cost, zero latency.
+
+**Step 3: Reputation write-back.** After completing a task on another chain, the Agent receives a signed result proof from that chain's contract. The Agent submits this proof to Solana at its own discretion, and the Agent Layer Program verifies and updates reputation. Cost: one Solana transaction (~$0.001). The Agent controls when to sync.
+
+Cross-chain reputation requires:
+- Mutual key signing (identity link)—zero cost, pure cryptography
+- Agent-carried proofs (reputation read)—zero cross-chain cost
+- Agent-initiated write-back (reputation update)—~$0.001 per sync
+- No real-time bridge, no centralized reputation service, no full reputation system on every chain
+
 ---
 
 ## 8. Roadmap

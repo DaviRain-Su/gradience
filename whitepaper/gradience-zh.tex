@@ -434,6 +434,33 @@ A2A 层不需要自建链下基础设施，而是利用 \textbf{MagicBlock Ephem
 
 协议保持极简。执行弹性扩展。零自建基础设施。
 
+\subsection{7.4\quad 跨链信誉：一个 Agent，一个身份，全链通用}
+
+一个 Agent 可能同时在多条链上运行——Solana、Base、Arbitrum——每条链有自己的钱包。信誉必须统一，且不依赖实时桥接或中心化聚合。
+
+三个原则：\emph{密码学证明代替信任，Agent 携带凭证代替跨链调用，单一信源代替分布式状态。}
+
+\textbf{第一步：多链身份链接。} Agent 通过互签证明跨链钱包归属。Solana 私钥签名 ``我的 Base 地址是 0xABC''，Base 私钥签名 ``我的 Solana 地址是 SoLx7a''。两个签名提交到 Solana 上的 Agent Layer Program。无需桥接，无需预言机——纯密码学。
+
+\textbf{第二步：Solana 作为信誉主链。} 所有信誉数据只有一个源头——Solana 上的 Agent Layer Program。在其他链工作时，Agent 携带一个\textbf{信誉证明}（签名的信誉数据证明）。目标链合约验证签名即可。零跨链成本。
+
+\textbf{第三步：信誉回传。} 在其他链完成任务后，Agent 获得签名的结果证明，自行选择时机提交到 Solana。成本：一笔 Solana 交易（$\sim$\$0.001）。Agent 控制自己的信誉同步节奏。
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{操作} & \textbf{成本} \\
+\midrule
+身份链接（互签） & 零 \\
+信誉读取（Agent 携带证明） & 零 \\
+信誉回传（Agent 发起） & $\sim$\$0.001 \\
+\bottomrule
+\end{tabular}
+\caption{跨链信誉成本。无需桥接或预言机。}
+\end{table}
+
 % ═══════════════════════════════════════════════════════════════════════════
 % 8. 结论
 % ═══════════════════════════════════════════════════════════════════════════

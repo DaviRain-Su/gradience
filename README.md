@@ -156,6 +156,42 @@ flowchart TB
 
 The protocol stays minimal. The execution scales elastically.
 
+### Cross-Chain Reputation: One Agent, One Identity, All Chains
+
+An Agent operates on multiple chains with different wallets. Reputation stays unified through cryptographic proofs—no bridges, no oracles:
+
+```mermaid
+flowchart TB
+    subgraph Agent["One Agent"]
+        Sol["Solana wallet"]
+        Base["Base wallet"]
+        Arb["Arbitrum wallet"]
+    end
+
+    subgraph Home["Solana (Reputation Home)"]
+        Rep["Agent Layer Program<br/>Single source of truth<br/>avgScore · winRate · linked addresses"]
+    end
+
+    subgraph Other["Other Chains"]
+        B["Base Agent Layer<br/>Verifies Solana reputation proof"]
+        A["Arbitrum Agent Layer<br/>Verifies Solana reputation proof"]
+    end
+
+    Sol --> Home
+    Base -.->|"carry reputation proof"| B
+    Arb -.->|"carry reputation proof"| A
+    B -.->|"write-back ~$0.001"| Home
+    A -.->|"write-back ~$0.001"| Home
+
+    style Home fill:#0f7b8a15,stroke:#0f7b8a
+```
+
+1. **Identity linking**: Mutual key signing across chains — zero cost, pure cryptography
+2. **Reputation read**: Agent carries a signed proof from Solana — zero cross-chain cost
+3. **Reputation write-back**: Agent submits result proof to Solana — ~$0.001 per sync
+
+No real-time bridge. No centralized aggregation. The Agent controls its own reputation.
+
 ---
 
 ## How It Works

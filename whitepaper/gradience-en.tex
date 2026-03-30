@@ -431,6 +431,33 @@ The integration requires only a \texttt{delegate} instruction in the Solana Prog
 
 The protocol stays minimal. The execution scales elastically. Zero custom infrastructure required.
 
+\subsection{7.4\quad Cross-Chain Reputation}
+
+An Agent may operate on multiple chains simultaneously---Solana, Base, Arbitrum---each with its own wallet. Reputation must be unified without real-time bridges or centralized aggregation.
+
+Three principles: \emph{cryptographic proof over trust, Agent-carried credentials over cross-chain calls, single source of truth over distributed state.}
+
+\textbf{Step 1: Identity linking.} The Agent proves ownership of wallets across chains via mutual signing. The Solana key signs ``My Base address is 0xABC''; the Base key signs ``My Solana address is SoLx7a''. Both signatures are submitted to the Agent Layer Program on Solana. No bridge, no oracle---pure cryptography.
+
+\textbf{Step 2: Reputation home chain.} All reputation lives on Solana. When working on another chain, the Agent carries a \textbf{reputation proof}---a signed attestation of its Solana reputation. The destination contract verifies the signature. Zero cross-chain cost.
+
+\textbf{Step 3: Write-back.} After completing work on another chain, the Agent receives a signed result proof and submits it to Solana at its own discretion. Cost: $\sim$\$0.001 per sync.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Operation} & \textbf{Cost} \\
+\midrule
+Identity linking (mutual signing) & Zero \\
+Reputation read (Agent-carried proof) & Zero \\
+Reputation write-back (Agent-initiated) & $\sim$\$0.001 \\
+\bottomrule
+\end{tabular}
+\caption{Cross-chain reputation costs. No bridges or oracles required.}
+\end{table}
+
 \textbf{Agent Layer} defines the settlement rules. Modules provide tooling (Chain Hub), user entry (Agent Me), social discovery (Agent Social), and network coordination (A2A). The kernel depends on no module. Modules depend on the kernel.
 
 % ═══════════════════════════════════════════════════════════════════════════
