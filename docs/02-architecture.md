@@ -650,6 +650,33 @@ Solana judge_and_pay 链上验证 VAA，触发分账
 
 ---
 
+### 多链扩展协议矩阵（完整版）
+
+Gradience 支持的链取决于所依赖的跨链消息协议的覆盖范围。不同生态系有各自的原生协议，Wormhole/LayerZero 不能覆盖所有情况：
+
+| 生态 | 原生跨链协议 | Wormhole | LayerZero | Gradience 支持路径 | 优先级 |
+|------|------------|:---:|:---:|---|:---:|
+| **EVM 全系**（Base/Arbitrum/Polygon/BNB/Avalanche…） | 无统一原生 | ✅ 50+ 链 | ✅ 50+ 链 | 直接集成 | W4 |
+| **Sui** | Move VM 原生 | ✅ | ✅ v2 | 直接集成（两个协议均支持） | W4+ |
+| **Aptos** | Move VM 原生 | ✅ | ✅ v2 | 直接集成（两个协议均支持） | W4+ |
+| **Cosmos 生态**（Osmosis / Cosmos Hub / Celestia…） | **IBC**（Inter-Blockchain Communication） | ⚠️ Wormhole Gateway（桥接层，非原生） | ⚠️ 有限支持 | 需额外对接 **IBC** 作为第三消息层 | 远期 |
+| **Polkadot/波卡**（原生平行链） | **XCM**（Cross-Consensus Message） | ❌ 不支持 Substrate | ❌ 不支持 Substrate | EVM 平行链（Moonbeam/Astar）可走 Wormhole；原生平行链需 XCM 适配 | 远期 |
+| **Solana**（核心） | 原生 | ✅ | ✅ | — | 核心 |
+
+**协议分层策略**：
+
+```
+主路径  Wormhole / LayerZero  → EVM 全系 + Sui + Aptos
+补充层  IBC                   → Cosmos 生态（Osmosis, Celestia, dYdX Chain…）
+远期    XCM                   → Polkadot 原生平行链
+```
+
+**Cosmos 的特殊性**：IBC 是 Cosmos 生态的"HTTP"级别基础设施，远比 Wormhole 桥接更原生可信。Gradience 扩展到 Cosmos 生态时，应直接对接 IBC，而非依赖 Wormhole Gateway 的间接桥接。这意味着需要在 Cosmos 链上部署一个 IBC 轻节点应用（IBC Light Client + ICS-20 + Gradience 消息格式）。
+
+**Polkadot 的现实**：XCM 仅在 Polkadot/Kusama 平行链之间工作，Solana 不在这个网络内。除非波卡生态出现成熟的跨生态桥接方案，否则 Gradience 对 Polkadot 的支持仅限于其 EVM 兼容平行链。
+
+---
+
 ### program-metadata：部署时 IDL 与 Security 注解
 
 `solana-program/program-metadata` 是官方提供的链上程序注解工具，不影响协议逻辑，属于部署 runbook 的一次性操作：
@@ -666,12 +693,97 @@ security.json 包含：`name`, `description`, `auditors`, `contacts`, `source_co
 
 ---
 
+### 为何协议核心实现在 Solana（而非以太坊或其他链）
+
+> **核心论点：在当前区块链发展阶段，Solana 的协议资本利用率最高。**
+
+资本利用率定义：每单位资本（时间 + 资金 + 开发者注意力）在协议中产生的有效价值比例。
+
+#### 1. 任务资本利用率：Gas 成本决定经济下限
+
+对一个 AI Agent 任务市场，Gas 费用直接决定"最小可行任务规模"：
+
+| 链 | 单笔复杂指令 Gas（2026 年均值） | 最小有意义任务规模 | 95% 奖励实际到账率（$10 任务） |
+|---|---|---|---|
+| Ethereum mainnet | $10 ~ $100 | >>$500 | ≈ 0%（Gas 吃光） |
+| Ethereum L2（Arbitrum/Base） | $0.01 ~ $0.50 | ~$5+ | ~95%（但流动性分散） |
+| **Solana** | $0.0002 ~ $0.001 | **$0.01+** | **≈ 99.99%** |
+| BNB Chain | $0.05 ~ $0.20 | ~$2+ | ~98% |
+
+**Solana 的 Gas 成本比以太坊低 5 个数量级**，这意味着：
+- `judge_and_pay`（最复杂指令，含多账户转账）在 Solana 约 $0.0005
+- 同等操作在以太坊 mainnet 约 $30-80（根据网络拥堵）
+- 微任务（$0.1 ~ $5）在 Solana 完全可行；在以太坊 mainnet 经济不成立
+
+#### 2. 时间资本利用率：结算速度决定 Agent 吞吐量
+
+Agent 是软件，能并行执行大量任务。结算延迟直接限制 Agent 的资本周转率：
+
+| 链 | 出块时间 | 最终确认 | Agent 每日可结算任务上限（单钱包） |
+|---|---|---|---|
+| Bitcoin | 10 分钟 | 60 分钟 | ~100 次 |
+| Ethereum mainnet | 12 秒 | 3 分钟 | ~480 次 |
+| **Solana** | **400ms** | **~2 秒** | **~43,200 次** |
+
+400ms 出块意味着 Agent 提交结果到拿到奖励不超过 2 秒——这是 AI Agent 原生的节奏，不是人类等待的节奏。
+
+#### 3. 生态资本利用率：2026 年 Solana 的开发者与用户密度
+
+协议价值 = 用户数 × 任务密度 × 流动性深度。当前阶段：
+
+- **USDC on Solana**：Circle 官方原生发行，流动性深度接近以太坊，无需 bridged USDC
+- **DeFi 生态**：Jupiter（DEX 聚合）、Raydium、Kamino、MarginFi——AI Agent 的 DeFi 任务有真实的执行标的
+- **开发者密度**：2025-2026 年 Solana 开发者活跃度超越所有 EVM L2，新协议首发率高
+- **AI Agent 工具链**：x402、NO_DNA、Kora、Helius MCP——全部 Solana-first 或 Solana-only
+- **Pinocchio / LiteSVM / Codama**：Solana 官方维护的高质量开发工具，以太坊没有等价物
+
+#### 4. 以太坊的结构性问题：流动性碎片化
+
+以太坊 L2 生态（Base / Arbitrum / OP / ZKsync / Scroll / Linea…）虽然 Gas 便宜，但：
+
+- **流动性分散**在 10+ 条链上，无单一统一市场
+- **用户需要桥接**才能在不同 L2 之间移动资金，摩擦极大
+- **AI Agent 需要同时维护多条链上的钱包和 Gas**——运营复杂度高
+- **没有统一的 AI Agent 工具链**，每条 L2 生态独立，开发者需重复适配
+
+Solana 作为**单一高性能链**，流动性集中，Agent 只需维护一个钱包即可访问整个生态。
+
+#### 5. 比特币：为何完全不可能
+
+Bitcoin Script 是**非图灵完备的**，无法实现：
+- 条件多方转账（judge_and_pay 的 95/3/2 分账）
+- PDA 账户（任务/质押/信誉状态存储）
+- 任何有状态的智能合约逻辑
+
+比特币唯一可能的路径是 **Ordinals/Runes + Layer 2**（如 Stacks），但这条路技术债极重、生态极小，不在考虑范围。
+
+#### 6. 总结：为何 Solana 是 AI Agent 协议的最优底层
+
+```
+选择 Solana 的本质原因：
+  极低 Gas（$0.0001 级）    → 微任务经济成立，资本不被摩耗
+  400ms 出块               → Agent 吞吐量与 AI 决策速度匹配
+  统一流动性               → 不分散，Agent 单钱包覆盖全生态
+  AI Agent 原生工具链      → x402 / Kora / NO_DNA / Helius MCP Solana-first
+  SPL Token 生态           → USDC + DeFi 标的原生支持
+  开发者活跃度峰值期       → 2025-2026 年是 Solana 生态最活跃阶段
+
+以太坊的问题不是技术，而是结构：
+  Gas 太贵（mainnet）      → 微任务经济不成立
+  L2 碎片化               → 流动性分散，Agent 运营复杂
+  无统一 AI 工具链         → 每条 L2 独立适配
+```
+
+**协议资本利用率 = 奖励到达率 × 结算速度 × 生态可达规模**。在 2026 年的当前阶段，Solana 在这三个维度上的综合得分显著领先所有其他选项。
+
+---
+
 ## 关键架构决策
 
 | 决策 | 选择 | 理由 |
 |------|------|------|
 | 任务模型 | 仅 Race Task（离散竞争） | 持续委托与竞争并行不兼容；Delegation Task 归 Chain Hub |
-| 链选择 | Solana 首发，EVM W4 | Solana 400ms 出块 + 低 Gas；EVM 为跨链信誉扩展；**主 Chain Hub 永远在 Solana**，不迁移 |
+| 链选择 | **Solana 核心永久**，EVM/Sui/Cosmos W4+ 扩展 | 协议资本利用率最高：Gas 低 5 个数量级（$0.0001 vs $30-80）、400ms 出块、统一流动性（无 L2 碎片化）、AI Agent 原生工具链（x402/Kora/NO_DNA/Helius）全部 Solana-first；以太坊 mainnet 微任务经济不成立，L2 碎片化流动性；Bitcoin 不可能（非图灵完备）；见 §2.10 |
 | Program 可升级 | 是，**Squads v4（3/5 多签）**控制 upgrade_authority | 开发阶段需迭代；费率常量不受 upgrade 影响 |
 | 费率 | 95/3/2 硬编码常量 | 协议承诺，不可被治理/升级修改 |
 | 支付 | SOL + SPL + Token-2022 | 内核无业务偏好，支持所有 Solana 原生资产；**标准 transfer only**，不支持 Transfer Hook / Confidential Transfer（避免恶意 Hook 拦截结算） |
