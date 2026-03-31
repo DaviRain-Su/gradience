@@ -66,15 +66,18 @@ describe("AgentLayerRaceTask", function () {
                 (reward * 200n) / 10000n,
             );
 
-        const winnerBalanceAfter = await ethers.provider.getBalance(agentA.address);
-        const loserBalanceAfter = await ethers.provider.getBalance(agentB.address);
+        const winnerBalanceAfterJudge = await ethers.provider.getBalance(agentA.address);
+        const loserBalanceAfterJudge = await ethers.provider.getBalance(agentB.address);
         const treasuryAfter = await ethers.provider.getBalance(treasury.address);
 
-        expect(winnerBalanceAfter - winnerBalanceBefore).to.equal(
-            (reward * 9500n) / 10000n + minStake,
+        expect(winnerBalanceAfterJudge - winnerBalanceBefore).to.equal(
+            (reward * 9500n) / 10000n,
         );
-        expect(loserBalanceAfter - loserBalanceBefore).to.equal(minStake);
+        expect(loserBalanceAfterJudge - loserBalanceBefore).to.equal(0n);
         expect(treasuryAfter - treasuryBefore).to.equal((reward * 200n) / 10000n);
+
+        await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
+        await expect(() => contract.connect(agentB).claim_stake(1n)).to.changeEtherBalance(agentB, minStake);
 
         const task = await contract.tasks(1n);
         expect(task[7]).to.equal(1n);
@@ -106,10 +109,11 @@ describe("AgentLayerRaceTask", function () {
             .withArgs(1n, poster.address, reward, 59n);
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
-        const agentAfter = await ethers.provider.getBalance(agentA.address);
+        const agentAfterJudge = await ethers.provider.getBalance(agentA.address);
 
         expect(posterAfter - posterBefore).to.equal(reward);
-        expect(agentAfter - agentBefore).to.equal(minStake);
+        expect(agentAfterJudge - agentBefore).to.equal(0n);
+        await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
         expect(task[7]).to.equal(2n);
@@ -133,6 +137,32 @@ describe("AgentLayerRaceTask", function () {
         await expect(contract.connect(attacker).judge_and_pay(1n, agentA.address, 80))
             .to.be.revertedWithCustomError(contract, "NotTaskJudge")
             .withArgs(1n, attacker.address, judge.address);
+    });
+
+    it("submit_result rejects overwrite and judge cannot apply", async function () {
+        const { contract, poster, judge, agentA } = await deployFixture();
+        const reward = ethers.parseEther("0.2");
+        const minStake = ethers.parseEther("0.01");
+        const now = await currentTime();
+        const deadline = now + 3600n;
+        const judgeDeadline = deadline + 1800n;
+
+        await contract
+            .connect(poster)
+            .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                value: reward,
+            });
+        await expect(contract.connect(judge).apply_for_task(1n, { value: minStake }))
+            .to.be.revertedWithCustomError(contract, "JudgeCannotApply")
+            .withArgs(1n, judge.address);
+
+        await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+        await contract.connect(agentA).submit_result(1n, "cid://result-a", "cid://trace-a");
+        await expect(
+            contract.connect(agentA).submit_result(1n, "cid://result-b", "cid://trace-b"),
+        )
+            .to.be.revertedWithCustomError(contract, "AlreadySubmitted")
+            .withArgs(1n, agentA.address);
     });
 
     it("claim_expired refunds poster and stakes after judge deadline", async function () {
@@ -164,9 +194,10 @@ describe("AgentLayerRaceTask", function () {
             .withArgs(1n, poster.address, reward, 0n);
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
-        const agentAfter = await ethers.provider.getBalance(agentA.address);
+        const agentAfterJudge = await ethers.provider.getBalance(agentA.address);
         expect(posterAfter - posterBefore).to.equal(reward);
-        expect(agentAfter - agentBefore).to.equal(minStake);
+        expect(agentAfterJudge - agentBefore).to.equal(0n);
+        await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
         expect(task[7]).to.equal(2n);

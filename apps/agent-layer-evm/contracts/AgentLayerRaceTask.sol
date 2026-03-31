@@ -63,7 +63,10 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error DeadlinePassed(uint256 taskId);
     error JudgeDeadlinePassed(uint256 taskId);
     error AlreadyApplied(uint256 taskId, address agent);
+    error AlreadySubmitted(uint256 taskId, address agent);
+    error JudgeCannotApply(uint256 taskId, address judge);
     error NotApplied(uint256 taskId, address agent);
+    error StakeNotClaimable(uint256 taskId, address agent);
     error InvalidStakeAmount(uint256 expected, uint256 actual);
     error NotTaskJudge(uint256 taskId, address caller, address expectedJudge);
     error InvalidScore(uint8 score);
@@ -156,6 +159,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     function apply_for_task(uint256 task_id) external payable nonReentrant {
         Task storage task = _loadOpenTask(task_id);
         if (block.timestamp >= task.deadline) revert DeadlinePassed(task_id);
+        if (msg.sender == task.judge) revert JudgeCannotApply(task_id, msg.sender);
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
@@ -185,6 +189,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (!app.exists) revert NotApplied(task_id, msg.sender);
 
         Submission storage submission = _submissions[task_id][msg.sender];
+        if (submission.exists) revert AlreadySubmitted(task_id, msg.sender);
         submission.exists = true;
         submission.submittedAt = uint64(block.timestamp);
         submission.resultRef = result_ref;
@@ -225,8 +230,6 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             _sendEth(task.poster, task.reward);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
         }
-
-        _refundAllStakes(task_id);
     }
 
     function claim_expired(uint256 task_id) external nonReentrant {
@@ -235,8 +238,21 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
         task.state = TaskState.Refunded;
         _sendEth(task.poster, task.reward);
-        _refundAllStakes(task_id);
         emit TaskRefunded(task_id, task.poster, task.reward, 0);
+    }
+
+    function claim_stake(uint256 task_id) external nonReentrant {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.state == TaskState.Open) revert TaskNotOpen(task_id);
+
+        Application storage app = applications[task_id][msg.sender];
+        uint256 stake = app.stake;
+        if (!app.exists || stake == 0) revert StakeNotClaimable(task_id, msg.sender);
+
+        app.stake = 0;
+        _sendEth(msg.sender, stake);
+        emit StakeRefunded(task_id, msg.sender, stake);
     }
 
     function get_submission(uint256 task_id, address agent) external view returns (Submission memory) {
@@ -245,21 +261,6 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
     function get_applicants(uint256 task_id) external view returns (address[] memory) {
         return _taskApplicants[task_id];
-    }
-
-    function _refundAllStakes(uint256 task_id) internal {
-        address[] storage applicants = _taskApplicants[task_id];
-        for (uint256 i = 0; i < applicants.length; i++) {
-            address agent = applicants[i];
-            Application storage app = applications[task_id][agent];
-            uint256 stake = app.stake;
-            if (!app.exists || stake == 0) {
-                continue;
-            }
-            app.stake = 0;
-            _sendEth(agent, stake);
-            emit StakeRefunded(task_id, agent, stake);
-        }
     }
 
     function _updateWinnerReputation(address winner, uint256 winnerPayout, uint8 score) internal {
