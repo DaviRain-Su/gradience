@@ -1251,6 +1251,30 @@ Chain Hub 的 Protocol Registry 是整个体系的开放入口，支持两种截
 
 **对项目方的价值**：提交一次 PR（或调用 `registerProtocol()` 链上指令），立刻获得整个 Gradience Agent 网络的调用能力 — **接入 Chain Hub = 接入所有 Gradience Agent**。不需要改造合约，不需要集成 SDK，只需提供 Program ID + IDL。
 
+**可组合性继承**：项目方不需要自己集成 SDP 或其他任何已注册协议。Agent 在调用第三方合约的同一工作流中，可以自由组合 Chain Hub 内所有已注册的能力（包括 SDP 的支付、托管、合规）：
+
+```typescript
+// Agent 工作流示例 —— 第三方合约与 SDP 在同一会话内自由组合
+// 第三方开发者无需了解 SDP，Agent 自行编排
+
+const swapResult = await chainHub.invoke("orca-whirlpool", "swap", {
+  tokenIn: "SOL", tokenOut: "USDC", amount: 1.0,
+});
+// ↑ 路径 B：第三方合约，直接 CPI，无 API Key
+
+const payment = await chainHub.invoke("sdp", "payments.on-ramp", {
+  amount: swapResult.amountOut, destination: agentWallet,
+});
+// ↑ 路径 A：SDP，Key Vault 自动注入凭证
+
+const position = await chainHub.invoke("kamino", "deposit", {
+  amount: swapResult.amountOut, vault: "USDC-SOL",
+});
+// ↑ 路径 B：另一个第三方合约
+```
+
+**接入 Chain Hub 的协议，自动继承所有其他已注册协议的可组合性。** 这是 Chain Hub 区别于单点集成的核心价值：整个 Registry 是一个开放的乐高积木库，任何新注册的协议都加入了这个库，并立刻可以被 Agent 与其他所有积木自由组合。
+
 ---
 
 ### 两条路径的统一调用接口
