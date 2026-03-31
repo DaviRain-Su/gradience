@@ -66,7 +66,10 @@ pub fn read_borsh_account<T: BorshDeserialize>(
     discriminator: u8,
 ) -> Result<T, ProgramError> {
     let data = account.try_borrow()?;
-    if data.len() < 2 || data[0] != discriminator {
+    if data.len() < 2
+        || data[0] != discriminator
+        || data[1] != crate::state::ACCOUNT_VERSION_V1
+    {
         return Err(ProgramError::InvalidAccountData);
     }
     let mut payload = &data[2..];

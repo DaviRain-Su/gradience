@@ -37,21 +37,28 @@ test('createIndexerPollingFetcher bounds seen task ids to avoid unbounded growth
     const fetcher: typeof fetch = async (input) => {
         const url = String(input);
         if (url.includes('/api/tasks?')) {
-            tick += 1;
-            const tasks =
+            const parsed = new URL(url);
+            const limit = Number(parsed.searchParams.get('limit') ?? '50');
+            const offset = Number(parsed.searchParams.get('offset') ?? '0');
+            if (offset === 0) {
+                tick += 1;
+            }
+            const snapshot =
                 tick === 1
-                    ? [task(1), task(2)]
+                    ? [task(5), task(4), task(3), task(2), task(1)]
                     : tick === 2
-                      ? [task(3)]
-                      : [task(1)];
-            return json(tasks);
+                      ? [task(9), task(8), task(7), task(6), task(5), task(4), task(3), task(2), task(1)]
+                      : [task(9), task(8), task(7), task(6), task(5), task(4), task(3), task(2), task(1)];
+            return json(snapshot.slice(offset, offset + limit));
         }
         return new Response(null, { status: 404 });
     };
 
     const poll = createIndexerPollingFetcher('http://indexer.local', {
-        maxSeenTaskIds: 2,
-        maxSeenSubmissionKeys: 2,
+        maxSeenTaskIds: 100,
+        maxSeenSubmissionKeys: 100,
+        tasksPageSize: 2,
+        maxTaskPages: 10,
         fetcher,
     });
 
@@ -59,17 +66,19 @@ test('createIndexerPollingFetcher bounds seen task ids to avoid unbounded growth
     const second = await poll();
     const third = await poll();
 
-    assert.deepEqual(
-        first.map((event) => event.event.event),
-        ['task_created', 'task_created'],
-    );
-    assert.equal(second.length, 1);
-    assert.equal(second[0]?.event.event, 'task_created');
-    assert.equal(third.length, 1);
-    assert.equal(third[0]?.event.event, 'task_created');
-    if (third[0]?.event.event === 'task_created') {
-        assert.equal(third[0].event.task_id, 1);
-    }
+    const firstTaskIds = first
+        .filter((event) => event.event.event === 'task_created')
+        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+    const secondTaskIds = second
+        .filter((event) => event.event.event === 'task_created')
+        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+    const thirdTaskIds = third
+        .filter((event) => event.event.event === 'task_created')
+        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+
+    assert.deepEqual(firstTaskIds, [5, 4, 3, 2, 1]);
+    assert.deepEqual(secondTaskIds, [9, 8, 7, 6]);
+    assert.deepEqual(thirdTaskIds, []);
 });
 
 function task(taskId: number) {

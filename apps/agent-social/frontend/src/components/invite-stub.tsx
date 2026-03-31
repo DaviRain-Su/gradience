@@ -15,6 +15,7 @@ interface InviteStubProps {
 export function InviteStub({ selectedAgent }: InviteStubProps) {
     const transport = useMemo(() => createDefaultMagicBlockTransport(), []);
     const [agentId, setAgentId] = useState('agent-social-local');
+    const [agentIdInput, setAgentIdInput] = useState('agent-social-local');
     const [to, setTo] = useState('');
     const [topic, setTopic] = useState('');
     const [message, setMessage] = useState('');
@@ -27,6 +28,16 @@ export function InviteStub({ selectedAgent }: InviteStubProps) {
             setTo(selectedAgent);
         }
     }, [selectedAgent]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const normalized = agentIdInput.trim();
+            if (normalized && normalized !== agentId) {
+                setAgentId(normalized);
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [agentId, agentIdInput]);
 
     useEffect(() => {
         const agent = new MagicBlockA2AAgent(agentId.trim(), transport);
@@ -77,8 +88,8 @@ export function InviteStub({ selectedAgent }: InviteStubProps) {
             </p>
             <form onSubmit={submit} className="grid" style={{ marginTop: 12 }}>
                 <input
-                    value={agentId}
-                    onChange={(event) => setAgentId(event.target.value)}
+                    value={agentIdInput}
+                    onChange={(event) => setAgentIdInput(event.target.value)}
                     placeholder="Your agent id"
                     required
                 />

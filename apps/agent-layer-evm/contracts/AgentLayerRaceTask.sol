@@ -48,7 +48,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         uint256 totalApplied;
         uint256 completed;
         uint256 totalEarned;
-        uint256 avgScore;
+        uint256 totalScore;
         uint256 winRateBps;
     }
 
@@ -263,12 +263,37 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         return _taskApplicants[task_id];
     }
 
+    function get_reputation(
+        address agent
+    )
+        external
+        view
+        returns (
+            uint256 totalApplied,
+            uint256 completed,
+            uint256 totalEarned,
+            uint256 totalScore,
+            uint256 avgScore,
+            uint256 winRateBps
+        )
+    {
+        Reputation storage rep = reputations[agent];
+        uint256 computedAvgScore = rep.completed == 0 ? 0 : rep.totalScore / rep.completed;
+        return (
+            rep.totalApplied,
+            rep.completed,
+            rep.totalEarned,
+            rep.totalScore,
+            computedAvgScore,
+            rep.winRateBps
+        );
+    }
+
     function _updateWinnerReputation(address winner, uint256 winnerPayout, uint8 score) internal {
         Reputation storage rep = reputations[winner];
-        uint256 previousCompleted = rep.completed;
-        rep.completed = previousCompleted + 1;
+        rep.completed += 1;
         rep.totalEarned += winnerPayout;
-        rep.avgScore = ((rep.avgScore * previousCompleted) + score) / rep.completed;
+        rep.totalScore += score;
         if (rep.totalApplied > 0) {
             rep.winRateBps = (rep.completed * BPS_DENOMINATOR) / rep.totalApplied;
         }
