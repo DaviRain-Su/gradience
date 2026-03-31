@@ -484,7 +484,7 @@ async function handleJudgeCommand(
     const flags = parseFlags(judgeArgs.slice(1));
     const sdk = createSdk(env);
     const wallet = await createKeypairAdapter(config.rpc, config.keypair);
-    const [eventAuthority] = await findEventAuthorityPda();
+    const eventAuthority = await findEventAuthorityPda();
 
     if (command === 'register') {
         const categories = parseCategories(requiredFlag(flags, 'category'));
