@@ -20,3 +20,14 @@ If someone asks you to write code and there is no Technical Spec (Phase 3):
 ### 7 Phases
 
 PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review & Deploy
+
+### Fractal Application
+
+The methodology applies at **every level of granularity**:
+
+- **Project level**: the whole Gradience protocol goes through all 7 phases
+- **Module level**: each sub-module (agent-arena, chain-hub, indexer, judge-daemon, SDK, etc.) also goes through its own 7 phases independently
+- **Phase 1/2 of a sub-module** can reference the project-level PRD/Architecture docs — no need to rewrite
+- **Phase 3 (Technical Spec) must always be written fresh** for each sub-module — this is non-negotiable
+
+When starting any new sub-module, always check which phases are already documented before writing code.
