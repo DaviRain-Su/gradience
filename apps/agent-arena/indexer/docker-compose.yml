@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: gradience
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d gradience"]
       interval: 5s
@@ -19,7 +19,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGPASSWORD: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - ./migrations:/migrations:ro
     command:
@@ -40,7 +40,7 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/gradience
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/gradience
       INDEXER_BIND_ADDR: 0.0.0.0:3001
     ports:
       - "3001:3001"

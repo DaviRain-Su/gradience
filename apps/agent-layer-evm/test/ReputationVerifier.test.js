@@ -96,4 +96,12 @@ describe("ReputationVerifier", function () {
             "NON_MONOTONIC_TIMESTAMP",
         );
     });
+
+    it("verifyReputation remains valid when maxAttestationAge is uint64 max", async function () {
+        const { verifier, keypair, payload } = await deployFixture();
+        await verifier.setMaxAttestationAge((1n << 64n) - 1n);
+        const { r, s } = signPayload(payload, keypair.secretKey);
+
+        expect(await verifier.verifyReputation(payload, r, s)).to.equal(true);
+    });
 });
