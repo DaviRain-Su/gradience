@@ -135,8 +135,50 @@ describe("AgentLayerRaceTask", function () {
             .withArgs(1n, attacker.address, judge.address);
     });
 
+    it("claim_expired refunds poster and stakes after judge deadline", async function () {
+        const { contract, poster, judge, agentA, attacker } = await deployFixture();
+        const reward = ethers.parseEther("0.4");
+        const minStake = ethers.parseEther("0.03");
+        const now = await currentTime();
+        const deadline = now + 60n;
+        const judgeDeadline = deadline + 60n;
+
+        await contract
+            .connect(poster)
+            .post_task("cid://eval-expired", deadline, judgeDeadline, judge.address, 1, minStake, {
+                value: reward,
+            });
+        await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+        await contract.connect(agentA).submit_result(1n, "cid://result-expired", "cid://trace-expired");
+
+        await expect(contract.connect(attacker).claim_expired(1n))
+            .to.be.revertedWithCustomError(contract, "JudgeDeadlineNotReached")
+            .withArgs(1n);
+
+        await warpTo(judgeDeadline + 1n);
+
+        const posterBefore = await ethers.provider.getBalance(poster.address);
+        const agentBefore = await ethers.provider.getBalance(agentA.address);
+        await expect(contract.connect(attacker).claim_expired(1n))
+            .to.emit(contract, "TaskRefunded")
+            .withArgs(1n, poster.address, reward, 0n);
+
+        const posterAfter = await ethers.provider.getBalance(poster.address);
+        const agentAfter = await ethers.provider.getBalance(agentA.address);
+        expect(posterAfter - posterBefore).to.equal(reward);
+        expect(agentAfter - agentBefore).to.equal(minStake);
+
+        const task = await contract.tasks(1n);
+        expect(task[7]).to.equal(2n);
+    });
+
     async function currentTime() {
         const latestBlock = await ethers.provider.getBlock("latest");
         return BigInt(latestBlock.timestamp);
+    }
+
+    async function warpTo(timestamp) {
+        await ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp)]);
+        await ethers.provider.send("evm_mine", []);
     }
 });

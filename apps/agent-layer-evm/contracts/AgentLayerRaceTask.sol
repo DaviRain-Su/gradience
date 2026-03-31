@@ -69,6 +69,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error InvalidScore(uint8 score);
     error WinnerNotApplied(uint256 taskId, address winner);
     error WinnerSubmissionMissing(uint256 taskId, address winner);
+    error JudgeDeadlineNotReached(uint256 taskId);
     error TransferFailed(address to, uint256 amount);
 
     event TaskCreated(
@@ -226,6 +227,16 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         }
 
         _refundAllStakes(task_id);
+    }
+
+    function claim_expired(uint256 task_id) external nonReentrant {
+        Task storage task = _loadOpenTask(task_id);
+        if (block.timestamp <= task.judgeDeadline) revert JudgeDeadlineNotReached(task_id);
+
+        task.state = TaskState.Refunded;
+        _sendEth(task.poster, task.reward);
+        _refundAllStakes(task_id);
+        emit TaskRefunded(task_id, task.poster, task.reward, 0);
     }
 
     function get_submission(uint256 task_id, address agent) external view returns (Submission memory) {
