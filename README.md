@@ -95,6 +95,19 @@ flowchart TB
 > The kernel depends on no module. Modules depend on the kernel.
 > Like the Linux kernel — it does the minimum, and does it right.
 
+### Protocol Layers → Implementation Components
+
+The whitepaper defines a three-layer value stack (§8). Here is how those **value layers** map to **implementation components**:
+
+| Layer | Role | Components | Timeline |
+|-------|------|-----------|----------|
+| **Layer 0** | External infrastructure (dependencies) | Solana, Token-2022, Wormhole/LI.FI, MPL Agent Registry (W4 optional) | Existing |
+| **Layer 1** | Core protocol ← **this is what we're building** | Agent Layer Program, Chain Hub, SDK, Daemon, Frontend | W1–W3 |
+| **Layer 2** | Agent Lending Protocol (future independent protocol) | Lending Program — reads Layer 1 `ReputationAccount` via CPI | W4+ |
+| **Layer 3** | gUSD Credit-Backed Stablecoin (future independent protocol) | gUSD Program — minted against Layer 2 credit lines | Future |
+
+**Key clarification**: Chain Hub is part of **Layer 1** (not a separate layer) — it extends the kernel with Delegation Tasks. Layer 0 components are external standards that Gradience optionally integrates with, not protocol-owned code.
+
 ### Why Solana, Not a New Chain
 
 Gradience does not need its own blockchain. A task lifecycle is ~10–25 transactions over hours or days. Even 10,000 concurrent tasks produce ~100 TPS at peak — less than 3% of Solana's capacity. All compute-intensive work (Agent execution, Judge evaluation) happens **off-chain**. The chain only records scores and payments.

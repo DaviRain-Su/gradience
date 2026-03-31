@@ -395,6 +395,28 @@ Gradience's boundary extends beyond task settlement. On-chain work history is th
 
 Layers~2 and~3 are \textbf{future independent protocols} built on top of this protocol and outside the current roadmap. The core protocol is designed with reputation data composability in mind, exposing standard CPI interfaces for upper-layer protocols.
 
+\subsection*{8.1\quad Protocol Layers to Implementation Components}
+
+The three-layer stack describes \textbf{value layers}; actual implementation is carried by concrete components. The complete mapping:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llll}
+\hline
+\textbf{Layer} & \textbf{Role} & \textbf{Components} & \textbf{Timeline} \\
+\hline
+Layer 0 & External infrastructure (dependencies) & Solana, Token-2022, Wormhole/LI.FI & Existing \\
+        & (optional integration) & MPL Agent Registry (ERC-8004 identity) & W4 optional \\
+Layer 1 & Core protocol (this protocol) & Agent Layer Program, Chain Hub & W1--W3 \\
+        & & SDK, Daemon/Indexer, Frontend & \\
+Layer 2 & Agent Lending Protocol & Lending Program (independent deploy) & W4+ \\
+Layer 3 & gUSD Stablecoin & gUSD Program (independent deploy) & Future \\
+\hline
+\end{tabular}
+\end{center}
+
+Note: \textbf{Chain Hub is part of Layer~1}---it is an extension component of the core protocol (handling Delegation Tasks), not a separate layer. Layer~0 consists of external dependencies and is not part of the Gradience protocol itself.
+
 \section{9. Roadmap}
 
 \begin{itemize}[nosep]

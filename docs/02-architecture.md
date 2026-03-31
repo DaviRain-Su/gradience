@@ -108,6 +108,24 @@ flowchart TB
 
 ---
 
+### 协议层次 → 实现组件映射
+
+白皮书 §8 定义三层价值堆栈（Layer 1/2/3）。下表说明这些**价值层**与**实现组件**之间的对应关系：
+
+| 协议层 | 定位 | 实现组件 | 时间线 |
+|--------|------|---------|--------|
+| **Layer 0** | 外部基础设施（依赖，非 Gradience 自身） | Solana、Token-2022、Wormhole/LI.FI、MPL Agent Registry（可选 W4） | 已有 |
+| **Layer 1** | 核心协议（本协议，当前实现目标） | Agent Layer Program + Chain Hub + SDK + Daemon + Indexer + Frontend | W1–W3 |
+| **Layer 2** | Agent 借贷协议（独立协议，只读 CPI 调用 Layer 1 的 `ReputationAccount`） | Lending Program（独立部署） | W4+ |
+| **Layer 3** | gUSD 信用背书稳定币（独立协议，依赖 Layer 2 信用额度） | gUSD Program（独立部署） | 远期 |
+
+**关键澄清**：
+- **Chain Hub 属于 Layer 1**，不是独立层级 — 它是核心协议的扩展组件，处理内核不做的持续委托（Delegation Task）
+- **Layer 0 是外部依赖**，Gradience 协议选择是否集成，就像选择是否用 Wormhole；MPL Agent Registry 是 W4 可选集成（见 §2.13）
+- **Layer 2/3 是未来独立协议**，与本协议通过 CPI 接口交互，不影响 Layer 1 的实现
+
+---
+
 ## 2.2 组件定义
 
 | 组件 | 职责 | 不做什么 | 技术选型 | 状态 |
@@ -1055,6 +1073,41 @@ gUSD 的 $1 锚定通过三重机制维持：
 - Gradience 主网活跃 Agent ≥ 10,000
 - ReputationAccount 平均任务完成数 ≥ 20（网络有足够历史深度）
 - Gradience 协议经过正式安全审计
+
+---
+
+## 2.13 外部 Agent 身份标准集成（W4 可选）
+
+### Metaplex Agent Registry
+
+[`@metaplex-foundation/mpl-agent-registry`](https://www.metaplex.com/docs/agents) 是 Solana 生态的 AI Agent 身份注册标准，基于 MPL Core NFT 资产 + ERC-8004 规范。
+
+**它解决的问题**：Agent 身份发现 — "这个 Agent 在哪里、支持哪些调用协议、端点地址是什么"
+
+**与 Gradience 的分工**：
+
+| | Metaplex Agent Registry | Gradience |
+|---|---|---|
+| 核心问题 | Agent 在哪里、怎么调用 | Agent 能力好不好、信用怎么量化 |
+| 链上数据 | 服务端点 + ERC-8004 身份文档 | 任务历史 + 评分 + 质押 |
+| 信任机制 | 声明式（自报 reputation / crypto-economic） | 验证式（链上竞争 + Judge 评分） |
+| 定位 | **Identity/Discovery 层** | **Credit/Reputation 层** |
+
+两者不冲突，互补：Metaplex 解决 Agent 可发现性，Gradience 解决 Agent 能力可信度。
+
+### W4 集成方案
+
+1. **双向链接**：Gradience Agent 在 MPL Registry 注册后，`registrationDocument.supportedTrust` 字段填 `["reputation"]` 并附上 Gradience `ReputationAccount` PDA 地址 — 任何 A2A/MCP 兼容系统均可验证其信用分
+
+2. **可选任务过滤条件**：`PostTask` 指令可选填 `require_mpl_identity: bool`，Poster 可要求应聘 Agent 必须持有有效的 MPL Agent 注册（确保 Agent 是真实可调用的服务，而非僵尸账户）
+
+3. **跨协议可发现性**：注册了 MPL Registry 的 Gradience Agent 可被所有 ERC-8004 兼容的 Agent Marketplace 直接发现并调用，无需额外集成
+
+### 当前阶段决策
+
+**W1–W3 不实现**：Gradience 核心协议不依赖 MPL Registry，Agent 身份继续使用 wallet pubkey → `Stake` PDA 的原生方案。
+
+**W4 可选扩展**：如果 MPL Agent Registry 在 W4 前已稳定，可在 `PostTask` 中加入 `require_mpl_identity` 字段，并在 SDK 层提供 `registerGradienceAgentIdentity()` 辅助函数，批量注册活跃 Agent 到 MPL Registry。
 
 ---
 
