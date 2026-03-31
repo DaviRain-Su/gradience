@@ -1,4 +1,5 @@
 use litesvm::LiteSVM;
+use solana_program::clock::Clock;
 use solana_sdk::{
     account::Account,
     instruction::Instruction,
@@ -42,6 +43,18 @@ impl TestContext {
         let mut svm = LiteSVM::new().with_sysvars().with_default_programs();
         let payer = Keypair::new();
 
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        svm.set_sysvar(&Clock {
+            slot: 1,
+            epoch_start_timestamp: current_time,
+            epoch: 0,
+            leader_schedule_epoch: 0,
+            unix_timestamp: current_time,
+        });
+
         let program_data = load_program_binary();
         let _ = svm.add_program(chain_hub_program_id(), &program_data);
 
@@ -73,6 +86,22 @@ impl TestContext {
 
     pub fn get_account(&self, address: &Pubkey) -> Option<Account> {
         self.svm.get_account(address)
+    }
+
+    pub fn warp_to_timestamp(&mut self, unix_timestamp: i64) {
+        let clock = self.svm.get_sysvar::<Clock>();
+        self.svm.set_sysvar(&Clock {
+            slot: clock.slot + 1,
+            epoch_start_timestamp: unix_timestamp,
+            epoch: clock.epoch,
+            leader_schedule_epoch: clock.leader_schedule_epoch,
+            unix_timestamp,
+        });
+        self.svm.expire_blockhash();
+    }
+
+    pub fn get_current_timestamp(&self) -> i64 {
+        self.svm.get_sysvar::<Clock>().unix_timestamp
     }
 }
 

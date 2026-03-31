@@ -9,7 +9,7 @@ use crate::{
     },
     errors::ChainHubError,
     state::{
-        ProgramConfig, SkillEntry, SkillRegistry, PROGRAM_CONFIG_DISCRIMINATOR,
+        ProgramConfig, SkillEntry, SkillRegistry, SkillStatus, PROGRAM_CONFIG_DISCRIMINATOR,
         SKILL_ENTRY_DISCRIMINATOR, SKILL_ENTRY_LEN, SKILL_REGISTRY_DISCRIMINATOR,
     },
     utils::{
@@ -101,6 +101,7 @@ pub fn process_register_skill(
         skill_id,
         authority: address_to_bytes(authority.address()),
         judge_category: data.judge_category,
+        status: SkillStatus::Active,
         name: data.name,
         metadata_uri: data.metadata_uri,
         bump: skill_bump,
@@ -109,6 +110,10 @@ pub fn process_register_skill(
     config.skill_count = skill_id;
     skill_registry.total_registered = skill_registry
         .total_registered
+        .checked_add(1)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
+    skill_registry.total_active = skill_registry
+        .total_active
         .checked_add(1)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 

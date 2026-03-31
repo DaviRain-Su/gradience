@@ -1,15 +1,20 @@
+use alloc::string::String;
 use borsh::{BorshDeserialize, BorshSerialize};
-use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
+use pinocchio::{
+    account::AccountView, cpi::Seed, error::ProgramError, sysvars::clock::Clock, sysvars::Sysvar,
+    Address, ProgramResult,
+};
 
 use crate::{
     constants::{
         AGENT_LAYER_JUDGE_POOL_SEED, CONFIG_SEED, DELEGATION_TASK_SEED, MAX_CATEGORIES,
-        SKILL_ENTRY_SEED,
+        MAX_PROTOCOL_ID_LEN, PROTOCOL_ENTRY_SEED, SKILL_ENTRY_SEED,
     },
     errors::ChainHubError,
     state::{
-        DelegationTaskAccount, ProgramConfig, SkillEntry, DELEGATION_TASK_DISCRIMINATOR,
-        DELEGATION_TASK_LEN, PROGRAM_CONFIG_DISCRIMINATOR, SKILL_ENTRY_DISCRIMINATOR,
+        DelegationTaskAccount, DelegationTaskStatus, ProgramConfig, ProtocolEntry, ProtocolStatus,
+        SkillEntry, SkillStatus, DELEGATION_TASK_DISCRIMINATOR, DELEGATION_TASK_LEN,
+        PROGRAM_CONFIG_DISCRIMINATOR, PROTOCOL_ENTRY_DISCRIMINATOR, SKILL_ENTRY_DISCRIMINATOR,
     },
     utils::{
         address_to_bytes, create_pda_account, is_zero_pubkey, read_borsh_account, verify_signer,
@@ -20,9 +25,13 @@ use crate::{
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DelegationTaskData {
     pub skill_id: u64,
+    pub protocol_id: String,
     pub judge_category: u8,
     pub selected_agent_authority: [u8; 32],
     pub selected_judge_authority: [u8; 32],
+    pub max_executions: u32,
+    pub expires_at: i64,
+    pub policy_hash: [u8; 32],
 }
 
 pub fn process_delegation_task(
@@ -33,8 +42,14 @@ pub fn process_delegation_task(
     let data = DelegationTaskData::try_from_slice(instruction_data)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
-    let [requester, config_account, skill_entry_account, delegation_task_account, system_program] =
-        accounts
+    let [
+        requester,
+        config_account,
+        skill_entry_account,
+        protocol_entry_account,
+        delegation_task_account,
+        system_program,
+    ] = accounts
     else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -52,6 +67,20 @@ pub fn process_delegation_task(
         || is_zero_pubkey(&data.selected_judge_authority)
     {
         return Err(ChainHubError::ZeroAuthority.into());
+    }
+    if data.max_executions == 0 {
+        return Err(ChainHubError::InvalidMaxExecutions.into());
+    }
+    if data.policy_hash == [0u8; 32] {
+        return Err(ChainHubError::InvalidPolicyHash.into());
+    }
+    if data.protocol_id.is_empty() || data.protocol_id.len() > MAX_PROTOCOL_ID_LEN {
+        return Err(ChainHubError::InvalidProtocolId.into());
+    }
+
+    let clock = Clock::get()?;
+    if data.expires_at <= clock.unix_timestamp {
+        return Err(ChainHubError::DelegationExpired.into());
     }
 
     let (config_pda, _) = Address::find_program_address(&[CONFIG_SEED], program_id);
@@ -71,6 +100,24 @@ pub fn process_delegation_task(
     }
     if skill.skill_id != data.skill_id || skill.judge_category != data.judge_category {
         return Err(ChainHubError::SkillMismatch.into());
+    }
+    if skill.status != SkillStatus::Active {
+        return Err(ChainHubError::SkillNotActive.into());
+    }
+
+    let protocol_id_seed = data.protocol_id.as_bytes();
+    let (protocol_pda, _) =
+        Address::find_program_address(&[PROTOCOL_ENTRY_SEED, protocol_id_seed], program_id);
+    if protocol_entry_account.address() != &protocol_pda {
+        return Err(ProgramError::InvalidSeeds);
+    }
+    let protocol: ProtocolEntry =
+        read_borsh_account(protocol_entry_account, PROTOCOL_ENTRY_DISCRIMINATOR)?;
+    if protocol.protocol_id != data.protocol_id {
+        return Err(ChainHubError::ProtocolMismatch.into());
+    }
+    if protocol.status != ProtocolStatus::Active {
+        return Err(ChainHubError::ProtocolNotActive.into());
     }
 
     let task_id = config
@@ -111,10 +158,16 @@ pub fn process_delegation_task(
         task_id,
         requester: address_to_bytes(requester.address()),
         skill: address_to_bytes(skill_entry_account.address()),
+        protocol: address_to_bytes(protocol_entry_account.address()),
         selected_agent_authority: data.selected_agent_authority,
         selected_judge_authority: data.selected_judge_authority,
         judge_pool: expected_judge_pool.to_bytes(),
         judge_category: data.judge_category,
+        max_executions: data.max_executions,
+        executed_count: 0,
+        expires_at: data.expires_at,
+        status: DelegationTaskStatus::Created,
+        policy_hash: data.policy_hash,
         bump: task_bump,
     };
 

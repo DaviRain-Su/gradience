@@ -2,9 +2,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
 
 use crate::{
-    constants::{CONFIG_SEED, SKILL_REGISTRY_SEED},
+    constants::{CONFIG_SEED, PROTOCOL_REGISTRY_SEED, SKILL_REGISTRY_SEED},
     state::{
-        ProgramConfig, SkillRegistry, PROGRAM_CONFIG_DISCRIMINATOR, PROGRAM_CONFIG_LEN,
+        ProgramConfig, ProtocolRegistry, SkillRegistry, PROGRAM_CONFIG_DISCRIMINATOR,
+        PROGRAM_CONFIG_LEN, PROTOCOL_REGISTRY_DISCRIMINATOR, PROTOCOL_REGISTRY_LEN,
         SKILL_REGISTRY_DISCRIMINATOR, SKILL_REGISTRY_LEN,
     },
     utils::{
@@ -27,7 +28,7 @@ pub fn process_initialize(
     let data = InitializeData::try_from_slice(instruction_data)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
-    let [payer, config, skill_registry, system_program] = accounts else {
+    let [payer, config, skill_registry, protocol_registry, system_program] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
@@ -35,12 +36,16 @@ pub fn process_initialize(
     verify_writable(payer)?;
     verify_writable(config)?;
     verify_writable(skill_registry)?;
+    verify_writable(protocol_registry)?;
     verify_system_program(system_program)?;
 
     if config.data_len() > 0 || config.lamports() > 0 {
         return Err(ProgramError::AccountAlreadyInitialized);
     }
     if skill_registry.data_len() > 0 || skill_registry.lamports() > 0 {
+        return Err(ProgramError::AccountAlreadyInitialized);
+    }
+    if protocol_registry.data_len() > 0 || protocol_registry.lamports() > 0 {
         return Err(ProgramError::AccountAlreadyInitialized);
     }
 
@@ -52,6 +57,11 @@ pub fn process_initialize(
     let (skill_registry_pda, skill_registry_bump) =
         Address::find_program_address(&[SKILL_REGISTRY_SEED], program_id);
     if skill_registry.address() != &skill_registry_pda {
+        return Err(ProgramError::InvalidSeeds);
+    }
+    let (protocol_registry_pda, protocol_registry_bump) =
+        Address::find_program_address(&[PROTOCOL_REGISTRY_SEED], program_id);
+    if protocol_registry.address() != &protocol_registry_pda {
         return Err(ProgramError::InvalidSeeds);
     }
 
@@ -79,6 +89,18 @@ pub fn process_initialize(
         ],
     )?;
 
+    let protocol_registry_bump_seed = [protocol_registry_bump];
+    create_pda_account(
+        payer,
+        PROTOCOL_REGISTRY_LEN,
+        program_id,
+        protocol_registry,
+        [
+            Seed::from(PROTOCOL_REGISTRY_SEED),
+            Seed::from(protocol_registry_bump_seed.as_slice()),
+        ],
+    )?;
+
     write_borsh_account(
         config,
         PROGRAM_CONFIG_DISCRIMINATOR,
@@ -86,6 +108,7 @@ pub fn process_initialize(
             upgrade_authority: data.upgrade_authority,
             agent_layer_program: data.agent_layer_program,
             skill_count: 0,
+            protocol_count: 0,
             delegation_task_count: 0,
             bump: config_bump,
         },
@@ -96,7 +119,18 @@ pub fn process_initialize(
         SKILL_REGISTRY_DISCRIMINATOR,
         &SkillRegistry {
             total_registered: 0,
+            total_active: 0,
             bump: skill_registry_bump,
+        },
+    )?;
+
+    write_borsh_account(
+        protocol_registry,
+        PROTOCOL_REGISTRY_DISCRIMINATOR,
+        &ProtocolRegistry {
+            total_registered: 0,
+            total_active: 0,
+            bump: protocol_registry_bump,
         },
     )?;
 
