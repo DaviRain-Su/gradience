@@ -82,6 +82,30 @@ test('DspyHttpEvaluator posts /evaluate payload and parses response', async () =
     assert.deepEqual(result.dimensionScores, { clarity: 80 });
 });
 
+test('DspyHttpEvaluator forwards bearer auth token when configured', async () => {
+    let seenAuth: string | null = null;
+    const evaluator = new DspyHttpEvaluator({
+        endpoint: 'http://localhost:8788',
+        authToken: 'secret-token',
+        fetcher: async (_input, init) => {
+            const headers = new Headers(init?.headers);
+            seenAuth = headers.get('authorization');
+            return new Response(
+                JSON.stringify({
+                    score: 80,
+                    reasoning: 'ok',
+                    dimension_scores: {},
+                    confidence: 0.9,
+                }),
+                { status: 200, headers: { 'content-type': 'application/json' } },
+            );
+        },
+    });
+    const result = await evaluator.evaluate(REQUEST);
+    assert.equal(seenAuth, 'Bearer secret-token');
+    assert.equal(result.score, 80);
+});
+
 test('evaluateWithRetry retries on rate limit with exponential backoff', async () => {
     let attempts = 0;
     const evaluator = {

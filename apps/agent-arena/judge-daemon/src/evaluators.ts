@@ -103,6 +103,7 @@ export interface DspyHttpEvaluatorOptions {
     endpoint: string;
     fetcher?: typeof fetch;
     timeoutMs?: number;
+    authToken?: string;
 }
 
 export class RateLimitError extends Error {
@@ -121,11 +122,13 @@ export class DspyHttpEvaluator implements ScoreEvaluator {
     private readonly endpoint: string;
     private readonly fetcher: typeof fetch;
     private readonly timeoutMs: number;
+    private readonly authToken: string | null;
 
     constructor(options: DspyHttpEvaluatorOptions) {
         this.endpoint = options.endpoint.replace(/\/$/, '');
         this.fetcher = options.fetcher ?? fetch;
         this.timeoutMs = options.timeoutMs ?? 20_000;
+        this.authToken = options.authToken?.trim() || null;
     }
 
     async evaluate(request: EvaluationRequest): Promise<EvaluationResult> {
@@ -134,7 +137,7 @@ export class DspyHttpEvaluator implements ScoreEvaluator {
         try {
             const response = await this.fetcher(`${this.endpoint}/evaluate`, {
                 method: 'POST',
-                headers: { 'content-type': 'application/json' },
+                headers: this.buildHeaders(),
                 body: JSON.stringify({
                     task_desc: request.taskDescription,
                     criteria: request.criteria,
@@ -181,6 +184,16 @@ export class DspyHttpEvaluator implements ScoreEvaluator {
         } finally {
             clearTimeout(timer);
         }
+    }
+
+    private buildHeaders(): Record<string, string> {
+        if (!this.authToken) {
+            return { 'content-type': 'application/json' };
+        }
+        return {
+            'content-type': 'application/json',
+            authorization: `Bearer ${this.authToken}`,
+        };
     }
 }
 

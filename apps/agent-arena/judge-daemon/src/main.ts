@@ -100,6 +100,7 @@ async function createWorkflowRunner(
     const typeBEvaluator = new DspyHttpEvaluator({
         endpoint: env.JUDGE_DAEMON_DSPY_ENDPOINT ?? 'http://127.0.0.1:8788',
         timeoutMs: toPositiveNumber(env.JUDGE_DAEMON_DSPY_TIMEOUT_MS, 20_000),
+        authToken: env.JUDGE_DAEMON_DSPY_AUTH_TOKEN,
     });
     const typeCEvaluator = new WasmTestCasesEvaluator(refResolver, {
         timeoutMs: toPositiveNumber(env.JUDGE_DAEMON_WASM_TIMEOUT_MS, 2_000),

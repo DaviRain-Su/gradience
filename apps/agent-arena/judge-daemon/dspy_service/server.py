@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import hmac
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -130,6 +131,8 @@ def create_evaluator():
 
 
 EVALUATOR = create_evaluator()
+AUTH_TOKEN = os.getenv("DSPY_SERVICE_AUTH_TOKEN")
+MAX_BODY_BYTES = 256 * 1024
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -137,7 +140,13 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/evaluate":
             self._send_json(404, {"error": "not_found"})
             return
+        if not self._is_authorized():
+            self._send_json(401, {"error": "unauthorized"})
+            return
         length = int(self.headers.get("content-length", "0"))
+        if length < 0 or length > MAX_BODY_BYTES:
+            self._send_json(413, {"error": "payload_too_large"})
+            return
         body = self.rfile.read(length) if length > 0 else b"{}"
         try:
             payload = json.loads(body.decode("utf-8"))
@@ -150,7 +159,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             result = EVALUATOR.evaluate(payload)
         except Exception as error:
-            self._send_json(500, {"error": str(error)})
+            if os.getenv("DSPY_SERVICE_LOG", "0") in ("1", "true", "TRUE"):
+                print(f"dspy_service evaluate error: {error}")
+            self._send_json(500, {"error": "internal_error"})
             return
         self._send_json(
             200,
@@ -181,11 +192,24 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _is_authorized(self) -> bool:
+        if not AUTH_TOKEN:
+            return True
+        candidate = self.headers.get("x-dspy-token")
+        if not candidate:
+            auth = self.headers.get("authorization", "")
+            if auth.lower().startswith("bearer "):
+                candidate = auth[7:].strip()
+        if not candidate:
+            return False
+        return hmac.compare_digest(candidate, AUTH_TOKEN)
+
 
 def main() -> None:
+    host = os.getenv("DSPY_SERVICE_HOST", "127.0.0.1")
     port = int(os.getenv("DSPY_SERVICE_PORT", "8788"))
-    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"dspy_service listening on :{port}")
+    server = ThreadingHTTPServer((host, port), Handler)
+    print(f"dspy_service listening on {host}:{port}")
     server.serve_forever()
 
 
