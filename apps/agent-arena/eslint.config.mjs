@@ -7,6 +7,7 @@ export default tseslint.config(
         ignores: [
             '**/dist/**',
             '**/node_modules/**',
+            '**/.next/**',
             '**/target/**',
             '**/generated/**',
             'clients/typescript/src/generated/**',

@@ -1,0 +1,10 @@
+build:
+    cd program && cargo-build-sbf
+
+unit-test:
+    cargo test -p chain-hub
+
+integration-test:
+    cargo test -p tests-chain-hub
+
+test: build unit-test integration-test

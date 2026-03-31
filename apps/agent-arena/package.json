@@ -2,6 +2,9 @@
     "name": "pinocchio-counter",
     "version": "1.0.0",
     "main": "index.js",
+    "bin": {
+        "gradience": "./bin/gradience"
+    },
     "description": "Pinocchio Counter Program",
     "displayName": "Pinocchio Counter",
     "usecase": "Program Development",
@@ -14,9 +17,19 @@
     "license": "MIT",
     "scripts": {
         "build": "cd clients/typescript && tsc",
+        "gradience": "bun ./cli/gradience.ts",
         "ci": "npm run generate-clients && npm run build && npm run lint && npm run format:check",
         "generate-clients": "tsx ./scripts/generate-clients.ts",
         "generate-idl": "cd program && cargo check --features idl",
+        "test:cli": "tsx --test ./cli/gradience.test.ts",
+        "test:judge-daemon": "tsx --test ./judge-daemon/src/daemon.test.ts ./judge-daemon/src/evaluators.test.ts ./judge-daemon/src/test-cases-evaluator.test.ts ./judge-daemon/src/workflow.test.ts",
+        "judge-daemon:start": "tsx ./judge-daemon/src/main.ts",
+        "judge-daemon:dspy": "python3 ./judge-daemon/dspy_service/server.py",
+        "t42:governance": "tsx ./scripts/t42-governance.ts",
+        "test:t42": "tsx --test ./scripts/t42-governance.test.ts",
+        "frontend:dev": "pnpm --dir ./frontend dev",
+        "frontend:build": "pnpm --dir ./frontend build",
+        "frontend:typecheck": "pnpm --dir ./frontend typecheck",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "lint": "eslint .",
@@ -38,5 +51,11 @@
         "tsx": "^4.20.5",
         "typescript": "^5",
         "typescript-eslint": "^8.54.0"
+    },
+    "dependencies": {
+        "@solana/web3.js": "^1.98.4",
+        "@solana-program/token": "^0.12.0",
+        "@sqds/multisig": "^2.1.4",
+        "pg": "^8.20.0"
     }
 }

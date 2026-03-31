@@ -1,0 +1,4 @@
+target/
+node_modules/
+clients/typescript/src/generated/
+**/.DS_Store

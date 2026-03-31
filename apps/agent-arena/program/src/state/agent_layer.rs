@@ -1,5 +1,6 @@
 use alloc::{string::String, vec::Vec};
 use borsh::{BorshDeserialize, BorshSerialize};
+use codama::{CodamaAccount, CodamaType};
 
 use crate::constants::{
     MAX_CATEGORIES, MAX_JUDGES_PER_POOL, MAX_MODEL_LEN, MAX_PROVIDER_LEN, MAX_REF_LEN,
@@ -16,7 +17,7 @@ const BORSH_VEC_PREFIX_LEN: usize = 4;
 const PUBKEY_BYTES_LEN: usize = 32;
 const OPTION_TAG_LEN: usize = 1;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq, CodamaType)]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum TaskState {
@@ -25,7 +26,7 @@ pub enum TaskState {
     Refunded = 2,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq, CodamaType)]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum JudgeMode {
@@ -33,7 +34,7 @@ pub enum JudgeMode {
     Pool = 1,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq, CodamaType)]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum Category {
@@ -47,7 +48,7 @@ pub enum Category {
     Gov = 7,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct Task {
     pub task_id: u64,
     pub poster: PubkeyBytes,
@@ -88,7 +89,7 @@ pub const TASK_DATA_LEN: usize = 8
 pub const TASK_DISCRIMINATOR: u8 = 0x01;
 pub const TASK_LEN: usize = ACCOUNT_HEADER_LEN + TASK_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct Escrow {
     pub task_id: u64,
     pub mint: PubkeyBytes,
@@ -100,7 +101,7 @@ pub const ESCROW_DATA_LEN: usize = 8 + PUBKEY_BYTES_LEN + 8 + 1;
 pub const ESCROW_DISCRIMINATOR: u8 = 0x02;
 pub const ESCROW_LEN: usize = ACCOUNT_HEADER_LEN + ESCROW_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct Application {
     pub task_id: u64,
     pub agent: PubkeyBytes,
@@ -113,7 +114,7 @@ pub const APPLICATION_DATA_LEN: usize = 8 + PUBKEY_BYTES_LEN + 8 + 8 + 1;
 pub const APPLICATION_DISCRIMINATOR: u8 = 0x03;
 pub const APPLICATION_LEN: usize = ACCOUNT_HEADER_LEN + APPLICATION_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaType)]
 pub struct RuntimeEnv {
     pub provider: String,
     pub model: String,
@@ -126,7 +127,7 @@ pub const RUNTIME_ENV_DATA_LEN: usize = (BORSH_STRING_PREFIX_LEN + MAX_PROVIDER_
     + (BORSH_STRING_PREFIX_LEN + MAX_RUNTIME_LEN)
     + (BORSH_STRING_PREFIX_LEN + MAX_VERSION_LEN);
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct Submission {
     pub task_id: u64,
     pub agent: PubkeyBytes,
@@ -149,7 +150,7 @@ pub const SUBMISSION_DATA_LEN: usize = 8
 pub const SUBMISSION_DISCRIMINATOR: u8 = 0x04;
 pub const SUBMISSION_LEN: usize = ACCOUNT_HEADER_LEN + SUBMISSION_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, Default, CodamaType)]
 pub struct ReputationStats {
     pub total_earned: u64,
     pub completed: u32,
@@ -160,7 +161,17 @@ pub struct ReputationStats {
 
 pub const REPUTATION_STATS_DATA_LEN: usize = 8 + 4 + 4 + 2 + 2;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(
+    BorshSerialize,
+    BorshDeserialize,
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Default,
+    CodamaType,
+)]
 pub struct CategoryStats {
     pub category: u8,
     pub avg_score: u16,
@@ -174,6 +185,15 @@ pub struct Reputation {
     pub agent: PubkeyBytes,
     pub global: ReputationStats,
     pub by_category: [CategoryStats; MAX_CATEGORIES],
+    pub bump: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, CodamaAccount)]
+#[codama(name = "Reputation")]
+pub struct ReputationCodama {
+    pub agent: PubkeyBytes,
+    pub global: ReputationStats,
+    pub by_category: Vec<CategoryStats>,
     pub bump: u8,
 }
 
@@ -199,7 +219,19 @@ pub const STAKE_DATA_LEN: usize = PUBKEY_BYTES_LEN + 8 + MAX_CATEGORIES + 1 + 8 
 pub const STAKE_DISCRIMINATOR: u8 = 0x06;
 pub const STAKE_LEN: usize = ACCOUNT_HEADER_LEN + STAKE_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, CodamaAccount)]
+#[codama(name = "Stake")]
+pub struct StakeCodama {
+    pub judge: PubkeyBytes,
+    pub amount: u64,
+    pub categories: Vec<u8>,
+    pub category_count: u8,
+    pub registered_at: i64,
+    pub cooldown_until: i64,
+    pub bump: u8,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaType)]
 pub struct JudgePoolEntry {
     pub judge: PubkeyBytes,
     pub weight: u32,
@@ -207,7 +239,7 @@ pub struct JudgePoolEntry {
 
 pub const JUDGE_POOL_ENTRY_DATA_LEN: usize = PUBKEY_BYTES_LEN + 4;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct JudgePool {
     pub category: u8,
     pub total_weight: u32,
@@ -223,7 +255,7 @@ pub const JUDGE_POOL_DATA_LEN: usize = 1
 pub const JUDGE_POOL_DISCRIMINATOR: u8 = 0x07;
 pub const JUDGE_POOL_LEN: usize = ACCOUNT_HEADER_LEN + JUDGE_POOL_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct Treasury {
     pub bump: u8,
 }
@@ -232,7 +264,7 @@ pub const TREASURY_DATA_LEN: usize = 1;
 pub const TREASURY_DISCRIMINATOR: u8 = 0x08;
 pub const TREASURY_LEN: usize = ACCOUNT_HEADER_LEN + TREASURY_DATA_LEN;
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
 pub struct ProgramConfig {
     pub treasury: PubkeyBytes,
     pub upgrade_authority: PubkeyBytes,

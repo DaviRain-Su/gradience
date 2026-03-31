@@ -1,0 +1,9 @@
+name = "gradience-indexer-managed"
+main = "src/index.ts"
+compatibility_date = "2026-03-31"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gradience-indexer"
+database_id = "changeme"
+migrations_dir = "d1/migrations"
