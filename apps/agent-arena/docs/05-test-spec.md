@@ -83,7 +83,7 @@ just test
 | apply_for_task：重复申请应 Err | ❌ 缺失 |
 | submit_result：正常提交 | test_t19b |
 | judge_and_pay：95/3/2 费用分拆精确验证 | test_t19c |
-| judge_and_pay：score < MIN_SCORE 应 Err | ❌ 缺失 |
+| judge_and_pay：score < MIN_SCORE → 走 Refund 路径（task.state = Refunded，奖励退回 poster），非 Err | ❌ 缺失 |
 | cancel_task：poster 主动取消，收取 2% | test_t19d |
 | refund_expired：deadline 后退款 | test_t19d |
 | force_refund：judge_deadline+7天后触发 | test_t19d |
