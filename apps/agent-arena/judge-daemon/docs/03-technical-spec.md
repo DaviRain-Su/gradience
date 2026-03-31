@@ -26,7 +26,7 @@ Judge Daemon 是**链外自动评判服务**：
 
 | 项目 | 说明 |
 |------|------|
-| TypeScript + Bun | 运行时 |
+| TypeScript + tsx (Node.js) | 运行时（测试：`tsx --test`；生产：tsx 或编译后运行） |
 | GradienceSDK | 调用链上指令 |
 | `@solana/kit` | 密钥对管理 |
 | Python DSPy | Type B LLM 评判微服务（独立进程） |

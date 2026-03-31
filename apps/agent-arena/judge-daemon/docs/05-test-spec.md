@@ -4,29 +4,32 @@
 
 ## 1. 当前测试文件
 
-| 文件 | 代码量 | 测试内容 | 状态 |
-|------|--------|---------|------|
-| `daemon.test.ts` | 151 行 | JudgeDaemon 生命周期、事件路由 | ✅ |
-| `evaluators.test.ts` | 133 行 | PollingManualEvaluator / DspyHttpEvaluator | ✅ |
-| `polling-sources.test.ts` | 106 行 | PollingEventSource、MockEventSource | ✅ |
-| `test-cases-evaluator.test.ts` | 107 行 | WasmTestCasesEvaluator | ✅ |
-| `workflow.test.ts` | 443 行 | JudgeWorkflowRunner 完整流程 | ✅ |
+| 文件 | 行数 | 测试内容 | 包含在 test:judge-daemon |
+|------|------|---------|:---:|
+| `daemon.test.ts` | 151 | JudgeDaemon 生命周期、事件路由 | ✅ |
+| `evaluators.test.ts` | 133 | PollingManualEvaluator / DspyHttpEvaluator | ✅ |
+| `test-cases-evaluator.test.ts` | 107 | WasmTestCasesEvaluator | ✅ |
+| `workflow.test.ts` | 443 | JudgeWorkflowRunner 完整流程 | ✅ |
+| `polling-sources.test.ts` | 106 | PollingEventSource、MockEventSource | ❌（未加入脚本） |
 
 ---
 
 ## 2. 运行方式
 
 ```bash
-cd apps/agent-arena/judge-daemon
-# 运行所有测试
-bun test
+# 在 apps/agent-arena/ 目录执行（通过 package.json 脚本）
+pnpm run test:judge-daemon
+# 等价于：
+# tsx --test ./judge-daemon/src/daemon.test.ts \
+#          ./judge-daemon/src/evaluators.test.ts \
+#          ./judge-daemon/src/test-cases-evaluator.test.ts \
+#          ./judge-daemon/src/workflow.test.ts
 
-# 运行单个测试文件
-bun test src/workflow.test.ts
-
-# 监听模式（开发时）
-bun test --watch
+# polling-sources.test.ts 单独运行（未加入主脚本）
+pnpm exec tsx --test ./judge-daemon/src/polling-sources.test.ts
 ```
+
+> ⚠️ `polling-sources.test.ts` 目前未包含在 `test:judge-daemon` 脚本中，建议补入。
 
 ---
 
@@ -70,7 +73,8 @@ bun test --watch
 
 ## 4. 测试策略说明
 
+- **运行时**：测试使用 `tsx --test`（Node.js），非 Bun
 - **链上调用全部 mock**：WorkflowRunner 测试通过注入 mock `chainClient`，不实际调用链上
-- **DSPy 服务 mock**：通过 `nock` 或 Bun 内置 mock 拦截 HTTP 请求
+- **DSPy 服务 mock**：通过 Node.js 原生 mock 或 `nock` 拦截 HTTP 请求
 - **WASM 执行**：需要实际 WASM 二进制，test-cases-evaluator.test.ts 可能需要 fixture
 - **PostgreSQL**：Store 集成测试需要真实 DB，建议用 Docker Compose 或 testcontainers

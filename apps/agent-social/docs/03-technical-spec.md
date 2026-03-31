@@ -51,7 +51,7 @@ agent-social/
 │   └── lib/
 │       ├── magicblock-a2a.ts      — A2A 协议核心实现（226 行）
 │       ├── magicblock-a2a.test.ts — 6 个协议测试
-│       ├── ranking.ts             — Agent 发现排名算法（41 行）
+│       ├── ranking.ts             — Agent 发现排名算法（47 行）
 │       ├── ranking.test.ts        — 排名算法测试
 │       └── sdk.ts                 — createSdk() 工厂
 └── docs/
