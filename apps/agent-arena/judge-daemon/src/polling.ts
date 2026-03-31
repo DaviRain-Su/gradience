@@ -19,13 +19,31 @@ interface IndexerSubmission {
     submission_slot: number;
 }
 
-export function createIndexerPollingFetcher(indexerEndpoint: string): () => Promise<EventEnvelope[]> {
-    const seenTaskIds = new Set<number>();
-    const seenSubmissionKeys = new Set<string>();
+const DEFAULT_MAX_SEEN_TASK_IDS = 10_000;
+const DEFAULT_MAX_SEEN_SUBMISSION_KEYS = 50_000;
+
+export interface IndexerPollingFetcherOptions {
+    maxSeenTaskIds?: number;
+    maxSeenSubmissionKeys?: number;
+    fetcher?: typeof fetch;
+}
+
+export function createIndexerPollingFetcher(
+    indexerEndpoint: string,
+    options: IndexerPollingFetcherOptions = {},
+): () => Promise<EventEnvelope[]> {
+    const seenTaskIds = new BoundedSeenSet<number>(
+        options.maxSeenTaskIds ?? DEFAULT_MAX_SEEN_TASK_IDS,
+    );
+    const seenSubmissionKeys = new BoundedSeenSet<string>(
+        options.maxSeenSubmissionKeys ?? DEFAULT_MAX_SEEN_SUBMISSION_KEYS,
+    );
+    const fetcher = options.fetcher ?? fetch;
     return async () => {
         const events: EventEnvelope[] = [];
         const tasks = await fetchJson<IndexerTask[]>(
             `${indexerEndpoint.replace(/\/$/, '')}/api/tasks?limit=50`,
+            fetcher,
         );
         const now = unixNow();
         for (const task of tasks) {
@@ -48,6 +66,7 @@ export function createIndexerPollingFetcher(indexerEndpoint: string): () => Prom
 
             const submissions = await fetchJsonOrNull<IndexerSubmission[]>(
                 `${indexerEndpoint.replace(/\/$/, '')}/api/tasks/${task.task_id}/submissions?sort=slot`,
+                fetcher,
             );
             if (!submissions) {
                 continue;
@@ -86,16 +105,16 @@ export async function loadMockEvents(filePath: string): Promise<EventEnvelope[]>
     );
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-    const response = await fetch(url);
+async function fetchJson<T>(url: string, fetcher: typeof fetch): Promise<T> {
+    const response = await fetcher(url);
     if (!response.ok) {
         throw new Error(`Polling request failed (${response.status}): ${url}`);
     }
     return (await response.json()) as T;
 }
 
-async function fetchJsonOrNull<T>(url: string): Promise<T | null> {
-    const response = await fetch(url);
+async function fetchJsonOrNull<T>(url: string, fetcher: typeof fetch): Promise<T | null> {
+    const response = await fetcher(url);
     if (response.status === 404) {
         return null;
     }
@@ -107,4 +126,29 @@ async function fetchJsonOrNull<T>(url: string): Promise<T | null> {
 
 function unixNow(): number {
     return Math.floor(Date.now() / 1000);
+}
+
+class BoundedSeenSet<T> {
+    private readonly set = new Set<T>();
+    private readonly order: T[] = [];
+
+    constructor(private readonly maxSize: number) {}
+
+    has(value: T): boolean {
+        return this.set.has(value);
+    }
+
+    add(value: T): void {
+        if (this.set.has(value)) {
+            return;
+        }
+        this.set.add(value);
+        this.order.push(value);
+        if (this.order.length > this.maxSize) {
+            const oldest = this.order.shift();
+            if (oldest !== undefined) {
+                this.set.delete(oldest);
+            }
+        }
+    }
 }

@@ -59,32 +59,48 @@ export class PollingEventSource implements EventSource {
 
     private timer: NodeJS.Timeout | null = null;
     private inFlight: Promise<void> | null = null;
+    private running = false;
 
     constructor(private readonly options: PollingEventSourceOptions) {
         this.pollIntervalMs = options.pollIntervalMs ?? 5_000;
     }
 
     async start(onEvent: EventHandler, onError: SourceErrorHandler): Promise<void> {
-        const tick = async () => {
-            try {
-                const events = await this.options.pollEvents();
-                for (const event of events) {
-                    await onEvent(event);
+        if (this.running) {
+            return;
+        }
+        this.running = true;
+
+        const runTick = async () => {
+            if (!this.running) {
+                return;
+            }
+            this.inFlight = (async () => {
+                try {
+                    const events = await this.options.pollEvents();
+                    for (const event of events) {
+                        await onEvent(event);
+                    }
+                } catch (error) {
+                    await onError(error);
                 }
-            } catch (error) {
-                await onError(error);
+            })();
+            await this.inFlight;
+            this.inFlight = null;
+            if (this.running) {
+                this.timer = setTimeout(() => {
+                    void runTick();
+                }, this.pollIntervalMs);
             }
         };
 
-        this.inFlight = tick();
-        this.timer = setInterval(() => {
-            this.inFlight = tick();
-        }, this.pollIntervalMs);
+        await runTick();
     }
 
     async stop(): Promise<void> {
+        this.running = false;
         if (this.timer) {
-            clearInterval(this.timer);
+            clearTimeout(this.timer);
             this.timer = null;
         }
         await this.inFlight;
