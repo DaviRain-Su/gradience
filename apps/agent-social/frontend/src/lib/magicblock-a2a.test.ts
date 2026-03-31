@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+    BroadcastChannelMagicBlockTransport,
     InMemoryMagicBlockHub,
     InMemoryMagicBlockTransport,
     MagicBlockA2AAgent,
     estimateMicropayment,
+    parseA2AEnvelope,
 } from './magicblock-a2a';
 
 test('two agents exchange message under 500ms latency budget', async () => {
@@ -67,4 +69,53 @@ test('agent emits outgoing delivery with micropayment metadata', () => {
     assert.ok(outgoingPayment > 0);
     unsubscribe();
     alice.stop();
+});
+
+test('parseA2AEnvelope rejects malformed payloads', () => {
+    assert.equal(parseA2AEnvelope({ topic: 'x' }), null);
+    assert.equal(
+        parseA2AEnvelope({
+            id: '1',
+            from: 'a',
+            to: 'b',
+            topic: 't',
+            message: 'm',
+            createdAt: Number.NaN,
+            paymentMicrolamports: 1,
+        }),
+        null,
+    );
+});
+
+test('BroadcastChannel transport ignores non-envelope messages', () => {
+    const listeners = new Set<(event: MessageEvent<unknown>) => void>();
+    const channel = {
+        postMessage: () => {},
+        addEventListener: (_type: 'message', listener: (event: MessageEvent<unknown>) => void) =>
+            listeners.add(listener),
+        removeEventListener: (_type: 'message', listener: (event: MessageEvent<unknown>) => void) =>
+            listeners.delete(listener),
+    } as unknown as BroadcastChannel;
+
+    const transport = new BroadcastChannelMagicBlockTransport(channel);
+    const received: string[] = [];
+    const off = transport.subscribe((envelope) => received.push(envelope.id));
+
+    for (const listener of listeners) {
+        listener({ data: { bad: true } } as MessageEvent<unknown>);
+        listener({
+            data: {
+                id: 'ok-1',
+                from: 'a',
+                to: 'b',
+                topic: 'topic',
+                message: 'hello',
+                createdAt: 1,
+                paymentMicrolamports: 2,
+            },
+        } as MessageEvent<unknown>);
+    }
+
+    off();
+    assert.deepEqual(received, ['ok-1']);
 });

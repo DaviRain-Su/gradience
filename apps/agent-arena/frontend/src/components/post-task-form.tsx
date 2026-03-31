@@ -81,16 +81,37 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
         setSubmitting(true);
         try {
             const now = Math.floor(Date.now() / 1000);
+            const taskId = parseUnsignedBigInt(form.taskId, 'task-id');
+            const reward = parseUnsignedBigInt(form.reward, 'reward');
+            const minStake = parseUnsignedBigInt(form.minStake, 'min-stake');
+            const category = parseBoundedInteger(form.category, 'category', 0, 7);
+            const judgeMode = parseBoundedInteger(form.judgeMode, 'judge-mode', 0, 1);
+            const evalRef = form.evalRef.trim();
+            if (!evalRef) {
+                throw new Error('eval-ref is required.');
+            }
+            const deadlineSeconds = parsePositiveInteger(
+                form.deadlineSeconds,
+                'deadline in seconds from now',
+            );
+            const judgeDeadlineSeconds = parsePositiveInteger(
+                form.judgeDeadlineSeconds,
+                'judge-deadline in seconds from now',
+            );
+            if (judgeDeadlineSeconds < deadlineSeconds) {
+                throw new Error('judge-deadline must be greater than or equal to deadline.');
+            }
+
             const signature = await sdk.task.post(adapter, {
-                taskId: BigInt(form.taskId),
-                evalRef: form.evalRef.trim(),
-                reward: BigInt(form.reward),
-                minStake: BigInt(form.minStake),
-                category: Number(form.category),
-                judgeMode: Number(form.judgeMode),
+                taskId,
+                evalRef,
+                reward,
+                minStake,
+                category,
+                judgeMode,
                 judge: form.judge.trim() ? address(form.judge.trim()) : undefined,
-                deadline: BigInt(now + Number(form.deadlineSeconds)),
-                judgeDeadline: BigInt(now + Number(form.judgeDeadlineSeconds)),
+                deadline: BigInt(now + deadlineSeconds),
+                judgeDeadline: BigInt(now + judgeDeadlineSeconds),
             });
             setStatus(signature);
             setForm((current) => ({ ...current, taskId: '', evalRef: '' }));
@@ -261,4 +282,36 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
             )}
         </section>
     );
+}
+
+function parseUnsignedBigInt(value: string, field: string): bigint {
+    const normalized = value.trim();
+    if (!/^\d+$/.test(normalized)) {
+        throw new Error(`${field} must be an unsigned integer.`);
+    }
+    return BigInt(normalized);
+}
+
+function parsePositiveInteger(value: string, field: string): number {
+    const normalized = value.trim();
+    if (!/^\d+$/.test(normalized)) {
+        throw new Error(`${field} must be a positive integer.`);
+    }
+    const parsed = Number(normalized);
+    if (!Number.isInteger(parsed) || parsed <= 0 || !Number.isFinite(parsed)) {
+        throw new Error(`${field} must be a positive integer.`);
+    }
+    return parsed;
+}
+
+function parseBoundedInteger(value: string, field: string, min: number, max: number): number {
+    const normalized = value.trim();
+    if (!/^\d+$/.test(normalized)) {
+        throw new Error(`${field} must be an integer between ${min} and ${max}.`);
+    }
+    const parsed = Number(normalized);
+    if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+        throw new Error(`${field} must be an integer between ${min} and ${max}.`);
+    }
+    return parsed;
 }

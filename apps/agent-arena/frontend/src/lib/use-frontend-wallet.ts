@@ -53,10 +53,26 @@ export function useFrontendWallet(): FrontendWalletState {
     useEffect(() => {
         refreshInjectedWallets();
         const interval = setInterval(refreshInjectedWallets, 1500);
-        const stop = setTimeout(() => clearInterval(interval), 15_000);
+        const onVisibility = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                refreshInjectedWallets();
+            }
+        };
+        const onFocus = () => refreshInjectedWallets();
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', onVisibility);
+        }
+        if (typeof window !== 'undefined') {
+            window.addEventListener('focus', onFocus);
+        }
         return () => {
             clearInterval(interval);
-            clearTimeout(stop);
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', onVisibility);
+            }
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('focus', onFocus);
+            }
         };
     }, [refreshInjectedWallets]);
 

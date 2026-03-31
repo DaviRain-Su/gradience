@@ -23,6 +23,7 @@ interface WalletManagerProps {
 export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
     const [profiles, setProfiles] = useState<WalletProfile[]>([]);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+    const [hydrated, setHydrated] = useState(false);
     const [labelInput, setLabelInput] = useState('');
     const [openWalletAddressInput, setOpenWalletAddressInput] = useState('');
     const [keypairInput, setKeypairInput] = useState('');
@@ -34,6 +35,7 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
         setProfiles(storedProfiles);
         const activeExists = storedActive && storedProfiles.some((item) => item.id === storedActive);
         setActiveProfileId(activeExists ? storedActive : storedProfiles[0]?.id ?? null);
+        setHydrated(true);
     }, []);
 
     const activeProfile = useMemo(
@@ -42,13 +44,19 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
     );
 
     useEffect(() => {
+        if (!hydrated) {
+            return;
+        }
         saveProfiles(profiles);
-    }, [profiles]);
+    }, [hydrated, profiles]);
 
     useEffect(() => {
+        if (!hydrated) {
+            return;
+        }
         saveActiveProfileId(activeProfileId);
         onActiveAddressChange(activeProfile?.address ?? null);
-    }, [activeProfileId, activeProfile, onActiveAddressChange]);
+    }, [hydrated, activeProfileId, activeProfile, onActiveAddressChange]);
 
     const addOpenWalletProfile = () => {
         setError(null);

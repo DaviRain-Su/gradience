@@ -91,7 +91,13 @@ export class BroadcastChannelMagicBlockTransport implements MagicBlockTransport 
     }
 
     subscribe(handler: (envelope: A2AEnvelope) => void): () => void {
-        const listener = (event: MessageEvent<A2AEnvelope>) => handler(event.data);
+        const listener = (event: MessageEvent<unknown>) => {
+            const envelope = parseA2AEnvelope(event.data);
+            if (!envelope) {
+                return;
+            }
+            handler(envelope);
+        };
         this.channel.addEventListener('message', listener);
         return () => this.channel.removeEventListener('message', listener);
     }
@@ -175,4 +181,45 @@ export function createDefaultMagicBlockTransport(channelName = 'gradience-magicb
         browserFallbackHub = new InMemoryMagicBlockHub();
     }
     return new InMemoryMagicBlockTransport(browserFallbackHub);
+}
+
+export function parseA2AEnvelope(value: unknown): A2AEnvelope | null {
+    if (!value || typeof value !== 'object') {
+        return null;
+    }
+    const row = value as Partial<A2AEnvelope>;
+    if (
+        typeof row.id !== 'string' ||
+        typeof row.from !== 'string' ||
+        typeof row.to !== 'string' ||
+        typeof row.topic !== 'string' ||
+        typeof row.message !== 'string'
+    ) {
+        return null;
+    }
+    if (
+        typeof row.createdAt !== 'number' ||
+        !Number.isFinite(row.createdAt) ||
+        row.createdAt < 0 ||
+        !Number.isInteger(row.createdAt)
+    ) {
+        return null;
+    }
+    if (
+        typeof row.paymentMicrolamports !== 'number' ||
+        !Number.isFinite(row.paymentMicrolamports) ||
+        row.paymentMicrolamports < 0 ||
+        !Number.isInteger(row.paymentMicrolamports)
+    ) {
+        return null;
+    }
+    return {
+        id: row.id,
+        from: row.from,
+        to: row.to,
+        topic: row.topic,
+        message: row.message,
+        createdAt: row.createdAt,
+        paymentMicrolamports: row.paymentMicrolamports,
+    };
 }
