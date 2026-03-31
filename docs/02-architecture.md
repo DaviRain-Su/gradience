@@ -143,7 +143,7 @@ flowchart TB
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
-| **Chain Hub** | Delegation Task、Skill 市场、Protocol Registry（任何服务 5 分钟注册）、Key Vault（OpenWallet Policy Engine，Poster 设定执行参数，Agent 物理上无法超出）；**底层金融原语由 SDP 提供**：稳定币发行、支付通道（on-ramp/off-ramp）、企业级托管（Fireblocks/BitGo）通过 SDP Adapter 注册为 Protocol Registry 的第一个重量级协议，Agent 调用时与其他 Skill 无差别 | 不修改 Agent Layer 内核；不自建支付 / 托管基础设施（复用 SDP） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
+| **Chain Hub** | Delegation Task、Skill 市场、**Protocol Registry（双轨注册）**、Key Vault；Protocol Registry 支持两条接入路径：**① 中心化服务（REST API）**——服务方提供 endpoint + 能力声明，API Key 由 Key Vault 自动注入，Agent 无感调用，典型例：SDP（首个注册协议）、Helius、第三方 AI 服务；**② 链上 Solana Program（CPI）**——项目方提供 Program ID + IDL，Agent 直接 CPI 调用，无需 API Key，完全无需信任，典型例：Orca、Kamino、任何自建合约的开发者；两条路径对 Agent 暴露统一接口 `chainHub.invoke(skillId, params)`，底层自动路由；Key Vault 由 OpenWallet Policy Engine 实现，Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出；底层金融原语由 SDP 提供 | 不修改 Agent Layer 内核；不自建支付/托管基础设施；不强迫链上 Program 做任何改造（只需提供 Program ID + IDL） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
 | **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
@@ -1190,6 +1190,96 @@ SDP 的 Issuance 模块是未来 gUSD 独立协议铸造稳定币时可复用的
 **W3**：SDP Adapter 生产就绪，Key Vault 对接 Fireblocks（via SDP）；完成"Agent Arena 任务奖励 → SDP 支付 demo"
 
 **不依赖 SDP 的部分**：Agent Layer Program（链上内核）、Indexer、SDK 核心——这些完全 Solana 原生，SDP 故障不影响协议正常运行
+
+---
+
+## 2.15 Protocol Registry 双轨注册模型
+
+Chain Hub 的 Protocol Registry 是整个体系的开放入口，支持两种截然不同的接入路径：
+
+### 路径 A — 中心化服务接入（REST API）
+
+**适用对象**：有 REST API 的服务商（SaaS、企业级基础设施、第三方 AI 服务等）
+
+**注册内容**：服务 endpoint + 能力声明 + 认证方式
+
+**调用机制**：HTTP 请求，API Key 由 Key Vault 自动注入，Agent 调用时**不持有任何凭证**
+
+**信任模型**：`centralized-enterprise`（需信任服务商）或 `centralized-community`（社区审查）
+
+```typescript
+// Protocol Registry 注册格式 — 路径 A
+{
+  id: "solana-developer-platform",
+  type: "rest-api",
+  trust: "centralized-enterprise",
+  endpoint: "https://api.platform.solana.com/v1",
+  capabilities: ["issuance", "payments", "custody", "compliance"],
+  authMethod: "key-vault",   // Key Vault 自动注入，Agent 无感
+  docs: "https://platform.solana.com/docs",
+}
+```
+
+**典型协议**：SDP（首个注册，金融原语层）、Helius、Alchemy、Chainalysis、第三方 LLM/数据/搜索服务
+
+---
+
+### 路径 B — 链上 Solana Program 接入（CPI）
+
+**适用对象**：任何在 Solana 上部署了合约的项目方或开发者
+
+**注册内容**：Program ID + IDL（Anchor / Codama 格式均可）+ 能力声明
+
+**调用机制**：直接 CPI，**无需 API Key，无需信任，代码即规则**
+
+**信任模型**：`on-chain-verified`（链上代码可独立验证）
+
+```typescript
+// Protocol Registry 注册格式 — 路径 B
+{
+  id: "orca-whirlpool",
+  type: "solana-program",
+  trust: "on-chain-verified",
+  programId: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  idl: { /* Anchor IDL or Codama-generated */ },
+  capabilities: ["swap", "add-liquidity", "remove-liquidity"],
+  docs: "https://docs.orca.so",
+}
+```
+
+**典型协议**：Orca（DEX）、Kamino（借贷）、Jupiter（聚合交易）、Raydium、任何自建合约的 Solana 开发者
+
+**对项目方的价值**：提交一次 PR（或调用 `registerProtocol()` 链上指令），立刻获得整个 Gradience Agent 网络的调用能力 — **接入 Chain Hub = 接入所有 Gradience Agent**。不需要改造合约，不需要集成 SDK，只需提供 Program ID + IDL。
+
+---
+
+### 两条路径的统一调用接口
+
+对 Agent 来说，调用任何已注册协议的体验完全一致，Chain Hub 在底层自动路由：
+
+```typescript
+// Agent 调用 — 无需关心底层是 REST API 还是 CPI
+const result = await chainHub.invoke("orca-whirlpool", "swap", {
+  tokenIn: "SOL", tokenOut: "USDC", amount: 1.0, slippage: 0.5,
+});
+
+const payment = await chainHub.invoke("solana-developer-platform", "payments", {
+  action: "on-ramp", amount: 100, currency: "USD", destination: agentWallet,
+});
+```
+
+Chain Hub 内部处理：
+- 路径 A → 从 Key Vault 取 API Key → HTTP 请求 → 返回结果
+- 路径 B → 构造 CPI 账户 → 发送交易 → 解析返回
+
+### 注册流程
+
+| | 路径 A（REST API） | 路径 B（Solana Program） |
+|---|---|---|
+| **注册方式** | 提交 PR 到 Chain Hub Registry 仓库 | 提交 PR，或调用链上 `registerProtocol()` 指令 |
+| **审查** | 社区审查 + trust 等级标注 | 自动验证 Program ID 存在性；IDL 合法性检查 |
+| **上线时间** | PR 合并后即生效 | 链上注册即时生效 |
+| **更新** | 服务方推 PR 更新 endpoint/能力 | 程序升级后更新 IDL |
 
 ---
 

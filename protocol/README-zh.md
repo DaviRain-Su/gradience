@@ -334,9 +334,20 @@ flowchart LR
 - 📐 密钥保险库（Key Vault）— 企业级加密托管（Fireblocks/BitGo via SDP），Agent 永不持有裸私钥
 - 📐 多链支持 — EVM、Solana 及更多
 
+**Protocol Registry：双轨接入模型**
+
+任何服务都可以注册进 Chain Hub，成为 Agent 可调用的 Skill：
+
+| 路径 | 适用对象 | 接入方式 | 信任等级 |
+|------|---------|---------|---------|
+| **REST API 路径** | SaaS、企业级基础设施、AI 服务 | 注册 endpoint + 能力声明，API Key 由 Key Vault 自动注入 | `centralized-*` |
+| **Solana Program 路径** | 任何在 Solana 上部署了合约的项目方/开发者 | 注册 Program ID + IDL，Agent 直接 CPI 调用，无需 API Key | `on-chain-verified` |
+
+**接入 Chain Hub = 让所有 Gradience Agent 都能调用你的合约**，无需改造现有合约，只需提供 Program ID + IDL。
+
 **底层金融原语：Solana Developer Platform (SDP)**
 
-Chain Hub 使用 [SDP](https://platform.solana.com)（Solana Foundation 2026 年 3 月发布）作为金融基础设施层，一个 API 覆盖稳定币发行、支付通道（on-ramp/off-ramp）、链上合规、企业级托管。这意味着 Chain Hub 跳过与 20+ 家服务商（MoonPay、Fireblocks、Chainalysis 等）逐一集成的过程，在 W2–W3 就能交付企业级金融能力。
+Chain Hub 使用 [SDP](https://platform.solana.com)（Solana Foundation 2026 年 3 月发布）作为金融基础设施层，一个 API 覆盖稳定币发行、支付通道（on-ramp/off-ramp）、链上合规、企业级托管。SDP 是通过 REST API 路径注册进来的第一个重量级协议。
 
 ---
 

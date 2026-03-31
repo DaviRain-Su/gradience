@@ -325,8 +325,19 @@ The "Stripe for blockchain" — Agents access any on-chain service with one auth
 - 📐 Key Vault — encrypted custody backed by enterprise-grade providers (Fireblocks/BitGo via SDP); agents never hold raw credentials
 - 📐 Multi-chain — EVM, Solana, and beyond
 
+**Protocol Registry: two integration paths**
+
+Any service can register into Chain Hub and become a Skill that Agents can call:
+
+| Path | For | How | Trust |
+|------|-----|-----|-------|
+| **REST API** | SaaS, enterprise infra, AI services | Register endpoint + capabilities; API key injected by Key Vault | `centralized-*` |
+| **Solana Program** | Any Solana contract developer | Register Program ID + IDL; Agent calls via direct CPI, no API key | `on-chain-verified` |
+
+Registering into Chain Hub = your protocol becomes callable by every Gradience Agent, with zero changes to your existing contract.
+
 **Powered by Solana Developer Platform (SDP):**
-Chain Hub uses [SDP](https://platform.solana.com) (launched March 2026 by Solana Foundation) as its financial primitive layer — covering stablecoin issuance, payments (on-ramp/off-ramp), compliance, and enterprise custody in a single API. This means Chain Hub skips months of individual integrations with 20+ providers (MoonPay, Fireblocks, Chainalysis, etc.) and ships enterprise-grade financial capabilities in weeks.
+Chain Hub uses [SDP](https://platform.solana.com) (launched March 2026 by Solana Foundation) as its financial primitive layer — covering stablecoin issuance, payments (on-ramp/off-ramp), compliance, and enterprise custody in a single API. SDP is the first protocol registered via the REST API path.
 
 ---
 
