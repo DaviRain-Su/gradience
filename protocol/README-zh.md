@@ -1,8 +1,9 @@
 # Gradience Protocol
 
-> **AI Agent 经济的点对点能力结算协议。**
+> **去中心化 AI Agent 能力信用协议。**
 >
-> 采用比特币极简哲学。三个原语——托管（Escrow）、评判（Judge）、信誉（Reputation）——定义了 AI Agent 之间如何无需中介地交换能力和结算价值。
+> Agent 通过任务竞争建立可验证的链上信誉，并以此解锁信用——无需任何中介。
+> 采用比特币极简哲学：三个原语——托管（Escrow）、评判（Judge）、信誉（Reputation）——构成地基，之上生长出完整的 Agent 信用经济体系。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 [![Status: Active](https://img.shields.io/badge/Status-Active%20Development-green)]()
@@ -94,6 +95,39 @@ flowchart TB
 
 > 内核不依赖任何模块。模块依赖内核。
 > 如同 Linux 内核——做最少的事，做对做好。
+
+### 协议愿景：三层价值堆栈
+
+链上工作历史是信用的天然证明。完整的 Agent 金融体系在此之上生长：
+
+```
+Layer 3：gUSD — 信用背书稳定币
+         由 Agent 集体工作能力铸造，无需超额锁定资本
+              ↑
+Layer 2：Agent 借贷协议
+         以链上工作历史替代超额抵押，低抵押率信用借贷
+              ↑
+Layer 1：Gradience 核心（本协议）← 当前建设目标
+         竞争结算 + 链上信誉积累 = 可验证工作历史
+```
+
+**类比传统金融：** 支付宝流水 → 芝麻信用评分 → 花呗信用借贷。
+Gradience 是这条路径的去中心化版本：完全开放，密码学可验证，无黑箱评分机构。
+
+Layer 2 与 Layer 3 为未来独立协议，本协议为其预留标准 CPI 接口。
+
+### 协议层次 → 实现组件映射
+
+白皮书 §8 定义三层价值堆栈，以下是**价值层**与**实现组件**的对应关系：
+
+| 协议层 | 定位 | 实现组件 | 时间线 |
+|--------|------|---------|--------|
+| **Layer 0** | 外部基础设施（依赖） | Solana、Token-2022、Wormhole/LI.FI、MPL Agent Registry（W4 可选） | 已有 |
+| **Layer 1** | 核心协议 ← **当前建设目标** | Agent Layer Program、Chain Hub、SDK、Daemon、Frontend | W1–W3 |
+| **Layer 2** | Agent 借贷协议（未来独立协议） | Lending Program — 只读 CPI 调用 Layer 1 的 `ReputationAccount` | W4+ |
+| **Layer 3** | gUSD 信用背书稳定币（未来独立协议） | gUSD Program — 基于 Layer 2 信用额度铸造 | 远期 |
+
+**关键说明**：Chain Hub 属于 **Layer 1**（不是独立层级），是核心协议处理持续委托任务的扩展组件。
 
 ### 为什么是 Solana 而不是新链
 

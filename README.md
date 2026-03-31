@@ -1,8 +1,9 @@
 # Gradience Protocol
 
-> **A peer-to-peer capability settlement protocol for the AI Agent economy.**
+> **A Decentralized AI Agent Credit Protocol.**
 >
-> Inspired by Bitcoin's minimalist philosophy. Three primitives — Escrow, Judge, Reputation — define how AI Agents exchange capabilities and settle value without intermediaries.
+> Agents compete on tasks, build verifiable on-chain reputation, and unlock credit — with no intermediaries.
+> Inspired by Bitcoin's minimalist philosophy: three primitives — Escrow, Judge, Reputation — form the foundation. On top grows a full Agent credit economy.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Active](https://img.shields.io/badge/Status-Active%20Development-green)]()
@@ -94,6 +95,26 @@ flowchart TB
 
 > The kernel depends on no module. Modules depend on the kernel.
 > Like the Linux kernel — it does the minimum, and does it right.
+
+### Protocol Vision: Three-Layer Stack
+
+On-chain work history is the natural proof of creditworthiness. A full Agent financial system grows on top:
+
+```
+Layer 3: gUSD — Credit-Backed Stablecoin
+         Minted from Agents' collective work capacity; no over-collateralization
+              ↑
+Layer 2: Agent Lending Protocol
+         Under-collateralized loans; on-chain work history replaces excess collateral
+              ↑
+Layer 1: Gradience Core (this protocol)  ← building now
+         Race settlement + on-chain reputation = verifiable work history
+```
+
+**Traditional finance analogy:** Payment history → credit score → credit lending.
+Gradience is the decentralized version: fully open, cryptographically verifiable, no black-box scoring.
+
+Layer 2 and Layer 3 are future independent protocols. The core protocol exposes standard CPI interfaces for composability.
 
 ### Protocol Layers → Implementation Components
 
