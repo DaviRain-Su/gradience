@@ -40,7 +40,7 @@
   {\LARGE\bfseries Gradience Protocol}\\[6pt]
   {\Large A Decentralized AI Agent Credit Protocol}\\[20pt]
   {\large @DaviRain-Su}\\[4pt]
-  {\normalsize March 2026 \quad$\cdot$\quad v0.4}
+  {\normalsize April 2026 \quad$\cdot$\quad v0.4}
 \end{center}
 \vspace{1em}\hrule\vspace{1.5em}
 
@@ -348,25 +348,46 @@ Token economics & Not specified & \textbf{Fixed supply + burn} \\
 \subsection{7.2\quad Settlement: Solana}
 Race model lifecycle: \texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx. 10K concurrent tasks $\approx$ 100 TPS $<$ 3\% Solana capacity. Compute-intensive work is off-chain.
 
-\subsection{7.3\quad A2A: Lightning Analogy}
-L1 (Solana): settlement, reputation. L2 (A2A): messaging, micropayment channels, state channels, batched reputation.
+\subsection{7.3\quad A2A Protocol Architecture}
 
-\subsection{7.4\quad Execution: MagicBlock ER}
+A2A implements four foundational patterns for Agent-to-Agent interaction:
 
 \begin{table}[H]\centering\small
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Requirement} & \textbf{MagicBlock ER} \\
+\textbf{Pattern} & \textbf{Mechanism} & \textbf{Application} \\
 \midrule
-$<$50ms interaction & 1ms block, $<$50ms e2e \\
-Zero-fee micropayments & Zero tx fees \\
-Privacy & Private ER (Intel TDX TEE) \\
-No bridge & Native Solana: delegate \& commit \\
+State Channels & Off-chain updates, on-chain settlement & Negotiations, task decomposition \\
+Payment Channels & Bidirectional micropayment streams & Skill rental, streaming rewards \\
+Optimistic Batching & Aggregate with challenge period & Reputation updates, activity logs \\
+Deferred Finality & Off-chain execution, delayed commit & Heavy evaluations \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Integration: one \texttt{delegate} instruction. Zero custom infrastructure.
+\textbf{Layering:} L2 handles interaction volume; L1 guarantees final settlement.
+
+\subsection{7.4\quad Implementation Options}
+
+\textbf{Option A: Ephemeral Rollups (Primary)} --- MagicBlock ER:
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item 1ms block time, $<$50ms end-to-end
+  \item Zero fees within ER, TEE privacy (Intel TDX)
+  \item Auto-commit to Solana L1
+  \item Trade-off: Vendor dependency
+\end{itemize}
+
+\textbf{Option B: Native State Channels (Planned)} --- Self-managed:
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item Near-instant, fully off-chain
+  \item Only open/close on-chain ($\sim$\$0.002)
+  \item Trade-off: Higher dev/ops cost
+\end{itemize}
+
+\textbf{Option C: Hybrid (Future)} --- Use-case based:
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item High-frequency $\to$ ER; Streaming $\to$ Channels; Large transfers $\to$ L1
+\end{itemize}
 
 \subsection{7.5\quad Cross-Chain Reputation}
 \textbf{Step 1:} Identity linking via mutual key signing---zero cost. \textbf{Step 2:} Solana as reputation home; Agent carries signed proof to other chains---zero cross-chain cost. \textbf{Step 3:} Write-back: Agent submits result proof to Solana---\$0.001. No bridge, no centralized aggregation.
@@ -424,7 +445,7 @@ Note: \textbf{Chain Hub is part of Layer~1}---it is an extension component of th
   \item \textbf{Week 1 (2026-04-01--07)} --- Agent Layer v2 (Solana): race model, SOL/SPL/Token2022, reputation
   \item \textbf{Week 2 (2026-04-08--14)} --- Chain Hub MVP; Agent Me MVP
   \item \textbf{Week 3 (2026-04-15--21)} --- Agent Social MVP; Open Judge Market; GRAD Genesis
-  \item \textbf{Week 4 (2026-04-22--30)} --- Multi-chain EVM; A2A Protocol (MagicBlock ER); Mining + Flywheel; target 1M+ Agents
+  \item \textbf{Week 4 (2026-04-22--30)} --- Multi-chain EVM; A2A Protocol (State Channels + ER); Mining + Flywheel; target 1M+ Agents
 \end{itemize}
 
 % ═══ 9. CONCLUSION ════════════════════════════════════════════════════

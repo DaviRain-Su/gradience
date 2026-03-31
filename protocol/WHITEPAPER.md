@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · March 2026 · v0.3**
+**@DaviRain-Su · April 2026 · v0.4**
 
 ---
 
@@ -45,6 +45,126 @@ Fee rates are encoded as immutable constants in the contract. No administrator, 
 ### 2.3 Complexity Lives Above
 
 The protocol does not embed hook systems, plugin architectures, or extension points. Implementations that require richer logic—bidding, negotiation, sub-task decomposition—build on top. The kernel stays closed. This is the Unix philosophy applied to economic protocols: do one thing well.
+
+### 2.4 Comparison with ERC-8183
+
+ERC-8183 (Agentic Commerce), submitted by the Virtuals Protocol team, is the closest existing standard.
+
+| Dimension | ERC-8183 | Gradience |
+|-----------|----------|-----------|
+| States / Transitions | 6 / 8 | **3 / 4** |
+| Task creation | Three steps (create → set budget → fund) | **One atomic operation** |
+| Evaluation model | Binary (complete / reject) | **Continuous (0–100 score)** |
+| Reputation | External dependency | **Built-in** |
+| Competition | None (client assigns provider) | **Race model (open submission)** |
+| Extension mechanism | Hook system (before/after callbacks) | **None—complexity lives above** |
+| Fee mutability | Admin-configurable | **Immutable constants** |
+| Permission model | Hook whitelist required | **Fully permissionless** |
+| Evaluator incentive | Not specified | **3% unconditional fee** |
+| Token economics | Not specified | **Fixed supply, mining + burn** |
+
+Gradience leads on **9 of 11 dimensions**.
+
+### 2.5 Bitcoin-Inspired Minimalism
+
+Bitcoin defined "money" with three primitives: **UTXO + Script + Proof-of-Work**. Gradience defines "Agent capability exchange" with three primitives: **Escrow + Judge + Reputation**.
+
+| Bitcoin | Gradience |
+|---------|-----------|
+| Proof of Work (competition) | Proof of Quality (race model) |
+| Block reward (fixed, immutable) | 95/3/2 split (immutable constants) |
+| Difficulty adjustment (adaptive) | Stake-based participation (market-driven) |
+| Longest chain wins | Highest score wins |
+
+**Why minimalism matters:**
+
+1. **Predictability**: Everyone knows the rules. No hidden logic. Long-term planning becomes possible.
+
+2. **Attack resistance**: Simple rules have less manipulation surface. Like Bitcoin's 51% attack cost, Gradience's economic attacks require controlling majority stake or reputation.
+
+3. **Verifiability**: Anyone can audit the protocol. No need to trust third parties. Transparency is security.
+
+4. **Self-operation**: No administrator required. Automatic difficulty adjustment in Bitcoin; automatic settlement in Gradience. 7×24 unmanned operation.
+
+**Contrast with complex systems:**
+- DeFi protocols: Hundreds of lines of code, frequent vulnerabilities
+- DAO governance: Complex voting, low efficiency  
+- Multi-token models: Difficult to understand and predict
+
+Gradience: ~300 lines of code. That's the entire foundation.
+
+### 2.6 AI Native Protocol Design
+
+Gradience represents a paradigm shift: from **"protocols for humans"** to **"protocols for AI Agents"**.
+
+**Human users vs. AI Agents:**
+
+| Dimension | Human | AI Agent |
+|-----------|-------|----------|
+| **Decision speed** | Seconds to minutes | Milliseconds to seconds |
+| **Parallel processing** | Limited (7±2) | Near unlimited |
+| **Attention** | Limited, fatigues | Infinite, 7×24 |
+| **Risk preference** | Loss-averse | Quantifiable optimization |
+| **Information processing** | Needs simplification | Handles raw data |
+| **Social needs** | Emotion, belonging | Efficiency, reputation |
+| **Error types** | Random, emotional | Systematic, predictable |
+| **Scalability** | Linear (add people) | Exponential (copy instances) |
+
+**Protocol design implications:**
+
+Traditional protocols assume:
+- Users will read carefully → Agents parse directly
+- Users will manually confirm → Agents execute automatically
+- Users need social features → Agents need reputation/efficiency
+- Users make random mistakes → Agents have systematic errors
+
+Gradience is designed for Agents:
+- **No confirmation dialogs**: Agents don't need double-checking
+- **No governance voting**: Agents need fast, deterministic decisions
+- **No social features**: Agents need verifiable reputation
+- **Immutable rules**: Agents can optimize against stable rules
+
+This is not just a technical difference—it's a **philosophical shift**. Gradience is the first protocol built from the ground up for an economy where the primary participants are autonomous software, not humans.
+
+### 2.7 Infrastructure vs. Application
+
+Gradience is not an application—it is **infrastructure** for the Agent economy.
+
+| Dimension | Application (e.g., Xyndicate) | Infrastructure (Gradience) |
+|-----------|------------------------------|---------------------------|
+| **Scope** | Single use case (trading) | Infinite use cases (any task) |
+| **Agent structure** | Fixed, closed squad | Open participation |
+| **Extensibility** | Closed system | Programmable, composable |
+| **Target users** | End consumers | Developers, builders, other protocols |
+| **Value capture** | Transaction fees | Protocol fees from ecosystem |
+
+**The infrastructure stack:**
+
+```
+┌───────────────────────────────────────────────┐
+│           APPLICATION LAYER                   │
+│  (Built ON TOP of Gradience)                  │
+│  ┌─────────────┐ ┌─────────────┐             │
+│  │  Trading    │ │  Research   │             │
+│  │  Bots       │ │  Optimizers │             │
+│  └─────────────┘ └─────────────┘             │
+├───────────────────────────────────────────────┤
+│           GRADIENCE (INFRASTRUCTURE)          │
+│  ┌─────────────────────────────────────────┐  │
+│  │ • Task posting    • Competition         │  │
+│  │ • Escrow          • Judging/Scoring     │  │
+│  │ • Reputation      • Dispute resolution  │  │
+│  └─────────────────────────────────────────┘  │
+├───────────────────────────────────────────────┤
+│           CHAIN HUB (TOOL LAYER)              │
+│  ┌─────────────────────────────────────────┐  │
+│  │ • Protocol adapters  • Skill market     │  │
+│  │ • Key vault          • Cross-chain      │  │
+│  └─────────────────────────────────────────┘  │
+└───────────────────────────────────────────────┘
+```
+
+**Infrastructure economics**: Applications capture end-user value; infrastructure captures value from all applications built on top. Gradience enables an ecosystem—each new application increases the value of the protocol for all participants.
 
 ---
 
@@ -154,6 +274,49 @@ All submissions are stored on-chain (as references/hashes). After settlement:
 - Losing submissions remain on-chain as historical records. They serve as evidence of Agent participation and contribute to the `attempted` count in reputation metrics.
 - Visibility of losing submissions follows the task's `visibility` setting—public tasks expose all submissions; sealed tasks keep them hidden.
 
+### 3.9 Greedy vs. Complex Arbitration
+
+Gradience uses a **greedy algorithm** (immediate selection of current best) rather than complex optimistic verification with challenge periods. This is a deliberate design choice with significant advantages.
+
+**ERC-8183 (complex approach):**
+```
+Task flow:
+1. Create task → escrow funds
+2. Agent executes → submits result
+3. Wait 2-hour challenge period
+4. If challenged → voting arbitration (days)
+5. Final settlement
+
+Total time: Hours to days
+Design goal: Perfect fairness
+```
+
+**Gradience (greedy approach):**
+```
+Task flow:
+1. Create task → escrow funds
+2. Multiple Agents execute in parallel
+3. Judge selects best submission immediately
+4. Settlement triggered automatically
+
+Total time: Minutes
+Design goal: Good enough + fast
+```
+
+**Why greedy wins:**
+
+| Factor | Complex (ERC-8183) | Greedy (Gradience) |
+|--------|-------------------|-------------------|
+| **Time to settlement** | Hours to days | Minutes |
+| **Code complexity** | High (corner cases) | Low (~300 lines) |
+| **Attack surface** | Large (voting, slashing) | Minimal (simple state machine) |
+| **User experience** | Slow, unpredictable | Fast, deterministic |
+| **Economic efficiency** | Capital locked for long periods | Rapid capital turnover |
+
+**The insight**: Perfect fairness is the enemy of good enough. Most tasks have clear quality differences—waiting for challenges when the result is obvious wastes everyone's time. The race model discovers quality through competition, not arbitration.
+
+When disputes do occur (rare edge cases), they are handled outside the protocol kernel—through social consensus, reputation systems, or optional arbitration layers built on top.
+
 ---
 
 ## 4. Economic Model
@@ -249,6 +412,32 @@ With open Judge participation, the protocol forms a Generative Adversarial struc
 **Equilibrium:** As Agents improve, Judges must become more discerning. As Judges become stricter, Agents must produce higher quality. Quality ratchets upward.
 
 **Collusion resistance:** Posters choose Judges (not Agents). Evaluation standards are publicly referenced. Judge reputation is transparent. All submissions stored on-chain for public audit (unless sealed).
+
+### 4.5.1 Industry Validation: Anthropic's Parallel Discovery
+
+Anthropic, the AI research company behind Claude, independently converged on the same GAN architecture for high-quality code generation:
+
+| Anthropic System | Gradience Equivalent |
+|------------------|---------------------|
+| **Planner** (expands simple prompts to product specs) | **Poster** (defines task requirements) |
+| **Generator** (writes code/designs) | **Agent** (executes tasks) |
+| **Evaluator** (QA testing with Playwright) | **Judge** (quality validation) |
+
+**Key finding from Anthropic's research:**
+
+When the Generator self-evaluated, it was "confidently praising the work"—giving high scores even to mediocre output. When separated into Generator + Evaluator roles, quality improved from "broken" to "usable."
+
+This validates Gradience's core design: **the separation of execution and evaluation is not optional—it's essential for quality.**
+
+**Grading criteria used by Anthropic's Evaluator:**
+- **Design Quality**: Does it feel cohesive vs. cobbled together?
+- **Originality**: Are there custom decisions or just defaults?
+- **Craft**: Technical execution (typography, spacing, contrast)
+- **Functionality**: Usability independent of aesthetics
+
+Gradience uses the same principle: Judges evaluate against criteria defined in `evaluationCID`, with scores from 0–100 providing continuous feedback rather than binary pass/fail.
+
+**Conclusion:** Anthropic's research—conducted independently for AI code generation—validates that the GAN structure (Generator vs. Discriminator) is the optimal architecture for quality assurance in autonomous systems. Gradience applies this proven pattern to the Agent economy.
 
 ---
 
@@ -380,30 +569,58 @@ This means Gradience is not just *compatible* with ERC-8004—it is a **primary 
 
 The protocol records Judge reputation on-chain but does not embed a discovery mechanism. Judge leaderboards, directories, and recommendation engines are the responsibility of upper-layer modules (Chain Hub, frontends, aggregators). The kernel provides data; the ecosystem builds interfaces.
 
+### 5.5 Dual-Track Agent Economy
+
+Gradience supports two complementary participation models, unified under the ERC-8004 reputation system:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 Gradience Dual-Track Economy                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Track A: Staking Competition                                    │
+│  ├── Use case: DeFi, financial, high-value tasks                │
+│  ├── Logic: More stake = more responsibility = higher reward    │
+│  ├── Risk control: Stake slashing                               │
+│  └── Examples: Asset management, liquidation, large trades      │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Track B: Capability Competition                                 │
+│  ├── Use case: General tasks, creative, coding                  │
+│  ├── Logic: Results speak; quality determines reward            │
+│  ├── Risk control: Reputation system (ERC-8004)                 │
+│  └── Examples: Code, design, analysis, content creation         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Unified Layer: ERC-8004 Identity & Reputation                   │
+│  ├── Both tracks share the same identity system                 │
+│  ├── Reputation accumulates across both tracks                  │
+│  └── Track A stake enhances Track B credibility (and vice versa)│
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why dual-track?**
+
+| Factor | Staking Competition | Capability Competition |
+|--------|-------------------|----------------------|
+| **Best for** | High-value tasks | General tasks |
+| **Barrier** | Capital required | Skill required |
+| **Risk control** | Economic (slashing) | Social (reputation) |
+| **Accessibility** | Institutional/wealthy | Anyone with skills |
+| **Speed** | Fast (stake = trust) | Slower (build reputation) |
+
+**Unified reputation:** An Agent with high stake in Track A (e.g., successful DeFi management) gains credibility in Track B (e.g., code tasks), and vice versa. The ERC-8004 identity layer ensures reputation is portable and composable across both tracks.
+
+**Future expansion:** The dual-track design enables Gradience to expand from general tasks (current focus) to high-value DeFi operations (future) without protocol changes—just different `minStake` parameters and evaluation criteria.
+
 ---
 
-## 6. Comparison with ERC-8183
+## 6. Architecture
 
-ERC-8183 (Agentic Commerce), submitted by the Virtuals Protocol team, is the closest existing standard.
-
-| Dimension | ERC-8183 | Gradience |
-|-----------|----------|-----------|
-| States / Transitions | 6 / 8 | **3 / 4** |
-| Task creation | Three steps (create → set budget → fund) | **One atomic operation** |
-| Evaluation model | Binary (complete / reject) | **Continuous (0–100 score)** |
-| Reputation | External dependency | **Built-in** |
-| Competition | None (client assigns provider) | **Race model (open submission)** |
-| Extension mechanism | Hook system (before/after callbacks) | **None—complexity lives above** |
-| Fee mutability | Admin-configurable | **Immutable constants** |
-| Permission model | Hook whitelist required | **Fully permissionless** |
-| Evaluator incentive | Not specified | **3% unconditional fee** |
-| Token economics | Not specified | **Fixed supply, mining + burn** |
-
----
-
-## 7. Architecture
-
-### 7.1 Kernel + Modules
+### 6.1 Kernel + Modules
 
 Gradience has a **kernel** and **modules** that grow around it:
 
@@ -432,7 +649,7 @@ Gradience has a **kernel** and **modules** that grow around it:
 
 The kernel depends on no module. Modules depend on the kernel.
 
-### 7.2 Settlement Layer: Why Solana, Not a New Chain
+### 6.2 Settlement Layer: Why Solana, Not a New Chain
 
 Gradience does not need its own blockchain. Under the race model, a task lifecycle produces:
 
@@ -447,27 +664,108 @@ Solana handles 4,000+ TPS. This uses < 3% of capacity.
 
 All compute-intensive work—Agent execution, Judge evaluation—happens **off-chain**. The chain only records submissions, scores, and payments.
 
-### 7.3 Network Layer: A2A and the Lightning Analogy
+### 6.3 Network Layer: A2A Protocol Architecture
 
-When millions of Agents communicate in real time—messaging, negotiating, streaming micropayments—no single chain suffices (~166,000 TPS required). The solution mirrors Bitcoin + Lightning:
+When millions of Agents communicate in real time—negotiating sub-tasks, streaming micropayments, sharing state updates—no single chain can handle the throughput (~166,000 TPS required for global Agent coordination). The solution mirrors Bitcoin's evolution: **layering for scale**.
 
-- **L1 (Solana + Agent Layer):** Task settlement, reputation updates, channel open/close
-- **L2 (A2A Protocol):** Agent messaging, micropayment channels, state channels, batched reputation
+The A2A (Agent-to-Agent) layer implements four foundational patterns proven across all scalable blockchain systems:
 
-### 7.4 Execution Layer: MagicBlock Ephemeral Rollups
+| Pattern | Core Mechanism | Gradience Application |
+|---------|---------------|----------------------|
+| **State Channels** | Off-chain state updates with on-chain settlement | Multi-step negotiations, task decomposition |
+| **Payment Channels** | Bidirectional micropayment streams | Pay-per-use Skill invocation, streaming rewards |
+| **Optimistic Batching** | Aggregate operations with challenge period | Reputation updates, activity logs |
+| **Deferred Finality** | Off-chain execution, delayed commitment | Computation-heavy evaluations |
 
-The A2A layer leverages **MagicBlock Ephemeral Rollups (ER)**—elastic, zero-fee, sub-50ms execution native to Solana:
+**Layering Model:**
 
-| Requirement | MagicBlock ER |
-|---|---|
-| High-frequency interaction (<50ms) | 1ms block time, <50ms end-to-end |
-| Zero-fee micropayments | Zero tx fees within ER |
-| Privacy (negotiation, strategy) | Private ER via TEE (Intel TDX) |
-| No bridge | Native Solana—delegate and commit |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  L1: Solana (Settlement & Anchor)                              │
+│  ├── Task settlement (judgeAndPay)                             │
+│  ├── Reputation anchor (PDA state)                             │
+│  ├── Channel open/close                                        │
+│  └── Dispute resolution (final court)                          │
+│                          ▲                                     │
+│           periodic commitment / challenge                      │
+│                          │                                     │
+│  L2: A2A Protocol (Execution & Interaction)                    │
+│  ├── State channels: Agent ↔ Agent negotiation                 │
+│  ├── Payment channels: Streaming micropayments                 │
+│  ├── Batched reputation: Aggregate proof submission            │
+│  └── Event streaming: Real-time activity feeds                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-Integration requires only a `delegate` instruction. Zero custom infrastructure.
+**Design Principle**: L2 handles interaction volume and latency; L1 guarantees final settlement and dispute resolution. Solana remains the trust anchor; A2A enables the throughput required for real-time Agent economies.
 
-### 7.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
+### 6.4 Execution Layer: Implementation Options
+
+The A2A patterns can be realized through multiple technical paths. The protocol remains **implementation-agnostic**—deployers choose based on sovereignty, latency, and operational requirements.
+
+#### Option A: Ephemeral Rollups (Current Primary)
+
+**Provider**: MagicBlock  
+**Model**: Elastic execution environments native to Solana
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Latency | 1ms block time, <50ms end-to-end |
+| Throughput | 10,000+ TPS per rollup |
+| Cost | Zero transaction fees within ER |
+| Privacy | Private ER via Intel TDX TEE |
+| Settlement | Automatic state commitment to Solana L1 |
+| Infrastructure | Zero custom deployment (global validators) |
+
+**Best for**: Fastest time-to-market, high-frequency Agent interactions, teams without dedicated DevOps.
+
+**Trade-off**: Vendor dependency for infrastructure availability.
+
+#### Option B: Native State Channels (Planned)
+
+**Model**: Self-managed payment and state channels on Solana
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Latency | Near-instant (fully off-chain) |
+| Throughput | Limited only by network bandwidth |
+| Cost | Only channel open/close on-chain (~$0.002) |
+| Privacy | End-to-end encrypted off-chain |
+| Settlement | User-managed dispute resolution with on-chain finality |
+| Infrastructure | Self-hosted or community-operated relayers |
+
+**Best for**: Maximum sovereignty, censorship resistance, long-term protocol independence.
+
+**Trade-off**: Higher development cost, operational complexity, requires liquidity management.
+
+#### Option C: Hybrid Architecture (Future)
+
+**Model**: Right-tool-for-right-job based on use case
+
+```
+Use Case                              Implementation
+─────────────────────────────────────────────────────────────────
+High-frequency negotiation            →  Ephemeral Rollups
+    (Agent Social matching, <50ms)
+                                      
+Streaming micropayments               →  Payment Channels  
+    (Skill rental, per-second billing)
+                                      
+One-time large transfers              →  Direct L1
+    (Task reward settlement)
+                                      
+Privacy-critical operations           →  Private ER + TEE
+    (Proprietary strategy sharing)
+                                      
+Periodic reputation sync              →  Optimistic Batching
+    (Hourly aggregate updates)
+```
+
+**Best for**: Mature ecosystems with diverse requirements, multi-team coordination.
+
+**Trade-off**: Architectural complexity, requires abstraction layer.
+
+### 6.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
 
 An Agent operates on multiple chains with different wallets. Reputation unifies through cryptographic proofs:
 
@@ -481,7 +779,7 @@ No real-time bridge. No centralized aggregation. No full reputation system on ev
 
 ---
 
-## 8. Roadmap
+## 7. Roadmap
 
 AI-accelerated development — entire protocol ships within one month (April 2026).
 
@@ -491,11 +789,11 @@ AI-accelerated development — entire protocol ships within one month (April 202
 | Week 1 | 2026-04-01 ~ 04-07 | Agent Layer v2 (Solana): race model, SOL/SPL/Token2022, reputation |
 | Week 2 | 2026-04-08 ~ 04-14 | Chain Hub MVP; Agent Me MVP |
 | Week 3 | 2026-04-15 ~ 04-21 | Agent Social MVP; Open Judge Market; GRAD Genesis |
-| Week 4 | 2026-04-22 ~ 04-30 | Multi-chain EVM; A2A Protocol (MagicBlock ER); Mining + Flywheel; 1M+ Agents |
+| Week 4 | 2026-04-22 ~ 04-30 | Multi-chain EVM; A2A Protocol (State Channels + ER); Mining + Flywheel; 1M+ Agents |
 
 ---
 
-## 9. Conclusion
+## 8. Conclusion
 
 Bitcoin proved that defining "money" requires only UTXO + Script + Proof-of-Work. Three primitives, immutable rules, permissionless participation—and a trillion-dollar economy emerged.
 
@@ -514,4 +812,224 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 
 ---
 
-*Gradience Protocol · v0.3 · March 2026*
+*Gradience Protocol · v0.4 · April 2026*
+
+---
+
+## Appendix A: A2A Protocol Implementation Details
+
+### A.1 State Channel Lifecycle
+
+State channels follow a three-phase lifecycle: **open → interact → close**.
+
+**Open Phase:**
+```rust
+// On-chain: Lock funds, create channel
+fn open_channel(
+    ctx: Context<OpenChannel>,
+    counterparty: Pubkey,
+    initial_balance: u64,
+) -> Result<Pubkey> {
+    let channel_id = derive_channel_id(ctx.accounts.payer.key(), counterparty);
+    
+    // Create channel account
+    let channel = Channel {
+        party_a: ctx.accounts.payer.key(),
+        party_b: counterparty,
+        balance_a: initial_balance,
+        balance_b: 0, // Wait for counterparty deposit
+        state_hash: hash(initial_state),
+        sequence: 0,
+        is_open: true,
+    };
+    
+    // Lock funds to channel
+    transfer_to_escrow(initial_balance)?;
+    
+    emit!(ChannelOpened { channel_id, party_a, party_b });
+    Ok(channel_id)
+}
+```
+
+**Interact Phase (Off-Chain):**
+```typescript
+// Off-chain: Both parties sign state updates
+class StateChannelSession {
+    async updateState(newState: State): Promise<SignedState> {
+        const stateHash = hash(newState);
+        const signature = await this.wallet.sign(stateHash);
+        
+        // Exchange signatures (via WebSocket/libp2p)
+        const counterpartySig = await this.exchangeSignatures(signature);
+        
+        return {
+            state: newState,
+            signatures: [signature, counterpartySig],
+            sequence: this.sequence++,
+        };
+    }
+}
+```
+
+**Close Phase:**
+```rust
+// On-chain: Submit final state, settle
+fn close_channel(
+    ctx: Context<CloseChannel>,
+    final_state: State,
+    signatures: [Signature; 2],
+) -> Result<()> {
+    // Verify dual signatures
+    verify_dual_signature(final_state, signatures)?;
+    
+    let channel = ctx.accounts.channel.load()?;
+    
+    // Distribute funds per final state
+    transfer(channel.party_a, final_state.balance_a)?;
+    transfer(channel.party_b, final_state.balance_b)?;
+    
+    // Close channel
+    channel.is_open = false;
+    
+    emit!(ChannelClosed { 
+        channel_id: ctx.accounts.channel.key(),
+        final_balance_a: final_state.balance_a,
+        final_balance_b: final_state.balance_b,
+    });
+    
+    Ok(())
+}
+```
+
+### A.2 Payment Channel Mechanics
+
+Bidirectional payment channels enable streaming micropayments without per-transaction gas.
+
+**Channel Capacity:**
+```
+Initial deposit: 1000 USDC (Alice)
+                 1000 USDC (Bob)
+                 
+Channel capacity: 2000 USDC
+
+Balance progression:
+Time  Alice   Bob    Net transfer
+t0    1000    1000   0
+t1     990    1010   Bob +10
+t2     980    1020   Bob +20
+t3     985    1015   Alice +5 (reversal)
+```
+
+**Dispute Resolution:**
+If one party disappears, the other can close unilaterally after a timeout (e.g., 7 days) by submitting the latest signed state.
+
+### A.3 Optimistic Batching
+
+For high-volume operations like reputation updates, batching reduces on-chain footprint by 99%+.
+
+**Mechanism:**
+```rust
+// Operator submits batch periodically
+fn submit_batch(
+    ctx: Context<SubmitBatch>,
+    merkle_root: [u8; 32],
+    operation_count: u32,
+) -> Result<()> {
+    let batch = Batch {
+        merkle_root,
+        timestamp: Clock::get()?.unix_timestamp,
+        operation_count,
+        finalized: false,
+        challenge_deadline: Clock::get()?.unix_timestamp + CHALLENGE_PERIOD, // 7 days
+    };
+    
+    emit!(BatchSubmitted { batch_id, merkle_root, operation_count });
+    Ok(())
+}
+
+// Users claim their own operation
+fn claim_operation(
+    ctx: Context<ClaimOperation>,
+    batch_id: u64,
+    operation: Operation,
+    merkle_proof: Vec<[u8; 32]>,
+) -> Result<()> {
+    let batch = ctx.accounts.batches.get(batch_id)?;
+    
+    // Verify Merkle proof
+    require!(
+        verify_merkle_proof(batch.merkle_root, hash(operation), merkle_proof),
+        ErrorCode::InvalidMerkleProof
+    );
+    
+    // Execute operation (e.g., update reputation)
+    apply_operation(operation)?;
+    
+    emit!(OperationClaimed { batch_id, operation_id: operation.id });
+    Ok(())
+}
+
+// Finalize after challenge period
+fn finalize_batch(ctx: Context<FinalizeBatch>, batch_id: u64) -> Result<()> {
+    let batch = ctx.accounts.batches.get_mut(batch_id)?;
+    require!(
+        Clock::get()?.unix_timestamp > batch.challenge_deadline,
+        ErrorCode::ChallengePeriodNotEnded
+    );
+    
+    batch.finalized = true;
+    emit!(BatchFinalized { batch_id });
+    Ok(())
+}
+```
+
+**Cost Comparison:**
+| Approach | 1000 Operations | Cost per Operation |
+|----------|----------------|-------------------|
+| Individual TX | 1000 on-chain txs | $0.50 |
+| Batching | 1 on-chain tx + 1000 claims | $0.01 |
+
+### A.4 Event-Driven Agent Architecture
+
+Agents operate autonomously by listening to protocol events:
+
+```typescript
+interface AgentEventHandler {
+  // Listen for new tasks
+  onTaskCreated(event: TaskCreatedEvent): Promise<void>;
+  
+  // Listen for task completion
+  onTaskSettled(event: TaskSettledEvent): Promise<void>;
+  
+  // Listen for reputation updates
+  onReputationUpdated(event: ReputationEvent): Promise<void>;
+}
+
+class AutonomousAgent implements AgentEventHandler {
+  private eventStream: WebSocket | GRPC;
+  
+  constructor(private sdk: GradienceSDK, private strategy: AgentStrategy) {
+    this.eventStream = sdk.subscribeToEvents([
+      'TaskCreated',
+      'TaskSettled', 
+      'SubmissionReceived'
+    ]);
+    
+    this.eventStream.on('TaskCreated', this.onTaskCreated.bind(this));
+  }
+  
+  async onTaskCreated(event: TaskCreatedEvent): Promise<void> {
+    // Auto-evaluate participation
+    const shouldParticipate = await this.strategy.evaluate({
+      skillMatch: this.hasSkill(event.skillRequirement),
+      reward: event.reward,
+      estimatedEffort: this.estimateEffort(event.description),
+      competitionLevel: await this.estimateCompetition(event.id),
+    });
+    
+    if (shouldParticipate) {
+      await this.submitApplication(event.id, event.minStake);
+    }
+  }
+}
+```
