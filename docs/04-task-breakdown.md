@@ -105,6 +105,18 @@
 
 ---
 
+### 🟣 W5（2026-05-01 ~ 05-03）— 全链路联调与发布前验证
+
+> **W5 目标**：在本地 Surfpool + devnet 完成“异常分支 / 压测 / 事件闭环”三类发布前联调，补齐 W1-W4 的系统性验证。
+
+| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
+|---|---------|------|------|------|--------|----------|
+| T46 | 超时与异常分支全链路（SOL/SPL/Token-2022） | 覆盖 `cancel_task` / `refund_expired` / `force_refund` / `judge_and_pay(score<MIN_SCORE)`；分别执行 SOL、SPL、Token-2022 路径；校验状态迁移、错误码、事件 payload、资金分账（含 95/3/2 与低分退款）；输出可复现脚本 | T19d, T33, T38 | 4h | P0 | 4 条异常路径 × 3 资产路径全部绿；余额断言精确到最小单位；错误码与事件字段与规格一致；形成 `scripts/` 可重放脚本 |
+| T47 | Pool 模式压力联调 + ALT 路径验证 | 构造 20/50/100+ 申请者；验证 Pool 随机评审、落败者 stake 批量退回、`remaining_accounts > 20` 的 ALT 自动切换与 v0 交易成功率；记录 CU、交易大小、失败重试策略 | T46, T28 | 4h | P1 | 50+ 申请者场景稳定完成；ALT 与 Legacy 路径切换符合阈值；关键交易 CU 与 size 有基线报告；无未解释失败 |
+| T48 | 事件闭环联调（Program → Indexer → WS → Judge Daemon） | 验证链上事件入库时序、WS 广播、Judge Daemon 消费与自动裁决链路；覆盖重连、幂等去重、回放恢复（断点后补偿）；对比 Triton 主路与 fallback 行为 | T47, T24, T35b | 4h | P1 | 从 `TaskCreated` 到 `TaskJudged` 的端到端时序可观测；断连恢复后无重复裁决；DB/WS/Daemon 状态一致；形成发布前 checklist |
+
+---
+
 ## 4.3 任务依赖图
 
 ```mermaid
@@ -156,6 +168,15 @@ flowchart LR
     subgraph W4["W4 多链"]
         T42 --> T43 --> T44
         T41 --> T45
+    end
+
+    subgraph W5["W5 联调与验收"]
+        T19d --> T46 --> T47 --> T48
+        T28 --> T47
+        T24 --> T48
+        T35b --> T48
+        T38 --> T46
+        T33 --> T46
     end
 ```
 
@@ -211,6 +232,18 @@ flowchart LR
 - EVM 合约部署到 Base Sepolia，核心指令通过
 - Solana 信誉证明在 EVM 可验证
 - MagicBlock 两 Agent 互通消息
+
+---
+
+### Milestone 5：发布前全链路验证（2026-05-03）
+**交付物**：异常分支联调报告 + 压测基线 + 事件闭环验收清单
+
+包含任务：T46 ~ T48
+
+**验收条件**：
+- 超时与异常分支（cancel/refund/force_refund/low-score）在 SOL/SPL/Token-2022 全覆盖
+- Pool 压测在大参与者场景稳定运行，ALT 自动切换可验证
+- Program/Indexer/WS/Judge Daemon 端到端链路在断连恢复后保持一致性
 
 ---
 
