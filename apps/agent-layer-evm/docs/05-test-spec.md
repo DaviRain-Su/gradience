@@ -4,10 +4,12 @@
 
 ## 1. 当前测试文件
 
-| 文件 | 代码量 | 测试内容 | 状态 |
-|------|--------|---------|------|
-| `AgentLayerRaceTask.test.js` | 9.5K | 主合约完整流程 | ✅ |
-| `ReputationVerifier.test.js` | 4.1K | 声誉验证逻辑 | ✅ |
+| 文件 | 代码量 | Test Cases | 测试内容 | 状态 |
+|------|--------|-----------|---------|------|
+| `AgentLayerRaceTask.test.js` | 9.5K | ~10 passing | 主合约完整流程 | ✅ |
+| `ReputationVerifier.test.js` | 4.1K | ~3 passing | 声誉验证逻辑 | ✅ |
+
+> 合计 **13 passing**（`npx hardhat test` 最近一次运行结果）
 
 ---
 
@@ -30,18 +32,20 @@ npx hardhat coverage
 
 ### 必须覆盖（P0）
 
-| 场景 | 说明 |
+| 场景 | 状态 |
 |------|------|
-| post_task → 正常创建 | Happy path |
-| apply_for_task → 正常申请 | |
-| submit_result → 正常提交 | |
-| judge_and_pay score≥60 → 95/3/2 分配精确验证 | 费用计算核心 |
-| judge_and_pay score<60 → 退款给 poster | |
-| claim_expired → judgeDeadline 后退款 | |
-| claim_stake → 任务结束后取回 stake | |
-| 重复申请 → revert AlreadyApplied | |
-| 非 judge 调用 judge_and_pay → revert NotTaskJudge | |
-| reward=0 → revert ZeroReward | |
+| post_task → 正常创建，taskCount 递增 | ✅ |
+| apply_for_task → 正常申请，stake 锁定 | ✅ |
+| submit_result → 正常提交，状态更新 | ✅ |
+| judge_and_pay score≥60 → 95/3/2 分配精确验证 | ✅ |
+| judge_and_pay score<60 → 退款给 poster | ✅ |
+| claim_expired → judgeDeadline 后退款给 poster | ✅ |
+| claim_stake → task 结束后 agent 取回 stake | ✅ |
+| claim_expired 后 claim_stake → stake 取回成功（新增交互路径） | ❌ 缺失 |
+| 重复申请 → revert AlreadyApplied | ✅ |
+| 非 judge 调用 judge_and_pay → revert NotTaskJudge | ✅ |
+| reward=0 → revert ZeroReward | ✅ |
+| claim_stake on Open task → revert TaskNotOpen | ❌ 缺失 |
 
 ### 应覆盖（P1）
 

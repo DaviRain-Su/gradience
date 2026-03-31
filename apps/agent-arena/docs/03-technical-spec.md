@@ -92,8 +92,7 @@ program/src/
 | `Task` | `[b"task", task_id.to_le_bytes()]` | task_id = u64，小端序 |
 | `Escrow` | `[b"escrow", task_id.to_le_bytes()]` | 与 Task 一一对应 |
 | `Application` | `[b"application", task_id.to_le_bytes(), agent.as_ref()]` | 每个 agent 对每个 task 一份 |
-| `Submission` | `[b"submission", task_id.to_le_bytes(), agent.as_ref()]` | 与 Application 一一对应 |
-| `RuntimeEnv` | `[b"runtime_env", task_id.to_le_bytes(), agent.as_ref()]` | 可选，提交时附带 |
+| `Submission` | `[b"submission", task_id.to_le_bytes(), agent.as_ref()]` | 与 Application 一一对应；`RuntimeEnv` 是 Submission 的内嵌字段，非独立 PDA |
 | `Reputation` | `[b"reputation", agent.as_ref()]` | 每个 agent 全局唯一 |
 | `Stake` | `[b"stake", judge.as_ref()]` | 每个 judge 全局唯一 |
 | `JudgePool` | `[b"judge_pool", category.to_le_bytes()]` | 每个 category 一个池 |
