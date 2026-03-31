@@ -345,3 +345,99 @@ test('Auto mode routes test_cases tasks to Type C-1 evaluator', async () => {
     assert.equal(usedTypeC, 1);
     assert.equal(submittedScore, 88);
 });
+
+test('Workflow processing is single-claim and skips duplicate runners', async () => {
+    const store = new InMemoryWorkflowStore();
+    await store.init();
+    const workflow = await store.enqueue({
+        taskId: 15,
+        trigger: 'submission_received',
+        slot: 150,
+        timestamp: 1_710_000_150,
+        agent: '11111111111111111111111111111111',
+        dedupeKey: 'submission_received:15:150',
+    });
+    const engine = new AbsurdWorkflowEngine(store);
+    let judgeCalls = 0;
+
+    const chainClient: JudgeChainClient = {
+        getTask: async () => ({
+            task_id: 15,
+            poster: '11111111111111111111111111111111',
+            judge: '11111111111111111111111111111111',
+            judge_mode: 'designated',
+            reward: 1,
+            mint: '11111111111111111111111111111111',
+            min_stake: 1,
+            state: 'open',
+            category: 1,
+            eval_ref: 'cid://eval',
+            deadline: 0,
+            judge_deadline: 0,
+            submission_count: 1,
+            winner: null,
+            created_at: 0,
+            slot: 0,
+        }),
+        getTaskSubmissions: async () => [
+            {
+                task_id: 15,
+                agent: '11111111111111111111111111111111',
+                result_ref: 'cid://result',
+                trace_ref: 'cid://trace',
+                runtime_provider: 'x',
+                runtime_model: 'x',
+                runtime_runtime: 'x',
+                runtime_version: 'x',
+                submission_slot: 150,
+                submitted_at: 0,
+            },
+        ],
+        judge: async () => {
+            judgeCalls += 1;
+            return 'sig';
+        },
+    };
+
+    const runner = new JudgeWorkflowRunner(engine, {
+        mode: 'type_b',
+        chainClient,
+        refResolver: {
+            fetchText: async (ref) => {
+                if (ref === 'cid://eval') {
+                    return JSON.stringify({ min_confidence: 0.7 });
+                }
+                return `${ref}-content`;
+            },
+            publishReason: async () => 'cid://reason',
+        },
+        typeAEvaluator: new StaticEvaluator({
+            score: 70,
+            reasoning: 'manual',
+            dimensionScores: {},
+            confidence: 1,
+            mode: 'type_a',
+        }),
+        typeBEvaluator: new StaticEvaluator({
+            score: 81,
+            reasoning: 'auto',
+            dimensionScores: {},
+            confidence: 0.9,
+            mode: 'type_b',
+        }),
+        typeCEvaluator: new StaticEvaluator({
+            score: 50,
+            reasoning: 'c1',
+            dimensionScores: {},
+            confidence: 1,
+            mode: 'type_c1',
+        }),
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+    });
+
+    await Promise.all([runner.process(workflow), runner.process(workflow)]);
+    const updated = store.getById(workflow.id);
+    assert.ok(updated);
+    assert.equal(updated.status, 'completed');
+    assert.equal(judgeCalls, 1);
+});

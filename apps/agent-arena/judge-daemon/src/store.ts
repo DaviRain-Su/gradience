@@ -7,6 +7,7 @@ export interface WorkflowStore {
     init(): Promise<void>;
     enqueue(input: EnqueueWorkflowInput): Promise<WorkflowRecord>;
     listPending(limit?: number): Promise<WorkflowRecord[]>;
+    claimPending(id: string): Promise<boolean>;
     updateStatus(id: string, status: WorkflowStatus, error?: string | null): Promise<void>;
     close(): Promise<void>;
 }
@@ -47,6 +48,19 @@ export class InMemoryWorkflowStore implements WorkflowStore {
             .filter((record) => record.status === 'pending')
             .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         return pending.slice(0, limit);
+    }
+
+    async claimPending(id: string): Promise<boolean> {
+        const current = this.records.get(id);
+        if (!current || current.status !== 'pending') {
+            return false;
+        }
+        this.records.set(id, {
+            ...current,
+            status: 'running',
+            updatedAt: new Date().toISOString(),
+        });
+        return true;
     }
 
     async updateStatus(id: string, status: WorkflowStatus, error: string | null = null): Promise<void> {
@@ -143,6 +157,18 @@ export class PostgresWorkflowStore implements WorkflowStore {
             [limit],
         );
         return rows.rows.map(toWorkflowRecord);
+    }
+
+    async claimPending(id: string): Promise<boolean> {
+        const result = await this.client.query(
+            `
+            UPDATE ${this.tableName}
+            SET status = 'running', updated_at = NOW()
+            WHERE id = $1 AND status = 'pending';
+            `,
+            [id],
+        );
+        return (result.rowCount ?? 0) > 0;
     }
 
     async updateStatus(id: string, status: WorkflowStatus, error: string | null = null): Promise<void> {

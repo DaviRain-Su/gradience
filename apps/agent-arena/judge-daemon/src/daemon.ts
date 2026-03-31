@@ -78,11 +78,23 @@ export class JudgeDaemon {
 
         this.logger.error(`${mode} source error: ${asMessage(error)}`);
         if (mode === 'triton') {
-            await this.switchToFallback('helius', this.options.heliusSource, 'polling');
+            try {
+                await this.switchToFallback('helius', this.options.heliusSource, 'polling');
+            } catch (fallbackError) {
+                this.logger.error(
+                    `Unable to switch from Triton after source error: ${asMessage(fallbackError)}`,
+                );
+            }
             return;
         }
         if (mode === 'helius') {
-            await this.switchToFallback('polling', this.options.pollingSource);
+            try {
+                await this.switchToFallback('polling', this.options.pollingSource);
+            } catch (fallbackError) {
+                this.logger.error(
+                    `Unable to switch from Helius after source error: ${asMessage(fallbackError)}`,
+                );
+            }
         }
     }
 
@@ -104,7 +116,14 @@ export class JudgeDaemon {
                 throw error;
             }
             if (secondaryMode === 'polling') {
-                await this.activate('polling', this.options.pollingSource);
+                try {
+                    await this.activate('polling', this.options.pollingSource);
+                } catch (secondaryError) {
+                    this.logger.error(
+                        `Secondary fallback ${secondaryMode} failed: ${asMessage(secondaryError)}`,
+                    );
+                    throw secondaryError;
+                }
             }
         }
     }

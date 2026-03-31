@@ -51,8 +51,8 @@ export class AbsurdWorkflowEngine {
         return this.store.listPending(limit);
     }
 
-    async markRunning(id: string): Promise<void> {
-        await this.store.updateStatus(id, 'running');
+    async markRunning(id: string): Promise<boolean> {
+        return this.store.claimPending(id);
     }
 
     async markCompleted(id: string): Promise<void> {

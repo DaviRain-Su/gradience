@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { JudgeDaemon } from './daemon.js';
 import { AbsurdWorkflowEngine } from './engine.js';
-import { MockEventSource, PollingEventSource } from './sources.js';
+import { MockEventSource, PollingEventSource, type EventHandler, type SourceErrorHandler } from './sources.js';
 import { InMemoryWorkflowStore } from './store.js';
 import type { EventEnvelope } from './types.js';
 
@@ -105,3 +105,47 @@ test('SubmissionReceived event queues workflow with agent context', async () => 
     assert.equal(first.agent, '11111111111111111111111111111111');
     await daemon.stop();
 });
+
+test('source error fallback failures are caught without crashing daemon', async () => {
+    const store = new InMemoryWorkflowStore();
+    const engine = new AbsurdWorkflowEngine(store);
+    const tritonSource = new TriggerableSource('triton');
+
+    const daemon = new JudgeDaemon(engine, {
+        tritonSource,
+        heliusSource: new MockEventSource('helius', { events: [], throwOnStart: true }),
+        pollingSource: new MockEventSource('polling', { events: [], throwOnStart: true }),
+        logger: quietLogger(),
+    });
+
+    await daemon.start();
+    assert.equal(daemon.mode(), 'triton');
+
+    await tritonSource.triggerError(new Error('stream dropped'));
+    assert.ok(daemon.mode() !== null);
+
+    await daemon.stop();
+});
+
+class TriggerableSource {
+    readonly name: string;
+    private onError: SourceErrorHandler | null = null;
+
+    constructor(name: string) {
+        this.name = name;
+    }
+
+    async start(_onEvent: EventHandler, onError: SourceErrorHandler): Promise<void> {
+        this.onError = onError;
+    }
+
+    async stop(): Promise<void> {
+        this.onError = null;
+    }
+
+    async triggerError(error: unknown): Promise<void> {
+        if (this.onError) {
+            await this.onError(error);
+        }
+    }
+}

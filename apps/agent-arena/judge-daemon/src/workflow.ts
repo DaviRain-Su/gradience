@@ -96,12 +96,19 @@ export class JudgeWorkflowRunner {
     }
 
     async process(workflow: WorkflowRecord): Promise<void> {
+        const claimed = await this.engine.markRunning(workflow.id);
+        if (!claimed) {
+            this.logger.info(
+                `Workflow ${workflow.id} already claimed by another worker; skipping`,
+            );
+            return;
+        }
+
         if (workflow.trigger === 'task_created') {
             await this.engine.markCompleted(workflow.id);
             return;
         }
 
-        await this.engine.markRunning(workflow.id);
         try {
             const task = await this.options.chainClient.getTask(workflow.taskId);
             if (!task) {
