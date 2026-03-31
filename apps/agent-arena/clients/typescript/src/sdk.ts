@@ -1064,7 +1064,7 @@ const REPUTATION_DISCRIMINATOR = 0x05;
 const SPL_TOKEN_PROGRAM_ADDRESS =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 const ASSOCIATED_TOKEN_PROGRAM_ADDRESS =
-    'ATokenGPvbdGVxr1r2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1r2hvZbsiqW5xWH25efTNsLJA8knL'>;
+    'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
 
 async function findConfigPda(programAddress: Address): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({ programAddress, seeds: [TEXT_ENCODER.encode('config')] });
