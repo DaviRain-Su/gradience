@@ -22,6 +22,8 @@ interface D1Database {
 
 interface Env {
     DB: D1Database;
+    WEBHOOK_AUTH_TOKEN?: string;
+    CORS_ALLOW_ORIGIN?: string;
 }
 
 type ProgramEvent =
@@ -152,6 +154,9 @@ const worker: WorkerHandler = {
     async fetch(request, env) {
         const url = new URL(request.url);
         const pathname = url.pathname;
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { status: 204, headers: corsHeaders(env) });
+        }
 
         if (request.method === 'GET' && pathname === '/healthz') {
             return jsonResponse({ ok: true });
@@ -163,6 +168,10 @@ const worker: WorkerHandler = {
                 pathname === '/webhook/helius' ||
                 pathname === '/webhook/events')
         ) {
+            const authFailure = validateWebhookAuth(request, env);
+            if (authFailure) {
+                return authFailure;
+            }
             return handleWebhook(request, env);
         }
 
@@ -216,7 +225,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
         }
         return jsonResponse({ processed_events: envelopes.length });
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('webhook', error, env);
     }
 }
 
@@ -261,7 +270,7 @@ async function handleGetTasks(url: URL, env: Env): Promise<Response> {
         );
         return jsonResponse(rows.map(mapTask));
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('get_tasks', error, env);
     }
 }
 
@@ -287,7 +296,7 @@ async function handleGetTaskById(taskIdRaw: string, env: Env): Promise<Response>
         }
         return jsonResponse(mapTask(row));
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('get_task_by_id', error, env);
     }
 }
 
@@ -331,7 +340,7 @@ async function handleGetTaskSubmissions(taskIdRaw: string, url: URL, env: Env): 
         const rows = await queryAll<SubmissionRow>(env.DB, sql, [taskId]);
         return jsonResponse(rows);
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('get_submissions', error, env);
     }
 }
 
@@ -351,7 +360,7 @@ async function handleGetReputation(agent: string, env: Env): Promise<Response> {
         }
         return jsonResponse(row);
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('get_reputation', error, env);
     }
 }
 
@@ -379,7 +388,7 @@ async function handleGetJudgePool(categoryRaw: string, env: Env): Promise<Respon
         );
         return jsonResponse(rows);
     } catch (error) {
-        return errorResponse(500, `internal error: ${toErrorMessage(error)}`);
+        return internalErrorResponse('get_judge_pool', error, env);
     }
 }
 
@@ -731,6 +740,18 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
                     envelope.timestamp,
                 ],
             );
+            await run(
+                db,
+                `UPDATE tasks
+                 SET submission_count = (
+                        SELECT COUNT(*)
+                        FROM submissions
+                        WHERE task_id = ?1
+                     ),
+                     slot = MAX(slot, ?2)
+                 WHERE task_id = ?1`,
+                [event.task_id, envelope.slot],
+            );
             break;
         }
         case 'task_judged': {
@@ -750,7 +771,7 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
                 `INSERT INTO reputations (
                     agent, global_avg_score, global_win_rate, global_completed,
                     global_total_applied, total_earned, updated_slot
-                 ) VALUES (?1, ?2, 10000, 1, 0, 0, ?3)
+                 ) VALUES (?1, ?2, 10000, 1, 0, ?3, ?4)
                  ON CONFLICT(agent) DO UPDATE SET
                     global_avg_score = ((reputations.global_avg_score * reputations.global_completed) + excluded.global_avg_score) / (reputations.global_completed + 1),
                     global_completed = reputations.global_completed + 1,
@@ -758,8 +779,9 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
                         WHEN reputations.global_total_applied > 0 THEN ((reputations.global_completed + 1) * 10000) / reputations.global_total_applied
                         ELSE 10000
                     END,
+                    total_earned = reputations.total_earned + excluded.total_earned,
                     updated_slot = MAX(reputations.updated_slot, excluded.updated_slot)`,
-                [winner, scoreBasisPoints, envelope.slot],
+                [winner, scoreBasisPoints, event.agent_payout, envelope.slot],
             );
 
             const category = await queryFirst<{ category: number }>(
@@ -1068,17 +1090,71 @@ function base58Encode(bytes: Uint8Array): string {
     return result;
 }
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(data: unknown, status = 200, env?: Env): Response {
     return new Response(JSON.stringify(data), {
         status,
         headers: {
             'content-type': 'application/json',
+            ...corsHeaders(env),
         },
     });
 }
 
-function errorResponse(status: number, error: string): Response {
-    return jsonResponse({ error }, status);
+function errorResponse(status: number, error: string, env?: Env): Response {
+    return jsonResponse({ error }, status, env);
+}
+
+function validateWebhookAuth(request: Request, env: Env): Response | null {
+    const expectedToken = env.WEBHOOK_AUTH_TOKEN?.trim();
+    if (!expectedToken) {
+        return errorResponse(503, 'webhook auth not configured', env);
+    }
+
+    const providedToken = extractWebhookToken(request);
+    if (!providedToken) {
+        return errorResponse(401, 'missing webhook authorization', env);
+    }
+
+    if (!constantTimeEquals(providedToken, expectedToken)) {
+        return errorResponse(401, 'invalid webhook authorization', env);
+    }
+
+    return null;
+}
+
+function extractWebhookToken(request: Request): string | null {
+    const authorization = request.headers.get('authorization');
+    if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+        return authorization.slice(7).trim();
+    }
+
+    const webhookToken = request.headers.get('x-webhook-token');
+    return webhookToken ? webhookToken.trim() : null;
+}
+
+function constantTimeEquals(left: string, right: string): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+    let result = 0;
+    for (let i = 0; i < left.length; i += 1) {
+        result |= left.charCodeAt(i) ^ right.charCodeAt(i);
+    }
+    return result === 0;
+}
+
+function internalErrorResponse(context: string, error: unknown, env?: Env): Response {
+    console.error(`[indexer-worker:${context}]`, toErrorMessage(error));
+    return errorResponse(500, 'internal error', env);
+}
+
+function corsHeaders(env?: Env): Record<string, string> {
+    const allowOrigin = env?.CORS_ALLOW_ORIGIN?.trim() || '*';
+    return {
+        'access-control-allow-origin': allowOrigin,
+        'access-control-allow-methods': 'GET,POST,OPTIONS',
+        'access-control-allow-headers': 'content-type,authorization,x-webhook-token',
+    };
 }
 
 function toErrorMessage(error: unknown): string {
