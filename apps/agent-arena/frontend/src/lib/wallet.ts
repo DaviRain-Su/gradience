@@ -4,6 +4,7 @@ import {
 } from '@solana/kit';
 
 const LOCAL_STORAGE_KEY = 'gradience.frontend.keypair';
+const SESSION_STORAGE_KEY = 'gradience.frontend.keypair.session';
 
 export async function signerFromSecret(secretText: string): Promise<TransactionSigner> {
     const parsed = JSON.parse(secretText) as unknown;
@@ -21,19 +22,29 @@ export function saveSecret(secretText: string): void {
     if (typeof window === 'undefined') {
         return;
     }
-    window.localStorage.setItem(LOCAL_STORAGE_KEY, secretText);
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, secretText);
+    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
 }
 
 export function loadSecret(): string | null {
     if (typeof window === 'undefined') {
         return null;
     }
-    return window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    const sessionSecret = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (sessionSecret) {
+        return sessionSecret;
+    }
+
+    if (window.localStorage.getItem(LOCAL_STORAGE_KEY)) {
+        window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    return null;
 }
 
 export function clearSecret(): void {
     if (typeof window === 'undefined') {
         return;
     }
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
     window.localStorage.removeItem(LOCAL_STORAGE_KEY);
 }
