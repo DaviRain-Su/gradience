@@ -23,7 +23,8 @@ CLI 是面向**终端用户和 CI 脚本**的交互入口：
 
 | 项目 | 说明 |
 |------|------|
-| TypeScript + Bun | 运行时（`#!/usr/bin/env bun`） |
+| TypeScript + Bun | 执行运行时（`#!/usr/bin/env bun`，直接运行 `.ts` 文件） |
+| tsx (Node.js) | 测试运行时（`pnpm run test:cli` → `tsx --test`） |
 | `@solana/kit` | 密钥对、RPC、地址工具 |
 | `GradienceSDK` | 封装所有链上指令调用 |
 | `process.argv` | 命令行参数解析（手写，无第三方框架） |

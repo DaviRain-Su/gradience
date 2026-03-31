@@ -110,6 +110,8 @@ interface GradienceSdkOptions {
 
 `generated/` 目录由 Codama 从 `idl/pinocchio_counter.json` 生成，**禁止手动修改**。
 
+> 注：IDL 文件名 `pinocchio_counter.json` 是脚手架初始化时的遗留命名，实际内容为 Gradience Agent Arena 程序的完整 IDL。
+
 更新流程：
 ```bash
 # 修改 program 代码 → 重新生成 IDL → 重新生成客户端

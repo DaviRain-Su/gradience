@@ -6,7 +6,7 @@
 
 | 文件 | 测试数 | 测试内容 | 状态 |
 |------|--------|---------|------|
-| `magicblock-a2a.test.ts` | 6 | A2A 协议、传输层、微支付 | ✅ |
+| `magicblock-a2a.test.ts` | 5 | A2A 协议、传输层、微支付 | ✅ |
 | `ranking.test.ts` | 2 | Agent 发现排名算法 | ✅ |
 
 ---
@@ -15,8 +15,8 @@
 
 ```bash
 cd apps/agent-social/frontend
-node --test src/lib/magicblock-a2a.test.ts
-node --test src/lib/ranking.test.ts
+tsx --test src/lib/magicblock-a2a.test.ts
+tsx --test src/lib/ranking.test.ts
 ```
 
 ---
@@ -66,7 +66,7 @@ node --test src/lib/ranking.test.ts
 
 ## 5. 测试策略
 
-- **Node.js 内置 test runner**，无第三方框架
+- **tsx --test**（Node.js），无第三方框架
 - **InMemoryTransport** 用于所有协议单元测试（可控延迟）
 - **BroadcastChannel** 测试需要浏览器环境或 jsdom
 - **SDK 调用全部 mock**：`getJudgePool` / `getReputation` 返回固定 fixture

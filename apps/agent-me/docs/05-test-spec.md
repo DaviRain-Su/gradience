@@ -14,8 +14,6 @@
 
 ```bash
 cd apps/agent-me/frontend
-node --test src/lib/wallet-utils.test.ts
-# 或
 tsx --test src/lib/wallet-utils.test.ts
 ```
 

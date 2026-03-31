@@ -148,10 +148,10 @@ cd apps/agent-arena/indexer
 docker-compose up -d
 
 # 单独运行（需手动配置 .env）
-DATABASE_URL=postgres://... PORT=3001 cargo run -p gradience-indexer
+DATABASE_URL=postgres://... INDEXER_BIND_ADDR=127.0.0.1:8787 cargo run -p gradience-indexer
 
 # 发送测试 webhook
-curl -X POST http://localhost:3001/webhook/events \
+curl -X POST http://127.0.0.1:8787/webhook/events \
   -H "Content-Type: application/json" \
   -d @mock/webhook.json
 ```
@@ -162,9 +162,11 @@ curl -X POST http://localhost:3001/webhook/events \
 
 | 变量 | 必须 | 默认 | 说明 |
 |------|------|------|------|
-| `DATABASE_URL` | ✅ | — | PostgreSQL 连接串 |
-| `PORT` | ❌ | `3001` | HTTP 监听端口 |
-| `WEBHOOK_SECRET` | ❌ | — | Webhook 签名验证密钥（Helius HMAC） |
+| `DATABASE_URL` | ✅ | `postgres://changeme:changeme@127.0.0.1:5432/gradience` | PostgreSQL 连接串 |
+| `INDEXER_BIND_ADDR` | ❌ | `127.0.0.1:8787` | HTTP 监听地址（host:port） |
+| `MOCK_WEBHOOK` | ❌ | `false` | 启用 mock webhook 模式（bool） |
+| `MOCK_WEBHOOK_FILE` | ❌ | `indexer/mock/webhook.json` | mock webhook 数据文件路径 |
+| `MOCK_WEBHOOK_ONLY` | ❌ | `false` | 仅处理 mock 数据，忽略真实 webhook（bool） |
 
 ---
 
