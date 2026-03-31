@@ -7,6 +7,7 @@ use crate::constants::{
 };
 
 pub type PubkeyBytes = [u8; 32];
+/// 2 bytes: discriminator (1) + version (1)
 pub const ACCOUNT_HEADER_LEN: usize = 2;
 pub const ACCOUNT_VERSION_V1: u8 = 1;
 

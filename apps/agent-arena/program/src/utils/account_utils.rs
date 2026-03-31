@@ -1,6 +1,7 @@
 //! Account validation utilities.
 
-use crate::ID as PINOCCHIO_COUNTER_PROGRAM_ID;
+use crate::ID as GRADIENCE_PROGRAM_ID;
+use borsh::BorshDeserialize;
 use pinocchio::{account::AccountView, address::Address, error::ProgramError};
 
 /// Verify account is writable, returning an error if it is not.
@@ -86,7 +87,7 @@ pub fn verify_system_account(account: &AccountView) -> Result<(), ProgramError> 
 /// * `Result<(), ProgramError>` - The result of the operation
 #[inline(always)]
 pub fn verify_current_program_account(account: &AccountView) -> Result<(), ProgramError> {
-    verify_owned_by(account, &PINOCCHIO_COUNTER_PROGRAM_ID)
+    verify_owned_by(account, &GRADIENCE_PROGRAM_ID)
 }
 
 /// Verify account data is empty, returning an error if it is not.
@@ -102,4 +103,14 @@ pub fn verify_empty(account: &AccountView) -> Result<(), ProgramError> {
         return Err(ProgramError::AccountAlreadyInitialized);
     }
     Ok(())
+}
+
+/// Borsh-deserialize from a potentially padded account data slice.
+///
+/// Many protocol accounts reserve max-size buffers (for future growth or variable fields),
+/// so trailing zero bytes are expected and must be tolerated by deserialization.
+#[inline(always)]
+pub fn borsh_deserialize_padded<T: BorshDeserialize>(data: &[u8]) -> Result<T, ProgramError> {
+    let mut cursor = data;
+    T::deserialize(&mut cursor).map_err(|_| ProgramError::InvalidAccountData)
 }

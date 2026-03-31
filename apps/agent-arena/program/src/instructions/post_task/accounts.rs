@@ -18,6 +18,11 @@ use crate::{
 /// 5. `[]` system_program
 /// 6. `[]` event_authority PDA
 /// 7. `[]` gradience_program
+/// 8. `[writable, optional]` poster_token_account (required when mint != [0; 32])
+/// 9. `[writable, optional]` escrow_ata (required when mint != [0; 32])
+/// 10. `[optional]` mint account (required when mint != [0; 32])
+/// 11. `[optional]` token_program (required when mint != [0; 32])
+/// 12. `[optional]` associated_token_program (required when mint != [0; 32])
 pub struct PostTaskAccounts<'a> {
     pub poster: &'a AccountView,
     pub config: &'a AccountView,
@@ -27,6 +32,33 @@ pub struct PostTaskAccounts<'a> {
     pub system_program: &'a AccountView,
     pub event_authority: &'a AccountView,
     pub program: &'a AccountView,
+    pub poster_token_account: Option<&'a AccountView>,
+    pub escrow_ata: Option<&'a AccountView>,
+    pub mint: Option<&'a AccountView>,
+    pub token_program: Option<&'a AccountView>,
+    pub associated_token_program: Option<&'a AccountView>,
+}
+
+#[derive(Clone, Copy)]
+pub struct PostTaskTokenAccounts<'a> {
+    pub poster_token_account: &'a AccountView,
+    pub escrow_ata: &'a AccountView,
+    pub mint: &'a AccountView,
+    pub token_program: &'a AccountView,
+    pub associated_token_program: &'a AccountView,
+}
+
+impl<'a> PostTaskAccounts<'a> {
+    #[inline(always)]
+    pub fn token_path_accounts(&self) -> Option<PostTaskTokenAccounts<'a>> {
+        Some(PostTaskTokenAccounts {
+            poster_token_account: self.poster_token_account?,
+            escrow_ata: self.escrow_ata?,
+            mint: self.mint?,
+            token_program: self.token_program?,
+            associated_token_program: self.associated_token_program?,
+        })
+    }
 }
 
 impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
@@ -34,7 +66,7 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
 
     #[inline(always)]
     fn try_from(accounts: &'a [AccountView]) -> Result<Self, Self::Error> {
-        let [
+        let (
             poster,
             config,
             task,
@@ -43,9 +75,57 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
             system_program,
             event_authority,
             program,
-        ] = accounts
-        else {
-            return Err(ProgramError::NotEnoughAccountKeys);
+            poster_token_account,
+            escrow_ata,
+            mint,
+            token_program,
+            associated_token_program,
+        ) = match accounts {
+            [poster, config, task, escrow, judge_pool, system_program, event_authority, program] => (
+                poster,
+                config,
+                task,
+                escrow,
+                judge_pool,
+                system_program,
+                event_authority,
+                program,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ),
+            [
+                poster,
+                config,
+                task,
+                escrow,
+                judge_pool,
+                system_program,
+                event_authority,
+                program,
+                poster_token_account,
+                escrow_ata,
+                mint,
+                token_program,
+                associated_token_program,
+            ] => (
+                poster,
+                config,
+                task,
+                escrow,
+                judge_pool,
+                system_program,
+                event_authority,
+                program,
+                Some(poster_token_account),
+                Some(escrow_ata),
+                Some(mint),
+                Some(token_program),
+                Some(associated_token_program),
+            ),
+            _ => return Err(ProgramError::NotEnoughAccountKeys),
         };
 
         verify_signer(poster)?;
@@ -65,6 +145,13 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
         verify_event_authority(event_authority)?;
         verify_current_program(program)?;
 
+        if let Some(poster_token_account) = poster_token_account {
+            verify_writable(poster_token_account)?;
+        }
+        if let Some(escrow_ata) = escrow_ata {
+            verify_writable(escrow_ata)?;
+        }
+
         Ok(Self {
             poster,
             config,
@@ -74,6 +161,11 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
             system_program,
             event_authority,
             program,
+            poster_token_account,
+            escrow_ata,
+            mint,
+            token_program,
+            associated_token_program,
         })
     }
 }

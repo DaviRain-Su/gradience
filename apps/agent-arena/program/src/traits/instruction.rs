@@ -5,6 +5,15 @@ use pinocchio::{account::AccountView, error::ProgramError};
 pub enum GradienceInstructionDiscriminators {
     Initialize = 0,
     PostTask = 1,
+    ApplyForTask = 2,
+    SubmitResult = 3,
+    JudgeAndPay = 4,
+    CancelTask = 5,
+    RefundExpired = 6,
+    ForceRefund = 7,
+    RegisterJudge = 8,
+    UnstakeJudge = 9,
+    UpgradeConfig = 10,
     /// 228 is the Anchor event instruction discriminator used for CPI-based event emission.
     /// Events are emitted by invoking CPI to this instruction with serialized event data.
     EmitEvent = 228,
@@ -17,6 +26,15 @@ impl TryFrom<u8> for GradienceInstructionDiscriminators {
         match value {
             0 => Ok(Self::Initialize),
             1 => Ok(Self::PostTask),
+            2 => Ok(Self::ApplyForTask),
+            3 => Ok(Self::SubmitResult),
+            4 => Ok(Self::JudgeAndPay),
+            5 => Ok(Self::CancelTask),
+            6 => Ok(Self::RefundExpired),
+            7 => Ok(Self::ForceRefund),
+            8 => Ok(Self::RegisterJudge),
+            9 => Ok(Self::UnstakeJudge),
+            10 => Ok(Self::UpgradeConfig),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }

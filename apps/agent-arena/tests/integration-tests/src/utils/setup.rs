@@ -3,15 +3,41 @@ use solana_program::clock::Clock;
 use solana_sdk::{
     account::Account,
     instruction::Instruction,
+    pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::{Transaction, TransactionError},
 };
+use std::{path::PathBuf, str::FromStr};
 
-use crate::utils::{cu_utils::CuTracker, Address};
-use pinocchio_counter_client::PINOCCHIO_COUNTER_ID;
+use crate::utils::cu_utils::CuTracker;
+use gradience_client::GRADIENCE_ID;
 
-const MIN_LAMPORTS: u64 = 500_000_000;
+const MIN_LAMPORTS: u64 = 10_000_000_000;
 const CU_TRACKING_ENV_VAR: &str = "CU_TRACKING";
+const FALLBACK_GRADIENCE_ID: &str = "GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4";
+
+fn load_program_binary() -> Vec<u8> {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let candidates = [
+        manifest_dir.join("../../target/deploy/gradience.so"),
+        manifest_dir.join("../../target/deploy/pinocchio_counter.so"),
+    ];
+
+    for candidate in candidates {
+        if candidate.exists() {
+            return std::fs::read(candidate).expect("failed to read program binary");
+        }
+    }
+
+    panic!(
+        "No program binary found. Build first with: cargo-build-sbf --manifest-path ../../program/Cargo.toml"
+    );
+}
+
+fn program_id() -> Pubkey {
+    Pubkey::from_str(&GRADIENCE_ID.to_string())
+        .unwrap_or_else(|_| Pubkey::from_str(FALLBACK_GRADIENCE_ID).unwrap())
+}
 
 pub struct TestContext {
     pub svm: LiteSVM,
@@ -36,8 +62,8 @@ impl TestContext {
             unix_timestamp: current_time,
         });
 
-        let program_data = include_bytes!("../../../../target/deploy/pinocchio_counter.so");
-        let _ = svm.add_program(PINOCCHIO_COUNTER_ID, program_data);
+        let program_data = load_program_binary();
+        let _ = svm.add_program(program_id(), &program_data);
 
         let payer = Keypair::new();
         svm.airdrop(&payer.pubkey(), MIN_LAMPORTS).unwrap();
@@ -57,7 +83,7 @@ impl TestContext {
 
     pub fn airdrop_if_required(
         &mut self,
-        address: &Address,
+        address: &Pubkey,
         lamports: u64,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(account) = self.svm.get_account(address) {
@@ -116,7 +142,7 @@ impl TestContext {
             .map_err(|e| e.err)
     }
 
-    pub fn get_account(&self, address: &Address) -> Option<Account> {
+    pub fn get_account(&self, address: &Pubkey) -> Option<Account> {
         self.svm.get_account(address)
     }
 

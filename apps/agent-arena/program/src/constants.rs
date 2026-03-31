@@ -43,8 +43,11 @@ pub const MAX_RUNTIME_LEN: usize = 32;
 /// Maximum byte length of `runtime_env.version`
 pub const MAX_VERSION_LEN: usize = 32;
 
+/// Lamports per 1 SOL
+pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
+
 /// Initial configurable value for `ProgramConfig.min_judge_stake` (1 SOL)
-pub const MIN_JUDGE_STAKE: u64 = 1_000_000_000;
+pub const MIN_JUDGE_STAKE: u64 = LAMPORTS_PER_SOL;
 
 /// Basis points denominator
 pub const BPS_DENOMINATOR: u64 = 10_000;

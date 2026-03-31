@@ -13,6 +13,7 @@ pub struct PostTaskData {
     pub judge_mode: u8, // 0 = designated, 1 = pool
     pub judge: [u8; 32],
     pub category: u8,
+    pub mint: [u8; 32],
     pub min_stake: u64,
     pub reward: u64,
 }
@@ -27,7 +28,8 @@ impl<'a> TryFrom<&'a [u8]> for PostTaskData {
 }
 
 impl<'a> InstructionData<'a> for PostTaskData {
-    const LEN: usize = 0;
+    // Borsh payload is variable-length because `eval_ref` is a String.
+    const LEN: usize = usize::MAX;
 }
 
 #[cfg(test)]
@@ -45,6 +47,7 @@ mod tests {
             judge_mode: 0,
             judge: [9u8; 32],
             category: 1,
+            mint: [0u8; 32],
             min_stake: 123,
             reward: 456,
         };

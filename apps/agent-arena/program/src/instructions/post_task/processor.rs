@@ -1,9 +1,13 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{
     account::AccountView, cpi::Seed, error::ProgramError, sysvars::clock::Clock, sysvars::Sysvar,
+    sysvars::slot_hashes::SlotHashes,
     Address, ProgramResult,
 };
+use pinocchio_token::instructions::TransferChecked as SplTransferChecked;
+use pinocchio_token_2022::instructions::TransferChecked as Token2022TransferChecked;
 use pinocchio_system::instructions::Transfer;
+use const_crypto::sha2::Sha256;
 
 use crate::{
     constants::{MAX_CATEGORIES, MAX_REF_LEN},
@@ -12,11 +16,15 @@ use crate::{
     instructions::PostTask,
     state::{
         ACCOUNT_VERSION_V1, ESCROW_DISCRIMINATOR, ESCROW_LEN, JUDGE_POOL_DISCRIMINATOR,
-        JUDGE_POOL_LEN, PROGRAM_CONFIG_DISCRIMINATOR, TASK_DISCRIMINATOR, TASK_LEN, Escrow,
-        JudgeMode, JudgePool, ProgramConfig, Task, TaskState,
+        PROGRAM_CONFIG_DISCRIMINATOR, TASK_DISCRIMINATOR, TASK_LEN, Escrow, JudgeMode, JudgePool,
+        ProgramConfig, Task, TaskState,
     },
     traits::EventSerialize,
-    utils::{create_pda_account, emit_event, verify_owned_by},
+    utils::{
+        borsh_deserialize_padded, create_associated_token_account_if_needed, create_pda_account, emit_event,
+        token_program_kind as resolve_token_program_kind, validate_mint_and_get_decimals,
+        verify_owned_by, verify_token_account, TokenProgramKind,
+    },
 };
 
 const CONFIG_SEED: &[u8] = b"config";
@@ -52,7 +60,8 @@ fn select_pool_judge(
 ) -> Result<[u8; 32], ProgramError> {
     verify_owned_by(judge_pool_account, program_id)?;
 
-    if judge_pool_account.data_len() < JUDGE_POOL_LEN {
+    const JUDGE_POOL_MIN_LEN: usize = 2 + 1 + 4 + 4 + 1; // header + category + total_weight + vec_len + bump
+    if judge_pool_account.data_len() < JUDGE_POOL_MIN_LEN {
         return Err(GradienceProgramError::JudgePoolEmpty.into());
     }
 
@@ -61,15 +70,33 @@ fn select_pool_judge(
         return Err(ProgramError::InvalidAccountData);
     }
 
-    let pool = JudgePool::try_from_slice(&data[2..]).map_err(|_| ProgramError::InvalidAccountData)?;
+    let pool: JudgePool = borsh_deserialize_padded(&data[2..])?;
     if pool.category != category || pool.entries.is_empty() || pool.total_weight == 0 {
         return Err(GradienceProgramError::JudgePoolEmpty.into());
     }
 
-    let point = ((slot as u32).wrapping_add(task_id as u32)) % pool.total_weight;
-    let mut cumulative: u32 = 0;
+    let recent_hash = {
+        let slot_hashes = SlotHashes::fetch()?;
+        let first = slot_hashes
+            .entries()
+            .first()
+            .ok_or(ProgramError::InvalidAccountData)?;
+        first.hash
+    };
+
+    let seed = Sha256::new()
+        .update(&recent_hash)
+        .update(&task_id.to_le_bytes())
+        .update(&slot.to_le_bytes())
+        .finalize();
+
+    let mut point_bytes = [0u8; 8];
+    point_bytes.copy_from_slice(&seed[0..8]);
+    let point = u64::from_le_bytes(point_bytes) % (pool.total_weight as u64);
+
+    let mut cumulative: u64 = 0;
     for entry in &pool.entries {
-        cumulative = cumulative.saturating_add(entry.weight);
+        cumulative = cumulative.saturating_add(entry.weight as u64);
         if point < cumulative {
             return Ok(entry.judge);
         }
@@ -101,6 +128,15 @@ pub fn process_post_task(
     }
     if ix.data.category >= MAX_CATEGORIES as u8 {
         return Err(GradienceProgramError::InvalidCategory.into());
+    }
+
+    let is_sol_path = ix.data.mint == [0u8; 32];
+    let token_path_accounts = ix.accounts.token_path_accounts();
+    if is_sol_path && token_path_accounts.is_some() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    if !is_sol_path && token_path_accounts.is_none() {
+        return Err(ProgramError::NotEnoughAccountKeys);
     }
 
     let clock = Clock::get()?;
@@ -138,6 +174,25 @@ pub fn process_post_task(
         return Err(ProgramError::InvalidSeeds);
     }
 
+    let token_flow = if let Some(token_accounts) = token_path_accounts {
+        if address_to_bytes(token_accounts.mint.address()) != ix.data.mint {
+            return Err(ProgramError::InvalidInstructionData);
+        }
+
+        let kind = resolve_token_program_kind(token_accounts.token_program)?;
+        let decimals = validate_mint_and_get_decimals(token_accounts.mint, kind)?;
+        verify_token_account(
+            token_accounts.poster_token_account,
+            kind,
+            token_accounts.mint.address(),
+            ix.accounts.poster.address(),
+        )?;
+
+        Some((token_accounts, kind, decimals))
+    } else {
+        None
+    };
+
     let (judge_mode, judge) = match ix.data.judge_mode {
         0 => {
             if ix.data.judge == [0u8; 32] {
@@ -164,7 +219,7 @@ pub fn process_post_task(
         judge,
         judge_mode,
         reward: ix.data.reward,
-        mint: [0u8; 32],
+        mint: ix.data.mint,
         min_stake: ix.data.min_stake,
         state: TaskState::Open,
         category: ix.data.category,
@@ -179,7 +234,7 @@ pub fn process_post_task(
 
     let escrow = Escrow {
         task_id,
-        mint: [0u8; 32],
+        mint: ix.data.mint,
         amount: ix.data.reward,
         bump: escrow_bump,
     };
@@ -210,12 +265,46 @@ pub fn process_post_task(
         ],
     )?;
 
-    Transfer {
-        from: ix.accounts.poster,
-        to: ix.accounts.escrow,
-        lamports: ix.data.reward,
+    if let Some((token_accounts, kind, decimals)) = token_flow {
+        create_associated_token_account_if_needed(
+            ix.accounts.poster,
+            token_accounts.escrow_ata,
+            ix.accounts.escrow,
+            token_accounts.mint,
+            token_accounts.token_program,
+            token_accounts.associated_token_program,
+            ix.accounts.system_program,
+        )?;
+
+        match kind {
+            TokenProgramKind::Spl => SplTransferChecked {
+                from: token_accounts.poster_token_account,
+                mint: token_accounts.mint,
+                to: token_accounts.escrow_ata,
+                authority: ix.accounts.poster,
+                amount: ix.data.reward,
+                decimals,
+            }
+            .invoke()?,
+            TokenProgramKind::Token2022 => Token2022TransferChecked {
+                from: token_accounts.poster_token_account,
+                mint: token_accounts.mint,
+                to: token_accounts.escrow_ata,
+                authority: ix.accounts.poster,
+                amount: ix.data.reward,
+                decimals,
+                token_program: token_accounts.token_program.address(),
+            }
+            .invoke()?,
+        }
+    } else {
+        Transfer {
+            from: ix.accounts.poster,
+            to: ix.accounts.escrow,
+            lamports: ix.data.reward,
+        }
+        .invoke()?;
     }
-    .invoke()?;
 
     {
         let mut task_data = ix.accounts.task.try_borrow_mut()?;

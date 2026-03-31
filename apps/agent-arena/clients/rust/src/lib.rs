@@ -6,6 +6,7 @@ pub mod generated;
 pub use generated::*;
 
 // Re-export commonly used items
-pub use generated::accounts::*;
 pub use generated::errors::*;
+pub use generated::instructions::*;
 pub use generated::programs::*;
+pub use generated::types::*;
