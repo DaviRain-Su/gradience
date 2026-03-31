@@ -191,7 +191,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
         connection,
         multisigPda,
     );
-    const transactionIndex = BigInt(multisigAccount.transactionIndex.toString());
+    const transactionIndex = BigInt(multisigAccount.transactionIndex.toString()) + 1n;
     const treasury = new PublicKey(config.newTreasury ?? payer.publicKey.toBase58());
 
     const upgradeConfigInstruction = buildUpgradeConfigInstruction({
@@ -213,7 +213,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
         feePayer: payer,
         multisigPda,
         transactionIndex,
-        creator: members[0]!.key,
+        creator: uniqueMembers[0]!,
         vaultIndex: 0,
         ephemeralSigners: 0,
         transactionMessage,

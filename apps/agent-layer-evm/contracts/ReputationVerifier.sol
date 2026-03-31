@@ -131,17 +131,26 @@ contract ReputationVerifier {
     }
 
     function _isPayloadValid(ReputationPayload memory payload) internal view returns (bool) {
+        uint256 nowTs = block.timestamp;
         if (payload.sourceChain != SOLANA_CHAIN_HASH) {
             return false;
         }
         if (payload.timestamp == 0) {
             return false;
         }
-        if (payload.timestamp > block.timestamp + MAX_FUTURE_SKEW) {
+        uint256 payloadTimestamp = uint256(payload.timestamp);
+        uint256 maxFutureSkew = uint256(MAX_FUTURE_SKEW);
+        if (nowTs > type(uint256).max - maxFutureSkew) {
             return false;
         }
-        if (maxAttestationAge > 0 && payload.timestamp + maxAttestationAge < block.timestamp) {
+        if (payloadTimestamp > nowTs + maxFutureSkew) {
             return false;
+        }
+        uint256 maxAge = uint256(maxAttestationAge);
+        if (maxAge > 0 && nowTs > maxAge) {
+            if (payloadTimestamp < nowTs - maxAge) {
+                return false;
+            }
         }
         return true;
     }

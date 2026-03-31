@@ -21,10 +21,14 @@ interface IndexerSubmission {
 
 const DEFAULT_MAX_SEEN_TASK_IDS = 10_000;
 const DEFAULT_MAX_SEEN_SUBMISSION_KEYS = 50_000;
+const DEFAULT_TASKS_PAGE_SIZE = 50;
+const DEFAULT_MAX_TASK_PAGES = 20;
 
 export interface IndexerPollingFetcherOptions {
     maxSeenTaskIds?: number;
     maxSeenSubmissionKeys?: number;
+    tasksPageSize?: number;
+    maxTaskPages?: number;
     fetcher?: typeof fetch;
 }
 
@@ -39,14 +43,24 @@ export function createIndexerPollingFetcher(
         options.maxSeenSubmissionKeys ?? DEFAULT_MAX_SEEN_SUBMISSION_KEYS,
     );
     const fetcher = options.fetcher ?? fetch;
+    const tasksPageSize = toPositiveInteger(options.tasksPageSize, DEFAULT_TASKS_PAGE_SIZE);
+    const maxTaskPages = toPositiveInteger(options.maxTaskPages, DEFAULT_MAX_TASK_PAGES);
+    let highestTaskIdSeen = 0;
+
     return async () => {
         const events: EventEnvelope[] = [];
-        const tasks = await fetchJson<IndexerTask[]>(
-            `${indexerEndpoint.replace(/\/$/, '')}/api/tasks?limit=50`,
+        const tasks = await fetchTasksWindow(
+            indexerEndpoint.replace(/\/$/, ''),
             fetcher,
+            tasksPageSize,
+            maxTaskPages,
+            highestTaskIdSeen,
         );
         const now = unixNow();
         for (const task of tasks) {
+            if (task.task_id > highestTaskIdSeen) {
+                highestTaskIdSeen = task.task_id;
+            }
             if (!seenTaskIds.has(task.task_id)) {
                 seenTaskIds.add(task.task_id);
                 events.push({
@@ -95,6 +109,33 @@ export function createIndexerPollingFetcher(
     };
 }
 
+async function fetchTasksWindow(
+    indexerEndpoint: string,
+    fetcher: typeof fetch,
+    pageSize: number,
+    maxPages: number,
+    highWaterTaskId: number,
+): Promise<IndexerTask[]> {
+    const tasks: IndexerTask[] = [];
+    for (let page = 0; page < maxPages; page += 1) {
+        const offset = page * pageSize;
+        const pageTasks = await fetchJson<IndexerTask[]>(
+            `${indexerEndpoint}/api/tasks?limit=${pageSize}&offset=${offset}`,
+            fetcher,
+        );
+        if (pageTasks.length === 0) {
+            break;
+        }
+        tasks.push(...pageTasks);
+
+        const oldestTaskId = pageTasks[pageTasks.length - 1]?.task_id ?? 0;
+        if (oldestTaskId <= highWaterTaskId || pageTasks.length < pageSize) {
+            break;
+        }
+    }
+    return tasks;
+}
+
 export async function loadMockEvents(filePath: string): Promise<EventEnvelope[]> {
     const raw = await readFile(filePath, 'utf8');
     const parsed = JSON.parse(raw) as { events: EventEnvelope[] };
@@ -126,6 +167,13 @@ async function fetchJsonOrNull<T>(url: string, fetcher: typeof fetch): Promise<T
 
 function unixNow(): number {
     return Math.floor(Date.now() / 1000);
+}
+
+function toPositiveInteger(value: number | undefined, fallback: number): number {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return fallback;
+    }
+    return Math.floor(value);
 }
 
 class BoundedSeenSet<T> {

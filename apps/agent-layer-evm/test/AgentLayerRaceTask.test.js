@@ -203,6 +203,32 @@ describe("AgentLayerRaceTask", function () {
         expect(task[7]).to.equal(2n);
     });
 
+    it("get_reputation derives avg score from totalScore without cumulative drift", async function () {
+        const { contract, poster, judge, agentA } = await deployFixture();
+        const reward = ethers.parseEther("0.1");
+        const scores = [60, 61, 62];
+
+        for (const score of scores) {
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, 0n, {
+                    value: reward,
+                });
+            const taskId = await contract.taskCount();
+            await contract.connect(agentA).apply_for_task(taskId, { value: 0n });
+            await contract.connect(agentA).submit_result(taskId, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(taskId, agentA.address, score);
+        }
+
+        const reputation = await contract.get_reputation(agentA.address);
+        expect(reputation[1]).to.equal(3n);
+        expect(reputation[3]).to.equal(183n);
+        expect(reputation[4]).to.equal(61n);
+    });
+
     async function currentTime() {
         const latestBlock = await ethers.provider.getBlock("latest");
         return BigInt(latestBlock.timestamp);

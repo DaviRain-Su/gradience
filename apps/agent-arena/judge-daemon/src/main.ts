@@ -1,6 +1,7 @@
 import path from 'node:path';
 import process from 'node:process';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 import { createKeyPairSignerFromBytes } from '@solana/kit';
 import {
@@ -129,11 +130,10 @@ async function createSources(env: NodeJS.ProcessEnv): Promise<{
     const pollIntervalMs = Number(env.JUDGE_DAEMON_POLL_INTERVAL_MS ?? '5000');
 
     if (isTruthy(env.MOCK_EVENT)) {
+        const moduleDir = path.dirname(fileURLToPath(import.meta.url));
         const mockFile =
             env.MOCK_EVENT_FILE ??
-            path.resolve(
-                '/Users/davirian/dev/active/gradience/apps/agent-arena/indexer/mock/webhook.json',
-            );
+            path.resolve(moduleDir, '../../indexer/mock/webhook.json');
         const events = await loadMockEvents(mockFile);
         return {
             tritonSource: new MockEventSource('triton', { events }),

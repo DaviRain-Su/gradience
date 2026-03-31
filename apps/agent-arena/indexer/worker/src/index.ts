@@ -773,7 +773,13 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
                     global_total_applied, total_earned, updated_slot
                  ) VALUES (?1, ?2, 10000, 1, 0, ?3, ?4)
                  ON CONFLICT(agent) DO UPDATE SET
-                    global_avg_score = ((reputations.global_avg_score * reputations.global_completed) + excluded.global_avg_score) / (reputations.global_completed + 1),
+                    global_avg_score = CAST(
+                        ROUND(
+                            ((reputations.global_avg_score * reputations.global_completed) + excluded.global_avg_score) * 1.0
+                            / (reputations.global_completed + 1)
+                        )
+                        AS INTEGER
+                    ),
                     global_completed = reputations.global_completed + 1,
                     global_win_rate = CASE
                         WHEN reputations.global_total_applied > 0 THEN ((reputations.global_completed + 1) * 10000) / reputations.global_total_applied
@@ -795,7 +801,13 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
                     `INSERT INTO reputation_by_category (agent, category, avg_score, completed)
                      VALUES (?1, ?2, ?3, 1)
                      ON CONFLICT(agent, category) DO UPDATE SET
-                        avg_score = ((reputation_by_category.avg_score * reputation_by_category.completed) + excluded.avg_score) / (reputation_by_category.completed + 1),
+                        avg_score = CAST(
+                            ROUND(
+                                ((reputation_by_category.avg_score * reputation_by_category.completed) + excluded.avg_score) * 1.0
+                                / (reputation_by_category.completed + 1)
+                            )
+                            AS INTEGER
+                        ),
                         completed = reputation_by_category.completed + 1`,
                     [winner, category.category, scoreBasisPoints],
                 );
