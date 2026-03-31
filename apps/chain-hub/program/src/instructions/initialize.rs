@@ -3,13 +3,14 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 
 use crate::{
     constants::{CONFIG_SEED, PROTOCOL_REGISTRY_SEED, SKILL_REGISTRY_SEED},
+    errors::ChainHubError,
     state::{
         ProgramConfig, ProtocolRegistry, SkillRegistry, PROGRAM_CONFIG_DISCRIMINATOR,
         PROGRAM_CONFIG_LEN, PROTOCOL_REGISTRY_DISCRIMINATOR, PROTOCOL_REGISTRY_LEN,
         SKILL_REGISTRY_DISCRIMINATOR, SKILL_REGISTRY_LEN,
     },
     utils::{
-        create_pda_account, verify_signer, verify_system_program, verify_writable,
+        create_pda_account, is_zero_pubkey, verify_signer, verify_system_program, verify_writable,
         write_borsh_account,
     },
 };
@@ -27,6 +28,9 @@ pub fn process_initialize(
 ) -> ProgramResult {
     let data = InitializeData::try_from_slice(instruction_data)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
+    if is_zero_pubkey(&data.upgrade_authority) || is_zero_pubkey(&data.agent_layer_program) {
+        return Err(ChainHubError::ZeroAuthority.into());
+    }
 
     let [payer, config, skill_registry, protocol_registry, system_program] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);

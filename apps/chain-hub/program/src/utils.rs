@@ -27,6 +27,14 @@ pub fn verify_system_program(account: &AccountView) -> Result<(), ProgramError> 
     Ok(())
 }
 
+pub fn verify_owner(account: &AccountView, expected_owner: &Address) -> Result<(), ProgramError> {
+    let owner = unsafe { account.owner() };
+    if owner != expected_owner {
+        return Err(ProgramError::IllegalOwner);
+    }
+    Ok(())
+}
+
 pub fn create_pda_account<const N: usize>(
     payer: &AccountView,
     space: usize,

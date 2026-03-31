@@ -18,7 +18,7 @@ use crate::{
     },
     utils::{
         address_to_bytes, create_pda_account, is_zero_pubkey, read_borsh_account, verify_signer,
-        verify_system_program, verify_writable, write_borsh_account,
+        verify_owner, verify_system_program, verify_writable, write_borsh_account,
     },
 };
 
@@ -48,6 +48,7 @@ pub fn process_delegation_task(
         skill_entry_account,
         protocol_entry_account,
         delegation_task_account,
+        judge_pool_account,
         system_program,
     ] = accounts
     else {
@@ -87,10 +88,10 @@ pub fn process_delegation_task(
     if config_account.address() != &config_pda {
         return Err(ProgramError::InvalidSeeds);
     }
+    verify_owner(config_account, program_id)?;
 
     let mut config: ProgramConfig =
         read_borsh_account(config_account, PROGRAM_CONFIG_DISCRIMINATOR)?;
-    let skill: SkillEntry = read_borsh_account(skill_entry_account, SKILL_ENTRY_DISCRIMINATOR)?;
 
     let skill_id_bytes = data.skill_id.to_le_bytes();
     let (skill_pda, _) =
@@ -98,6 +99,8 @@ pub fn process_delegation_task(
     if skill_entry_account.address() != &skill_pda {
         return Err(ProgramError::InvalidSeeds);
     }
+    verify_owner(skill_entry_account, program_id)?;
+    let skill: SkillEntry = read_borsh_account(skill_entry_account, SKILL_ENTRY_DISCRIMINATOR)?;
     if skill.skill_id != data.skill_id || skill.judge_category != data.judge_category {
         return Err(ChainHubError::SkillMismatch.into());
     }
@@ -111,6 +114,7 @@ pub fn process_delegation_task(
     if protocol_entry_account.address() != &protocol_pda {
         return Err(ProgramError::InvalidSeeds);
     }
+    verify_owner(protocol_entry_account, program_id)?;
     let protocol: ProtocolEntry =
         read_borsh_account(protocol_entry_account, PROTOCOL_ENTRY_DISCRIMINATOR)?;
     if protocol.protocol_id != data.protocol_id {
@@ -137,8 +141,12 @@ pub fn process_delegation_task(
         &[AGENT_LAYER_JUDGE_POOL_SEED, judge_category_seed.as_ref()],
         &agent_layer_program,
     );
-    if expected_judge_pool.to_bytes() == [0u8; 32] {
+    if judge_pool_account.address() != &expected_judge_pool {
         return Err(ChainHubError::InvalidJudgePoolShape.into());
+    }
+    verify_owner(judge_pool_account, &agent_layer_program)?;
+    if judge_pool_account.data_len() == 0 && judge_pool_account.lamports() == 0 {
+        return Err(ProgramError::UninitializedAccount);
     }
 
     let task_bump_seed = [task_bump];
@@ -161,7 +169,7 @@ pub fn process_delegation_task(
         protocol: address_to_bytes(protocol_entry_account.address()),
         selected_agent_authority: data.selected_agent_authority,
         selected_judge_authority: data.selected_judge_authority,
-        judge_pool: expected_judge_pool.to_bytes(),
+        judge_pool: address_to_bytes(judge_pool_account.address()),
         judge_category: data.judge_category,
         max_executions: data.max_executions,
         executed_count: 0,

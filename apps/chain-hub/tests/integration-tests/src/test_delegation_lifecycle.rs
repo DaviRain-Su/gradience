@@ -28,6 +28,7 @@ fn create_delegation_ix(
     task_id: u64,
     skill_id: u64,
     protocol_id: &str,
+    judge_pool: Pubkey,
     judge_category: u8,
     selected_agent: Pubkey,
     selected_judge: Pubkey,
@@ -42,6 +43,7 @@ fn create_delegation_ix(
             AccountMeta::new_readonly(derive_skill_pda(skill_id), false),
             AccountMeta::new_readonly(derive_protocol_pda(protocol_id), false),
             AccountMeta::new(derive_task_pda(task_id), false),
+            AccountMeta::new_readonly(judge_pool, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
         ],
         data: encode_ix(
@@ -67,6 +69,9 @@ fn test_delegation_full_lifecycle_to_completed() {
     initialize(&mut ctx, agent_layer_program);
     register_skill(&mut ctx, 1, 2);
     register_protocol(&mut ctx, "sdp");
+    let expected_judge_pool =
+        Pubkey::find_program_address(&[b"judge_pool", &[2]], &agent_layer_program).0;
+    ctx.set_program_owned_account(expected_judge_pool, agent_layer_program, 1, 8);
 
     let agent = Keypair::new();
     let judge = Keypair::new();
@@ -79,6 +84,7 @@ fn test_delegation_full_lifecycle_to_completed() {
         1,
         1,
         "sdp",
+        expected_judge_pool,
         2,
         agent.pubkey(),
         judge.pubkey(),
@@ -91,8 +97,6 @@ fn test_delegation_full_lifecycle_to_completed() {
     let task: DelegationTaskAccount = decode_padded(&task_account.data, DELEGATION_TASK_DISCRIMINATOR);
     assert_eq!(task.status, DelegationTaskStatus::Created);
     assert_eq!(task.executed_count, 0);
-    let expected_judge_pool =
-        Pubkey::find_program_address(&[b"judge_pool", &[2]], &agent_layer_program).0;
     assert_eq!(task.judge_pool, expected_judge_pool.to_bytes());
 
     let activate_ix = Instruction {
@@ -131,9 +135,13 @@ fn test_delegation_full_lifecycle_to_completed() {
 #[test]
 fn test_delegation_unauthorized_and_expired_paths() {
     let mut ctx = TestContext::new();
-    initialize(&mut ctx, Pubkey::new_unique());
+    let agent_layer_program = Pubkey::new_unique();
+    initialize(&mut ctx, agent_layer_program);
     register_skill(&mut ctx, 1, 2);
     register_protocol(&mut ctx, "sdp");
+    let expected_judge_pool =
+        Pubkey::find_program_address(&[b"judge_pool", &[2]], &agent_layer_program).0;
+    ctx.set_program_owned_account(expected_judge_pool, agent_layer_program, 1, 8);
 
     let agent = Keypair::new();
     let judge = Keypair::new();
@@ -148,6 +156,7 @@ fn test_delegation_unauthorized_and_expired_paths() {
         1,
         1,
         "sdp",
+        expected_judge_pool,
         2,
         agent.pubkey(),
         judge.pubkey(),
@@ -221,6 +230,7 @@ fn test_delegation_unauthorized_and_expired_paths() {
         2,
         1,
         "sdp",
+        expected_judge_pool,
         2,
         agent.pubkey(),
         judge.pubkey(),

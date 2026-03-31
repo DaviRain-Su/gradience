@@ -88,6 +88,23 @@ impl TestContext {
         self.svm.get_account(address)
     }
 
+    pub fn set_program_owned_account(
+        &mut self,
+        address: Pubkey,
+        owner: Pubkey,
+        lamports: u64,
+        data_len: usize,
+    ) {
+        let account = Account {
+            lamports,
+            data: vec![0u8; data_len],
+            owner,
+            executable: false,
+            rent_epoch: 0,
+        };
+        self.svm.set_account(address, account).unwrap();
+    }
+
     pub fn warp_to_timestamp(&mut self, unix_timestamp: i64) {
         let clock = self.svm.get_sysvar::<Clock>();
         self.svm.set_sysvar(&Clock {
