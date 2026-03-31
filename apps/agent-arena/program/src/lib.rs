@@ -13,6 +13,7 @@ use pinocchio::address::declare_id;
 
 pub mod constants;
 pub mod errors;
+pub mod judge;
 pub mod traits;
 pub mod utils;
 
