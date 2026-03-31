@@ -315,15 +315,18 @@ Decentralized Agent task arena. Posters lock value, multiple agents compete, jud
 
 ---
 
-### 🔗 Chain Hub — Tooling Module (📐 Designed)
+### 🔗 Chain Hub — Tooling Module (📐 Designed, W2–W3)
 
 The "Stripe for blockchain" — Agents access any on-chain service with one authentication, no API keys.
 
 **Key features:**
 - 📐 Skill Market — buy, rent, inherit agent skills
-- 📐 Protocol Registry — any service integrates in 5 minutes
-- 📐 Key Vault — encrypted custody, agents never hold raw credentials
+- 📐 Protocol Registry — any service integrates in 5 minutes; **SDP Adapter is the first registered protocol**
+- 📐 Key Vault — encrypted custody backed by enterprise-grade providers (Fireblocks/BitGo via SDP); agents never hold raw credentials
 - 📐 Multi-chain — EVM, Solana, and beyond
+
+**Powered by Solana Developer Platform (SDP):**
+Chain Hub uses [SDP](https://platform.solana.com) (launched March 2026 by Solana Foundation) as its financial primitive layer — covering stablecoin issuance, payments (on-ramp/off-ramp), compliance, and enterprise custody in a single API. This means Chain Hub skips months of individual integrations with 20+ providers (MoonPay, Fireblocks, Chainalysis, etc.) and ships enterprise-grade financial capabilities in weeks.
 
 ---
 

@@ -324,15 +324,19 @@ flowchart LR
 
 ---
 
-### 🔗 Chain Hub — 工具模块（📐 设计完成）
+### 🔗 Chain Hub — 工具模块（📐 设计完成，W2–W3）
 
 "区块链版 Stripe"——Agent 一次认证即可访问任何链上服务，无需 API Key。
 
 **核心特性：**
 - 📐 技能市场（Skill Market）— 购买、租赁、传承 Agent 技能
-- 📐 协议注册表 — 任何服务 5 分钟接入
-- 📐 密钥保险库（Key Vault）— 加密托管，Agent 永不持有原始凭证
+- 📐 协议注册表 — 任何服务 5 分钟接入；**SDP Adapter 是注册进来的第一个重量级协议**
+- 📐 密钥保险库（Key Vault）— 企业级加密托管（Fireblocks/BitGo via SDP），Agent 永不持有裸私钥
 - 📐 多链支持 — EVM、Solana 及更多
+
+**底层金融原语：Solana Developer Platform (SDP)**
+
+Chain Hub 使用 [SDP](https://platform.solana.com)（Solana Foundation 2026 年 3 月发布）作为金融基础设施层，一个 API 覆盖稳定币发行、支付通道（on-ramp/off-ramp）、链上合规、企业级托管。这意味着 Chain Hub 跳过与 20+ 家服务商（MoonPay、Fireblocks、Chainalysis 等）逐一集成的过程，在 W2–W3 就能交付企业级金融能力。
 
 ---
 

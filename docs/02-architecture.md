@@ -114,7 +114,7 @@ flowchart TB
 
 | 协议层 | 定位 | 实现组件 | 时间线 |
 |--------|------|---------|--------|
-| **Layer 0** | 外部基础设施（依赖，非 Gradience 自身） | Solana、Token-2022、Wormhole/LI.FI、MPL Agent Registry（可选 W4） | 已有 |
+| **Layer 0** | 外部基础设施（依赖，非 Gradience 自身） | Solana、Token-2022、Wormhole/LI.FI、MPL Agent Registry（可选 W4）、**SDP（Chain Hub 金融原语层，W2–W3）** | 已有 |
 | **Layer 1** | 核心协议（本协议，当前实现目标） | Agent Layer Program + Chain Hub + SDK + Daemon + Indexer + Frontend | W1–W3 |
 | **Layer 2** | Agent 借贷协议（独立协议，只读 CPI 调用 Layer 1 的 `ReputationAccount`） | Lending Program（独立部署） | W4+ |
 | **Layer 3** | gUSD 信用背书稳定币（独立协议，依赖 Layer 2 信用额度） | gUSD Program（独立部署） | 远期 |
@@ -143,7 +143,7 @@ flowchart TB
 | **OKX Agentic Wallet 适配器** | 企业级 TEE 托管钱包；私钥在 TEE 内生成和签名，OKX 自身也无法访问；支持最多 50 个子钱包并行策略；内置异常检测；原生 x402 微支付协议；适合高安全场景和 OKX 生态 | 依赖 OKX 基础设施（非完全去中心化） | OKX OnchainOS SDK | 外部集成 |
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
-| **Chain Hub** | Delegation Task、Skill 市场；Key Vault 由 OpenWallet Policy Engine 实现——Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出 | 不修改 Agent Layer 内核 | Rust + Pinocchio + TS + OpenWallet | 新建（Week 3） |
+| **Chain Hub** | Delegation Task、Skill 市场、Protocol Registry（任何服务 5 分钟注册）、Key Vault（OpenWallet Policy Engine，Poster 设定执行参数，Agent 物理上无法超出）；**底层金融原语由 SDP 提供**：稳定币发行、支付通道（on-ramp/off-ramp）、企业级托管（Fireblocks/BitGo）通过 SDP Adapter 注册为 Protocol Registry 的第一个重量级协议，Agent 调用时与其他 Skill 无差别 | 不修改 Agent Layer 内核；不自建支付 / 托管基础设施（复用 SDP） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
 | **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
 | **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
@@ -1108,6 +1108,88 @@ gUSD 的 $1 锚定通过三重机制维持：
 **W1–W3 不实现**：Gradience 核心协议不依赖 MPL Registry，Agent 身份继续使用 wallet pubkey → `Stake` PDA 的原生方案。
 
 **W4 可选扩展**：如果 MPL Agent Registry 在 W4 前已稳定，可在 `PostTask` 中加入 `require_mpl_identity` 字段，并在 SDK 层提供 `registerGradienceAgentIdentity()` 辅助函数，批量注册活跃 Agent 到 MPL Registry。
+
+---
+
+## 2.14 Solana Developer Platform (SDP) 与 Chain Hub 集成
+
+### SDP 是什么
+
+[Solana Developer Platform](https://platform.solana.com)（2026-03-24 发布）是 Solana Foundation 推出的**企业级一站式金融基础设施平台**，将 20+ 家基础设施提供商打包为统一 API：
+
+| 模块 | 功能 | 相关服务商 |
+|------|------|-----------|
+| **Issuance** | 稳定币铸造、RWA 代币化 | Helius、Alchemy |
+| **Payments** | 法币↔稳定币、on-ramp/off-ramp、B2B/B2C/P2P | MoonPay、Mastercard、Western Union、Worldpay |
+| **Custody** | 企业级密钥托管 | Fireblocks、BitGo |
+| **Compliance** | 链上合规检测 | Chainalysis |
+| **Trading** | 原子互换、FX（2026 年晚些上线）| — |
+
+定位：Solana 版的"Stripe + Plaid + Chainalysis 合体"。AI-ready 原生设计，API 技能可直接喂给 Claude / Codex 等 AI 编码 Agent。
+
+### 与 Chain Hub 的协同关系
+
+**Chain Hub 的愿景**：让 AI Agent 像调用 Stripe 一样简单地访问任意链上金融服务。
+**SDP 的定位**：Solana 金融服务的统一 Stripe。
+
+两者不是竞争关系，而是 **Chain Hub 把 SDP 当作底层金融原语层**：
+
+```
+Chain Hub (Layer 1 组件)
+├── Protocol Registry ← SDP Adapter 注册为第一个重量级协议
+├── Key Vault         ← 对接 Fireblocks/BitGo（via SDP Custody）
+├── Skill Market      ← Agent 调用 SDP 金融 Skill 与普通 Skill 无差别
+└── Delegation Task   ← Agent 执行需要支付/稳定币时透明调用 SDP
+
+SDP (Layer 0 外部基础设施)
+├── Issuance API  → gUSD Layer 3 未来铸造的金融原语储备
+├── Payments API  → Agent 收到任务奖励后的 on-ramp / 跨境支付
+└── Custody API   → Key Vault 企业级托管，Agent 永不持有裸私钥
+```
+
+### 具体集成方案（W2–W3）
+
+**1. SDP Adapter — Protocol Registry 首个重量级协议**
+
+```typescript
+// apps/chain-hub/src/adapters/sdp.ts
+export const SDP_ADAPTER = {
+  id: "solana-developer-platform",
+  name: "Solana Developer Platform",
+  version: "1.0",
+  trust: "centralized-enterprise",       // Protocol Registry 透明标注
+  capabilities: ["issuance", "payments", "custody", "compliance"],
+  // Agent 调用时通过 Key Vault 注入 SDP API Key，自身不持有
+  invoke: async (skill: string, params: Record<string, unknown>) => {
+    const apiKey = await keyVault.get("sdp-api-key");
+    return fetch(`https://api.platform.solana.com/v1/${skill}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(params),
+    });
+  },
+};
+```
+
+**2. Key Vault 对接 SDP Custody**
+
+Chain Hub Key Vault 的托管后端可选接入 SDP 集成的 Fireblocks/BitGo，企业场景下 Agent 的执行钱包私钥在 HSM 内生成和签名，链下 Policy Engine（OpenWallet）+ 链上 Escrow 双重防线。
+
+**3. Agent Arena 支付场景 demo（W2 验证目标）**
+
+在 Agent Arena 里演示：任务奖励结算后，Agent 调用 Chain Hub 的 SDP Payments Skill，将 SOL/USDC 奖励通过 SDP on-ramp 换成法币，全程无需额外 API Key 配置。
+
+**4. gUSD Layer 3 的金融原语储备**
+
+SDP 的 Issuance 模块是未来 gUSD 独立协议铸造稳定币时可复用的金融原语。当 Gradience 主网满足 gUSD 启动条件时（活跃 Agent ≥ 10,000，见 §2.12），gUSD 协议可通过 SDP 的稳定币发行 API 快速完成合规侧的法律架构，而非从零对接交易所。
+
+### 当前阶段决策
+
+**W2 开始**：申请 SDP waitlist（https://platform.solana.com），sandbox 环境验证 Payments + Custody API；将 SDP Adapter 写入 Protocol Registry 框架
+
+**W3**：SDP Adapter 生产就绪，Key Vault 对接 Fireblocks（via SDP）；完成"Agent Arena 任务奖励 → SDP 支付 demo"
+
+**不依赖 SDP 的部分**：Agent Layer Program（链上内核）、Indexer、SDK 核心——这些完全 Solana 原生，SDP 故障不影响协议正常运行
 
 ---
 
