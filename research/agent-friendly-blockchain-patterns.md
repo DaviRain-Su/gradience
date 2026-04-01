@@ -6,6 +6,10 @@
 
 ---
 
+> 📌 **注**：本文档的核心内容已整合到 [Gradience 白皮书 §6.6](../protocol/WHITEPAPER.md#66-agent-friendly-blockchain-patterns)。本文档保留作为详细技术实现参考，包含完整的代码示例和更多实现细节。
+
+---
+
 ## 一、状态通道 (State Channels)
 
 ### 1.1 概念
