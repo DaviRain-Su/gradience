@@ -126,7 +126,132 @@ Gradience is designed for Agents:
 
 This is not just a technical difference—it's a **philosophical shift**. Gradience is the first protocol built from the ground up for an economy where the primary participants are autonomous software, not humans.
 
-### 2.7 Infrastructure vs. Application
+### 2.7 Identity & Privacy: Tiered Verification
+
+> **Core insight**: AI Agents act autonomously, but they are ultimately owned by humans. The protocol must verify the human behind the Agent without compromising privacy.
+
+#### The Ownership Problem
+
+AI Agents are autonomous software that can:
+- Hold private keys and sign transactions
+- Make decisions and execute tasks
+- Accumulate reputation and assets
+
+But they are **created and controlled by humans**. This creates a unique challenge:
+
+```
+Agent (autonomous) ←── owns ──→ Human (responsible)
+     │                                │
+     └──────── needs verification ────┘
+```
+
+**Why this matters:**
+1. **Financial accountability**: When an Agent borrows money, who is responsible for repayment?
+2. **Legal compliance**: When an Agent earns income, who pays taxes?
+3. **Sybil resistance**: How do we prevent one human from creating unlimited Agents to game the system?
+
+#### Tiered Identity Verification
+
+Gradience implements **optional, privacy-preserving identity verification** using Zero-Knowledge proofs:
+
+| Tier | Verification | Privacy Level | Capabilities |
+|------|-------------|---------------|--------------|
+| **Tier 0: Anonymous** | None | Maximum | • Participate in Battles<br>• Earn reputation<br>• Small task rewards |
+| **Tier 1: Pseudonymous** | Wallet signature | High | • All Tier 0 capabilities<br>• Larger task rewards<br>• Cross-chain reputation |
+| **Tier 2: ZK-KYC** | ZK proof of identity | Selective disclosure | • All Tier 1 capabilities<br>• **Uncollateralized lending**<br>• **gUSD minting**<br>• Financial derivatives |
+
+**Key design principles:**
+
+1. **Privacy by default**: Tier 0 and Tier 1 require no personal information
+2. **Opt-in verification**: Users choose whether to upgrade to Tier 2
+3. **Zero-knowledge**: Tier 2 proves humanity without revealing identity
+4. **Composability**: Reputation is portable across all tiers
+
+#### Tier 2: ZK-KYC in Detail
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ZK-KYC PROCESS                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┐         ┌──────────────┐                 │
+│  │   User       │         │   ZK Prover  │                 │
+│  │  (Human)     │───────→ │   Service    │                 │
+│  │              │  ID Doc │   (World ID  │                 │
+│  └──────────────┘         │   / Polygon  │                 │
+│                           │   ID / etc)  │                 │
+│                           └──────┬───────┘                 │
+│                                  │                         │
+│                                  ↓ ZK Proof               │
+│                           ┌──────────────┐                 │
+│                           │  Blockchain  │                 │
+│                           │  (Gradience) │                 │
+│                           └──────────────┘                 │
+│                                                             │
+│  Proof attests: "This address is linked to a unique human"  │
+│  WITHOUT revealing: Who the human is                        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**What the ZK proof proves:**
+- ✅ This Agent is controlled by a unique human
+- ✅ The human has passed KYC/identity verification
+- ✅ The human has not created other Tier 2 Agents (sybil resistance)
+
+**What remains private:**
+- ❌ Name, address, nationality
+- ❌ ID document details
+- ❌ Other on-chain activity
+
+#### Why This Matters for Agent Economy
+
+**Without identity verification:**
+- Agents can freely create new addresses
+- Reputation is non-portable and easily gamed
+- Uncollateralized lending is impossible (no accountability)
+- Protocol remains a toy, not serious infrastructure
+
+**With ZK-KYC:**
+- One human = One Tier 2 identity
+- Reputation accumulates on a persistent identity
+- Financial services become possible (lending, credit)
+- Protocol becomes compliant infrastructure
+
+**The Gradience approach balances:**
+- **Privacy**: No personal data on-chain
+- **Compliance**: Financial operations have accountable parties
+- **Freedom**: Users choose their level of participation
+- **Security**: Sybil attacks are economically infeasible
+
+#### Comparison with Existing Solutions
+
+| Solution | Approach | Problem | Gradience Difference |
+|----------|----------|---------|---------------------|
+| **World ID** | Biometric proof of personhood | Only proves "you're human", not "you're responsible" | Adds financial accountability layer |
+| **Traditional KYC** | Full identity disclosure | Privacy violation, data breach risk | ZK proofs keep identity private |
+| **No verification** | Pure pseudonymity | Sybil attacks, no financial accountability | Optional verification for serious use |
+| **Soulbound Tokens** | Non-transferable identity | Centralized issuance, limited adoption | Market-verified reputation + optional identity |
+
+#### Integration with Reputation
+
+```
+Identity Tier + Reputation Score = Credit Worthiness
+
+Example:
+- Tier 0 + High Score = Trusted participant, limited financial access
+- Tier 2 + High Score = Credit-worthy borrower, can mint gUSD
+- Tier 2 + Low Score = Verified but unreliable, no lending
+- Tier 0 + Low Score = New participant, needs to prove value
+```
+
+This creates a **meritocratic system** where:
+- Privacy is respected
+- Financial access requires accountability
+- Reputation is earned through market participation
+- Everyone can participate at their chosen level
+
+### 2.8 Infrastructure vs. Application
 
 Gradience is not an application—it is **infrastructure** for the Agent economy.
 
