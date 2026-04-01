@@ -27,7 +27,9 @@ test("evaluateRelayAlerts emits expected warnings", () => {
     minAvgDeliveriesPerPull: 0.1,
     minPullRequestsForDeliveryCheck: 10,
     maxDbFailureRate: 0.1,
+    criticalDbFailureRate: 0.2,
     maxDbAvgQueryLatencyMs: 200,
+    criticalDbAvgQueryLatencyMs: 400,
     minDbQueryCountForHealthCheck: 20,
   };
 
@@ -43,6 +45,10 @@ test("evaluateRelayAlerts emits expected warnings", () => {
       "rejected_payload_spike",
     ],
   );
+  const failureAlert = alerts.find((item) => item.code === "db_query_failure_rate_high");
+  const latencyAlert = alerts.find((item) => item.code === "db_query_latency_high");
+  assert.equal(failureAlert?.severity, "warning");
+  assert.equal(latencyAlert?.severity, "warning");
 });
 
 test("RelayAlertMonitor captures alerts from store metrics", async () => {
@@ -58,11 +64,84 @@ test("RelayAlertMonitor captures alerts from store metrics", async () => {
       minAvgDeliveriesPerPull: 0,
       minPullRequestsForDeliveryCheck: 100,
       maxDbFailureRate: 1,
+      criticalDbFailureRate: 1,
       maxDbAvgQueryLatencyMs: 1000,
+      criticalDbAvgQueryLatencyMs: 2000,
       minDbQueryCountForHealthCheck: 100,
     },
   });
   const snapshot = await monitor.checkNow();
   assert.equal(snapshot.alerts.length, 1);
   assert.equal(snapshot.alerts[0]?.code, "rejected_payload_spike");
+});
+
+test("RelayAlertMonitor emits db recovery alert on healthy transition", async () => {
+  let snapshotIndex = 0;
+  const snapshots: RelayMetrics[] = [
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 100,
+      dbQueryFailures: 30,
+      dbAvgQueryLatencyMs: 800,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 2,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 2,
+      pullRequests: 2,
+      rejectedPayloads: 0,
+      dbQueryCount: 120,
+      dbQueryFailures: 1,
+      dbAvgQueryLatencyMs: 90,
+    },
+  ];
+  const store = {
+    upsertAgent: () => {
+      throw new Error("not used");
+    },
+    listAgents: () => {
+      throw new Error("not used");
+    },
+    publishEnvelope: () => {
+      throw new Error("not used");
+    },
+    pullEnvelopes: () => {
+      throw new Error("not used");
+    },
+    markPayloadRejected: () => {
+      throw new Error("not used");
+    },
+    getMetrics: async () => snapshots[Math.min(snapshotIndex++, snapshots.length - 1)]!,
+  };
+  const monitor = new RelayAlertMonitor(store, {
+    thresholds: {
+      maxRejectedPayloads: 999,
+      maxDedupRatio: 1,
+      minAvgDeliveriesPerPull: 0,
+      minPullRequestsForDeliveryCheck: 999,
+      maxDbFailureRate: 0.05,
+      criticalDbFailureRate: 0.2,
+      maxDbAvgQueryLatencyMs: 200,
+      criticalDbAvgQueryLatencyMs: 600,
+      minDbQueryCountForHealthCheck: 20,
+    },
+  });
+
+  const unhealthy = await monitor.checkNow();
+  assert.equal(
+    unhealthy.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    true,
+  );
+
+  const recovered = await monitor.checkNow();
+  assert.equal(
+    recovered.alerts.some((item) => item.code === "db_health_recovered"),
+    true,
+  );
 });
