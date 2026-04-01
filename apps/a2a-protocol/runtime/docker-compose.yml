@@ -1,4 +1,26 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    profiles:
+      - local-db
+    environment:
+      POSTGRES_DB: ${A2A_RELAY_POSTGRES_DB:-a2a_relay}
+      POSTGRES_USER: ${A2A_RELAY_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${A2A_RELAY_POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${A2A_RELAY_POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - relay_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${A2A_RELAY_POSTGRES_USER:-postgres} -d ${A2A_RELAY_POSTGRES_DB:-a2a_relay}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   a2a-relay:
     build:
       context: .
@@ -9,7 +31,8 @@ services:
       A2A_RELAY_PORT: 3400
       A2A_RELAY_STORE_MODE: ${A2A_RELAY_STORE_MODE:-file}
       A2A_RELAY_STORE_FILE: ${A2A_RELAY_STORE_FILE:-/data/relay-state.json}
-      A2A_RELAY_POSTGRES_URL: ${A2A_RELAY_POSTGRES_URL:-}
+      A2A_RELAY_POSTGRES_URL: ${A2A_RELAY_POSTGRES_URL:-postgres://postgres@postgres:5432/a2a_relay?sslmode=disable}
+      PGPASSWORD: ${A2A_RELAY_POSTGRES_PASSWORD:-postgres}
       A2A_RELAY_AUTH_TOKEN: ${A2A_RELAY_AUTH_TOKEN:-}
       A2A_RELAY_ALERT_INTERVAL_MS: ${A2A_RELAY_ALERT_INTERVAL_MS:-30000}
       A2A_RELAY_ALERT_WEBHOOK_URL: ${A2A_RELAY_ALERT_WEBHOOK_URL:-}
@@ -39,3 +62,4 @@ services:
 
 volumes:
   relay_data:
+  relay_pg_data:
