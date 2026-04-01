@@ -17,7 +17,7 @@
   {\LARGE\bfseries Gradience Protocol}\\[6pt]
   {\Large 去中心化 AI Agent 能力信用协议}\\[20pt]
   {\large @DaviRain-Su}\\[4pt]
-  {\normalsize 2026 年 3 月\quad$\cdot$\quad v0.4}
+  {\normalsize 2026 年 4 月\quad$\cdot$\quad v0.4}
 \end{center}
 \vspace{1em}\hrule\vspace{1.5em}
 
@@ -43,7 +43,100 @@ Gradience 受比特币~\cite{bitcoin}启发，用三个原语定义 Agent 能力
 费率编码为不可变常量。部署后无法修改。如同比特币的 2100 万上限。
 
 \subsection{2.3\quad 复杂度放在上层}
-无 Hook、无插件、无扩展点。内核保持封闭。
+无 Hook、无插件、无扩展点。更复杂的逻辑（竞价、协商、子任务分解）在上层构建。内核保持封闭。这是 Unix 哲学在经济协议中的应用：把一件事做好。
+
+\subsection{2.4\quad 与 ERC-8183 对比}
+
+ERC-8183（Agentic Commerce）由 Virtuals Protocol 团队提交，是最接近的现有标准。
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{维度} & \textbf{ERC-8183} & \textbf{Gradience} \\
+\midrule
+状态 / 转换 & 6 / 8 & \textbf{3 / 4} \\
+任务创建 & 三步（创建 $\rightarrow$ 设预算 $\rightarrow$ 注资） & \textbf{单原子操作} \\
+评估模型 & 二元（完成 / 拒绝） & \textbf{连续评分（0--100）} \\
+信誉系统 & 外部依赖 & \textbf{内建} \\
+竞争机制 & 无（客户指定执行者） & \textbf{竞赛模式（开放提交）} \\
+扩展机制 & Hook 系统（前后回调） & \textbf{无---复杂度在上层} \\
+费用可变性 & 管理员可配置 & \textbf{不可变常量} \\
+权限模型 & 需要 Hook 白名单 & \textbf{完全无需许可} \\
+评判者激励 & 未指定 & \textbf{3\% 无条件费用} \\
+代币经济 & 未指定 & \textbf{固定供应，挖矿 + 销毁} \\
+\bottomrule
+\end{tabular}
+\caption{Gradience 在 11 个维度中的 9 个领先。}
+\end{table}
+
+\subsection{2.5\quad 比特币启发的极简主义}
+
+比特币用三个原语定义"货币"：\textbf{UTXO + 脚本 + 工作量证明}。Gradience 用三个原语定义"Agent 能力交换"：\textbf{托管 + 评判 + 信誉}。
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{比特币} & \textbf{Gradience} \\
+\midrule
+工作量证明（竞争） & 质量证明（竞赛模式） \\
+区块奖励（固定、不可变） & 95/3/2 分配（不可变常量） \\
+难度调整（自适应） & 质押参与（市场驱动） \\
+最长链获胜 & 最高评分获胜 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{为什么极简主义很重要：}
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{可预测性}：每个人都知道规则。没有隐藏逻辑。长期规划成为可能。
+\item \textbf{抗攻击性}：简单规则的操纵面更小。如同比特币的 51\% 攻击成本，Gradience 的经济攻击需要控制多数质押或信誉。
+\item \textbf{可验证性}：任何人都可以审计协议。无需信任第三方。透明即安全。
+\item \textbf{自主运行}：不需要管理员。比特币的自动难度调整；Gradience 的自动结算。7×24 无人值守运行。
+\end{enumerate}
+
+\textbf{与复杂系统的对比：}
+\begin{itemize}[leftmargin=2em]
+\item DeFi 协议：数百行代码，频繁出现漏洞
+\item DAO 治理：复杂投票，效率低下
+\item 多代币模型：难以理解和预测
+\end{itemize}
+
+Gradience：约 300 行代码。这就是整个基础。
+
+\subsection{2.6\quad AI 原生协议设计}
+
+Gradience 代表范式转变：从\textbf{"为人类设计的协议"}到\textbf{"为 AI Agent 设计的协议"}。
+
+\textbf{人类用户 vs. AI Agent：}
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{维度} & \textbf{人类} & \textbf{AI Agent} \\
+\midrule
+\textbf{决策速度} & 秒到分钟 & 毫秒到秒 \\
+\textbf{交易频率} & 低频、间歇 & 高频、持续 \\
+\textbf{错误容忍} & 需要解释、申诉 & 代码即法律，自动执行 \\
+\textbf{身份验证} & KYC、OAuth & 链上地址、质押证明 \\
+\textbf{信任机制} & 声誉、合同 & 密码学验证、经济激励 \\
+\textbf{可组合性} & 手动集成 & 自主发现、自动集成 \\
+\textbf{协议需求} & 灵活、可协商 & 确定、自动化、不可变 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{AI 原生协议的核心特征：}
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{确定性}：无歧义，机器可解析
+\item \textbf{自动化}：无人工干预，触发即执行
+\item \textbf{可组合性}：模块化，即插即用
+\item \textbf{经济激励}：理性参与者自动对齐
+\item \textbf{无需许可}：无注册、无审批、无边界
+\end{enumerate}
+
+Gradience 的\textbf{四元架构}（Agent Layer, Agent Arena, Agent Social, Agent Me）构建完整的 AI 经济生态系统。每个组件都是可组合的模块，Agent 可以自主发现、协商、协作——无需人类中介。
 
 \section{3. 协议规范}
 
