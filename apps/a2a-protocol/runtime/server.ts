@@ -30,6 +30,11 @@ export interface RelayServerOptions {
   storeFilePath?: string;
   postgresConnectionString?: string;
   postgresRejectElevatedRole?: boolean;
+  postgresPoolMaxConnections?: number;
+  postgresPoolIdleTimeoutMs?: number;
+  postgresPoolConnectionTimeoutMs?: number;
+  postgresPoolStatementTimeoutMs?: number;
+  postgresPoolQueryTimeoutMs?: number;
   alertThresholds?: RelayAlertThresholds;
   alertIntervalMs?: number;
   alertWebhookUrl?: string;
@@ -64,6 +69,11 @@ export async function startRelayServer(
       storeFilePath: options.storeFilePath ?? "./data/relay-state.json",
       postgresConnectionString: options.postgresConnectionString,
       postgresRejectElevatedRole: options.postgresRejectElevatedRole,
+      postgresPoolMaxConnections: options.postgresPoolMaxConnections,
+      postgresPoolIdleTimeoutMs: options.postgresPoolIdleTimeoutMs,
+      postgresPoolConnectionTimeoutMs: options.postgresPoolConnectionTimeoutMs,
+      postgresPoolStatementTimeoutMs: options.postgresPoolStatementTimeoutMs,
+      postgresPoolQueryTimeoutMs: options.postgresPoolQueryTimeoutMs,
     }));
   const relay = new A2ARelayApi(store, {
     authToken: options.authToken,
@@ -254,6 +264,11 @@ function createRelayStore(options: {
   storeFilePath: string;
   postgresConnectionString?: string;
   postgresRejectElevatedRole?: boolean;
+  postgresPoolMaxConnections?: number;
+  postgresPoolIdleTimeoutMs?: number;
+  postgresPoolConnectionTimeoutMs?: number;
+  postgresPoolStatementTimeoutMs?: number;
+  postgresPoolQueryTimeoutMs?: number;
 }): Promise<RelayStore> {
   if (options.mode === "memory") {
     return Promise.resolve(new InMemoryRelayStore());
@@ -266,6 +281,11 @@ function createRelayStore(options: {
     }
     return PostgresRelayStore.connect(options.postgresConnectionString, {
       rejectElevatedRole: options.postgresRejectElevatedRole,
+      poolMaxConnections: options.postgresPoolMaxConnections,
+      poolIdleTimeoutMs: options.postgresPoolIdleTimeoutMs,
+      poolConnectionTimeoutMs: options.postgresPoolConnectionTimeoutMs,
+      poolStatementTimeoutMs: options.postgresPoolStatementTimeoutMs,
+      poolQueryTimeoutMs: options.postgresPoolQueryTimeoutMs,
     });
   }
   return Promise.resolve(new FileRelayStore(options.storeFilePath));

@@ -43,7 +43,15 @@ declare module "node:crypto" {
 
 declare module "pg" {
   export class Pool {
-    constructor(options: { connectionString: string });
+    constructor(options: {
+      connectionString: string;
+      max?: number;
+      idleTimeoutMillis?: number;
+      connectionTimeoutMillis?: number;
+      statement_timeout?: number;
+      query_timeout?: number;
+      keepAlive?: boolean;
+    });
     query(sql: string, params?: unknown[]): Promise<{
       rows: Array<Record<string, unknown>>;
     }>;

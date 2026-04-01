@@ -16,6 +16,24 @@ interface SqlClientLike {
   query(sql: string, params?: unknown[]): Promise<SqlResult>;
 }
 
+interface PostgresPoolOptions {
+  poolMaxConnections?: number;
+  poolIdleTimeoutMs?: number;
+  poolConnectionTimeoutMs?: number;
+  poolStatementTimeoutMs?: number;
+  poolQueryTimeoutMs?: number;
+}
+
+interface PgPoolConfig {
+  connectionString: string;
+  max: number;
+  idleTimeoutMillis: number;
+  connectionTimeoutMillis: number;
+  statement_timeout: number;
+  query_timeout: number;
+  keepAlive: boolean;
+}
+
 interface PersistedRelayState {
   version: 1;
   agents: Array<{
@@ -75,6 +93,11 @@ export class PostgresRelayStore implements RelayStore {
       maxAgents?: number;
       maxEnvelopes?: number;
       rejectElevatedRole?: boolean;
+      poolMaxConnections?: number;
+      poolIdleTimeoutMs?: number;
+      poolConnectionTimeoutMs?: number;
+      poolStatementTimeoutMs?: number;
+      poolQueryTimeoutMs?: number;
     } = {},
   ) {
     this.tableName = sanitizeSqlIdentifier(options.tableName ?? "a2a_relay_state");
@@ -93,9 +116,20 @@ export class PostgresRelayStore implements RelayStore {
       maxAgents?: number;
       maxEnvelopes?: number;
       rejectElevatedRole?: boolean;
+      poolMaxConnections?: number;
+      poolIdleTimeoutMs?: number;
+      poolConnectionTimeoutMs?: number;
+      poolStatementTimeoutMs?: number;
+      poolQueryTimeoutMs?: number;
     } = {},
   ): Promise<PostgresRelayStore> {
-    const pool = await createPgPool(connectionString);
+    const pool = await createPgPool(connectionString, {
+      poolMaxConnections: options.poolMaxConnections,
+      poolIdleTimeoutMs: options.poolIdleTimeoutMs,
+      poolConnectionTimeoutMs: options.poolConnectionTimeoutMs,
+      poolStatementTimeoutMs: options.poolStatementTimeoutMs,
+      poolQueryTimeoutMs: options.poolQueryTimeoutMs,
+    });
     return new PostgresRelayStore(pool, options);
   }
 
@@ -289,11 +323,22 @@ export class PostgresRelayStore implements RelayStore {
   }
 }
 
-async function createPgPool(connectionString: string): Promise<SqlClientLike> {
+async function createPgPool(
+  connectionString: string,
+  options: PostgresPoolOptions = {},
+): Promise<SqlClientLike> {
   const pgModule = (await import("pg")) as {
-    Pool: new (options: { connectionString: string }) => SqlClientLike;
+    Pool: new (options: {
+      connectionString: string;
+      max?: number;
+      idleTimeoutMillis?: number;
+      connectionTimeoutMillis?: number;
+      statement_timeout?: number;
+      query_timeout?: number;
+      keepAlive?: boolean;
+    }) => SqlClientLike;
   };
-  return new pgModule.Pool({ connectionString });
+  return new pgModule.Pool(buildPgPoolConfig(connectionString, options));
 }
 
 function toBoolean(value: unknown): boolean {
@@ -308,6 +353,32 @@ function toBoolean(value: unknown): boolean {
     return value === 1;
   }
   return false;
+}
+
+function clampPositiveInt(value: number | undefined, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const normalized = Math.floor(value);
+  if (normalized <= 0) {
+    return fallback;
+  }
+  return normalized;
+}
+
+export function buildPgPoolConfig(
+  connectionString: string,
+  options: PostgresPoolOptions = {},
+): PgPoolConfig {
+  return {
+    connectionString,
+    max: clampPositiveInt(options.poolMaxConnections, 10),
+    idleTimeoutMillis: clampPositiveInt(options.poolIdleTimeoutMs, 30_000),
+    connectionTimeoutMillis: clampPositiveInt(options.poolConnectionTimeoutMs, 5_000),
+    statement_timeout: clampPositiveInt(options.poolStatementTimeoutMs, 20_000),
+    query_timeout: clampPositiveInt(options.poolQueryTimeoutMs, 20_000),
+    keepAlive: true,
+  };
 }
 
 function sanitizeSqlIdentifier(value: string): string {

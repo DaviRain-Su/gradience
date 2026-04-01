@@ -18,6 +18,11 @@ export interface RelayRuntimeConfig {
   storeFilePath: string;
   postgresConnectionString?: string;
   postgresRejectElevatedRole: boolean;
+  postgresPoolMaxConnections: number;
+  postgresPoolIdleTimeoutMs: number;
+  postgresPoolConnectionTimeoutMs: number;
+  postgresPoolStatementTimeoutMs: number;
+  postgresPoolQueryTimeoutMs: number;
   alertThresholds: RelayAlertThresholds;
   alertIntervalMs: number;
   alertWebhookUrl?: string;
@@ -44,6 +49,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/local-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: false,
+    postgresPoolMaxConnections: 3,
+    postgresPoolIdleTimeoutMs: 10_000,
+    postgresPoolConnectionTimeoutMs: 3_000,
+    postgresPoolStatementTimeoutMs: 15_000,
+    postgresPoolQueryTimeoutMs: 15_000,
     alertThresholds: {
       maxRejectedPayloads: 200,
       maxDedupRatio: 0.6,
@@ -73,6 +83,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/devnet-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: false,
+    postgresPoolMaxConnections: 10,
+    postgresPoolIdleTimeoutMs: 30_000,
+    postgresPoolConnectionTimeoutMs: 5_000,
+    postgresPoolStatementTimeoutMs: 20_000,
+    postgresPoolQueryTimeoutMs: 20_000,
     alertThresholds: {
       maxRejectedPayloads: 80,
       maxDedupRatio: 0.45,
@@ -102,6 +117,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/prod-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: true,
+    postgresPoolMaxConnections: 20,
+    postgresPoolIdleTimeoutMs: 60_000,
+    postgresPoolConnectionTimeoutMs: 8_000,
+    postgresPoolStatementTimeoutMs: 30_000,
+    postgresPoolQueryTimeoutMs: 30_000,
     alertThresholds: {
       maxRejectedPayloads: 40,
       maxDedupRatio: 0.3,
@@ -154,6 +174,26 @@ export function resolveRelayRuntimeConfig(
     postgresRejectElevatedRole: parseBoolean(
       env.A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE,
       preset.postgresRejectElevatedRole,
+    ),
+    postgresPoolMaxConnections: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_MAX_CONNECTIONS,
+      preset.postgresPoolMaxConnections,
+    ),
+    postgresPoolIdleTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_IDLE_TIMEOUT_MS,
+      preset.postgresPoolIdleTimeoutMs,
+    ),
+    postgresPoolConnectionTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_CONNECTION_TIMEOUT_MS,
+      preset.postgresPoolConnectionTimeoutMs,
+    ),
+    postgresPoolStatementTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_STATEMENT_TIMEOUT_MS,
+      preset.postgresPoolStatementTimeoutMs,
+    ),
+    postgresPoolQueryTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_QUERY_TIMEOUT_MS,
+      preset.postgresPoolQueryTimeoutMs,
     ),
     alertIntervalMs: parseIntSafe(
       env.A2A_RELAY_ALERT_INTERVAL_MS,

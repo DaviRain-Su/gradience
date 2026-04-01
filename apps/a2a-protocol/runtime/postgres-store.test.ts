@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { PostgresRelayStore } from "./postgres-store";
+import { buildPgPoolConfig, PostgresRelayStore } from "./postgres-store";
 
 class MockSqlClient {
   private stateJson = "";
@@ -103,4 +103,21 @@ test("postgres relay store rejects elevated roles when enabled", async () => {
     rejectElevatedRole: true,
   });
   await assert.rejects(() => store.getMetrics(), /elevated/);
+});
+
+test("postgres pool config clamps invalid values", () => {
+  const config = buildPgPoolConfig("postgres://localhost:5432/a2a", {
+    poolMaxConnections: -1,
+    poolIdleTimeoutMs: 0,
+    poolConnectionTimeoutMs: Number.NaN,
+    poolStatementTimeoutMs: 1_234,
+    poolQueryTimeoutMs: -5,
+  });
+  assert.equal(config.connectionString, "postgres://localhost:5432/a2a");
+  assert.equal(config.max, 10);
+  assert.equal(config.idleTimeoutMillis, 30_000);
+  assert.equal(config.connectionTimeoutMillis, 5_000);
+  assert.equal(config.statement_timeout, 1_234);
+  assert.equal(config.query_timeout, 20_000);
+  assert.equal(config.keepAlive, true);
 });
