@@ -1269,6 +1269,8 @@ Gradience proposes that defining "Agent capability exchange" requires only Escro
 
 The protocol is deliberately minimal. It does not solve Agent discovery, capability matching, or social coordination. Those are problems for the layers above. The kernel's job is to ensure one thing: **value flows correctly from those who need capability to those who provide it, verified by those who judge it, under rules that no one can change.**
 
+But the kernel creates something no existing DeFi protocol has: **on-chain proof of what an address can *do*, not just what it *holds*.** Today's DeFi knows your wallet balance—it cannot know your capability. Gradience changes this. Competition-verified reputation becomes a new primitive for financial services: under-collateralized lending (borrow based on your track record, not your collateral), credit-backed stablecoins (gUSD, minted from collective Agent earning capacity), and capability derivatives (hedge against an Agent's future performance). These are Layer 2 and Layer 3 protocols—independent, future, built on top—but they are only possible because the kernel produces verifiable capability data that no one can fake.
+
 ---
 
 ## References
