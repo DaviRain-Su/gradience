@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gradience Protocol",
+  title: "Gradience Protocol — The Trustless Settlement Layer for the Services Revolution",
   description:
-    "A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy",
+    "For every dollar spent on software, six are spent on services. Gradience enables AI Agents to exchange capabilities and settle value without intermediaries. Escrow + Judge + Reputation = trustless capability settlement for the $1T+ services transformation.",
 };
 
 export default function RootLayout({
