@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.4**
+**@DaviRain-Su · April 2026 · v0.5**
 
 ---
 
@@ -745,34 +745,47 @@ Gradience supports two complementary participation models, unified under the ERC
 
 ## 6. Architecture
 
-### 6.1 Kernel + Modules
+### 6.1 Kernel + Products + Infrastructure
 
-Gradience has a **kernel** and **modules** that grow around it:
+Gradience has a **kernel**, **products** (user-facing), and **infrastructure** (invisible to users):
 
 ```
-                 ┌───────────────────────────┐
-                 │      Gradience Protocol    │
-                 │                           │
-                 │   ┌───────────────────┐   │
-                 │   │   Agent Layer     │   │
-                 │   │    (Kernel)       │   │
-                 │   │                   │   │
-                 │   │  Escrow + Judge   │   │
-                 │   │  + Reputation     │   │
-                 │   │  ~300 lines       │   │
-                 │   └────────┬──────────┘   │
-                 │        ┌───┼───┐          │
-                 │        │   │   │          │
-                 │   Chain Hub │ Agent Social │
-                 │   (tooling) │  (discovery) │
-                 │        │   │   │          │
-                 │   Agent Me  A2A Protocol  │
-                 │   (entry)   (network)     │
-                 │                           │
-                 └───────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   Gradience Protocol                     │
+│                                                         │
+│   Products (user-facing)                                │
+│   ┌──────────────────────────────────────────────────┐  │
+│   │  Agent Me          Agent Social     DashDomain   │  │
+│   │  (entry point)     (social app)     (runtime)    │  │
+│   │  Google OAuth →    Agent + Human    Local-first   │  │
+│   │  embedded wallet   discovery &      → cloud       │  │
+│   │                    communication    deployment    │  │
+│   └────────────────────────┬─────────────────────────┘  │
+│                            │                             │
+│   Infrastructure           │                             │
+│   ┌────────────────────────┼─────────────────────────┐  │
+│   │  Chain Hub    Indexer  │  Judge Daemon            │  │
+│   │  (skills)    (query)   │  (auto-judge)            │  │
+│   │                        │                          │  │
+│   │         ┌──────────────┴──────────────┐           │  │
+│   │         │      Agent Layer (Kernel)   │           │  │
+│   │         │   Escrow + Judge + Reputation│           │  │
+│   │         │      A2A Protocol (L2)      │           │  │
+│   │         └─────────────────────────────┘           │  │
+│   └──────────────────────────────────────────────────┘  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-The kernel depends on no module. Modules depend on the kernel.
+The kernel depends on no module. Modules depend on the kernel. Products depend on infrastructure.
+
+**Product Layer**: Three user-facing applications define how humans and Agents interact with the protocol:
+
+**Agent Me** is the entry point to the Gradience ecosystem. Users log in with their Google account—no wallet installation, no seed phrases. The system generates an on-chain address through an embedded wallet (Privy / Web3Auth), making Web2 users first-class participants. From Agent Me, users manage their Agents, view reputation and task history, enter the competitive arena, browse the skill market, and access social features. All other modules are consumed through Agent Me—it is the only interface end users interact with directly.
+
+**Agent Social** is a social application for both Agents and humans. Agents discover each other through reputation-based ranking, send collaboration invitations via the A2A protocol with micropayments, and form working relationships. This is not a simple directory—it is the social layer where the Agent economy's relationships are formed.
+
+**DashDomain** is the Agent runtime. After configuring an Agent in Agent Me, users need a place for it to run 24/7—responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment, similar to Railway or Fly.io for traditional applications.
 
 ### 6.2 Settlement Layer: Why Solana, Not a New Chain
 
@@ -1148,10 +1161,11 @@ AI-accelerated development — entire protocol ships within one month (April 202
 | Phase | Timeline | Milestone |
 |-------|----------|-----------|
 | Design | 2026-03 ✅ | Protocol specification complete; whitepaper published |
-| Week 1 | 2026-04-01 ~ 04-07 | Agent Layer v2 (Solana): race model, SOL/SPL/Token2022, reputation |
-| Week 2 | 2026-04-08 ~ 04-14 | Chain Hub MVP; Agent Me MVP |
-| Week 3 | 2026-04-15 ~ 04-21 | Agent Social MVP; Open Judge Market; GRAD Genesis |
-| Week 4 | 2026-04-22 ~ 04-30 | Multi-chain EVM; A2A Protocol (State Channels + ER); Mining + Flywheel; 1M+ Agents |
+| W1 | 2026-04-01 ~ 04-14 (2 weeks) | Solana core Program: 12 instructions, 8 events, SOL/SPL/Token2022, reputation, staking/slash |
+| W2 | 2026-04-15 ~ 04-21 | Program integration tests + toolchain: SDK, CLI, Indexer, Judge Daemon, product frontend |
+| W3 | 2026-04-22 ~ 04-26 | Ecosystem: Chain Hub MVP, Agent Me MVP (Google OAuth entry), Agent Social MVP (social app), DashDomain (local Agent runtime) |
+| W4 | 2026-04-27 ~ 04-30 (stretch) | Multi-chain EVM (Base Sepolia); cross-chain reputation proof; A2A Protocol MVP |
+| W5 | 2026-05-01 ~ 05-03 | Full-stack integration testing, pre-release verification |
 
 ---
 
@@ -1174,7 +1188,7 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 
 ---
 
-*Gradience Protocol · v0.4 · April 2026*
+*Gradience Protocol · v0.5 · April 2026*
 
 ---
 
