@@ -6,7 +6,9 @@ export interface RelayAlertThresholds {
   minAvgDeliveriesPerPull: number;
   minPullRequestsForDeliveryCheck: number;
   maxDbFailureRate: number;
+  criticalDbFailureRate: number;
   maxDbAvgQueryLatencyMs: number;
+  criticalDbAvgQueryLatencyMs: number;
   minDbQueryCountForHealthCheck: number;
 }
 
@@ -17,6 +19,7 @@ export interface RelayAlert {
     | "delivery_throughput_low"
     | "db_query_failure_rate_high"
     | "db_query_latency_high"
+    | "db_health_recovered"
     | "test_alert";
   severity: "warning" | "critical";
   message: string;
@@ -30,7 +33,9 @@ export const DEFAULT_RELAY_ALERT_THRESHOLDS: RelayAlertThresholds = {
   minAvgDeliveriesPerPull: 0.2,
   minPullRequestsForDeliveryCheck: 25,
   maxDbFailureRate: 0.05,
+  criticalDbFailureRate: 0.15,
   maxDbAvgQueryLatencyMs: 200,
+  criticalDbAvgQueryLatencyMs: 500,
   minDbQueryCountForHealthCheck: 20,
 };
 
@@ -86,7 +91,8 @@ export function evaluateRelayAlerts(
     if (failureRate >= thresholds.maxDbFailureRate) {
       alerts.push({
         code: "db_query_failure_rate_high",
-        severity: "critical",
+        severity:
+          failureRate >= thresholds.criticalDbFailureRate ? "critical" : "warning",
         message: "Database query failure rate exceeded threshold.",
         observed: failureRate,
         threshold: thresholds.maxDbFailureRate,
@@ -95,7 +101,10 @@ export function evaluateRelayAlerts(
     if (metrics.dbAvgQueryLatencyMs >= thresholds.maxDbAvgQueryLatencyMs) {
       alerts.push({
         code: "db_query_latency_high",
-        severity: "warning",
+        severity:
+          metrics.dbAvgQueryLatencyMs >= thresholds.criticalDbAvgQueryLatencyMs
+            ? "critical"
+            : "warning",
         message: "Database average query latency exceeded threshold.",
         observed: metrics.dbAvgQueryLatencyMs,
         threshold: thresholds.maxDbAvgQueryLatencyMs,
@@ -108,6 +117,7 @@ export function evaluateRelayAlerts(
 
 export class RelayAlertMonitor {
   private timer: ReturnType<typeof setInterval> | null = null;
+  private lastDbHealthy: boolean | null = null;
 
   constructor(
     private readonly store: RelayStore,
@@ -120,10 +130,28 @@ export class RelayAlertMonitor {
 
   async checkNow(): Promise<{ alerts: RelayAlert[]; metrics: RelayMetrics }> {
     const metrics = await this.store.getMetrics();
+    const thresholds = this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS;
     const alerts = evaluateRelayAlerts(
       metrics,
-      this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS,
+      thresholds,
     );
+    const dbEligible = metrics.dbQueryCount >= thresholds.minDbQueryCountForHealthCheck;
+    const dbUnhealthy = alerts.some((alert) =>
+      alert.code === "db_query_failure_rate_high" || alert.code === "db_query_latency_high"
+    );
+    if (dbEligible) {
+      const dbHealthy = !dbUnhealthy;
+      if (this.lastDbHealthy === false && dbHealthy) {
+        alerts.push({
+          code: "db_health_recovered",
+          severity: "warning",
+          message: "Database health recovered below configured alert thresholds.",
+          observed: 0,
+          threshold: 1,
+        });
+      }
+      this.lastDbHealthy = dbHealthy;
+    }
     return { alerts, metrics };
   }
 

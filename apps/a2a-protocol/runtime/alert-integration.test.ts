@@ -56,7 +56,9 @@ test("relay monitor dispatches threshold alerts to webhook sink", async () => {
       minAvgDeliveriesPerPull: 0,
       minPullRequestsForDeliveryCheck: 9999,
       maxDbFailureRate: 1,
+      criticalDbFailureRate: 1,
       maxDbAvgQueryLatencyMs: 10_000,
+      criticalDbAvgQueryLatencyMs: 20_000,
       minDbQueryCountForHealthCheck: 9999,
     },
   });
