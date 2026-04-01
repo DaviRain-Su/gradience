@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { startRelayServer } from "./server";
+import { startRelayServer, validatePostgresRuntimePolicy } from "./server";
 
 test("relay server exposes health and relay endpoints", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "a2a-relay-server-"));
@@ -66,10 +66,114 @@ test("relay server exposes health and relay endpoints", async () => {
 
       const alerts = await fetch(`${server.baseUrl}/v1/alerts`);
       assert.equal(alerts.status, 401);
+
+      const drillUnauthorized = await fetch(`${server.baseUrl}/v1/alerts/test`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ severity: "critical" }),
+      });
+      assert.equal(drillUnauthorized.status, 401);
+
+      const drill = await fetch(`${server.baseUrl}/v1/alerts/test`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          severity: "warning",
+          message: "drill",
+          observed: 2,
+          threshold: 1,
+        }),
+      });
+      assert.equal(drill.status, 202);
+      const drillBody = (await drill.json()) as {
+        accepted: boolean;
+        dispatched: boolean;
+        alert: { code: string; severity: string; message: string };
+      };
+      assert.equal(drillBody.accepted, true);
+      assert.equal(drillBody.dispatched, false);
+      assert.equal(drillBody.alert.code, "test_alert");
+      assert.equal(drillBody.alert.severity, "warning");
+      assert.equal(drillBody.alert.message, "drill");
+
+      const replayUnauthorized = await fetch(
+        `${server.baseUrl}/v1/alerts/replay-failed`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ maxItems: 50 }),
+        },
+      );
+      assert.equal(replayUnauthorized.status, 401);
+
+      const replay = await fetch(`${server.baseUrl}/v1/alerts/replay-failed`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ maxItems: 50 }),
+      });
+      assert.equal(replay.status, 200);
+      const replayBody = (await replay.json()) as {
+        ok: boolean;
+        result: { processed: number; delivered: number; remaining: number };
+      };
+      assert.equal(replayBody.ok, true);
+      assert.equal(replayBody.result.processed, 0);
+      assert.equal(replayBody.result.delivered, 0);
     } finally {
       await server.close();
     }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("relay server rejects postgres mode without connection string", async () => {
+  await assert.rejects(() =>
+    startRelayServer({
+      storeMode: "postgres",
+    }),
+  );
+});
+
+test("runtime policy rejects insecure postgres config in prod", () => {
+  assert.throws(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=disable",
+      postgresRejectElevatedRole: true,
+      postgresRequireSsl: true,
+    }),
+  );
+  assert.throws(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=require",
+      postgresRejectElevatedRole: false,
+      postgresRequireSsl: true,
+    }),
+  );
+});
+
+test("runtime policy allows secure postgres config in prod", () => {
+  assert.doesNotThrow(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=require",
+      postgresRejectElevatedRole: true,
+      postgresRequireSsl: true,
+    }),
+  );
 });

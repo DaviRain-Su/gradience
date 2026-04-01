@@ -40,7 +40,7 @@ export class A2ARelayApi {
       if (!body?.agent || !body.endpoint) {
         return { status: 400, body: { error: "invalid_payload" } };
       }
-      const descriptor = this.store.upsertAgent({
+      const descriptor = await this.store.upsertAgent({
         agent: body.agent,
         capabilityMask: BigInt(body.capabilityMask),
         transportFlags: body.transportFlags ?? 0,
@@ -53,7 +53,7 @@ export class A2ARelayApi {
       const capabilityMask = request.query?.capabilityMask;
       const limit = parseLimit(request.query?.limit, 100, 500);
       const cursor = request.query?.cursor;
-      const all = this.store.listAgents(
+      const all = await this.store.listAgents(
         capabilityMask !== undefined ? BigInt(capabilityMask) : undefined,
       );
       const sorted = [...all].sort((a, b) => a.agent.localeCompare(b.agent));
@@ -74,23 +74,23 @@ export class A2ARelayApi {
         | { envelope: SignedEnvelope; payload: Record<string, unknown> }
         | undefined;
       if (!body?.envelope || !body.payload) {
-        this.store.markPayloadRejected();
+        await this.store.markPayloadRejected();
         return { status: 400, body: { error: "invalid_payload" } };
       }
       const payloadSize = jsonSize(body.payload);
       if (payloadSize > this.maxPayloadBytes) {
-        this.store.markPayloadRejected();
+        await this.store.markPayloadRejected();
         return { status: 413, body: { error: "payload_too_large" } };
       }
       if (!isValidEnvelope(body.envelope)) {
-        this.store.markPayloadRejected();
+        await this.store.markPayloadRejected();
         return { status: 400, body: { error: "invalid_envelope" } };
       }
       if (body.envelope.paymentMicrolamports > this.maxPaymentMicrolamports) {
-        this.store.markPayloadRejected();
+        await this.store.markPayloadRejected();
         return { status: 400, body: { error: "payment_limit_exceeded" } };
       }
-      const record = this.store.publishEnvelope(body.envelope, body.payload);
+      const record = await this.store.publishEnvelope(body.envelope, body.payload);
       return {
         status: 202,
         body: {
@@ -107,7 +107,7 @@ export class A2ARelayApi {
       }
       const after = request.query?.after;
       const limit = parseLimit(request.query?.limit, 100, 500);
-      const result = this.store.pullEnvelopes(agent, after, limit);
+      const result = await this.store.pullEnvelopes(agent, after, limit);
       return {
         status: 200,
         body: {
@@ -120,7 +120,7 @@ export class A2ARelayApi {
     if (request.method === "GET" && request.path === "/v1/metrics") {
       return {
         status: 200,
-        body: this.store.getMetrics(),
+        body: await this.store.getMetrics(),
       };
     }
 

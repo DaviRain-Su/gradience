@@ -56,15 +56,25 @@ export interface RelayMetrics {
   envelopesDelivered: number;
   pullRequests: number;
   rejectedPayloads: number;
+  dbQueryCount: number;
+  dbQueryFailures: number;
+  dbAvgQueryLatencyMs: number;
 }
 
+export type Awaitable<T> = T | Promise<T>;
+
 export interface RelayStore {
-  upsertAgent(descriptor: Omit<RelayAgentDescriptor, "heartbeatAt">): RelayAgentDescriptor;
-  listAgents(capabilityMask?: bigint): RelayAgentDescriptor[];
-  publishEnvelope(envelope: SignedEnvelope, body: Record<string, unknown>): RelayEnvelopeRecord;
-  pullEnvelopes(agent: Address, afterId?: string, limit?: number): RelayPullResult;
-  markPayloadRejected(): void;
-  getMetrics(): RelayMetrics;
+  upsertAgent(
+    descriptor: Omit<RelayAgentDescriptor, "heartbeatAt">,
+  ): Awaitable<RelayAgentDescriptor>;
+  listAgents(capabilityMask?: bigint): Awaitable<RelayAgentDescriptor[]>;
+  publishEnvelope(
+    envelope: SignedEnvelope,
+    body: Record<string, unknown>,
+  ): Awaitable<RelayEnvelopeRecord>;
+  pullEnvelopes(agent: Address, afterId?: string, limit?: number): Awaitable<RelayPullResult>;
+  markPayloadRejected(): Awaitable<void>;
+  getMetrics(): Awaitable<RelayMetrics>;
 }
 
 export interface SubtaskBroadcastInput {

@@ -5,13 +5,19 @@ export interface RelayAlertThresholds {
   maxDedupRatio: number;
   minAvgDeliveriesPerPull: number;
   minPullRequestsForDeliveryCheck: number;
+  maxDbFailureRate: number;
+  maxDbAvgQueryLatencyMs: number;
+  minDbQueryCountForHealthCheck: number;
 }
 
 export interface RelayAlert {
   code:
     | "rejected_payload_spike"
     | "dedup_ratio_high"
-    | "delivery_throughput_low";
+    | "delivery_throughput_low"
+    | "db_query_failure_rate_high"
+    | "db_query_latency_high"
+    | "test_alert";
   severity: "warning" | "critical";
   message: string;
   observed: number;
@@ -23,6 +29,9 @@ export const DEFAULT_RELAY_ALERT_THRESHOLDS: RelayAlertThresholds = {
   maxDedupRatio: 0.35,
   minAvgDeliveriesPerPull: 0.2,
   minPullRequestsForDeliveryCheck: 25,
+  maxDbFailureRate: 0.05,
+  maxDbAvgQueryLatencyMs: 200,
+  minDbQueryCountForHealthCheck: 20,
 };
 
 export function evaluateRelayAlerts(
@@ -71,6 +80,29 @@ export function evaluateRelayAlerts(
     }
   }
 
+  if (metrics.dbQueryCount >= thresholds.minDbQueryCountForHealthCheck) {
+    const failureRate =
+      metrics.dbQueryCount === 0 ? 0 : metrics.dbQueryFailures / metrics.dbQueryCount;
+    if (failureRate >= thresholds.maxDbFailureRate) {
+      alerts.push({
+        code: "db_query_failure_rate_high",
+        severity: "critical",
+        message: "Database query failure rate exceeded threshold.",
+        observed: failureRate,
+        threshold: thresholds.maxDbFailureRate,
+      });
+    }
+    if (metrics.dbAvgQueryLatencyMs >= thresholds.maxDbAvgQueryLatencyMs) {
+      alerts.push({
+        code: "db_query_latency_high",
+        severity: "warning",
+        message: "Database average query latency exceeded threshold.",
+        observed: metrics.dbAvgQueryLatencyMs,
+        threshold: thresholds.maxDbAvgQueryLatencyMs,
+      });
+    }
+  }
+
   return alerts;
 }
 
@@ -82,12 +114,12 @@ export class RelayAlertMonitor {
     private readonly options: {
       thresholds?: RelayAlertThresholds;
       intervalMs?: number;
-      onAlerts?: (alerts: RelayAlert[], metrics: RelayMetrics) => void;
+      onAlerts?: (alerts: RelayAlert[], metrics: RelayMetrics) => void | Promise<void>;
     } = {},
   ) {}
 
-  checkNow(): { alerts: RelayAlert[]; metrics: RelayMetrics } {
-    const metrics = this.store.getMetrics();
+  async checkNow(): Promise<{ alerts: RelayAlert[]; metrics: RelayMetrics }> {
+    const metrics = await this.store.getMetrics();
     const alerts = evaluateRelayAlerts(
       metrics,
       this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS,
@@ -104,21 +136,26 @@ export class RelayAlertMonitor {
       return;
     }
     this.timer = setInterval(() => {
-      const { alerts, metrics } = this.checkNow();
-      if (alerts.length === 0) {
-        return;
-      }
-      if (this.options.onAlerts) {
-        this.options.onAlerts(alerts, metrics);
-        return;
-      }
-      for (const alert of alerts) {
-        console.warn(
-          `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
-            alert.observed,
-          )} threshold=${String(alert.threshold)}`,
-        );
-      }
+      void this.checkNow().then(({ alerts, metrics }) => {
+        if (alerts.length === 0) {
+          return;
+        }
+        if (this.options.onAlerts) {
+          Promise.resolve(this.options.onAlerts(alerts, metrics)).catch((error) => {
+            console.error("[a2a-relay-alert] delivery failed", error);
+          });
+          return;
+        }
+        for (const alert of alerts) {
+          console.warn(
+            `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
+              alert.observed,
+            )} threshold=${String(alert.threshold)}`,
+          );
+        }
+      }).catch((error) => {
+        console.error("[a2a-relay-alert] monitor tick failed", error);
+      });
     }, intervalMs);
   }
 

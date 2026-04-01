@@ -1,12 +1,18 @@
 import { createServer } from "node:http";
 import { URL } from "node:url";
 
+import { RelayAlertSink, type RelayAlertSeverity } from "./alert-sink";
 import {
   DEFAULT_RELAY_ALERT_THRESHOLDS,
   RelayAlertMonitor,
+  type RelayAlert,
   type RelayAlertThresholds,
 } from "./monitor";
-import { loadRelayRuntimeConfigFromEnv } from "./config";
+import {
+  loadRelayRuntimeConfigFromEnv,
+  type RelayRuntimeConfig,
+} from "./config";
+import { PostgresRelayStore } from "./postgres-store";
 import { A2ARelayApi } from "./relay";
 import { FileRelayStore, InMemoryRelayStore } from "./store";
 import type {
@@ -23,10 +29,27 @@ export interface RelayServerOptions {
   maxPaymentMicrolamports?: bigint;
   httpMaxBodyBytes?: number;
   store?: RelayStore;
-  storeMode?: "memory" | "file";
+  storeMode?: "memory" | "file" | "postgres";
   storeFilePath?: string;
+  postgresConnectionString?: string;
+  postgresRejectElevatedRole?: boolean;
+  postgresRequireSsl?: boolean;
+  postgresPoolMaxConnections?: number;
+  postgresPoolIdleTimeoutMs?: number;
+  postgresPoolConnectionTimeoutMs?: number;
+  postgresPoolStatementTimeoutMs?: number;
+  postgresPoolQueryTimeoutMs?: number;
   alertThresholds?: RelayAlertThresholds;
   alertIntervalMs?: number;
+  alertWebhookUrl?: string;
+  alertSlackWebhookUrl?: string;
+  alertMinSeverity?: RelayAlertSeverity;
+  alertDispatchCooldownMs?: number;
+  alertRetryAttempts?: number;
+  alertRetryBaseDelayMs?: number;
+  alertSigningSecret?: string;
+  alertFailureQueueFilePath?: string;
+  alertReplayOnStart?: boolean;
 }
 
 export interface StartedRelayServer {
@@ -34,7 +57,7 @@ export interface StartedRelayServer {
   port: number;
   baseUrl: string;
   close: () => Promise<void>;
-  checkAlerts: () => ReturnType<RelayAlertMonitor["checkNow"]>;
+  checkAlerts: () => Promise<Awaited<ReturnType<RelayAlertMonitor["checkNow"]>>>;
 }
 
 export async function startRelayServer(
@@ -45,18 +68,61 @@ export async function startRelayServer(
   const httpMaxBodyBytes = options.httpMaxBodyBytes ?? 1_048_576;
   const store =
     options.store ??
-    createRelayStore({
+    (await createRelayStore({
       mode: options.storeMode ?? "file",
       storeFilePath: options.storeFilePath ?? "./data/relay-state.json",
-    });
+      postgresConnectionString: options.postgresConnectionString,
+      postgresRejectElevatedRole: options.postgresRejectElevatedRole,
+      postgresPoolMaxConnections: options.postgresPoolMaxConnections,
+      postgresPoolIdleTimeoutMs: options.postgresPoolIdleTimeoutMs,
+      postgresPoolConnectionTimeoutMs: options.postgresPoolConnectionTimeoutMs,
+      postgresPoolStatementTimeoutMs: options.postgresPoolStatementTimeoutMs,
+      postgresPoolQueryTimeoutMs: options.postgresPoolQueryTimeoutMs,
+    }));
   const relay = new A2ARelayApi(store, {
     authToken: options.authToken,
     maxPayloadBytes: options.maxPayloadBytes,
     maxPaymentMicrolamports: options.maxPaymentMicrolamports,
   });
+  const alertSink = new RelayAlertSink({
+    webhookUrl: options.alertWebhookUrl,
+    slackWebhookUrl: options.alertSlackWebhookUrl,
+    minSeverity: options.alertMinSeverity,
+    cooldownMs: options.alertDispatchCooldownMs,
+    retryAttempts: options.alertRetryAttempts,
+    retryBaseDelayMs: options.alertRetryBaseDelayMs,
+    signingSecret: options.alertSigningSecret,
+    failureQueueFilePath: options.alertFailureQueueFilePath,
+    source: "a2a-relay",
+  });
+  if (options.alertReplayOnStart) {
+    const replayResult = await alertSink.drainFailureQueue();
+    if (replayResult.processed > 0) {
+      console.log(
+        `[a2a-relay] replayed failed alerts processed=${String(
+          replayResult.processed,
+        )} delivered=${String(replayResult.delivered)} remaining=${String(
+          replayResult.remaining,
+        )}`,
+      );
+    }
+  }
   const alertMonitor = new RelayAlertMonitor(store, {
     thresholds: options.alertThresholds,
     intervalMs: options.alertIntervalMs,
+    onAlerts: async (alerts, metrics) => {
+      if (alertSink.isEnabled()) {
+        await alertSink.notify(alerts, metrics);
+        return;
+      }
+      for (const alert of alerts) {
+        console.warn(
+          `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
+            alert.observed,
+          )} threshold=${String(alert.threshold)}`,
+        );
+      }
+    },
   });
   alertMonitor.start();
 
@@ -79,7 +145,7 @@ export async function startRelayServer(
       }
 
       if (method === "GET" && requestUrl.pathname === "/readyz") {
-        store.getMetrics();
+        await store.getMetrics();
         sendJson(response, 200, {
           ok: true,
           store: options.storeMode ?? "file",
@@ -92,11 +158,55 @@ export async function startRelayServer(
           sendJson(response, 401, { error: "unauthorized" });
           return;
         }
-        const snapshot = alertMonitor.checkNow();
+        const snapshot = await alertMonitor.checkNow();
         sendJson(response, 200, {
           items: snapshot.alerts,
           metrics: snapshot.metrics,
           thresholds: options.alertThresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS,
+        });
+        return;
+      }
+
+      if (method === "POST" && requestUrl.pathname === "/v1/alerts/test") {
+        if (!isAuthorizedRequest(normalizeHeaders(request.headers), options.authToken)) {
+          sendJson(response, 401, { error: "unauthorized" });
+          return;
+        }
+        const body = await readRequestBody(request, httpMaxBodyBytes);
+        const payload =
+          typeof body === "object" && body !== null
+            ? (body as Record<string, unknown>)
+            : {};
+        const alert = buildTestAlert(payload);
+        const metrics = await store.getMetrics();
+        let dispatched = false;
+        if (alertSink.isEnabled()) {
+          await alertSink.notify([alert], metrics);
+          dispatched = true;
+        }
+        sendJson(response, 202, {
+          accepted: true,
+          dispatched,
+          alert,
+        });
+        return;
+      }
+
+      if (method === "POST" && requestUrl.pathname === "/v1/alerts/replay-failed") {
+        if (!isAuthorizedRequest(normalizeHeaders(request.headers), options.authToken)) {
+          sendJson(response, 401, { error: "unauthorized" });
+          return;
+        }
+        const body = await readRequestBody(request, httpMaxBodyBytes);
+        const payload =
+          typeof body === "object" && body !== null
+            ? (body as Record<string, unknown>)
+            : {};
+        const maxItems = parseNumeric(payload.maxItems, 100);
+        const result = await alertSink.drainFailureQueue(maxItems);
+        sendJson(response, 200, {
+          ok: true,
+          result,
         });
         return;
       }
@@ -145,6 +255,7 @@ export async function startRelayServer(
 
 export async function runRelayServerFromEnv(): Promise<StartedRelayServer> {
   const config = loadRelayRuntimeConfigFromEnv();
+  validatePostgresRuntimePolicy(config);
   const server = await startRelayServer(config);
 
   console.log(
@@ -153,14 +264,61 @@ export async function runRelayServerFromEnv(): Promise<StartedRelayServer> {
   return server;
 }
 
-function createRelayStore(options: {
-  mode: "memory" | "file";
-  storeFilePath: string;
-}): RelayStore {
-  if (options.mode === "memory") {
-    return new InMemoryRelayStore();
+export function validatePostgresRuntimePolicy(
+  config: Pick<
+    RelayRuntimeConfig,
+    | "profile"
+    | "storeMode"
+    | "postgresConnectionString"
+    | "postgresRejectElevatedRole"
+    | "postgresRequireSsl"
+  >,
+): void {
+  if (config.storeMode !== "postgres") {
+    return;
   }
-  return new FileRelayStore(options.storeFilePath);
+  const connection = config.postgresConnectionString?.trim();
+  if (!connection) {
+    throw new Error("postgres store mode requires explicit A2A_RELAY_POSTGRES_URL");
+  }
+  if (config.postgresRequireSsl && !postgresConnectionUsesSsl(connection)) {
+    throw new Error("postgres store mode requires SSL-enabled connection string");
+  }
+  if (config.profile === "prod" && !config.postgresRejectElevatedRole) {
+    throw new Error("prod postgres mode must keep elevated-role rejection enabled");
+  }
+}
+
+function createRelayStore(options: {
+  mode: "memory" | "file" | "postgres";
+  storeFilePath: string;
+  postgresConnectionString?: string;
+  postgresRejectElevatedRole?: boolean;
+  postgresPoolMaxConnections?: number;
+  postgresPoolIdleTimeoutMs?: number;
+  postgresPoolConnectionTimeoutMs?: number;
+  postgresPoolStatementTimeoutMs?: number;
+  postgresPoolQueryTimeoutMs?: number;
+}): Promise<RelayStore> {
+  if (options.mode === "memory") {
+    return Promise.resolve(new InMemoryRelayStore());
+  }
+  if (options.mode === "postgres") {
+    if (!options.postgresConnectionString) {
+      return Promise.reject(
+        new Error("A2A_RELAY_POSTGRES_URL is required when store mode is postgres"),
+      );
+    }
+    return PostgresRelayStore.connect(options.postgresConnectionString, {
+      rejectElevatedRole: options.postgresRejectElevatedRole,
+      poolMaxConnections: options.postgresPoolMaxConnections,
+      poolIdleTimeoutMs: options.postgresPoolIdleTimeoutMs,
+      poolConnectionTimeoutMs: options.postgresPoolConnectionTimeoutMs,
+      poolStatementTimeoutMs: options.postgresPoolStatementTimeoutMs,
+      poolQueryTimeoutMs: options.postgresPoolQueryTimeoutMs,
+    });
+  }
+  return Promise.resolve(new FileRelayStore(options.storeFilePath));
 }
 
 function normalizeRelayRequestBody(pathname: string, body: unknown): unknown {
@@ -346,5 +504,58 @@ async function closeServer(server: any): Promise<void> {
       resolve();
     });
   });
+}
+
+function buildTestAlert(payload: Record<string, unknown>): RelayAlert {
+  const severityValue = payload.severity;
+  const severity =
+    severityValue === "critical" || severityValue === "warning"
+      ? severityValue
+      : "critical";
+  const observed = parseNumeric(payload.observed, 1);
+  const threshold = parseNumeric(payload.threshold, 0.5);
+  const message =
+    typeof payload.message === "string" && payload.message.trim() !== ""
+      ? payload.message.trim()
+      : "Manual relay alert drill triggered.";
+  return {
+    code: "test_alert",
+    severity,
+    message,
+    observed,
+    threshold,
+  };
+}
+
+function parseNumeric(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function postgresConnectionUsesSsl(connectionString: string): boolean {
+  const normalized = connectionString.trim().toLowerCase();
+  if (normalized.includes("sslmode=disable")) {
+    return false;
+  }
+  if (normalized.includes("ssl=false")) {
+    return false;
+  }
+  if (
+    normalized.includes("sslmode=require") ||
+    normalized.includes("sslmode=verify-ca") ||
+    normalized.includes("sslmode=verify-full") ||
+    normalized.includes("ssl=true")
+  ) {
+    return true;
+  }
+  return false;
 }
 

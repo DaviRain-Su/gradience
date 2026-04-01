@@ -2,6 +2,7 @@ import {
   DEFAULT_RELAY_ALERT_THRESHOLDS,
   type RelayAlertThresholds,
 } from "./monitor";
+import type { RelayAlertSeverity } from "./alert-sink";
 
 export type RelayRuntimeProfile = "local" | "devnet" | "prod";
 
@@ -13,10 +14,27 @@ export interface RelayRuntimeConfig {
   maxPayloadBytes: number;
   maxPaymentMicrolamports: bigint;
   httpMaxBodyBytes: number;
-  storeMode: "memory" | "file";
+  storeMode: "memory" | "file" | "postgres";
   storeFilePath: string;
+  postgresConnectionString?: string;
+  postgresRejectElevatedRole: boolean;
+  postgresRequireSsl: boolean;
+  postgresPoolMaxConnections: number;
+  postgresPoolIdleTimeoutMs: number;
+  postgresPoolConnectionTimeoutMs: number;
+  postgresPoolStatementTimeoutMs: number;
+  postgresPoolQueryTimeoutMs: number;
   alertThresholds: RelayAlertThresholds;
   alertIntervalMs: number;
+  alertWebhookUrl?: string;
+  alertSlackWebhookUrl?: string;
+  alertMinSeverity: RelayAlertSeverity;
+  alertDispatchCooldownMs: number;
+  alertRetryAttempts: number;
+  alertRetryBaseDelayMs: number;
+  alertSigningSecret?: string;
+  alertFailureQueueFilePath?: string;
+  alertReplayOnStart: boolean;
 }
 
 const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
@@ -30,13 +48,33 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "memory",
     storeFilePath: "./data/local-relay-state.json",
+    postgresConnectionString: undefined,
+    postgresRejectElevatedRole: false,
+    postgresRequireSsl: false,
+    postgresPoolMaxConnections: 3,
+    postgresPoolIdleTimeoutMs: 10_000,
+    postgresPoolConnectionTimeoutMs: 3_000,
+    postgresPoolStatementTimeoutMs: 15_000,
+    postgresPoolQueryTimeoutMs: 15_000,
     alertThresholds: {
       maxRejectedPayloads: 200,
       maxDedupRatio: 0.6,
       minAvgDeliveriesPerPull: 0.05,
       minPullRequestsForDeliveryCheck: 20,
+      maxDbFailureRate: 0.2,
+      maxDbAvgQueryLatencyMs: 400,
+      minDbQueryCountForHealthCheck: 10,
     },
     alertIntervalMs: 30_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "warning",
+    alertDispatchCooldownMs: 60_000,
+    alertRetryAttempts: 2,
+    alertRetryBaseDelayMs: 150,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/local-alert-failures.ndjson",
+    alertReplayOnStart: false,
   },
   devnet: {
     profile: "devnet",
@@ -48,13 +86,33 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "file",
     storeFilePath: "./data/devnet-relay-state.json",
+    postgresConnectionString: undefined,
+    postgresRejectElevatedRole: false,
+    postgresRequireSsl: false,
+    postgresPoolMaxConnections: 10,
+    postgresPoolIdleTimeoutMs: 30_000,
+    postgresPoolConnectionTimeoutMs: 5_000,
+    postgresPoolStatementTimeoutMs: 20_000,
+    postgresPoolQueryTimeoutMs: 20_000,
     alertThresholds: {
       maxRejectedPayloads: 80,
       maxDedupRatio: 0.45,
       minAvgDeliveriesPerPull: 0.15,
       minPullRequestsForDeliveryCheck: 25,
+      maxDbFailureRate: 0.1,
+      maxDbAvgQueryLatencyMs: 300,
+      minDbQueryCountForHealthCheck: 20,
     },
     alertIntervalMs: 30_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "warning",
+    alertDispatchCooldownMs: 60_000,
+    alertRetryAttempts: 3,
+    alertRetryBaseDelayMs: 250,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/devnet-alert-failures.ndjson",
+    alertReplayOnStart: true,
   },
   prod: {
     profile: "prod",
@@ -66,13 +124,33 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "file",
     storeFilePath: "./data/prod-relay-state.json",
+    postgresConnectionString: undefined,
+    postgresRejectElevatedRole: true,
+    postgresRequireSsl: true,
+    postgresPoolMaxConnections: 20,
+    postgresPoolIdleTimeoutMs: 60_000,
+    postgresPoolConnectionTimeoutMs: 8_000,
+    postgresPoolStatementTimeoutMs: 30_000,
+    postgresPoolQueryTimeoutMs: 30_000,
     alertThresholds: {
       maxRejectedPayloads: 40,
       maxDedupRatio: 0.3,
       minAvgDeliveriesPerPull: 0.25,
       minPullRequestsForDeliveryCheck: 30,
+      maxDbFailureRate: 0.03,
+      maxDbAvgQueryLatencyMs: 200,
+      minDbQueryCountForHealthCheck: 30,
     },
     alertIntervalMs: 15_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "critical",
+    alertDispatchCooldownMs: 180_000,
+    alertRetryAttempts: 5,
+    alertRetryBaseDelayMs: 400,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/prod-alert-failures.ndjson",
+    alertReplayOnStart: true,
   },
 };
 
@@ -103,9 +181,71 @@ export function resolveRelayRuntimeConfig(
     ),
     storeMode: parseStoreMode(env.A2A_RELAY_STORE_MODE, preset.storeMode),
     storeFilePath: env.A2A_RELAY_STORE_FILE ?? preset.storeFilePath,
+    postgresConnectionString:
+      parseOptionalString(env.A2A_RELAY_POSTGRES_URL) ??
+      preset.postgresConnectionString,
+    postgresRejectElevatedRole: parseBoolean(
+      env.A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE,
+      preset.postgresRejectElevatedRole,
+    ),
+    postgresRequireSsl: parseBoolean(
+      env.A2A_RELAY_POSTGRES_REQUIRE_SSL,
+      preset.postgresRequireSsl,
+    ),
+    postgresPoolMaxConnections: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_MAX_CONNECTIONS,
+      preset.postgresPoolMaxConnections,
+    ),
+    postgresPoolIdleTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_IDLE_TIMEOUT_MS,
+      preset.postgresPoolIdleTimeoutMs,
+    ),
+    postgresPoolConnectionTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_CONNECTION_TIMEOUT_MS,
+      preset.postgresPoolConnectionTimeoutMs,
+    ),
+    postgresPoolStatementTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_STATEMENT_TIMEOUT_MS,
+      preset.postgresPoolStatementTimeoutMs,
+    ),
+    postgresPoolQueryTimeoutMs: parseIntSafe(
+      env.A2A_RELAY_POSTGRES_POOL_QUERY_TIMEOUT_MS,
+      preset.postgresPoolQueryTimeoutMs,
+    ),
     alertIntervalMs: parseIntSafe(
       env.A2A_RELAY_ALERT_INTERVAL_MS,
       preset.alertIntervalMs,
+    ),
+    alertWebhookUrl:
+      parseOptionalString(env.A2A_RELAY_ALERT_WEBHOOK_URL) ?? preset.alertWebhookUrl,
+    alertSlackWebhookUrl:
+      parseOptionalString(env.A2A_RELAY_ALERT_SLACK_WEBHOOK_URL) ??
+      preset.alertSlackWebhookUrl,
+    alertMinSeverity: parseSeverity(
+      env.A2A_RELAY_ALERT_MIN_SEVERITY,
+      preset.alertMinSeverity,
+    ),
+    alertDispatchCooldownMs: parseIntSafe(
+      env.A2A_RELAY_ALERT_DISPATCH_COOLDOWN_MS,
+      preset.alertDispatchCooldownMs,
+    ),
+    alertRetryAttempts: parseIntSafe(
+      env.A2A_RELAY_ALERT_RETRY_ATTEMPTS,
+      preset.alertRetryAttempts,
+    ),
+    alertRetryBaseDelayMs: parseIntSafe(
+      env.A2A_RELAY_ALERT_RETRY_BASE_DELAY_MS,
+      preset.alertRetryBaseDelayMs,
+    ),
+    alertSigningSecret:
+      parseOptionalString(env.A2A_RELAY_ALERT_SIGNING_SECRET) ??
+      preset.alertSigningSecret,
+    alertFailureQueueFilePath:
+      parseOptionalString(env.A2A_RELAY_ALERT_FAILURE_QUEUE_FILE) ??
+      preset.alertFailureQueueFilePath,
+    alertReplayOnStart: parseBoolean(
+      env.A2A_RELAY_ALERT_REPLAY_ON_START,
+      preset.alertReplayOnStart,
     ),
     alertThresholds: {
       maxRejectedPayloads: parseIntSafe(
@@ -123,6 +263,18 @@ export function resolveRelayRuntimeConfig(
       minPullRequestsForDeliveryCheck: parseIntSafe(
         env.A2A_RELAY_ALERT_MIN_PULL_REQUESTS,
         preset.alertThresholds.minPullRequestsForDeliveryCheck,
+      ),
+      maxDbFailureRate: parseFloatSafe(
+        env.A2A_RELAY_ALERT_MAX_DB_FAILURE_RATE,
+        preset.alertThresholds.maxDbFailureRate,
+      ),
+      maxDbAvgQueryLatencyMs: parseIntSafe(
+        env.A2A_RELAY_ALERT_MAX_DB_AVG_QUERY_LATENCY_MS,
+        preset.alertThresholds.maxDbAvgQueryLatencyMs,
+      ),
+      minDbQueryCountForHealthCheck: parseIntSafe(
+        env.A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT,
+        preset.alertThresholds.minDbQueryCountForHealthCheck,
       ),
     },
   };
@@ -151,9 +303,9 @@ function parseProfile(input: string | undefined): RelayRuntimeProfile {
 
 function parseStoreMode(
   input: string | undefined,
-  fallback: "memory" | "file",
-): "memory" | "file" {
-  if (input === "memory" || input === "file") {
+  fallback: "memory" | "file" | "postgres",
+): "memory" | "file" | "postgres" {
+  if (input === "memory" || input === "file" || input === "postgres") {
     return input;
   }
   return fallback;
@@ -187,6 +339,30 @@ function parseOptionalString(input: string | undefined): string | undefined {
   }
   const value = input.trim();
   return value === "" ? undefined : value;
+}
+
+function parseSeverity(
+  input: string | undefined,
+  fallback: RelayAlertSeverity,
+): RelayAlertSeverity {
+  if (input === "warning" || input === "critical") {
+    return input;
+  }
+  return fallback;
+}
+
+function parseBoolean(input: string | undefined, fallback: boolean): boolean {
+  if (!input) {
+    return fallback;
+  }
+  const normalized = input.trim().toLowerCase();
+  if (normalized === "1" || normalized === "true" || normalized === "yes") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false" || normalized === "no") {
+    return false;
+  }
+  return fallback;
 }
 
 function readRuntimeEnv(): Record<string, string | undefined> {

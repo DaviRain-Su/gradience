@@ -23,6 +23,9 @@ export class InMemoryRelayStore implements RelayStore {
     envelopesDelivered: 0,
     pullRequests: 0,
     rejectedPayloads: 0,
+    dbQueryCount: 0,
+    dbQueryFailures: 0,
+    dbAvgQueryLatencyMs: 0,
   };
 
   constructor(options: { maxAgents?: number; maxEnvelopes?: number } = {}) {
@@ -155,6 +158,9 @@ export class FileRelayStore implements RelayStore {
     envelopesDelivered: 0,
     pullRequests: 0,
     rejectedPayloads: 0,
+    dbQueryCount: 0,
+    dbQueryFailures: 0,
+    dbAvgQueryLatencyMs: 0,
   };
 
   constructor(
@@ -293,12 +299,16 @@ export class FileRelayStore implements RelayStore {
           deliveredTo: new Set(item.deliveredTo),
         });
       }
-      this.metrics.agentsUpserted = parsed.metrics.agentsUpserted;
-      this.metrics.envelopesPublished = parsed.metrics.envelopesPublished;
-      this.metrics.envelopesDeduplicated = parsed.metrics.envelopesDeduplicated;
-      this.metrics.envelopesDelivered = parsed.metrics.envelopesDelivered;
-      this.metrics.pullRequests = parsed.metrics.pullRequests;
-      this.metrics.rejectedPayloads = parsed.metrics.rejectedPayloads;
+      const metrics = normalizePersistedMetrics(parsed.metrics);
+      this.metrics.agentsUpserted = metrics.agentsUpserted;
+      this.metrics.envelopesPublished = metrics.envelopesPublished;
+      this.metrics.envelopesDeduplicated = metrics.envelopesDeduplicated;
+      this.metrics.envelopesDelivered = metrics.envelopesDelivered;
+      this.metrics.pullRequests = metrics.pullRequests;
+      this.metrics.rejectedPayloads = metrics.rejectedPayloads;
+      this.metrics.dbQueryCount = metrics.dbQueryCount;
+      this.metrics.dbQueryFailures = metrics.dbQueryFailures;
+      this.metrics.dbAvgQueryLatencyMs = metrics.dbAvgQueryLatencyMs;
     } catch (error) {
       if (isFileNotFound(error)) {
         return;
@@ -345,6 +355,30 @@ export class FileRelayStore implements RelayStore {
     writeFileSync(tempFile, JSON.stringify(state), "utf8");
     renameSync(tempFile, this.filePath);
   }
+}
+
+function normalizePersistedMetrics(metrics: Partial<RelayMetrics> | undefined): RelayMetrics {
+  return {
+    agentsUpserted: clampMetric(metrics?.agentsUpserted),
+    envelopesPublished: clampMetric(metrics?.envelopesPublished),
+    envelopesDeduplicated: clampMetric(metrics?.envelopesDeduplicated),
+    envelopesDelivered: clampMetric(metrics?.envelopesDelivered),
+    pullRequests: clampMetric(metrics?.pullRequests),
+    rejectedPayloads: clampMetric(metrics?.rejectedPayloads),
+    dbQueryCount: clampMetric(metrics?.dbQueryCount),
+    dbQueryFailures: clampMetric(metrics?.dbQueryFailures),
+    dbAvgQueryLatencyMs: clampMetric(metrics?.dbAvgQueryLatencyMs),
+  };
+}
+
+function clampMetric(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value < 0) {
+    return 0;
+  }
+  return value;
 }
 
 function isFileNotFound(error: unknown): boolean {
