@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { FileRelayStore } from "./store";
 
-test("file relay store persists agents, envelopes, and metrics", () => {
+test("file relay store persists agents, envelopes, and metrics", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "a2a-relay-store-"));
   const filePath = join(tempDir, "relay-state.json");
   try {
@@ -44,7 +44,7 @@ test("file relay store persists agents, envelopes, and metrics", () => {
     assert.equal(pull.items.length, 1);
     assert.equal(pull.items[0]?.envelope.id, "1:1");
 
-    const metrics = storeB.getMetrics();
+    const metrics = await storeB.getMetrics();
     assert.equal(metrics.agentsUpserted, 1);
     assert.equal(metrics.envelopesPublished, 1);
     assert.equal(metrics.pullRequests >= 1, true);

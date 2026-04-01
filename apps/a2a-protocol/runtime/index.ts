@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./store";
+export * from "./postgres-store";
 export * from "./relay";
 export * from "./config";
 export * from "./monitor";

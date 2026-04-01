@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { startRelayServer } from "./server";
@@ -78,7 +81,80 @@ test("relay monitor dispatches threshold alerts to webhook sink", async () => {
   }
 });
 
-async function startWebhookReceiver(): Promise<{
+test("relay replays failed alert queue through authenticated endpoint", async () => {
+  const queueDir = mkdtempSync(join(tmpdir(), "a2a-alert-replay-"));
+  const queuePath = join(queueDir, "alert-failures.ndjson");
+  try {
+    let online = false;
+    const receiver = await startWebhookReceiver({
+      shouldFail: () => !online,
+    });
+    const relay = await startRelayServer({
+      host: "127.0.0.1",
+      port: 0,
+      authToken: "token",
+      alertWebhookUrl: receiver.url,
+      alertRetryAttempts: 1,
+      alertRetryBaseDelayMs: 0,
+      alertDispatchCooldownMs: 0,
+      alertFailureQueueFilePath: queuePath,
+      alertIntervalMs: 0,
+    });
+    try {
+      const initial = await fetch(`${relay.baseUrl}/v1/alerts/test`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          message: "queue-me",
+        }),
+      });
+      assert.equal(initial.status, 500);
+
+      online = true;
+      const replay = await fetch(`${relay.baseUrl}/v1/alerts/replay-failed`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          maxItems: 10,
+        }),
+      });
+      assert.equal(replay.status, 200);
+      const replayBody = (await replay.json()) as {
+        ok: boolean;
+        result: { processed: number; delivered: number; remaining: number };
+      };
+      assert.equal(replayBody.ok, true);
+      assert.equal(replayBody.result.processed, 1);
+      assert.equal(replayBody.result.delivered, 1);
+      assert.equal(replayBody.result.remaining, 0);
+    } finally {
+      await relay.close();
+      await receiver.close();
+    }
+  } finally {
+    rmSync(queueDir, { recursive: true, force: true });
+  }
+});
+
+async function startWebhookReceiver(options: {
+  shouldFail?: () => boolean;
+} = {}): Promise<{
+  url: string;
+  requests: unknown[];
+  close: () => Promise<void>;
+}> {
+  return startWebhookReceiverWithOptions(options);
+}
+
+async function startWebhookReceiverWithOptions(options: {
+  shouldFail?: () => boolean;
+}): Promise<{
   url: string;
   requests: unknown[];
   close: () => Promise<void>;
@@ -95,9 +171,14 @@ async function startWebhookReceiver(): Promise<{
       } catch {
         requests.push(body);
       }
-      response.statusCode = 200;
-      response.setHeader("content-type", "application/json");
-      response.end(JSON.stringify({ ok: true }));
+      if (options.shouldFail?.()) {
+        response.statusCode = 500;
+        response.end(JSON.stringify({ ok: false }));
+      } else {
+        response.statusCode = 200;
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ ok: true }));
+      }
     });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));

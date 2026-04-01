@@ -1,4 +1,6 @@
 declare module "node:fs" {
+  export function appendFileSync(path: string, data: string, encoding: "utf8"): void;
+  export function existsSync(path: string): boolean;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
   export function readFileSync(path: string, encoding: "utf8"): string;
   export function renameSync(oldPath: string, newPath: string): void;
@@ -25,5 +27,25 @@ declare module "node:url" {
     searchParams: {
       entries(): IterableIterator<[string, string]>;
     };
+  }
+}
+
+declare module "node:crypto" {
+  export function createHmac(
+    algorithm: string,
+    key: string,
+  ): {
+    update(data: string): {
+      digest(encoding: "hex"): string;
+    };
+  };
+}
+
+declare module "pg" {
+  export class Pool {
+    constructor(options: { connectionString: string });
+    query(sql: string, params?: unknown[]): Promise<{
+      rows: Array<Record<string, unknown>>;
+    }>;
   }
 }

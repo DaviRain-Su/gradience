@@ -87,8 +87,8 @@ export class RelayAlertMonitor {
     } = {},
   ) {}
 
-  checkNow(): { alerts: RelayAlert[]; metrics: RelayMetrics } {
-    const metrics = this.store.getMetrics();
+  async checkNow(): Promise<{ alerts: RelayAlert[]; metrics: RelayMetrics }> {
+    const metrics = await this.store.getMetrics();
     const alerts = evaluateRelayAlerts(
       metrics,
       this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS,
@@ -105,23 +105,26 @@ export class RelayAlertMonitor {
       return;
     }
     this.timer = setInterval(() => {
-      const { alerts, metrics } = this.checkNow();
-      if (alerts.length === 0) {
-        return;
-      }
-      if (this.options.onAlerts) {
-        Promise.resolve(this.options.onAlerts(alerts, metrics)).catch((error) => {
-          console.error("[a2a-relay-alert] delivery failed", error);
-        });
-        return;
-      }
-      for (const alert of alerts) {
-        console.warn(
-          `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
-            alert.observed,
-          )} threshold=${String(alert.threshold)}`,
-        );
-      }
+      void this.checkNow().then(({ alerts, metrics }) => {
+        if (alerts.length === 0) {
+          return;
+        }
+        if (this.options.onAlerts) {
+          Promise.resolve(this.options.onAlerts(alerts, metrics)).catch((error) => {
+            console.error("[a2a-relay-alert] delivery failed", error);
+          });
+          return;
+        }
+        for (const alert of alerts) {
+          console.warn(
+            `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
+              alert.observed,
+            )} threshold=${String(alert.threshold)}`,
+          );
+        }
+      }).catch((error) => {
+        console.error("[a2a-relay-alert] monitor tick failed", error);
+      });
     }, intervalMs);
   }
 

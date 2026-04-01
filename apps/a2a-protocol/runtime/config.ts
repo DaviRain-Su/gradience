@@ -14,14 +14,20 @@ export interface RelayRuntimeConfig {
   maxPayloadBytes: number;
   maxPaymentMicrolamports: bigint;
   httpMaxBodyBytes: number;
-  storeMode: "memory" | "file";
+  storeMode: "memory" | "file" | "postgres";
   storeFilePath: string;
+  postgresConnectionString?: string;
   alertThresholds: RelayAlertThresholds;
   alertIntervalMs: number;
   alertWebhookUrl?: string;
   alertSlackWebhookUrl?: string;
   alertMinSeverity: RelayAlertSeverity;
   alertDispatchCooldownMs: number;
+  alertRetryAttempts: number;
+  alertRetryBaseDelayMs: number;
+  alertSigningSecret?: string;
+  alertFailureQueueFilePath?: string;
+  alertReplayOnStart: boolean;
 }
 
 const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
@@ -35,6 +41,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "memory",
     storeFilePath: "./data/local-relay-state.json",
+    postgresConnectionString: undefined,
     alertThresholds: {
       maxRejectedPayloads: 200,
       maxDedupRatio: 0.6,
@@ -46,6 +53,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     alertSlackWebhookUrl: undefined,
     alertMinSeverity: "warning",
     alertDispatchCooldownMs: 60_000,
+    alertRetryAttempts: 2,
+    alertRetryBaseDelayMs: 150,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/local-alert-failures.ndjson",
+    alertReplayOnStart: false,
   },
   devnet: {
     profile: "devnet",
@@ -57,6 +69,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "file",
     storeFilePath: "./data/devnet-relay-state.json",
+    postgresConnectionString: undefined,
     alertThresholds: {
       maxRejectedPayloads: 80,
       maxDedupRatio: 0.45,
@@ -68,6 +81,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     alertSlackWebhookUrl: undefined,
     alertMinSeverity: "warning",
     alertDispatchCooldownMs: 60_000,
+    alertRetryAttempts: 3,
+    alertRetryBaseDelayMs: 250,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/devnet-alert-failures.ndjson",
+    alertReplayOnStart: true,
   },
   prod: {
     profile: "prod",
@@ -79,6 +97,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     httpMaxBodyBytes: 1_048_576,
     storeMode: "file",
     storeFilePath: "./data/prod-relay-state.json",
+    postgresConnectionString: undefined,
     alertThresholds: {
       maxRejectedPayloads: 40,
       maxDedupRatio: 0.3,
@@ -90,6 +109,11 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     alertSlackWebhookUrl: undefined,
     alertMinSeverity: "critical",
     alertDispatchCooldownMs: 180_000,
+    alertRetryAttempts: 5,
+    alertRetryBaseDelayMs: 400,
+    alertSigningSecret: undefined,
+    alertFailureQueueFilePath: "./data/prod-alert-failures.ndjson",
+    alertReplayOnStart: true,
   },
 };
 
@@ -120,6 +144,9 @@ export function resolveRelayRuntimeConfig(
     ),
     storeMode: parseStoreMode(env.A2A_RELAY_STORE_MODE, preset.storeMode),
     storeFilePath: env.A2A_RELAY_STORE_FILE ?? preset.storeFilePath,
+    postgresConnectionString:
+      parseOptionalString(env.A2A_RELAY_POSTGRES_URL) ??
+      preset.postgresConnectionString,
     alertIntervalMs: parseIntSafe(
       env.A2A_RELAY_ALERT_INTERVAL_MS,
       preset.alertIntervalMs,
@@ -136,6 +163,24 @@ export function resolveRelayRuntimeConfig(
     alertDispatchCooldownMs: parseIntSafe(
       env.A2A_RELAY_ALERT_DISPATCH_COOLDOWN_MS,
       preset.alertDispatchCooldownMs,
+    ),
+    alertRetryAttempts: parseIntSafe(
+      env.A2A_RELAY_ALERT_RETRY_ATTEMPTS,
+      preset.alertRetryAttempts,
+    ),
+    alertRetryBaseDelayMs: parseIntSafe(
+      env.A2A_RELAY_ALERT_RETRY_BASE_DELAY_MS,
+      preset.alertRetryBaseDelayMs,
+    ),
+    alertSigningSecret:
+      parseOptionalString(env.A2A_RELAY_ALERT_SIGNING_SECRET) ??
+      preset.alertSigningSecret,
+    alertFailureQueueFilePath:
+      parseOptionalString(env.A2A_RELAY_ALERT_FAILURE_QUEUE_FILE) ??
+      preset.alertFailureQueueFilePath,
+    alertReplayOnStart: parseBoolean(
+      env.A2A_RELAY_ALERT_REPLAY_ON_START,
+      preset.alertReplayOnStart,
     ),
     alertThresholds: {
       maxRejectedPayloads: parseIntSafe(
@@ -181,9 +226,9 @@ function parseProfile(input: string | undefined): RelayRuntimeProfile {
 
 function parseStoreMode(
   input: string | undefined,
-  fallback: "memory" | "file",
-): "memory" | "file" {
-  if (input === "memory" || input === "file") {
+  fallback: "memory" | "file" | "postgres",
+): "memory" | "file" | "postgres" {
+  if (input === "memory" || input === "file" || input === "postgres") {
     return input;
   }
   return fallback;
@@ -225,6 +270,20 @@ function parseSeverity(
 ): RelayAlertSeverity {
   if (input === "warning" || input === "critical") {
     return input;
+  }
+  return fallback;
+}
+
+function parseBoolean(input: string | undefined, fallback: boolean): boolean {
+  if (!input) {
+    return fallback;
+  }
+  const normalized = input.trim().toLowerCase();
+  if (normalized === "1" || normalized === "true" || normalized === "yes") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false" || normalized === "no") {
+    return false;
   }
   return fallback;
 }

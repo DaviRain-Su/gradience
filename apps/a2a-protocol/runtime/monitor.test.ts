@@ -33,11 +33,11 @@ test("evaluateRelayAlerts emits expected warnings", () => {
   );
 });
 
-test("RelayAlertMonitor captures alerts from store metrics", () => {
+test("RelayAlertMonitor captures alerts from store metrics", async () => {
   const store = new InMemoryRelayStore();
-  store.markPayloadRejected();
-  store.markPayloadRejected();
-  store.markPayloadRejected();
+  await store.markPayloadRejected();
+  await store.markPayloadRejected();
+  await store.markPayloadRejected();
 
   const monitor = new RelayAlertMonitor(store, {
     thresholds: {
@@ -47,7 +47,7 @@ test("RelayAlertMonitor captures alerts from store metrics", () => {
       minPullRequestsForDeliveryCheck: 100,
     },
   });
-  const snapshot = monitor.checkNow();
+  const snapshot = await monitor.checkNow();
   assert.equal(snapshot.alerts.length, 1);
   assert.equal(snapshot.alerts[0]?.code, "rejected_payload_spike");
 });

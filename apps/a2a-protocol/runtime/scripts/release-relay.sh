@@ -11,6 +11,10 @@ if [[ "${PROFILE}" == "prod" && -z "${A2A_RELAY_AUTH_TOKEN:-}" ]]; then
   echo "warning: A2A_RELAY_AUTH_TOKEN is empty for prod profile" >&2
 fi
 
+if [[ "${A2A_RELAY_STORE_MODE:-}" == "postgres" && -z "${A2A_RELAY_POSTGRES_URL:-}" ]]; then
+  echo "warning: A2A_RELAY_STORE_MODE=postgres but A2A_RELAY_POSTGRES_URL is empty" >&2
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNTIME_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 

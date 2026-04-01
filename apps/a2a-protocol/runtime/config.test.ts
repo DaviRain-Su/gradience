@@ -18,6 +18,8 @@ test("relay profile defaults are stable for devnet and prod", () => {
   assert.equal(prod.storeMode, "file");
   assert.equal(prod.storeFilePath, "./data/prod-relay-state.json");
   assert.equal(prod.alertIntervalMs < devnet.alertIntervalMs, true);
+  assert.equal(devnet.alertRetryAttempts >= 3, true);
+  assert.equal(prod.alertMinSeverity, "critical");
 });
 
 test("relay runtime config resolves profile and env overrides", () => {
@@ -31,6 +33,12 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_ALERT_SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/test",
     A2A_RELAY_ALERT_MIN_SEVERITY: "warning",
     A2A_RELAY_ALERT_DISPATCH_COOLDOWN_MS: "1000",
+    A2A_RELAY_ALERT_RETRY_ATTEMPTS: "9",
+    A2A_RELAY_ALERT_RETRY_BASE_DELAY_MS: "300",
+    A2A_RELAY_ALERT_SIGNING_SECRET: "signing-secret",
+    A2A_RELAY_ALERT_FAILURE_QUEUE_FILE: "./tmp/failures.ndjson",
+    A2A_RELAY_ALERT_REPLAY_ON_START: "false",
+    A2A_RELAY_POSTGRES_URL: "postgres://localhost:5432/a2a",
   });
 
   assert.equal(resolved.profile, "prod");
@@ -45,6 +53,15 @@ test("relay runtime config resolves profile and env overrides", () => {
   );
   assert.equal(resolved.alertMinSeverity, "warning");
   assert.equal(resolved.alertDispatchCooldownMs, 1000);
+  assert.equal(resolved.alertRetryAttempts, 9);
+  assert.equal(resolved.alertRetryBaseDelayMs, 300);
+  assert.equal(resolved.alertSigningSecret, "signing-secret");
+  assert.equal(resolved.alertFailureQueueFilePath, "./tmp/failures.ndjson");
+  assert.equal(resolved.alertReplayOnStart, false);
+  assert.equal(
+    resolved.postgresConnectionString,
+    "postgres://localhost:5432/a2a",
+  );
 });
 
 test("relay runtime config falls back to devnet profile", () => {

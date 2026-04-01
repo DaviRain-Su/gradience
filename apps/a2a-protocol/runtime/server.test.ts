@@ -100,10 +100,47 @@ test("relay server exposes health and relay endpoints", async () => {
       assert.equal(drillBody.alert.code, "test_alert");
       assert.equal(drillBody.alert.severity, "warning");
       assert.equal(drillBody.alert.message, "drill");
+
+      const replayUnauthorized = await fetch(
+        `${server.baseUrl}/v1/alerts/replay-failed`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ maxItems: 50 }),
+        },
+      );
+      assert.equal(replayUnauthorized.status, 401);
+
+      const replay = await fetch(`${server.baseUrl}/v1/alerts/replay-failed`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ maxItems: 50 }),
+      });
+      assert.equal(replay.status, 200);
+      const replayBody = (await replay.json()) as {
+        ok: boolean;
+        result: { processed: number; delivered: number; remaining: number };
+      };
+      assert.equal(replayBody.ok, true);
+      assert.equal(replayBody.result.processed, 0);
+      assert.equal(replayBody.result.delivered, 0);
     } finally {
       await server.close();
     }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("relay server rejects postgres mode without connection string", async () => {
+  await assert.rejects(() =>
+    startRelayServer({
+      storeMode: "postgres",
+    }),
+  );
 });
