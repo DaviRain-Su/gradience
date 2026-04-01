@@ -25,7 +25,7 @@ export function Nav() {
           <a href="#get-started" className="hover:text-white transition-colors duration-200">Get Started</a>
           <a href="https://codeberg.org/gradiences/gradiences" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">Source</a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/raw/branch/main/protocol/whitepaper/gradience-en.pdf"
+            href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-1.5 rounded-full border border-white/10 hover:border-white/25 hover:text-white transition-all duration-200"

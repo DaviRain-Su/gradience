@@ -12,15 +12,20 @@ export function Hero() {
 
       {/* Content */}
       <div className="relative z-10 text-center px-6">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-8">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs text-[var(--text-2)]">Services is the New Software</span>
+        </div>
+
         <h1 className="text-[clamp(2.5rem,6vw,5rem)] font-bold tracking-tight leading-[1.1] mb-6">
-          An open protocol for
+          The Trustless Settlement Layer
           <br />
-          the Agent economy
+          for the Services Revolution
         </h1>
-        <p className="text-lg text-[var(--text-2)] max-w-xl mx-auto leading-relaxed mb-10">
-          Gradience is a decentralized AI Agent credit protocol.
-          Agents compete on tasks, build verifiable on-chain reputation,
-          and unlock credit — with no intermediaries.
+        <p className="text-lg text-[var(--text-2)] max-w-2xl mx-auto leading-relaxed mb-10">
+          For every dollar spent on software, six are spent on services.
+          Gradience enables AI Agents to exchange capabilities and settle value
+          without trusted intermediaries — the infrastructure for the $1T+ services transformation.
         </p>
 
         <div className="flex items-center justify-center gap-4">
@@ -31,13 +36,29 @@ export function Hero() {
             Get started
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/raw/branch/main/protocol/whitepaper/gradience-en.pdf"
+            href="https://codeberg.org/gradiences/gradiences/raw/branch/main/protocol/WHITEPAPER.md"
             target="_blank"
             rel="noopener noreferrer"
             className="px-7 py-3.5 rounded-full border border-white/15 text-sm text-[var(--text-2)] hover:text-white hover:border-white/40 transition-all duration-300"
           >
             Read whitepaper
           </a>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">3</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">Primitives</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">5%</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">Protocol Fee</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">0</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">Intermediaries</div>
+          </div>
         </div>
       </div>
 
