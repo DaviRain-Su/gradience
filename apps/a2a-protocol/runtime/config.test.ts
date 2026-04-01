@@ -22,6 +22,7 @@ test("relay profile defaults are stable for devnet and prod", () => {
       devnet.alertThresholds.maxDbFailureRate,
     true,
   );
+  assert.equal(devnet.alertThresholds.dbConsecutiveUnhealthyChecksToAlert >= 1, true);
 
   assert.equal(prod.profile, "prod");
   assert.equal(prod.storeMode, "file");
@@ -35,6 +36,7 @@ test("relay profile defaults are stable for devnet and prod", () => {
       prod.alertThresholds.maxDbAvgQueryLatencyMs,
     true,
   );
+  assert.equal(prod.alertThresholds.dbConsecutiveHealthyChecksToRecover >= 1, true);
   assert.equal(prod.alertIntervalMs < devnet.alertIntervalMs, true);
   assert.equal(devnet.alertRetryAttempts >= 3, true);
   assert.equal(prod.alertMinSeverity, "critical");
@@ -61,6 +63,8 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_ALERT_MAX_DB_AVG_QUERY_LATENCY_MS: "222",
     A2A_RELAY_ALERT_CRITICAL_DB_AVG_QUERY_LATENCY_MS: "444",
     A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT: "11",
+    A2A_RELAY_ALERT_DB_CONSECUTIVE_UNHEALTHY_TO_ALERT: "3",
+    A2A_RELAY_ALERT_DB_CONSECUTIVE_HEALTHY_TO_RECOVER: "4",
     A2A_RELAY_POSTGRES_URL: "postgres://localhost:5432/a2a",
     A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE: "true",
     A2A_RELAY_POSTGRES_REQUIRE_SSL: "true",
@@ -104,6 +108,8 @@ test("relay runtime config resolves profile and env overrides", () => {
   assert.equal(resolved.alertThresholds.maxDbAvgQueryLatencyMs, 222);
   assert.equal(resolved.alertThresholds.criticalDbAvgQueryLatencyMs, 444);
   assert.equal(resolved.alertThresholds.minDbQueryCountForHealthCheck, 11);
+  assert.equal(resolved.alertThresholds.dbConsecutiveUnhealthyChecksToAlert, 3);
+  assert.equal(resolved.alertThresholds.dbConsecutiveHealthyChecksToRecover, 4);
 });
 
 test("relay runtime config falls back to devnet profile", () => {

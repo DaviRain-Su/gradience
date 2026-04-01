@@ -10,6 +10,8 @@ export interface RelayAlertThresholds {
   maxDbAvgQueryLatencyMs: number;
   criticalDbAvgQueryLatencyMs: number;
   minDbQueryCountForHealthCheck: number;
+  dbConsecutiveUnhealthyChecksToAlert: number;
+  dbConsecutiveHealthyChecksToRecover: number;
 }
 
 export interface RelayAlert {
@@ -37,6 +39,8 @@ export const DEFAULT_RELAY_ALERT_THRESHOLDS: RelayAlertThresholds = {
   maxDbAvgQueryLatencyMs: 200,
   criticalDbAvgQueryLatencyMs: 500,
   minDbQueryCountForHealthCheck: 20,
+  dbConsecutiveUnhealthyChecksToAlert: 2,
+  dbConsecutiveHealthyChecksToRecover: 2,
 };
 
 export function evaluateRelayAlerts(
@@ -117,7 +121,9 @@ export function evaluateRelayAlerts(
 
 export class RelayAlertMonitor {
   private timer: ReturnType<typeof setInterval> | null = null;
-  private lastDbHealthy: boolean | null = null;
+  private dbUnhealthyStreak = 0;
+  private dbHealthyStreak = 0;
+  private dbIncidentActive = false;
 
   constructor(
     private readonly store: RelayStore,
@@ -131,26 +137,46 @@ export class RelayAlertMonitor {
   async checkNow(): Promise<{ alerts: RelayAlert[]; metrics: RelayMetrics }> {
     const metrics = await this.store.getMetrics();
     const thresholds = this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS;
-    const alerts = evaluateRelayAlerts(
+    const computedAlerts = evaluateRelayAlerts(
       metrics,
       thresholds,
     );
+    const alerts = computedAlerts.filter((item) => !isDbHealthAlert(item));
+    const dbAlerts = computedAlerts.filter(isDbHealthAlert);
     const dbEligible = metrics.dbQueryCount >= thresholds.minDbQueryCountForHealthCheck;
-    const dbUnhealthy = alerts.some((alert) =>
-      alert.code === "db_query_failure_rate_high" || alert.code === "db_query_latency_high"
-    );
-    if (dbEligible) {
-      const dbHealthy = !dbUnhealthy;
-      if (this.lastDbHealthy === false && dbHealthy) {
-        alerts.push({
-          code: "db_health_recovered",
-          severity: "warning",
-          message: "Database health recovered below configured alert thresholds.",
-          observed: 0,
-          threshold: 1,
-        });
+    if (!dbEligible) {
+      this.dbUnhealthyStreak = 0;
+      this.dbHealthyStreak = 0;
+      return { alerts, metrics };
+    }
+
+    if (dbAlerts.length > 0) {
+      this.dbUnhealthyStreak += 1;
+      this.dbHealthyStreak = 0;
+      if (
+        this.dbIncidentActive ||
+        this.dbUnhealthyStreak >= thresholds.dbConsecutiveUnhealthyChecksToAlert
+      ) {
+        this.dbIncidentActive = true;
+        alerts.push(...dbAlerts);
       }
-      this.lastDbHealthy = dbHealthy;
+      return { alerts, metrics };
+    }
+
+    this.dbHealthyStreak += 1;
+    this.dbUnhealthyStreak = 0;
+    if (
+      this.dbIncidentActive &&
+      this.dbHealthyStreak >= thresholds.dbConsecutiveHealthyChecksToRecover
+    ) {
+      this.dbIncidentActive = false;
+      alerts.push({
+        code: "db_health_recovered",
+        severity: "warning",
+        message: "Database health recovered below configured alert thresholds.",
+        observed: this.dbHealthyStreak,
+        threshold: thresholds.dbConsecutiveHealthyChecksToRecover,
+      });
     }
     return { alerts, metrics };
   }
@@ -194,4 +220,11 @@ export class RelayAlertMonitor {
     clearInterval(this.timer);
     this.timer = null;
   }
+}
+
+function isDbHealthAlert(alert: RelayAlert): boolean {
+  return (
+    alert.code === "db_query_failure_rate_high" ||
+    alert.code === "db_query_latency_high"
+  );
 }

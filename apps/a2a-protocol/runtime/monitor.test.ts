@@ -31,6 +31,8 @@ test("evaluateRelayAlerts emits expected warnings", () => {
     maxDbAvgQueryLatencyMs: 200,
     criticalDbAvgQueryLatencyMs: 400,
     minDbQueryCountForHealthCheck: 20,
+    dbConsecutiveUnhealthyChecksToAlert: 2,
+    dbConsecutiveHealthyChecksToRecover: 2,
   };
 
   const alerts = evaluateRelayAlerts(metrics, thresholds);
@@ -68,6 +70,8 @@ test("RelayAlertMonitor captures alerts from store metrics", async () => {
       maxDbAvgQueryLatencyMs: 1000,
       criticalDbAvgQueryLatencyMs: 2000,
       minDbQueryCountForHealthCheck: 100,
+      dbConsecutiveUnhealthyChecksToAlert: 2,
+      dbConsecutiveHealthyChecksToRecover: 2,
     },
   });
   const snapshot = await monitor.checkNow();
@@ -75,7 +79,7 @@ test("RelayAlertMonitor captures alerts from store metrics", async () => {
   assert.equal(snapshot.alerts[0]?.code, "rejected_payload_spike");
 });
 
-test("RelayAlertMonitor emits db recovery alert on healthy transition", async () => {
+test("RelayAlertMonitor applies DB hysteresis for alert and recovery", async () => {
   let snapshotIndex = 0;
   const snapshots: RelayMetrics[] = [
     {
@@ -91,6 +95,17 @@ test("RelayAlertMonitor emits db recovery alert on healthy transition", async ()
     },
     {
       agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 101,
+      dbQueryFailures: 20,
+      dbAvgQueryLatencyMs: 700,
+    },
+    {
+      agentsUpserted: 1,
       envelopesPublished: 2,
       envelopesDeduplicated: 0,
       envelopesDelivered: 2,
@@ -99,6 +114,17 @@ test("RelayAlertMonitor emits db recovery alert on healthy transition", async ()
       dbQueryCount: 120,
       dbQueryFailures: 1,
       dbAvgQueryLatencyMs: 90,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 2,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 2,
+      pullRequests: 2,
+      rejectedPayloads: 0,
+      dbQueryCount: 121,
+      dbQueryFailures: 1,
+      dbAvgQueryLatencyMs: 80,
     },
   ];
   const store = {
@@ -130,13 +156,27 @@ test("RelayAlertMonitor emits db recovery alert on healthy transition", async ()
       maxDbAvgQueryLatencyMs: 200,
       criticalDbAvgQueryLatencyMs: 600,
       minDbQueryCountForHealthCheck: 20,
+      dbConsecutiveUnhealthyChecksToAlert: 2,
+      dbConsecutiveHealthyChecksToRecover: 2,
     },
   });
 
-  const unhealthy = await monitor.checkNow();
+  const unhealthyFirst = await monitor.checkNow();
   assert.equal(
-    unhealthy.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    unhealthyFirst.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    false,
+  );
+
+  const unhealthySecond = await monitor.checkNow();
+  assert.equal(
+    unhealthySecond.alerts.some((item) => item.code === "db_query_failure_rate_high"),
     true,
+  );
+
+  const recovering = await monitor.checkNow();
+  assert.equal(
+    recovering.alerts.some((item) => item.code === "db_health_recovered"),
+    false,
   );
 
   const recovered = await monitor.checkNow();

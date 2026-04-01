@@ -66,6 +66,8 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDbAvgQueryLatencyMs: 400,
       criticalDbAvgQueryLatencyMs: 1200,
       minDbQueryCountForHealthCheck: 10,
+      dbConsecutiveUnhealthyChecksToAlert: 2,
+      dbConsecutiveHealthyChecksToRecover: 2,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -106,6 +108,8 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDbAvgQueryLatencyMs: 300,
       criticalDbAvgQueryLatencyMs: 900,
       minDbQueryCountForHealthCheck: 20,
+      dbConsecutiveUnhealthyChecksToAlert: 2,
+      dbConsecutiveHealthyChecksToRecover: 2,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -146,6 +150,8 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDbAvgQueryLatencyMs: 200,
       criticalDbAvgQueryLatencyMs: 500,
       minDbQueryCountForHealthCheck: 30,
+      dbConsecutiveUnhealthyChecksToAlert: 2,
+      dbConsecutiveHealthyChecksToRecover: 2,
     },
     alertIntervalMs: 15_000,
     alertWebhookUrl: undefined,
@@ -290,6 +296,14 @@ export function resolveRelayRuntimeConfig(
         env.A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT,
         preset.alertThresholds.minDbQueryCountForHealthCheck,
       ),
+      dbConsecutiveUnhealthyChecksToAlert: parsePositiveIntAtLeastOne(
+        env.A2A_RELAY_ALERT_DB_CONSECUTIVE_UNHEALTHY_TO_ALERT,
+        preset.alertThresholds.dbConsecutiveUnhealthyChecksToAlert,
+      ),
+      dbConsecutiveHealthyChecksToRecover: parsePositiveIntAtLeastOne(
+        env.A2A_RELAY_ALERT_DB_CONSECUTIVE_HEALTHY_TO_RECOVER,
+        preset.alertThresholds.dbConsecutiveHealthyChecksToRecover,
+      ),
     },
   };
 }
@@ -334,6 +348,17 @@ function parseIntSafe(input: string | undefined, fallback: number): number {
     return fallback;
   }
   return Math.floor(parsed);
+}
+
+function parsePositiveIntAtLeastOne(
+  input: string | undefined,
+  fallback: number,
+): number {
+  const value = parseIntSafe(input, fallback);
+  if (value < 1) {
+    return 1;
+  }
+  return value;
 }
 
 function parseFloatSafe(input: string | undefined, fallback: number): number {
