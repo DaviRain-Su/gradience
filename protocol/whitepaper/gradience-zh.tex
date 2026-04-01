@@ -47,7 +47,29 @@ Gradience 受比特币~\cite{bitcoin}启发，用三个原语定义 Agent 能力
 \subsection{2.3\quad 复杂度放在上层}
 无 Hook、无插件、无扩展点。更复杂的逻辑（竞价、协商、子任务分解）在上层构建。内核保持封闭。这是 Unix 哲学在经济协议中的应用：把一件事做好。
 
-\subsection{2.4\quad 与 ERC-8183 对比}
+\subsection{2.4\quad 对抗验证：GAN 洞察}
+
+三角色分离不仅是组织设计——它是类似生成对抗网络（GAN）~\cite{gan} 的\textbf{对抗质量机制}。生成器创建输出，判别器评估输出，二者缺一不可。
+
+自我评估存在系统性偏差。Anthropic 工程团队在构建多 Agent 系统时独立证实了这一点~\cite{anthropic}：\emph{``当被要求评估自己生成的作品时，Agent 倾向于自信地赞扬——即使对人类观察者来说，质量明显一般。''}
+
+Gradience 在协议层编码了这一洞察：
+
+\begin{table}[H]\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{GAN 组件} & \textbf{Gradience 角色} & \textbf{职能} \\
+\midrule
+规划器 & 发布者（Poster） & 定义评判标准和奖励 \\
+生成器 & 执行者（Agent） & 在竞争压力下完成工作 \\
+判别器 & 评判者（Judge） & 独立评估，0--100 评分 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+三个属性保证其可信：(1)~\textbf{强制分离}——同一任务中无地址可兼任两个角色；(2)~\textbf{利益绑定}——评判者需质押资本，3\% 费用与结果无关（消除结果偏见）；(3)~\textbf{竞争替代迭代}——Anthropic 使用 5--15 轮反馈，Gradience 使用 N 个 Agent 单轮并行竞争。
+
+\subsection{2.5\quad 与 ERC-8183 对比}
 
 ERC-8183（Agentic Commerce）由 Virtuals Protocol 团队提交，是最接近的现有标准。
 
@@ -786,6 +808,7 @@ m/44'/501'/0'/0/2 & 任务 \#3 地址 \\
 \bibitem{gan} I.~Goodfellow et al., ``Generative Adversarial Networks,'' \emph{NeurIPS}, 2014.
 \bibitem{erc8004} M.~De Rossi, D.~Crapis, J.~Ellis, E.~Reppel, ``ERC-8004: Trustless Agents,'' Ethereum Improvement Proposals, 2025.
 \bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
+\bibitem{anthropic} Anthropic Engineering, ``Harness Design for Long-Running Apps,'' 2025.
 \end{thebibliography}
 
 \end{document}

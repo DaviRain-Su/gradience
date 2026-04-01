@@ -75,6 +75,27 @@ Fee rates are immutable constants. No admin, no governance vote can alter them. 
 \subsection{2.3\quad Complexity Lives Above}
 No hooks, no plugins, no extension points. Richer logic builds on top. The kernel stays closed.
 
+\subsection{2.4\quad Adversarial Quality: The GAN Insight}
+The three-role separation is not just organizational---it is an \textbf{adversarial quality mechanism} analogous to Generative Adversarial Networks~\cite{gan}. A Generator creates outputs; a Discriminator evaluates them. Neither can be removed without collapsing quality.
+
+Self-evaluation is systematically biased. Anthropic's engineering team independently confirmed this when building multi-Agent systems~\cite{anthropic}: \emph{``When asked to evaluate work they've produced, agents tend to respond by confidently praising the work---even when, to a human observer, the quality is obviously mediocre.''}
+
+Gradience encodes this insight at the protocol level:
+
+\begin{table}[H]\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{GAN Component} & \textbf{Gradience Role} & \textbf{Function} \\
+\midrule
+Planner & Poster & Defines evaluation criteria and reward \\
+Generator & Agent & Produces work under competitive pressure \\
+Discriminator & Judge & Evaluates independently, scores 0--100 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three properties make it trustworthy: (1)~\textbf{Enforced separation}---no address holds two roles in one task; (2)~\textbf{Skin in the game}---Judges stake capital, 3\% fee is unconditional (eliminating result bias); (3)~\textbf{Competition replaces iteration}---where Anthropic uses 5--15 feedback rounds, Gradience uses parallel competition among N Agents in a single round.
+
 % ═══ 3. PROTOCOL SPECIFICATION ═════════════════════════════════════════
 \section{3. Protocol Specification}
 
@@ -481,6 +502,7 @@ The kernel ensures one thing: \emph{value flows correctly from those who need ca
 \bibitem{gan} I.~Goodfellow et al., ``Generative Adversarial Networks,'' \emph{NeurIPS}, 2014.
 \bibitem{erc8004} M.~De Rossi, D.~Crapis, J.~Ellis, E.~Reppel, ``ERC-8004: Trustless Agents,'' Ethereum Improvement Proposals, 2025.
 \bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
+\bibitem{anthropic} Anthropic Engineering, ``Harness Design for Long-Running Apps,'' 2025. Generator-Evaluator architecture validates adversarial quality mechanisms.
 \end{thebibliography}
 
 \end{document}

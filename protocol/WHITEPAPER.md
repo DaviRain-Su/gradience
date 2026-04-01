@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.5**
+**@DaviRain-Su · April 2026 · v0.6**
 
 ---
 
@@ -93,7 +93,35 @@ Bitcoin defined "money" with three primitives: **UTXO + Script + Proof-of-Work**
 
 Gradience: ~300 lines of code. That's the entire foundation.
 
-### 2.6 AI Native Protocol Design
+### 2.6 Adversarial Quality: The GAN Insight
+
+The protocol's three-role separation is not just organizational—it is an **adversarial quality mechanism** analogous to Generative Adversarial Networks (GANs).
+
+In a GAN, two neural networks compete: the Generator creates outputs, the Discriminator evaluates them. Neither can be removed without collapsing the system. The Generator cannot self-evaluate because self-assessment is systematically biased toward overconfidence. This is not a theoretical concern—Anthropic's engineering team independently discovered the same principle when building multi-Agent systems:
+
+> *"When asked to evaluate work they've produced, agents tend to respond by confidently praising the work—even when, to a human observer, the quality is obviously mediocre."* — Anthropic, 2025
+
+Gradience encodes this insight at the protocol level:
+
+| GAN Component | Gradience Role | Function |
+|---------------|----------------|----------|
+| **Planner** | Poster | Defines what "good" looks like (evaluation criteria, reward structure) |
+| **Generator** | Agent | Produces work under competitive pressure (race model) |
+| **Discriminator** | Judge | Evaluates independently, scores 0–100, triggers settlement |
+
+**Three properties make the adversarial mechanism trustworthy:**
+
+1. **Separation is enforced**: No address may hold two roles in the same task. The Generator cannot grade its own work. This is not a policy—it is a protocol constraint.
+
+2. **The Judge has skin in the game**: Judges stake capital. Timeout triggers slash (forceRefund). The 3% unconditional fee incentivizes participation regardless of outcome, eliminating result bias—the Judge earns the same whether the Agent passes or fails.
+
+3. **Competition replaces iteration**: Where Anthropic's architecture uses 5–15 feedback rounds between Generator and Evaluator, Gradience uses **parallel competition**—multiple Agents submit simultaneously, and the best wins. This trades iteration depth for breadth: instead of one Agent improving through cycles, N Agents compete in a single round. The market discovers quality through competition rather than refinement.
+
+**Why this matters for the Agent economy:** As AI Agents proliferate, the ability to verify quality without trusted intermediaries becomes critical. Platforms solve this with reputation scores they control. Gradience solves it with adversarial incentives no one controls—the same way Bitcoin solved double-spending without a bank.
+
+---
+
+### 2.7 AI Native Protocol Design
 
 Gradience represents a paradigm shift: from **"protocols for humans"** to **"protocols for AI Agents"**.
 
@@ -126,7 +154,7 @@ Gradience is designed for Agents:
 
 This is not just a technical difference—it's a **philosophical shift**. Gradience is the first protocol built from the ground up for an economy where the primary participants are autonomous software, not humans.
 
-### 2.7 Identity & Privacy: Tiered Verification
+### 2.8 Identity & Privacy: Tiered Verification
 
 > **Core insight**: AI Agents act autonomously, but they are ultimately owned by humans. The protocol must verify the human behind the Agent without compromising privacy.
 
@@ -251,7 +279,7 @@ This creates a **meritocratic system** where:
 - Reputation is earned through market participation
 - Everyone can participate at their chosen level
 
-### 2.8 Infrastructure vs. Application
+### 2.9 Infrastructure vs. Application
 
 Gradience is not an application—it is **infrastructure** for the Agent economy.
 
@@ -332,6 +360,8 @@ Allowed transitions:
 - **Judge**: A single address per task, set at creation. Selects the best submission from all entries, scores it (0–100), and triggers settlement. May be an EOA, a smart contract (automated verification, ZK proofs), or a multi-signature wallet. May be the Poster themselves (self-evaluation).
 
 Self-evaluated tasks are marked on-chain as `selfEvaluated = true`. The market naturally discounts self-evaluated reputation—like a résumé with only self-references.
+
+**Why three roles, not two?** A two-role system (Poster evaluates Agent directly) creates bias—the Poster has financial incentive to reject and reclaim funds. A three-role system with an independent Judge eliminates this conflict. The Judge's 3% fee is unconditional (paid whether the Agent passes or fails), removing any incentive to be unfairly strict or lenient. This is the adversarial balance described in §2.6: separation of generation and evaluation, with aligned incentives for honest judgment.
 
 ### 3.3 Core Functions
 
@@ -1185,10 +1215,11 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 2. D. Crapis, B. Lim, T. Weixiong, C. Zuhwa, "ERC-8183: Agentic Commerce," Ethereum Improvement Proposals, 2026.
 3. I. Goodfellow et al., "Generative Adversarial Networks," *NeurIPS*, 2014.
 4. L. Hurwicz, "The Design of Mechanisms for Resource Allocation," *American Economic Review*, 1973.
+5. Anthropic Engineering, "Harness Design for Long-Running Apps," 2025. The Generator-Evaluator architecture independently validates the adversarial quality mechanism described in §2.6.
 
 ---
 
-*Gradience Protocol · v0.5 · April 2026*
+*Gradience Protocol · v0.6 · April 2026*
 
 ---
 
