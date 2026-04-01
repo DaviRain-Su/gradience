@@ -24,9 +24,150 @@ Everything else—Agent discovery, capability matching, complex negotiation—gr
 
 ---
 
-## 2. Design Philosophy
+## 2. The Services Revolution: Services is the New Software
 
-### 2.1 Roles Emerge from Behavior
+### 2.1 The Trillion-Dollar Thesis
+
+> "The next $1T company will be a software company masquerading as a services firm." — Sequoia Capital, March 2026
+
+Twenty years ago, Marc Andreessen declared "Software is Eating the World." This prophecy gave birth to trillion-dollar SaaS companies. Today, Sequoia Capital identifies an even larger transformation: **for every dollar spent on software, six are spent on services**.
+
+**Services is the New Software.**
+
+AI Agents are not merely tools—they are autonomous economic actors capable of delivering professional services at scale. The models are now intelligent enough that in many categories, the best place to start is as an **autopilot** (selling the work) rather than a **copilot** (selling the tool).
+
+### 2.2 Intelligence vs. Judgement
+
+Understanding this distinction is crucial:
+
+| Dimension | Intelligence | Judgement |
+|-----------|--------------|-----------|
+| **Nature** | Complex but rule-based | Experience and taste built over years |
+| **Examples** | Writing code, filling forms, data analysis | What to build next, strategic decisions, culture fit |
+| **AI Readiness** | **Crossed threshold** — AI can do most autonomously | **Still evolving** — requires human oversight |
+| **Services** | Bookkeeping, medical coding, contract drafting | Management consulting, executive recruiting |
+
+**The Frontier is Moving:**
+- Software engineering got there first (over half of all AI tool usage)
+- Every other category is coming
+- Today's judgement will become tomorrow's intelligence as AI systems accumulate proprietary data
+
+### 2.3 The Opportunity Map
+
+Sequoia's analysis identifies **$1+ trillion** in addressable services markets:
+
+| Market | Size | Intelligence Ratio | Outsourcing Maturity | Key Players |
+|--------|------|-------------------|---------------------|-------------|
+| **Recruitment & Staffing** | $200B+ | Medium | High | Juicebox, Mercor |
+| **Supply Chain/Procurement** | $200B+ | High | Medium | Magentic, AskLio |
+| **Insurance Brokerage** | $140-200B | Very High | Very High | WithCoverage, Harper |
+| **IT Managed Services** | $100B+ | High | Very High | Edra, Serval |
+| **Accounting & Audit** | $50-80B | High | High | Rillet, Basis |
+| **Healthcare Revenue Cycle** | $50-80B | Very High | Very High | Anterior |
+| **Claims Adjusting** | $50-80B | High | Very High | Pace, Strala |
+| **Tax Advisory** | $30-35B | High | Medium | TaxGPT, Skalar |
+| **Legal (Transactional)** | $20-25B | High | Very High | Harvey, Crosby, Lawhive |
+| **Management Consulting** | $300-400B | Low | Low | TBD |
+
+**The Pattern:** The higher the intelligence ratio and outsourcing maturity, the sooner autopilots will win.
+
+### 2.4 The Wedge: Outsourcing as Entry Point
+
+> "For every dollar spent on software, six are spent on services. The total addressable market for autopilots is all labour spend in a category. But the right place to start is where outsourcing already exists."
+
+If a task is already outsourced, it tells you three things:
+1. **External work is accepted** — no cultural barrier
+2. **Budget line exists** — clean substitution possible
+3. **Outcome-based purchasing** — buyer already buys results, not tools
+
+**The Playbook:**
+1. Start with outsourced, intelligence-heavy tasks (the wedge)
+2. Nail distribution
+3. Expand toward insourced, judgement-heavy work as AI compounds
+
+**Example:** Crosby started with NDAs—well-defined, intelligence-heavy, already outsourced. The budget exists, scope is clear, ROI is immediate.
+
+### 2.5 The Infrastructure Gap
+
+For AI Agents to truly "eat" the services market, three fundamental infrastructure problems must be solved:
+
+| Problem | Why It Matters | Gradience Solution |
+|---------|----------------|-------------------|
+| **Capability Verification** | Service buyers need proof Agent can deliver | Race model + on-chain reputation |
+| **Trustless Settlement** | No intermediary should control payment | Escrow + atomic settlement |
+| **Quality Assurance** | Work quality must be objectively verifiable | Judge role + continuous scoring |
+
+**Existing approaches fail:**
+- **Platform models** (Upwork, Virtuals ACP) extract 20-30% fees and control all matching
+- **Traditional standards** (ERC-8183) lack built-in reputation and competition mechanisms
+- **Manual verification** doesn't scale to millions of Agent interactions
+
+### 2.6 Gradience: The Trust Layer for Agent Services
+
+Gradience provides the **economic infrastructure** for the "Services is New Software" era:
+
+**For Intelligence-Heavy Services (High Standardization):**
+- Race model enables price/quality discovery at scale
+- Atomic settlement ensures instant payment on delivery
+- No intermediary means lower fees (5% vs 20-30%)
+- **Example**: A medical coding Agent processes thousands of claims autonomously
+
+**For Judgement-Heavy Services (Professional Copilot):**
+- Agents prove specialized capabilities through competition
+- Reputation accumulates from real work history
+- Continuous scoring (0-100) captures nuanced quality differences
+- **Example**: A legal drafting Agent builds reputation through document battles
+
+**For Hybrid Services:**
+- Track A (staking) for high-value tasks requiring capital commitment
+- Track B (capability) for general tasks requiring skill demonstration
+- Unified reputation across both tracks
+
+### 2.7 The Convergence: Copilot → Autopilot
+
+The copilot-to-autopilot transition has already begun. Copilots (Harvey, Rogo) sell to professionals. Autopilots (Crosby, WithCoverage) sell outcomes directly to companies.
+
+**The Innovator's Dilemma:**
+- 2025's fastest-growing AI companies were copilots
+- 2026: Many will try to become autopilots
+- But they face a dilemma: selling the work means cutting their own customers out
+- **This is the opening for pure-play autopilots and the protocols that enable them**
+
+Gradience is protocol-native—there is no existing customer base to cannibalize. We enable the entire ecosystem of autopilots to emerge.
+
+### 2.8 Historical Parallel: Bitcoin for Agent Services
+
+Just as Bitcoin solved trustless value transfer for the internet, Gradience solves trustless service exchange for the Agent economy:
+
+| Era | Problem | Solution | Impact |
+|-----|---------|----------|--------|
+| **2009** | Digital money without banks | Bitcoin (UTXO + PoW) | $1T+ cryptocurrency market |
+| **2026** | Services without platforms | Gradience (Escrow + Judge + Reputation) | Agent service economy |
+
+**The Protocol Commitment:**
+- Bitcoin: 21M supply cap, immutable, no administrator
+- Gradience: 95/3/2 fee split, immutable, no governance
+- Both: Rules are code, not policy
+
+### 2.9 Why This Matters Now
+
+Sequoia's March 2026 analysis coincides with Gradience's roadmap at a pivotal moment:
+
+- **Agent Arena MVP**: Live (April 2026) — proving the race model works
+- **Agent Me**: Personal Agent management (Q2 2026)
+- **Agent Social**: Discovery and reputation network (Q3 2026)
+- **Cross-chain expansion**: Base, Arbitrum (Q4 2026)
+
+**The Timing:**
+> "Software ate the world through SaaS. Agents will eat services through protocols. Gradience is that protocol."
+
+We are not building "another Agent tool." We are building the **settlement layer** for the largest economic transformation since the internet itself.
+
+---
+
+## 3. Design Philosophy
+
+### 3.1 Roles Emerge from Behavior
 
 Bitcoin has no `registerAsMiner()`. You run the software, you mine. Identity is what you do, not what you declare.
 
@@ -38,15 +179,15 @@ In Gradience, there are no fixed role categories—only three actions:
 
 The same address may act as Poster in one task, Agent in another, and Judge in a third. The only constraint: no address may hold two roles in the same task.
 
-### 2.2 The Protocol Is a Promise
+### 3.2 The Protocol Is a Promise
 
 Fee rates are encoded as immutable constants in the contract. No administrator, no governance vote, no upgrade can alter them after deployment. This is not a platform policy—it is a protocol commitment, just as Bitcoin's 21 million supply cap is a protocol commitment.
 
-### 2.3 Complexity Lives Above
+### 3.3 Complexity Lives Above
 
 The protocol does not embed hook systems, plugin architectures, or extension points. Implementations that require richer logic—bidding, negotiation, sub-task decomposition—build on top. The kernel stays closed. This is the Unix philosophy applied to economic protocols: do one thing well.
 
-### 2.4 Comparison with ERC-8183
+### 3.4 Comparison with ERC-8183
 
 ERC-8183 (Agentic Commerce), submitted by the Virtuals Protocol team, is the closest existing standard.
 
@@ -65,7 +206,7 @@ ERC-8183 (Agentic Commerce), submitted by the Virtuals Protocol team, is the clo
 
 Gradience leads on **9 of 11 dimensions**.
 
-### 2.5 Bitcoin-Inspired Minimalism
+### 3.5 Bitcoin-Inspired Minimalism
 
 Bitcoin defined "money" with three primitives: **UTXO + Script + Proof-of-Work**. Gradience defines "Agent capability exchange" with three primitives: **Escrow + Judge + Reputation**.
 
@@ -93,7 +234,7 @@ Bitcoin defined "money" with three primitives: **UTXO + Script + Proof-of-Work**
 
 Gradience: ~300 lines of code. That's the entire foundation.
 
-### 2.6 Adversarial Quality: The GAN Insight
+### 3.6 Adversarial Quality: The GAN Insight
 
 The protocol's three-role separation is not just organizational—it is an **adversarial quality mechanism** analogous to Generative Adversarial Networks (GANs).
 
@@ -121,7 +262,7 @@ Gradience encodes this insight at the protocol level:
 
 ---
 
-### 2.7 Evolutionary Pressure: Self-Improving Networks
+### 4.7 Evolutionary Pressure: Self-Improving Networks
 
 The GAN mechanism (§2.6) ensures quality in a single task—multiple Agents compete in one round. But how does the *network itself* improve over time? Bitcoin has difficulty adjustment: as miners get faster, the protocol automatically demands more work. Gradience needs an analogous mechanism for capability evolution.
 
@@ -150,7 +291,7 @@ The protocol does not embed any specific optimization framework. It provides the
 
 ---
 
-### 2.8 AI Native Protocol Design
+### 4.8 AI Native Protocol Design
 
 Gradience represents a paradigm shift: from **"protocols for humans"** to **"protocols for AI Agents"**.
 
@@ -185,7 +326,7 @@ This is not just a technical difference—it's a **philosophical shift**. Gradie
 
 **Relationship to UX-layer standards:** Industry initiatives like Linear's Agent Interaction Guidelines (AIG) address trust at the product layer—identity disclosure, state transparency, human accountability. Gradience addresses the same trust requirements at the protocol layer: on-chain identity replaces UI labels, `trace_ref` replaces status panels, staking and slash replace responsibility disclaimers. The two layers are complementary: AIG makes Agents *feel* trustworthy; Gradience makes trust *verifiable and settleable*.
 
-### 2.9 Identity & Privacy: Tiered Verification
+### 4.9 Identity & Privacy: Tiered Verification
 
 > **Core insight**: AI Agents act autonomously, but they are ultimately owned by humans. The protocol must verify the human behind the Agent without compromising privacy.
 
@@ -310,7 +451,7 @@ This creates a **meritocratic system** where:
 - Reputation is earned through market participation
 - Everyone can participate at their chosen level
 
-### 2.10 Infrastructure vs. Application
+### 4.10 Infrastructure vs. Application
 
 Gradience is not an application—it is **infrastructure** for the Agent economy.
 
@@ -352,9 +493,9 @@ Gradience is not an application—it is **infrastructure** for the Agent economy
 
 ---
 
-## 3. Protocol Specification
+## 4. Protocol Specification
 
-### 3.1 Race Model: Bitcoin Mining for Agents
+### 4.1 Race Model: Bitcoin Mining for Agents
 
 The protocol uses a **race model** inspired by Bitcoin mining. In Bitcoin, any miner may attempt to produce a valid block; the first to succeed wins the reward. In Gradience, any staked Agent may submit a result for an open task; the Judge selects the best submission.
 
@@ -384,7 +525,7 @@ Allowed transitions:
 
 **Why race?** In the assign model, a Poster subjectively picks one Agent—no market discovery. In the race model, the market discovers the best Agent through open competition. Agents who lose expend resources (like miners who don't find the block), but this is the cost of competition. High-reputation Agents have higher win rates, making participation profitable in expectation.
 
-### 3.2 Roles
+### 4.2 Roles
 
 - **Poster**: Creates a task with description, evaluation reference, deadline, designated Judge, and visibility setting. Locks value into escrow. May also serve as Judge (self-evaluation) for cold-start scenarios. May cancel the task before judgment (escrowed value is refunded minus protocol fee).
 - **Agent**: Any staked address may submit a result to any open task. No application or assignment needed. Reputation is created on first submission. An Agent may resubmit to the same task—each new submission replaces the previous one; the Judge evaluates only the latest version from each Agent.
@@ -394,7 +535,7 @@ Self-evaluated tasks are marked on-chain as `selfEvaluated = true`. The market n
 
 **Why three roles, not two?** A two-role system (Poster evaluates Agent directly) creates bias—the Poster has financial incentive to reject and reclaim funds. A three-role system with an independent Judge eliminates this conflict. The Judge's 3% fee is unconditional (paid whether the Agent passes or fails), removing any incentive to be unfairly strict or lenient. This is the adversarial balance described in §2.6: separation of generation and evaluation, with aligned incentives for honest judgment.
 
-### 3.3 Core Functions
+### 4.3 Core Functions
 
 | Function | Caller | Effect |
 |----------|--------|--------|
@@ -408,7 +549,7 @@ Self-evaluated tasks are marked on-chain as `selfEvaluated = true`. The market n
 
 **Three core functions** (post, submit, judge) define the entire task lifecycle. `cancelTask` allows Poster withdrawal (the 2% protocol fee still applies to discourage frivolous posting). Safety functions (refund, forceRefund) are permissionless.
 
-### 3.4 Submission Visibility
+### 4.4 Submission Visibility
 
 The Poster sets a `visibility` flag at task creation:
 
@@ -419,7 +560,7 @@ The Poster sets a `visibility` flag at task creation:
 
 The protocol does not enforce encryption—it stores the visibility flag and leaves implementation to the execution layer (e.g., MagicBlock Private ER with TEE for sealed mode). This keeps the kernel minimal while supporting both open and confidential workflows.
 
-### 3.5 Staking
+### 4.5 Staking
 
 Both Agents and Judges must stake to participate:
 
@@ -428,7 +569,7 @@ Both Agents and Judges must stake to participate:
 - **Stake currency**: SOL in Phase 1; transitions to GRAD in Phase 3 (see §4.3). Each phase is a new Program version—the protocol's immutability is preserved because old versions remain unchanged; users migrate voluntarily.
 - **No explicit slashing** (v1). Bad Agents lose competition and waste effort. Bad Judges lose reputation and stop being selected. The cost of misbehavior is economic death, not confiscation.
 
-### 3.6 Anti-Gaming: Why Self-Evaluation Doesn't Break the Protocol
+### 4.6 Anti-Gaming: Why Self-Evaluation Doesn't Break the Protocol
 
 Self-evaluation (Poster = Judge) is allowed for cold-start but has built-in defenses:
 
@@ -437,7 +578,7 @@ Self-evaluation (Poster = Judge) is allowed for cold-start but has built-in defe
 3. **On-chain transparency**—self-evaluated tasks are publicly marked; the market discounts them
 4. **Race model**—in open competition, self-evaluation is irrelevant because other Agents submit too; a Judge who ignores better submissions destroys their own reputation
 
-### 3.7 Evaluation Standard (evaluationCID)
+### 4.7 Evaluation Standard (evaluationCID)
 
 The `evaluationCID` field references the evaluation criteria stored off-chain. The protocol does not enforce a format—Posters define how their tasks should be judged. Recommended standard types:
 
@@ -452,7 +593,7 @@ This is extensible—new evaluation types can be added without protocol changes,
 
 **Data availability:** The protocol requires `evaluationCID` to reference content-addressed storage. Recommended backends: **Arweave** (permanent storage) or **Avail** (data availability layer). IPFS is acceptable but carries pin-expiry risk. If evaluation criteria becomes unavailable, the Judge cannot evaluate; the task will reach deadline and trigger `refundExpired` or the Poster may `cancelTask`.
 
-### 3.8 Losing Submissions
+### 4.8 Losing Submissions
 
 All submissions are stored on-chain (as references/hashes). After settlement:
 
@@ -460,7 +601,7 @@ All submissions are stored on-chain (as references/hashes). After settlement:
 - Losing submissions remain on-chain as historical records. They serve as evidence of Agent participation and contribute to the `attempted` count in reputation metrics.
 - Visibility of losing submissions follows the task's `visibility` setting—public tasks expose all submissions; sealed tasks keep them hidden.
 
-### 3.9 Greedy vs. Complex Arbitration
+### 4.9 Greedy vs. Complex Arbitration
 
 Gradience uses a **greedy algorithm** (immediate selection of current best) rather than complex optimistic verification with challenge periods. This is a deliberate design choice with significant advantages.
 
@@ -505,7 +646,7 @@ When disputes do occur (rare edge cases), they are handled outside the protocol 
 
 ---
 
-## 4. Economic Model
+## 5. Economic Model
 
 ### 4.1 Judge as Miner
 
@@ -627,9 +768,9 @@ Gradience uses the same principle: Judges evaluate against criteria defined in `
 
 ---
 
-## 5. Reputation
+## 6. Reputation
 
-### 5.1 Behavior-Derived, Not Registered
+### 4.1 Behavior-Derived, Not Registered
 
 Reputation is not purchased, not declared, not pre-registered. It is created automatically when an address first participates, and accumulates from every subsequent action.
 
@@ -640,7 +781,7 @@ Four metrics, all computed on-chain:
 - **Submitted**: number of tasks submitted to (including losses)
 - **Win Rate**: completed ÷ submitted
 
-### 5.2 Three-Dimensional
+### 4.2 Three-Dimensional
 
 A single address accumulates reputation across all roles:
 
@@ -648,11 +789,11 @@ A single address accumulates reputation across all roles:
 - As **Judge**: accuracy and consistency of evaluations (tracked by outcome patterns)
 - As **Poster**: reliability of task definitions and payments (completion rate, cancellation rate)
 
-### 5.3 ERC-8004 Integration: How Reputation Flows Into the Agent Identity Standard
+### 4.3 ERC-8004 Integration: How Reputation Flows Into the Agent Identity Standard
 
 ERC-8004 defines three on-chain registries: **Identity Registry** (agent profiles as ERC-721 NFTs), **Reputation Registry** (feedback signals between agents), and **Validation Registry** (independent verification hooks). Gradience maps onto all three.
 
-#### 5.3.1 Identity Registry
+#### 4.3.1 Identity Registry
 
 When an Agent first participates in Gradience (first `submitResult` or `judgeAndPay`), the protocol MAY auto-register the Agent in the ERC-8004 Identity Registry if not already registered. The Agent's registration file includes:
 
@@ -680,7 +821,7 @@ When an Agent first participates in Gradience (first `submitResult` or `judgeAnd
 
 For Solana-native agents, the `agentWallet` metadata field links to the Solana address. For cross-chain agents, multiple registrations point to the same identity (see §7.5).
 
-#### 5.3.2 Reputation Registry
+#### 4.3.2 Reputation Registry
 
 Every `judgeAndPay()` execution produces a feedback signal that is written to the ERC-8004 Reputation Registry. The mapping:
 
@@ -721,7 +862,7 @@ The `feedbackURI` points to a JSON file containing full task details:
 - **On-chain hook (EVM):** If Gradience is deployed on an EVM chain where ERC-8004 is available, `judgeAndPay()` directly calls the Reputation Registry's `giveFeedback()` in the same transaction. Atomic and trustless.
 - **Off-chain relay (Solana → EVM):** On Solana, the Judge daemon or a dedicated relayer watches `judgeAndPay` events and submits corresponding `giveFeedback()` calls to the ERC-8004 registry on an EVM chain. The feedback includes the Solana transaction signature as proof of origin.
 
-#### 5.3.3 Validation Registry
+#### 4.3.3 Validation Registry
 
 For tasks using `test_cases` evaluation, the Judge can be a **Validation Registry hook**—a smart contract that re-executes the test suite and records the validation result on-chain. This enables:
 
@@ -729,7 +870,7 @@ For tasks using `test_cases` evaluation, the Judge can be a **Validation Registr
 - Disputed judgments to be checked against deterministic test results
 - Insurance protocols to assess claim validity based on validation data
 
-#### 5.3.4 Data Flow Summary
+#### 4.3.4 Data Flow Summary
 
 ```
 Gradience Protocol (Solana)
@@ -751,11 +892,11 @@ Gradience Protocol (Solana)
 
 This means Gradience is not just *compatible* with ERC-8004—it is a **primary data source** for the standard. Every task completed on Gradience enriches the global Agent reputation layer.
 
-### 5.4 Judge Discovery
+### 4.4 Judge Discovery
 
 The protocol records Judge reputation on-chain but does not embed a discovery mechanism. Judge leaderboards, directories, and recommendation engines are the responsibility of upper-layer modules (Chain Hub, frontends, aggregators). The kernel provides data; the ecosystem builds interfaces.
 
-### 5.5 Dual-Track Agent Economy
+### 4.5 Dual-Track Agent Economy
 
 Gradience supports two complementary participation models, unified under the ERC-8004 reputation system:
 
@@ -804,9 +945,9 @@ Gradience supports two complementary participation models, unified under the ERC
 
 ---
 
-## 6. Architecture
+## 7. Architecture
 
-### 6.1 Kernel + Products + Infrastructure
+### 4.1 Kernel + Products + Infrastructure
 
 Gradience has a **kernel**, **products** (user-facing), and **infrastructure** (invisible to users):
 
@@ -858,7 +999,7 @@ Agent IM follows a **desktop-first, voice-native** strategy. The MVP is a deskto
 
 **DashDomain** is the Agent runtime. After configuring an Agent in Agent IM, users need a place for it to run 24/7—responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment, similar to Railway or Fly.io for traditional applications.
 
-### 6.2 Settlement Layer: Why Solana, Not a New Chain
+### 4.2 Settlement Layer: Why Solana, Not a New Chain
 
 Gradience does not need its own blockchain. Under the race model, a task lifecycle produces:
 
@@ -873,7 +1014,7 @@ Solana handles 4,000+ TPS. This uses < 3% of capacity.
 
 All compute-intensive work—Agent execution, Judge evaluation—happens **off-chain**. The chain only records submissions, scores, and payments.
 
-### 6.3 Network Layer: A2A Protocol Architecture
+### 4.3 Network Layer: A2A Protocol Architecture
 
 When millions of Agents communicate in real time—negotiating sub-tasks, streaming micropayments, sharing state updates—no single chain can handle the throughput (~166,000 TPS required for global Agent coordination). The solution mirrors Bitcoin's evolution: **layering for scale**.
 
@@ -908,7 +1049,7 @@ The A2A (Agent-to-Agent) layer implements four foundational patterns proven acro
 
 **Design Principle**: L2 handles interaction volume and latency; L1 guarantees final settlement and dispute resolution. Solana remains the trust anchor; A2A enables the throughput required for real-time Agent economies.
 
-### 6.4 Execution Layer: Implementation Options
+### 4.4 Execution Layer: Implementation Options
 
 The A2A patterns can be realized through multiple technical paths. The protocol remains **implementation-agnostic**—deployers choose based on sovereignty, latency, and operational requirements.
 
@@ -974,7 +1115,7 @@ Periodic reputation sync              →  Optimistic Batching
 
 **Trade-off**: Architectural complexity, requires abstraction layer.
 
-### 6.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
+### 4.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
 
 An Agent operates on multiple chains with different wallets. Reputation unifies through cryptographic proofs:
 
@@ -986,7 +1127,7 @@ An Agent operates on multiple chains with different wallets. Reputation unifies 
 
 No real-time bridge. No centralized aggregation. No full reputation system on every chain.
 
-### 6.6 Confidential Computing: Privacy Without Trust
+### 4.6 Confidential Computing: Privacy Without Trust
 
 The protocol's sealed submission mode (§3.4) declares *intent* for privacy but leaves implementation to the execution layer. As the Agent economy matures, three scenarios demand cryptographic privacy guarantees beyond what TEE alone provides:
 
@@ -1015,7 +1156,7 @@ Future (MPC evaluation):
 
 ---
 
-### 6.7 Agent-Friendly Blockchain Patterns
+### 4.7 Agent-Friendly Blockchain Patterns
 
 #### Design Philosophy
 
@@ -1039,7 +1180,7 @@ Agent using blockchain:
 
 These principles lead to concrete design patterns that lower the barrier for AI Agents to use blockchain:
 
-#### 6.6.1 State Channels: High-Frequency Agent Interaction
+#### 4.6.1 State Channels: High-Frequency Agent Interaction
 
 **Problem**: Agents need to interact frequently (negotiation, micro-payments, real-time collaboration). On-chain transactions are too slow and expensive.
 
@@ -1061,7 +1202,7 @@ Opening (on-chain)          Off-chain Interaction          Closing (on-chain)
 
 **Cost reduction**: 1000 interactions cost 2 on-chain transactions (~$0.02) vs 1000 on-chain transactions (~$500).
 
-#### 6.6.2 Optimistic Batching: Cost-Effective Settlement
+#### 4.6.2 Optimistic Batching: Cost-Effective Settlement
 
 **Problem**: 1000 Agents complete tasks daily. Individual settlement costs $500/day.
 
@@ -1111,7 +1252,7 @@ fn claim_reward(
 
 **Cost reduction**: 1000 operations → 1 transaction (~$0.50 + $0.01 × 1000 = $10.50) vs $500 individually.
 
-#### 6.6.3 Meta-Transactions: Gas Abstraction
+#### 4.6.3 Meta-Transactions: Gas Abstraction
 
 **Problem**: New Agents don't have Gas tokens. Users shouldn't need to buy SOL/OKB before using Agents.
 
@@ -1158,7 +1299,7 @@ class SimpleRelayer {
 
 **Note**: This is a simple centralized Relayer for MVP. Future versions can evolve to decentralized Relayer networks.
 
-#### 6.6.4 Event-Driven Architecture: Automated Workflows
+#### 4.6.4 Event-Driven Architecture: Automated Workflows
 
 **Problem**: Agents shouldn't waste resources polling for updates.
 
@@ -1221,7 +1362,7 @@ class EventDrivenAgent {
 - **Real-time**: Instant response to opportunities
 - **Automated**: Agents operate 24/7 without human intervention
 
-#### 6.6.5 HD Wallet: Identity Isolation
+#### 4.6.5 HD Wallet: Identity Isolation
 
 **Problem**: One Agent doing 100 tasks needs address isolation for privacy and auditability.
 
@@ -1242,7 +1383,7 @@ Benefits:
 - Single recovery phrase
 ```
 
-#### 6.6.6 Cross-Chain Future: LayerZero/Wormhole
+#### 4.6.6 Cross-Chain Future: LayerZero/Wormhole
 
 **Current**: Solana-only for Phase 1 (MVP)
 
@@ -1254,7 +1395,7 @@ Benefits:
 
 ---
 
-## 7. Roadmap
+## 8. Roadmap
 
 AI-accelerated development — entire protocol ships within one month (April 2026).
 
@@ -1269,7 +1410,7 @@ AI-accelerated development — entire protocol ships within one month (April 202
 
 ---
 
-## 8. Conclusion
+## 9. Conclusion
 
 Bitcoin proved that defining "money" requires only UTXO + Script + Proof-of-Work. Three primitives, immutable rules, permissionless participation—and a trillion-dollar economy emerged.
 
