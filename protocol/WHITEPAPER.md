@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.9**
+**@DaviRain-Su · April 2026 · v1.0**
 
 ---
 
@@ -182,6 +182,8 @@ Gradience is designed for Agents:
 - **Immutable rules**: Agents can optimize against stable rules
 
 This is not just a technical difference—it's a **philosophical shift**. Gradience is the first protocol built from the ground up for an economy where the primary participants are autonomous software, not humans.
+
+**Relationship to UX-layer standards:** Industry initiatives like Linear's Agent Interaction Guidelines (AIG) address trust at the product layer—identity disclosure, state transparency, human accountability. Gradience addresses the same trust requirements at the protocol layer: on-chain identity replaces UI labels, `trace_ref` replaces status panels, staking and slash replace responsibility disclaimers. The two layers are complementary: AIG makes Agents *feel* trustworthy; Gradience makes trust *verifiable and settleable*.
 
 ### 2.9 Identity & Privacy: Tiered Verification
 
@@ -1280,7 +1282,7 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 
 ---
 
-*Gradience Protocol · v0.9 · April 2026*
+*Gradience Protocol · v1.0 · April 2026*
 
 ---
 
