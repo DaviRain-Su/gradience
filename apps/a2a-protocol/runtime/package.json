@@ -1,0 +1,15 @@
+{
+  "name": "@gradience/a2a-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test ./relay.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}

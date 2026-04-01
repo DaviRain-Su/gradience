@@ -1,0 +1,20 @@
+[package]
+name = "a2a-protocol"
+version = { workspace = true }
+edition = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[lints]
+workspace = true
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+pinocchio = { workspace = true, features = ["cpi", "copy"] }
+pinocchio-system = { workspace = true }
+solana-address = { workspace = true }
+borsh = { workspace = true }
+thiserror = { workspace = true }
