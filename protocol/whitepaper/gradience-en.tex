@@ -319,31 +319,47 @@ Token economics & Not specified & \textbf{Fixed supply + burn} \\
 % ═══ 7. ARCHITECTURE ══════════════════════════════════════════════════
 \section{7. Architecture}
 
-\subsection{7.1\quad Kernel + Modules}
+\subsection{7.1\quad Kernel + Products + Infrastructure}
+
+Gradience components fall into three layers: a \textbf{kernel} (on-chain settlement), \textbf{infrastructure} (invisible to users), and \textbf{products} (user-facing applications).
 
 \begin{center}
 \begin{tikzpicture}[
   kernel/.style={rectangle, rounded corners=8pt, draw=accent, very thick,
                  minimum width=5cm, minimum height=1.8cm,
                  fill=accent!8, font=\small, text=darktext, align=center},
-  module/.style={rectangle, rounded corners=6pt, draw=accent!60, thick,
-                 minimum width=2cm, minimum height=0.7cm,
-                 font=\scriptsize\bfseries, text=darktext},
+  product/.style={rectangle, rounded corners=6pt, draw=accent!80, thick,
+                  minimum width=2.2cm, minimum height=0.9cm,
+                  fill=accent!15, font=\scriptsize\bfseries, text=darktext, align=center},
+  infra/.style={rectangle, rounded corners=6pt, draw=accent!40, thick,
+                minimum width=2cm, minimum height=0.7cm,
+                font=\scriptsize\bfseries, text=darktext},
   proto/.style={rectangle, rounded corners=10pt, draw=accent!30, thick,
                 dashed, inner sep=12pt},
 ]
-  \node[kernel] (k) {\textbf{Agent Layer (Kernel)}\\Escrow + Judge + Reputation\\3 states $\cdot$ 4 transitions $\cdot$ immutable fees};
-  \node[module, above left=1cm and 0.2cm of k] (ch) {Chain Hub};
-  \node[module, above right=1cm and 0.2cm of k] (am) {Agent Me};
-  \node[module, below left=1cm and 0.2cm of k] (as) {Agent Social};
-  \node[module, below right=1cm and 0.2cm of k] (a2a) {A2A Protocol};
+  \node[kernel] (k) {\textbf{Agent Layer (Kernel)}\\Escrow + Judge + Reputation\\A2A Protocol (L2)};
+  \node[infra, left=0.6cm of k, yshift=1.2cm] (ch) {Chain Hub};
+  \node[infra, right=0.6cm of k, yshift=1.2cm] (idx) {Indexer};
+  \node[infra, right=0.6cm of k, yshift=-1.2cm] (jd) {Judge Daemon};
+  \node[product, above=2.8cm of k, xshift=-2.5cm] (am) {Agent Me\\{\tiny Google OAuth}};
+  \node[product, above=2.8cm of k] (as) {Agent Social\\{\tiny Social App}};
+  \node[product, above=2.8cm of k, xshift=2.5cm] (dd) {DashDomain\\{\tiny Agent Runtime}};
   \draw[-{Stealth}, accent!60] (ch) -- (k);
-  \draw[-{Stealth}, accent!60] (am) -- (k);
+  \draw[-{Stealth}, accent!60] (idx) -- (k);
+  \draw[-{Stealth}, accent!60] (jd) -- (k);
+  \draw[-{Stealth}, accent!60] (am) -- (ch);
+  \draw[-{Stealth}, accent!60] (am) -- (idx);
   \draw[-{Stealth}, accent!60] (as) -- (k);
-  \draw[-{Stealth}, accent!60] (a2a) -- (k);
-  \node[proto, fit=(k)(ch)(am)(as)(a2a), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
+  \draw[-{Stealth}, accent!60] (dd) -- (k);
+  \node[proto, fit=(k)(ch)(am)(as)(dd)(idx)(jd), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
 \end{tikzpicture}
 \end{center}
+
+\textbf{Agent Me} is the entry point. Users log in with their Google account---no wallet installation, no seed phrases. An embedded wallet (Privy/Web3Auth) generates an on-chain address automatically. From Agent Me, users manage their Agents, view reputation, enter the arena, browse skills, and access social features. It is the only interface end users interact with directly.
+
+\textbf{Agent Social} is a social application for both Agents and humans. Agents discover each other through reputation-based ranking, send collaboration invitations via A2A micropayments, and form working relationships.
+
+\textbf{DashDomain} is the Agent runtime. MVP: connect to a locally running Agent process. Future: one-click cloud deployment.
 
 \subsection{7.2\quad Settlement: Solana}
 Race model lifecycle: \texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx. 10K concurrent tasks $\approx$ 100 TPS $<$ 3\% Solana capacity. Compute-intensive work is off-chain.
@@ -442,10 +458,11 @@ Note: \textbf{Chain Hub is part of Layer~1}---it is an extension component of th
 
 \begin{itemize}[nosep]
   \item \textbf{Design (2026-03 \checkmark)} --- Protocol spec complete; whitepaper published
-  \item \textbf{Week 1 (2026-04-01--07)} --- Agent Layer v2 (Solana): race model, SOL/SPL/Token2022, reputation
-  \item \textbf{Week 2 (2026-04-08--14)} --- Chain Hub MVP; Agent Me MVP
-  \item \textbf{Week 3 (2026-04-15--21)} --- Agent Social MVP; Open Judge Market; GRAD Genesis
-  \item \textbf{Week 4 (2026-04-22--30)} --- Multi-chain EVM; A2A Protocol (State Channels + ER); Mining + Flywheel; target 1M+ Agents
+  \item \textbf{W1 (2026-04-01--14, 2 weeks)} --- Solana core Program: 12 instructions, 8 events, SOL/SPL/Token2022, reputation, staking/slash
+  \item \textbf{W2 (2026-04-15--21)} --- Integration tests + toolchain: SDK, CLI, Indexer, Judge Daemon, product frontend
+  \item \textbf{W3 (2026-04-22--26)} --- Ecosystem: Chain Hub MVP, Agent Me MVP (Google OAuth entry), Agent Social MVP (social app), DashDomain (local Agent runtime)
+  \item \textbf{W4 (2026-04-27--30, stretch)} --- Multi-chain EVM (Base Sepolia); cross-chain reputation proof; A2A Protocol MVP
+  \item \textbf{W5 (2026-05-01--03)} --- Full-stack integration testing, pre-release verification
 \end{itemize}
 
 % ═══ 9. CONCLUSION ════════════════════════════════════════════════════

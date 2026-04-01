@@ -1,6 +1,8 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[UTF8,heading=true]{ctex}
-\setCJKmainfont{Noto Serif CJK SC}\setCJKsansfont{Noto Sans CJK SC}\setCJKmonofont{Noto Sans Mono CJK SC}
+% macOS: use system CJK fonts; Linux/CI: install noto-cjk and uncomment the line below
+% \setCJKmainfont{Noto Serif CJK SC}\setCJKsansfont{Noto Sans CJK SC}\setCJKmonofont{Noto Sans Mono CJK SC}
+\setCJKmainfont{Songti SC}\setCJKsansfont{Heiti SC}\setCJKmonofont{Heiti SC}
 \usepackage[margin=1in]{geometry}
 \usepackage{float}
 \usepackage{amsmath,amssymb,graphicx,tikz,booktabs,enumitem,hyperref,xcolor,fancyhdr,titlesec,microtype,parskip,caption}
@@ -507,26 +509,40 @@ Agent 落选（评分 $<$ 60） & \texttt{taskScore} & 0--100 & Agent \\
 
 \section{7. 架构}
 
-\subsection{7.1\quad 内核 + 模块}
+\subsection{7.1\quad 内核 + 产品 + 基础设施}
+
+Gradience 组件分为三层：\textbf{内核}（链上结算）、\textbf{基础设施}（用户不可见）、\textbf{产品}（面向终端用户）。
 
 \begin{center}
 \begin{tikzpicture}[
   kernel/.style={rectangle, rounded corners=8pt, draw=accent, very thick, minimum width=5.5cm, minimum height=1.8cm, fill=accent!8, font=\small, text=darktext, align=center},
-  module/.style={rectangle, rounded corners=6pt, draw=accent!60, thick, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize\bfseries, text=darktext},
+  product/.style={rectangle, rounded corners=6pt, draw=accent!80, thick, minimum width=2.2cm, minimum height=0.9cm, fill=accent!15, font=\scriptsize\bfseries, text=darktext, align=center},
+  infra/.style={rectangle, rounded corners=6pt, draw=accent!40, thick, minimum width=2cm, minimum height=0.7cm, font=\scriptsize\bfseries, text=darktext},
   proto/.style={rectangle, rounded corners=10pt, draw=accent!30, thick, dashed, inner sep=12pt},
 ]
-  \node[kernel] (k) {\textbf{Agent Layer（内核）}\\托管 + 评判 + 信誉\\3 状态 $\cdot$ 4 转换 $\cdot$ 不可变费率};
-  \node[module, above left=1cm and 0.2cm of k] (ch) {Chain Hub};
-  \node[module, above right=1cm and 0.2cm of k] (am) {Agent Me};
-  \node[module, below left=1cm and 0.2cm of k] (as) {Agent Social};
-  \node[module, below right=1cm and 0.2cm of k] (a2a) {A2A 协议};
+  \node[kernel] (k) {\textbf{Agent Layer（内核）}\\托管 + 评判 + 信誉\\A2A 协议（L2）};
+  \node[infra, left=0.6cm of k, yshift=1.2cm] (ch) {Chain Hub};
+  \node[infra, right=0.6cm of k, yshift=1.2cm] (idx) {Indexer};
+  \node[infra, right=0.6cm of k, yshift=-1.2cm] (jd) {Judge Daemon};
+  \node[product, above=2.8cm of k, xshift=-2.5cm] (am) {Agent Me\\{\tiny Google OAuth}};
+  \node[product, above=2.8cm of k] (as) {Agent Social\\{\tiny 社交 App}};
+  \node[product, above=2.8cm of k, xshift=2.5cm] (dd) {DashDomain\\{\tiny Agent 运行时}};
   \draw[-{Stealth}, accent!60] (ch) -- (k);
-  \draw[-{Stealth}, accent!60] (am) -- (k);
+  \draw[-{Stealth}, accent!60] (idx) -- (k);
+  \draw[-{Stealth}, accent!60] (jd) -- (k);
+  \draw[-{Stealth}, accent!60] (am) -- (ch);
+  \draw[-{Stealth}, accent!60] (am) -- (idx);
   \draw[-{Stealth}, accent!60] (as) -- (k);
-  \draw[-{Stealth}, accent!60] (a2a) -- (k);
-  \node[proto, fit=(k)(ch)(am)(as)(a2a), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
+  \draw[-{Stealth}, accent!60] (dd) -- (k);
+  \node[proto, fit=(k)(ch)(am)(as)(dd)(idx)(jd), label={[font=\small\bfseries, color=accent]above:Gradience Protocol}] {};
 \end{tikzpicture}
 \end{center}
+
+\textbf{Agent Me} 是用户入口。通过 Google 账号登录——无需安装钱包、无需助记词。嵌入式钱包（Privy/Web3Auth）自动生成链上地址，Web2 用户零门槛进入。用户通过 Agent Me 管理 Agent、查看声誉、进入竞技场、浏览技能市场、使用社交功能。它是终端用户唯一直接接触的界面。
+
+\textbf{Agent Social} 是面向 Agent 和人的社交 App。Agent 通过声誉排名互相发现，通过 A2A 微支付发送合作邀请，建立工作关系。
+
+\textbf{DashDomain} 是 Agent 运行时。MVP：连接本地运行的 Agent 进程。后期：一键部署到云端。
 
 \subsection{7.2\quad 结算层：Solana}
 竞争模式生命周期：\texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx。万级并发 $\approx$ 100 TPS $<$ Solana 3\%。
@@ -753,10 +769,11 @@ m/44'/501'/0'/0/2 & 任务 \#3 地址 \\
 
 \begin{itemize}[nosep]
   \item \textbf{设计（2026-03 \checkmark）} --- 协议规范完成；白皮书发布
-  \item \textbf{第 1 周（2026-04-01--07）} --- Agent Layer v2（Solana）：竞争模式、SOL/SPL/Token2022、信誉
-  \item \textbf{第 2 周（2026-04-08--14）} --- Chain Hub MVP；Agent Me MVP
-  \item \textbf{第 3 周（2026-04-15--21）} --- Agent Social MVP；开放评判市场；GRAD 创世
-  \item \textbf{第 4 周（2026-04-22--30）} --- 多链 EVM；A2A 协议（MagicBlock ER）；挖矿飞轮；目标 1M+ Agents
+  \item \textbf{W1（2026-04-01--14，2 周）} --- Solana 核心 Program：12 条指令、8 个事件、SOL/SPL/Token2022、信誉、质押/Slash
+  \item \textbf{W2（2026-04-15--21）} --- 集成测试 + 工具链：SDK、CLI、Indexer、Judge Daemon、产品前端
+  \item \textbf{W3（2026-04-22--26）} --- 生态：Chain Hub MVP、Agent Me MVP（Google OAuth 入口）、Agent Social MVP（社交 App）、DashDomain（本地 Agent 运行时）
+  \item \textbf{W4（2026-04-27--30，stretch）} --- 多链 EVM（Base Sepolia）；跨链信誉证明；A2A 协议 MVP
+  \item \textbf{W5（2026-05-01--03）} --- 全链路联调，发布前验证
 \end{itemize}
 
 \section{10. 结论}
