@@ -66,6 +66,40 @@ test("relay server exposes health and relay endpoints", async () => {
 
       const alerts = await fetch(`${server.baseUrl}/v1/alerts`);
       assert.equal(alerts.status, 401);
+
+      const drillUnauthorized = await fetch(`${server.baseUrl}/v1/alerts/test`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ severity: "critical" }),
+      });
+      assert.equal(drillUnauthorized.status, 401);
+
+      const drill = await fetch(`${server.baseUrl}/v1/alerts/test`, {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          severity: "warning",
+          message: "drill",
+          observed: 2,
+          threshold: 1,
+        }),
+      });
+      assert.equal(drill.status, 202);
+      const drillBody = (await drill.json()) as {
+        accepted: boolean;
+        dispatched: boolean;
+        alert: { code: string; severity: string; message: string };
+      };
+      assert.equal(drillBody.accepted, true);
+      assert.equal(drillBody.dispatched, false);
+      assert.equal(drillBody.alert.code, "test_alert");
+      assert.equal(drillBody.alert.severity, "warning");
+      assert.equal(drillBody.alert.message, "drill");
     } finally {
       await server.close();
     }

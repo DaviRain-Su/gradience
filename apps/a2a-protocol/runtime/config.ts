@@ -2,6 +2,7 @@ import {
   DEFAULT_RELAY_ALERT_THRESHOLDS,
   type RelayAlertThresholds,
 } from "./monitor";
+import type { RelayAlertSeverity } from "./alert-sink";
 
 export type RelayRuntimeProfile = "local" | "devnet" | "prod";
 
@@ -17,6 +18,10 @@ export interface RelayRuntimeConfig {
   storeFilePath: string;
   alertThresholds: RelayAlertThresholds;
   alertIntervalMs: number;
+  alertWebhookUrl?: string;
+  alertSlackWebhookUrl?: string;
+  alertMinSeverity: RelayAlertSeverity;
+  alertDispatchCooldownMs: number;
 }
 
 const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
@@ -37,6 +42,10 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minPullRequestsForDeliveryCheck: 20,
     },
     alertIntervalMs: 30_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "warning",
+    alertDispatchCooldownMs: 60_000,
   },
   devnet: {
     profile: "devnet",
@@ -55,6 +64,10 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minPullRequestsForDeliveryCheck: 25,
     },
     alertIntervalMs: 30_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "warning",
+    alertDispatchCooldownMs: 60_000,
   },
   prod: {
     profile: "prod",
@@ -73,6 +86,10 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minPullRequestsForDeliveryCheck: 30,
     },
     alertIntervalMs: 15_000,
+    alertWebhookUrl: undefined,
+    alertSlackWebhookUrl: undefined,
+    alertMinSeverity: "critical",
+    alertDispatchCooldownMs: 180_000,
   },
 };
 
@@ -106,6 +123,19 @@ export function resolveRelayRuntimeConfig(
     alertIntervalMs: parseIntSafe(
       env.A2A_RELAY_ALERT_INTERVAL_MS,
       preset.alertIntervalMs,
+    ),
+    alertWebhookUrl:
+      parseOptionalString(env.A2A_RELAY_ALERT_WEBHOOK_URL) ?? preset.alertWebhookUrl,
+    alertSlackWebhookUrl:
+      parseOptionalString(env.A2A_RELAY_ALERT_SLACK_WEBHOOK_URL) ??
+      preset.alertSlackWebhookUrl,
+    alertMinSeverity: parseSeverity(
+      env.A2A_RELAY_ALERT_MIN_SEVERITY,
+      preset.alertMinSeverity,
+    ),
+    alertDispatchCooldownMs: parseIntSafe(
+      env.A2A_RELAY_ALERT_DISPATCH_COOLDOWN_MS,
+      preset.alertDispatchCooldownMs,
     ),
     alertThresholds: {
       maxRejectedPayloads: parseIntSafe(
@@ -187,6 +217,16 @@ function parseOptionalString(input: string | undefined): string | undefined {
   }
   const value = input.trim();
   return value === "" ? undefined : value;
+}
+
+function parseSeverity(
+  input: string | undefined,
+  fallback: RelayAlertSeverity,
+): RelayAlertSeverity {
+  if (input === "warning" || input === "critical") {
+    return input;
+  }
+  return fallback;
 }
 
 function readRuntimeEnv(): Record<string, string | undefined> {

@@ -3,6 +3,7 @@ export * from "./store";
 export * from "./relay";
 export * from "./config";
 export * from "./monitor";
+export * from "./alert-sink";
 export * from "./server";
 export * from "./orchestrator";
 export * from "./adapters/agent-arena";

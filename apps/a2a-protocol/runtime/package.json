@@ -13,8 +13,9 @@
     "release:local": "./scripts/release-relay.sh local",
     "release:down": "docker compose down",
     "smoke": "./scripts/smoke-relay.sh",
+    "alert:drill": "./scripts/trigger-alert-drill.sh",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test ./config.test.ts ./relay.test.ts ./persistent-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
+    "test": "tsx --test ./config.test.ts ./alert-sink.test.ts ./alert-integration.test.ts ./relay.test.ts ./persistent-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
   },
   "devDependencies": {
     "@types/node": "^20.19.37",

@@ -1,9 +1,11 @@
 import { createServer } from "node:http";
 import { URL } from "node:url";
 
+import { RelayAlertSink, type RelayAlertSeverity } from "./alert-sink";
 import {
   DEFAULT_RELAY_ALERT_THRESHOLDS,
   RelayAlertMonitor,
+  type RelayAlert,
   type RelayAlertThresholds,
 } from "./monitor";
 import { loadRelayRuntimeConfigFromEnv } from "./config";
@@ -27,6 +29,10 @@ export interface RelayServerOptions {
   storeFilePath?: string;
   alertThresholds?: RelayAlertThresholds;
   alertIntervalMs?: number;
+  alertWebhookUrl?: string;
+  alertSlackWebhookUrl?: string;
+  alertMinSeverity?: RelayAlertSeverity;
+  alertDispatchCooldownMs?: number;
 }
 
 export interface StartedRelayServer {
@@ -54,9 +60,29 @@ export async function startRelayServer(
     maxPayloadBytes: options.maxPayloadBytes,
     maxPaymentMicrolamports: options.maxPaymentMicrolamports,
   });
+  const alertSink = new RelayAlertSink({
+    webhookUrl: options.alertWebhookUrl,
+    slackWebhookUrl: options.alertSlackWebhookUrl,
+    minSeverity: options.alertMinSeverity,
+    cooldownMs: options.alertDispatchCooldownMs,
+    source: "a2a-relay",
+  });
   const alertMonitor = new RelayAlertMonitor(store, {
     thresholds: options.alertThresholds,
     intervalMs: options.alertIntervalMs,
+    onAlerts: async (alerts, metrics) => {
+      if (alertSink.isEnabled()) {
+        await alertSink.notify(alerts, metrics);
+        return;
+      }
+      for (const alert of alerts) {
+        console.warn(
+          `[a2a-relay-alert] code=${alert.code} severity=${alert.severity} observed=${String(
+            alert.observed,
+          )} threshold=${String(alert.threshold)}`,
+        );
+      }
+    },
   });
   alertMonitor.start();
 
@@ -97,6 +123,31 @@ export async function startRelayServer(
           items: snapshot.alerts,
           metrics: snapshot.metrics,
           thresholds: options.alertThresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS,
+        });
+        return;
+      }
+
+      if (method === "POST" && requestUrl.pathname === "/v1/alerts/test") {
+        if (!isAuthorizedRequest(normalizeHeaders(request.headers), options.authToken)) {
+          sendJson(response, 401, { error: "unauthorized" });
+          return;
+        }
+        const body = await readRequestBody(request, httpMaxBodyBytes);
+        const payload =
+          typeof body === "object" && body !== null
+            ? (body as Record<string, unknown>)
+            : {};
+        const alert = buildTestAlert(payload);
+        const metrics = store.getMetrics();
+        let dispatched = false;
+        if (alertSink.isEnabled()) {
+          await alertSink.notify([alert], metrics);
+          dispatched = true;
+        }
+        sendJson(response, 202, {
+          accepted: true,
+          dispatched,
+          alert,
         });
         return;
       }
@@ -346,5 +397,39 @@ async function closeServer(server: any): Promise<void> {
       resolve();
     });
   });
+}
+
+function buildTestAlert(payload: Record<string, unknown>): RelayAlert {
+  const severityValue = payload.severity;
+  const severity =
+    severityValue === "critical" || severityValue === "warning"
+      ? severityValue
+      : "critical";
+  const observed = parseNumeric(payload.observed, 1);
+  const threshold = parseNumeric(payload.threshold, 0.5);
+  const message =
+    typeof payload.message === "string" && payload.message.trim() !== ""
+      ? payload.message.trim()
+      : "Manual relay alert drill triggered.";
+  return {
+    code: "test_alert",
+    severity,
+    message,
+    observed,
+    threshold,
+  };
+}
+
+function parseNumeric(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
 }
 

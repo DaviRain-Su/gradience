@@ -11,7 +11,8 @@ export interface RelayAlert {
   code:
     | "rejected_payload_spike"
     | "dedup_ratio_high"
-    | "delivery_throughput_low";
+    | "delivery_throughput_low"
+    | "test_alert";
   severity: "warning" | "critical";
   message: string;
   observed: number;
@@ -82,7 +83,7 @@ export class RelayAlertMonitor {
     private readonly options: {
       thresholds?: RelayAlertThresholds;
       intervalMs?: number;
-      onAlerts?: (alerts: RelayAlert[], metrics: RelayMetrics) => void;
+      onAlerts?: (alerts: RelayAlert[], metrics: RelayMetrics) => void | Promise<void>;
     } = {},
   ) {}
 
@@ -109,7 +110,9 @@ export class RelayAlertMonitor {
         return;
       }
       if (this.options.onAlerts) {
-        this.options.onAlerts(alerts, metrics);
+        Promise.resolve(this.options.onAlerts(alerts, metrics)).catch((error) => {
+          console.error("[a2a-relay-alert] delivery failed", error);
+        });
         return;
       }
       for (const alert of alerts) {
