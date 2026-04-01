@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.7**
+**@DaviRain-Su · April 2026 · v0.8**
 
 ---
 
@@ -121,7 +121,36 @@ Gradience encodes this insight at the protocol level:
 
 ---
 
-### 2.7 AI Native Protocol Design
+### 2.7 Evolutionary Pressure: Self-Improving Networks
+
+The GAN mechanism (§2.6) ensures quality in a single task—multiple Agents compete in one round. But how does the *network itself* improve over time? Bitcoin has difficulty adjustment: as miners get faster, the protocol automatically demands more work. Gradience needs an analogous mechanism for capability evolution.
+
+The answer comes from automated research loops—a pattern independently identified by Karpathy as "AutoResearch": modify → evaluate → compare → commit or revert → repeat. When this loop operates inside the protocol's own incentive structure, three forms of evolutionary pressure emerge:
+
+**1. Agent Self-Evolution.** An Agent that loses a task can analyze *why* it lost (the winner's score, the evaluation criteria, its own gaps) and automatically iterate. The race model creates selection pressure: Agents that evolve faster win more tasks, earn more reputation, and attract more work. This is not hypothetical—it is the natural consequence of transparent evaluation criteria and on-chain reputation.
+
+**2. Protocol Security Hardening.** The same loop applies to the protocol itself. Agents can compete to find vulnerabilities: a Poster creates a "break this contract" task with a bounty; competing Agents run automated fuzzing, property-based testing, and formal verification. The Judge evaluates severity and novelty. Over time, the protocol becomes harder to attack—not through manual audits, but through continuous adversarial pressure from economically motivated Agents.
+
+```
+Traditional security:    Audit → Fix → Wait for next audit (months)
+AutoResearch security:   Fuzz → Find → Fix → Fuzz → ... (continuous)
+                         Powered by Agent competition + reputation incentives
+```
+
+**3. Evaluation Quality Ratchet.** Judges themselves face evolutionary pressure. A Judge whose scores are consistently overturned (via dispute mechanism or by comparison with other Judges on similar tasks) loses reputation. Judges are incentivized to improve their evaluation methodology—including using automated research loops to calibrate their scoring. This creates a quality ratchet: better Agents demand better Judges, and better Judges demand better Agents.
+
+The protocol does not embed any specific optimization framework. It provides the incentive structure—reputation, stakes, fees—that makes self-improvement economically rational. The optimization machinery lives in the execution layer, above the kernel. This is consistent with §2.3: complexity lives above.
+
+| Bitcoin | Gradience |
+|---------|-----------|
+| Difficulty adjustment (hashrate → harder puzzles) | Reputation pressure (better Agents → higher bar) |
+| Miners upgrade hardware to compete | Agents iterate to improve capability |
+| Network security increases over time | Protocol robustness increases over time |
+| No one coordinates the improvement | No one coordinates the improvement |
+
+---
+
+### 2.8 AI Native Protocol Design
 
 Gradience represents a paradigm shift: from **"protocols for humans"** to **"protocols for AI Agents"**.
 
@@ -154,7 +183,7 @@ Gradience is designed for Agents:
 
 This is not just a technical difference—it's a **philosophical shift**. Gradience is the first protocol built from the ground up for an economy where the primary participants are autonomous software, not humans.
 
-### 2.8 Identity & Privacy: Tiered Verification
+### 2.9 Identity & Privacy: Tiered Verification
 
 > **Core insight**: AI Agents act autonomously, but they are ultimately owned by humans. The protocol must verify the human behind the Agent without compromising privacy.
 
@@ -279,7 +308,7 @@ This creates a **meritocratic system** where:
 - Reputation is earned through market participation
 - Everyone can participate at their chosen level
 
-### 2.9 Infrastructure vs. Application
+### 2.10 Infrastructure vs. Application
 
 Gradience is not an application—it is **infrastructure** for the Agent economy.
 
@@ -1245,10 +1274,11 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 3. I. Goodfellow et al., "Generative Adversarial Networks," *NeurIPS*, 2014.
 4. L. Hurwicz, "The Design of Mechanisms for Resource Allocation," *American Economic Review*, 1973.
 5. Anthropic Engineering, "Harness Design for Long-Running Apps," 2025. The Generator-Evaluator architecture independently validates the adversarial quality mechanism described in §2.6.
+6. A. Karpathy, "AutoResearch," 2025. Automated modify-evaluate-compare-commit loops as a paradigm for continuous capability improvement. The evolutionary pressure described in §2.7 generalizes this pattern to protocol-level self-improvement.
 
 ---
 
-*Gradience Protocol · v0.7 · April 2026*
+*Gradience Protocol · v0.8 · April 2026*
 
 ---
 

@@ -96,6 +96,20 @@ Discriminator & Judge & Evaluates independently, scores 0--100 \\
 
 Three properties make it trustworthy: (1)~\textbf{Enforced separation}---no address holds two roles in one task; (2)~\textbf{Skin in the game}---Judges stake capital, 3\% fee is unconditional (eliminating result bias); (3)~\textbf{Competition replaces iteration}---where Anthropic uses 5--15 feedback rounds, Gradience uses parallel competition among N Agents in a single round.
 
+\subsection{2.5\quad Evolutionary Pressure: Self-Improving Networks}
+
+The GAN mechanism (\S2.4) ensures quality in a single task. But how does the \emph{network itself} improve over time? Bitcoin has difficulty adjustment: as miners improve, the protocol demands more work. Gradience needs an analogous mechanism for capability evolution.
+
+Automated research loops~\cite{karpathy}---modify $\to$ evaluate $\to$ compare $\to$ commit or revert $\to$ repeat---create three forms of evolutionary pressure when operating inside the protocol's incentive structure:
+
+\textbf{(1) Agent Self-Evolution.} Agents that lose tasks can analyze why (scores, criteria, gaps) and automatically iterate. The race model creates selection pressure: faster-evolving Agents win more, earn more reputation, attract more work.
+
+\textbf{(2) Protocol Security Hardening.} Agents compete to find vulnerabilities (``break this contract'' bounties). Over time, the protocol hardens through continuous adversarial pressure from economically motivated Agents---not periodic manual audits.
+
+\textbf{(3) Evaluation Quality Ratchet.} Judges whose scores are consistently overturned lose reputation. They are incentivized to improve evaluation methodology---creating a ratchet: better Agents demand better Judges, better Judges demand better Agents.
+
+The protocol provides incentive structure (reputation, stakes, fees) that makes self-improvement economically rational. The optimization machinery lives above the kernel (\S2.3).
+
 % ═══ 3. PROTOCOL SPECIFICATION ═════════════════════════════════════════
 \section{3. Protocol Specification}
 
@@ -515,6 +529,7 @@ The kernel ensures one thing: \emph{value flows correctly from those who need ca
 \bibitem{erc8004} M.~De Rossi, D.~Crapis, J.~Ellis, E.~Reppel, ``ERC-8004: Trustless Agents,'' Ethereum Improvement Proposals, 2025.
 \bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
 \bibitem{anthropic} Anthropic Engineering, ``Harness Design for Long-Running Apps,'' 2025. Generator-Evaluator architecture validates adversarial quality mechanisms.
+\bibitem{karpathy} A.~Karpathy, ``AutoResearch,'' 2025. Automated modify-evaluate-compare-commit loops as a paradigm for continuous capability improvement.
 \end{thebibliography}
 
 \end{document}

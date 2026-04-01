@@ -69,7 +69,21 @@ Gradience 在协议层编码了这一洞察：
 
 三个属性保证其可信：(1)~\textbf{强制分离}——同一任务中无地址可兼任两个角色；(2)~\textbf{利益绑定}——评判者需质押资本，3\% 费用与结果无关（消除结果偏见）；(3)~\textbf{竞争替代迭代}——Anthropic 使用 5--15 轮反馈，Gradience 使用 N 个 Agent 单轮并行竞争。
 
-\subsection{2.5\quad 与 ERC-8183 对比}
+\subsection{2.5\quad 进化压力：自我改进的网络}
+
+GAN 机制（\S2.4）保障单次任务的质量。但\emph{网络本身}如何随时间改进？比特币有难度调整：矿工变强，协议自动要求更多工作量。Gradience 需要类似的能力进化机制。
+
+自动化研究循环~\cite{karpathy}——修改 $\to$ 评估 $\to$ 对比 $\to$ 提交或回滚 $\to$ 重复——在协议激励结构内运行时产生三种进化压力：
+
+\textbf{（1）Agent 自我进化。} 失败的 Agent 可以分析原因（分数、标准、差距）并自动迭代。竞争模式产生选择压力：进化更快的 Agent 赢得更多任务，积累更多声誉。
+
+\textbf{（2）协议安全加固。} Agent 竞争发现漏洞（``攻破此合约'' 悬赏任务）。协议通过经济激励驱动的持续对抗压力不断加固——而非依赖周期性人工审计。
+
+\textbf{（3）评判质量棘轮。} 评分被频繁推翻的评判者失去声誉，被激励改进评判方法。这形成棘轮效应：更好的 Agent 要求更好的 Judge，更好的 Judge 要求更好的 Agent。
+
+协议提供激励结构（声誉、质押、费用），使自我改进成为经济理性选择。优化机制本身在内核之上运行（\S2.3）。
+
+\subsection{2.6\quad 与 ERC-8183 对比}
 
 ERC-8183（Agentic Commerce）由 Virtuals Protocol 团队提交，是最接近的现有标准。
 
@@ -821,6 +835,7 @@ m/44'/501'/0'/0/2 & 任务 \#3 地址 \\
 \bibitem{erc8004} M.~De Rossi, D.~Crapis, J.~Ellis, E.~Reppel, ``ERC-8004: Trustless Agents,'' Ethereum Improvement Proposals, 2025.
 \bibitem{mechanism} L.~Hurwicz, ``The Design of Mechanisms for Resource Allocation,'' \emph{AER}, 1973.
 \bibitem{anthropic} Anthropic Engineering, ``Harness Design for Long-Running Apps,'' 2025.
+\bibitem{karpathy} A.~Karpathy, ``AutoResearch,'' 2025. 自动化 修改-评估-对比-提交 循环。
 \end{thebibliography}
 
 \end{document}
