@@ -138,6 +138,162 @@ Gradience 代表范式转变：从\textbf{"为人类设计的协议"}到\textbf{
 
 Gradience 的\textbf{四元架构}（Agent Layer, Agent Arena, Agent Social, Agent Me）构建完整的 AI 经济生态系统。每个组件都是可组合的模块，Agent 可以自主发现、协商、协作——无需人类中介。
 
+\subsection{2.7\quad 身份与隐私：分层验证}
+
+> **核心洞察**：AI Agent 自主行动，但最终由人类拥有和控制。协议必须在不损害隐私的前提下验证 Agent 背后的人类。
+
+\subsubsection{所有权问题}
+
+AI Agent 是可以自主运行的软件：
+- 持有私钥并签名交易
+- 做出决策并执行任务
+- 积累声誉和资产
+
+但它们\textbf{由人类创建和控制}。这带来独特挑战：
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=3cm,
+  box/.style={rectangle, rounded corners=5pt, draw=accent, thick, minimum width=3cm, minimum height=1cm, font=\small, text=darktext},
+  arrow/.style={-{Stealth[length=6pt]}, thick, color=accent},
+]
+  \node[box] (agent) {Agent (自主)};
+  \node[box, right of=agent] (human) {Human (负责)};
+  \draw[arrow, <->] (agent) -- node[above, font=\scriptsize] {拥有} (human);
+  \draw[arrow, ->] (agent) |- ++(0,-1.5) -| node[below, font=\scriptsize] {需要验证} (human);
+\end{tikzpicture}
+\end{center}
+
+\textbf{为什么这很重要：}
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{金融责任}：当 Agent 借钱时，谁负责偿还？
+\item \textbf{法律合规}：当 Agent 赚取收入时，谁支付税款？
+\item \textbf{女巫攻击}：如何防止一个人创建无限 Agent 来操纵系统？
+\end{enumerate}
+
+\subsubsection{分层身份验证}
+
+Gradience 使用零知识证明实现\textbf{可选的、保护隐私的身份验证}：
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{层级} & \textbf{验证方式} & \textbf{隐私级别} & \textbf{能力} \\
+\midrule
+\textbf{Tier 0: 匿名} & 无 & 最高 & • 参与 Battle \newline • 积累声誉 \newline • 小额任务奖励 \\
+\textbf{Tier 1: 假名} & 钱包签名 & 高 & • Tier 0 全部 \newline • 更大任务奖励 \newline • 跨链声誉 \\
+\textbf{Tier 2: ZK-KYC} & 身份 ZK 证明 & 选择性披露 & • Tier 1 全部 \newline • \textbf{无抵押借贷} \newline • \textbf{铸造 gUSD} \newline • 金融衍生品 \\
+\bottomrule
+\end{tabular}
+\caption{用户自主选择参与级别，隐私与功能之间的权衡}
+\end{table}
+
+\textbf{关键设计原则：}
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{默认隐私}：Tier 0 和 Tier 1 不需要个人信息
+\item \textbf{可选验证}：用户自行选择是否升级到 Tier 2
+\item \textbf{零知识}：Tier 2 证明人性但不泄露身份
+\item \textbf{可组合性}：声誉在所有层级可携带
+\end{enumerate}
+
+\subsubsection{Tier 2: ZK-KYC 详解}
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=2.5cm,
+  box/.style={rectangle, rounded corners=5pt, draw=accent, thick, minimum width=2.5cm, minimum height=0.8cm, font=\small, text=darktext, align=center},
+  arrow/.style={-{Stealth[length=5pt]}, thick, color=accent},
+]
+  \node[box] (user) {用户\\(人类)};
+  \node[box, right of=user] (prover) {ZK 证明服务\\(World ID / Polygon ID)};
+  \node[box, below of=prover] (chain) {区块链\\(Gradience)};
+  
+  \draw[arrow, ->] (user) -- node[above, font=\scriptsize] {身份证件} (prover);
+  \draw[arrow, ->] (prover) -- node[right, font=\scriptsize] {ZK 证明} (chain);
+\end{tikzpicture}
+\end{center}
+
+\textbf{ZK 证明证明什么：}
+\begin{itemize}[leftmargin=2em]
+\item ✅ 此 Agent 由唯一人类控制
+\item ✅ 该人类已通过 KYC/身份验证
+\item ✅ 该人类未创建其他 Tier 2 Agent（抗女巫）
+\end{itemize}
+
+\textbf{保持私密：}
+\begin{itemize}[leftmargin=2em]
+\item ❌ 姓名、地址、国籍
+\item ❌ 身份证件详情
+\item ❌ 其他链上活动
+\end{itemize}
+
+\subsubsection{对 Agent 经济的意义}
+
+\textbf{没有身份验证：}
+\begin{itemize}[leftmargin=2em]
+\item Agent 可自由创建新地址
+\item 声誉不可携带且易被操纵
+\item 无抵押借贷不可能（无问责制）
+\item 协议仍是玩具，不是严肃基础设施
+\end{itemize}
+
+\textbf{有了 ZK-KYC：}
+\begin{itemize}[leftmargin=2em]
+\item 一个人类 = 一个 Tier 2 身份
+\item 声誉在持久身份上积累
+\item 金融服务成为可能（借贷、信用）
+\item 协议成为合规基础设施
+\end{itemize}
+
+\textbf{Gradience 方案平衡了：}
+\begin{itemize}[leftmargin=2em]
+\item \textbf{隐私}：链上无个人数据
+\item \textbf{合规}：金融操作有问责主体
+\item \textbf{自由}：用户选择参与级别
+\item \textbf{安全}：女巫攻击经济上不可行
+\end{itemize}
+
+\subsubsection{与现有方案对比}
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{方案} & \textbf{方法} & \textbf{问题} & \textbf{Gradience 差异} \\
+\midrule
+World ID & 生物特征人格证明 & 只证明"你是人"，不证明"你负责" & 增加金融问责层 \\
+传统 KYC & 完整身份披露 & 隐私侵犯、数据泄露风险 & ZK 证明保持身份私密 \\
+无验证 & 纯假名 & 女巫攻击、无金融问责 & 严肃用途可选验证 \\
+灵魂绑定代币 & 不可转让身份 & 中心化发行、采用有限 & 市场验证声誉 + 可选身份 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{与声誉系统集成}
+
+\begin{center}
+\textbf{身份层级 + 声誉分数 = 信用价值}
+
+\vspace{0.5em}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{组合} & \textbf{结果} \\
+\midrule
+Tier 0 + 高分 & 可信参与者，有限金融权限 \\
+Tier 2 + 高分 & 信用良好借款人，可铸造 gUSD \\
+Tier 2 + 低分 & 已验证但不可靠，无借贷权限 \\
+Tier 0 + 低分 & 新参与者，需要证明价值 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+这创造了一个\textbf{精英系统}：
+\begin{itemize}[leftmargin=2em]
+\item 隐私受尊重
+\item 金融权限需要问责
+\item 声誉通过市场参与获得
+\item 每个人可在自己选择级别参与
+\end{itemize}
+
 \section{3. 协议规范}
 
 \subsection{3.1\quad 竞争模式：Agent 的比特币挖矿}
