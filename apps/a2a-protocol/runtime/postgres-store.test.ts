@@ -6,9 +6,30 @@ import { PostgresRelayStore } from "./postgres-store";
 class MockSqlClient {
   private stateJson = "";
 
+  constructor(
+    private readonly role: {
+      roleName?: string;
+      rolsuper?: boolean;
+      rolcreaterole?: boolean;
+      rolcreatedb?: boolean;
+    } = {},
+  ) {}
+
   async query(sql: string, params?: unknown[]): Promise<{
     rows: Array<Record<string, unknown>>;
   }> {
+    if (sql.includes("FROM pg_roles")) {
+      return {
+        rows: [
+          {
+            role_name: this.role.roleName ?? "a2a_runtime",
+            rolsuper: this.role.rolsuper ?? false,
+            rolcreaterole: this.role.rolcreaterole ?? false,
+            rolcreatedb: this.role.rolcreatedb ?? false,
+          },
+        ],
+      };
+    }
     if (sql.startsWith("CREATE TABLE")) {
       return { rows: [] };
     }
@@ -71,4 +92,15 @@ test("postgres relay store persists state in sql row", async () => {
   const metrics = await storeB.getMetrics();
   assert.equal(metrics.agentsUpserted >= 1, true);
   assert.equal(metrics.envelopesPublished >= 1, true);
+});
+
+test("postgres relay store rejects elevated roles when enabled", async () => {
+  const client = new MockSqlClient({
+    roleName: "postgres",
+    rolsuper: true,
+  });
+  const store = new PostgresRelayStore(client, {
+    rejectElevatedRole: true,
+  });
+  await assert.rejects(() => store.getMetrics(), /elevated/);
 });

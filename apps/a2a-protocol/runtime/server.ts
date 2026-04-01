@@ -29,6 +29,7 @@ export interface RelayServerOptions {
   storeMode?: "memory" | "file" | "postgres";
   storeFilePath?: string;
   postgresConnectionString?: string;
+  postgresRejectElevatedRole?: boolean;
   alertThresholds?: RelayAlertThresholds;
   alertIntervalMs?: number;
   alertWebhookUrl?: string;
@@ -62,6 +63,7 @@ export async function startRelayServer(
       mode: options.storeMode ?? "file",
       storeFilePath: options.storeFilePath ?? "./data/relay-state.json",
       postgresConnectionString: options.postgresConnectionString,
+      postgresRejectElevatedRole: options.postgresRejectElevatedRole,
     }));
   const relay = new A2ARelayApi(store, {
     authToken: options.authToken,
@@ -251,6 +253,7 @@ function createRelayStore(options: {
   mode: "memory" | "file" | "postgres";
   storeFilePath: string;
   postgresConnectionString?: string;
+  postgresRejectElevatedRole?: boolean;
 }): Promise<RelayStore> {
   if (options.mode === "memory") {
     return Promise.resolve(new InMemoryRelayStore());
@@ -261,7 +264,9 @@ function createRelayStore(options: {
         new Error("A2A_RELAY_POSTGRES_URL is required when store mode is postgres"),
       );
     }
-    return PostgresRelayStore.connect(options.postgresConnectionString);
+    return PostgresRelayStore.connect(options.postgresConnectionString, {
+      rejectElevatedRole: options.postgresRejectElevatedRole,
+    });
   }
   return Promise.resolve(new FileRelayStore(options.storeFilePath));
 }

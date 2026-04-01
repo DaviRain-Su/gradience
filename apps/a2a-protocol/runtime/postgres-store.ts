@@ -65,6 +65,7 @@ export class PostgresRelayStore implements RelayStore {
   private readonly singletonKey: string;
   private readonly maxAgents: number;
   private readonly maxEnvelopes: number;
+  private readonly rejectElevatedRole: boolean;
 
   constructor(
     private readonly client: SqlClientLike,
@@ -73,12 +74,14 @@ export class PostgresRelayStore implements RelayStore {
       singletonKey?: string;
       maxAgents?: number;
       maxEnvelopes?: number;
+      rejectElevatedRole?: boolean;
     } = {},
   ) {
     this.tableName = sanitizeSqlIdentifier(options.tableName ?? "a2a_relay_state");
     this.singletonKey = options.singletonKey ?? "default";
     this.maxAgents = options.maxAgents ?? 10_000;
     this.maxEnvelopes = options.maxEnvelopes ?? 50_000;
+    this.rejectElevatedRole = options.rejectElevatedRole ?? false;
     this.readyPromise = this.ensureInitialized();
   }
 
@@ -89,6 +92,7 @@ export class PostgresRelayStore implements RelayStore {
       singletonKey?: string;
       maxAgents?: number;
       maxEnvelopes?: number;
+      rejectElevatedRole?: boolean;
     } = {},
   ): Promise<PostgresRelayStore> {
     const pool = await createPgPool(connectionString);
@@ -211,6 +215,7 @@ export class PostgresRelayStore implements RelayStore {
   }
 
   private async ensureInitialized(): Promise<void> {
+    await this.assertRolePolicy();
     const table = this.tableName;
     await this.client.query(
       `CREATE TABLE IF NOT EXISTS ${table} (
@@ -224,6 +229,32 @@ export class PostgresRelayStore implements RelayStore {
        VALUES ($1, $2)
        ON CONFLICT (singleton_key) DO NOTHING`,
       [this.singletonKey, JSON.stringify(DEFAULT_STATE)],
+    );
+  }
+
+  private async assertRolePolicy(): Promise<void> {
+    const result = await this.client.query(
+      `SELECT current_user AS role_name, rolsuper, rolcreaterole, rolcreatedb
+       FROM pg_roles
+       WHERE rolname = current_user`,
+    );
+    const row = result.rows[0];
+    if (!row) {
+      throw new Error("unable to resolve current postgres role");
+    }
+    if (!this.rejectElevatedRole) {
+      return;
+    }
+    const elevated = toBoolean(row.rolsuper) || toBoolean(row.rolcreaterole) || toBoolean(row.rolcreatedb);
+    if (!elevated) {
+      return;
+    }
+    const roleName =
+      typeof row.role_name === "string" && row.role_name.trim() !== ""
+        ? row.role_name
+        : "unknown";
+    throw new Error(
+      `postgres role '${roleName}' is elevated (requires non-superuser, non-createdb, non-createrole)`,
     );
   }
 
@@ -263,6 +294,20 @@ async function createPgPool(connectionString: string): Promise<SqlClientLike> {
     Pool: new (options: { connectionString: string }) => SqlClientLike;
   };
   return new pgModule.Pool({ connectionString });
+}
+
+function toBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "t" || normalized === "true" || normalized === "1";
+  }
+  if (typeof value === "number") {
+    return value === 1;
+  }
+  return false;
 }
 
 function sanitizeSqlIdentifier(value: string): string {

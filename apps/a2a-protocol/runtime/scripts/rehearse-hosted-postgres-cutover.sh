@@ -16,6 +16,7 @@ if [[ -z "${POSTGRES_URL}" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REJECT_ELEVATED_ROLE="${A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE:-false}"
 
 CUTOVER_DONE="false"
 ROLLED_BACK="false"
@@ -28,6 +29,7 @@ rollback_if_needed() {
 }
 trap rollback_if_needed EXIT
 
+A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE="${REJECT_ELEVATED_ROLE}" \
 "${SCRIPT_DIR}/preflight-hosted-postgres.sh"
 
 A2A_RELAY_STORE_MODE=postgres \

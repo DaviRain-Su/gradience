@@ -17,6 +17,7 @@ export interface RelayRuntimeConfig {
   storeMode: "memory" | "file" | "postgres";
   storeFilePath: string;
   postgresConnectionString?: string;
+  postgresRejectElevatedRole: boolean;
   alertThresholds: RelayAlertThresholds;
   alertIntervalMs: number;
   alertWebhookUrl?: string;
@@ -42,6 +43,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeMode: "memory",
     storeFilePath: "./data/local-relay-state.json",
     postgresConnectionString: undefined,
+    postgresRejectElevatedRole: false,
     alertThresholds: {
       maxRejectedPayloads: 200,
       maxDedupRatio: 0.6,
@@ -70,6 +72,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeMode: "file",
     storeFilePath: "./data/devnet-relay-state.json",
     postgresConnectionString: undefined,
+    postgresRejectElevatedRole: false,
     alertThresholds: {
       maxRejectedPayloads: 80,
       maxDedupRatio: 0.45,
@@ -98,6 +101,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeMode: "file",
     storeFilePath: "./data/prod-relay-state.json",
     postgresConnectionString: undefined,
+    postgresRejectElevatedRole: true,
     alertThresholds: {
       maxRejectedPayloads: 40,
       maxDedupRatio: 0.3,
@@ -147,6 +151,10 @@ export function resolveRelayRuntimeConfig(
     postgresConnectionString:
       parseOptionalString(env.A2A_RELAY_POSTGRES_URL) ??
       preset.postgresConnectionString,
+    postgresRejectElevatedRole: parseBoolean(
+      env.A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE,
+      preset.postgresRejectElevatedRole,
+    ),
     alertIntervalMs: parseIntSafe(
       env.A2A_RELAY_ALERT_INTERVAL_MS,
       preset.alertIntervalMs,

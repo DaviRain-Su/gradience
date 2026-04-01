@@ -13,6 +13,7 @@ COMPOSE_FILE="${RUNTIME_DIR}/docker-compose.yml"
 
 docker compose -f "${COMPOSE_FILE}" run --rm --no-deps \
   -e A2A_RELAY_POSTGRES_URL="${POSTGRES_URL}" \
+  -e A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE="${A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE:-true}" \
   a2a-relay node --input-type=module <<'NODE'
 import { Client } from "pg";
 
@@ -20,6 +21,8 @@ const connectionString = process.env.A2A_RELAY_POSTGRES_URL;
 if (!connectionString) {
   throw new Error("missing connection string");
 }
+const rejectElevated =
+  (process.env.A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE ?? "true").toLowerCase() !== "false";
 
 const client = new Client({ connectionString });
 await client.connect();
@@ -29,11 +32,17 @@ try {
     "SELECT rolsuper, rolcreaterole, rolcreatedb FROM pg_roles WHERE rolname = current_user",
   );
   const roleFlags = role.rows[0] ?? {};
-  if (roleFlags.rolsuper === true) {
-    console.warn("[preflight] warning: current user has superuser privilege");
+  const isElevated =
+    roleFlags.rolsuper === true ||
+    roleFlags.rolcreaterole === true ||
+    roleFlags.rolcreatedb === true;
+  if (isElevated && rejectElevated) {
+    throw new Error(
+      "current user has elevated postgres privileges; use least-privilege role or set A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE=false for local rehearsal",
+    );
   }
-  if (roleFlags.rolcreaterole === true || roleFlags.rolcreatedb === true) {
-    console.warn("[preflight] warning: current user has elevated role/db privileges");
+  if (isElevated && !rejectElevated) {
+    console.warn("[preflight] warning: elevated role allowed by override");
   }
 
   const tableName = `a2a_preflight_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
