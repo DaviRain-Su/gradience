@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { startRelayServer } from "./server";
+import { startRelayServer, validatePostgresRuntimePolicy } from "./server";
 
 test("relay server exposes health and relay endpoints", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "a2a-relay-server-"));
@@ -141,6 +141,39 @@ test("relay server rejects postgres mode without connection string", async () =>
   await assert.rejects(() =>
     startRelayServer({
       storeMode: "postgres",
+    }),
+  );
+});
+
+test("runtime policy rejects insecure postgres config in prod", () => {
+  assert.throws(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=disable",
+      postgresRejectElevatedRole: true,
+      postgresRequireSsl: true,
+    }),
+  );
+  assert.throws(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=require",
+      postgresRejectElevatedRole: false,
+      postgresRequireSsl: true,
+    }),
+  );
+});
+
+test("runtime policy allows secure postgres config in prod", () => {
+  assert.doesNotThrow(() =>
+    validatePostgresRuntimePolicy({
+      profile: "prod",
+      storeMode: "postgres",
+      postgresConnectionString: "postgres://host:5432/a2a?sslmode=require",
+      postgresRejectElevatedRole: true,
+      postgresRequireSsl: true,
     }),
   );
 });

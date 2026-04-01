@@ -18,6 +18,7 @@ export interface RelayRuntimeConfig {
   storeFilePath: string;
   postgresConnectionString?: string;
   postgresRejectElevatedRole: boolean;
+  postgresRequireSsl: boolean;
   postgresPoolMaxConnections: number;
   postgresPoolIdleTimeoutMs: number;
   postgresPoolConnectionTimeoutMs: number;
@@ -49,6 +50,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/local-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: false,
+    postgresRequireSsl: false,
     postgresPoolMaxConnections: 3,
     postgresPoolIdleTimeoutMs: 10_000,
     postgresPoolConnectionTimeoutMs: 3_000,
@@ -83,6 +85,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/devnet-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: false,
+    postgresRequireSsl: false,
     postgresPoolMaxConnections: 10,
     postgresPoolIdleTimeoutMs: 30_000,
     postgresPoolConnectionTimeoutMs: 5_000,
@@ -117,6 +120,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     storeFilePath: "./data/prod-relay-state.json",
     postgresConnectionString: undefined,
     postgresRejectElevatedRole: true,
+    postgresRequireSsl: true,
     postgresPoolMaxConnections: 20,
     postgresPoolIdleTimeoutMs: 60_000,
     postgresPoolConnectionTimeoutMs: 8_000,
@@ -174,6 +178,10 @@ export function resolveRelayRuntimeConfig(
     postgresRejectElevatedRole: parseBoolean(
       env.A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE,
       preset.postgresRejectElevatedRole,
+    ),
+    postgresRequireSsl: parseBoolean(
+      env.A2A_RELAY_POSTGRES_REQUIRE_SSL,
+      preset.postgresRequireSsl,
     ),
     postgresPoolMaxConnections: parseIntSafe(
       env.A2A_RELAY_POSTGRES_POOL_MAX_CONNECTIONS,

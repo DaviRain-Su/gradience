@@ -14,12 +14,14 @@ test("relay profile defaults are stable for devnet and prod", () => {
   assert.equal(devnet.storeMode, "file");
   assert.equal(devnet.storeFilePath, "./data/devnet-relay-state.json");
   assert.equal(devnet.postgresRejectElevatedRole, false);
+  assert.equal(devnet.postgresRequireSsl, false);
   assert.equal(devnet.postgresPoolMaxConnections >= 10, true);
 
   assert.equal(prod.profile, "prod");
   assert.equal(prod.storeMode, "file");
   assert.equal(prod.storeFilePath, "./data/prod-relay-state.json");
   assert.equal(prod.postgresRejectElevatedRole, true);
+  assert.equal(prod.postgresRequireSsl, true);
   assert.equal(prod.postgresPoolConnectionTimeoutMs >= devnet.postgresPoolConnectionTimeoutMs, true);
   assert.equal(prod.alertIntervalMs < devnet.alertIntervalMs, true);
   assert.equal(devnet.alertRetryAttempts >= 3, true);
@@ -44,6 +46,7 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_ALERT_REPLAY_ON_START: "false",
     A2A_RELAY_POSTGRES_URL: "postgres://localhost:5432/a2a",
     A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE: "true",
+    A2A_RELAY_POSTGRES_REQUIRE_SSL: "true",
     A2A_RELAY_POSTGRES_POOL_MAX_CONNECTIONS: "7",
     A2A_RELAY_POSTGRES_POOL_IDLE_TIMEOUT_MS: "22222",
     A2A_RELAY_POSTGRES_POOL_CONNECTION_TIMEOUT_MS: "3333",
@@ -73,6 +76,7 @@ test("relay runtime config resolves profile and env overrides", () => {
     "postgres://localhost:5432/a2a",
   );
   assert.equal(resolved.postgresRejectElevatedRole, true);
+  assert.equal(resolved.postgresRequireSsl, true);
   assert.equal(resolved.postgresPoolMaxConnections, 7);
   assert.equal(resolved.postgresPoolIdleTimeoutMs, 22222);
   assert.equal(resolved.postgresPoolConnectionTimeoutMs, 3333);

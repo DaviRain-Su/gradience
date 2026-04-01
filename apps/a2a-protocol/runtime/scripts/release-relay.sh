@@ -35,6 +35,25 @@ if [[ "${STORE_MODE}" == "postgres" ]]; then
   fi
 fi
 
+if [[ "${PROFILE}" == "prod" && "${STORE_MODE}" == "postgres" ]]; then
+  REQUIRE_EXPLICIT_POSTGRES_URL="true"
+  export A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE="${A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE:-true}"
+  export A2A_RELAY_POSTGRES_REQUIRE_SSL="${A2A_RELAY_POSTGRES_REQUIRE_SSL:-true}"
+  if [[ -z "${A2A_RELAY_POSTGRES_URL:-}" ]]; then
+    echo "error: prod postgres mode requires explicit A2A_RELAY_POSTGRES_URL" >&2
+    exit 1
+  fi
+  URL_LOWER="$(printf '%s' "${A2A_RELAY_POSTGRES_URL}" | tr '[:upper:]' '[:lower:]')"
+  if [[ "${URL_LOWER}" == *"sslmode=disable"* || "${URL_LOWER}" == *"ssl=false"* ]]; then
+    echo "error: prod postgres mode requires SSL (found insecure flags in A2A_RELAY_POSTGRES_URL)" >&2
+    exit 1
+  fi
+  if [[ "${URL_LOWER}" != *"sslmode=require"* && "${URL_LOWER}" != *"sslmode=verify-ca"* && "${URL_LOWER}" != *"sslmode=verify-full"* && "${URL_LOWER}" != *"ssl=true"* ]]; then
+    echo "error: prod postgres mode requires explicit SSL parameters in A2A_RELAY_POSTGRES_URL" >&2
+    exit 1
+  fi
+fi
+
 if [[ "${USE_LOCAL_POSTGRES_PROFILE}" == "true" ]]; then
   A2A_RELAY_PROFILE="${PROFILE}" \
   COMPOSE_PROFILES="${COMPOSE_PROFILES:-local-db}" \

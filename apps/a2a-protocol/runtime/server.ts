@@ -8,7 +8,10 @@ import {
   type RelayAlert,
   type RelayAlertThresholds,
 } from "./monitor";
-import { loadRelayRuntimeConfigFromEnv } from "./config";
+import {
+  loadRelayRuntimeConfigFromEnv,
+  type RelayRuntimeConfig,
+} from "./config";
 import { PostgresRelayStore } from "./postgres-store";
 import { A2ARelayApi } from "./relay";
 import { FileRelayStore, InMemoryRelayStore } from "./store";
@@ -30,6 +33,7 @@ export interface RelayServerOptions {
   storeFilePath?: string;
   postgresConnectionString?: string;
   postgresRejectElevatedRole?: boolean;
+  postgresRequireSsl?: boolean;
   postgresPoolMaxConnections?: number;
   postgresPoolIdleTimeoutMs?: number;
   postgresPoolConnectionTimeoutMs?: number;
@@ -251,12 +255,38 @@ export async function startRelayServer(
 
 export async function runRelayServerFromEnv(): Promise<StartedRelayServer> {
   const config = loadRelayRuntimeConfigFromEnv();
+  validatePostgresRuntimePolicy(config);
   const server = await startRelayServer(config);
 
   console.log(
     `[a2a-relay] listening on ${server.baseUrl} profile=${config.profile} store=${config.storeMode}`,
   );
   return server;
+}
+
+export function validatePostgresRuntimePolicy(
+  config: Pick<
+    RelayRuntimeConfig,
+    | "profile"
+    | "storeMode"
+    | "postgresConnectionString"
+    | "postgresRejectElevatedRole"
+    | "postgresRequireSsl"
+  >,
+): void {
+  if (config.storeMode !== "postgres") {
+    return;
+  }
+  const connection = config.postgresConnectionString?.trim();
+  if (!connection) {
+    throw new Error("postgres store mode requires explicit A2A_RELAY_POSTGRES_URL");
+  }
+  if (config.postgresRequireSsl && !postgresConnectionUsesSsl(connection)) {
+    throw new Error("postgres store mode requires SSL-enabled connection string");
+  }
+  if (config.profile === "prod" && !config.postgresRejectElevatedRole) {
+    throw new Error("prod postgres mode must keep elevated-role rejection enabled");
+  }
 }
 
 function createRelayStore(options: {
@@ -508,5 +538,24 @@ function parseNumeric(value: unknown, fallback: number): number {
     }
   }
   return fallback;
+}
+
+function postgresConnectionUsesSsl(connectionString: string): boolean {
+  const normalized = connectionString.trim().toLowerCase();
+  if (normalized.includes("sslmode=disable")) {
+    return false;
+  }
+  if (normalized.includes("ssl=false")) {
+    return false;
+  }
+  if (
+    normalized.includes("sslmode=require") ||
+    normalized.includes("sslmode=verify-ca") ||
+    normalized.includes("sslmode=verify-full") ||
+    normalized.includes("ssl=true")
+  ) {
+    return true;
+  }
+  return false;
 }
 
