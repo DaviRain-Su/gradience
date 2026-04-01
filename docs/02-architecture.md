@@ -6,6 +6,15 @@
 
 ---
 
+## 变更记录
+
+| 版本 | 日期 | 变更说明 |
+|------|------|---------|
+| v0.1 | 2026-03-30 | 初稿 |
+| v0.2 | 2026-04-02 | 产品架构更新：Agent Me 升级为用户入口（Google OAuth 嵌入式钱包）；Agent Social 升级为 Agent + 人社交 App；新增 DashDomain（Agent 运行时，本地优先 → 云端部署）；架构图新增产品层；§2.2 组件定义表更新 Agent Me / Agent Social / DashDomain |
+
+---
+
 ## 2.1 系统概览
 
 ### 一句话描述
@@ -61,10 +70,14 @@ flowchart TB
         IJudge["📋 IJudge CPI 接口<br/>合约 Judge 标准"]
     end
 
+    subgraph Products["产品层（用户可见，W3+）"]
+        AgentMe["🧑‍💻 Agent Me<br/>用户入口（Google OAuth）<br/>嵌入式钱包 · 声誉 · 任务"]
+        AgentSocial["🤝 Agent Social<br/>Agent + 人 社交 App<br/>发现 · 匹配 · A2A 通讯"]
+        DashDomain["🖥️ DashDomain<br/>Agent 运行时<br/>本地连接 → 一键云端"]
+    end
+
     subgraph Modules["模块层（上层，W3+）"]
         ChainHub["🔗 Chain Hub<br/>Skill 市场 · Key Vault · Delegation Task"]
-        AgentMe["🧑‍💻 Agent Me<br/>个人 Agent 界面"]
-        AgentSocial["🤝 Agent Social<br/>Agent 发现 + 匹配"]
     end
 
     subgraph EVMLayer["EVM 层（Week 4）"]
@@ -78,11 +91,17 @@ flowchart TB
         Storage["💾 Arweave / Avail<br/>evaluationCID · resultRef"]
     end
 
-    Human --> Frontend
+    Human -->|"Google OAuth"| AgentMe
     Human --> CLI
     DevAgent --> SDK
     Dev --> SDK
     Dev --> CLI
+
+    AgentMe --> SDK
+    AgentMe --> AgentSocial
+    AgentMe --> DashDomain
+    AgentSocial -->|"A2A 协议"| DashDomain
+
     Frontend --> SDK
     CLI --> SDK
     JudgeDaemon --> SDK
@@ -100,7 +119,7 @@ flowchart TB
     AgentLayer -->|"CID 引用"| Storage
 
     Indexer -->|"REST / WebSocket"| SDK
-    Indexer -->|"REST / WebSocket"| Frontend
+    Indexer -->|"REST / WebSocket"| AgentMe
 
     EVMContract --> ReputationBridge
     ReputationBridge -.->|"Solana 签名证明"| AgentLayer
@@ -144,8 +163,9 @@ flowchart TB
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
 | **Chain Hub** | Delegation Task、Skill 市场、**Protocol Registry（双轨注册）**、Key Vault；Protocol Registry 支持两条接入路径：**① 中心化服务（REST API）**——服务方提供 endpoint + 能力声明，API Key 由 Key Vault 自动注入，Agent 无感调用，典型例：SDP（首个注册协议）、Helius、第三方 AI 服务；**② 链上 Solana Program（CPI）**——项目方提供 Program ID + IDL，Agent 直接 CPI 调用，无需 API Key，完全无需信任，典型例：Orca、Kamino、任何自建合约的开发者；两条路径对 Agent 暴露统一接口 `chainHub.invoke(skillId, params)`，底层自动路由；Key Vault 由 OpenWallet Policy Engine 实现，Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出；底层金融原语由 SDP 提供 | 不修改 Agent Layer 内核；不自建支付/托管基础设施；不强迫链上 Program 做任何改造（只需提供 Program ID + IDL） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
-| **Agent Me** | 个人 Agent 界面，AgentSoul 本地存储；使用 OpenWallet 管理用户的多链钱包（Solana + EVM），Key 从不离开本地 | 不上传用户私有记忆和私钥 | Next.js / Tauri + OpenWallet SDK | 新建（Week 3） |
-| **Agent Social** | Agent 发现 + 匹配（Week 3） | 不做结算 | Next.js + Indexer | 新建（Week 3） |
+| **Agent Me** | **用户入口产品**（唯一面向终端用户的界面）。通过 Google OAuth 登录，嵌入式钱包技术（Privy / Web3Auth）自动为用户生成链上地址，Web2 用户无需理解私钥/助记词；管理自己的 Agent、查看声誉、控制 Agent 进入竞技场、浏览技能市场、查看任务历史；所有其他模块（Arena、Chain Hub、Social、Indexer）通过 Agent Me 呈现给用户 | 不上传用户私有记忆和私钥；不自建钱包基础设施（使用嵌入式钱包 SDK） | Next.js / Tauri + Privy SDK（嵌入式钱包）+ @gradience/sdk | 新建（Week 3） |
+| **Agent Social** | **面向 Agent + 人的社交 App**。Agent 发现（按声誉排名浏览）、匹配、A2A 通讯、合作邀请；不是一个简单的"发现页"，而是 Gradience 生态的社交层——Agent 和人类用户在同一个社交网络中互相发现和交互 | 不做结算；不存储完整消息历史（去中心化，无中心服务器） | Next.js + Indexer + A2A Protocol | 新建（Week 3） |
+| **DashDomain** | **Agent 运行时**。用户在 Agent Me 中配置好 Agent 后，需要一个地方让 Agent 24/7 运行、响应任务、处理 A2A 消息。**MVP（本地模式）**：Agent Me 连接用户本地电脑上运行的 Agent 进程（localhost tunnel），开发者自行管理运行环境；**后期（云端模式）**：平台提供一键部署功能，将 Agent 部署到云服务器，无需自行运维。类比：Agent Me 是 GitHub（配置/管理），DashDomain 是 GitHub Actions / Railway（运行/托管） | 不参与链上结算；不托管用户私钥（仅托管 Agent 进程） | TypeScript + Docker（云端模式）；MVP 阶段为本地进程连接 | 新建（Week 3 本地 / 后期云端） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
 
 ---
