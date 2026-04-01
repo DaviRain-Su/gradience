@@ -15,6 +15,9 @@ const metrics: RelayMetrics = {
   envelopesDelivered: 1,
   pullRequests: 1,
   rejectedPayloads: 0,
+  dbQueryCount: 0,
+  dbQueryFailures: 0,
+  dbAvgQueryLatencyMs: 0,
 };
 
 const warningAlert: RelayAlert = {

@@ -56,6 +56,9 @@ export interface RelayMetrics {
   envelopesDelivered: number;
   pullRequests: number;
   rejectedPayloads: number;
+  dbQueryCount: number;
+  dbQueryFailures: number;
+  dbAvgQueryLatencyMs: number;
 }
 
 export type Awaitable<T> = T | Promise<T>;

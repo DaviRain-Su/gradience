@@ -74,6 +74,9 @@ const DEFAULT_STATE: PersistedRelayState = {
     envelopesDelivered: 0,
     pullRequests: 0,
     rejectedPayloads: 0,
+    dbQueryCount: 0,
+    dbQueryFailures: 0,
+    dbAvgQueryLatencyMs: 0,
   },
 };
 
@@ -84,6 +87,9 @@ export class PostgresRelayStore implements RelayStore {
   private readonly maxAgents: number;
   private readonly maxEnvelopes: number;
   private readonly rejectElevatedRole: boolean;
+  private dbQueryCount = 0;
+  private dbQueryFailures = 0;
+  private dbQueryLatencyTotalMs = 0;
 
   constructor(
     private readonly client: SqlClientLike,
@@ -236,7 +242,14 @@ export class PostgresRelayStore implements RelayStore {
 
   async getMetrics(): Promise<RelayMetrics> {
     const state = await this.readState();
-    return { ...state.metrics };
+    const base = normalizePersistedMetrics(state.metrics);
+    return {
+      ...base,
+      dbQueryCount: this.dbQueryCount,
+      dbQueryFailures: this.dbQueryFailures,
+      dbAvgQueryLatencyMs:
+        this.dbQueryCount === 0 ? 0 : this.dbQueryLatencyTotalMs / this.dbQueryCount,
+    };
   }
 
   private async withState<T>(
@@ -251,14 +264,14 @@ export class PostgresRelayStore implements RelayStore {
   private async ensureInitialized(): Promise<void> {
     await this.assertRolePolicy();
     const table = this.tableName;
-    await this.client.query(
+    await this.query(
       `CREATE TABLE IF NOT EXISTS ${table} (
         singleton_key TEXT PRIMARY KEY,
         state_json TEXT NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`,
     );
-    await this.client.query(
+    await this.query(
       `INSERT INTO ${table} (singleton_key, state_json)
        VALUES ($1, $2)
        ON CONFLICT (singleton_key) DO NOTHING`,
@@ -267,7 +280,7 @@ export class PostgresRelayStore implements RelayStore {
   }
 
   private async assertRolePolicy(): Promise<void> {
-    const result = await this.client.query(
+    const result = await this.query(
       `SELECT current_user AS role_name, rolsuper, rolcreaterole, rolcreatedb
        FROM pg_roles
        WHERE rolname = current_user`,
@@ -295,7 +308,7 @@ export class PostgresRelayStore implements RelayStore {
   private async readState(): Promise<PersistedRelayState> {
     await this.readyPromise;
     const table = this.tableName;
-    const result = await this.client.query(
+    const result = await this.query(
       `SELECT state_json FROM ${table} WHERE singleton_key = $1`,
       [this.singletonKey],
     );
@@ -310,16 +323,32 @@ export class PostgresRelayStore implements RelayStore {
         `unsupported relay state version: ${String((parsed as { version?: number }).version)}`,
       );
     }
+    parsed.metrics = normalizePersistedMetrics(parsed.metrics);
     return parsed;
   }
 
   private async writeState(state: PersistedRelayState): Promise<void> {
     await this.readyPromise;
     const table = this.tableName;
-    await this.client.query(
+    await this.query(
       `UPDATE ${table} SET state_json = $1, updated_at = NOW() WHERE singleton_key = $2`,
       [JSON.stringify(state), this.singletonKey],
     );
+  }
+
+  private async query(sql: string, params?: unknown[]): Promise<SqlResult> {
+    const startedAt = Date.now();
+    try {
+      const result = await this.client.query(sql, params);
+      this.dbQueryCount += 1;
+      this.dbQueryLatencyTotalMs += Date.now() - startedAt;
+      return result;
+    } catch (error) {
+      this.dbQueryCount += 1;
+      this.dbQueryFailures += 1;
+      this.dbQueryLatencyTotalMs += Date.now() - startedAt;
+      throw error;
+    }
   }
 }
 
@@ -364,6 +393,30 @@ function clampPositiveInt(value: number | undefined, fallback: number): number {
     return fallback;
   }
   return normalized;
+}
+
+function normalizePersistedMetrics(metrics: Partial<RelayMetrics> | undefined): RelayMetrics {
+  return {
+    agentsUpserted: clampMetric(metrics?.agentsUpserted),
+    envelopesPublished: clampMetric(metrics?.envelopesPublished),
+    envelopesDeduplicated: clampMetric(metrics?.envelopesDeduplicated),
+    envelopesDelivered: clampMetric(metrics?.envelopesDelivered),
+    pullRequests: clampMetric(metrics?.pullRequests),
+    rejectedPayloads: clampMetric(metrics?.rejectedPayloads),
+    dbQueryCount: clampMetric(metrics?.dbQueryCount),
+    dbQueryFailures: clampMetric(metrics?.dbQueryFailures),
+    dbAvgQueryLatencyMs: clampMetric(metrics?.dbAvgQueryLatencyMs),
+  };
+}
+
+function clampMetric(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value < 0) {
+    return 0;
+  }
+  return value;
 }
 
 export function buildPgPoolConfig(

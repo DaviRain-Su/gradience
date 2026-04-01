@@ -16,6 +16,7 @@ test("relay profile defaults are stable for devnet and prod", () => {
   assert.equal(devnet.postgresRejectElevatedRole, false);
   assert.equal(devnet.postgresRequireSsl, false);
   assert.equal(devnet.postgresPoolMaxConnections >= 10, true);
+  assert.equal(devnet.alertThresholds.maxDbFailureRate > 0, true);
 
   assert.equal(prod.profile, "prod");
   assert.equal(prod.storeMode, "file");
@@ -23,6 +24,7 @@ test("relay profile defaults are stable for devnet and prod", () => {
   assert.equal(prod.postgresRejectElevatedRole, true);
   assert.equal(prod.postgresRequireSsl, true);
   assert.equal(prod.postgresPoolConnectionTimeoutMs >= devnet.postgresPoolConnectionTimeoutMs, true);
+  assert.equal(prod.alertThresholds.maxDbAvgQueryLatencyMs <= devnet.alertThresholds.maxDbAvgQueryLatencyMs, true);
   assert.equal(prod.alertIntervalMs < devnet.alertIntervalMs, true);
   assert.equal(devnet.alertRetryAttempts >= 3, true);
   assert.equal(prod.alertMinSeverity, "critical");
@@ -44,6 +46,9 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_ALERT_SIGNING_SECRET: "signing-secret",
     A2A_RELAY_ALERT_FAILURE_QUEUE_FILE: "./tmp/failures.ndjson",
     A2A_RELAY_ALERT_REPLAY_ON_START: "false",
+    A2A_RELAY_ALERT_MAX_DB_FAILURE_RATE: "0.07",
+    A2A_RELAY_ALERT_MAX_DB_AVG_QUERY_LATENCY_MS: "222",
+    A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT: "11",
     A2A_RELAY_POSTGRES_URL: "postgres://localhost:5432/a2a",
     A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE: "true",
     A2A_RELAY_POSTGRES_REQUIRE_SSL: "true",
@@ -82,6 +87,9 @@ test("relay runtime config resolves profile and env overrides", () => {
   assert.equal(resolved.postgresPoolConnectionTimeoutMs, 3333);
   assert.equal(resolved.postgresPoolStatementTimeoutMs, 4444);
   assert.equal(resolved.postgresPoolQueryTimeoutMs, 5555);
+  assert.equal(resolved.alertThresholds.maxDbFailureRate, 0.07);
+  assert.equal(resolved.alertThresholds.maxDbAvgQueryLatencyMs, 222);
+  assert.equal(resolved.alertThresholds.minDbQueryCountForHealthCheck, 11);
 });
 
 test("relay runtime config falls back to devnet profile", () => {

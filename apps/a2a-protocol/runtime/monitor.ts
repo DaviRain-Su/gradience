@@ -5,6 +5,9 @@ export interface RelayAlertThresholds {
   maxDedupRatio: number;
   minAvgDeliveriesPerPull: number;
   minPullRequestsForDeliveryCheck: number;
+  maxDbFailureRate: number;
+  maxDbAvgQueryLatencyMs: number;
+  minDbQueryCountForHealthCheck: number;
 }
 
 export interface RelayAlert {
@@ -12,6 +15,8 @@ export interface RelayAlert {
     | "rejected_payload_spike"
     | "dedup_ratio_high"
     | "delivery_throughput_low"
+    | "db_query_failure_rate_high"
+    | "db_query_latency_high"
     | "test_alert";
   severity: "warning" | "critical";
   message: string;
@@ -24,6 +29,9 @@ export const DEFAULT_RELAY_ALERT_THRESHOLDS: RelayAlertThresholds = {
   maxDedupRatio: 0.35,
   minAvgDeliveriesPerPull: 0.2,
   minPullRequestsForDeliveryCheck: 25,
+  maxDbFailureRate: 0.05,
+  maxDbAvgQueryLatencyMs: 200,
+  minDbQueryCountForHealthCheck: 20,
 };
 
 export function evaluateRelayAlerts(
@@ -68,6 +76,29 @@ export function evaluateRelayAlerts(
         message: "Average envelope deliveries per pull dropped below threshold.",
         observed: avgDeliveries,
         threshold: thresholds.minAvgDeliveriesPerPull,
+      });
+    }
+  }
+
+  if (metrics.dbQueryCount >= thresholds.minDbQueryCountForHealthCheck) {
+    const failureRate =
+      metrics.dbQueryCount === 0 ? 0 : metrics.dbQueryFailures / metrics.dbQueryCount;
+    if (failureRate >= thresholds.maxDbFailureRate) {
+      alerts.push({
+        code: "db_query_failure_rate_high",
+        severity: "critical",
+        message: "Database query failure rate exceeded threshold.",
+        observed: failureRate,
+        threshold: thresholds.maxDbFailureRate,
+      });
+    }
+    if (metrics.dbAvgQueryLatencyMs >= thresholds.maxDbAvgQueryLatencyMs) {
+      alerts.push({
+        code: "db_query_latency_high",
+        severity: "warning",
+        message: "Database average query latency exceeded threshold.",
+        observed: metrics.dbAvgQueryLatencyMs,
+        threshold: thresholds.maxDbAvgQueryLatencyMs,
       });
     }
   }

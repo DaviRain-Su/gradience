@@ -61,6 +61,9 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDedupRatio: 0.6,
       minAvgDeliveriesPerPull: 0.05,
       minPullRequestsForDeliveryCheck: 20,
+      maxDbFailureRate: 0.2,
+      maxDbAvgQueryLatencyMs: 400,
+      minDbQueryCountForHealthCheck: 10,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -96,6 +99,9 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDedupRatio: 0.45,
       minAvgDeliveriesPerPull: 0.15,
       minPullRequestsForDeliveryCheck: 25,
+      maxDbFailureRate: 0.1,
+      maxDbAvgQueryLatencyMs: 300,
+      minDbQueryCountForHealthCheck: 20,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -131,6 +137,9 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       maxDedupRatio: 0.3,
       minAvgDeliveriesPerPull: 0.25,
       minPullRequestsForDeliveryCheck: 30,
+      maxDbFailureRate: 0.03,
+      maxDbAvgQueryLatencyMs: 200,
+      minDbQueryCountForHealthCheck: 30,
     },
     alertIntervalMs: 15_000,
     alertWebhookUrl: undefined,
@@ -254,6 +263,18 @@ export function resolveRelayRuntimeConfig(
       minPullRequestsForDeliveryCheck: parseIntSafe(
         env.A2A_RELAY_ALERT_MIN_PULL_REQUESTS,
         preset.alertThresholds.minPullRequestsForDeliveryCheck,
+      ),
+      maxDbFailureRate: parseFloatSafe(
+        env.A2A_RELAY_ALERT_MAX_DB_FAILURE_RATE,
+        preset.alertThresholds.maxDbFailureRate,
+      ),
+      maxDbAvgQueryLatencyMs: parseIntSafe(
+        env.A2A_RELAY_ALERT_MAX_DB_AVG_QUERY_LATENCY_MS,
+        preset.alertThresholds.maxDbAvgQueryLatencyMs,
+      ),
+      minDbQueryCountForHealthCheck: parseIntSafe(
+        env.A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT,
+        preset.alertThresholds.minDbQueryCountForHealthCheck,
       ),
     },
   };

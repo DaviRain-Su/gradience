@@ -17,19 +17,31 @@ test("evaluateRelayAlerts emits expected warnings", () => {
     envelopesDelivered: 0,
     pullRequests: 30,
     rejectedPayloads: 8,
+    dbQueryCount: 100,
+    dbQueryFailures: 15,
+    dbAvgQueryLatencyMs: 280,
   };
   const thresholds: RelayAlertThresholds = {
     maxRejectedPayloads: 5,
     maxDedupRatio: 0.4,
     minAvgDeliveriesPerPull: 0.1,
     minPullRequestsForDeliveryCheck: 10,
+    maxDbFailureRate: 0.1,
+    maxDbAvgQueryLatencyMs: 200,
+    minDbQueryCountForHealthCheck: 20,
   };
 
   const alerts = evaluateRelayAlerts(metrics, thresholds);
-  assert.equal(alerts.length, 3);
+  assert.equal(alerts.length, 5);
   assert.deepEqual(
     alerts.map((item) => item.code).sort(),
-    ["dedup_ratio_high", "delivery_throughput_low", "rejected_payload_spike"],
+    [
+      "db_query_failure_rate_high",
+      "db_query_latency_high",
+      "dedup_ratio_high",
+      "delivery_throughput_low",
+      "rejected_payload_spike",
+    ],
   );
 });
 
@@ -45,6 +57,9 @@ test("RelayAlertMonitor captures alerts from store metrics", async () => {
       maxDedupRatio: 1,
       minAvgDeliveriesPerPull: 0,
       minPullRequestsForDeliveryCheck: 100,
+      maxDbFailureRate: 1,
+      maxDbAvgQueryLatencyMs: 1000,
+      minDbQueryCountForHealthCheck: 100,
     },
   });
   const snapshot = await monitor.checkNow();
