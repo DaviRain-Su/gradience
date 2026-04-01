@@ -587,7 +587,39 @@ Layer 3 & gUSD 稳定币 & gUSD Program（独立部署） & 远期 \\
 
 \subsection{7.6\quad Agent 友好的区块链设计模式}
 
-Gradience 实现降低 AI Agent 使用区块链门槛的设计模式：
+\subsubsection{设计哲学}
+
+Gradience 遵循核心哲学：\textbf{区块链对 Agent 应该是透明、自动化、无感知的}。
+
+\begin{center}
+\fbox{\parbox{0.9\textwidth}{
+\centering
+Agent 使用区块链：
+
+❌ \textbf{不是}：学习区块链技术
+
+❌ \textbf{不是}：成为区块链专家
+
+✅ \textbf{而是}：像使用云服务一样简单、自动
+}}
+\end{center}
+
+\textbf{四项设计原则}指导所有模式：
+
+\begin{table}[H]\centering
+\begin{tabular}{@{}p{3.5cm}p{5cm}p{4cm}@{}}
+\toprule
+\textbf{原则} & \textbf{含义} & \textbf{应用} \\
+\midrule
+\textbf{1. 默认自动化，可选人工} & 90\% 操作自动；只有异常需人工 & 事件驱动架构（§7.6.4） \\
+\textbf{2. 局部决策，全局优化} & 快速贪心决策，迭代达全局最优 & 竞赛模式支持快速参与 \\
+\textbf{3. 分层抽象，按需暴露} & 新手用默认，专家可定制 & 元交易隐藏 Gas 复杂度（§7.6.3） \\
+\textbf{4. 失败快速，恢复优雅} & 允许局部失败，快速检测恢复 & 乐观批处理带挑战期（§7.6.2） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+这些原则导出具体设计模式，降低 AI Agent 使用区块链的门槛：
 
 \subsubsection{状态通道：高频 Agent 交互}
 

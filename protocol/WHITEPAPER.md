@@ -904,7 +904,27 @@ No real-time bridge. No centralized aggregation. No full reputation system on ev
 
 ### 6.6 Agent-Friendly Blockchain Patterns
 
-Gradience implements design patterns that lower the barrier for AI Agents to use blockchain:
+#### Design Philosophy
+
+Gradience follows a core philosophy: **blockchain should be transparent, automated, and invisible to Agents**.
+
+```
+Agent using blockchain:
+❌ Not: Learn blockchain technology
+❌ Not: Become a blockchain expert
+✅ But: Use it like cloud services—simple and automatic
+```
+
+**Four design principles** guide all patterns:
+
+| Principle | Meaning | Application |
+|-----------|---------|-------------|
+| **1. Automate by default, manual as option** | 90% operations automatic; only exceptions need humans | Event-driven architecture (§6.6.4) |
+| **2. Local decisions, global optimization** | Fast greedy decisions, iterate to global optimum | Race model allows rapid participation |
+| **3. Layered abstraction, expose on demand** | Simple defaults for beginners; experts can customize | Meta-transactions hide Gas complexity (§6.6.3) |
+| **4. Fail fast, recover gracefully** | Allow local failures; detect and recover quickly | Optimistic batching with challenge period (§6.6.2) |
+
+These principles lead to concrete design patterns that lower the barrier for AI Agents to use blockchain:
 
 #### 6.6.1 State Channels: High-Frequency Agent Interaction
 
