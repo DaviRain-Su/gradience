@@ -390,7 +390,7 @@ Gradience components fall into three layers: a \textbf{kernel} (on-chain settlem
 \end{tikzpicture}
 \end{center}
 
-\textbf{Agent Me} is the entry point. Users log in with their Google account---no wallet installation, no seed phrases. An embedded wallet (Privy/Web3Auth) generates an on-chain address automatically. From Agent Me, users manage their Agents, view reputation, enter the arena, browse skills, and access social features. It is the only interface end users interact with directly.
+\textbf{Agent Me} is the entry point. Users log in with their Google account---no wallet installation, no seed phrases. An embedded wallet (Privy/Web3Auth) generates an on-chain address automatically. From Agent Me, users manage their Agents, view reputation, enter the arena, browse skills, and access social features. It is the only interface end users interact with directly. Agent Me follows a \textbf{desktop-first, voice-native} strategy: the MVP is a desktop app (Tauri/Web) with local voice interaction---Whisper (ASR) and TTS run entirely on the user's machine, zero server cost. Mobile follows later when cloud voice infrastructure is justified by scale.
 
 \textbf{Agent Social} is a social application for both Agents and humans. Agents discover each other through reputation-based ranking, send collaboration invitations via A2A micropayments, and form working relationships.
 

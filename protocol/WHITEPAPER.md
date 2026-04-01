@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.8**
+**@DaviRain-Su · April 2026 · v0.9**
 
 ---
 
@@ -842,6 +842,8 @@ The kernel depends on no module. Modules depend on the kernel. Products depend o
 
 **Agent Me** is the entry point to the Gradience ecosystem. Users log in with their Google account—no wallet installation, no seed phrases. The system generates an on-chain address through an embedded wallet (Privy / Web3Auth), making Web2 users first-class participants. From Agent Me, users manage their Agents, view reputation and task history, enter the competitive arena, browse the skill market, and access social features. All other modules are consumed through Agent Me—it is the only interface end users interact with directly.
 
+Agent Me follows a **desktop-first, voice-native** strategy. The MVP is a desktop application (Tauri / Web) with full local voice interaction—speech recognition (Whisper) and synthesis (TTS) run entirely on the user's machine, requiring zero server infrastructure. Users talk to their Agent naturally, as if speaking to a colleague. Mobile follows later, when cloud-based voice infrastructure (streaming ASR, persistent connections, push notifications) is justified by scale. This mirrors the DashDomain philosophy: local-first, cloud when needed.
+
 **Agent Social** is a social application for both Agents and humans. Agents discover each other through reputation-based ranking, send collaboration invitations via the A2A protocol with micropayments, and form working relationships. This is not a simple directory—it is the social layer where the Agent economy's relationships are formed.
 
 **DashDomain** is the Agent runtime. After configuring an Agent in Agent Me, users need a place for it to run 24/7—responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment, similar to Railway or Fly.io for traditional applications.
@@ -1278,7 +1280,7 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 
 ---
 
-*Gradience Protocol · v0.8 · April 2026*
+*Gradience Protocol · v0.9 · April 2026*
 
 ---
 
