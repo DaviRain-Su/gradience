@@ -1,7 +1,7 @@
-import { InMemoryRelayStore } from "./store";
 import type {
   RelayRequest,
   RelayResponse,
+  RelayStore,
   SignedEnvelope,
 } from "./types";
 
@@ -11,7 +11,7 @@ export class A2ARelayApi {
   private readonly maxPaymentMicrolamports: bigint;
 
   constructor(
-    private readonly store: InMemoryRelayStore,
+    private readonly store: RelayStore,
     options: {
       authToken?: string;
       maxPayloadBytes?: number;

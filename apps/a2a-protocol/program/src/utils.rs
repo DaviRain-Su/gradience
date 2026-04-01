@@ -43,7 +43,7 @@ pub fn create_pda_account<const N: usize>(
     pda_signer_seeds: [Seed; N],
 ) -> ProgramResult {
     let rent = Rent::get()?;
-    let required_lamports = rent.try_minimum_balance(space).unwrap().max(1);
+    let required_lamports = normalize_required_lamports(rent.try_minimum_balance(space))?;
     let signers = [Signer::from(&pda_signer_seeds)];
 
     if pda_account.lamports() > 0 {
@@ -100,4 +100,27 @@ pub fn address_to_bytes(address: &Address) -> [u8; 32] {
 #[inline(always)]
 pub fn is_zero_pubkey(pubkey: &[u8; 32]) -> bool {
     pubkey.iter().all(|v| *v == 0)
+}
+
+#[inline(always)]
+fn normalize_required_lamports(required_lamports: Result<u64, ProgramError>) -> Result<u64, ProgramError> {
+    required_lamports.map(|value| value.max(1))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_required_lamports;
+    use pinocchio::error::ProgramError;
+
+    #[test]
+    fn normalize_required_lamports_handles_none() {
+        let result = normalize_required_lamports(Err(ProgramError::InvalidArgument));
+        assert_eq!(result, Err(ProgramError::InvalidArgument));
+    }
+
+    #[test]
+    fn normalize_required_lamports_enforces_minimum_one() {
+        assert_eq!(normalize_required_lamports(Ok(0)), Ok(1));
+        assert_eq!(normalize_required_lamports(Ok(7)), Ok(7));
+    }
 }

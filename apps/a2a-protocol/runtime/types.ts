@@ -58,6 +58,15 @@ export interface RelayMetrics {
   rejectedPayloads: number;
 }
 
+export interface RelayStore {
+  upsertAgent(descriptor: Omit<RelayAgentDescriptor, "heartbeatAt">): RelayAgentDescriptor;
+  listAgents(capabilityMask?: bigint): RelayAgentDescriptor[];
+  publishEnvelope(envelope: SignedEnvelope, body: Record<string, unknown>): RelayEnvelopeRecord;
+  pullEnvelopes(agent: Address, afterId?: string, limit?: number): RelayPullResult;
+  markPayloadRejected(): void;
+  getMetrics(): RelayMetrics;
+}
+
 export interface SubtaskBroadcastInput {
   requester: Address;
   parentTaskId: bigint;

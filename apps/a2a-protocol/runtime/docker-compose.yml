@@ -1,0 +1,31 @@
+services:
+  a2a-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      A2A_RELAY_PROFILE: ${A2A_RELAY_PROFILE:-devnet}
+      A2A_RELAY_HOST: 0.0.0.0
+      A2A_RELAY_PORT: 3400
+      A2A_RELAY_STORE_MODE: ${A2A_RELAY_STORE_MODE:-file}
+      A2A_RELAY_STORE_FILE: ${A2A_RELAY_STORE_FILE:-/data/relay-state.json}
+      A2A_RELAY_AUTH_TOKEN: ${A2A_RELAY_AUTH_TOKEN:-}
+      A2A_RELAY_ALERT_INTERVAL_MS: ${A2A_RELAY_ALERT_INTERVAL_MS:-30000}
+    ports:
+      - "3400:3400"
+    volumes:
+      - relay_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3400/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  relay_data:

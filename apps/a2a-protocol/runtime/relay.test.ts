@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 import { A2ARelayApi } from "./relay";
-import { InMemoryRelayStore } from "./store";
+import { FileRelayStore, InMemoryRelayStore } from "./store";
 
 test("relay announce and list agents with capability filter", async () => {
   const relay = new A2ARelayApi(new InMemoryRelayStore());
@@ -121,4 +124,35 @@ test("relay rejects unauthorized and invalid envelope payloads", async () => {
     },
   });
   assert.equal(invalid.status, 413);
+});
+
+test("relay works with persistent file relay store", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "a2a-relay-api-"));
+  const storePath = join(tempDir, "relay.json");
+  try {
+    const relayA = new A2ARelayApi(new FileRelayStore(storePath));
+    const announce = await relayA.handle({
+      method: "POST",
+      path: "/v1/discovery/announce",
+      body: {
+        agent: "agent-persistent",
+        capabilityMask: "7",
+        transportFlags: 1,
+        endpoint: "ws://agent-persistent",
+      },
+    });
+    assert.equal(announce.status, 200);
+
+    const relayB = new A2ARelayApi(new FileRelayStore(storePath));
+    const listed = await relayB.handle({
+      method: "GET",
+      path: "/v1/discovery/agents",
+      query: { capabilityMask: "1" },
+    });
+    const payload = listed.body as { items: Array<{ agent: string }> };
+    assert.equal(listed.status, 200);
+    assert.deepEqual(payload.items.map((item) => item.agent), ["agent-persistent"]);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });

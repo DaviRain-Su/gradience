@@ -4,8 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "tsx ./main.ts",
+    "start:local": "A2A_RELAY_PROFILE=local tsx ./main.ts",
+    "start:devnet": "A2A_RELAY_PROFILE=devnet tsx ./main.ts",
+    "start:prod": "A2A_RELAY_PROFILE=prod tsx ./main.ts",
+    "release:devnet": "./scripts/release-relay.sh devnet",
+    "release:prod": "./scripts/release-relay.sh prod",
+    "release:local": "./scripts/release-relay.sh local",
+    "release:down": "docker compose down",
+    "smoke": "./scripts/smoke-relay.sh",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test ./relay.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
+    "test": "tsx --test ./config.test.ts ./relay.test.ts ./persistent-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
   },
   "devDependencies": {
     "@types/node": "^20.19.37",
