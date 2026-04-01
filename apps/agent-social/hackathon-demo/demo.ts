@@ -26,6 +26,7 @@ import {
     type A2ADelivery,
     type AgentDiscoveryRow,
 } from './a2a.ts';
+import { keypairIdentity } from '@metaplex-foundation/umi';
 import { getDiscountedRate } from './skill-token.ts';
 
 // ---------------------------------------------------------------------------
@@ -91,8 +92,10 @@ async function main() {
     if (liveMode) {
         // LIVE: register agents on-chain
         const { makeUmi, registerGradienceAgent } = await import('./agents.ts');
-        const aliceUmi = makeUmi(RPC, new Uint8Array(ALICE_SECRET!));
-        const bobUmi   = makeUmi(RPC, new Uint8Array(BOB_SECRET!));
+        const aliceUmi = makeUmi(RPC);
+        const bobUmi   = makeUmi(RPC);
+        aliceUmi.use(keypairIdentity(aliceUmi.eddsa.createKeypairFromSeed(new Uint8Array(ALICE_SECRET!).slice(0, 32))));
+        bobUmi.use(keypairIdentity(bobUmi.eddsa.createKeypairFromSeed(new Uint8Array(BOB_SECRET!).slice(0, 32))));
 
         console.log('Registering agents on Solana via Metaplex Core...');
         const [alice, bob] = await Promise.all([

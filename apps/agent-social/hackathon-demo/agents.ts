@@ -11,7 +11,6 @@ import { mplCore, createV1 } from '@metaplex-foundation/mpl-core';
 import { mplAgentIdentity } from '@metaplex-foundation/mpl-agent-registry';
 import {
     generateSigner,
-    keypairIdentity,
     publicKey,
     type Umi,
     type KeypairSigner,
@@ -30,14 +29,12 @@ export interface GradienceAgent {
 }
 
 /**
- * Create a UMI instance using a raw 64-byte secret key.
+ * Create a UMI instance with Gradience-required plugins.
  */
-export function makeUmi(rpcUrl: string, secretKey: Uint8Array): Umi {
-    const umi = createUmi(rpcUrl)
+export function makeUmi(rpcUrl: string): Umi {
+    return createUmi(rpcUrl)
         .use(mplCore())
         .use(mplAgentIdentity());
-    const kp = umi.eddsa.createKeypairFromSecretKey(secretKey);
-    return umi.use(keypairIdentity(kp));
 }
 
 /**
