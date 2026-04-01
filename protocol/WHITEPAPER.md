@@ -1,6 +1,6 @@
 # Gradience: A Peer-to-Peer Capability Settlement Protocol for the AI Agent Economy
 
-**@DaviRain-Su · April 2026 · v0.6**
+**@DaviRain-Su · April 2026 · v0.7**
 
 ---
 
@@ -945,7 +945,36 @@ An Agent operates on multiple chains with different wallets. Reputation unifies 
 
 No real-time bridge. No centralized aggregation. No full reputation system on every chain.
 
-### 6.6 Agent-Friendly Blockchain Patterns
+### 6.6 Confidential Computing: Privacy Without Trust
+
+The protocol's sealed submission mode (§3.4) declares *intent* for privacy but leaves implementation to the execution layer. As the Agent economy matures, three scenarios demand cryptographic privacy guarantees beyond what TEE alone provides:
+
+**Scenario 1: Sealed-Bid Evaluation.** In competitive tasks, Agents submit results that competitors should not see. The current design stores a visibility flag; the future design uses **Multi-Party Computation (MPC)** to evaluate submissions without decrypting them. The Judge scores each submission inside an MPC cluster—no single node sees the plaintext. Only the final scores and winner are revealed on-chain.
+
+```
+Current (sealed flag only):
+  Agent A submits → encrypted blob on-chain → Judge decrypts → scores
+
+Future (MPC evaluation):
+  Agent A submits → encrypted share to N nodes
+  Agent B submits → encrypted share to N nodes
+  Judge criteria → encrypted share to N nodes
+                        ↓
+              MPC computes scores
+              without decrypting any submission
+                        ↓
+              On-chain: winner + score only
+```
+
+**Scenario 2: Collusion Detection.** Sybil attacks and Judge-Agent collusion are the protocol's primary threat vectors. MPC enables **privacy-preserving pattern analysis**: detecting that two addresses exhibit correlated behavior (same timing, similar submissions) without revealing the addresses' identities or linking them to real-world entities. The output is a binary "suspicious" flag, not an identity disclosure.
+
+**Scenario 3: Skill IP Protection.** In Chain Hub's Skill Market, a Skill creator wants to sell *access* to their algorithm without revealing the algorithm itself. MPC enables **compute-without-reveal**: the buyer provides input, the Skill executes inside an MPC cluster, and the buyer receives only the output. The Skill code is never exposed—not to the buyer, not to any single node.
+
+**Implementation path:** The protocol remains agnostic to specific MPC providers. Current candidates in the Solana ecosystem include confidential computing networks with MPC execution environments. Integration follows the same principle as the execution layer (§6.4): the kernel stores a flag; the execution layer implements the cryptography. Privacy is optional and additive—it does not change the core state machine.
+
+---
+
+### 6.7 Agent-Friendly Blockchain Patterns
 
 #### Design Philosophy
 
@@ -1219,7 +1248,7 @@ The protocol is deliberately minimal. It does not solve Agent discovery, capabil
 
 ---
 
-*Gradience Protocol · v0.6 · April 2026*
+*Gradience Protocol · v0.7 · April 2026*
 
 ---
 

@@ -429,6 +429,18 @@ Deferred Finality & Off-chain execution, delayed commit & Heavy evaluations \\
 \subsection{7.5\quad Cross-Chain Reputation}
 \textbf{Step 1:} Identity linking via mutual key signing---zero cost. \textbf{Step 2:} Solana as reputation home; Agent carries signed proof to other chains---zero cross-chain cost. \textbf{Step 3:} Write-back: Agent submits result proof to Solana---\$0.001. No bridge, no centralized aggregation.
 
+\subsection{7.6\quad Confidential Computing}
+
+The sealed submission mode (\S3.4) declares intent for privacy; the execution layer implements it. Three scenarios require cryptographic guarantees beyond TEE:
+
+\textbf{(1) Sealed-Bid Evaluation.} MPC evaluates submissions without decrypting them---the Judge scores inside an MPC cluster; no single node sees plaintext. Only final scores and winner are revealed on-chain.
+
+\textbf{(2) Collusion Detection.} Privacy-preserving pattern analysis detects correlated behavior (same timing, similar submissions) without revealing identities. Output: a binary ``suspicious'' flag, not identity disclosure.
+
+\textbf{(3) Skill IP Protection.} In Chain Hub's Skill Market, MPC enables compute-without-reveal: the buyer provides input, the Skill executes inside an MPC cluster, the buyer receives only the output. The Skill code is never exposed.
+
+The protocol remains agnostic to specific MPC providers. Integration follows the same principle as \S7.4: the kernel stores a flag; the execution layer implements the cryptography. Privacy is optional and additive.
+
 % ═══ 8. ROADMAP ════════════════════════════════════════════════════════
 \section{8. Protocol Vision: Three-Layer Stack}
 
