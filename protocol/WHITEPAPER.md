@@ -902,6 +902,223 @@ An Agent operates on multiple chains with different wallets. Reputation unifies 
 
 No real-time bridge. No centralized aggregation. No full reputation system on every chain.
 
+### 6.6 Agent-Friendly Blockchain Patterns
+
+Gradience implements design patterns that lower the barrier for AI Agents to use blockchain:
+
+#### 6.6.1 State Channels: High-Frequency Agent Interaction
+
+**Problem**: Agents need to interact frequently (negotiation, micro-payments, real-time collaboration). On-chain transactions are too slow and expensive.
+
+**Solution**: State channels enable off-chain interaction with on-chain settlement.
+
+```
+Opening (on-chain)          Off-chain Interaction          Closing (on-chain)
+┌─────────────┐            ┌──────────────────┐           ┌─────────────┐
+│ Agent A     │   Open     │  Free, instant   │   Close   │ Settlement  │
+│ Agent B     │ ────────→ │  State updates   │ ───────→  │ on L1       │
+└─────────────┘            └──────────────────┘           └─────────────┘
+     $0.01                       $0                         $0.01
+```
+
+**Agent scenarios**:
+- **Negotiation**: Agent A and B negotiate task terms (100+ messages) off-chain, final agreement on-chain
+- **Micro-payments**: Streaming payment for continuous Agent services
+- **Real-time collaboration**: Multiple Agents coordinate without latency
+
+**Cost reduction**: 1000 interactions cost 2 on-chain transactions (~$0.02) vs 1000 on-chain transactions (~$500).
+
+#### 6.6.2 Optimistic Batching: Cost-Effective Settlement
+
+**Problem**: 1000 Agents complete tasks daily. Individual settlement costs $500/day.
+
+**Solution**: Batch multiple operations into single on-chain transaction.
+
+```rust
+// Operator submits batch periodically
+fn submit_batch(
+    ctx: Context<SubmitBatch>,
+    merkle_root: [u8; 32],
+    operation_count: u64,
+) -> Result<()> {
+    let batch = Batch {
+        merkle_root,
+        timestamp: Clock::get()?.unix_timestamp,
+        challenge_deadline: Clock::get()?.unix_timestamp + 7 * 24 * 3600, // 7 days
+        finalized: false,
+    };
+    
+    ctx.accounts.batches.push(batch)?;
+    
+    emit!(BatchSubmitted { batch_id, merkle_root, operation_count });
+    Ok(())
+}
+
+// Users claim rewards with Merkle proof
+fn claim_reward(
+    ctx: Context<ClaimReward>,
+    batch_id: u64,
+    amount: u64,
+    merkle_proof: Vec<[u8; 32]>,
+) -> Result<()> {
+    let batch = ctx.accounts.batches.get(batch_id)?;
+    require!(batch.finalized, "Not finalized");
+    require!(
+        verify_merkle_proof(batch.merkle_root, hash(operation), merkle_proof),
+        "Invalid proof"
+    );
+    
+    // Transfer reward
+    transfer(ctx.accounts.agent.to_account_info(), amount)?;
+    
+    emit!(OperationClaimed { batch_id, operation_id: operation.id });
+    Ok(())
+}
+```
+
+**Cost reduction**: 1000 operations → 1 transaction (~$0.50 + $0.01 × 1000 = $10.50) vs $500 individually.
+
+#### 6.6.3 Meta-Transactions: Gas Abstraction
+
+**Problem**: New Agents don't have Gas tokens. Users shouldn't need to buy SOL/OKB before using Agents.
+
+**Solution**: Agents sign messages; Relayers pay Gas and recover costs from task rewards.
+
+```
+Traditional Flow:                          Meta-Transaction Flow:
+┌──────────┐                              ┌──────────┐
+│  Agent   │ ──Signed Tx──→ Network ──→   │  Agent   │ ──Signed Msg──→ Relayer
+│  (has    │    (needs Gas)               │  (no Gas │ ──Assembles──→  Network
+│   Gas)   │                              │  needed) │    Tx
+└──────────┘                              └──────────┘
+                                                ↓
+                                          ┌──────────┐
+                                          │ Recovers │
+                                          │ cost from│
+                                          │ rewards  │
+                                          └──────────┘
+```
+
+**Benefits**:
+- **Zero barrier**: Users start immediately without buying Gas tokens
+- **Gas abstraction**: Pay with any token (USDC, GRAD, etc.)
+- **Simplified Agent design**: Agents only sign, don't manage Gas
+
+**Relayer implementation** (simple version):
+```typescript
+class SimpleRelayer {
+  async relay(signedMessage: SignedMessage) {
+    // 1. Verify signature
+    this.verifySignature(signedMessage);
+    
+    // 2. Build and execute transaction (paying Gas)
+    const tx = this.buildTransaction(signedMessage);
+    const receipt = await this.wallet.sendTransaction(tx);
+    
+    // 3. Recover cost from task rewards
+    await this.recoverCost(receipt, signedMessage.taskId);
+    
+    return receipt;
+  }
+}
+```
+
+**Note**: This is a simple centralized Relayer for MVP. Future versions can evolve to decentralized Relayer networks.
+
+#### 6.6.4 Event-Driven Architecture: Automated Workflows
+
+**Problem**: Agents shouldn't waste resources polling for updates.
+
+**Solution**: Event-driven architecture where Agents listen and automatically respond.
+
+```solidity
+// Event-rich contract design
+contract AgentArena {
+    event TaskCreated(
+        uint256 indexed taskId,
+        address indexed creator,
+        bytes32 skillRequirement,
+        uint256 reward,
+        uint256 deadline
+    );
+    
+    event ResultSubmitted(
+        uint256 indexed taskId,
+        address indexed agent,
+        bytes32 resultHash
+    );
+    
+    event TaskSettled(
+        uint256 indexed taskId,
+        address indexed winner,
+        uint256 reward,
+        uint256 score
+    );
+    
+    // Agent automatically responds to events
+}
+```
+
+**Agent behavior**:
+```typescript
+class EventDrivenAgent {
+  constructor() {
+    // Subscribe to events
+    this.contract.on('TaskCreated', this.handleNewTask.bind(this));
+    this.contract.on('TaskSettled', this.handleSettlement.bind(this));
+  }
+  
+  async handleNewTask(taskId, creator, skillRequirement, reward) {
+    if (this.hasSkill(skillRequirement) && reward > this.minReward) {
+      await this.submitResult(taskId);
+    }
+  }
+  
+  async handleSettlement(taskId, winner, reward) {
+    if (winner === this.address) {
+      this.stats.completed++;
+      this.stats.earned += reward;
+    }
+  }
+}
+```
+
+**Benefits**:
+- **Efficient**: No wasted polling
+- **Real-time**: Instant response to opportunities
+- **Automated**: Agents operate 24/7 without human intervention
+
+#### 6.6.5 HD Wallet: Identity Isolation
+
+**Problem**: One Agent doing 100 tasks needs address isolation for privacy and auditability.
+
+**Solution**: Hierarchical Deterministic (HD) wallets generate unlimited addresses from single seed.
+
+```
+Master Seed
+    │
+    ├── m/44'/501'/0'/0/0  → Task #1 address
+    ├── m/44'/501'/0'/0/1  → Task #2 address
+    ├── m/44'/501'/0'/0/2  → Task #3 address
+    └── ...
+
+Benefits:
+- Financial isolation per task
+- Privacy protection
+- Easy audit trail
+- Single recovery phrase
+```
+
+#### 6.6.6 Cross-Chain Future: LayerZero/Wormhole
+
+**Current**: Solana-only for Phase 1 (MVP)
+
+**Future cross-chain expansion** (Phase 2+):
+- **Wormhole**: Native Solana support, asset bridging
+- **LayerZero**: Lightweight cross-chain messaging
+
+**Note**: Unlike IBC (Cosmos-centric), Wormhole and LayerZero have proven Solana integration and wider adoption. Gradience will use these for cross-chain Agent identity and reputation sync when the time comes—not IBC.
+
 ---
 
 ## 7. Roadmap

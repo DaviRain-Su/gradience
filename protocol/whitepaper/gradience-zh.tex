@@ -585,6 +585,138 @@ Layer 3 & gUSD 稳定币 & gUSD Program（独立部署） & 远期 \\
 
 注：\textbf{Chain Hub 属于 Layer 1}，是核心协议的扩展组件（处理持续委托任务），不是独立层级。Layer 0 为外部依赖，不属于 Gradience 协议本体。
 
+\subsection{7.6\quad Agent 友好的区块链设计模式}
+
+Gradience 实现降低 AI Agent 使用区块链门槛的设计模式：
+
+\subsubsection{状态通道：高频 Agent 交互}
+
+\textbf{问题}：Agent 需要频繁交互（协商、小额支付、实时协作）。链上交易太慢太贵。
+
+\textbf{方案}：状态通道实现链下交互、链上结算。
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=1.5cm,
+  box/.style={rectangle, rounded corners=5pt, draw=accent, thick, minimum width=2.8cm, minimum height=1cm, font=\scriptsize, text=darktext, align=center},
+  arrow/.style={-{Stealth[length=4pt]}, thick, color=accent},
+]
+  \node[box] (open) {打开通道\\(链上)\\\$0.01};
+  \node[box, right=1.2cm of open] (offchain) {链下交互\\免费、即时\\状态更新};
+  \node[box, right=1.2cm of offchain] (close) {关闭通道\\(链上)\\\$0.01};
+  
+  \draw[arrow, ->] (open) -- (offchain);
+  \draw[arrow, ->] (offchain) -- (close);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Agent 场景}：
+\begin{itemize}[leftmargin=2em]
+\item \textbf{协商}：Agent A 和 B 链下协商任务条款（100+ 消息），最终协议上链
+\item \textbf{小额支付}：流式支付用于持续的 Agent 服务
+\item \textbf{实时协作}：多个 Agent 无延迟协调
+\end{itemize}
+
+\textbf{成本降低}：1000 次交互只需 2 笔链上交易（\$0.02）vs 1000 笔链上交易（\$500）。
+
+\subsubsection{乐观批处理：成本效益结算}
+
+\textbf{问题}：1000 个 Agent 每天完成任务。单独结算成本 \$500/天。
+
+\textbf{方案}：将多笔操作打包成单笔链上交易。
+
+\begin{table}[H]\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{指标} & \textbf{单独结算} & \textbf{批处理} \\
+\midrule
+交易数量 & 1000 笔 & 1 笔 \\
+Gas 成本 & \$500 & \$10.50 \\
+节省 & - & 98\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{实现}：运营商提交 Merkle Root，用户用 Merkle 证明领取奖励，7 天挑战期后最终确定。
+
+\subsubsection{元交易：Gas 抽象}
+
+\textbf{问题}：新 Agent 没有 Gas 代币。用户不应该需要先买 SOL 才能使用 Agent。
+
+\textbf{方案}：Agent 签名消息；Relayer 代付 Gas 并从任务奖励中回收成本。
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=1.8cm,
+  box/.style={rectangle, rounded corners=5pt, draw=accent, thick, minimum width=2.5cm, minimum height=0.9cm, font=\scriptsize, text=darktext, align=center},
+  arrow/.style={-{Stealth[length=4pt]}, thick, color=accent},
+]
+  \node[box] (agent) {Agent\\(无 Gas)};
+  \node[box, right=1.5cm of agent] (relayer) {Relayer\\(代付 Gas)};
+  \node[box, right=1.5cm of relayer] (chain) {区块链};
+  
+  \draw[arrow, ->] (agent) -- node[above, font=\tiny] {签名消息} (relayer);
+  \draw[arrow, ->] (relayer) -- node[above, font=\tiny] {执行交易} (chain);
+\end{tikzpicture}
+\end{center}
+
+\textbf{优势}：
+\begin{itemize}[leftmargin=2em]
+\item \textbf{零门槛}：用户无需购买 Gas 代币即可开始使用
+\item \textbf{Gas 抽象}：可用任意代币支付（USDC、GRAD 等）
+\item \textbf{简化 Agent 设计}：Agent 只签名，不管理 Gas
+\end{itemize}
+
+\textbf{注意}：MVP 阶段使用简单的中心化 Relayer，未来可演进去中心化 Relayer 网络。
+
+\subsubsection{事件驱动架构：自动化工作流}
+
+\textbf{问题}：Agent 不应该浪费资源轮询更新。
+
+\textbf{方案}：事件驱动架构，Agent 监听并自动响应。
+
+\textbf{Agent 行为}：
+\begin{itemize}[leftmargin=2em]
+\item 监听 \texttt{TaskCreated} 事件 $\to$ 自动评估是否参与 $\to$ 自动提交申请
+\item 监听 \texttt{TaskSettled} 事件 $\to$ 更新统计 $\to$ 触发下一步操作
+\end{itemize}
+
+\textbf{优势}：高效（无浪费轮询）、实时（即时响应机会）、自动化（7×24 无人值守运行）。
+
+\subsubsection{HD 钱包：身份隔离}
+
+\textbf{问题}：一个 Agent 做 100 个任务需要地址隔离以保护隐私和可审计性。
+
+\textbf{方案}：分层确定性（HD）钱包从单个种子生成无限地址。
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{派生路径} & \textbf{用途} \\
+\midrule
+m/44'/501'/0'/0/0 & 任务 \#1 地址 \\
+m/44'/501'/0'/0/1 & 任务 \#2 地址 \\
+m/44'/501'/0'/0/2 & 任务 \#3 地址 \\
+... & ... \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{优势}：任务间财务隔离、隐私保护、易于审计、单一恢复短语。
+
+\subsubsection{跨链未来：LayerZero/Wormhole}
+
+\textbf{当前}：Phase 1（MVP）仅 Solana
+
+\textbf{未来跨链扩展}（Phase 2+）：
+\begin{itemize}[leftmargin=2em]
+\item \textbf{Wormhole}：原生 Solana 支持，资产桥接
+\item \textbf{LayerZero}：轻量级跨链消息传递
+\end{itemize}
+
+\textbf{注意}：与 IBC（Cosmos 生态）不同，Wormhole 和 LayerZero 有成熟的 Solana 集成和更广泛的采用。Gradience 未来跨链时将使用这些协议，而不是 IBC。
+
 \section{9. 路线图}
 
 \begin{itemize}[nosep]
