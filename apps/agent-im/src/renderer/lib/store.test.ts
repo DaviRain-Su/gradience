@@ -81,4 +81,45 @@ describe('AppStore', () => {
         store.getState().setDiscoveryQuery('defi');
         assert.equal(store.getState().discoveryQuery, 'defi');
     });
+
+    it('applyInteropSyncEvent updates per-agent interoperability counters', () => {
+        const snapshot1 = store.getState().applyInteropSyncEvent({
+            type: 'interop_sync',
+            winner: 'agent-a',
+            taskId: 100,
+            score: 88,
+            category: 1,
+            chainTx: 'sig-1',
+            judgedAt: Date.now(),
+            identityRegistered: true,
+            feedbackTargets: ['erc8004_feedback'],
+            erc8004FeedbackPublished: true,
+            istranaFeedbackPublished: false,
+            attestationPublished: true,
+        });
+        assert.equal(snapshot1.identityRegistered, true);
+        assert.equal(snapshot1.erc8004FeedbackCount, 1);
+        assert.equal(snapshot1.istranaFeedbackCount, 0);
+        assert.equal(snapshot1.attestationCount, 1);
+
+        const snapshot2 = store.getState().applyInteropSyncEvent({
+            type: 'interop_sync',
+            winner: 'agent-a',
+            taskId: 101,
+            score: 92,
+            category: 2,
+            chainTx: 'sig-2',
+            judgedAt: Date.now(),
+            identityRegistered: false,
+            feedbackTargets: ['istrana_feedback'],
+            erc8004FeedbackPublished: false,
+            istranaFeedbackPublished: true,
+            attestationPublished: false,
+        });
+        assert.equal(snapshot2.identityRegistered, true);
+        assert.equal(snapshot2.erc8004FeedbackCount, 1);
+        assert.equal(snapshot2.istranaFeedbackCount, 1);
+        assert.equal(snapshot2.lastTaskId, 101);
+        assert.equal(snapshot2.lastScore, 92);
+    });
 });

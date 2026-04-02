@@ -10,6 +10,8 @@ import type {
     Conversation,
     ChatMessage,
     AgentDiscoveryRow,
+    InteropStatusSnapshot,
+    InteropSyncEvent,
 } from '../../shared/types.ts';
 import { EMPTY_AUTH } from '../../shared/types.ts';
 
@@ -36,6 +38,11 @@ export interface AppStore {
     discoveryQuery: string;
     setDiscoveryQuery: (q: string) => void;
     setDiscoveryRows: (rows: AgentDiscoveryRow[]) => void;
+
+    // Interoperability status
+    interopStatus: Map<string, InteropStatusSnapshot>;
+    applyInteropSyncEvent: (event: InteropSyncEvent) => InteropStatusSnapshot;
+    getInteropStatus: (agent: string) => InteropStatusSnapshot | null;
 }
 
 export function createAppStore() {
@@ -108,5 +115,35 @@ export function createAppStore() {
         discoveryQuery: '',
         setDiscoveryQuery: (discoveryQuery) => set({ discoveryQuery }),
         setDiscoveryRows: (discoveryRows) => set({ discoveryRows }),
+
+        // Interoperability status
+        interopStatus: new Map(),
+        applyInteropSyncEvent: (event) => {
+            const { interopStatus } = get();
+            const existing = interopStatus.get(event.winner);
+            const next: InteropStatusSnapshot = {
+                agent: event.winner,
+                identityRegistered:
+                    event.identityRegistered || existing?.identityRegistered || false,
+                erc8004FeedbackCount:
+                    (existing?.erc8004FeedbackCount ?? 0) +
+                    (event.erc8004FeedbackPublished ? 1 : 0),
+                istranaFeedbackCount:
+                    (existing?.istranaFeedbackCount ?? 0) +
+                    (event.istranaFeedbackPublished ? 1 : 0),
+                attestationCount:
+                    (existing?.attestationCount ?? 0) +
+                    (event.attestationPublished ? 1 : 0),
+                lastTaskId: event.taskId,
+                lastScore: event.score,
+                lastChainTx: event.chainTx,
+                updatedAt: Date.now(),
+            };
+            const nextMap = new Map(interopStatus);
+            nextMap.set(event.winner, next);
+            set({ interopStatus: nextMap });
+            return next;
+        },
+        getInteropStatus: (agent) => get().interopStatus.get(agent) ?? null,
     }));
 }

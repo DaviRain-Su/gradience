@@ -84,3 +84,32 @@ export interface AgentDiscoveryRow {
 // ── App Views ────────────────────────────────────────────────────────
 
 export type ActiveView = 'me' | 'discover' | 'chat';
+
+// ── Interoperability Status ─────────────────────────────────────────
+
+export interface InteropStatusSnapshot {
+    agent: string;
+    identityRegistered: boolean;
+    erc8004FeedbackCount: number;
+    istranaFeedbackCount: number;
+    attestationCount: number;
+    lastTaskId: number | null;
+    lastScore: number | null;
+    lastChainTx: string | null;
+    updatedAt: number;
+}
+
+export interface InteropSyncEvent {
+    type: 'interop_sync';
+    winner: string;
+    taskId: number;
+    score: number;
+    category: number;
+    chainTx: string;
+    judgedAt: number;
+    identityRegistered: boolean;
+    feedbackTargets: string[];
+    erc8004FeedbackPublished: boolean;
+    istranaFeedbackPublished: boolean;
+    attestationPublished: boolean;
+}
