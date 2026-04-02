@@ -35,8 +35,11 @@ export async function POST(request: Request) {
         const resend = new Resend(apiKey);
         
         // 给用户发送确认邮件
+        // 注意：使用 Resend 的测试域名 on resend.dev，或验证你的域名
+        const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+        
         await resend.emails.send({
-          from: 'Gradience <hello@gradiences.xyz>',
+          from: `Gradience <${fromEmail}>`,
           to: email,
           subject: "You're on the Gradience waitlist!",
           html: `<p>Thanks for joining! We'll notify you when early access is available (Q2 2026).</p>`,
