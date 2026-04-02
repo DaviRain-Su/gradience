@@ -12,6 +12,7 @@ export interface RelayAlertThresholds {
   minDbQueryCountForHealthCheck: number;
   dbConsecutiveUnhealthyChecksToAlert: number;
   dbConsecutiveHealthyChecksToRecover: number;
+  dbIncidentRepeatCooldownChecks: number;
 }
 
 export interface RelayAlert {
@@ -41,6 +42,7 @@ export const DEFAULT_RELAY_ALERT_THRESHOLDS: RelayAlertThresholds = {
   minDbQueryCountForHealthCheck: 20,
   dbConsecutiveUnhealthyChecksToAlert: 2,
   dbConsecutiveHealthyChecksToRecover: 2,
+  dbIncidentRepeatCooldownChecks: 3,
 };
 
 export function evaluateRelayAlerts(
@@ -124,6 +126,8 @@ export class RelayAlertMonitor {
   private dbUnhealthyStreak = 0;
   private dbHealthyStreak = 0;
   private dbIncidentActive = false;
+  private dbIncidentRepeatCounter = 0;
+  private lastDbIncidentSignature: string | null = null;
 
   constructor(
     private readonly store: RelayStore,
@@ -153,11 +157,27 @@ export class RelayAlertMonitor {
     if (dbAlerts.length > 0) {
       this.dbUnhealthyStreak += 1;
       this.dbHealthyStreak = 0;
-      if (
-        this.dbIncidentActive ||
-        this.dbUnhealthyStreak >= thresholds.dbConsecutiveUnhealthyChecksToAlert
-      ) {
-        this.dbIncidentActive = true;
+      const signature = computeIncidentSignature(dbAlerts);
+      if (!this.dbIncidentActive) {
+        if (this.dbUnhealthyStreak >= thresholds.dbConsecutiveUnhealthyChecksToAlert) {
+          this.dbIncidentActive = true;
+          this.lastDbIncidentSignature = signature;
+          this.dbIncidentRepeatCounter = 0;
+          alerts.push(...dbAlerts);
+        }
+        return { alerts, metrics };
+      }
+
+      if (this.lastDbIncidentSignature !== signature) {
+        this.lastDbIncidentSignature = signature;
+        this.dbIncidentRepeatCounter = 0;
+        alerts.push(...dbAlerts);
+        return { alerts, metrics };
+      }
+
+      this.dbIncidentRepeatCounter += 1;
+      if (this.dbIncidentRepeatCounter >= thresholds.dbIncidentRepeatCooldownChecks) {
+        this.dbIncidentRepeatCounter = 0;
         alerts.push(...dbAlerts);
       }
       return { alerts, metrics };
@@ -170,6 +190,8 @@ export class RelayAlertMonitor {
       this.dbHealthyStreak >= thresholds.dbConsecutiveHealthyChecksToRecover
     ) {
       this.dbIncidentActive = false;
+      this.lastDbIncidentSignature = null;
+      this.dbIncidentRepeatCounter = 0;
       alerts.push({
         code: "db_health_recovered",
         severity: "warning",
@@ -227,4 +249,11 @@ function isDbHealthAlert(alert: RelayAlert): boolean {
     alert.code === "db_query_failure_rate_high" ||
     alert.code === "db_query_latency_high"
   );
+}
+
+function computeIncidentSignature(alerts: RelayAlert[]): string {
+  return alerts
+    .map((alert) => `${alert.code}:${alert.severity}`)
+    .sort()
+    .join("|");
 }

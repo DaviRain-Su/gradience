@@ -33,6 +33,7 @@ test("evaluateRelayAlerts emits expected warnings", () => {
     minDbQueryCountForHealthCheck: 20,
     dbConsecutiveUnhealthyChecksToAlert: 2,
     dbConsecutiveHealthyChecksToRecover: 2,
+    dbIncidentRepeatCooldownChecks: 3,
   };
 
   const alerts = evaluateRelayAlerts(metrics, thresholds);
@@ -72,6 +73,7 @@ test("RelayAlertMonitor captures alerts from store metrics", async () => {
       minDbQueryCountForHealthCheck: 100,
       dbConsecutiveUnhealthyChecksToAlert: 2,
       dbConsecutiveHealthyChecksToRecover: 2,
+      dbIncidentRepeatCooldownChecks: 3,
     },
   });
   const snapshot = await monitor.checkNow();
@@ -158,6 +160,7 @@ test("RelayAlertMonitor applies DB hysteresis for alert and recovery", async () 
       minDbQueryCountForHealthCheck: 20,
       dbConsecutiveUnhealthyChecksToAlert: 2,
       dbConsecutiveHealthyChecksToRecover: 2,
+      dbIncidentRepeatCooldownChecks: 3,
     },
   });
 
@@ -184,4 +187,120 @@ test("RelayAlertMonitor applies DB hysteresis for alert and recovery", async () 
     recovered.alerts.some((item) => item.code === "db_health_recovered"),
     true,
   );
+});
+
+test("RelayAlertMonitor deduplicates repeated DB incident alerts with cooldown and emits on escalation", async () => {
+  let snapshotIndex = 0;
+  const snapshots: RelayMetrics[] = [
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 120,
+      dbQueryFailures: 12,
+      dbAvgQueryLatencyMs: 210,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 121,
+      dbQueryFailures: 12,
+      dbAvgQueryLatencyMs: 220,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 122,
+      dbQueryFailures: 12,
+      dbAvgQueryLatencyMs: 230,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 123,
+      dbQueryFailures: 12,
+      dbAvgQueryLatencyMs: 240,
+    },
+    {
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 124,
+      dbQueryFailures: 40,
+      dbAvgQueryLatencyMs: 700,
+    },
+  ];
+  const store = {
+    upsertAgent: () => {
+      throw new Error("not used");
+    },
+    listAgents: () => {
+      throw new Error("not used");
+    },
+    publishEnvelope: () => {
+      throw new Error("not used");
+    },
+    pullEnvelopes: () => {
+      throw new Error("not used");
+    },
+    markPayloadRejected: () => {
+      throw new Error("not used");
+    },
+    getMetrics: async () => snapshots[Math.min(snapshotIndex++, snapshots.length - 1)]!,
+  };
+  const monitor = new RelayAlertMonitor(store, {
+    thresholds: {
+      maxRejectedPayloads: 999,
+      maxDedupRatio: 1,
+      minAvgDeliveriesPerPull: 0,
+      minPullRequestsForDeliveryCheck: 999,
+      maxDbFailureRate: 0.05,
+      criticalDbFailureRate: 0.2,
+      maxDbAvgQueryLatencyMs: 200,
+      criticalDbAvgQueryLatencyMs: 600,
+      minDbQueryCountForHealthCheck: 20,
+      dbConsecutiveUnhealthyChecksToAlert: 1,
+      dbConsecutiveHealthyChecksToRecover: 1,
+      dbIncidentRepeatCooldownChecks: 3,
+    },
+  });
+
+  const first = await monitor.checkNow();
+  assert.equal(
+    first.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    true,
+  );
+  const second = await monitor.checkNow();
+  assert.equal(second.alerts.some((item) => item.code === "db_query_failure_rate_high"), false);
+  const third = await monitor.checkNow();
+  assert.equal(third.alerts.some((item) => item.code === "db_query_failure_rate_high"), false);
+  const fourth = await monitor.checkNow();
+  assert.equal(
+    fourth.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    true,
+  );
+  const escalated = await monitor.checkNow();
+  const dbAlerts = escalated.alerts.filter(
+    (item) => item.code === "db_query_failure_rate_high" || item.code === "db_query_latency_high",
+  );
+  assert.equal(dbAlerts.length >= 1, true);
+  assert.equal(dbAlerts.some((item) => item.severity === "critical"), true);
 });

@@ -62,6 +62,7 @@ test("relay monitor dispatches threshold alerts to webhook sink", async () => {
       minDbQueryCountForHealthCheck: 9999,
       dbConsecutiveUnhealthyChecksToAlert: 1,
       dbConsecutiveHealthyChecksToRecover: 1,
+      dbIncidentRepeatCooldownChecks: 1,
     },
   });
   try {

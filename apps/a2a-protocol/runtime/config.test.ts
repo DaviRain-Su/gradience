@@ -23,6 +23,7 @@ test("relay profile defaults are stable for devnet and prod", () => {
     true,
   );
   assert.equal(devnet.alertThresholds.dbConsecutiveUnhealthyChecksToAlert >= 1, true);
+  assert.equal(devnet.alertThresholds.dbIncidentRepeatCooldownChecks >= 1, true);
 
   assert.equal(prod.profile, "prod");
   assert.equal(prod.storeMode, "file");
@@ -65,6 +66,7 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_ALERT_MIN_DB_QUERY_COUNT: "11",
     A2A_RELAY_ALERT_DB_CONSECUTIVE_UNHEALTHY_TO_ALERT: "3",
     A2A_RELAY_ALERT_DB_CONSECUTIVE_HEALTHY_TO_RECOVER: "4",
+    A2A_RELAY_ALERT_DB_INCIDENT_REPEAT_COOLDOWN_CHECKS: "5",
     A2A_RELAY_POSTGRES_URL: "postgres://localhost:5432/a2a",
     A2A_RELAY_POSTGRES_REJECT_ELEVATED_ROLE: "true",
     A2A_RELAY_POSTGRES_REQUIRE_SSL: "true",
@@ -110,6 +112,7 @@ test("relay runtime config resolves profile and env overrides", () => {
   assert.equal(resolved.alertThresholds.minDbQueryCountForHealthCheck, 11);
   assert.equal(resolved.alertThresholds.dbConsecutiveUnhealthyChecksToAlert, 3);
   assert.equal(resolved.alertThresholds.dbConsecutiveHealthyChecksToRecover, 4);
+  assert.equal(resolved.alertThresholds.dbIncidentRepeatCooldownChecks, 5);
 });
 
 test("relay runtime config falls back to devnet profile", () => {

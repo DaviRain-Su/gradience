@@ -68,6 +68,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minDbQueryCountForHealthCheck: 10,
       dbConsecutiveUnhealthyChecksToAlert: 2,
       dbConsecutiveHealthyChecksToRecover: 2,
+      dbIncidentRepeatCooldownChecks: 3,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -110,6 +111,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minDbQueryCountForHealthCheck: 20,
       dbConsecutiveUnhealthyChecksToAlert: 2,
       dbConsecutiveHealthyChecksToRecover: 2,
+      dbIncidentRepeatCooldownChecks: 4,
     },
     alertIntervalMs: 30_000,
     alertWebhookUrl: undefined,
@@ -152,6 +154,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
       minDbQueryCountForHealthCheck: 30,
       dbConsecutiveUnhealthyChecksToAlert: 2,
       dbConsecutiveHealthyChecksToRecover: 2,
+      dbIncidentRepeatCooldownChecks: 6,
     },
     alertIntervalMs: 15_000,
     alertWebhookUrl: undefined,
@@ -303,6 +306,10 @@ export function resolveRelayRuntimeConfig(
       dbConsecutiveHealthyChecksToRecover: parsePositiveIntAtLeastOne(
         env.A2A_RELAY_ALERT_DB_CONSECUTIVE_HEALTHY_TO_RECOVER,
         preset.alertThresholds.dbConsecutiveHealthyChecksToRecover,
+      ),
+      dbIncidentRepeatCooldownChecks: parsePositiveIntAtLeastOne(
+        env.A2A_RELAY_ALERT_DB_INCIDENT_REPEAT_COOLDOWN_CHECKS,
+        preset.alertThresholds.dbIncidentRepeatCooldownChecks,
       ),
     },
   };
