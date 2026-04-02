@@ -11,7 +11,8 @@
 | 版本 | 日期 | 变更说明 |
 |------|------|---------|
 | v0.1 | 2026-03-30 | 初稿 |
-| v0.2 | 2026-04-02 | 产品架构更新：Agent Me 升级为用户入口（Google OAuth 嵌入式钱包）；Agent Social 升级为 Agent + 人社交 App；新增 DashDomain（Agent 运行时，本地优先 → 云端部署）；架构图新增产品层；§2.2 组件定义表更新 Agent Me / Agent Social / DashDomain |
+| v0.2 | 2026-04-02 | 产品架构更新；新增 DashDomain |
+| v0.3 | 2026-04-02 | Agent Me + Agent Social 合并为 Agent.im；双界面设计（GUI + API）；架构图更新；组件定义表更新 |
 
 ---
 
@@ -71,8 +72,7 @@ flowchart TB
     end
 
     subgraph Products["产品层（用户可见，W3+）"]
-        AgentMe["🧑‍💻 Agent Me<br/>用户入口（Google OAuth）<br/>嵌入式钱包 · 声誉 · 任务"]
-        AgentSocial["🤝 Agent Social<br/>Agent + 人 社交 App<br/>发现 · 匹配 · A2A 通讯"]
+        AgentIM["💬 Agent.im<br/>用户入口 IM<br/>GUI（人）+ API（Agent）<br/>Google OAuth · 语音原生"]
         DashDomain["🖥️ DashDomain<br/>Agent 运行时<br/>本地连接 → 一键云端"]
     end
 
@@ -91,16 +91,14 @@ flowchart TB
         Storage["💾 Arweave / Avail<br/>evaluationCID · resultRef"]
     end
 
-    Human -->|"Google OAuth"| AgentMe
+    Human -->|"Google OAuth"| AgentIM
     Human --> CLI
-    DevAgent --> SDK
+    DevAgent -->|"A2A API"| AgentIM
     Dev --> SDK
     Dev --> CLI
 
-    AgentMe --> SDK
-    AgentMe --> AgentSocial
-    AgentMe --> DashDomain
-    AgentSocial -->|"A2A 协议"| DashDomain
+    AgentIM --> SDK
+    AgentIM --> DashDomain
 
     Frontend --> SDK
     CLI --> SDK
@@ -108,18 +106,15 @@ flowchart TB
 
     SDK --> AgentLayer
     SDK --> ChainHub
-    SDK --> AgentSocial
-
     AgentLayer --> IJudge
     ChainHub -->|"读取信誉"| AgentLayer
-    AgentSocial -->|"读取信誉"| AgentLayer
 
     AgentLayer --> Solana
     AgentLayer -->|"Program 事件"| Indexer
     AgentLayer -->|"CID 引用"| Storage
 
     Indexer -->|"REST / WebSocket"| SDK
-    Indexer -->|"REST / WebSocket"| AgentMe
+    Indexer -->|"REST / WebSocket"| AgentIM
 
     EVMContract --> ReputationBridge
     ReputationBridge -.->|"Solana 签名证明"| AgentLayer
@@ -149,7 +144,7 @@ flowchart TB
 
 | 组件 | 职责 | 不做什么 | 技术选型 | 状态 |
 |------|------|---------|---------|------|
-| **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent Me / A2A 的存在；不做持续委托（Delegation Task） | Rust + Pinocchio（no_std，无 Anchor） | 新建 |
+| **Agent Layer Program** | 链上结算内核：Escrow、Judge、Reputation、Staking、Slash，仅支持 Race Task | 不知道 Chain Hub / Agent.im / A2A 的存在；不做持续委托（Delegation Task） | Rust + Pinocchio（no_std，无 Anchor） | 新建 |
 | **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge；**三层可插拔评判架构**：① **TestCasesEvaluator**（链下测试用例跑分，客观确定性，适合代码/算法/DeFi验证）；② **LLMScoreEvaluator**（DSPy 标准化 LLM 打分，结构化 I/O + 跨模型可移植 + 可用历史数据优化，适合报告/策略分析/创作类任务）；③ **OnChainEvaluator**（链上/链下确定性验证，含 oracle_hash / wasm_exec / zk_proof，适合量化回测/DeFi计算/zkML证明/隐私计算）；W4 扩展 zkML（RISC Zero / EZKL 集成），可密码学确定性验证 Agent 使用了声明的 AI 模型 | 不内嵌 AI 逻辑；不托管资金 | Pinocchio CPI + DSPy（Python，Judge Daemon 侧） | 新建 |
 | **Judge Daemon** | 链下持久化评测工作流：通过 **gRPC 事件流**超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL；Type B 评分通过 **DSPy LLMScoreEvaluator** 实现（结构化评分、跨模型可移植、可用历史数据用 MIPROv2 自动优化）；**gRPC 事件流支持两个提供商**：① **Helius LaserStream**（默认，DX 优，MCP 集成）；② **Triton Dragon's Mouth**（Geyser-fed gRPC，多节点可用，备选） | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd + **Helius LaserStream 或 Triton Dragon's Mouth** + **DSPy（Python 微服务 / RPC）** | 新建 |
 | **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave；内置 **MPP/x402 客户端**（`@solana/kit`），Agent 调用外部付费 API（LLM / 数据 / 搜索）时自动处理 HTTP 402 挑战，用 Solana 钱包按需付款，无需管理 API Key | 不是链上组件；trace 内容不上链，只有 CID 引用上链；MPP 仅用于调用外部服务，不影响任务悬赏结算 | TypeScript + Absurd + LLM SDK + **@solana/kit**；x402 参考：`gh:solana-foundation/templates/community/kit-node-solanax402`（Facilitator + Server 完整实现）；AI Agent + x402 集成参考：`gh:solana-foundation/templates/community/solana-chatgpt-kit`（MCP + Jupiter + 自然语言调用模式） | 新建 |
@@ -163,9 +158,8 @@ flowchart TB
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
 | **Chain Hub** | Delegation Task、Skill 市场、**Protocol Registry（双轨注册）**、Key Vault；Protocol Registry 支持两条接入路径：**① 中心化服务（REST API）**——服务方提供 endpoint + 能力声明，API Key 由 Key Vault 自动注入，Agent 无感调用，典型例：SDP（首个注册协议）、Helius、第三方 AI 服务；**② 链上 Solana Program（CPI）**——项目方提供 Program ID + IDL，Agent 直接 CPI 调用，无需 API Key，完全无需信任，典型例：Orca、Kamino、任何自建合约的开发者；两条路径对 Agent 暴露统一接口 `chainHub.invoke(skillId, params)`，底层自动路由；Key Vault 由 OpenWallet Policy Engine 实现，Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出；底层金融原语由 SDP 提供 | 不修改 Agent Layer 内核；不自建支付/托管基础设施；不强迫链上 Program 做任何改造（只需提供 Program ID + IDL） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
-| **Agent Me** | **用户入口产品**（唯一面向终端用户的界面）。通过 Google OAuth 登录，嵌入式钱包技术（Privy / Web3Auth）自动为用户生成链上地址，Web2 用户无需理解私钥/助记词；管理自己的 Agent、查看声誉、控制 Agent 进入竞技场、浏览技能市场、查看任务历史；所有其他模块（Arena、Chain Hub、Social、Indexer）通过 Agent Me 呈现给用户 | 不上传用户私有记忆和私钥；不自建钱包基础设施（使用嵌入式钱包 SDK） | Next.js / Tauri + Privy SDK（嵌入式钱包）+ @gradience/sdk | 新建（Week 3） |
-| **Agent Social** | **面向 Agent + 人的社交 App**。Agent 发现（按声誉排名浏览）、匹配、A2A 通讯、合作邀请；不是一个简单的"发现页"，而是 Gradience 生态的社交层——Agent 和人类用户在同一个社交网络中互相发现和交互 | 不做结算；不存储完整消息历史（去中心化，无中心服务器） | Next.js + Indexer + A2A Protocol | 新建（Week 3） |
-| **DashDomain** | **Agent 运行时**。用户在 Agent Me 中配置好 Agent 后，需要一个地方让 Agent 24/7 运行、响应任务、处理 A2A 消息。**MVP（本地模式）**：Agent Me 连接用户本地电脑上运行的 Agent 进程（localhost tunnel），开发者自行管理运行环境；**后期（云端模式）**：平台提供一键部署功能，将 Agent 部署到云服务器，无需自行运维。类比：Agent Me 是 GitHub（配置/管理），DashDomain 是 GitHub Actions / Railway（运行/托管） | 不参与链上结算；不托管用户私钥（仅托管 Agent 进程） | TypeScript + Docker（云端模式）；MVP 阶段为本地进程连接 | 新建（Week 3 本地 / 后期云端） |
+| **Agent.im** | **用户唯一入口 IM 应用**（合并原 Agent Me + Agent Social）。Google OAuth 登录 → 嵌入式钱包（Privy）。"我的"视角（声誉/任务历史）+ "社交"视角（发现广场/A2A 通讯）。**双界面设计**：人通过 GUI（对话/语音），Agent 通过 API（JSON/链上），同一 A2A 协议产生完全相同的链上效果。所有协议交互都通过 Agent.im 完成。开放基础设施，任何人可贡献或构建替代客户端 | 不上传用户私有记忆和私钥；不做链上合约修改；不做移动端（MVP） | Electrobun（TypeScript + Bun）+ React + Vite + Privy SDK + @gradience/sdk + A2A Protocol | 新建（Week 3） |
+| **DashDomain** | **Agent 运行时**。用户在 Agent.im 中配置好 Agent 后，需要一个地方让 Agent 24/7 运行、响应任务、处理 A2A 消息。**MVP（本地模式）**：连接用户本地电脑上运行的 Agent 进程（localhost tunnel）；**后期（云端模式）**：一键部署到云服务器。类比：Agent.im 是 GitHub（配置/管理），DashDomain 是 GitHub Actions / Railway（运行/托管） | 不参与链上结算；不托管用户私钥（仅托管 Agent 进程） | TypeScript + Docker（云端模式）；MVP 阶段为本地进程连接 | 新建（Week 3 本地 / 后期云端） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
 
 ---
@@ -299,7 +293,7 @@ Judge Daemon  → SDK（提交 judge_and_pay）
 SDK           → Agent Layer Program（核心 Program 指令）
 SDK           → Indexer API（查询事件、任务列表）
 Chain Hub     → Agent Layer Program（读取信誉 PDA）
-Agent Social  → Indexer API（读取 Agent 信誉排行）
+Agent.im  → Indexer API（读取 Agent 信誉排行）
 EVM 合约      → Solana 信誉证明（链下签名验证，无 RPC 依赖）
 
 依赖方向规则：
@@ -588,8 +582,7 @@ W2 (04-15 ~ 04-21): 工具链
 
 W3 (04-22 ~ 04-26): 模块层
   ✅ Chain Hub MVP（Skill 市场 + Key Vault 基础）
-  ✅ Agent Me MVP
-  ✅ Agent Social MVP
+  ✅ Agent.im MVP（合并原 Agent Me + Agent Social）
   ✅ GRAD 创世 + 链上治理 DAO（多签 upgrade_authority）
 
 W4 (04-27 ~ 04-30, Stretch Goals): 全链

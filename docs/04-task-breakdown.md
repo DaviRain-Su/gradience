@@ -86,8 +86,7 @@
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T39 | Chain Hub MVP | Delegation Task **Pinocchio** program 骨架（与 Agent Layer 主程序技术栈一致，no_std，无 Anchor）；Skill 市场注册表；与 Agent Layer JudgePool 集成（选人 → 授权）；**代码参考**：`gh:solana-program/multi-delegator`（官方 Pinocchio + Codama + LiteSVM 实现，固定授权 / 循环授权 / 订阅计划三种委托模型，与 Delegation Task 场景直接对齐，参考其 PDA 设计、指令结构、版本迁移框架 ADR-003） | T19d | 4h | P1 | Chain Hub program 可初始化；delegation_task 指令可调用（不含完整执行逻辑）；PDA 设计参照 multi-delegator ADR-001 |
-| T40 | Agent Me MVP | 用户个人 Agent 界面：OpenWallet 钱包管理，Reputation PDA 展示，任务历史；Tauri / Next.js | T38 | 4h | P1 | 页面显示当前钱包的全局 + category 信誉；任务历史可查 |
-| T41 | Agent Social MVP | Agent 发现 + 匹配页：按 category 搜索 Agent，展示信誉排名，发送合作邀请（链下消息） | T38 | 4h | P1 | 可搜索 Agent，点击查看其 Reputation PDA；消息功能 stub |
+| T40 | Agent.im MVP | 用户入口 IM 应用（合并原 Agent Me + Agent Social）：Electrobun 桌面应用，Google OAuth 登录（Privy 嵌入式钱包），"我的"视角（声誉面板 + 任务历史）+ "社交"视角（Agent 发现广场 + A2A 消息），双界面设计（GUI + API 同一 A2A 协议）；迁移 agent-me（3 组件）+ agent-social（6 文件）到 apps/agent-im/ | T38 | 8h | P1 | Google OAuth 登录成功；声誉正确展示；Agent 发现排名正确；A2A 消息收发 < 500ms |
 | T42 | GRAD Token + 链上治理 | SPL Token 发行（GRAD），Squads v4 多签 DAO 设置（3/5），转移 upgrade_authority 给多签 | T19d | 4h | P1 | GRAD mint 创建；upgrade_authority = Squads PDA；多签测试可执行 `upgrade_config` |
 
 ---
@@ -101,7 +100,7 @@
 |---|---------|------|------|------|--------|----------|
 | T43 | EVM Agent Layer Solidity 合约 | 将核心 Race Task 逻辑移植到 Solidity ^0.8.20；post_task / apply / submit / judge_and_pay；部署到 Base Sepolia | T19d | 4h | P1 | `npx hardhat test` 通过；合约部署到 Base Sepolia testnet；核心 4 条指令可调用 |
 | T44 | 跨链信誉证明（签名 + 验证） | Squads upgrade_authority 离线签名 Agent 信誉（agent_pubkey, score, chain=solana）；`ReputationVerifier` EVM 合约验证 ed25519 签名 | T42, T43 | 4h | P1 | E2E：Solana 信誉 → 多签签名 → EVM `verifyReputation()` 返回 true |
-| T45 | A2A 协议 MVP（MagicBlock） | Agent Social 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T41 | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
+| T45 | A2A 协议 MVP（MagicBlock） | Agent.im 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T40 | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
 
 ---
 
@@ -211,15 +210,14 @@ flowchart LR
 ---
 
 ### Milestone 3：生态模块 MVP（2026-04-26）
-**交付物**：Chain Hub / Agent Me / Agent Social / GRAD Token / Squads 多签治理
+**交付物**：Chain Hub / Agent.im / GRAD Token / Squads 多签治理
 
 包含任务：T39 ~ T42
 
 **验收条件**：
 - GRAD mint 创建，upgrade_authority 转交 Squads v4（3/5 多签）
 - Chain Hub delegation_task 指令可调用
-- Agent Me 页面可展示信誉
-- Agent Social 可搜索 Agent
+- Agent.im 可展示声誉 + 搜索 Agent + A2A 消息收发
 
 ---
 

@@ -1786,7 +1786,7 @@ import type { Address } from "@solana/kit";
 
 /**
  * 查询某 Agent 获得的全部能力凭证（TaskCompletion Attestations）
- * 可用于：Agent Me 页面展示、外部协议验证 Agent 能力
+ * 可用于：Agent.im 页面展示、外部协议验证 Agent 能力
  */
 export async function getAgentAttestations(agentAddress: Address) {
   // sas-lib 支持按 signer 过滤（signer = 颁发该 Attestation 的 Daemon 公钥）
