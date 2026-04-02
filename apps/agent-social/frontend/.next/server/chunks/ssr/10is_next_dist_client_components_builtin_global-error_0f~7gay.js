@@ -1,0 +1,3 @@
+module.exports=[18850,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(85005);a.n(d("[project]/active/gradience/apps/agent-social/frontend/node_modules/.pnpm/next@16.2.1_react-dom@19.2.4_react@19.2.4__react@19.2.4/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},43444,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(85005);a.n(d("[project]/active/gradience/apps/agent-social/frontend/node_modules/.pnpm/next@16.2.1_react-dom@19.2.4_react@19.2.4__react@19.2.4/node_modules/next/dist/client/components/builtin/global-error.js"))},29280,a=>{"use strict";a.i(18850);var b=a.i(43444);a.n(b)},56118,a=>{a.n(a.i(29280))}];
+
+//# sourceMappingURL=10is_next_dist_client_components_builtin_global-error_0f~7gay.js.map

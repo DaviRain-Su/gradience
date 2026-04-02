@@ -115,6 +115,22 @@ async function createWorkflowRunner(
         retryPolicy,
         logger: console,
     });
+    if (interopPublisher?.flushOutbox) {
+        try {
+            const drained = await interopPublisher.flushOutbox();
+            if (drained.processed > 0 || drained.failed > 0) {
+                console.info(
+                    `[judge-daemon] interop outbox replay processed=${drained.processed} failed=${drained.failed} remaining=${drained.remaining}`,
+                );
+            }
+        } catch (error) {
+            console.error(
+                `[judge-daemon] failed to replay interop outbox: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+        }
+    }
     return new JudgeWorkflowRunner(engine, {
         mode,
         chainClient,

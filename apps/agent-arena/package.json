@@ -25,6 +25,8 @@
         "test:judge-daemon": "tsx --test ./judge-daemon/src/daemon.test.ts ./judge-daemon/src/evaluators.test.ts ./judge-daemon/src/interop.test.ts ./judge-daemon/src/test-cases-evaluator.test.ts ./judge-daemon/src/workflow.test.ts",
         "judge-daemon:start": "tsx ./judge-daemon/src/main.ts",
         "judge-daemon:dspy": "python3 ./judge-daemon/dspy_service/server.py",
+        "drill:interop-e2e": "tsx ./scripts/drill-interop-e2e.ts",
+        "test:drill-interop-e2e": "tsx --test ./scripts/drill-interop-e2e.test.ts",
         "t42:governance": "tsx ./scripts/t42-governance.ts",
         "test:t42": "tsx --test ./scripts/t42-governance.test.ts",
         "frontend:dev": "pnpm --dir ./frontend dev",

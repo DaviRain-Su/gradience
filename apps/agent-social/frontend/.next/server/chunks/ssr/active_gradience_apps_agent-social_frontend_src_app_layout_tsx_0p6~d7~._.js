@@ -1,0 +1,3 @@
+module.exports=[15502,a=>{"use strict";var b=a.i(27093);a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{children:a})})},"metadata",0,{title:"Agent Social",description:"Agent discovery with realtime A2A collaboration channel"}])},97076,a=>{a.n(a.i(15502))}];
+
+//# sourceMappingURL=active_gradience_apps_agent-social_frontend_src_app_layout_tsx_0p6~d7~._.js.map

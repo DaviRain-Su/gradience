@@ -1,0 +1,94 @@
+/* [project]/active/gradience/apps/agent-me/frontend/src/app/globals.css [app-client] (css) */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: #f5f7ff;
+  background: #0b1020;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.panel {
+  background: #111830;
+  border: 1px solid #2d3557;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.grid {
+  gap: 16px;
+  display: grid;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.muted {
+  color: #a5afcf;
+}
+
+.error {
+  color: #ff8b8b;
+}
+
+.ok {
+  color: #71e2a6;
+}
+
+input, textarea, select, button {
+  font: inherit;
+}
+
+input, textarea, select {
+  color: #f5f7ff;
+  background: #121b38;
+  border: 1px solid #34406f;
+  border-radius: 8px;
+  width: 100%;
+  padding: 8px 10px;
+}
+
+button {
+  cursor: pointer;
+  color: #fff;
+  background: #5f7dff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+button.secondary {
+  background: #2a335b;
+}
+
+button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  text-align: left;
+  border-bottom: 1px solid #2d3557;
+  padding: 8px 4px;
+  font-size: 13px;
+}
+
+/*# sourceMappingURL=active_gradience_apps_agent-me_frontend_src_app_globals_0z4vnzh.css.map*/

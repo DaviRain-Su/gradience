@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import { mkdtemp, readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
 import {
@@ -155,6 +158,35 @@ test('buildInteropPublisherFromEnv maps 8004 feedback payload shape', async () =
     }
 });
 
+test('buildInteropPublisherFromEnv maps EVM reputation relay payload shape', async () => {
+    const originalFetch = globalThis.fetch;
+    const bodies: unknown[] = [];
+    globalThis.fetch = async (_input, init) => {
+        if (init?.body && typeof init.body === 'string') {
+            bodies.push(JSON.parse(init.body));
+        }
+        return new Response('', { status: 200 });
+    };
+
+    try {
+        const publisher = buildInteropPublisherFromEnv({
+            JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT: 'https://example.com/evm-relay',
+        });
+        assert.ok(publisher);
+        await publisher.onTaskJudged(makeSignal(77));
+        assert.equal(bodies.length, 1);
+        const payload = bodies[0] as {
+            event: string;
+            payload: { globalScore: number; categoryScores: number[] };
+        };
+        assert.equal(payload.event, 'submit_reputation');
+        assert.equal(payload.payload.globalScore, 77);
+        assert.equal(payload.payload.categoryScores[1], 77);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('HttpJsonSink signs payload when signature secret is configured', async () => {
     const originalFetch = globalThis.fetch;
     let capturedHeaders: Record<string, string> = {};
@@ -194,4 +226,36 @@ test('InteropPipeline emits status summary when status sink is configured', asyn
     };
     assert.equal(summary.type, 'interop_sync');
     assert.equal(summary.erc8004FeedbackPublished, true);
+});
+
+test('InteropPipeline persists failed publish into outbox and replays later', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'gradience-interop-'));
+    const outboxFile = path.join(tempDir, 'outbox.ndjson');
+    let fail = true;
+    const flakySink: InteropSink = {
+        async publish(): Promise<void> {
+            if (fail) {
+                throw new Error('network down');
+            }
+        },
+    };
+    const pipeline = new InteropPipeline({
+        feedbackSinks: [{ name: 'flaky', sink: flakySink }],
+        outboxFilePath: outboxFile,
+        retryPolicy: { maxAttempts: 1, baseDelayMs: 1 },
+        logger: { warn: () => {}, error: () => {} },
+    });
+
+    await assert.rejects(() => pipeline.onTaskJudged(makeSignal()));
+    const persisted = await readFile(outboxFile, 'utf8');
+    assert.ok(persisted.includes('"taskId":12'));
+
+    fail = false;
+    const replayResult = await pipeline.flushOutbox?.();
+    assert.ok(replayResult);
+    assert.equal(replayResult.processed, 1);
+    assert.equal(replayResult.remaining, 0);
+
+    const afterReplay = await readFile(outboxFile, 'utf8');
+    assert.equal(afterReplay, '');
 });

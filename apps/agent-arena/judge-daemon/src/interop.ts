@@ -1,4 +1,6 @@
 import { createHmac } from 'node:crypto';
+import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import type { RetryPolicy } from './evaluators.js';
 
@@ -18,6 +20,20 @@ export interface ReputationInteropSignal {
 
 export interface InteropPublisher {
     onTaskJudged(signal: ReputationInteropSignal): Promise<void>;
+    flushOutbox?(): Promise<InteropOutboxDrainResult>;
+}
+
+export interface InteropOutboxDrainResult {
+    processed: number;
+    failed: number;
+    remaining: number;
+}
+
+interface InteropOutboxEntry {
+    signal: ReputationInteropSignal;
+    attempts: number;
+    lastError: string;
+    queuedAt: number;
 }
 
 export interface InteropSink {
@@ -99,6 +115,7 @@ export class InteropPipeline implements InteropPublisher {
     private readonly retryPolicy: RetryPolicy;
     private readonly minScoreForAttestation: number;
     private readonly logger: Pick<Console, 'warn' | 'error'>;
+    private readonly outboxFilePath: string | null;
 
     constructor(
         private readonly options: {
@@ -106,6 +123,7 @@ export class InteropPipeline implements InteropPublisher {
             feedbackSinks?: Array<{ name: string; sink: InteropSink }>;
             attestationSink?: InteropSink;
             statusSink?: InteropSink;
+            outboxFilePath?: string;
             retryPolicy?: RetryPolicy;
             minScoreForAttestation?: number;
             logger?: Pick<Console, 'warn' | 'error'>;
@@ -114,9 +132,45 @@ export class InteropPipeline implements InteropPublisher {
         this.retryPolicy = options.retryPolicy ?? { maxAttempts: 3, baseDelayMs: 500 };
         this.minScoreForAttestation = options.minScoreForAttestation ?? 60;
         this.logger = options.logger ?? console;
+        this.outboxFilePath = options.outboxFilePath ?? null;
     }
 
     async onTaskJudged(signal: ReputationInteropSignal): Promise<void> {
+        try {
+            await this.publishSignal(signal);
+        } catch (error) {
+            await this.enqueueOutbox(signal, asMessage(error));
+            throw error;
+        }
+    }
+
+    async flushOutbox(): Promise<InteropOutboxDrainResult> {
+        const entries = await this.readOutboxEntries();
+        if (entries.length === 0) {
+            return { processed: 0, failed: 0, remaining: 0 };
+        }
+
+        const remaining: InteropOutboxEntry[] = [];
+        let processed = 0;
+        let failed = 0;
+        for (const entry of entries) {
+            try {
+                await this.publishSignal(entry.signal);
+                processed += 1;
+            } catch (error) {
+                failed += 1;
+                remaining.push({
+                    ...entry,
+                    attempts: entry.attempts + 1,
+                    lastError: asMessage(error),
+                });
+            }
+        }
+        await this.writeOutboxEntries(remaining);
+        return { processed, failed, remaining: remaining.length };
+    }
+
+    private async publishSignal(signal: ReputationInteropSignal): Promise<void> {
         let identityPublished = false;
         let attestationPublished = false;
         const feedbackTargets: string[] = [];
@@ -160,10 +214,75 @@ export class InteropPipeline implements InteropPublisher {
                     feedbackTargets,
                     erc8004FeedbackPublished: feedbackTargets.includes('erc8004_feedback'),
                     istranaFeedbackPublished: feedbackTargets.includes('istrana_feedback'),
+                    evmReputationPublished: feedbackTargets.includes(
+                        'evm_reputation_relay',
+                    ),
                     attestationPublished,
                 }),
             );
         }
+    }
+
+    private async enqueueOutbox(
+        signal: ReputationInteropSignal,
+        reason: string,
+    ): Promise<void> {
+        if (!this.outboxFilePath) {
+            return;
+        }
+        const entries = await this.readOutboxEntries();
+        entries.push({
+            signal,
+            attempts: 0,
+            lastError: reason,
+            queuedAt: Date.now(),
+        });
+        await this.writeOutboxEntries(entries);
+    }
+
+    private async readOutboxEntries(): Promise<InteropOutboxEntry[]> {
+        if (!this.outboxFilePath) {
+            return [];
+        }
+        try {
+            await stat(this.outboxFilePath);
+        } catch {
+            return [];
+        }
+        const raw = await readFile(this.outboxFilePath, 'utf8');
+        if (!raw.trim()) {
+            return [];
+        }
+        const lines = raw
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+        const entries: InteropOutboxEntry[] = [];
+        for (const line of lines) {
+            try {
+                const parsed = JSON.parse(line) as InteropOutboxEntry;
+                if (isOutboxEntry(parsed)) {
+                    entries.push(parsed);
+                }
+            } catch {
+                continue;
+            }
+        }
+        return entries;
+    }
+
+    private async writeOutboxEntries(entries: InteropOutboxEntry[]): Promise<void> {
+        if (!this.outboxFilePath) {
+            return;
+        }
+        await mkdir(path.dirname(this.outboxFilePath), { recursive: true });
+        const tempPath = `${this.outboxFilePath}.tmp`;
+        const body =
+            entries.length === 0
+                ? ''
+                : `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`;
+        await writeFile(tempPath, body, 'utf8');
+        await rename(tempPath, this.outboxFilePath);
     }
 
     private async withRetry(
@@ -209,8 +328,11 @@ export function buildInteropPublisherFromEnv(
 ): InteropPublisher | null {
     const token = env.JUDGE_DAEMON_INTEROP_AUTH_TOKEN;
     const signatureSecret = env.JUDGE_DAEMON_INTEROP_SIGNING_SECRET;
+    const outboxFilePath = env.JUDGE_DAEMON_INTEROP_OUTBOX_FILE;
     const identityEndpoint = env.JUDGE_DAEMON_ERC8004_IDENTITY_ENDPOINT;
     const feedback804Endpoint = env.JUDGE_DAEMON_ERC8004_FEEDBACK_ENDPOINT;
+    const evmReputationRelayEndpoint =
+        env.JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT;
     const istranaEndpoint = env.JUDGE_DAEMON_ISTRANA_FEEDBACK_ENDPOINT;
     const attestationEndpoint = env.JUDGE_DAEMON_SAS_ATTESTATION_ENDPOINT;
     const agentImInteropEndpoint = env.JUDGE_DAEMON_AGENT_IM_INTEROP_ENDPOINT;
@@ -247,6 +369,20 @@ export function buildInteropPublisherFromEnv(
                 ),
             },
         );
+    }
+    if (evmReputationRelayEndpoint) {
+        feedbackSinks.push({
+            name: 'evm_reputation_relay',
+            sink: new MappedInteropSink(
+                new HttpJsonSink({
+                    endpoint: evmReputationRelayEndpoint,
+                    name: 'evm_reputation_relay',
+                    authToken: token,
+                    signatureSecret,
+                }),
+                toEvmReputationRelayPayload,
+            ),
+        });
     }
 
     if (
@@ -290,6 +426,7 @@ export function buildInteropPublisherFromEnv(
                   signatureSecret,
               })
             : undefined,
+        outboxFilePath,
         retryPolicy: options.retryPolicy,
         logger: options.logger,
     });
@@ -389,6 +526,30 @@ function toTaskCompletionAttestationPayload(signal: ReputationInteropSignal): un
     };
 }
 
+function toEvmReputationRelayPayload(signal: ReputationInteropSignal): unknown {
+    const categoryScores = [0, 0, 0, 0, 0, 0, 0, 0];
+    if (signal.category >= 0 && signal.category < categoryScores.length) {
+        categoryScores[signal.category] = clampScore(signal.score);
+    }
+    return {
+        protocol: 'gradience',
+        event: 'submit_reputation',
+        payload: {
+            agentPubkey: signal.winner,
+            globalScore: clampScore(signal.score),
+            categoryScores,
+            sourceChain: 'solana',
+            timestamp: signal.judgedAt,
+        },
+        gradience: {
+            taskId: signal.taskId,
+            reasonRef: signal.reasonRef,
+            txSignature: signal.chainTx,
+            judge: signal.judge,
+        },
+    };
+}
+
 function isReputationInteropSignal(value: unknown): value is ReputationInteropSignal {
     if (!value || typeof value !== 'object') {
         return false;
@@ -409,9 +570,33 @@ function isReputationInteropSignal(value: unknown): value is ReputationInteropSi
     );
 }
 
+function isOutboxEntry(value: unknown): value is InteropOutboxEntry {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const entry = value as Partial<InteropOutboxEntry>;
+    return (
+        typeof entry.signal === 'object' &&
+        isReputationInteropSignal(entry.signal) &&
+        typeof entry.attempts === 'number' &&
+        Number.isFinite(entry.attempts) &&
+        entry.attempts >= 0 &&
+        typeof entry.lastError === 'string' &&
+        typeof entry.queuedAt === 'number' &&
+        Number.isFinite(entry.queuedAt)
+    );
+}
+
 function asMessage(error: unknown): string {
     if (error instanceof Error) {
         return error.message;
     }
     return String(error);
+}
+
+function clampScore(score: number): number {
+    if (!Number.isFinite(score)) {
+        return 0;
+    }
+    return Math.max(0, Math.min(100, Math.round(score)));
 }
