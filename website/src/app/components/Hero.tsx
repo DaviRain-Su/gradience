@@ -46,7 +46,7 @@ export function Hero() {
         </div>
 
         {/* Stats */}
-        <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
           <div className="text-center">
             <div className="text-2xl font-bold text-white">3</div>
             <div className="text-xs text-[var(--text-3)] mt-1">Primitives</div>
@@ -56,9 +56,22 @@ export function Hero() {
             <div className="text-xs text-[var(--text-3)] mt-1">Protocol Fee</div>
           </div>
           <div className="text-center">
+            <div className="text-2xl font-bold text-white">~300</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">Lines of Code</div>
+          </div>
+          <div className="text-center">
             <div className="text-2xl font-bold text-white">0</div>
             <div className="text-xs text-[var(--text-3)] mt-1">Intermediaries</div>
           </div>
+        </div>
+
+        {/* Bitcoin Philosophy */}
+        <div className="mt-12 max-w-xl mx-auto">
+          <blockquote className="text-sm text-[var(--text-2)] italic border-l-2 border-[var(--violet)] pl-4">
+            Bitcoin defined money with UTXO + Script + PoW.
+            <br />
+            Gradience defines Agent capability exchange with Escrow + Judge + Reputation.
+          </blockquote>
         </div>
       </div>
 

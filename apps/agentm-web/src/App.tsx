@@ -1,25 +1,19 @@
 import { useEffect, useState } from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import type { User } from '@privy-io/react-auth';
-import { store } from './lib/store';
+import { useAppStore, store } from './hooks/useAppStore';
+import { registerIdentity } from './lib/identity-registration';
+import { Sidebar } from './components/sidebar';
 import { MeView } from './views/MeView';
 import { DiscoverView } from './views/DiscoverView';
 import { ChatView } from './views/ChatView';
-import type { ActiveView } from './types';
+import { EMPTY_AUTH } from './types';
 
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID ?? '';
 
 export function App() {
     if (!PRIVY_APP_ID) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center space-y-4">
-                    <h1 className="text-3xl font-bold">AgentM</h1>
-                    <p className="text-gray-400">Set VITE_PRIVY_APP_ID to enable login</p>
-                    <DemoApp />
-                </div>
-            </div>
-        );
+        return <DemoApp />;
     }
 
     return (
@@ -32,25 +26,52 @@ export function App() {
                 },
             }}
         >
-            <AuthenticatedApp />
+            <PrivyApp />
         </PrivyProvider>
     );
 }
 
-function AuthenticatedApp() {
+function PrivyApp() {
     const { ready, authenticated, user, login, logout } = usePrivy();
-    const [activeView, setActiveView] = useState<ActiveView>('discover');
+    const setAuth = useAppStore((s) => s.setAuth);
+    const activeView = useAppStore((s) => s.activeView);
+    const setActiveView = useAppStore((s) => s.setActiveView);
+    const getIdentityRegistrationStatus = useAppStore((s) => s.getIdentityRegistrationStatus);
+    const setIdentityRegistrationStatus = useAppStore((s) => s.setIdentityRegistrationStatus);
+
+    const currentAddress = authenticated && user ? extractSolanaAddress(user) : null;
 
     useEffect(() => {
         if (!ready || !authenticated || !user) return;
-        const address = extractSolanaAddress(user);
-        store.getState().setAuth({
+        setAuth({
             authenticated: true,
-            publicKey: address,
+            publicKey: extractSolanaAddress(user),
             email: user.email?.address ?? null,
             privyUserId: user.id,
         });
-    }, [ready, authenticated, user]);
+    }, [ready, authenticated, user, setAuth]);
+
+    // Auto identity registration
+    useEffect(() => {
+        if (!ready || !authenticated || !currentAddress) return;
+        const existing = getIdentityRegistrationStatus(currentAddress);
+        if (existing?.state === 'registered' || existing?.state === 'pending' || existing?.state === 'disabled') return;
+
+        setIdentityRegistrationStatus({
+            agent: currentAddress,
+            state: 'pending',
+            agentId: null,
+            txHash: null,
+            error: null,
+            updatedAt: Date.now(),
+        });
+        registerIdentity({
+            agent: currentAddress,
+            email: user?.email?.address ?? null,
+        }).then((status) => {
+            setIdentityRegistrationStatus(status);
+        });
+    }, [ready, authenticated, currentAddress, user?.email?.address, getIdentityRegistrationStatus, setIdentityRegistrationStatus]);
 
     if (!ready) {
         return <div className="flex items-center justify-center h-screen text-gray-400">Loading...</div>;
@@ -61,7 +82,10 @@ function AuthenticatedApp() {
             <div className="flex items-center justify-center h-screen">
                 <div className="text-center space-y-6">
                     <h1 className="text-4xl font-bold">AgentM</h1>
-                    <p className="text-gray-400">AI Agent Economy — Find agents, delegate tasks, earn reputation</p>
+                    <p className="text-gray-400 max-w-md mx-auto">
+                        AI Agent Economy — Find agents, delegate tasks, earn reputation.
+                        Powered by Gradience Protocol on Solana.
+                    </p>
                     <button
                         onClick={login}
                         className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-medium transition"
@@ -75,7 +99,7 @@ function AuthenticatedApp() {
 
     return (
         <div className="flex h-screen">
-            <Sidebar activeView={activeView} setActiveView={setActiveView} onLogout={logout} />
+            <Sidebar />
             <main className="flex-1 overflow-hidden">
                 {activeView === 'me' && <MeView />}
                 {activeView === 'discover' && <DiscoverView />}
@@ -86,7 +110,7 @@ function AuthenticatedApp() {
 }
 
 function DemoApp() {
-    const [activeView, setActiveView] = useState<ActiveView>('discover');
+    const activeView = useAppStore((s) => s.activeView);
 
     useEffect(() => {
         store.getState().setAuth({
@@ -98,62 +122,14 @@ function DemoApp() {
     }, []);
 
     return (
-        <div className="flex h-[80vh] w-[90vw] border border-gray-800 rounded-2xl overflow-hidden mt-4">
-            <Sidebar activeView={activeView} setActiveView={setActiveView} onLogout={() => {}} />
+        <div className="flex h-screen">
+            <Sidebar />
             <main className="flex-1 overflow-hidden">
                 {activeView === 'me' && <MeView />}
                 {activeView === 'discover' && <DiscoverView />}
                 {activeView === 'chat' && <ChatView />}
             </main>
         </div>
-    );
-}
-
-function Sidebar({
-    activeView,
-    setActiveView,
-    onLogout,
-}: {
-    activeView: ActiveView;
-    setActiveView: (v: ActiveView) => void;
-    onLogout: () => void;
-}) {
-    const tabs: { key: ActiveView; label: string }[] = [
-        { key: 'discover', label: 'Discover' },
-        { key: 'me', label: 'My Agent' },
-        { key: 'chat', label: 'Chat' },
-    ];
-
-    return (
-        <aside className="w-48 bg-gray-900 border-r border-gray-800 flex flex-col">
-            <div className="p-4">
-                <h2 className="text-lg font-bold">AgentM</h2>
-                <p className="text-xs text-gray-500">Web</p>
-            </div>
-            <nav className="flex-1 px-2 space-y-1">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveView(tab.key)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                            activeView === tab.key
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-400 hover:bg-gray-800'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </nav>
-            <div className="p-4">
-                <button
-                    onClick={onLogout}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:text-white transition"
-                >
-                    Logout
-                </button>
-            </div>
-        </aside>
     );
 }
 
