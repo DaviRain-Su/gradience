@@ -334,3 +334,117 @@ fn cooperative_close_rejects_overspend() {
     };
     let _ = ctx.send_tx_expect_error(ix, &[&payer, &payee]);
 }
+
+// ── Subtask Lifecycle ───────────────────────────────────────────────
+
+#[test]
+fn create_subtask_order_persists_state() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix = build_create_subtask_order_ix(
+        &requester.pubkey(), 1, 1, 5_000_000, now + 600, now + 3600,
+    );
+    ctx.send_tx(ix, &[&requester]).unwrap();
+
+    let (subtask_pda, _) = find_subtask_pda(1, 1);
+    let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+
+    assert_eq!(order.parent_task_id, 1);
+    assert_eq!(order.subtask_id, 1);
+    assert_eq!(order.requester, requester.pubkey().to_bytes());
+    assert_eq!(order.budget, 5_000_000);
+    assert_eq!(order.status, SubtaskStatus::Bidding);
+}
+
+#[test]
+fn submit_subtask_bid_creates_bid_pda() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let bidder = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix_order = build_create_subtask_order_ix(
+        &requester.pubkey(), 2, 1, 10_000_000, now + 600, now + 3600,
+    );
+    ctx.send_tx(ix_order, &[&requester]).unwrap();
+
+    let ix_bid = build_submit_subtask_bid_ix(
+        &bidder.pubkey(), 2, 1, 8_000_000, 1_000_000, 300,
+    );
+    ctx.send_tx(ix_bid, &[&bidder]).unwrap();
+
+    let (bid_pda, _) = find_bid_pda(2, 1, &bidder.pubkey());
+    let bid: SubtaskBid = read_account_data(&ctx, &bid_pda);
+
+    assert_eq!(bid.bidder, bidder.pubkey().to_bytes());
+    assert_eq!(bid.quote_amount, 8_000_000);
+    assert_eq!(bid.status, BidStatus::Open);
+}
+
+#[test]
+fn create_subtask_rejects_expired_deadline() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix = build_create_subtask_order_ix(
+        &requester.pubkey(), 3, 1, 5_000_000, now - 100, now + 3600,
+    );
+    let _ = ctx.send_tx_expect_error(ix, &[&requester]);
+}
+
+#[test]
+fn create_subtask_rejects_zero_budget() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix = build_create_subtask_order_ix(
+        &requester.pubkey(), 4, 1, 0, now + 600, now + 3600,
+    );
+    let _ = ctx.send_tx_expect_error(ix, &[&requester]);
+}
+
+#[test]
+fn full_subtask_bidding_lifecycle() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let bidder_a = ctx.create_funded_keypair();
+    let bidder_b = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix_order = build_create_subtask_order_ix(
+        &requester.pubkey(), 10, 1, 20_000_000, now + 600, now + 7200,
+    );
+    ctx.send_tx(ix_order, &[&requester]).unwrap();
+
+    let ix_bid_a = build_submit_subtask_bid_ix(
+        &bidder_a.pubkey(), 10, 1, 15_000_000, 2_000_000, 600,
+    );
+    ctx.send_tx(ix_bid_a, &[&bidder_a]).unwrap();
+
+    let ix_bid_b = build_submit_subtask_bid_ix(
+        &bidder_b.pubkey(), 10, 1, 12_000_000, 1_500_000, 900,
+    );
+    ctx.send_tx(ix_bid_b, &[&bidder_b]).unwrap();
+
+    let (bid_a_pda, _) = find_bid_pda(10, 1, &bidder_a.pubkey());
+    let bid_a: SubtaskBid = read_account_data(&ctx, &bid_a_pda);
+    assert_eq!(bid_a.quote_amount, 15_000_000);
+
+    let (subtask_pda, _) = find_subtask_pda(10, 1);
+    let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+    assert_eq!(order.status, SubtaskStatus::Bidding);
+}

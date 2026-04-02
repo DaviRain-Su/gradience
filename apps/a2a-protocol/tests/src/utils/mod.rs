@@ -269,6 +269,77 @@ pub fn build_open_channel_ix(
     }
 }
 
+pub fn build_create_subtask_order_ix(
+    requester: &Pubkey,
+    parent_task_id: u64,
+    subtask_id: u32,
+    budget: u64,
+    bid_deadline: i64,
+    execute_deadline: i64,
+) -> Instruction {
+    use a2a_protocol::instructions::CreateSubtaskOrderData;
+
+    let (subtask_pda, _) = find_subtask_pda(parent_task_id, subtask_id);
+    let data = CreateSubtaskOrderData {
+        parent_task_id,
+        subtask_id,
+        budget,
+        bid_deadline,
+        execute_deadline,
+        requirement_hash: [0x99u8; 32],
+        escrow_channel_id: 1,
+    };
+    let mut ix_data = vec![9u8]; // discriminator 9 = CreateSubtaskOrder
+    ix_data.extend_from_slice(&borsh::to_vec(&data).unwrap());
+
+    Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(*requester, true),
+            AccountMeta::new(subtask_pda, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+        ],
+        data: ix_data,
+    }
+}
+
+pub fn build_submit_subtask_bid_ix(
+    bidder: &Pubkey,
+    parent_task_id: u64,
+    subtask_id: u32,
+    quote_amount: u64,
+    stake_amount: u64,
+    eta_seconds: u32,
+) -> Instruction {
+    use a2a_protocol::instructions::SubmitSubtaskBidData;
+
+    let (subtask_pda, _) = find_subtask_pda(parent_task_id, subtask_id);
+    let (bid_pda, _) = find_bid_pda(parent_task_id, subtask_id, bidder);
+    let (config_pda, _) = find_config_pda();
+    let data = SubmitSubtaskBidData {
+        parent_task_id,
+        subtask_id,
+        quote_amount,
+        stake_amount,
+        eta_seconds,
+        commitment_hash: [0xBBu8; 32],
+    };
+    let mut ix_data = vec![10u8]; // discriminator 10 = SubmitSubtaskBid
+    ix_data.extend_from_slice(&borsh::to_vec(&data).unwrap());
+
+    Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(*bidder, true),
+            AccountMeta::new(bid_pda, false),
+            AccountMeta::new(subtask_pda, false),
+            AccountMeta::new_readonly(config_pda, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+        ],
+        data: ix_data,
+    }
+}
+
 pub fn build_create_thread_ix(
     creator: &Pubkey,
     counterparty: &Pubkey,
