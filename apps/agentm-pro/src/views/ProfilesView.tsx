@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ProfileCard } from '@/components/profile/ProfileCard';
-import { ProfileForm } from '@/components/profile/ProfileForm';
 import { VersionList } from '@/components/profile/VersionList';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useProfile } from '@/hooks/useProfile';
 import { useProStore } from '@/lib/store';
 import type { AgentProfile } from '@/types';
+import { ProfileCreateView } from './ProfileCreateView';
+import { ProfileEditView } from './ProfileEditView';
 
 export function ProfilesView({ owner }: { owner: string | null }) {
     const { profiles, loading, error, refreshProfiles, createProfile, updateProfile, updateProfileStatus, deleteProfile } =
@@ -68,15 +69,29 @@ export function ProfilesView({ owner }: { owner: string | null }) {
             {loading && <p className="text-sm text-gray-500">Syncing profiles...</p>}
 
             {(mode === 'create' || mode === 'edit') && (
-                <ProfileForm
-                    initialProfile={mode === 'edit' ? editingProfile : null}
-                    submitting={loading}
-                    onSubmit={submitCreateOrEdit}
-                    onCancel={() => {
-                        setMode('list');
-                        setEditingProfile(null);
-                    }}
-                />
+                <>
+                    {mode === 'create' && (
+                        <ProfileCreateView
+                            submitting={loading}
+                            onSubmit={submitCreateOrEdit}
+                            onCancel={() => {
+                                setMode('list');
+                                setEditingProfile(null);
+                            }}
+                        />
+                    )}
+                    {mode === 'edit' && editingProfile && (
+                        <ProfileEditView
+                            profile={editingProfile}
+                            submitting={loading}
+                            onSubmit={submitCreateOrEdit}
+                            onCancel={() => {
+                                setMode('list');
+                                setEditingProfile(null);
+                            }}
+                        />
+                    )}
+                </>
             )}
 
             {mode === 'list' && (
