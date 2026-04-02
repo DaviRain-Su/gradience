@@ -1,107 +1,134 @@
 # 网站部署指南
 
-## 修改总结
+## 邮件订阅服务配置
 
-本次更新完成了以下内容：
+### 方案 1: Vercel 托管（推荐，支持 API 路由）
 
-### 1. 新增组件
-- `Waitlist.tsx` - 邮件收集表单组件
-  - 支持邮箱输入
-  - 用户类型选择（Developer/Gamer/Protocol/Investor）
-  - 本地存储数据（临时方案）
-  - 提交状态反馈
+#### 1. 注册 Resend
+- 访问 https://resend.com
+- 注册账号
+- 获取 API Key
 
-### 2. 修改的文件
-- `Hero.tsx` - CTA 改为 "Join waitlist"，白皮书链接改为本地 PDF
-- `GetStarted.tsx` - 移除源代码链接，保留白皮书和联系邮箱
-- `Audiences.tsx` - 卡片链接改为 #waitlist
-- `page.tsx` - 添加 Waitlist 组件
-
-### 3. 新增资源
-- `public/whitepaper.pdf` - 白皮书 PDF
-
----
-
-## 部署步骤
-
-### 1. 构建
-
+#### 2. 部署到 Vercel
 ```bash
+# 安装 Vercel CLI
+npm i -g vercel
+
+# 登录
+vercel login
+
+# 部署
 cd website
-npm install  # 如果还没有安装依赖
-npm run build
-```
-
-### 2. 检查构建输出
-
-确保 `out/` 目录包含：
-- `index.html`
-- `_next/` 静态资源
-- `whitepaper.pdf`
-
-### 3. 部署
-
-根据你的托管平台选择：
-
-#### Vercel（推荐）
-```bash
 vercel --prod
 ```
 
-#### Netlify
-```bash
-netlify deploy --prod --dir=out
+#### 3. 配置环境变量
+在 Vercel Dashboard 中添加：
+```
+RESEND_API_KEY=re_xxxxxxxx
+ADMIN_EMAIL=hello@gradiences.xyz
 ```
 
-#### 静态托管（Cloudflare Pages / AWS S3）
-上传 `out/` 目录内容到对应服务。
+#### 4. 验证域名（可选）
+在 Resend 中添加 gradiences.xyz 域名，验证后可从 hello@gradiences.xyz 发送邮件。
 
 ---
 
-## 邮件收集后端方案
+### 方案 2: 静态托管（Netlify/Cloudflare Pages）
 
-目前表单数据存储在浏览器 localStorage 中。你需要选择一个后端方案：
+静态托管不支持 API 路由，需要改用第三方表单服务：
 
-### 选项 1: Google Forms（最简单）
-1. 创建 Google Form
-2. 使用表单提交 URL
-3. 修改 Waitlist.tsx 中的提交逻辑
+#### 选项 A: Google Forms（免费，最简单）
+1. 创建 Google Form（邮箱 + 用户类型）
+2. 获取预填充链接
+3. 修改 Waitlist.tsx 跳转至 Google Form
 
-### 选项 2: Mailchimp / ConvertKit
-- 使用他们的 API
-- 需要 API key
+#### 选项 B: Formspree（免费 50 次/月）
+1. 注册 https://formspree.io
+2. 获取 form endpoint
+3. 修改 API 调用地址
 
-### 选项 3: Resend（推荐）
-- 简单的邮件服务
-- 可以发送确认邮件
-
-### 选项 4: 自建后端
-- 简单的 Express/Fastify 服务
-- 存储到数据库或发送到 Discord/Slack
+#### 选项 C: Airtable（免费 1200 行）
+1. 创建 Airtable Base
+2. 使用 Airtable Form
+3. 嵌入到网站
 
 ---
 
-## 本地预览
+### 方案 3: 自建后端
+
+如果你有自己的服务器：
 
 ```bash
+# 部署 Next.js 应用到服务器
+npm run build
+npm start
+```
+
+或使用 Docker：
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+---
+
+## 构建命令
+
+### 开发
+```bash
 cd website
+npm install
 npm run dev
 ```
 
-访问 http://localhost:3000
+### 生产构建
+```bash
+cd website
+npm install
+npm run build
+```
+
+### 静态导出（用于 Netlify/Cloudflare Pages）
+```bash
+cd website
+STATIC_EXPORT=true npm run build
+# 输出在 dist/ 目录
+```
 
 ---
 
-## 验证清单
+## 环境变量
 
-- [ ] 网站能正常打开
-- [ ] "Join waitlist" 按钮能滚动到表单
-- [ ] 邮箱输入和类型选择正常工作
-- [ ] 提交后显示成功消息
-- [ ] "Read whitepaper" 能下载 PDF
-- [ ] 所有 Codeberg 链接已移除
+创建 `.env.local`：
+```bash
+# Resend API Key（用于发送邮件）
+RESEND_API_KEY=re_xxxxxxxx
+
+# 管理员邮箱（接收新用户通知）
+ADMIN_EMAIL=hello@gradiences.xyz
+```
+
+---
+
+## 部署前检查清单
+
+- [ ] 所有环境变量已配置
+- [ ] 构建成功无错误
+- [ ] 邮件订阅功能已测试
+- [ ] 白皮书 PDF 已放入 public/
 - [ ] 移动端显示正常
 
 ---
 
-*更新日期: 2026-04-03*
+## 当前实现状态
+
+✅ 邮件订阅表单前端
+✅ API 路由（等待邮件服务配置）
+⏳ 需要选择托管方案并配置环境变量
+
+推荐：使用 Vercel + Resend，30 分钟即可上线。

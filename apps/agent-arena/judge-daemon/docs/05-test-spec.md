@@ -4,13 +4,13 @@
 
 ## 1. 当前测试文件
 
-| 文件 | 行数 | 测试内容 | 包含在 test:judge-daemon |
-|------|------|---------|:---:|
-| `daemon.test.ts` | 151 | JudgeDaemon 生命周期、事件路由 | ✅ |
-| `evaluators.test.ts` | 133 | PollingManualEvaluator / DspyHttpEvaluator | ✅ |
-| `test-cases-evaluator.test.ts` | 107 | WasmTestCasesEvaluator | ✅ |
-| `workflow.test.ts` | 443 | JudgeWorkflowRunner 完整流程 | ✅ |
-| `polling-sources.test.ts` | 106 | PollingEventSource、MockEventSource | ❌（未加入脚本） |
+| 文件                           | 行数 | 测试内容                                   | 包含在 test:judge-daemon |
+| ------------------------------ | ---- | ------------------------------------------ | :----------------------: |
+| `daemon.test.ts`               | 151  | JudgeDaemon 生命周期、事件路由             |            ✅            |
+| `evaluators.test.ts`           | 133  | PollingManualEvaluator / DspyHttpEvaluator |            ✅            |
+| `test-cases-evaluator.test.ts` | 107  | WasmTestCasesEvaluator                     |            ✅            |
+| `workflow.test.ts`             | 443  | JudgeWorkflowRunner 完整流程               |            ✅            |
+| `polling-sources.test.ts`      | 106  | PollingEventSource、MockEventSource        |     ❌（未加入脚本）     |
 
 ---
 
@@ -37,37 +37,37 @@ pnpm exec tsx --test ./judge-daemon/src/polling-sources.test.ts
 
 ### 已覆盖（✅）
 
-| 场景 | 测试文件 |
-|------|---------|
-| JudgeDaemon 启动/停止生命周期 | daemon.test.ts |
-| 事件到达 → 路由到 engine | daemon.test.ts |
-| Mock 事件源触发工作流 | daemon.test.ts |
-| PollingManualEvaluator 超时返回默认分 | evaluators.test.ts |
-| DspyHttpEvaluator HTTP 调用 + 返回解析 | evaluators.test.ts |
-| PollingEventSource 正常轮询 | polling-sources.test.ts |
-| MockEventSource 事件回放 | polling-sources.test.ts |
-| WasmTestCasesEvaluator 基础执行 | test-cases-evaluator.test.ts |
-| WorkflowRunner 完整评判流程（mock chain client） | workflow.test.ts |
-| dedupeKey 防重复执行 | workflow.test.ts |
-| 失败重试逻辑 | workflow.test.ts |
+| 场景                                             | 测试文件                     |
+| ------------------------------------------------ | ---------------------------- |
+| JudgeDaemon 启动/停止生命周期                    | daemon.test.ts               |
+| 事件到达 → 路由到 engine                         | daemon.test.ts               |
+| Mock 事件源触发工作流                            | daemon.test.ts               |
+| PollingManualEvaluator 超时返回默认分            | evaluators.test.ts           |
+| DspyHttpEvaluator HTTP 调用 + 返回解析           | evaluators.test.ts           |
+| PollingEventSource 正常轮询                      | polling-sources.test.ts      |
+| MockEventSource 事件回放                         | polling-sources.test.ts      |
+| WasmTestCasesEvaluator 基础执行                  | test-cases-evaluator.test.ts |
+| WorkflowRunner 完整评判流程（mock chain client） | workflow.test.ts             |
+| dedupeKey 防重复执行                             | workflow.test.ts             |
+| 失败重试逻辑                                     | workflow.test.ts             |
 
 ### 缺失（P0）
 
-| 场景 | 说明 |
-|------|------|
-| score < MIN_SCORE → 不调用 judgeAndPay | 分数门槛边界 |
-| DSPy 服务不可用时的降级行为 | 网络故障处理 |
-| PostgresWorkflowStore CRUD | 需要 DB（目前只测 InMemory） |
-| `auto` 模式按 eval_ref 类型选择评判器 | 路由逻辑 |
+| 场景                                   | 说明                         |
+| -------------------------------------- | ---------------------------- |
+| score < MIN_SCORE → 不调用 judgeAndPay | 分数门槛边界                 |
+| DSPy 服务不可用时的降级行为            | 网络故障处理                 |
+| PostgresWorkflowStore CRUD             | 需要 DB（目前只测 InMemory） |
+| `auto` 模式按 eval_ref 类型选择评判器  | 路由逻辑                     |
 
 ### 缺失（P1）
 
-| 场景 | 说明 |
-|------|------|
-| RefResolver：Arweave/IPFS 下载失败处理 | 容错性 |
-| 并发多任务同时评判 | 并发安全 |
-| 工作流状态机：pending → running → completed 完整转换 | 状态正确性 |
-| Triton / Helius 流断连重连 | 长期运行稳定性 |
+| 场景                                                 | 说明           |
+| ---------------------------------------------------- | -------------- |
+| RefResolver：Arweave/IPFS 下载失败处理               | 容错性         |
+| 并发多任务同时评判                                   | 并发安全       |
+| 工作流状态机：pending → running → completed 完整转换 | 状态正确性     |
+| Triton / Helius 流断连重连                           | 长期运行稳定性 |
 
 ---
 

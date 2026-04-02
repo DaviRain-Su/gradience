@@ -3,15 +3,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const BASELINE_LINE_REGEX =
-    /T70_BASELINE\|instruction=([a-z_]+)\|cu=(\d+)\|tx_size_bytes=(\d+)\|latency_ms=(\d+)/g;
+const BASELINE_LINE_REGEX = /T70_BASELINE\|instruction=([a-z_]+)\|cu=(\d+)\|tx_size_bytes=(\d+)\|latency_ms=(\d+)/g;
 
-export type T47Scenario =
-    | 'pool_settlement'
-    | 'pool_capacity'
-    | 'alt_switch'
-    | 'tx_packet_limit'
-    | 'high_load';
+export type T47Scenario = 'pool_settlement' | 'pool_capacity' | 'alt_switch' | 'tx_packet_limit' | 'high_load';
 
 export type T47TargetScale = 'n20' | 'n50' | 'n100';
 
@@ -78,14 +72,8 @@ export interface T47DrillReport {
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARENA_ROOT = path.resolve(SCRIPT_DIR, '..');
 const REPO_ROOT = path.resolve(ARENA_ROOT, '..', '..');
-const INTEGRATION_MANIFEST = path.join(
-    ARENA_ROOT,
-    'tests/integration-tests/Cargo.toml',
-);
-const SDK_TEST_FILE = path.join(
-    ARENA_ROOT,
-    'clients/typescript/src/sdk.test.ts',
-);
+const INTEGRATION_MANIFEST = path.join(ARENA_ROOT, 'tests/integration-tests/Cargo.toml');
+const SDK_TEST_FILE = path.join(ARENA_ROOT, 'clients/typescript/src/sdk.test.ts');
 
 const DRILL_CASES: T47DrillCase[] = [
     {
@@ -132,7 +120,7 @@ const DRILL_CASES: T47DrillCase[] = [
 
 async function runCase(testCase: T47DrillCase): Promise<T47DrillResult> {
     const startedAt = Date.now();
-    return await new Promise((resolve) => {
+    return await new Promise(resolve => {
         const child = spawn(testCase.command, {
             shell: true,
             cwd: REPO_ROOT,
@@ -141,18 +129,18 @@ async function runCase(testCase: T47DrillCase): Promise<T47DrillResult> {
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (chunk) => {
+        child.stdout.on('data', chunk => {
             const text = String(chunk);
             stdout += text;
             process.stdout.write(text);
         });
-        child.stderr.on('data', (chunk) => {
+        child.stderr.on('data', chunk => {
             const text = String(chunk);
             stderr += text;
             process.stderr.write(text);
         });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
             const exitCode = typeof code === 'number' ? code : 1;
             resolve({
                 id: testCase.id,
@@ -184,24 +172,13 @@ function parseInstructionBaselines(output: string): T47InstructionBaseline[] {
     return baselines;
 }
 
-export function buildCoverage(
-    cases: T47DrillCase[],
-    results: T47DrillResult[],
-): T47CoverageRow[] {
-    const scenarios: T47Scenario[] = [
-        'pool_settlement',
-        'pool_capacity',
-        'alt_switch',
-        'tx_packet_limit',
-        'high_load',
-    ];
+export function buildCoverage(cases: T47DrillCase[], results: T47DrillResult[]): T47CoverageRow[] {
+    const scenarios: T47Scenario[] = ['pool_settlement', 'pool_capacity', 'alt_switch', 'tx_packet_limit', 'high_load'];
     const scales: T47TargetScale[] = ['n20', 'n50', 'n100'];
 
-    return scenarios.map((scenario) => {
-        const cells = scales.map((scale) => {
-            const matchedCases = cases.filter(
-                (entry) => entry.scenario === scenario && entry.scale === scale,
-            );
+    return scenarios.map(scenario => {
+        const cells = scales.map(scale => {
+            const matchedCases = cases.filter(entry => entry.scenario === scenario && entry.scale === scale);
             if (matchedCases.length === 0) {
                 return {
                     scale,
@@ -211,35 +188,29 @@ export function buildCoverage(
                 };
             }
 
-            const matchedResults = results.filter((entry) =>
-                matchedCases.some((testCase) => testCase.id === entry.id),
-            );
-            const required = matchedCases.some((entry) => entry.required);
-            const success = matchedResults.length > 0 && matchedResults.every((entry) => entry.success);
+            const matchedResults = results.filter(entry => matchedCases.some(testCase => testCase.id === entry.id));
+            const required = matchedCases.some(entry => entry.required);
+            const success = matchedResults.length > 0 && matchedResults.every(entry => entry.success);
 
             return {
                 scale,
                 status: success ? ('pass' as const) : ('fail' as const),
                 required,
-                caseIds: matchedCases.map((entry) => entry.id),
+                caseIds: matchedCases.map(entry => entry.id),
             };
         });
 
-        const requiredCells = cells.filter((cell) => cell.required);
+        const requiredCells = cells.filter(cell => cell.required);
         let overall: T47CoverageRow['overall'] = 'partial';
         if (requiredCells.length > 0) {
-            overall = requiredCells.every((cell) => cell.status === 'pass')
-                ? 'pass'
-                : 'fail';
+            overall = requiredCells.every(cell => cell.status === 'pass') ? 'pass' : 'fail';
         }
 
         return { scenario, cells, overall };
     });
 }
 
-export async function runT47PoolAltDrill(
-    cases: T47DrillCase[] = DRILL_CASES,
-): Promise<T47DrillReport> {
+export async function runT47PoolAltDrill(cases: T47DrillCase[] = DRILL_CASES): Promise<T47DrillReport> {
     const results: T47DrillResult[] = [];
     const baselines: T47InstructionBaseline[] = [];
 
@@ -250,11 +221,10 @@ export async function runT47PoolAltDrill(
         baselines.push(...parseInstructionBaselines(`${result.stdout}\n${result.stderr}`));
     }
 
-    const requiredResults = results.filter((entry) => entry.required);
-    const requiredPassed = requiredResults.filter((entry) => entry.success).length;
+    const requiredResults = results.filter(entry => entry.required);
+    const requiredPassed = requiredResults.filter(entry => entry.success).length;
     const requiredTotal = requiredResults.length;
-    const passRate =
-        requiredTotal === 0 ? 1 : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
+    const passRate = requiredTotal === 0 ? 1 : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
 
     return {
         generatedAt: new Date().toISOString(),
@@ -263,7 +233,7 @@ export async function runT47PoolAltDrill(
         passRate,
         requiredTotal,
         requiredPassed,
-        cases: results.map((entry) => ({
+        cases: results.map(entry => ({
             id: entry.id,
             success: entry.success,
             exitCode: entry.exitCode,
@@ -274,22 +244,18 @@ export async function runT47PoolAltDrill(
     };
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runT47PoolAltDrill()
-        .then((report) => {
+        .then(report => {
             process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
             if (!report.ok) {
                 process.exit(1);
             }
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

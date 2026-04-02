@@ -5,17 +5,10 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import { createKeyPairSignerFromBytes } from '@solana/kit';
-import {
-    GradienceSDK,
-    KeypairAdapter,
-} from '../../clients/typescript/src/index.js';
+import { GradienceSDK, KeypairAdapter } from '../../clients/typescript/src/index.js';
 import { AbsurdWorkflowEngine } from './engine.js';
 import { JudgeDaemon } from './daemon.js';
-import {
-    DspyHttpEvaluator,
-    EnvManualReviewProvider,
-    PollingManualEvaluator,
-} from './evaluators.js';
+import { DspyHttpEvaluator, EnvManualReviewProvider, PollingManualEvaluator } from './evaluators.js';
 import { createIndexerPollingFetcher, loadMockEvents } from './polling.js';
 import { RefResolver } from './refs.js';
 import {
@@ -26,18 +19,10 @@ import {
     type SourceErrorHandler,
     type EventSource,
 } from './sources.js';
-import {
-    InMemoryWorkflowStore,
-    PostgresWorkflowStore,
-    type WorkflowStore,
-} from './store.js';
+import { InMemoryWorkflowStore, PostgresWorkflowStore, type WorkflowStore } from './store.js';
 import type { EventEnvelope } from './types.js';
 import { createMetricsTracker, renderPrometheusMetrics } from './observability.js';
-import {
-    JudgeWorkflowRunner,
-    SdkJudgeChainClient,
-    type JudgeMode,
-} from './workflow.js';
+import { JudgeWorkflowRunner, SdkJudgeChainClient, type JudgeMode } from './workflow.js';
 import { buildInteropPublisherFromEnv } from './interop.js';
 import { WasmTestCasesEvaluator } from './test-cases-evaluator.js';
 
@@ -51,7 +36,7 @@ export async function startJudgeDaemon(env: NodeJS.ProcessEnv = process.env): Pr
     const engine = new AbsurdWorkflowEngine(store);
     const metrics = createMetricsTracker();
     const runner = await createWorkflowRunner(env, engine);
-    engine.setOnWorkflowQueued(async (workflow) => {
+    engine.setOnWorkflowQueued(async workflow => {
         metrics.recordWorkflowQueued();
         if (runner) {
             await runner.process(workflow);
@@ -64,7 +49,7 @@ export async function startJudgeDaemon(env: NodeJS.ProcessEnv = process.env): Pr
         heliusSource: wrapEventSource(heliusSource, metrics.recordEvent.bind(metrics)),
         pollingSource: wrapEventSource(pollingSource, metrics.recordEvent.bind(metrics)),
         onSourceError: () => metrics.recordSourceError(),
-        onModeChanged: (mode) => metrics.setMode(mode),
+        onModeChanged: mode => metrics.setMode(mode),
     });
     await daemon.start();
     const observabilityServer = await startObservabilityServer(env, daemon, engine, metrics);
@@ -107,7 +92,7 @@ async function startObservabilityServer(
     return {
         close: async () =>
             new Promise<void>((resolve, reject) => {
-                server.close((error) => {
+                server.close(error => {
                     if (error) {
                         reject(error);
                         return;
@@ -161,21 +146,16 @@ function parseBindAddress(bindAddr: string): { host: string; port: number } {
     const [host, portRaw] = bindAddr.split(':');
     const port = Number(portRaw);
     if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) {
-        throw new Error(
-            `Invalid JUDGE_DAEMON_HEALTH_BIND_ADDR: ${bindAddr} (expected host:port)`,
-        );
+        throw new Error(`Invalid JUDGE_DAEMON_HEALTH_BIND_ADDR: ${bindAddr} (expected host:port)`);
     }
     return { host, port };
 }
 
-function wrapEventSource(
-    source: EventSource,
-    onEvent: (event: EventEnvelope) => void,
-): EventSource {
+function wrapEventSource(source: EventSource, onEvent: (event: EventEnvelope) => void): EventSource {
     return {
         name: source.name,
         async start(onEventHandler: EventHandler, onError: SourceErrorHandler): Promise<void> {
-            await source.start(async (event) => {
+            await source.start(async event => {
                 onEvent(event);
                 await onEventHandler(event);
             }, onError);
@@ -280,9 +260,7 @@ async function createSources(env: NodeJS.ProcessEnv): Promise<{
 
     if (isTruthy(env.MOCK_EVENT)) {
         const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-        const mockFile =
-            env.MOCK_EVENT_FILE ??
-            path.resolve(moduleDir, '../../indexer/mock/webhook.json');
+        const mockFile = env.MOCK_EVENT_FILE ?? path.resolve(moduleDir, '../../indexer/mock/webhook.json');
         const events = await loadMockEvents(mockFile);
         return {
             tritonSource: new MockEventSource('triton', { events }),
@@ -328,14 +306,8 @@ function isTruthy(value: string | undefined): boolean {
 async function loadKeypairSigner(keypairPath: string) {
     const raw = await readFile(keypairPath, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
-    if (
-        !Array.isArray(parsed) ||
-        parsed.length !== 64 ||
-        parsed.some((item) => !isByte(item))
-    ) {
-        throw new Error(
-            `Invalid keypair file ${keypairPath}; expected 64-byte array`,
-        );
+    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some(item => !isByte(item))) {
+        throw new Error(`Invalid keypair file ${keypairPath}; expected 64-byte array`);
     }
     return createKeyPairSignerFromBytes(Uint8Array.from(parsed as number[]));
 }
@@ -374,7 +346,7 @@ function parseMode(value: string | undefined): JudgeMode {
 }
 
 if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
-    void startJudgeDaemon(process.env).then((runtime) => {
+    void startJudgeDaemon(process.env).then(runtime => {
         process.on('SIGINT', () => {
             void runtime.stop().finally(() => process.exit(0));
         });

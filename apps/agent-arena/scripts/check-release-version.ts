@@ -3,8 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const SEMVER_REGEX =
-    /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 interface VersionSnapshot {
     workspaceVersion: string;
@@ -14,11 +13,11 @@ interface VersionSnapshot {
 
 function extractArg(argv: string[], name: string): string | null {
     const exact = `--${name}`;
-    const withValue = argv.find((arg) => arg.startsWith(`${exact}=`));
+    const withValue = argv.find(arg => arg.startsWith(`${exact}=`));
     if (withValue) {
         return withValue.slice(exact.length + 1);
     }
-    const index = argv.findIndex((arg) => arg === exact);
+    const index = argv.findIndex(arg => arg === exact);
     if (index >= 0 && argv[index + 1]) {
         return argv[index + 1];
     }
@@ -45,25 +44,15 @@ function inferVersionFromGitTag(gitRefName: string | undefined): string | null {
 }
 
 async function loadSnapshot(repoRoot: string): Promise<VersionSnapshot> {
-    const workspaceCargo = await readFile(
-        path.join(repoRoot, 'apps/agent-arena/Cargo.toml'),
-        'utf8',
-    );
-    const rustCargo = await readFile(
-        path.join(repoRoot, 'apps/agent-arena/clients/rust/Cargo.toml'),
-        'utf8',
-    );
+    const workspaceCargo = await readFile(path.join(repoRoot, 'apps/agent-arena/Cargo.toml'), 'utf8');
+    const rustCargo = await readFile(path.join(repoRoot, 'apps/agent-arena/clients/rust/Cargo.toml'), 'utf8');
     const npmPackageRaw = await readFile(
         path.join(repoRoot, 'apps/agent-arena/clients/typescript/package.json'),
         'utf8',
     );
     const npmPackage = JSON.parse(npmPackageRaw) as { version?: string };
 
-    const workspaceVersion = parseTomlSectionValue(
-        workspaceCargo,
-        'workspace.package',
-        'version',
-    );
+    const workspaceVersion = parseTomlSectionValue(workspaceCargo, 'workspace.package', 'version');
     const rustClientVersion = parseTomlSectionValue(rustCargo, 'package', 'version');
     const npmSdkVersion = npmPackage.version ?? null;
 
@@ -73,9 +62,7 @@ async function loadSnapshot(repoRoot: string): Promise<VersionSnapshot> {
     return { workspaceVersion, rustClientVersion, npmSdkVersion };
 }
 
-export async function checkReleaseVersion(
-    argv: string[] = process.argv.slice(2),
-): Promise<VersionSnapshot> {
+export async function checkReleaseVersion(argv: string[] = process.argv.slice(2)): Promise<VersionSnapshot> {
     const scriptDir = path.dirname(fileURLToPath(import.meta.url));
     const repoRoot = path.resolve(scriptDir, '..', '..', '..');
     const snapshot = await loadSnapshot(repoRoot);
@@ -88,25 +75,18 @@ export async function checkReleaseVersion(
 
     const uniqueVersions = new Set(Object.values(snapshot));
     if (uniqueVersions.size !== 1) {
-        throw new Error(
-            `version mismatch detected: ${JSON.stringify(snapshot)}`,
-        );
+        throw new Error(`version mismatch detected: ${JSON.stringify(snapshot)}`);
     }
 
-    const requestedVersion =
-        extractArg(argv, 'version') ?? process.env.RELEASE_VERSION ?? null;
+    const requestedVersion = extractArg(argv, 'version') ?? process.env.RELEASE_VERSION ?? null;
     if (requestedVersion && snapshot.workspaceVersion !== requestedVersion) {
-        throw new Error(
-            `release version mismatch: requested=${requestedVersion} current=${snapshot.workspaceVersion}`,
-        );
+        throw new Error(`release version mismatch: requested=${requestedVersion} current=${snapshot.workspaceVersion}`);
     }
 
     if (process.env.GITHUB_REF_TYPE === 'tag') {
         const tagVersion = inferVersionFromGitTag(process.env.GITHUB_REF_NAME);
         if (tagVersion && tagVersion !== snapshot.workspaceVersion) {
-            throw new Error(
-                `tag version mismatch: tag=${tagVersion} current=${snapshot.workspaceVersion}`,
-            );
+            throw new Error(`tag version mismatch: tag=${tagVersion} current=${snapshot.workspaceVersion}`);
         }
     }
 
@@ -124,12 +104,10 @@ export async function checkReleaseVersion(
     return snapshot;
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
-    checkReleaseVersion().catch((error) => {
+    checkReleaseVersion().catch(error => {
         process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
         process.exit(1);
     });

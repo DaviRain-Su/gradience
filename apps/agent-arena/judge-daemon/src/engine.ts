@@ -15,9 +15,7 @@ export class AbsurdWorkflowEngine {
         this.onWorkflowQueued = options.onWorkflowQueued;
     }
 
-    setOnWorkflowQueued(
-        handler: (workflow: WorkflowRecord) => void | Promise<void>,
-    ): void {
+    setOnWorkflowQueued(handler: (workflow: WorkflowRecord) => void | Promise<void>): void {
         this.onWorkflowQueued = handler;
     }
 

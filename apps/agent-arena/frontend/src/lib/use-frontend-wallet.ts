@@ -42,7 +42,7 @@ export function useFrontendWallet(): FrontendWalletState {
 
     const refreshInjectedWallets = useCallback(() => {
         const next = listInjectedWallets();
-        setInjectedWallets((current) => {
+        setInjectedWallets(current => {
             if (sameWalletList(current, next)) {
                 return current;
             }
@@ -91,7 +91,7 @@ export function useFrontendWallet(): FrontendWalletState {
 
     const connectInjected = useCallback(
         async (id: string) => {
-            const selected = injectedWallets.find((wallet) => wallet.id === id);
+            const selected = injectedWallets.find(wallet => wallet.id === id);
             if (!selected) {
                 setInjectedError(`Wallet ${id} not found`);
                 return;
@@ -105,9 +105,7 @@ export function useFrontendWallet(): FrontendWalletState {
                 if (!connectedAddress) {
                     throw new Error('Wallet connected but no public key returned');
                 }
-                setInjectedAdapter(
-                    new InjectedBrowserWalletAdapter(selected.provider, connectedAddress as Address),
-                );
+                setInjectedAdapter(new InjectedBrowserWalletAdapter(selected.provider, connectedAddress as Address));
                 setActiveWalletKind('injected');
             } catch (error) {
                 setInjectedError(error instanceof Error ? error.message : String(error));
@@ -164,10 +162,7 @@ export function useFrontendWallet(): FrontendWalletState {
     };
 }
 
-function sameWalletList(
-    current: InjectedWalletDescriptor[],
-    next: InjectedWalletDescriptor[],
-): boolean {
+function sameWalletList(current: InjectedWalletDescriptor[], next: InjectedWalletDescriptor[]): boolean {
     if (current.length !== next.length) {
         return false;
     }

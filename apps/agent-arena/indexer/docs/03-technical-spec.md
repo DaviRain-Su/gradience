@@ -16,6 +16,7 @@ Indexer 是**链外只读数据层**：
 - 通过 WebSocket 向订阅者实时推送事件
 
 **不做**：
+
 - 写链上数据（只读）
 - 评判任务（Judge Daemon 负责）
 - 业务决策逻辑
@@ -24,13 +25,13 @@ Indexer 是**链外只读数据层**：
 
 ## 2. 技术栈
 
-| 项目 | 说明 |
-|------|------|
-| Rust + Tokio | 异步运行时 |
-| Axum | HTTP + WebSocket 框架 |
-| tokio-postgres | PostgreSQL 驱动（无 ORM） |
-| serde + serde_json | JSON 序列化 |
-| Docker Compose | 本地 PostgreSQL + Indexer 一键启动 |
+| 项目                           | 说明                                        |
+| ------------------------------ | ------------------------------------------- |
+| Rust + Tokio                   | 异步运行时                                  |
+| Axum                           | HTTP + WebSocket 框架                       |
+| tokio-postgres                 | PostgreSQL 驱动（无 ORM）                   |
+| serde + serde_json             | JSON 序列化                                 |
+| Docker Compose                 | 本地 PostgreSQL + Indexer 一键启动          |
 | Cloudflare Worker (TypeScript) | 可选：轻量级 edge webhook 代理（`worker/`） |
 
 ---
@@ -65,38 +66,39 @@ indexer/
 
 ### REST
 
-| Method | Path | 说明 |
-|--------|------|------|
-| GET | `/healthz` | 健康检查，返回 `{"status":"ok"}` |
-| GET | `/api/tasks` | 任务列表，支持过滤参数 |
-| GET | `/api/tasks/:task_id` | 单任务详情 |
-| GET | `/api/tasks/:task_id/submissions` | 任务的提交列表 |
-| GET | `/api/agents/:pubkey/reputation` | Agent 声誉查询 |
-| GET | `/api/reputation/:agent` | 同上（兼容旧路径） |
-| GET | `/api/judge-pool/:category` | 指定 category 的 Judge Pool 成员列表 |
-| POST | `/webhook/triton` | Triton Dragon's Mouth 事件接收 |
-| POST | `/webhook/helius` | Helius Webhook 事件接收 |
-| POST | `/webhook/events` | Generic 事件接收（测试/备用） |
+| Method | Path                              | 说明                                 |
+| ------ | --------------------------------- | ------------------------------------ |
+| GET    | `/healthz`                        | 健康检查，返回 `{"status":"ok"}`     |
+| GET    | `/api/tasks`                      | 任务列表，支持过滤参数               |
+| GET    | `/api/tasks/:task_id`             | 单任务详情                           |
+| GET    | `/api/tasks/:task_id/submissions` | 任务的提交列表                       |
+| GET    | `/api/agents/:pubkey/reputation`  | Agent 声誉查询                       |
+| GET    | `/api/reputation/:agent`          | 同上（兼容旧路径）                   |
+| GET    | `/api/judge-pool/:category`       | 指定 category 的 Judge Pool 成员列表 |
+| POST   | `/webhook/triton`                 | Triton Dragon's Mouth 事件接收       |
+| POST   | `/webhook/helius`                 | Helius Webhook 事件接收              |
+| POST   | `/webhook/events`                 | Generic 事件接收（测试/备用）        |
 
 ### 查询参数（GET /api/tasks）
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `status` | string | `open` / `completed` / `refunded` |
-| `category` | u8 | 任务类别 0–7 |
-| `mint` | string | 支付 mint 地址过滤 |
-| `poster` | string | 发布者地址过滤 |
-| `limit` | u32 | 分页大小（默认 20，最大 100） |
-| `offset` | u32 | 分页偏移 |
+| 参数       | 类型   | 说明                              |
+| ---------- | ------ | --------------------------------- |
+| `status`   | string | `open` / `completed` / `refunded` |
+| `category` | u8     | 任务类别 0–7                      |
+| `mint`     | string | 支付 mint 地址过滤                |
+| `poster`   | string | 发布者地址过滤                    |
+| `limit`    | u32    | 分页大小（默认 20，最大 100）     |
+| `offset`   | u32    | 分页偏移                          |
 
 ### WebSocket
 
-| Path | 说明 |
-|------|------|
-| `/ws` | 订阅所有事件 |
+| Path                     | 说明                 |
+| ------------------------ | -------------------- |
+| `/ws`                    | 订阅所有事件         |
 | `/ws/tasks?task_id=<id>` | 仅订阅指定任务的事件 |
 
 WsEvent 结构：
+
 ```json
 { "event": "TaskJudged", "task_id": 42, "slot": 300000000, "timestamp": 1743465600 }
 ```
@@ -105,14 +107,14 @@ WsEvent 结构：
 
 ## 5. 数据库 Schema（核心表）
 
-| 表名 | 用途 |
-|------|------|
-| `tasks` | Task 主表（对应链上 Task 账户） |
-| `applications` | Agent 申请记录 |
-| `submissions` | Agent 提交记录 |
-| `reputation` | Agent 声誉分（score, completed, failed） |
-| `stakes` | Judge 质押记录 |
-| `judge_pool_members` | JudgePool 成员列表（category → judges） |
+| 表名                 | 用途                                     |
+| -------------------- | ---------------------------------------- |
+| `tasks`              | Task 主表（对应链上 Task 账户）          |
+| `applications`       | Agent 申请记录                           |
+| `submissions`        | Agent 提交记录                           |
+| `reputation`         | Agent 声誉分（score, completed, failed） |
+| `stakes`             | Judge 质押记录                           |
+| `judge_pool_members` | JudgePool 成员列表（category → judges）  |
 
 ---
 
@@ -160,25 +162,28 @@ curl -X POST http://127.0.0.1:8787/webhook/events \
 
 ## 9. 环境变量
 
-| 变量 | 必须 | 默认 | 说明 |
-|------|------|------|------|
-| `DATABASE_URL` | ✅ | `postgres://changeme:changeme@127.0.0.1:5432/gradience` | PostgreSQL 连接串 |
-| `INDEXER_BIND_ADDR` | ❌ | `127.0.0.1:8787` | HTTP 监听地址（host:port） |
-| `MOCK_WEBHOOK` | ❌ | `false` | 启用 mock webhook 模式（bool） |
-| `MOCK_WEBHOOK_FILE` | ❌ | `indexer/mock/webhook.json` | mock webhook 数据文件路径 |
-| `MOCK_WEBHOOK_ONLY` | ❌ | `false` | 仅处理 mock 数据，忽略真实 webhook（bool） |
+| 变量                | 必须 | 默认                                                    | 说明                                       |
+| ------------------- | ---- | ------------------------------------------------------- | ------------------------------------------ |
+| `DATABASE_URL`      | ✅   | `<POSTGRES_CONNECTION_URI>`                              | PostgreSQL 连接串                          |
+| `INDEXER_BIND_ADDR` | ❌   | `127.0.0.1:8787`                                        | HTTP 监听地址（host:port）                 |
+| `MOCK_WEBHOOK`      | ❌   | `false`                                                 | 启用 mock webhook 模式（bool）             |
+| `MOCK_WEBHOOK_FILE` | ❌   | `indexer/mock/webhook.json`                             | mock webhook 数据文件路径                  |
+| `MOCK_WEBHOOK_ONLY` | ❌   | `false`                                                 | 仅处理 mock 数据，忽略真实 webhook（bool） |
 
 ---
 
 ## 10. 接口契约
 
 ### ← Program（上游）
+
 - 事件通过 Triton Dragon's Mouth gRPC 或 Helius Webhook 推送
 - 事件格式由 `program/src/events/` 定义，Indexer 的 `events.rs` 必须与之同步
 
 ### → Judge Daemon（下游）
+
 - Judge Daemon 轮询 `GET /api/tasks?status=open` 获取待评判任务
 - 监听 `GET /ws/tasks?task_id=<id>` 获取实时状态变化
 
 ### → CLI / Frontend（下游）
+
 - 直接调用 REST API 查询任务、声誉、Judge Pool

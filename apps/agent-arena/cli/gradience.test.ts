@@ -56,23 +56,11 @@ test('invalid arguments return clear machine-readable error in NO_DNA mode', () 
 });
 
 test('NO_DNA task post outputs structured signature payload', () => {
-    const result = runCli(
-        [
-            'task',
-            'post',
-            '--task-id',
-            '42',
-            '--eval-ref',
-            'ipfs://eval',
-            '--reward',
-            '1000000',
-        ],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-post-signature',
-        },
-    );
+    const result = runCli(['task', 'post', '--task-id', '42', '--eval-ref', 'ipfs://eval', '--reward', '1000000'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-post-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-post-signature');
@@ -80,14 +68,11 @@ test('NO_DNA task post outputs structured signature payload', () => {
 });
 
 test('NO_DNA task apply outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'apply', '--task-id', '7'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-apply-signature',
-        },
-    );
+    const result = runCli(['task', 'apply', '--task-id', '7'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-apply-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-apply-signature');
@@ -96,16 +81,7 @@ test('NO_DNA task apply outputs structured signature payload', () => {
 
 test('NO_DNA task submit outputs structured signature payload', () => {
     const result = runCli(
-        [
-            'task',
-            'submit',
-            '--task-id',
-            '3',
-            '--result-ref',
-            'ipfs://result',
-            '--trace-ref',
-            'ipfs://trace',
-        ],
+        ['task', 'submit', '--task-id', '3', '--result-ref', 'ipfs://result', '--trace-ref', 'ipfs://trace'],
         {
             NO_DNA: '1',
             GRADIENCE_CLI_MOCK: '1',
@@ -170,14 +146,11 @@ test('NO_DNA task judge outputs signature + winner + score payload', () => {
 });
 
 test('NO_DNA task cancel outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'cancel', '--task-id', '2'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-cancel-signature',
-        },
-    );
+    const result = runCli(['task', 'cancel', '--task-id', '2'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-cancel-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-cancel-signature');
@@ -185,14 +158,11 @@ test('NO_DNA task cancel outputs structured signature payload', () => {
 });
 
 test('NO_DNA task refund outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'refund', '--task-id', '4'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-refund-signature',
-        },
-    );
+    const result = runCli(['task', 'refund', '--task-id', '4'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-refund-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-refund-signature');

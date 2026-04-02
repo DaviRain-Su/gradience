@@ -164,9 +164,7 @@ const worker: WorkerHandler = {
 
         if (
             request.method === 'POST' &&
-            (pathname === '/webhook/triton' ||
-                pathname === '/webhook/helius' ||
-                pathname === '/webhook/events')
+            (pathname === '/webhook/triton' || pathname === '/webhook/helius' || pathname === '/webhook/events')
         ) {
             const authFailure = validateWebhookAuth(request, env);
             if (authFailure) {
@@ -275,10 +273,7 @@ async function handleGetTasks(url: URL, env: Env): Promise<Response> {
     const sortParam = url.searchParams.get('sort');
     const sort = parseTaskSort(sortParam);
     if (sort === null) {
-        return errorResponse(
-            400,
-            `invalid sort value: ${sortParam} (expected task_id_desc|task_id_asc)`,
-        );
+        return errorResponse(400, `invalid sort value: ${sortParam} (expected task_id_desc|task_id_asc)`);
     }
     const finalOffset = offsetResult;
 
@@ -342,10 +337,7 @@ async function handleGetTaskSubmissions(taskIdRaw: string, url: URL, env: Env): 
     const sortParam = url.searchParams.get('sort');
     const sort = parseSubmissionSort(sortParam);
     if (sort === null) {
-        return errorResponse(
-            400,
-            `invalid sort value: ${sortParam} (expected score|slot)`,
-        );
+        return errorResponse(400, `invalid sort value: ${sortParam} (expected score|slot)`);
     }
 
     try {
@@ -511,7 +503,7 @@ function extractLogsFromTransaction(tx: unknown): string[] | null {
 }
 
 function decodeMockEvents(events: unknown[]): EventEnvelope[] {
-    return events.map((item) => {
+    return events.map(item => {
         const record = asRecord(item);
         if (!record) {
             throw new Error('mock event envelope is not an object');
@@ -920,12 +912,7 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
     }
 }
 
-async function ensureTaskExists(
-    db: D1Database,
-    taskId: number,
-    slot: number,
-    timestamp: number,
-): Promise<void> {
+async function ensureTaskExists(db: D1Database, taskId: number, slot: number, timestamp: number): Promise<void> {
     await run(
         db,
         `INSERT INTO tasks (
@@ -937,26 +924,27 @@ async function ensureTaskExists(
     );
 }
 
-async function queryAll<T>(
-    db: D1Database,
-    sql: string,
-    params: unknown[],
-): Promise<T[]> {
-    const response = await db.prepare(sql).bind(...params).all();
+async function queryAll<T>(db: D1Database, sql: string, params: unknown[]): Promise<T[]> {
+    const response = await db
+        .prepare(sql)
+        .bind(...params)
+        .all();
     return response.results as T[];
 }
 
-async function queryFirst<T>(
-    db: D1Database,
-    sql: string,
-    params: unknown[],
-): Promise<T | null> {
-    const row = await db.prepare(sql).bind(...params).first();
+async function queryFirst<T>(db: D1Database, sql: string, params: unknown[]): Promise<T | null> {
+    const row = await db
+        .prepare(sql)
+        .bind(...params)
+        .first();
     return (row as T | null) ?? null;
 }
 
 async function run(db: D1Database, sql: string, params: unknown[]): Promise<void> {
-    await db.prepare(sql).bind(...params).run();
+    await db
+        .prepare(sql)
+        .bind(...params)
+        .run();
 }
 
 function mapTask(task: TaskRow): Record<string, unknown> {
@@ -1049,18 +1037,10 @@ function parseTaskSort(value: string | null): 'task_id_desc' | 'task_id_asc' | n
 }
 
 function parseSubmissionSort(value: string | null): 'score' | 'slot' | null {
-    if (
-        value === null ||
-        value === 'score' ||
-        value === 'score_desc'
-    ) {
+    if (value === null || value === 'score' || value === 'score_desc') {
         return 'score';
     }
-    if (
-        value === 'slot' ||
-        value === 'slot_desc' ||
-        value === 'submission_slot_desc'
-    ) {
+    if (value === 'slot' || value === 'slot_desc' || value === 'submission_slot_desc') {
         return 'slot';
     }
     return null;
@@ -1103,7 +1083,7 @@ function parseByteArray(value: unknown, exactLength?: number): number[] {
     if (!Array.isArray(value)) {
         throw new Error('expected byte array field');
     }
-    const out = value.map((entry) => {
+    const out = value.map(entry => {
         if (typeof entry !== 'number' || !Number.isInteger(entry) || entry < 0 || entry > 255) {
             throw new Error('byte array contains invalid value');
         }
@@ -1130,7 +1110,7 @@ function asStringArray(value: unknown): string[] | null {
     if (!Array.isArray(value)) {
         return null;
     }
-    if (value.some((entry) => typeof entry !== 'string')) {
+    if (value.some(entry => typeof entry !== 'string')) {
         return null;
     }
     return value as string[];

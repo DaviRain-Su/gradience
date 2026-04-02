@@ -6,9 +6,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5433:5432"
+      - '5433:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d gradience"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d gradience']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -31,7 +31,7 @@ services:
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0001_init.sql
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0002_judge_pool_members.sql
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0003_tasks_poster_index.sql
-    restart: "no"
+    restart: 'no'
 
   indexer:
     build:
@@ -46,7 +46,7 @@ services:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/gradience
       INDEXER_BIND_ADDR: 0.0.0.0:3001
     ports:
-      - "3001:3001"
+      - '3001:3001'
 
 volumes:
   postgres_data:

@@ -53,10 +53,7 @@ async function main(): Promise<void> {
     applyGradienceClientFixups(typescriptClientsDir, rustClientsDir);
 }
 
-function applyGradienceClientFixups(
-    typescriptClientDir: string,
-    rustClientDir: string,
-): void {
+function applyGradienceClientFixups(typescriptClientDir: string, rustClientDir: string): void {
     const generatedDir = path.join(typescriptClientDir, 'src', 'generated');
     const pdasDir = path.join(generatedDir, 'pdas');
     const typesDir = path.join(generatedDir, 'types');

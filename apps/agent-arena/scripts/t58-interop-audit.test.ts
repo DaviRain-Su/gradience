@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-    evaluateT58InteropAudit,
-} from './t58-interop-audit.ts';
+import { evaluateT58InteropAudit } from './t58-interop-audit.ts';
 import type { InteropDrillResult } from './drill-interop-e2e.ts';
 
 function makeDrillResult(overrides: Partial<InteropDrillResult> = {}): InteropDrillResult {
@@ -53,7 +51,7 @@ function makeDrillResult(overrides: Partial<InteropDrillResult> = {}): InteropDr
 test('evaluateT58InteropAudit passes for complete multi-role drill', () => {
     const checks = evaluateT58InteropAudit(makeDrillResult());
     assert.equal(checks.length, 4);
-    assert.ok(checks.every((entry) => entry.success));
+    assert.ok(checks.every(entry => entry.success));
 });
 
 test('evaluateT58InteropAudit fails when erc8004 status is missing', () => {
@@ -62,7 +60,7 @@ test('evaluateT58InteropAudit fails when erc8004 status is missing', () => {
             erc8004Status: null,
         }),
     );
-    assert.ok(checks.some((entry) => entry.id === 'erc8004_status' && !entry.success));
+    assert.ok(checks.some(entry => entry.id === 'erc8004_status' && !entry.success));
 });
 
 test('evaluateT58InteropAudit fails when agent-im counters are below expected', () => {
@@ -92,5 +90,5 @@ test('evaluateT58InteropAudit fails when agent-im counters are below expected', 
             },
         }),
     );
-    assert.ok(checks.some((entry) => entry.id === 'agent_im_sync' && !entry.success));
+    assert.ok(checks.some(entry => entry.id === 'agent_im_sync' && !entry.success));
 });

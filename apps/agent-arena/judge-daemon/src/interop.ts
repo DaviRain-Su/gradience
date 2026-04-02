@@ -69,18 +69,9 @@ export interface OnChainAttestationWallet {
 }
 
 interface SasLibLike {
-    fetchSchema: (
-        rpc: unknown,
-        schema: Address,
-    ) => Promise<{ data?: unknown } | unknown>;
-    fetchMaybeAttestation?: (
-        rpc: unknown,
-        attestation: Address,
-    ) => Promise<{ exists?: boolean } | null>;
-    serializeAttestationData: (
-        schema: unknown,
-        data: Record<string, unknown>,
-    ) => Uint8Array;
+    fetchSchema: (rpc: unknown, schema: Address) => Promise<{ data?: unknown } | unknown>;
+    fetchMaybeAttestation?: (rpc: unknown, attestation: Address) => Promise<{ exists?: boolean } | null>;
+    serializeAttestationData: (schema: unknown, data: Record<string, unknown>) => Uint8Array;
     deriveAttestationPda: (input: {
         credential: Address;
         schema: Address;
@@ -132,11 +123,7 @@ export class HttpJsonSink implements InteropSink {
         if (this.options.signatureSecret) {
             const timestamp = String(Math.floor(Date.now() / 1000));
             headers['x-gradience-signature-ts'] = timestamp;
-            headers['x-gradience-signature'] = signPayload(
-                this.options.signatureSecret,
-                timestamp,
-                body,
-            );
+            headers['x-gradience-signature'] = signPayload(this.options.signatureSecret, timestamp, body);
         }
 
         try {
@@ -149,9 +136,7 @@ export class HttpJsonSink implements InteropSink {
 
             if (!response.ok) {
                 const message = await response.text();
-                throw new Error(
-                    `${this.options.name} returned ${response.status}: ${message}`,
-                );
+                throw new Error(`${this.options.name} returned ${response.status}: ${message}`);
             }
         } finally {
             clearTimeout(timeout);
@@ -188,9 +173,7 @@ export class SasOnChainAttestationSink implements InteropSink {
     private modulePromise: Promise<SasLibLike> | null = null;
 
     constructor(private readonly options: SasOnChainAttestationOptions) {
-        this.rpc = createSolanaRpc(
-            options.rpcEndpoint as unknown as Parameters<typeof createSolanaRpc>[0],
-        );
+        this.rpc = createSolanaRpc(options.rpcEndpoint as unknown as Parameters<typeof createSolanaRpc>[0]);
         this.moduleName = options.moduleName ?? 'sas-lib';
         this.idempotent = options.idempotent ?? true;
     }
@@ -243,7 +226,7 @@ export class SasOnChainAttestationSink implements InteropSink {
 
     private async loadSasModule(): Promise<SasLibLike> {
         if (!this.modulePromise) {
-            this.modulePromise = import(this.moduleName).then((mod) => {
+            this.modulePromise = import(this.moduleName).then(mod => {
                 const required = [
                     'fetchSchema',
                     'serializeAttestationData',
@@ -331,9 +314,7 @@ export class InteropPipeline implements InteropPublisher {
 
         if (this.options.identitySink) {
             for (const dispatch of buildIdentityDispatches(signal)) {
-                await this.withRetry('identity_sink', () =>
-                    this.options.identitySink?.publish(dispatch),
-                );
+                await this.withRetry('identity_sink', () => this.options.identitySink?.publish(dispatch));
                 identityRecipients.push(dispatch.agent);
                 identityDispatches.push({
                     role: dispatch.role,
@@ -347,9 +328,7 @@ export class InteropPipeline implements InteropPublisher {
         const feedbackDispatches = buildFeedbackDispatches(signal);
         for (const feedbackSink of feedbackSinks) {
             for (const dispatch of feedbackDispatches) {
-                await this.withRetry(`feedback_sink:${feedbackSink.name}`, () =>
-                    feedbackSink.sink.publish(dispatch),
-                );
+                await this.withRetry(`feedback_sink:${feedbackSink.name}`, () => feedbackSink.sink.publish(dispatch));
                 feedbackTargets.add(feedbackSink.name);
                 feedbackRecipients.push({
                     sink: feedbackSink.name,
@@ -359,13 +338,8 @@ export class InteropPipeline implements InteropPublisher {
             }
         }
 
-        if (
-            this.options.attestationSink &&
-            signal.score >= this.minScoreForAttestation
-        ) {
-            await this.withRetry('attestation_sink', () =>
-                this.options.attestationSink?.publish(signal),
-            );
+        if (this.options.attestationSink && signal.score >= this.minScoreForAttestation) {
+            await this.withRetry('attestation_sink', () => this.options.attestationSink?.publish(signal));
             attestationPublished = true;
         }
 
@@ -388,19 +362,14 @@ export class InteropPipeline implements InteropPublisher {
                     feedbackPublishedCount: feedbackRecipients.length,
                     erc8004FeedbackPublished: feedbackTargets.has('erc8004_feedback'),
                     istranaFeedbackPublished: feedbackTargets.has('istrana_feedback'),
-                    evmReputationPublished: feedbackTargets.has(
-                        'evm_reputation_relay',
-                    ),
+                    evmReputationPublished: feedbackTargets.has('evm_reputation_relay'),
                     attestationPublished,
                 }),
             );
         }
     }
 
-    private async enqueueOutbox(
-        signal: ReputationInteropSignal,
-        reason: string,
-    ): Promise<void> {
+    private async enqueueOutbox(signal: ReputationInteropSignal, reason: string): Promise<void> {
         if (!this.outboxFilePath) {
             return;
         }
@@ -429,8 +398,8 @@ export class InteropPipeline implements InteropPublisher {
         }
         const lines = raw
             .split('\n')
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
         const entries: InteropOutboxEntry[] = [];
         for (const line of lines) {
             try {
@@ -451,18 +420,12 @@ export class InteropPipeline implements InteropPublisher {
         }
         await mkdir(path.dirname(this.outboxFilePath), { recursive: true });
         const tempPath = `${this.outboxFilePath}.tmp`;
-        const body =
-            entries.length === 0
-                ? ''
-                : `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`;
+        const body = entries.length === 0 ? '' : `${entries.map(entry => JSON.stringify(entry)).join('\n')}\n`;
         await writeFile(tempPath, body, 'utf8');
         await rename(tempPath, this.outboxFilePath);
     }
 
-    private async withRetry(
-        name: string,
-        fn: () => Promise<void> | undefined,
-    ): Promise<void> {
+    private async withRetry(name: string, fn: () => Promise<void> | undefined): Promise<void> {
         const maxAttempts = Math.max(1, this.retryPolicy.maxAttempts);
         const baseDelayMs = Math.max(1, this.retryPolicy.baseDelayMs);
         let lastError: unknown = null;
@@ -480,11 +443,7 @@ export class InteropPipeline implements InteropPublisher {
                     break;
                 }
                 const delayMs = baseDelayMs * 2 ** (attempt - 1);
-                this.logger.warn(
-                    `${name} failed on attempt ${attempt}, retrying in ${delayMs}ms: ${asMessage(
-                        error,
-                    )}`,
-                );
+                this.logger.warn(`${name} failed on attempt ${attempt}, retrying in ${delayMs}ms: ${asMessage(error)}`);
                 await wait(delayMs);
             }
         }
@@ -509,8 +468,7 @@ export function buildInteropPublisherFromEnv(
     const outboxFilePath = env.JUDGE_DAEMON_INTEROP_OUTBOX_FILE;
     const identityEndpoint = env.JUDGE_DAEMON_ERC8004_IDENTITY_ENDPOINT;
     const feedback804Endpoint = env.JUDGE_DAEMON_ERC8004_FEEDBACK_ENDPOINT;
-    const evmReputationRelayEndpoint =
-        env.JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT;
+    const evmReputationRelayEndpoint = env.JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT;
     const istranaEndpoint = env.JUDGE_DAEMON_ISTRANA_FEEDBACK_ENDPOINT;
     const attestationEndpoint = env.JUDGE_DAEMON_SAS_ATTESTATION_ENDPOINT;
     const attestationMode = env.JUDGE_DAEMON_SAS_ATTESTATION_MODE ?? 'http';
@@ -521,38 +479,34 @@ export function buildInteropPublisherFromEnv(
     const feedbackSinks: Array<{ name: string; sink: InteropSink }> = [];
 
     if (feedback804Endpoint) {
-        feedbackSinks.push(
-            {
-                name: 'erc8004_feedback',
-                sink: new MappedInteropSink(
-                    new HttpJsonSink({
-                        endpoint: feedback804Endpoint,
-                        name: 'erc8004_feedback',
-                        authToken: token,
-                        signatureSecret,
-                    }),
-                    toErc8004FeedbackPayload,
-                    isFeedbackDispatch,
-                ),
-            },
-        );
+        feedbackSinks.push({
+            name: 'erc8004_feedback',
+            sink: new MappedInteropSink(
+                new HttpJsonSink({
+                    endpoint: feedback804Endpoint,
+                    name: 'erc8004_feedback',
+                    authToken: token,
+                    signatureSecret,
+                }),
+                toErc8004FeedbackPayload,
+                isFeedbackDispatch,
+            ),
+        });
     }
     if (istranaEndpoint) {
-        feedbackSinks.push(
-            {
-                name: 'istrana_feedback',
-                sink: new MappedInteropSink(
-                    new HttpJsonSink({
-                        endpoint: istranaEndpoint,
-                        name: 'istrana_feedback',
-                        authToken: token,
-                        signatureSecret,
-                    }),
-                    toIstranaFeedbackPayload,
-                    isFeedbackDispatch,
-                ),
-            },
-        );
+        feedbackSinks.push({
+            name: 'istrana_feedback',
+            sink: new MappedInteropSink(
+                new HttpJsonSink({
+                    endpoint: istranaEndpoint,
+                    name: 'istrana_feedback',
+                    authToken: token,
+                    signatureSecret,
+                }),
+                toIstranaFeedbackPayload,
+                isFeedbackDispatch,
+            ),
+        });
     }
     if (evmReputationRelayEndpoint) {
         feedbackSinks.push({
@@ -571,10 +525,7 @@ export function buildInteropPublisherFromEnv(
     }
 
     const shouldUseOnChainAttestation =
-        attestationMode === 'onchain' &&
-        !!sasCredentialPda &&
-        !!sasSchemaPda &&
-        !!options.sasOnChain;
+        attestationMode === 'onchain' && !!sasCredentialPda && !!sasSchemaPda && !!options.sasOnChain;
 
     if (
         !identityEndpoint &&
@@ -603,10 +554,7 @@ export function buildInteropPublisherFromEnv(
                     authToken: token,
                     signatureSecret,
                 }),
-                (payload) =>
-                    toTaskCompletionAttestationPayload(
-                        payload as ReputationInteropSignal,
-                    ),
+                payload => toTaskCompletionAttestationPayload(payload as ReputationInteropSignal),
                 isReputationInteropSignal,
             )
           : undefined;
@@ -641,7 +589,7 @@ export function buildInteropPublisherFromEnv(
 }
 
 function wait(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function signPayload(secret: string, timestamp: string, body: string): string {
@@ -856,9 +804,7 @@ function isIdentityDispatch(value: unknown): value is IdentityDispatch {
     }
     const dispatch = value as Partial<IdentityDispatch>;
     return (
-        isReputationInteropSignal(dispatch.signal) &&
-        isInteropRole(dispatch.role) &&
-        typeof dispatch.agent === 'string'
+        isReputationInteropSignal(dispatch.signal) && isInteropRole(dispatch.role) && typeof dispatch.agent === 'string'
     );
 }
 
@@ -897,8 +843,7 @@ function isReputationInteropSignal(value: unknown): value is ReputationInteropSi
         typeof signal.judgedAt === 'number' &&
         typeof signal.judgeMode === 'string' &&
         (typeof signal.participants === 'undefined' ||
-            (Array.isArray(signal.participants) &&
-                signal.participants.every((value) => typeof value === 'string')))
+            (Array.isArray(signal.participants) && signal.participants.every(value => typeof value === 'string')))
     );
 }
 

@@ -120,16 +120,13 @@ function findMode(metrics: Map<string, number>): string {
     return 'none';
 }
 
-export async function collectAlertGateSnapshot(
-    config: AlertGateConfig,
-): Promise<AlertGateSnapshot> {
-    const [indexerHealth, indexerMetricsRaw, judgeHealth, judgeMetricsRaw] =
-        await Promise.all([
-            fetchJson(config.indexerHealthUrl),
-            fetchText(config.indexerMetricsUrl),
-            fetchJson(config.judgeHealthUrl),
-            fetchText(config.judgeMetricsUrl),
-        ]);
+export async function collectAlertGateSnapshot(config: AlertGateConfig): Promise<AlertGateSnapshot> {
+    const [indexerHealth, indexerMetricsRaw, judgeHealth, judgeMetricsRaw] = await Promise.all([
+        fetchJson(config.indexerHealthUrl),
+        fetchText(config.indexerMetricsUrl),
+        fetchJson(config.judgeHealthUrl),
+        fetchText(config.judgeMetricsUrl),
+    ]);
 
     const indexerMetrics = parsePrometheusMetrics(indexerMetricsRaw);
     const judgeMetrics = parsePrometheusMetrics(judgeMetricsRaw);
@@ -138,39 +135,21 @@ export async function collectAlertGateSnapshot(
     return {
         indexer: {
             healthOk: indexerHealth.ok === true,
-            eventsProcessedTotal: requireMetric(
-                indexerMetrics,
-                'gradience_indexer_events_processed_total',
-            ),
-            lastEventTimestamp: requireMetric(
-                indexerMetrics,
-                'gradience_indexer_last_event_timestamp_unix',
-            ),
+            eventsProcessedTotal: requireMetric(indexerMetrics, 'gradience_indexer_events_processed_total'),
+            lastEventTimestamp: requireMetric(indexerMetrics, 'gradience_indexer_last_event_timestamp_unix'),
         },
         judgeDaemon: {
             healthOk: judgeHealth.ok === true,
             mode: findMode(judgeMetrics),
-            pendingWorkflows: requireMetric(
-                judgeMetrics,
-                'gradience_judge_daemon_pending_workflows',
-            ),
-            sourceErrorsTotal: requireMetric(
-                judgeMetrics,
-                'gradience_judge_daemon_source_errors_total',
-            ),
-            lastEventTimestamp: requireMetric(
-                judgeMetrics,
-                'gradience_judge_daemon_last_event_timestamp_unix',
-            ),
+            pendingWorkflows: requireMetric(judgeMetrics, 'gradience_judge_daemon_pending_workflows'),
+            sourceErrorsTotal: requireMetric(judgeMetrics, 'gradience_judge_daemon_source_errors_total'),
+            lastEventTimestamp: requireMetric(judgeMetrics, 'gradience_judge_daemon_last_event_timestamp_unix'),
         },
         evaluatedAt: now,
     };
 }
 
-export function evaluateAlertGate(
-    snapshot: AlertGateSnapshot,
-    config: AlertGateConfig,
-): string[] {
+export function evaluateAlertGate(snapshot: AlertGateSnapshot, config: AlertGateConfig): string[] {
     const failures: string[] = [];
     if (!snapshot.indexer.healthOk) {
         failures.push('indexer /healthz not ok');
@@ -187,9 +166,7 @@ export function evaluateAlertGate(
         );
     }
     if (snapshot.judgeDaemon.sourceErrorsTotal > config.maxSourceErrors) {
-        failures.push(
-            `source errors too high: ${snapshot.judgeDaemon.sourceErrorsTotal} > ${config.maxSourceErrors}`,
-        );
+        failures.push(`source errors too high: ${snapshot.judgeDaemon.sourceErrorsTotal} > ${config.maxSourceErrors}`);
     }
 
     if (config.requireEventActivity) {
@@ -201,19 +178,15 @@ export function evaluateAlertGate(
         }
         if (
             snapshot.indexer.lastEventTimestamp > 0 &&
-            snapshot.evaluatedAt - snapshot.indexer.lastEventTimestamp >
-                config.maxEventStalenessSeconds
+            snapshot.evaluatedAt - snapshot.indexer.lastEventTimestamp > config.maxEventStalenessSeconds
         ) {
             failures.push(
-                `indexer event timestamp stale by ${
-                    snapshot.evaluatedAt - snapshot.indexer.lastEventTimestamp
-                }s`,
+                `indexer event timestamp stale by ${snapshot.evaluatedAt - snapshot.indexer.lastEventTimestamp}s`,
             );
         }
         if (
             snapshot.judgeDaemon.lastEventTimestamp > 0 &&
-            snapshot.evaluatedAt - snapshot.judgeDaemon.lastEventTimestamp >
-                config.maxEventStalenessSeconds
+            snapshot.evaluatedAt - snapshot.judgeDaemon.lastEventTimestamp > config.maxEventStalenessSeconds
         ) {
             failures.push(
                 `judge-daemon event timestamp stale by ${
@@ -234,24 +207,18 @@ export async function runAlertGate(
     return { snapshot, failures };
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runAlertGate()
         .then(({ snapshot, failures }) => {
-            process.stdout.write(
-                `${JSON.stringify({ ok: failures.length === 0, failures, snapshot }, null, 2)}\n`,
-            );
+            process.stdout.write(`${JSON.stringify({ ok: failures.length === 0, failures, snapshot }, null, 2)}\n`);
             if (failures.length > 0) {
                 process.exit(1);
             }
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

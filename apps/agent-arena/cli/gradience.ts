@@ -62,10 +62,7 @@ async function main(): Promise<number> {
             const key = args[2];
             const value = args[3];
             if (!key || !value || !isSupportedConfigKey(key) || args.length !== 4) {
-                throw new CliError(
-                    'INVALID_ARGUMENT',
-                    'Usage: gradience config set <rpc|keypair> <value>',
-                );
+                throw new CliError('INVALID_ARGUMENT', 'Usage: gradience config set <rpc|keypair> <value>');
             }
             const configPath = await updateConfig(key, value, process.env);
             if (noDna) {
@@ -91,10 +88,7 @@ async function main(): Promise<number> {
             return 0;
         }
 
-        throw new CliError(
-            'UNKNOWN_COMMAND',
-            `Unknown command: ${args.join(' ') || '(empty)'}. Use --help for usage.`,
-        );
+        throw new CliError('UNKNOWN_COMMAND', `Unknown command: ${args.join(' ') || '(empty)'}. Use --help for usage.`);
     } catch (error) {
         const normalized = normalizeError(error);
         if (noDna) {
@@ -141,7 +135,8 @@ function printHelp(noDna: boolean): void {
                     description: 'Set keypair path in ~/.gradience/config.json',
                 },
                 {
-                    command: 'task post --task-id <id> --eval-ref <cid> --reward <lamports> [--category <n>] [--min-stake <lamports>]',
+                    command:
+                        'task post --task-id <id> --eval-ref <cid> --reward <lamports> [--category <n>] [--min-stake <lamports>]',
                     description: 'Create a task on-chain',
                 },
                 {
@@ -157,7 +152,8 @@ function printHelp(noDna: boolean): void {
                     description: 'Fetch task state from indexer',
                 },
                 {
-                    command: 'task judge --task-id <id> --winner <agent> --poster <poster> --score <0-10000> --reason-ref <cid>',
+                    command:
+                        'task judge --task-id <id> --winner <agent> --poster <poster> --score <0-10000> --reason-ref <cid>',
                     description: 'Judge task and settle payouts',
                 },
                 {
@@ -219,17 +215,10 @@ function printJson(value: unknown): void {
     process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
-async function handleTaskCommand(
-    taskArgs: string[],
-    env: NodeJS.ProcessEnv,
-    noDna: boolean,
-): Promise<void> {
+async function handleTaskCommand(taskArgs: string[], env: NodeJS.ProcessEnv, noDna: boolean): Promise<void> {
     const command = taskArgs[0];
     if (!command || !isTaskCommand(command)) {
-        throw new CliError(
-            'INVALID_ARGUMENT',
-            'Usage: gradience task <post|apply|submit|status> ...',
-        );
+        throw new CliError('INVALID_ARGUMENT', 'Usage: gradience task <post|apply|submit|status> ...');
     }
 
     if (command === 'status') {
@@ -249,12 +238,7 @@ async function handleTaskCommand(
         if (!task) {
             throw new CliError('NOT_FOUND', `Task ${taskId.toString()} not found`);
         }
-        emitStatus(
-            Number(taskId),
-            toCliTaskState(task.state),
-            BigInt(task.submission_count),
-            noDna,
-        );
+        emitStatus(Number(taskId), toCliTaskState(task.state), BigInt(task.submission_count), noDna);
         return;
     }
 
@@ -310,10 +294,7 @@ async function handleTaskCommand(
                   ? parseAddress(flags.get('judge'), 'judge')
                   : undefined;
         const now = BigInt(Math.floor(Date.now() / 1000));
-        const deadline = parseU64(
-            flags.get('deadline') ?? (now + 86_400n).toString(),
-            'deadline',
-        );
+        const deadline = parseU64(flags.get('deadline') ?? (now + 86_400n).toString(), 'deadline');
         const judgeDeadline = parseU64(
             flags.get('judge-deadline') ?? (deadline + 86_400n).toString(),
             'judge-deadline',
@@ -426,32 +407,18 @@ function emitStatus(taskId: number, state: string, submissionCount: bigint, noDn
         });
         return;
     }
-    process.stdout.write(
-        `task ${taskId}: state=${state}, submissionCount=${submissionCount.toString()}\n`,
-    );
+    process.stdout.write(`task ${taskId}: state=${state}, submissionCount=${submissionCount.toString()}\n`);
 }
 
-function emitJudgeSignature(
-    signature: string,
-    taskId: number,
-    winner: string,
-    score: number,
-    noDna: boolean,
-): void {
+function emitJudgeSignature(signature: string, taskId: number, winner: string, score: number, noDna: boolean): void {
     if (noDna) {
         printJson({ signature, taskId, winner, score });
         return;
     }
-    process.stdout.write(
-        `judge ok: signature=${signature} taskId=${taskId} winner=${winner} score=${score}\n`,
-    );
+    process.stdout.write(`judge ok: signature=${signature} taskId=${taskId} winner=${winner} score=${score}\n`);
 }
 
-async function handleJudgeCommand(
-    judgeArgs: string[],
-    env: NodeJS.ProcessEnv,
-    noDna: boolean,
-): Promise<void> {
+async function handleJudgeCommand(judgeArgs: string[], env: NodeJS.ProcessEnv, noDna: boolean): Promise<void> {
     const command = judgeArgs[0];
     if (!command || !isJudgeCommand(command)) {
         throw new CliError('INVALID_ARGUMENT', 'Usage: gradience judge <register|unstake> ...');
@@ -511,21 +478,17 @@ async function handleJudgeCommand(
         );
 
         const poolMetas = await Promise.all(
-            categories.map(async (category) => {
+            categories.map(async category => {
                 const [pool] = await findJudgePoolPda(category);
                 return { address: pool, role: AccountRole.WRITABLE } as AccountMeta;
             }),
         );
 
-        const signature = await wallet.signAndSendTransaction([
-            appendRemainingAccounts(instruction, poolMetas),
-        ]);
+        const signature = await wallet.signAndSendTransaction([appendRemainingAccounts(instruction, poolMetas)]);
         if (noDna) {
             printJson({ signature, categories, stakeAmount: Number(stakeAmount) });
         } else {
-            process.stdout.write(
-                `judge register ok: signature=${signature} categories=${categories.join(',')}\n`,
-            );
+            process.stdout.write(`judge register ok: signature=${signature} categories=${categories.join(',')}\n`);
         }
         return;
     }
@@ -542,14 +505,12 @@ async function handleJudgeCommand(
         { programAddress: GRADIENCE_PROGRAM_ADDRESS },
     );
     const poolMetas = await Promise.all(
-        categories.map(async (category) => {
+        categories.map(async category => {
             const [pool] = await findJudgePoolPda(category);
             return { address: pool, role: AccountRole.WRITABLE } as AccountMeta;
         }),
     );
-    const signature = await wallet.signAndSendTransaction([
-        appendRemainingAccounts(instruction, poolMetas),
-    ]);
+    const signature = await wallet.signAndSendTransaction([appendRemainingAccounts(instruction, poolMetas)]);
     if (noDna) {
         printJson({ signature, categories });
     } else {
@@ -599,11 +560,8 @@ async function loadKeypairSigner(keypairPath: string) {
     } catch {
         throw new CliError('INVALID_ARGUMENT', `Invalid keypair json: ${keypairPath}`);
     }
-    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some((value) => !isByte(value))) {
-        throw new CliError(
-            'INVALID_ARGUMENT',
-            'Keypair file must be a 64-element array of byte values',
-        );
+    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some(value => !isByte(value))) {
+        throw new CliError('INVALID_ARGUMENT', 'Keypair file must be a 64-element array of byte values');
     }
 
     const bytes = Uint8Array.from(parsed as number[]);
@@ -708,11 +666,7 @@ function isSupportedConfigKey(value: string): value is ConfigKey {
     return value === 'rpc' || value === 'keypair';
 }
 
-async function updateConfig(
-    key: ConfigKey,
-    rawValue: string,
-    env: NodeJS.ProcessEnv,
-): Promise<string> {
+async function updateConfig(key: ConfigKey, rawValue: string, env: NodeJS.ProcessEnv): Promise<string> {
     const home = env.HOME || homedir();
     const configDir = path.join(home, '.gradience');
     const configPath = path.join(configDir, 'config.json');
@@ -823,12 +777,12 @@ async function fetchStakeCategories(rpcEndpoint: string, stakePda: Address): Pro
 function parseCategories(raw: string): number[] {
     const chunks = raw
         .split(',')
-        .map((item) => item.trim())
+        .map(item => item.trim())
         .filter(Boolean);
     if (chunks.length === 0) {
         throw new CliError('INVALID_ARGUMENT', 'At least one category is required');
     }
-    const categories = chunks.map((item) => {
+    const categories = chunks.map(item => {
         const lower = item.toLowerCase();
         if (CATEGORY_NAME_TO_ID.has(lower)) {
             return CATEGORY_NAME_TO_ID.get(lower)!;
@@ -922,6 +876,6 @@ class ByteReader {
     }
 }
 
-void main().then((exitCode) => {
+void main().then(exitCode => {
     process.exitCode = exitCode;
 });

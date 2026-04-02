@@ -157,7 +157,7 @@ test('buildInteropPublisherFromEnv maps 8004 feedback payload shape', async () =
         await publisher.onTaskJudged(makeSignal(90));
         assert.equal(bodies.length, 3);
         const byRole = new Map(
-            (bodies as Array<{ gradience?: { feedbackRole?: string } }>).map((item) => [
+            (bodies as Array<{ gradience?: { feedbackRole?: string } }>).map(item => [
                 item.gradience?.feedbackRole ?? 'unknown',
                 item,
             ]),
@@ -217,11 +217,7 @@ test('buildInteropPublisherFromEnv maps 8004 identity payload shape', async () =
         assert.ok(publisher);
         await publisher.onTaskJudged(makeSignal(78));
         assert.equal(bodies.length, 3);
-        const identities = new Set(
-            (bodies as Array<{ agentPubkey?: string }>).map(
-                (item) => item.agentPubkey ?? '',
-            ),
-        );
+        const identities = new Set((bodies as Array<{ agentPubkey?: string }>).map(item => item.agentPubkey ?? ''));
         assert.ok(identities.has('winner-agent'));
         assert.ok(identities.has('poster-agent'));
         assert.ok(identities.has('judge-agent'));
@@ -254,9 +250,7 @@ test('buildInteropPublisherFromEnv maps EVM reputation relay payload shape', asy
         await publisher.onTaskJudged(makeSignal(77));
         assert.equal(bodies.length, 3);
         const recipients = new Set(
-            (bodies as Array<{ payload?: { agentPubkey?: string } }>).map(
-                (item) => item.payload?.agentPubkey ?? '',
-            ),
+            (bodies as Array<{ payload?: { agentPubkey?: string } }>).map(item => item.payload?.agentPubkey ?? ''),
         );
         assert.ok(recipients.has('winner-agent'));
         assert.ok(recipients.has('poster-agent'));
@@ -293,7 +287,7 @@ test('feedback sinks include loser role when participants contain non-winner age
             participants: ['winner-agent', 'loser-1', 'loser-2'],
         });
         const loserPayloads = (bodies as Array<{ gradience?: { feedbackRole?: string } }>).filter(
-            (item) => item.gradience?.feedbackRole === 'loser',
+            item => item.gradience?.feedbackRole === 'loser',
         );
         assert.equal(loserPayloads.length, 2);
     } finally {

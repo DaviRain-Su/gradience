@@ -59,10 +59,7 @@ export interface T46DrillReport {
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARENA_ROOT = path.resolve(SCRIPT_DIR, '..');
 const REPO_ROOT = path.resolve(ARENA_ROOT, '..', '..');
-const INTEGRATION_MANIFEST = path.join(
-    ARENA_ROOT,
-    'tests/integration-tests/Cargo.toml',
-);
+const INTEGRATION_MANIFEST = path.join(ARENA_ROOT, 'tests/integration-tests/Cargo.toml');
 
 const DRILL_CASES: DrillCase[] = [
     {
@@ -149,21 +146,21 @@ const DRILL_CASES: DrillCase[] = [
 
 async function runCase(testCase: DrillCase): Promise<DrillCaseResult> {
     const startedAt = Date.now();
-    return await new Promise((resolve) => {
+    return await new Promise(resolve => {
         const child = spawn(testCase.command, {
             shell: true,
             cwd: REPO_ROOT,
             env: process.env,
         });
 
-        child.stdout.on('data', (chunk) => {
+        child.stdout.on('data', chunk => {
             process.stdout.write(String(chunk));
         });
-        child.stderr.on('data', (chunk) => {
+        child.stderr.on('data', chunk => {
             process.stderr.write(String(chunk));
         });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
             const exitCode = typeof code === 'number' ? code : 1;
             resolve({
                 id: testCase.id,
@@ -180,10 +177,7 @@ async function runCase(testCase: DrillCase): Promise<DrillCaseResult> {
     });
 }
 
-export function buildCoverage(
-    cases: DrillCase[],
-    results: DrillCaseResult[],
-): ScenarioCoverage[] {
+export function buildCoverage(cases: DrillCase[], results: DrillCaseResult[]): ScenarioCoverage[] {
     const scenarios: AbnormalScenario[] = [
         'cancel_task',
         'refund_expired',
@@ -193,11 +187,9 @@ export function buildCoverage(
     ];
     const assets: AssetPath[] = ['sol', 'spl', 'token2022'];
 
-    return scenarios.map((scenario) => {
-        const cells = assets.map((asset) => {
-            const matchedCases = cases.filter(
-                (entry) => entry.scenario === scenario && entry.asset === asset,
-            );
+    return scenarios.map(scenario => {
+        const cells = assets.map(asset => {
+            const matchedCases = cases.filter(entry => entry.scenario === scenario && entry.asset === asset);
             if (matchedCases.length === 0) {
                 return {
                     asset,
@@ -206,44 +198,37 @@ export function buildCoverage(
                     caseIds: [],
                 };
             }
-            const matchedResults = results.filter((entry) =>
-                matchedCases.some((testCase) => testCase.id === entry.id),
-            );
-            const required = matchedCases.some((entry) => entry.required);
-            const success = matchedResults.length > 0 && matchedResults.every((entry) => entry.success);
+            const matchedResults = results.filter(entry => matchedCases.some(testCase => testCase.id === entry.id));
+            const required = matchedCases.some(entry => entry.required);
+            const success = matchedResults.length > 0 && matchedResults.every(entry => entry.success);
             return {
                 asset,
                 status: success ? ('pass' as const) : ('fail' as const),
                 required,
-                caseIds: matchedCases.map((entry) => entry.id),
+                caseIds: matchedCases.map(entry => entry.id),
             };
         });
 
-        const requiredCells = cells.filter((cell) => cell.required);
+        const requiredCells = cells.filter(cell => cell.required);
         let overall: ScenarioCoverage['overall'] = 'partial';
         if (requiredCells.length > 0) {
-            overall = requiredCells.every((cell) => cell.status === 'pass')
-                ? 'pass'
-                : 'fail';
+            overall = requiredCells.every(cell => cell.status === 'pass') ? 'pass' : 'fail';
         }
         return { scenario, cells, overall };
     });
 }
 
-export async function runT46AbnormalPathDrill(
-    cases: DrillCase[] = DRILL_CASES,
-): Promise<T46DrillReport> {
+export async function runT46AbnormalPathDrill(cases: DrillCase[] = DRILL_CASES): Promise<T46DrillReport> {
     const results: DrillCaseResult[] = [];
     for (const testCase of cases) {
         process.stdout.write(`\n[T46] ${testCase.id}\n`);
         results.push(await runCase(testCase));
     }
 
-    const requiredResults = results.filter((entry) => entry.required);
-    const requiredPassed = requiredResults.filter((entry) => entry.success).length;
+    const requiredResults = results.filter(entry => entry.required);
+    const requiredPassed = requiredResults.filter(entry => entry.success).length;
     const requiredTotal = requiredResults.length;
-    const passRate =
-        requiredTotal === 0 ? 1 : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
+    const passRate = requiredTotal === 0 ? 1 : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
     const coverage = buildCoverage(cases, results);
 
     return {
@@ -258,22 +243,18 @@ export async function runT46AbnormalPathDrill(
     };
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runT46AbnormalPathDrill()
-        .then((report) => {
+        .then(report => {
             process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
             if (!report.ok) {
                 process.exit(1);
             }
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

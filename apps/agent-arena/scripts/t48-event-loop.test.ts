@@ -54,14 +54,8 @@ test('isExpectedWsSequence validates order and consistent task id', () => {
         { event: 'task_judged', task_id: 9, slot: 2, timestamp: 2 },
         { event: 'submission_received', task_id: 9, slot: 3, timestamp: 3 },
     ];
-    assert.equal(
-        isExpectedWsSequence(okSequence, ['task_created', 'submission_received', 'task_judged']),
-        true,
-    );
-    assert.equal(
-        isExpectedWsSequence(badSequence, ['task_created', 'submission_received', 'task_judged']),
-        false,
-    );
+    assert.equal(isExpectedWsSequence(okSequence, ['task_created', 'submission_received', 'task_judged']), true);
+    assert.equal(isExpectedWsSequence(badSequence, ['task_created', 'submission_received', 'task_judged']), false);
 });
 
 test('evaluateReplayConsistency rejects replay-driven judge counter drift', () => {
@@ -106,7 +100,7 @@ test('evaluateReplayConsistency rejects replay-driven judge counter drift', () =
     assert.equal(result.indexerConsistent, true);
     assert.equal(result.judgeProgressed, true);
     assert.equal(result.judgeReplayDedup, false);
-    assert.ok(result.failures.some((item) => item.includes('judge replay dedupe failed')));
+    assert.ok(result.failures.some(item => item.includes('judge replay dedupe failed')));
 });
 
 test('runT48EventLoopDrill produces passing report with replay-stable judge counters', async () => {
@@ -141,10 +135,7 @@ test('runT48EventLoopDrill produces passing report with replay-stable judge coun
         requireJudgeProgress: true,
     };
 
-    const fetchImpl: typeof fetch = async (
-        input: Parameters<typeof fetch>[0],
-        init?: Parameters<typeof fetch>[1],
-    ) => {
+    const fetchImpl: typeof fetch = async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
         const target = String(input);
         const url = new URL(target);
         if (url.pathname === '/healthz') {
@@ -193,10 +184,7 @@ test('runT48EventLoopDrill produces passing report with replay-stable judge coun
             });
         }
         if (url.pathname === '/api/tasks/77/submissions') {
-            return new Response(
-                JSON.stringify([{ task_id: 77, agent: 'A', submission_slot: 2 }]),
-                { status: 200 },
-            );
+            return new Response(JSON.stringify([{ task_id: 77, agent: 'A', submission_slot: 2 }]), { status: 200 });
         }
         throw new Error(`unexpected url in test fetch: ${target} (${init?.method ?? 'GET'})`);
     };

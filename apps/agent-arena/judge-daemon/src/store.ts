@@ -45,7 +45,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
 
     async listPending(limit = 100): Promise<WorkflowRecord[]> {
         const pending = [...this.records.values()]
-            .filter((record) => record.status === 'pending')
+            .filter(record => record.status === 'pending')
             .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         return pending.slice(0, limit);
     }

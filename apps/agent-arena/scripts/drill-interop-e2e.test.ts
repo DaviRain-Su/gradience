@@ -72,7 +72,7 @@ function createAgentImMock(authToken: string) {
             const agents = new Set<string>([
                 payload.winner,
                 ...identityRecipients,
-                ...feedbackRecipients.map((entry) => entry.agent),
+                ...feedbackRecipients.map(entry => entry.agent),
             ]);
 
             for (const agent of agents) {
@@ -83,43 +83,34 @@ function createAgentImMock(authToken: string) {
                     istranaFeedbackCount: 0,
                 };
                 const next = {
-                    identityRegistered:
-                        current.identityRegistered || identityRecipients.includes(agent),
+                    identityRegistered: current.identityRegistered || identityRecipients.includes(agent),
                     erc8004FeedbackCount:
                         current.erc8004FeedbackCount +
-                        feedbackRecipients.filter(
-                            (entry) =>
-                                entry.agent === agent &&
-                                entry.sink === 'erc8004_feedback',
-                        ).length +
+                        feedbackRecipients.filter(entry => entry.agent === agent && entry.sink === 'erc8004_feedback')
+                            .length +
                         (payload.erc8004FeedbackPublished &&
                         (!payload.feedbackRecipients || payload.feedbackRecipients.length === 0) &&
                         agent === payload.winner
-                            ? payload.feedbackPublishedCount ?? 1
+                            ? (payload.feedbackPublishedCount ?? 1)
                             : 0),
                     evmReputationCount:
                         current.evmReputationCount +
                         feedbackRecipients.filter(
-                            (entry) =>
-                                entry.agent === agent &&
-                                entry.sink === 'evm_reputation_relay',
+                            entry => entry.agent === agent && entry.sink === 'evm_reputation_relay',
                         ).length +
                         (payload.evmReputationPublished &&
                         (!payload.feedbackRecipients || payload.feedbackRecipients.length === 0) &&
                         agent === payload.winner
-                            ? payload.feedbackPublishedCount ?? 1
+                            ? (payload.feedbackPublishedCount ?? 1)
                             : 0),
                     istranaFeedbackCount:
                         current.istranaFeedbackCount +
-                        feedbackRecipients.filter(
-                            (entry) =>
-                                entry.agent === agent &&
-                                entry.sink === 'istrana_feedback',
-                        ).length +
+                        feedbackRecipients.filter(entry => entry.agent === agent && entry.sink === 'istrana_feedback')
+                            .length +
                         (payload.istranaFeedbackPublished &&
                         (!payload.feedbackRecipients || payload.feedbackRecipients.length === 0) &&
                         agent === payload.winner
-                            ? payload.feedbackPublishedCount ?? 1
+                            ? (payload.feedbackPublishedCount ?? 1)
                             : 0),
                 };
                 statusMap.set(agent, next);
@@ -153,8 +144,7 @@ function createErc8004RelayMock(authToken: string) {
         const url = new URL(req.url ?? '/', 'http://127.0.0.1');
         if (
             req.method === 'POST' &&
-            (url.pathname === '/relay/erc8004/register-identity' ||
-                url.pathname === '/relay/erc8004/give-feedback')
+            (url.pathname === '/relay/erc8004/register-identity' || url.pathname === '/relay/erc8004/give-feedback')
         ) {
             if (req.headers.authorization !== `Bearer ${authToken}`) {
                 res.writeHead(401).end();
@@ -168,8 +158,7 @@ function createErc8004RelayMock(authToken: string) {
                 agentPubkey?: string;
                 registrations?: Array<{ agentId?: string }>;
             };
-            const agent =
-                payload.agentPubkey ?? payload.registrations?.[0]?.agentId ?? 'unknown-agent';
+            const agent = payload.agentPubkey ?? payload.registrations?.[0]?.agentId ?? 'unknown-agent';
             knownAgents.add(agent);
             if (url.pathname === '/relay/erc8004/register-identity') {
                 identitySuccess += 1;
@@ -244,11 +233,7 @@ test('runInteropDrill publishes multi-role feedback and audits relay/agent-im st
         assert.equal(result.relayStatus.success, 4);
         assert.equal(result.erc8004Status?.identitySuccess, 4);
         assert.equal(result.erc8004Status?.feedbackSuccess, 4);
-        assert.equal(
-            result.agentImStatusByAgent['44444444444444444444444444444444']
-                ?.evmReputationCount,
-            1,
-        );
+        assert.equal(result.agentImStatusByAgent['44444444444444444444444444444444']?.evmReputationCount, 1);
     } finally {
         relay.server.close();
         agentIm.server.close();

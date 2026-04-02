@@ -28,7 +28,7 @@ export function useLocalSigner(): LocalSignerState {
         setSecretInput(cached);
         setConnecting(true);
         void signerFromSecret(cached)
-            .then((connectedSigner) => {
+            .then(connectedSigner => {
                 setSigner(connectedSigner);
             })
             .catch(() => {
@@ -56,10 +56,7 @@ export function useLocalSigner(): LocalSignerState {
         setSigner(null);
     }, []);
 
-    const signerAddress = useMemo(
-        () => (signer ? String(signer.address) : null),
-        [signer],
-    );
+    const signerAddress = useMemo(() => (signer ? String(signer.address) : null), [signer]);
 
     return {
         signer,

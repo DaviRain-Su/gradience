@@ -2,11 +2,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const REQUIRED_WS_SEQUENCE = [
-    'task_created',
-    'submission_received',
-    'task_judged',
-] as const;
+const REQUIRED_WS_SEQUENCE = ['task_created', 'submission_received', 'task_judged'] as const;
 
 type RequiredWsEvent = (typeof REQUIRED_WS_SEQUENCE)[number];
 
@@ -223,7 +219,10 @@ export function classifyJudgeMode(mode: string): 'primary' | 'fallback' | 'unkno
     return 'unknown';
 }
 
-export function buildMockWebhookPayload(taskId: number, timestamp: number): {
+export function buildMockWebhookPayload(
+    taskId: number,
+    timestamp: number,
+): {
     events: Array<Record<string, unknown>>;
 } {
     const slotBase = Math.max(1, timestamp);
@@ -275,10 +274,7 @@ function bytePubkey(seed: number): number[] {
     return Array.from({ length: 32 }, (_, index) => (seed + index) % 256);
 }
 
-export function isExpectedWsSequence(
-    events: WsBroadcastEvent[],
-    expected: readonly RequiredWsEvent[],
-): boolean {
+export function isExpectedWsSequence(events: WsBroadcastEvent[], expected: readonly RequiredWsEvent[]): boolean {
     if (events.length !== expected.length) {
         return false;
     }
@@ -295,33 +291,24 @@ export function isExpectedWsSequence(
     return true;
 }
 
-export function evaluateReplayConsistency(
-    input: ReplayConsistencyInput,
-): ReplayConsistencyResult {
+export function evaluateReplayConsistency(input: ReplayConsistencyInput): ReplayConsistencyResult {
     const failures: string[] = [];
 
     const indexerConsistent =
-        input.taskState === 'completed' &&
-        input.submissionCount === input.expectedSubmissionCount;
+        input.taskState === 'completed' && input.submissionCount === input.expectedSubmissionCount;
     if (!indexerConsistent) {
-        failures.push(
-            `indexer state drift: state=${input.taskState ?? 'null'}, submissions=${input.submissionCount}`,
-        );
+        failures.push(`indexer state drift: state=${input.taskState ?? 'null'}, submissions=${input.submissionCount}`);
     }
 
-    const judgeProgressed =
-        input.judgeAfterFirst.maxEventsProcessedTotal >
-        input.judgeBefore.eventsProcessedTotal;
+    const judgeProgressed = input.judgeAfterFirst.maxEventsProcessedTotal > input.judgeBefore.eventsProcessedTotal;
     if (input.requireJudgeProgress && !judgeProgressed) {
         failures.push('judge-daemon did not consume new events during first pass');
     }
 
     const replayEventsDelta =
-        input.judgeAfterReplay.maxEventsProcessedTotal -
-        input.judgeAfterFirst.maxEventsProcessedTotal;
+        input.judgeAfterReplay.maxEventsProcessedTotal - input.judgeAfterFirst.maxEventsProcessedTotal;
     const replayWorkflowDelta =
-        input.judgeAfterReplay.maxWorkflowsQueuedTotal -
-        input.judgeAfterFirst.maxWorkflowsQueuedTotal;
+        input.judgeAfterReplay.maxWorkflowsQueuedTotal - input.judgeAfterFirst.maxWorkflowsQueuedTotal;
 
     const judgeReplayDedup =
         replayEventsDelta <= input.judgeReplayEventTolerance &&
@@ -340,9 +327,7 @@ export function evaluateReplayConsistency(
     };
 }
 
-export async function collectWsEventsViaWebSocket(
-    input: CollectWsEventsInput,
-): Promise<WsBroadcastEvent[]> {
+export async function collectWsEventsViaWebSocket(input: CollectWsEventsInput): Promise<WsBroadcastEvent[]> {
     const WebSocketCtor = globalThis.WebSocket;
     if (typeof WebSocketCtor !== 'function') {
         throw new Error('global WebSocket is not available in this Node runtime');
@@ -396,7 +381,7 @@ export async function collectWsEventsViaWebSocket(
                 return;
             }
             triggerStarted = true;
-            input.trigger().catch((error) => {
+            input.trigger().catch(error => {
                 fail(error instanceof Error ? error : new Error(String(error)));
             });
         });
@@ -422,7 +407,7 @@ export async function collectWsEventsViaWebSocket(
 
         socket.addEventListener('message', (message: unknown) => {
             normalizeWsMessage(message)
-                .then((event) => {
+                .then(event => {
                     if (!event || event.task_id !== input.taskId) {
                         return;
                     }
@@ -431,7 +416,7 @@ export async function collectWsEventsViaWebSocket(
                         succeed();
                     }
                 })
-                .catch((error) => {
+                .catch(error => {
                     fail(error instanceof Error ? error : new Error(String(error)));
                 });
         });
@@ -487,11 +472,7 @@ function withTaskFilter(wsUrl: string, taskId: number): string {
     return url.toString();
 }
 
-async function fetchJson<T>(
-    fetchImpl: typeof fetch,
-    url: string,
-    init?: RequestInit,
-): Promise<T> {
+async function fetchJson<T>(fetchImpl: typeof fetch, url: string, init?: RequestInit): Promise<T> {
     let response: Response;
     try {
         response = await fetchImpl(url, init);
@@ -517,58 +498,28 @@ async function fetchText(fetchImpl: typeof fetch, url: string): Promise<string> 
     return response.text();
 }
 
-async function fetchIndexerMetrics(
-    fetchImpl: typeof fetch,
-    baseUrl: string,
-): Promise<IndexerMetricsSnapshot> {
+async function fetchIndexerMetrics(fetchImpl: typeof fetch, baseUrl: string): Promise<IndexerMetricsSnapshot> {
     const body = await fetchText(fetchImpl, `${baseUrl.replace(/\/$/, '')}/metrics`);
     const metrics = parsePrometheusMetrics(body);
     return {
-        eventsProcessedTotal: requireMetric(
-            metrics,
-            'gradience_indexer_events_processed_total',
-        ),
-        wsEventsPublishedTotal: requireMetric(
-            metrics,
-            'gradience_indexer_ws_events_published_total',
-        ),
+        eventsProcessedTotal: requireMetric(metrics, 'gradience_indexer_events_processed_total'),
+        wsEventsPublishedTotal: requireMetric(metrics, 'gradience_indexer_ws_events_published_total'),
         wsConnectionsTotal: requireMetric(metrics, 'gradience_indexer_ws_connections_total'),
-        wsActiveConnections: requireMetric(
-            metrics,
-            'gradience_indexer_ws_active_connections',
-        ),
-        lastEventTimestamp: requireMetric(
-            metrics,
-            'gradience_indexer_last_event_timestamp_unix',
-        ),
+        wsActiveConnections: requireMetric(metrics, 'gradience_indexer_ws_active_connections'),
+        lastEventTimestamp: requireMetric(metrics, 'gradience_indexer_last_event_timestamp_unix'),
     };
 }
 
-async function fetchJudgeMetrics(
-    fetchImpl: typeof fetch,
-    baseUrl: string,
-): Promise<JudgeMetricsSnapshot> {
+async function fetchJudgeMetrics(fetchImpl: typeof fetch, baseUrl: string): Promise<JudgeMetricsSnapshot> {
     const body = await fetchText(fetchImpl, `${baseUrl.replace(/\/$/, '')}/metrics`);
     const metrics = parsePrometheusMetrics(body);
     return {
         mode: extractJudgeMode(metrics),
-        eventsProcessedTotal: requireMetric(
-            metrics,
-            'gradience_judge_daemon_events_processed_total',
-        ),
-        workflowsQueuedTotal: requireMetric(
-            metrics,
-            'gradience_judge_daemon_workflows_queued_total',
-        ),
+        eventsProcessedTotal: requireMetric(metrics, 'gradience_judge_daemon_events_processed_total'),
+        workflowsQueuedTotal: requireMetric(metrics, 'gradience_judge_daemon_workflows_queued_total'),
         pendingWorkflows: requireMetric(metrics, 'gradience_judge_daemon_pending_workflows'),
-        sourceErrorsTotal: requireMetric(
-            metrics,
-            'gradience_judge_daemon_source_errors_total',
-        ),
-        lastEventTimestamp: requireMetric(
-            metrics,
-            'gradience_judge_daemon_last_event_timestamp_unix',
-        ),
+        sourceErrorsTotal: requireMetric(metrics, 'gradience_judge_daemon_source_errors_total'),
+        lastEventTimestamp: requireMetric(metrics, 'gradience_judge_daemon_last_event_timestamp_unix'),
     };
 }
 
@@ -582,10 +533,7 @@ async function observeJudgeWindow(
     fetchImpl: typeof fetch,
     sleep: (ms: number) => Promise<void>,
 ): Promise<JudgeWindowSummary> {
-    const sampleCount = Math.max(
-        1,
-        Math.ceil(config.judgeObserveWindowMs / config.judgePollIntervalMs),
-    );
+    const sampleCount = Math.max(1, Math.ceil(config.judgeObserveWindowMs / config.judgePollIntervalMs));
     const samples: JudgeMetricsSnapshot[] = [];
     for (let index = 0; index < sampleCount; index += 1) {
         samples.push(await fetchJudgeMetrics(fetchImpl, config.judgeBaseUrl));
@@ -612,30 +560,21 @@ function summarizeJudgeSamples(samples: JudgeMetricsSnapshot[]): JudgeWindowSumm
     return {
         sampleCount: samples.length,
         mode: samples[samples.length - 1]?.mode ?? 'none',
-        maxEventsProcessedTotal: Math.max(
-            ...samples.map((item) => item.eventsProcessedTotal),
-        ),
-        maxWorkflowsQueuedTotal: Math.max(
-            ...samples.map((item) => item.workflowsQueuedTotal),
-        ),
-        maxPendingWorkflows: Math.max(...samples.map((item) => item.pendingWorkflows)),
-        maxSourceErrorsTotal: Math.max(...samples.map((item) => item.sourceErrorsTotal)),
-        maxLastEventTimestamp: Math.max(...samples.map((item) => item.lastEventTimestamp)),
+        maxEventsProcessedTotal: Math.max(...samples.map(item => item.eventsProcessedTotal)),
+        maxWorkflowsQueuedTotal: Math.max(...samples.map(item => item.workflowsQueuedTotal)),
+        maxPendingWorkflows: Math.max(...samples.map(item => item.pendingWorkflows)),
+        maxSourceErrorsTotal: Math.max(...samples.map(item => item.sourceErrorsTotal)),
+        maxLastEventTimestamp: Math.max(...samples.map(item => item.lastEventTimestamp)),
     };
 }
 
 function defaultSleep(ms: number): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         setTimeout(resolve, ms);
     });
 }
 
-function createCase(
-    id: string,
-    success: boolean,
-    detail: string,
-    required = true,
-): T48CaseResult {
+function createCase(id: string, success: boolean, detail: string, required = true): T48CaseResult {
     return {
         id,
         required,
@@ -729,11 +668,7 @@ export async function runT48EventLoopDrill(
         expectedEvents: REQUIRED_WS_SEQUENCE,
         timeoutMs: config.wsTimeoutMs,
         trigger: async () => {
-            const processedEvents = await ingestMockEvents(
-                fetchImpl,
-                config.indexerWebhookUrl,
-                payload,
-            );
+            const processedEvents = await ingestMockEvents(fetchImpl, config.indexerWebhookUrl, payload);
             if (processedEvents !== payload.events.length) {
                 throw new Error(
                     `webhook ingest mismatch for round1: processed=${processedEvents}, expected=${payload.events.length}`,
@@ -745,13 +680,12 @@ export async function runT48EventLoopDrill(
         createCase(
             'ws-primary-roundtrip',
             isExpectedWsSequence(wsRound1, REQUIRED_WS_SEQUENCE),
-            `ws round1 events=${wsRound1.map((entry) => entry.event).join('>')}`,
+            `ws round1 events=${wsRound1.map(entry => entry.event).join('>')}`,
         ),
     );
 
     const judgeAfterFirst = await observeJudgeWindow(config, fetchImpl, sleep);
-    const judgeProgressed =
-        judgeAfterFirst.maxEventsProcessedTotal > judgeBefore.eventsProcessedTotal;
+    const judgeProgressed = judgeAfterFirst.maxEventsProcessedTotal > judgeBefore.eventsProcessedTotal;
     cases.push(
         createCase(
             'judge-consumption',
@@ -766,11 +700,7 @@ export async function runT48EventLoopDrill(
         expectedEvents: REQUIRED_WS_SEQUENCE,
         timeoutMs: config.wsTimeoutMs,
         trigger: async () => {
-            const processedEvents = await ingestMockEvents(
-                fetchImpl,
-                config.indexerWebhookUrl,
-                payload,
-            );
+            const processedEvents = await ingestMockEvents(fetchImpl, config.indexerWebhookUrl, payload);
             if (processedEvents !== payload.events.length) {
                 throw new Error(
                     `webhook ingest mismatch for round2: processed=${processedEvents}, expected=${payload.events.length}`,
@@ -782,7 +712,7 @@ export async function runT48EventLoopDrill(
         createCase(
             'ws-reconnect-roundtrip',
             isExpectedWsSequence(wsRound2, REQUIRED_WS_SEQUENCE),
-            `ws round2 events=${wsRound2.map((entry) => entry.event).join('>')}`,
+            `ws round2 events=${wsRound2.map(entry => entry.event).join('>')}`,
         ),
     );
 
@@ -823,13 +753,10 @@ export async function runT48EventLoopDrill(
         ),
     );
 
-    const required = cases.filter((entry) => entry.required);
-    const requiredPassed = required.filter((entry) => entry.success).length;
+    const required = cases.filter(entry => entry.required);
+    const requiredPassed = required.filter(entry => entry.success).length;
     const requiredTotal = required.length;
-    const passRate =
-        requiredTotal === 0
-            ? 1
-            : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
+    const passRate = requiredTotal === 0 ? 1 : Math.round((requiredPassed / requiredTotal) * 10_000) / 10_000;
     const activeJudgeMode = judgeAfterReplay.mode;
 
     return {
@@ -861,22 +788,18 @@ export async function runT48EventLoopDrill(
     };
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runT48EventLoopDrill()
-        .then((report) => {
+        .then(report => {
             process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
             if (!report.ok) {
                 process.exit(1);
             }
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

@@ -69,7 +69,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
             const rows = submissionData ?? [];
             setSubmissions(rows);
             if (rows.length > 0) {
-                setJudgeForm((current) =>
+                setJudgeForm(current =>
                     current.winner
                         ? current
                         : {
@@ -98,11 +98,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
         }
     };
 
-    const canJudge =
-        Boolean(task) &&
-        Boolean(signerAddress) &&
-        task?.judge === signerAddress &&
-        task?.state === 'open';
+    const canJudge = Boolean(task) && Boolean(signerAddress) && task?.judge === signerAddress && task?.state === 'open';
 
     const submitJudge = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -128,9 +124,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
             setJudgeStatus(signature);
             await refresh();
         } catch (judgeActionError) {
-            setJudgeError(
-                judgeActionError instanceof Error ? judgeActionError.message : String(judgeActionError),
-            );
+            setJudgeError(judgeActionError instanceof Error ? judgeActionError.message : String(judgeActionError));
         } finally {
             setJudging(false);
         }
@@ -158,9 +152,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                     </div>
                     {loading && <p className="text-sm text-zinc-400">Loading task…</p>}
                     {error && <p className="text-sm text-red-400">{error}</p>}
-                    {!loading && !task && !error && (
-                        <p className="text-sm text-zinc-400">Task not found.</p>
-                    )}
+                    {!loading && !task && !error && <p className="text-sm text-zinc-400">Task not found.</p>}
                     {task && (
                         <div className="space-y-1 text-sm">
                             <p>
@@ -175,8 +167,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                                 <span className="break-all">{task.poster}</span>
                             </p>
                             <p>
-                                <span className="text-zinc-400">Deadline:</span>{' '}
-                                {formatUnixTime(task.deadline)}
+                                <span className="text-zinc-400">Deadline:</span> {formatUnixTime(task.deadline)}
                             </p>
                             <p>
                                 <span className="text-zinc-400">Judge deadline:</span>{' '}
@@ -196,21 +187,15 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                         <p className="mt-2 text-sm text-zinc-400">No submissions.</p>
                     ) : (
                         <ul className="mt-2 space-y-2">
-                            {submissions.map((submission) => (
+                            {submissions.map(submission => (
                                 <li
                                     key={`${submission.task_id}:${submission.agent}`}
                                     className="rounded border border-zinc-800 p-2 text-xs"
                                 >
                                     <p className="break-all text-zinc-200">Agent: {submission.agent}</p>
-                                    <p className="break-all text-zinc-400">
-                                        result_ref: {submission.result_ref}
-                                    </p>
-                                    <p className="break-all text-zinc-400">
-                                        trace_ref: {submission.trace_ref}
-                                    </p>
-                                    <p className="text-zinc-500">
-                                        slot: {submission.submission_slot}
-                                    </p>
+                                    <p className="break-all text-zinc-400">result_ref: {submission.result_ref}</p>
+                                    <p className="break-all text-zinc-400">trace_ref: {submission.trace_ref}</p>
+                                    <p className="text-zinc-500">slot: {submission.submission_slot}</p>
                                 </li>
                             ))}
                         </ul>
@@ -228,7 +213,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                 <div className="mt-3 space-y-2">
                     {injectedWallets.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
-                            {injectedWallets.map((wallet) => (
+                            {injectedWallets.map(wallet => (
                                 <button
                                     key={wallet.id}
                                     type="button"
@@ -265,9 +250,9 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                     )}
                     <textarea
                         value={secretInput}
-                        onChange={(event) => setSecretInput(event.target.value)}
+                        onChange={event => setSecretInput(event.target.value)}
                         className="h-20 w-full rounded border border-zinc-700 bg-transparent p-2 text-xs"
-                        placeholder='[12,34,...,64 bytes]'
+                        placeholder="[12,34,...,64 bytes]"
                     />
                     <div className="flex gap-2">
                         <button
@@ -300,25 +285,21 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                     </p>
                 )}
                 {task && task.state !== 'open' && (
-                    <p className="mt-3 text-sm text-zinc-400">
-                        Task is not open; judge action disabled.
-                    </p>
+                    <p className="mt-3 text-sm text-zinc-400">Task is not open; judge action disabled.</p>
                 )}
 
                 {canJudge && (
                     <form onSubmit={submitJudge} className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
                         <select
                             value={judgeForm.winner}
-                            onChange={(event) =>
-                                setJudgeForm({ ...judgeForm, winner: event.target.value })
-                            }
+                            onChange={event => setJudgeForm({ ...judgeForm, winner: event.target.value })}
                             className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                             required
                         >
                             <option value="" disabled>
                                 Select winner
                             </option>
-                            {submissions.map((submission) => (
+                            {submissions.map(submission => (
                                 <option key={submission.agent} value={submission.agent}>
                                     {submission.agent}
                                 </option>
@@ -326,18 +307,14 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                         </select>
                         <input
                             value={judgeForm.score}
-                            onChange={(event) =>
-                                setJudgeForm({ ...judgeForm, score: event.target.value })
-                            }
+                            onChange={event => setJudgeForm({ ...judgeForm, score: event.target.value })}
                             placeholder="score 0-100"
                             className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                             required
                         />
                         <input
                             value={judgeForm.reasonRef}
-                            onChange={(event) =>
-                                setJudgeForm({ ...judgeForm, reasonRef: event.target.value })
-                            }
+                            onChange={event => setJudgeForm({ ...judgeForm, reasonRef: event.target.value })}
                             placeholder="reason-ref"
                             className="rounded border border-zinc-700 bg-transparent p-2 text-sm md:col-span-2"
                             required
@@ -353,9 +330,7 @@ export function TaskDetail({ taskId }: { taskId: number }) {
                 )}
                 {judgeError && <p className="mt-2 text-sm text-red-400">{judgeError}</p>}
                 {judgeStatus && (
-                    <p className="mt-2 break-all text-xs text-emerald-400">
-                        Judge submitted. Signature: {judgeStatus}
-                    </p>
+                    <p className="mt-2 break-all text-xs text-emerald-400">Judge submitted. Signature: {judgeStatus}</p>
                 )}
             </section>
         </main>

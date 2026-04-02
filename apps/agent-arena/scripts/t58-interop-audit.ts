@@ -3,10 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import {
-    runInteropDrill,
-    type InteropDrillResult,
-} from './drill-interop-e2e.ts';
+import { runInteropDrill, type InteropDrillResult } from './drill-interop-e2e.ts';
 
 export interface T58AuditCheck {
     id: string;
@@ -44,11 +41,11 @@ function asMessage(error: unknown): string {
 }
 
 function normalizeOutputPath(argv: string[], fallback: string): string {
-    const outputArg = argv.find((arg) => arg.startsWith('--output='));
+    const outputArg = argv.find(arg => arg.startsWith('--output='));
     if (outputArg) {
         return path.resolve(REPO_ROOT, outputArg.slice('--output='.length));
     }
-    const outputIndex = argv.findIndex((arg) => arg === '--output');
+    const outputIndex = argv.findIndex(arg => arg === '--output');
     if (outputIndex >= 0 && argv[outputIndex + 1]) {
         return path.resolve(REPO_ROOT, argv[outputIndex + 1]);
     }
@@ -58,13 +55,10 @@ function normalizeOutputPath(argv: string[], fallback: string): string {
 export function evaluateT58InteropAudit(drill: InteropDrillResult): T58AuditCheck[] {
     const checks: T58AuditCheck[] = [];
 
-    const roles = new Set(drill.feedbackDispatches.map((entry) => entry.role));
-    const requiresLoser = drill.participants.some((entry) => entry !== drill.agent);
+    const roles = new Set(drill.feedbackDispatches.map(entry => entry.role));
+    const requiresLoser = drill.participants.some(entry => entry !== drill.agent);
     const roleCoverageOk =
-        roles.has('winner') &&
-        roles.has('poster') &&
-        roles.has('judge') &&
-        (!requiresLoser || roles.has('loser'));
+        roles.has('winner') && roles.has('poster') && roles.has('judge') && (!requiresLoser || roles.has('loser'));
     checks.push({
         id: 'role_coverage',
         success: roleCoverageOk,
@@ -72,8 +66,7 @@ export function evaluateT58InteropAudit(drill: InteropDrillResult): T58AuditChec
     });
 
     const relayCounterOk =
-        drill.relayStatus.failed === 0 &&
-        drill.relayStatus.success >= drill.feedbackDispatches.length;
+        drill.relayStatus.failed === 0 && drill.relayStatus.success >= drill.feedbackDispatches.length;
     checks.push({
         id: 'relay_status',
         success: relayCounterOk,
@@ -94,11 +87,9 @@ export function evaluateT58InteropAudit(drill: InteropDrillResult): T58AuditChec
             : 'erc8004 status missing',
     });
 
-    const agentStatusSyncOk = drill.identityRecipients.every((agent) => {
+    const agentStatusSyncOk = drill.identityRecipients.every(agent => {
         const status = drill.agentImStatusByAgent[agent];
-        const expectedFeedbackCount = drill.feedbackDispatches.filter(
-            (entry) => entry.agent === agent,
-        ).length;
+        const expectedFeedbackCount = drill.feedbackDispatches.filter(entry => entry.agent === agent).length;
         return (
             !!status &&
             status.identityRegistered === true &&
@@ -115,9 +106,7 @@ export function evaluateT58InteropAudit(drill: InteropDrillResult): T58AuditChec
     return checks;
 }
 
-export async function runT58InteropAudit(
-    env: NodeJS.ProcessEnv = process.env,
-): Promise<T58InteropAuditReport> {
+export async function runT58InteropAudit(env: NodeJS.ProcessEnv = process.env): Promise<T58InteropAuditReport> {
     requireEnv('JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT', env);
     requireEnv('JUDGE_DAEMON_AGENT_IM_INTEROP_ENDPOINT', env);
     requireEnv('JUDGE_DAEMON_ERC8004_IDENTITY_ENDPOINT', env);
@@ -126,9 +115,7 @@ export async function runT58InteropAudit(
     try {
         const drill = await runInteropDrill(env);
         const checks = evaluateT58InteropAudit(drill);
-        const failures = checks
-            .filter((entry) => !entry.success)
-            .map((entry) => `${entry.id}: ${entry.detail}`);
+        const failures = checks.filter(entry => !entry.success).map(entry => `${entry.id}: ${entry.detail}`);
         return {
             generatedAt: new Date().toISOString(),
             repoRoot: REPO_ROOT,
@@ -149,14 +136,12 @@ export async function runT58InteropAudit(
     }
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     const outputPath = normalizeOutputPath(process.argv.slice(2), DEFAULT_OUTPUT);
     runT58InteropAudit(process.env)
-        .then(async (report) => {
+        .then(async report => {
             await mkdir(path.dirname(outputPath), { recursive: true });
             await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
             process.stdout.write(
@@ -167,7 +152,7 @@ if (isMainEntry) {
                 process.exit(1);
             }
         })
-        .catch((error) => {
+        .catch(error => {
             process.stderr.write(`${asMessage(error)}\n`);
             process.exit(1);
         });

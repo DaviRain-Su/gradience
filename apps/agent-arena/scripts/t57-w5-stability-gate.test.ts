@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-    buildChecklist,
-    evaluateT57Gate,
-    type T57PhaseResult,
-} from './t57-w5-stability-gate.ts';
+import { buildChecklist, evaluateT57Gate, type T57PhaseResult } from './t57-w5-stability-gate.ts';
 import type { T46DrillReport } from './t46-abnormal-paths.ts';
 import type { T47DrillReport } from './t47-pool-alt.ts';
 import type { T48DrillReport } from './t48-event-loop.ts';
@@ -129,13 +125,9 @@ function createT48Report(mode: T48DrillReport['modeClassification']): T48DrillRe
 }
 
 test('buildChecklist maps T46/T47/T48 status into pass checklist', () => {
-    const checklist = buildChecklist(
-        createT46Report(true),
-        createT47Report(true),
-        createT48Report('fallback'),
-    );
+    const checklist = buildChecklist(createT46Report(true), createT47Report(true), createT48Report('fallback'));
     assert.equal(checklist.length, 4);
-    assert.ok(checklist.every((item) => item.status === 'pass'));
+    assert.ok(checklist.every(item => item.status === 'pass'));
 });
 
 test('evaluateT57Gate fails when required baseline metrics are missing', () => {
@@ -177,17 +169,13 @@ test('evaluateT57Gate fails when required baseline metrics are missing', () => {
 
     const failures = evaluateT57Gate({
         phases,
-        checklist: buildChecklist(
-            createT46Report(true),
-            createT47Report(false),
-            createT48Report('fallback'),
-        ),
+        checklist: buildChecklist(createT46Report(true), createT47Report(false), createT48Report('fallback')),
         t47Report: createT47Report(false),
         t48Report: createT48Report('fallback'),
         allowUnknownMode: false,
     });
 
-    assert.ok(failures.some((item) => item.includes('missing T47 baseline metric')));
+    assert.ok(failures.some(item => item.includes('missing T47 baseline metric')));
 });
 
 test('evaluateT57Gate rejects unknown judge mode classification by default', () => {
@@ -227,15 +215,11 @@ test('evaluateT57Gate rejects unknown judge mode classification by default', () 
                 error: null,
             },
         ],
-        checklist: buildChecklist(
-            createT46Report(true),
-            createT47Report(true),
-            createT48Report('unknown'),
-        ),
+        checklist: buildChecklist(createT46Report(true), createT47Report(true), createT48Report('unknown')),
         t47Report: createT47Report(true),
         t48Report: createT48Report('unknown'),
         allowUnknownMode: false,
     });
 
-    assert.ok(failures.some((item) => item.includes('unknown T48 judge mode')));
+    assert.ok(failures.some(item => item.includes('unknown T48 judge mode')));
 });

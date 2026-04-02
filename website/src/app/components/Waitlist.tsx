@@ -19,34 +19,29 @@ export function Waitlist() {
 
     setStatus("submitting");
 
-    // For now, we'll just simulate the submission
-    // Later you can integrate with: 
-    // - Mailchimp
-    // - ConvertKit
-    // - Resend
-    // - Google Forms
-    // - Airtable
-    // - Or your own backend
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Store in localStorage for now (temporary solution)
-      const submissions = JSON.parse(localStorage.getItem("waitlist") || "[]");
-      submissions.push({
-        email,
-        userType,
-        timestamp: new Date().toISOString(),
+      // 调用 API 发送邮件
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, userType }),
       });
-      localStorage.setItem("waitlist", JSON.stringify(submissions));
-      
-      setStatus("success");
-      setMessage("You're on the list! We'll notify you when early access is available.");
-      setEmail("");
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatus("success");
+        setMessage(data.message || "You're on the list! Check your email for confirmation.");
+        setEmail("");
+      } else {
+        setStatus("error");
+        setMessage(data.error || "Something went wrong. Please try again.");
+      }
     } catch (error) {
       setStatus("error");
-      setMessage("Something went wrong. Please try again.");
+      setMessage("Network error. Please check your connection and try again.");
     }
   };
 

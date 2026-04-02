@@ -30,13 +30,10 @@ test('buildCoverage marks missing asset coverage as not_implemented', () => {
     ];
 
     const coverage = buildCoverage(cases, results);
-    const lowScore = coverage.find((entry) => entry.scenario === 'low_score_refund');
+    const lowScore = coverage.find(entry => entry.scenario === 'low_score_refund');
     assert.ok(lowScore);
     assert.equal(lowScore.overall, 'pass');
-    assert.equal(
-        lowScore.cells.find((entry) => entry.asset === 'spl')?.status,
-        'not_implemented',
-    );
+    assert.equal(lowScore.cells.find(entry => entry.asset === 'spl')?.status, 'not_implemented');
 });
 
 test('buildCoverage marks required failures as fail', () => {
@@ -65,11 +62,8 @@ test('buildCoverage marks required failures as fail', () => {
     ];
 
     const coverage = buildCoverage(cases, results);
-    const force = coverage.find((entry) => entry.scenario === 'force_refund');
+    const force = coverage.find(entry => entry.scenario === 'force_refund');
     assert.ok(force);
     assert.equal(force.overall, 'fail');
-    assert.equal(
-        force.cells.find((entry) => entry.asset === 'sol')?.status,
-        'fail',
-    );
+    assert.equal(force.cells.find(entry => entry.asset === 'sol')?.status, 'fail');
 });

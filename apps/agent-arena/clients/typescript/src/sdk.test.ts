@@ -448,7 +448,7 @@ function createMockRpc(data: Uint8Array | null): unknown {
                           data: [Buffer.from(data).toString('base64'), 'base64'],
                           executable: false,
                           lamports: 1_000_000,
-                          owner: (encodeZeroAddress() as Address),
+                          owner: encodeZeroAddress() as Address,
                           space: data.length,
                       }
                     : null,

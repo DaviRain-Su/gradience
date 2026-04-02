@@ -100,9 +100,7 @@ export class JudgeWorkflowRunner {
     async process(workflow: WorkflowRecord): Promise<void> {
         const claimed = await this.engine.markRunning(workflow.id);
         if (!claimed) {
-            this.logger.info(
-                `Workflow ${workflow.id} already claimed by another worker; skipping`,
-            );
+            this.logger.info(`Workflow ${workflow.id} already claimed by another worker; skipping`);
             return;
         }
 
@@ -137,16 +135,9 @@ export class JudgeWorkflowRunner {
                 agent: submission.agent,
             };
 
-            const threshold =
-                criteriaDoc.minConfidence !== null
-                    ? criteriaDoc.minConfidence
-                    : this.minConfidence;
+            const threshold = criteriaDoc.minConfidence !== null ? criteriaDoc.minConfidence : this.minConfidence;
 
-            const judged = await this.evaluate(
-                request,
-                threshold,
-                criteriaDoc.evaluationType,
-            );
+            const judged = await this.evaluate(request, threshold, criteriaDoc.evaluationType);
             const reasonRef = await this.options.refResolver.publishReason({
                 task_id: workflow.taskId,
                 winner: submission.agent,
@@ -185,9 +176,7 @@ export class JudgeWorkflowRunner {
             );
         } catch (error) {
             await this.engine.markFailed(workflow.id, asMessage(error));
-            this.logger.error(
-                `Workflow ${workflow.id} failed for task ${workflow.taskId}: ${asMessage(error)}`,
-            );
+            this.logger.error(`Workflow ${workflow.id} failed for task ${workflow.taskId}: ${asMessage(error)}`);
         }
     }
 
@@ -207,11 +196,7 @@ export class JudgeWorkflowRunner {
             return this.options.typeCEvaluator.evaluate(request);
         }
 
-        const automated = await evaluateWithRetry(
-            this.options.typeBEvaluator,
-            request,
-            this.retryPolicy,
-        );
+        const automated = await evaluateWithRetry(this.options.typeBEvaluator, request, this.retryPolicy);
         if (automated.confidence >= minConfidence) {
             return automated;
         }
@@ -229,9 +214,7 @@ export class JudgeWorkflowRunner {
         try {
             await publisher.onTaskJudged(signal);
         } catch (error) {
-            this.logger.error(
-                `Interop publish failed for task ${signal.taskId}: ${asMessage(error)}`,
-            );
+            this.logger.error(`Interop publish failed for task ${signal.taskId}: ${asMessage(error)}`);
         }
     }
 }
@@ -248,29 +231,22 @@ export class RefResolverClient implements ReferenceClient {
     }
 }
 
-function pickSubmission(
-    submissions: SubmissionApi[] | null,
-    preferredAgent: string | null,
-): SubmissionApi | null {
+function pickSubmission(submissions: SubmissionApi[] | null, preferredAgent: string | null): SubmissionApi | null {
     if (!submissions || submissions.length === 0) {
         return null;
     }
-    const filtered = preferredAgent
-        ? submissions.filter((item) => item.agent === preferredAgent)
-        : submissions;
+    const filtered = preferredAgent ? submissions.filter(item => item.agent === preferredAgent) : submissions;
     if (filtered.length === 0) {
         return null;
     }
-    return filtered.reduce((latest, current) =>
-        current.submission_slot > latest.submission_slot ? current : latest,
-    );
+    return filtered.reduce((latest, current) => (current.submission_slot > latest.submission_slot ? current : latest));
 }
 
 function uniqueParticipants(submissions: SubmissionApi[] | null): string[] {
     if (!submissions || submissions.length === 0) {
         return [];
     }
-    return [...new Set(submissions.map((item) => item.agent).filter((agent) => agent.length > 0))];
+    return [...new Set(submissions.map(item => item.agent).filter(agent => agent.length > 0))];
 }
 
 function parseCriteria(raw: string): {
@@ -283,10 +259,7 @@ function parseCriteria(raw: string): {
         const json = JSON.parse(raw) as Record<string, unknown>;
         return {
             taskDescription:
-                asString(json.task_description) ??
-                asString(json.task_desc) ??
-                asString(json.description) ??
-                null,
+                asString(json.task_description) ?? asString(json.task_desc) ?? asString(json.description) ?? null,
             evaluationType: asString(json.type),
             minConfidence: toConfidence(json.min_confidence),
             criteria: json,

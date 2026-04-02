@@ -15,7 +15,7 @@ export default function HomePage() {
                 Tasks are fetched from Indexer REST, and posting uses SDK <code>task.post()</code>.
             </p>
             <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <PostTaskForm onPosted={() => setRefreshToken((value) => value + 1)} />
+                <PostTaskForm onPosted={() => setRefreshToken(value => value + 1)} />
                 <TaskList refreshToken={refreshToken} />
             </div>
         </main>

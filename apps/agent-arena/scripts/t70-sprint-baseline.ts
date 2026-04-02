@@ -64,22 +64,15 @@ interface BaselineReport {
     };
 }
 
-const BASELINE_LINE_REGEX =
-    /T70_BASELINE\|instruction=([a-z_]+)\|cu=(\d+)\|tx_size_bytes=(\d+)\|latency_ms=(\d+)/g;
+const BASELINE_LINE_REGEX = /T70_BASELINE\|instruction=([a-z_]+)\|cu=(\d+)\|tx_size_bytes=(\d+)\|latency_ms=(\d+)/g;
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ARENA_ROOT = path.resolve(SCRIPT_DIR, '..');
 const REPO_ROOT = path.resolve(ARENA_ROOT, '..', '..');
-const INTEGRATION_MANIFEST = path.join(
-    ARENA_ROOT,
-    'tests/integration-tests/Cargo.toml',
-);
+const INTEGRATION_MANIFEST = path.join(ARENA_ROOT, 'tests/integration-tests/Cargo.toml');
 const INDEXER_MANIFEST = path.join(ARENA_ROOT, 'indexer/Cargo.toml');
 
-const DEFAULT_OUTPUT = path.join(
-    ARENA_ROOT,
-    '.baselines/t70-sprint-baseline.json',
-);
+const DEFAULT_OUTPUT = path.join(ARENA_ROOT, '.baselines/t70-sprint-baseline.json');
 
 const SPRINTS: SprintSpec[] = [
     {
@@ -140,7 +133,7 @@ const SPRINTS: SprintSpec[] = [
 
 async function runCommand(spec: CommandSpec): Promise<CommandResult> {
     const startedAt = Date.now();
-    return await new Promise((resolve) => {
+    return await new Promise(resolve => {
         const child = spawn(spec.command, {
             shell: true,
             cwd: REPO_ROOT,
@@ -149,18 +142,18 @@ async function runCommand(spec: CommandSpec): Promise<CommandResult> {
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (chunk) => {
+        child.stdout.on('data', chunk => {
             const text = String(chunk);
             stdout += text;
             process.stdout.write(text);
         });
-        child.stderr.on('data', (chunk) => {
+        child.stderr.on('data', chunk => {
             const text = String(chunk);
             stderr += text;
             process.stderr.write(text);
         });
 
-        child.on('close', (code) => {
+        child.on('close', code => {
             const exitCode = typeof code === 'number' ? code : 1;
             resolve({
                 id: spec.id,
@@ -180,10 +173,7 @@ function percentile(values: number[], p: number): number {
         return 0;
     }
     const sorted = [...values].sort((a, b) => a - b);
-    const index = Math.min(
-        sorted.length - 1,
-        Math.max(0, Math.ceil((p / 100) * sorted.length) - 1),
-    );
+    const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
     return sorted[index] ?? 0;
 }
 
@@ -213,20 +203,18 @@ function parseInstructionBaselines(output: string): InstructionBaseline[] {
 }
 
 function normalizeOutputPath(argv: string[]): string {
-    const outputArg = argv.find((arg) => arg.startsWith('--output='));
+    const outputArg = argv.find(arg => arg.startsWith('--output='));
     if (outputArg) {
         return path.resolve(REPO_ROOT, outputArg.slice('--output='.length));
     }
-    const outputIndex = argv.findIndex((arg) => arg === '--output');
+    const outputIndex = argv.findIndex(arg => arg === '--output');
     if (outputIndex >= 0 && argv[outputIndex + 1]) {
         return path.resolve(REPO_ROOT, argv[outputIndex + 1]);
     }
     return DEFAULT_OUTPUT;
 }
 
-export async function runT70SprintBaseline(
-    outputPath = DEFAULT_OUTPUT,
-): Promise<BaselineReport> {
+export async function runT70SprintBaseline(outputPath = DEFAULT_OUTPUT): Promise<BaselineReport> {
     const sprintReports: SprintReport[] = [];
     const allCommandResults: CommandResult[] = [];
     const instructionBaselines: InstructionBaseline[] = [];
@@ -238,20 +226,17 @@ export async function runT70SprintBaseline(
             const result = await runCommand(command);
             sprintResults.push(result);
             allCommandResults.push(result);
-            instructionBaselines.push(
-                ...parseInstructionBaselines(`${result.stdout}\n${result.stderr}`),
-            );
+            instructionBaselines.push(...parseInstructionBaselines(`${result.stdout}\n${result.stderr}`));
         }
 
-        const passed = sprintResults.filter((result) => result.success).length;
-        const passRate =
-            sprintResults.length === 0 ? 0 : Math.round((passed / sprintResults.length) * 10_000) / 10_000;
+        const passed = sprintResults.filter(result => result.success).length;
+        const passRate = sprintResults.length === 0 ? 0 : Math.round((passed / sprintResults.length) * 10_000) / 10_000;
         sprintReports.push({
             name: sprint.name,
             tasks: sprint.tasks,
             passRate,
-            latencyMs: summarizeLatency(sprintResults.map((result) => result.durationMs)),
-            commands: sprintResults.map((result) => ({
+            latencyMs: summarizeLatency(sprintResults.map(result => result.durationMs)),
+            commands: sprintResults.map(result => ({
                 id: result.id,
                 success: result.success,
                 exitCode: result.exitCode,
@@ -264,9 +249,7 @@ export async function runT70SprintBaseline(
         allCommandResults.length === 0
             ? 0
             : Math.round(
-                  (allCommandResults.filter((result) => result.success).length /
-                      allCommandResults.length) *
-                      10_000,
+                  (allCommandResults.filter(result => result.success).length / allCommandResults.length) * 10_000,
               ) / 10_000;
 
     const report: BaselineReport = {
@@ -276,9 +259,7 @@ export async function runT70SprintBaseline(
         instructionBaselines,
         overall: {
             passRate: allPassRate,
-            latencyMs: summarizeLatency(
-                allCommandResults.map((result) => result.durationMs),
-            ),
+            latencyMs: summarizeLatency(allCommandResults.map(result => result.durationMs)),
         },
     };
 
@@ -287,27 +268,21 @@ export async function runT70SprintBaseline(
     return report;
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     const outputPath = normalizeOutputPath(process.argv.slice(2));
     runT70SprintBaseline(outputPath)
-        .then((report) => {
+        .then(report => {
             process.stdout.write(
                 `[T70] baseline generated: ${outputPath}\n[T70] overall passRate=${report.overall.passRate}\n`,
             );
             if (report.instructionBaselines.length === 0) {
-                process.stderr.write(
-                    '[T70] warning: no instruction baseline lines captured\n',
-                );
+                process.stderr.write('[T70] warning: no instruction baseline lines captured\n');
             }
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

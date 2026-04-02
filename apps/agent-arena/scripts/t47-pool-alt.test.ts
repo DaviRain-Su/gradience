@@ -32,13 +32,10 @@ test('buildCoverage marks unimplemented n50/n100 cells', () => {
     ];
 
     const coverage = buildCoverage(cases, results);
-    const pool = coverage.find((entry) => entry.scenario === 'pool_settlement');
+    const pool = coverage.find(entry => entry.scenario === 'pool_settlement');
     assert.ok(pool);
     assert.equal(pool.overall, 'pass');
-    assert.equal(
-        pool.cells.find((entry) => entry.scale === 'n50')?.status,
-        'not_implemented',
-    );
+    assert.equal(pool.cells.find(entry => entry.scale === 'n50')?.status, 'not_implemented');
 });
 
 test('buildCoverage marks required alt failure correctly', () => {
@@ -69,11 +66,8 @@ test('buildCoverage marks required alt failure correctly', () => {
     ];
 
     const coverage = buildCoverage(cases, results);
-    const alt = coverage.find((entry) => entry.scenario === 'alt_switch');
+    const alt = coverage.find(entry => entry.scenario === 'alt_switch');
     assert.ok(alt);
     assert.equal(alt.overall, 'fail');
-    assert.equal(
-        alt.cells.find((entry) => entry.scale === 'n50')?.status,
-        'fail',
-    );
+    assert.equal(alt.cells.find(entry => entry.scale === 'n50')?.status, 'fail');
 });

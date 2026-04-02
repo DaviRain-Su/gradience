@@ -52,10 +52,7 @@ describe('indexer worker webhook auth', () => {
             body: JSON.stringify({}),
         });
 
-        const response = await worker.fetch(
-            request,
-            makeMockEnv() as Parameters<typeof worker.fetch>[1],
-        );
+        const response = await worker.fetch(request, makeMockEnv() as Parameters<typeof worker.fetch>[1]);
         const payload = (await response.json()) as { error: string };
 
         expect(response.status).toBe(503);
@@ -128,9 +125,7 @@ describe('indexer worker task query contract', () => {
         );
         const payload = (await response.json()) as { error: string };
         expect(response.status).toBe(400);
-        expect(payload.error).toBe(
-            'invalid sort value: created_at_desc (expected task_id_desc|task_id_asc)',
-        );
+        expect(payload.error).toBe('invalid sort value: created_at_desc (expected task_id_desc|task_id_asc)');
     });
 
     it('accepts page alias for /api/tasks pagination', async () => {
@@ -142,7 +137,7 @@ describe('indexer worker task query contract', () => {
         expect(response.status).toBe(200);
         const payload = (await response.json()) as unknown[];
         expect(Array.isArray(payload)).toBe(true);
-        const taskQuery = calls.find((entry) => entry.query.includes('FROM tasks'));
+        const taskQuery = calls.find(entry => entry.query.includes('FROM tasks'));
         expect(taskQuery).toBeDefined();
         expect(taskQuery?.values[4]).toBe(10);
         expect(taskQuery?.values[5]).toBe(10);
@@ -181,24 +176,20 @@ describe('indexer worker task query contract', () => {
         });
         const response = await worker.fetch(request, env);
         expect(response.status).toBe(200);
-        const taskQuery = calls.find((entry) => entry.query.includes('FROM tasks'));
+        const taskQuery = calls.find(entry => entry.query.includes('FROM tasks'));
         expect(taskQuery?.query).toContain('ORDER BY task_id ASC');
     });
 
     it('accepts submissions sort alias submission_slot_desc', async () => {
         const { env, calls } = makeSpyEnv('expected-token', {
-            firstResult: (query) =>
-                query.includes('SELECT task_id FROM tasks') ? { task_id: 1 } : null,
+            firstResult: query => (query.includes('SELECT task_id FROM tasks') ? { task_id: 1 } : null),
         });
-        const request = new Request(
-            'https://worker.example/api/tasks/1/submissions?sort=submission_slot_desc',
-            {
-                method: 'GET',
-            },
-        );
+        const request = new Request('https://worker.example/api/tasks/1/submissions?sort=submission_slot_desc', {
+            method: 'GET',
+        });
         const response = await worker.fetch(request, env);
         expect(response.status).toBe(200);
-        const submissionsQuery = calls.find((entry) => entry.query.includes('FROM submissions'));
+        const submissionsQuery = calls.find(entry => entry.query.includes('FROM submissions'));
         expect(submissionsQuery?.query).toContain('ORDER BY submission_slot DESC');
     });
 });

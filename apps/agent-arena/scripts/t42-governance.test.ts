@@ -54,12 +54,7 @@ test('decodeProgramConfigUpgradeAuthority reads upgrade authority bytes', () => 
     const minStake = Buffer.alloc(8);
     minStake.writeBigUInt64LE(2_000_000_000n);
 
-    const encoded = Buffer.concat([
-        Buffer.from([0x09, 0x01]),
-        treasury,
-        upgradeAuthority.toBuffer(),
-        minStake,
-    ]);
+    const encoded = Buffer.concat([Buffer.from([0x09, 0x01]), treasury, upgradeAuthority.toBuffer(), minStake]);
     const decoded = decodeProgramConfigUpgradeAuthority(encoded);
     assert.equal(decoded.toBase58(), upgradeAuthority.toBase58());
 });

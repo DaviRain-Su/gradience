@@ -1,10 +1,7 @@
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import {
-    buildInteropPublisherFromEnv,
-    type ReputationInteropSignal,
-} from '../judge-daemon/src/interop.js';
+import { buildInteropPublisherFromEnv, type ReputationInteropSignal } from '../judge-daemon/src/interop.js';
 
 type InteropRole = 'winner' | 'poster' | 'judge' | 'loser';
 
@@ -47,9 +44,7 @@ function requireEnv(name: string, env: NodeJS.ProcessEnv): string {
 }
 
 function inferStatusEndpoint(endpoint: string, suffix: string, replacement: string): string {
-    return endpoint.endsWith(suffix)
-        ? `${endpoint.slice(0, -suffix.length)}${replacement}`
-        : endpoint;
+    return endpoint.endsWith(suffix) ? `${endpoint.slice(0, -suffix.length)}${replacement}` : endpoint;
 }
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -60,9 +55,7 @@ async function fetchJson(url: string): Promise<unknown> {
     return response.json();
 }
 
-export async function runInteropDrill(
-    env: NodeJS.ProcessEnv = process.env,
-): Promise<InteropDrillResult> {
+export async function runInteropDrill(env: NodeJS.ProcessEnv = process.env): Promise<InteropDrillResult> {
     requireEnv('JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT', env);
     requireEnv('JUDGE_DAEMON_AGENT_IM_INTEROP_ENDPOINT', env);
 
@@ -75,10 +68,8 @@ export async function runInteropDrill(
     }
 
     const agent = env.DRILL_AGENT ?? '11111111111111111111111111111111';
-    const poster =
-        env.DRILL_POSTER ?? '22222222222222222222222222222222';
-    const judge =
-        env.DRILL_JUDGE ?? '33333333333333333333333333333333';
+    const poster = env.DRILL_POSTER ?? '22222222222222222222222222222222';
+    const judge = env.DRILL_JUDGE ?? '33333333333333333333333333333333';
     const participants = resolveParticipants(agent, env);
     const signal: ReputationInteropSignal = {
         taskId: Number(env.DRILL_TASK_ID ?? 999001),
@@ -98,7 +89,7 @@ export async function runInteropDrill(
         signal.winner,
         signal.poster,
         signal.judge,
-        ...participants.filter((participant) => participant !== signal.winner),
+        ...participants.filter(participant => participant !== signal.winner),
     ]);
     const feedbackDispatches = buildFeedbackDispatches(signal);
 
@@ -107,16 +98,13 @@ export async function runInteropDrill(
     if (publisher.flushOutbox) {
         const drained = await publisher.flushOutbox();
         if (drained.remaining > 0) {
-            throw new Error(
-                `interop outbox still has remaining entries: ${drained.remaining}`,
-            );
+            throw new Error(`interop outbox still has remaining entries: ${drained.remaining}`);
         }
     }
 
     const evmRelayEndpoint = requireEnv('JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT', env);
     const relayStatusEndpoint =
-        env.EVM_RELAY_STATUS_ENDPOINT ??
-        inferStatusEndpoint(evmRelayEndpoint, '/relay/submit-reputation', '/status');
+        env.EVM_RELAY_STATUS_ENDPOINT ?? inferStatusEndpoint(evmRelayEndpoint, '/relay/submit-reputation', '/status');
     const relayStatus = (await fetchJson(relayStatusEndpoint)) as {
         success?: number;
         failed?: number;
@@ -145,41 +133,16 @@ export async function runInteropDrill(
                 knownAgents?: number;
             };
         };
-        const expectedIdentitySuccess = erc8004IdentityEndpoint
-            ? identityRecipients.length
-            : 0;
-        const expectedFeedbackSuccess = erc8004FeedbackEndpoint
-            ? feedbackDispatches.length
-            : 0;
-        if (
-            erc8004IdentityEndpoint &&
-            (erc8004Status.erc8004?.identity?.success ?? 0) < expectedIdentitySuccess
-        ) {
-            throw new Error(
-                `erc8004 identity success counter not incremented: ${JSON.stringify(
-                    erc8004Status,
-                )}`,
-            );
+        const expectedIdentitySuccess = erc8004IdentityEndpoint ? identityRecipients.length : 0;
+        const expectedFeedbackSuccess = erc8004FeedbackEndpoint ? feedbackDispatches.length : 0;
+        if (erc8004IdentityEndpoint && (erc8004Status.erc8004?.identity?.success ?? 0) < expectedIdentitySuccess) {
+            throw new Error(`erc8004 identity success counter not incremented: ${JSON.stringify(erc8004Status)}`);
         }
-        if (
-            erc8004FeedbackEndpoint &&
-            (erc8004Status.erc8004?.feedback?.success ?? 0) < expectedFeedbackSuccess
-        ) {
-            throw new Error(
-                `erc8004 feedback success counter not incremented: ${JSON.stringify(
-                    erc8004Status,
-                )}`,
-            );
+        if (erc8004FeedbackEndpoint && (erc8004Status.erc8004?.feedback?.success ?? 0) < expectedFeedbackSuccess) {
+            throw new Error(`erc8004 feedback success counter not incremented: ${JSON.stringify(erc8004Status)}`);
         }
-        if (
-            erc8004IdentityEndpoint &&
-            (erc8004Status.erc8004?.knownAgents ?? 0) < identityRecipients.length
-        ) {
-            throw new Error(
-                `erc8004 knownAgents below expected recipients: ${JSON.stringify(
-                    erc8004Status,
-                )}`,
-            );
+        if (erc8004IdentityEndpoint && (erc8004Status.erc8004?.knownAgents ?? 0) < identityRecipients.length) {
+            throw new Error(`erc8004 knownAgents below expected recipients: ${JSON.stringify(erc8004Status)}`);
         }
         erc8004StatusSummary = {
             identitySuccess: erc8004Status.erc8004?.identity?.success ?? 0,
@@ -193,26 +156,16 @@ export async function runInteropDrill(
         env.AGENT_IM_INTEROP_STATUS_ENDPOINT ??
         inferStatusEndpoint(agentImEventsEndpoint, '/interop/events', '/interop/status');
     const agentImStatusByAgent: Record<string, AgentInteropStatus> = {};
-    const agentsToAudit = uniqueAgents([
-        ...identityRecipients,
-        ...feedbackDispatches.map((dispatch) => dispatch.agent),
-    ]);
+    const agentsToAudit = uniqueAgents([...identityRecipients, ...feedbackDispatches.map(dispatch => dispatch.agent)]);
     for (const targetAgent of agentsToAudit) {
         const status = await fetchAgentImStatus(agentImStatusBase, targetAgent);
         agentImStatusByAgent[targetAgent] = status;
-        const expectedIdentity =
-            !!erc8004IdentityEndpoint && identityRecipients.includes(targetAgent);
-        const expectedErc8004 = erc8004FeedbackEndpoint
-            ? countFeedbackDispatches(feedbackDispatches, targetAgent)
-            : 0;
+        const expectedIdentity = !!erc8004IdentityEndpoint && identityRecipients.includes(targetAgent);
+        const expectedErc8004 = erc8004FeedbackEndpoint ? countFeedbackDispatches(feedbackDispatches, targetAgent) : 0;
         const expectedEvm = countFeedbackDispatches(feedbackDispatches, targetAgent);
-        const expectedIstrana = istranaEndpoint
-            ? countFeedbackDispatches(feedbackDispatches, targetAgent)
-            : 0;
+        const expectedIstrana = istranaEndpoint ? countFeedbackDispatches(feedbackDispatches, targetAgent) : 0;
         if (expectedIdentity && !status.identityRegistered) {
-            throw new Error(
-                `agent-im identity status not updated for ${targetAgent}: ${JSON.stringify(status)}`,
-            );
+            throw new Error(`agent-im identity status not updated for ${targetAgent}: ${JSON.stringify(status)}`);
         }
         if ((status.erc8004FeedbackCount ?? 0) < expectedErc8004) {
             throw new Error(
@@ -246,10 +199,7 @@ export async function runInteropDrill(
     };
 }
 
-async function fetchAgentImStatus(
-    statusEndpoint: string,
-    agent: string,
-): Promise<AgentInteropStatus> {
+async function fetchAgentImStatus(statusEndpoint: string, agent: string): Promise<AgentInteropStatus> {
     const statusUrl = new URL(statusEndpoint);
     statusUrl.searchParams.set('agent', agent);
     const payload = (await fetchJson(statusUrl.toString())) as {
@@ -273,8 +223,8 @@ function parseCsvList(value: string | undefined): string[] {
     }
     return value
         .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
 }
 
 function uniqueAgents(values: string[]): string[] {
@@ -291,9 +241,7 @@ function uniqueAgents(values: string[]): string[] {
     return output;
 }
 
-function buildFeedbackDispatches(
-    signal: ReputationInteropSignal,
-): FeedbackDispatchExpectation[] {
+function buildFeedbackDispatches(signal: ReputationInteropSignal): FeedbackDispatchExpectation[] {
     const seen = new Set<string>();
     const dispatches: FeedbackDispatchExpectation[] = [];
     const append = (role: InteropRole, agent: string) => {
@@ -321,28 +269,21 @@ function buildFeedbackDispatches(
     return dispatches;
 }
 
-function countFeedbackDispatches(
-    dispatches: FeedbackDispatchExpectation[],
-    agent: string,
-): number {
-    return dispatches.filter((dispatch) => dispatch.agent === agent).length;
+function countFeedbackDispatches(dispatches: FeedbackDispatchExpectation[], agent: string): number {
+    return dispatches.filter(dispatch => dispatch.agent === agent).length;
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runInteropDrill(process.env)
-        .then((result) => {
+        .then(result => {
             process.stdout.write(
                 `[drill] interop e2e passed for agent=${result.agent} taskId=${result.taskId} recipients=${result.identityRecipients.length}\n`,
             );
         })
-        .catch((error) => {
-            process.stderr.write(
-                `${error instanceof Error ? error.message : String(error)}\n`,
-            );
+        .catch(error => {
+            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
             process.exit(1);
         });
 }

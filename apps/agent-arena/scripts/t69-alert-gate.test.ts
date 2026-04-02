@@ -3,12 +3,7 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { test } from 'node:test';
 
-import {
-    evaluateAlertGate,
-    parsePrometheusMetrics,
-    runAlertGate,
-    type AlertGateSnapshot,
-} from './t69-alert-gate.ts';
+import { evaluateAlertGate, parsePrometheusMetrics, runAlertGate, type AlertGateSnapshot } from './t69-alert-gate.ts';
 
 test('parsePrometheusMetrics parses gauge and labeled metrics', () => {
     const metrics = parsePrometheusMetrics(
@@ -48,9 +43,9 @@ test('evaluateAlertGate fails on threshold breaches', () => {
         maxEventStalenessSeconds: 500,
         requireEventActivity: true,
     });
-    assert.ok(failures.some((item) => item.includes('pending workflows too high')));
-    assert.ok(failures.some((item) => item.includes('source errors too high')));
-    assert.ok(failures.some((item) => item.includes('event timestamp stale')));
+    assert.ok(failures.some(item => item.includes('pending workflows too high')));
+    assert.ok(failures.some(item => item.includes('source errors too high')));
+    assert.ok(failures.some(item => item.includes('event timestamp stale')));
 });
 
 test('runAlertGate succeeds with healthy mock endpoints', async () => {
@@ -71,9 +66,7 @@ test('runAlertGate succeeds with healthy mock endpoints', async () => {
             res.end(
                 [
                     'gradience_indexer_events_processed_total 5',
-                    `gradience_indexer_last_event_timestamp_unix ${Math.floor(
-                        Date.now() / 1000,
-                    )}`,
+                    `gradience_indexer_last_event_timestamp_unix ${Math.floor(Date.now() / 1000)}`,
                 ].join('\n'),
             );
             return;
@@ -84,9 +77,7 @@ test('runAlertGate succeeds with healthy mock endpoints', async () => {
                 [
                     'gradience_judge_daemon_pending_workflows 0',
                     'gradience_judge_daemon_source_errors_total 0',
-                    `gradience_judge_daemon_last_event_timestamp_unix ${Math.floor(
-                        Date.now() / 1000,
-                    )}`,
+                    `gradience_judge_daemon_last_event_timestamp_unix ${Math.floor(Date.now() / 1000)}`,
                     'gradience_judge_daemon_mode_info{mode="triton"} 1',
                 ].join('\n'),
             );

@@ -3,12 +3,7 @@
 import { AccountRole, createNoopSigner, type Address, type Instruction } from '@solana/kit';
 import type { WalletAdapter } from '@gradience/sdk';
 import bs58 from 'bs58';
-import {
-    Connection,
-    PublicKey,
-    Transaction,
-    TransactionInstruction,
-} from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 
 import { RPC_ENDPOINT } from './config';
 
@@ -45,7 +40,7 @@ export function listInjectedWallets(source?: InjectedWindowLike): InjectedWallet
     const root = source ?? (typeof window !== 'undefined' ? (window as InjectedWindowLike) : {});
     const providers: Array<{ provider: InjectedWalletProvider; hint?: string }> = [];
     if (root.solana?.providers?.length) {
-        providers.push(...root.solana.providers.map((provider) => ({ provider })));
+        providers.push(...root.solana.providers.map(provider => ({ provider })));
     }
     if (root.solana) {
         providers.push({ provider: root.solana });
@@ -128,11 +123,7 @@ export function extractWalletAddress(
         if (typeof candidate === 'string' && isLikelyBase58Address(candidate)) {
             return candidate;
         }
-        if (
-            typeof candidate === 'object' &&
-            'toBase58' in candidate &&
-            typeof candidate.toBase58 === 'function'
-        ) {
+        if (typeof candidate === 'object' && 'toBase58' in candidate && typeof candidate.toBase58 === 'function') {
             const value = String(candidate.toBase58());
             if (isLikelyBase58Address(value)) {
                 return value;
@@ -197,14 +188,10 @@ export class InjectedBrowserWalletAdapter implements WalletAdapter {
 export function toWeb3Instruction(instruction: Instruction): TransactionInstruction {
     return new TransactionInstruction({
         programId: new PublicKey(String(instruction.programAddress)),
-        keys: (instruction.accounts ?? []).map((account) => ({
+        keys: (instruction.accounts ?? []).map(account => ({
             pubkey: new PublicKey(String(account.address)),
-            isSigner:
-                account.role === AccountRole.READONLY_SIGNER ||
-                account.role === AccountRole.WRITABLE_SIGNER,
-            isWritable:
-                account.role === AccountRole.WRITABLE ||
-                account.role === AccountRole.WRITABLE_SIGNER,
+            isSigner: account.role === AccountRole.READONLY_SIGNER || account.role === AccountRole.WRITABLE_SIGNER,
+            isWritable: account.role === AccountRole.WRITABLE || account.role === AccountRole.WRITABLE_SIGNER,
         })),
         data: Buffer.from(instruction.data ?? new Uint8Array()),
     });

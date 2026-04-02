@@ -34,7 +34,7 @@ test('PollingEventSource executes ticks sequentially without overlap', async () 
 
 test('createIndexerPollingFetcher bounds seen task ids to avoid unbounded growth', async () => {
     let tick = 0;
-    const fetcher: typeof fetch = async (input) => {
+    const fetcher: typeof fetch = async input => {
         const url = String(input);
         if (url.includes('/api/tasks?')) {
             const parsed = new URL(url);
@@ -67,14 +67,14 @@ test('createIndexerPollingFetcher bounds seen task ids to avoid unbounded growth
     const third = await poll();
 
     const firstTaskIds = first
-        .filter((event) => event.event.event === 'task_created')
-        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+        .filter(event => event.event.event === 'task_created')
+        .map(event => (event.event.event === 'task_created' ? event.event.task_id : -1));
     const secondTaskIds = second
-        .filter((event) => event.event.event === 'task_created')
-        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+        .filter(event => event.event.event === 'task_created')
+        .map(event => (event.event.event === 'task_created' ? event.event.task_id : -1));
     const thirdTaskIds = third
-        .filter((event) => event.event.event === 'task_created')
-        .map((event) => (event.event.event === 'task_created' ? event.event.task_id : -1));
+        .filter(event => event.event.event === 'task_created')
+        .map(event => (event.event.event === 'task_created' ? event.event.task_id : -1));
 
     assert.deepEqual(firstTaskIds, [5, 4, 3, 2, 1]);
     assert.deepEqual(secondTaskIds, [9, 8, 7, 6]);
@@ -100,7 +100,7 @@ function json(payload: unknown): Response {
 }
 
 function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         setTimeout(resolve, ms);
     });
 }

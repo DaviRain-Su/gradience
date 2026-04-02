@@ -3,13 +3,7 @@ import test from 'node:test';
 
 import { createSolanaRpc, generateKeyPairSigner } from '@solana/kit';
 
-import {
-    KeypairAdapter,
-    KiteAdapter,
-    OKXAdapter,
-    OpenWalletAdapter,
-    PrivyAdapter,
-} from './wallet-adapters.js';
+import { KeypairAdapter, KiteAdapter, OKXAdapter, OpenWalletAdapter, PrivyAdapter } from './wallet-adapters.js';
 
 type RpcClient = ReturnType<typeof createSolanaRpc>;
 

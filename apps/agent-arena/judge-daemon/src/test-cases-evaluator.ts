@@ -60,9 +60,7 @@ export class WasmTestCasesEvaluator implements ScoreEvaluator {
         return {
             score,
             reasoning:
-                passRate >= minPassRate
-                    ? 'test_cases passed'
-                    : `test_cases failed: pass_rate=${passRate.toFixed(3)}`,
+                passRate >= minPassRate ? 'test_cases passed' : `test_cases failed: pass_rate=${passRate.toFixed(3)}`,
             dimensionScores: {
                 pass_rate: Number(passRate.toFixed(4)),
                 min_pass_rate: minPassRate,
@@ -106,10 +104,7 @@ function parseTestCases(raw: unknown): TestCaseSpec[] {
         .filter((value): value is TestCaseSpec => value !== null);
 }
 
-async function resolveWasmBytes(
-    criteria: TestCasesCriteria,
-    reader: BytesRefReader,
-): Promise<Uint8Array | null> {
+async function resolveWasmBytes(criteria: TestCasesCriteria, reader: BytesRefReader): Promise<Uint8Array | null> {
     const wasmRef = asString(criteria.wasm_ref);
     if (wasmRef) {
         return reader.fetchBytes(wasmRef);
@@ -121,10 +116,7 @@ async function resolveWasmBytes(
     return null;
 }
 
-function evaluateByTestCases(
-    testCases: TestCaseSpec[],
-    resultContent: string,
-): { score: number; passRate: number } {
+function evaluateByTestCases(testCases: TestCaseSpec[], resultContent: string): { score: number; passRate: number } {
     const parsedResult = safeParseJsonRecord(resultContent);
     let totalWeight = 0;
     let passedWeight = 0;
@@ -215,7 +207,7 @@ const { parentPort, workerData } = require('node:worker_threads');
             }
             resolve(payload.score ?? 0);
         });
-        worker.once('error', (error) => {
+        worker.once('error', error => {
             clearTimeout(timeout);
             reject(error);
         });
@@ -322,9 +314,7 @@ function ensureInstructionBytesNoFloat(code: Uint8Array): void {
         offset += 1;
 
         if (isFloatingPointOpcode(opcode)) {
-            throw new Error(
-                `Deterministic subset forbids floating-point opcode 0x${opcode.toString(16)}`,
-            );
+            throw new Error(`Deterministic subset forbids floating-point opcode 0x${opcode.toString(16)}`);
         }
 
         if (isNoImmediateOpcode(opcode)) {
@@ -332,9 +322,7 @@ function ensureInstructionBytesNoFloat(code: Uint8Array): void {
         }
 
         if (opcode === 0xfc || opcode === 0xfd || opcode === 0xfe) {
-            throw new Error(
-                `Deterministic subset forbids opcode prefix 0x${opcode.toString(16)}`,
-            );
+            throw new Error(`Deterministic subset forbids opcode prefix 0x${opcode.toString(16)}`);
         }
 
         if (opcode === 0x02 || opcode === 0x03 || opcode === 0x04) {
@@ -373,9 +361,7 @@ function ensureInstructionBytesNoFloat(code: Uint8Array): void {
             const typeCount = readLebU32(code, offset);
             offset = typeCount.nextOffset;
             for (let i = 0; i < typeCount.value; i += 1) {
-                assertNoFloatValType(
-                    readByte(code, offset, 'Corrupted wasm select type immediate'),
-                );
+                assertNoFloatValType(readByte(code, offset, 'Corrupted wasm select type immediate'));
                 offset += 1;
             }
             continue;
@@ -500,11 +486,7 @@ function readLebU32(bytes: Uint8Array, startOffset: number): { value: number; ne
     throw new Error('Invalid leb128 encoding in wasm');
 }
 
-function readLebSigned(
-    bytes: Uint8Array,
-    startOffset: number,
-    maxBits: number,
-): { nextOffset: number } {
+function readLebSigned(bytes: Uint8Array, startOffset: number, maxBits: number): { nextOffset: number } {
     let shift = 0;
     let offset = startOffset;
     while (offset < bytes.length) {
