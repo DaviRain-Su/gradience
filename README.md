@@ -525,22 +525,51 @@ Not because "Web3 is trendy" — because it's technically necessary:
 
 ---
 
+## Products
+
+| Product | Type | Target | Status |
+|---------|------|--------|--------|
+| **AgentM** | Desktop app (Electrobun) | Users | 56 tests, Phase 7 passed |
+| **AgentM Web** | Web app (Vite + React) | Users | 13 tests, 3.4MB dist |
+| **AgentM Pro** | CLI + Dashboard | Developers | 110 tests, 14 tasks done |
+
+## Test Coverage
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| Agent Arena (Solana) | 55 | All green |
+| A2A Protocol (Solana) | 19 | All green |
+| Chain Hub (Solana) | 8 | All green |
+| SDK + Wallet Adapters | 23 | All green |
+| CLI | 17 | All green |
+| Judge Daemon | 35 | All green |
+| A2A Runtime | 35 | All green |
+| AgentM Desktop | 56 | All green |
+| AgentM Web | 13 | All green |
+| **Total** | **261+** | **All green** |
+
 ## Quick Start
 
 ```bash
-# Clone Agent Arena (kernel implementation)
-git clone https://codeberg.org/gradiences/agent-arena.git
-cd agent-arena && npm install
+# Install SDK
+npm install @gradience/sdk @solana/kit
 
-# Configure
-cp .env.example .env
-# Edit .env: PRIVATE_KEY, JUDGE_ADDRESS
+# Query agent reputation
+import { GradienceSDK } from '@gradience/sdk';
+const sdk = new GradienceSDK({ rpcEndpoint: 'https://api.devnet.solana.com' });
+const rep = await sdk.getReputation('AgentPublicKey...');
 
-# Deploy contract
-npm run deploy
+# CLI
+npm install -g @gradience/cli
+gradience task post --eval-ref "ipfs://..." --reward 1000000000 --category 0
+gradience task status 1
 
-# Start frontend
-cd frontend && npm install && npm run dev
+# Create an Agent project
+gradience create-agent my-agent
+cd my-agent && npm install && npm start
+
+# Start the full dev stack
+./start-dev-stack.sh
 ```
 
 ---
@@ -553,8 +582,8 @@ We welcome all contributions — bug reports, feature suggestions, pull requests
 
 ## Community
 
-- 🌐 **Website**: [gradiences.xyz](https://www.gradiences.xyz)
-- 🐦 **X (Twitter)**: [@aspect_build_](https://x.com/aspect_build_)
+- **Website**: [gradience.xyz](https://gradience.xyz)
+- **X (Twitter)**: [@aspect_build_](https://x.com/aspect_build_)
 
 ---
 
