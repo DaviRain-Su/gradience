@@ -1,0 +1,23 @@
+{
+  "name": "@gradience/agent-im",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test src/renderer/lib/a2a-client.test.ts src/renderer/lib/ranking.test.ts src/renderer/lib/store.test.ts src/main/api-server.test.ts",
+    "test:a2a": "tsx --test src/renderer/lib/a2a-client.test.ts",
+    "test:ranking": "tsx --test src/renderer/lib/ranking.test.ts",
+    "test:store": "tsx --test src/renderer/lib/store.test.ts",
+    "test:api": "tsx --test src/main/api-server.test.ts"
+  },
+  "dependencies": {
+    "@gradience/sdk": "file:../agent-arena/clients/typescript",
+    "@solana/kit": "^5.5.1",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3",
+    "@types/node": "^20.19.37"
+  }
+}
