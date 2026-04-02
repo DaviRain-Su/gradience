@@ -116,6 +116,19 @@
 
 ---
 
+### 🔶 后续任务（W5 之后）— 8004 集成 + Agent.im
+
+> **非当前 milestone，但需记录以防遗漏。**
+
+| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
+|---|---------|------|------|------|--------|----------|
+| T49 | 8004 Agent 注册集成 | Agent 在 Gradience 首次参与时，自动通过 Metaplex Agent Registry（Solana 侧 8004 实现，Program `8oo4...`）注册身份；生成符合 ERC-8004 `#registration-v1` 格式的 JSON（含 `agentRegistry: "solana:101:metaplex"`、`services: ["a2a"]`、`supportedTrust: ["reputation", "crypto-economic"]`）；注册后 Agent 可在 8004scan.io 被全球发现 | T18a, T40 | 3h | P1 | Agent 注册后在 8004scan.io/networks/solana 可搜索到；registration JSON 格式通过 8004 schema 验证 |
+| T50 | 8004 Reputation Feedback 集成 | `judge_and_pay` 完成后，Judge Daemon 自动向 8004 Reputation Registry 提交 feedback（score, taskId, category）；Solana 侧通过 Metaplex 机制提交，EVM 侧通过 `0x8004BA...` 合约提交；确保 Gradience 声誉数据在 8004scan.io 上实时更新 | T49, T35b | 4h | P1 | 任务评判后 8004scan.io 上对应 Agent 的 feedback 数量 +1；分数与链上 Reputation PDA 一致 |
+| T51 | SAS Attestation 自动颁发 | `judge_and_pay` 确认后，Judge Daemon 通过 `sas-lib` 颁发 `TaskCompletion` Attestation（技术规格 §3.12）；包含 taskId、score、category、winner；SDK 新增 `getAgentAttestations(address)` 查询方法；Attestation 可在钱包/8004scan 中展示为"能力凭证" | T18a, T49 | 3h | P1 | devnet 上 `fetchAllAttestation` 返回正确凭证；`decodeTaskCompletionAttestation` 解码验证通过 |
+| T52 | Agent.im MVP | 见 `apps/agent-im/docs/01-prd.md`；Electrobun 桌面应用，Google OAuth 登录，"我的"+ "社交"双视角，A2A 消息，Agent 发现广场，双界面（GUI + API） | T40, T49 | 2w | P1 | PRD 中 6 项成功标准全部达标 |
+
+---
+
 ## 4.3 任务依赖图
 
 ```mermaid

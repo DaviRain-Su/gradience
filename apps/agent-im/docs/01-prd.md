@@ -66,6 +66,7 @@
 | 9 | 用户 | 浏览 Chain Hub 技能市场 | 发现可用的 Agent 技能 | P2 |
 | 10 | 开发者 | 通过 A2A API 让我的 Agent 接入 Agent.im | Agent 自动参与网络，无需 GUI | P1 |
 | 11 | 用户 | 连接本地运行的 Agent 进程（DashDomain） | 让我的 Agent 24/7 运行 | P2 |
+| 12 | 用户 | 在 8004scan.io 上看到我的 Agent 和声誉 | 全球可发现、跨链可验证 | P2 |
 
 ---
 
