@@ -99,6 +99,8 @@ export class PostgresRelayStore implements RelayStore {
   private dbQueryCount = 0;
   private dbQueryFailures = 0;
   private dbQueryLatencyTotalMs = 0;
+  private lastKnownMetrics = normalizePersistedMetrics(DEFAULT_STATE.metrics);
+  private lastKnownDbAlertState = normalizePersistedDbAlertState(DEFAULT_STATE.dbAlertState);
 
   constructor(
     private readonly client: SqlClientLike,
@@ -250,8 +252,17 @@ export class PostgresRelayStore implements RelayStore {
   }
 
   async getMetrics(): Promise<RelayMetrics> {
-    const state = await this.readState();
-    const base = normalizePersistedMetrics(state.metrics);
+    let base = this.lastKnownMetrics;
+    try {
+      const state = await this.readState();
+      base = normalizePersistedMetrics(state.metrics);
+      this.lastKnownMetrics = base;
+    } catch (error) {
+      if (isRolePolicyError(error)) {
+        throw error;
+      }
+      base = this.lastKnownMetrics;
+    }
     return {
       ...base,
       dbQueryCount: this.dbQueryCount,
@@ -262,13 +273,24 @@ export class PostgresRelayStore implements RelayStore {
   }
 
   async getDbAlertState(): Promise<RelayDbAlertState> {
-    const state = await this.readState();
-    return { ...normalizePersistedDbAlertState(state.dbAlertState) };
+    try {
+      const state = await this.readState();
+      const normalized = normalizePersistedDbAlertState(state.dbAlertState);
+      this.lastKnownDbAlertState = normalized;
+      return { ...normalized };
+    } catch (error) {
+      if (isRolePolicyError(error)) {
+        throw error;
+      }
+      return { ...this.lastKnownDbAlertState };
+    }
   }
 
   async setDbAlertState(state: RelayDbAlertState): Promise<void> {
+    const normalized = normalizePersistedDbAlertState(state);
+    this.lastKnownDbAlertState = normalized;
     await this.withState(async (persisted) => {
-      persisted.dbAlertState = normalizePersistedDbAlertState(state);
+      persisted.dbAlertState = normalized;
     });
   }
 
@@ -278,6 +300,8 @@ export class PostgresRelayStore implements RelayStore {
     const state = await this.readState();
     const result = await mutation(state);
     await this.writeState(state);
+    this.lastKnownMetrics = normalizePersistedMetrics(state.metrics);
+    this.lastKnownDbAlertState = normalizePersistedDbAlertState(state.dbAlertState);
     return result;
   }
 
@@ -345,6 +369,8 @@ export class PostgresRelayStore implements RelayStore {
     }
     parsed.metrics = normalizePersistedMetrics(parsed.metrics);
     parsed.dbAlertState = normalizePersistedDbAlertState(parsed.dbAlertState);
+    this.lastKnownMetrics = parsed.metrics;
+    this.lastKnownDbAlertState = parsed.dbAlertState;
     return parsed;
   }
 
@@ -386,9 +412,15 @@ async function createPgPool(
       statement_timeout?: number;
       query_timeout?: number;
       keepAlive?: boolean;
-    }) => SqlClientLike;
+    }) => SqlClientLike & {
+      on?: (event: "error", listener: (error: unknown) => void) => void;
+    };
   };
-  return new pgModule.Pool(buildPgPoolConfig(connectionString, options));
+  const pool = new pgModule.Pool(buildPgPoolConfig(connectionString, options));
+  pool.on?.("error", (error) => {
+    console.warn("[a2a-relay] postgres pool connection error", error);
+  });
+  return pool;
 }
 
 function toBoolean(value: unknown): boolean {
@@ -464,6 +496,13 @@ function clampCounter(value: number | undefined): number {
     return 0;
   }
   return Math.floor(value);
+}
+
+function isRolePolicyError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes("requires non-superuser, non-createdb, non-createrole")
+  );
 }
 
 export function buildPgPoolConfig(

@@ -260,7 +260,11 @@ export class RelayAlertMonitor {
     if (!hasDbAlertStateChanged(previousState, this.dbAlertState)) {
       return;
     }
-    await this.store.setDbAlertState(this.dbAlertState);
+    try {
+      await this.store.setDbAlertState(this.dbAlertState);
+    } catch (error) {
+      console.warn("[a2a-relay-alert] failed to persist db alert state", error);
+    }
   }
 }
 

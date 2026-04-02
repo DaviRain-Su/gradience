@@ -405,3 +405,66 @@ test("RelayAlertMonitor keeps DB incident dedupe context after monitor restart",
   assert.equal(second.alerts.some((item) => item.code === "db_query_failure_rate_high"), false);
   assert.equal(persistedDbState.incidentRepeatCounter, 1);
 });
+
+test("RelayAlertMonitor continues when db alert state persistence fails", async () => {
+  const store = {
+    upsertAgent: () => {
+      throw new Error("not used");
+    },
+    listAgents: () => {
+      throw new Error("not used");
+    },
+    publishEnvelope: () => {
+      throw new Error("not used");
+    },
+    pullEnvelopes: () => {
+      throw new Error("not used");
+    },
+    markPayloadRejected: () => {
+      throw new Error("not used");
+    },
+    getMetrics: async () => ({
+      agentsUpserted: 1,
+      envelopesPublished: 1,
+      envelopesDeduplicated: 0,
+      envelopesDelivered: 1,
+      pullRequests: 1,
+      rejectedPayloads: 0,
+      dbQueryCount: 50,
+      dbQueryFailures: 15,
+      dbAvgQueryLatencyMs: 250,
+    }),
+    getDbAlertState: async () => ({
+      unhealthyStreak: 0,
+      healthyStreak: 0,
+      incidentActive: false,
+      incidentRepeatCounter: 0,
+      lastIncidentSignature: null,
+    }),
+    setDbAlertState: async () => {
+      throw new Error("write unavailable");
+    },
+  };
+  const monitor = new RelayAlertMonitor(store, {
+    thresholds: {
+      maxRejectedPayloads: 999,
+      maxDedupRatio: 1,
+      minAvgDeliveriesPerPull: 0,
+      minPullRequestsForDeliveryCheck: 999,
+      maxDbFailureRate: 0.1,
+      criticalDbFailureRate: 0.2,
+      maxDbAvgQueryLatencyMs: 400,
+      criticalDbAvgQueryLatencyMs: 900,
+      minDbQueryCountForHealthCheck: 20,
+      dbConsecutiveUnhealthyChecksToAlert: 1,
+      dbConsecutiveHealthyChecksToRecover: 1,
+      dbIncidentRepeatCooldownChecks: 3,
+    },
+  });
+
+  const snapshot = await monitor.checkNow();
+  assert.equal(
+    snapshot.alerts.some((item) => item.code === "db_query_failure_rate_high"),
+    true,
+  );
+});

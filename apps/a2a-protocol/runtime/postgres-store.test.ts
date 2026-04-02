@@ -5,6 +5,7 @@ import { buildPgPoolConfig, PostgresRelayStore } from "./postgres-store";
 
 class MockSqlClient {
   private stateJson = "";
+  private failStateReads = false;
 
   constructor(
     private readonly role: {
@@ -40,6 +41,9 @@ class MockSqlClient {
       return { rows: [] };
     }
     if (sql.startsWith("SELECT state_json")) {
+      if (this.failStateReads) {
+        throw new Error("state read failed");
+      }
       if (this.stateJson === "") {
         return { rows: [] };
       }
@@ -50,6 +54,10 @@ class MockSqlClient {
       return { rows: [] };
     }
     throw new Error(`unexpected sql: ${sql}`);
+  }
+
+  setFailStateReads(value: boolean): void {
+    this.failStateReads = value;
   }
 }
 
@@ -130,4 +138,19 @@ test("postgres pool config clamps invalid values", () => {
   assert.equal(config.statement_timeout, 1_234);
   assert.equal(config.query_timeout, 20_000);
   assert.equal(config.keepAlive, true);
+});
+
+test("postgres relay store getMetrics falls back when state read fails", async () => {
+  const client = new MockSqlClient();
+  const store = new PostgresRelayStore(client);
+  const baseline = await store.getMetrics();
+  assert.equal(baseline.dbQueryFailures, 0);
+
+  client.setFailStateReads(true);
+  const degraded = await store.getMetrics();
+  assert.equal(degraded.dbQueryFailures >= 1, true);
+  assert.equal(degraded.dbQueryCount >= 2, true);
+
+  const dbState = await store.getDbAlertState();
+  assert.equal(dbState.incidentActive, false);
 });
