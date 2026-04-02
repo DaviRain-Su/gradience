@@ -563,6 +563,44 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 });
             }
 
+            // POST /webhook/profile-sync (Git push → Profile update)
+            if (method === 'POST' && path === '/webhook/profile-sync') {
+                const bodyText = await readBody(req);
+                let payload: { agent?: string; profile?: { display_name?: string; bio?: string; links?: Record<string, string> } };
+                try {
+                    payload = JSON.parse(bodyText);
+                } catch {
+                    return json(res, 400, { error: 'Invalid JSON' });
+                }
+                if (!payload.agent || !payload.profile) {
+                    return json(res, 400, { error: 'Missing agent or profile field' });
+                }
+                // Forward to Indexer Profile API
+                const indexerBase = process.env.VITE_INDEXER_BASE_URL ?? 'http://127.0.0.1:3001';
+                try {
+                    const indexerRes = await fetch(
+                        `${indexerBase}/api/agents/${encodeURIComponent(payload.agent)}/profile`,
+                        {
+                            method: 'PUT',
+                            headers: { 'content-type': 'application/json' },
+                            body: JSON.stringify({
+                                display_name: payload.profile.display_name ?? payload.agent,
+                                bio: payload.profile.bio ?? '',
+                                links: payload.profile.links ?? {},
+                                publish_mode: 'git-sync',
+                            }),
+                            signal: AbortSignal.timeout(5000),
+                        },
+                    );
+                    if (!indexerRes.ok) {
+                        return json(res, 502, { error: `Indexer profile update failed: ${indexerRes.status}` });
+                    }
+                } catch {
+                    return json(res, 502, { error: 'Indexer unreachable for profile sync' });
+                }
+                return json(res, 200, { ok: true, agent: payload.agent, publishMode: 'git-sync' });
+            }
+
             // POST /interop/events (ingest signed events from judge-daemon)
             if (method === 'POST' && path === '/interop/events') {
                 const bodyText = await readBody(req);
@@ -839,6 +877,15 @@ function parseJsonObject(text: string): Record<string, unknown> | { error: strin
 function parseGitSyncWebhookPayload(
     payload: Record<string, unknown>,
 ): ParsedGitSyncWebhookPayload | ParseError {
+    if (isGithubPushPayload(payload)) {
+        return parseGithubPushWebhookPayload(payload);
+    }
+    return parseDirectProfileSyncPayload(payload);
+}
+
+function parseDirectProfileSyncPayload(
+    payload: Record<string, unknown>,
+): ParsedGitSyncWebhookPayload | ParseError {
     const agentRaw = typeof payload.agent === 'string' ? payload.agent.trim() : '';
     if (!agentRaw) {
         return { error: 'Missing required field: agent' };
@@ -864,9 +911,11 @@ function parseGitSyncWebhookPayload(
     if (contentRef !== null && contentRef.length === 0) {
         return { error: 'Invalid content_ref: expected non-empty string' };
     }
-    const source = typeof payload.source === 'string' && payload.source.trim().length > 0
-        ? payload.source.trim()
-        : 'git';
+    const source = normalizeSourceName(
+        typeof payload.source === 'string' && payload.source.trim().length > 0
+            ? payload.source.trim()
+            : 'git',
+    );
     const repository = typeof payload.repository === 'string' && payload.repository.trim().length > 0
         ? payload.repository.trim()
         : null;
@@ -883,6 +932,250 @@ function parseGitSyncWebhookPayload(
         bio: parsedProfile.bio,
         links: parsedProfile.links,
     };
+}
+
+function parseGithubPushWebhookPayload(
+    payload: Record<string, unknown>,
+): ParsedGitSyncWebhookPayload | ParseError {
+    const repository = parseRepositoryIdentifier(payload.repository);
+    const commitSha = extractTrimmedString(payload.after) ??
+        extractTrimmedString((payload.head_commit as Record<string, unknown> | undefined)?.id) ??
+        null;
+    const source = normalizeSourceName(
+        extractTrimmedString(payload.source) ?? 'github',
+    );
+
+    const profilePatch = extractGithubProfilePatch(payload);
+    if ('error' in profilePatch) {
+        return profilePatch;
+    }
+    const parsedProfile = parseProfileUpsertPayload({
+        display_name: profilePatch.profile.display_name,
+        bio: profilePatch.profile.bio,
+        links: profilePatch.profile.links,
+        publish_mode: 'git-sync',
+    });
+    if ('error' in parsedProfile) {
+        return parsedProfile;
+    }
+    if (typeof profilePatch.contentRef !== 'undefined' && profilePatch.contentRef !== null && profilePatch.contentRef.length === 0) {
+        return { error: 'Invalid content_ref: expected non-empty string' };
+    }
+    return {
+        source,
+        repository,
+        commitSha,
+        contentRef: profilePatch.contentRef ?? null,
+        agent: profilePatch.agent,
+        displayName: parsedProfile.displayName,
+        bio: parsedProfile.bio,
+        links: parsedProfile.links,
+    };
+}
+
+function isGithubPushPayload(payload: Record<string, unknown>): boolean {
+    return (
+        payload.repository !== undefined &&
+        typeof payload.repository === 'object' &&
+        payload.repository !== null &&
+        !Array.isArray(payload.repository) &&
+        (typeof payload.ref === 'string' || typeof payload.after === 'string')
+    );
+}
+
+function extractGithubProfilePatch(
+    payload: Record<string, unknown>,
+): { agent: string; profile: Record<string, unknown>; contentRef: string | null } | ParseError {
+    const topLevelAgent = extractTrimmedString(payload.agent);
+    const topLevelContentRef = parseOptionalContentRef(payload.content_ref);
+    if ('error' in topLevelContentRef) {
+        return topLevelContentRef;
+    }
+
+    const candidates = ['profile_sync', 'gradience_profile', 'profile']
+        .map((key) => payload[key])
+        .filter((value): value is Record<string, unknown> =>
+            !!value && typeof value === 'object' && !Array.isArray(value),
+        );
+
+    for (const candidate of candidates) {
+        const nestedContentRef = parseOptionalContentRef(candidate.content_ref);
+        if ('error' in nestedContentRef) {
+            return nestedContentRef;
+        }
+        const candidateAgent = extractTrimmedString(candidate.agent) ?? topLevelAgent;
+        const nestedProfile = toRecord(candidate.profile);
+        const profilePayload =
+            nestedProfile ??
+            (isLikelyProfileObject(candidate) ? candidate : null);
+        if (!candidateAgent || !profilePayload) {
+            continue;
+        }
+        return {
+            agent: candidateAgent,
+            profile: profilePayload,
+            contentRef: nestedContentRef.value ?? topLevelContentRef.value,
+        };
+    }
+
+    if (topLevelAgent) {
+        const topLevelProfile = toRecord(payload.profile);
+        if (topLevelProfile) {
+            return {
+                agent: topLevelAgent,
+                profile: topLevelProfile,
+                contentRef: topLevelContentRef.value,
+            };
+        }
+    }
+
+    return {
+        error:
+            'GitHub push payload missing profile_sync data: expected profile_sync/gradience_profile with agent + profile',
+    };
+}
+
+function parseOptionalContentRef(
+    value: unknown,
+): { value: string | null } | ParseError {
+    if (typeof value === 'undefined' || value === null) {
+        return { value: null };
+    }
+    if (typeof value !== 'string') {
+        return { error: 'Invalid content_ref: expected string' };
+    }
+    const normalized = value.trim();
+    if (!normalized) {
+        return { error: 'Invalid content_ref: expected non-empty string' };
+    }
+    return { value: normalized };
+}
+
+function parseRepositoryIdentifier(value: unknown): string | null {
+    const record = toRecord(value);
+    if (!record) {
+        return null;
+    }
+    const fullName = extractTrimmedString(record.full_name);
+    if (fullName) {
+        return fullName;
+    }
+    const htmlUrl = extractTrimmedString(record.html_url);
+    if (htmlUrl) {
+        const fromUrl = parseRepositoryFromUrl(htmlUrl);
+        if (fromUrl) return fromUrl;
+    }
+    const cloneUrl = extractTrimmedString(record.clone_url);
+    if (cloneUrl) {
+        const fromUrl = parseRepositoryFromUrl(cloneUrl);
+        if (fromUrl) return fromUrl;
+    }
+    const owner = toRecord(record.owner);
+    const ownerLogin = extractTrimmedString(owner?.login);
+    const name = extractTrimmedString(record.name);
+    if (ownerLogin && name) {
+        return `${ownerLogin}/${name}`;
+    }
+    return null;
+}
+
+function parseRepositoryFromUrl(value: string): string | null {
+    try {
+        const parsed = new URL(value);
+        const segments = parsed.pathname
+            .split('/')
+            .map((segment) => segment.trim())
+            .filter(Boolean);
+        if (segments.length < 2) {
+            return null;
+        }
+        const org = segments[0];
+        const repo = segments[1].replace(/\.git$/i, '');
+        if (!org || !repo) {
+            return null;
+        }
+        return `${org}/${repo}`;
+    } catch {
+        return null;
+    }
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
+    return value as Record<string, unknown>;
+}
+
+function extractTrimmedString(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+}
+
+function isLikelyProfileObject(value: Record<string, unknown>): boolean {
+    return (
+        typeof value.display_name === 'string' ||
+        typeof value.bio === 'string' ||
+        value.links !== undefined
+    );
+}
+
+function normalizeSourceName(source: string): string {
+    return source.trim().toLowerCase();
+}
+
+function normalizeAllowlist(values: string[] | undefined): string[] | null {
+    if (!values || values.length === 0) {
+        return null;
+    }
+    const normalized = values
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => value.length > 0);
+    return normalized.length > 0 ? [...new Set(normalized)] : null;
+}
+
+function isAllowedProfileSyncSource(source: string, allowlist: string[] | null): boolean {
+    if (!allowlist) {
+        return true;
+    }
+    return allowlist.includes(normalizeSourceName(source));
+}
+
+function isAllowedProfileSyncOrganization(
+    repository: string | null,
+    allowlist: string[] | null,
+): boolean {
+    if (!allowlist) {
+        return true;
+    }
+    const organization = extractRepositoryOrganization(repository);
+    if (!organization) {
+        return false;
+    }
+    return allowlist.includes(organization.toLowerCase());
+}
+
+function extractRepositoryOrganization(repository: string | null): string | null {
+    if (!repository) {
+        return null;
+    }
+    if (repository.includes('://')) {
+        const fromUrl = parseRepositoryFromUrl(repository);
+        if (!fromUrl) {
+            return null;
+        }
+        const [org] = fromUrl.split('/');
+        return org ?? null;
+    }
+    const normalized = repository.replace(/^github\.com\//i, '');
+    const [org] = normalized.split('/');
+    if (!org || org.trim().length === 0) {
+        return null;
+    }
+    return org.trim();
 }
 
 function parseProfilePublishMode(

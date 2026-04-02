@@ -94,6 +94,11 @@ async function main(): Promise<number> {
             return 0;
         }
 
+        if (args[0] === 'create-agent') {
+            await handleCreateAgent(args.slice(1), noDna);
+            return 0;
+        }
+
         throw new CliError('UNKNOWN_COMMAND', `Unknown command: ${args.join(' ') || '(empty)'}. Use --help for usage.`);
     } catch (error) {
         const normalized = normalizeError(error);
@@ -1172,6 +1177,121 @@ const CATEGORY_NAME_TO_ID = new Map<string, number>([
     ['compute', 6],
     ['gov', 7],
 ]);
+
+// ── create-agent ────────────────────────────────────────────────────
+
+async function handleCreateAgent(args: string[], noDna: boolean): Promise<void> {
+    const name = args[0] || 'my-agent';
+    const template = parseFlag(args, '--template') || 'basic';
+
+    if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) {
+        throw new CliError('INVALID_NAME', 'Agent name must start with a letter and contain only letters, numbers, hyphens, dashes.');
+    }
+
+    const targetDir = path.resolve(process.cwd(), name);
+
+    try {
+        await mkdir(targetDir, { recursive: true });
+    } catch {
+        throw new CliError('DIR_ERROR', `Cannot create directory: ${targetDir}`);
+    }
+
+    const packageJson = JSON.stringify({
+        name,
+        version: '0.1.0',
+        private: true,
+        type: 'module',
+        scripts: {
+            start: 'tsx agent.ts',
+            dev: 'tsx --watch agent.ts',
+        },
+        dependencies: {
+            '@gradience/sdk': '^0.1.0',
+            '@solana/kit': '^5.5.0',
+            tsx: '^4.20.0',
+            typescript: '^5.9.0',
+        },
+    }, null, 2);
+
+    const agentTs = `import { GradienceSDK, KeypairAdapter } from '@gradience/sdk';
+import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import path from 'node:path';
+
+const RPC = process.env.GRADIENCE_RPC ?? 'https://api.devnet.solana.com';
+const INDEXER = process.env.GRADIENCE_INDEXER ?? 'http://127.0.0.1:3001';
+const KEYPAIR_PATH = process.env.GRADIENCE_KEYPAIR ?? path.join(homedir(), '.config/solana/id.json');
+
+async function main() {
+    // Load keypair
+    const raw = JSON.parse(await readFile(KEYPAIR_PATH, 'utf-8'));
+    const wallet = KeypairAdapter.fromSecretKey(new Uint8Array(raw));
+    console.log('Agent:', wallet.publicKey);
+
+    const sdk = new GradienceSDK({ rpcEndpoint: RPC, indexerEndpoint: INDEXER });
+
+    // 1. Check reputation
+    const rep = await sdk.getReputation(wallet.publicKey);
+    console.log('Reputation:', rep ?? 'No reputation yet');
+
+    // 2. Browse open tasks
+    const tasks = await sdk.getTasks({ state: 'open', limit: 5 });
+    console.log('Open tasks:', tasks?.length ?? 0);
+
+    if (!tasks || tasks.length === 0) {
+        console.log('No open tasks. Waiting...');
+        return;
+    }
+
+    // 3. Apply to first matching task
+    const target = tasks[0];
+    console.log(\`Applying to Task #\${target.task_id} (reward: \${target.reward})...\`);
+
+    // TODO: Add your task selection logic here
+    // await sdk.applyForTask(wallet, { taskId: BigInt(target.task_id) });
+
+    // 4. Process and submit result
+    // TODO: Add your task processing logic here
+    // const resultRef = 'ipfs://your-result-cid';
+    // await sdk.submitTaskResult(wallet, { taskId: BigInt(target.task_id), resultRef });
+}
+
+main().catch(console.error);
+`;
+
+    const tsconfigJson = JSON.stringify({
+        compilerOptions: {
+            target: 'ESNext',
+            module: 'ESNext',
+            moduleResolution: 'bundler',
+            esModuleInterop: true,
+            strict: true,
+            skipLibCheck: true,
+            outDir: './dist',
+        },
+        include: ['*.ts'],
+    }, null, 2);
+
+    await writeFile(path.join(targetDir, 'package.json'), packageJson);
+    await writeFile(path.join(targetDir, 'agent.ts'), agentTs);
+    await writeFile(path.join(targetDir, 'tsconfig.json'), tsconfigJson);
+
+    if (noDna) {
+        printJson({ ok: true, name, template, path: targetDir });
+    } else {
+        console.log(`\n  Agent project created: ${name}/\n`);
+        console.log('  Next steps:');
+        console.log(`    cd ${name}`);
+        console.log('    npm install');
+        console.log('    npm start\n');
+    }
+}
+
+function parseFlag(args: string[], flag: string): string | undefined {
+    const idx = args.indexOf(flag);
+    if (idx === -1 || idx + 1 >= args.length) return undefined;
+    return args[idx + 1];
+}
 
 class ByteReader {
     private readonly view: DataView;
