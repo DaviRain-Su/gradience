@@ -21,6 +21,18 @@
 - [completed] C1. 运行受影响模块验证（typecheck / test / build）【website `npm run build` 通过】
 - [completed] C2. 形成里程碑审查表（完成项 / 证据 / 差距）
 
+## Milestone D — 并行功能收口（进行中）
+
+- [completed] D1. a2a-router 规格前置检查（`apps/agentm/docs/a2a-multiprotocol/01~05`）
+- [completed] D2. 修复 a2a-router 的 typecheck 阻塞（readonly relay + test runtime 兼容）
+- [completed] D3. AgentM release gate 复跑通过（typecheck/test/build/stage-a-demo）
+- [completed] D4. 暂存区边界清理（仅保留本轮 `a2a-router + a2a docs` 相关改动；移除并行功能污染）
+- [completed] D5. 形成“可提交边界”清单
+  - 纳入本轮：`apps/agentm/src/main/a2a-router/nostr-client.ts`、`nostr-client.test.ts`、`apps/agentm/package.json`、`apps/agentm/package-lock.json`
+  - 文档范围：`apps/agentm/docs/a2a-multiprotocol/01~05` 已纳入审查范围（本轮无需改动）
+  - 过程追踪：`docs/plans/2026-04-03-agentm-delivery-checklist.md`
+  - 延后：`apps/a2a-protocol/runtime/data/`（运行时状态文件）
+
 ## 非当前阶段（暂缓）
 
 - [deferred] 多链信誉

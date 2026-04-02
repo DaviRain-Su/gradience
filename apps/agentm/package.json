@@ -22,6 +22,7 @@
     "@gradience/sdk": "file:../agent-arena/clients/typescript",
     "@privy-io/react-auth": "^3.18.0",
     "@solana/kit": "^5.5.1",
+    "nostr-tools": "^2.23.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zustand": "^5.0.5"

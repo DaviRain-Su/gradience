@@ -14,7 +14,6 @@ import {
 } from 'nostr-tools';
 import type { SubCloser } from 'nostr-tools/abstract-pool';
 import { generateSecretKey, getPublicKey, finalizeEvent } from 'nostr-tools/pure';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { NOSTR_CONFIG, A2A_ERROR_CODES } from './constants.js';
 import type {
     AgentPresenceEvent,
@@ -34,7 +33,7 @@ export interface NostrClientOptions {
 
 export class NostrClient {
     private pool: SimplePool | null = null;
-    private relays: readonly string[];
+    private relays: string[];
     private privateKey: Uint8Array;
     private pubkey: string;
     private relayStatus: Map<string, RelayStatus> = new Map();
@@ -42,8 +41,8 @@ export class NostrClient {
     private lastEventAt?: number;
 
     constructor(options: NostrClientOptions = {}) {
-        this.relays = options.relays ?? NOSTR_CONFIG.DEFAULT_RELAYS;
-        this.privateKey = options.privateKey ? hexToBytes(options.privateKey) : generateSecretKey();
+        this.relays = options.relays ? [...options.relays] : [...NOSTR_CONFIG.DEFAULT_RELAYS];
+        this.privateKey = options.privateKey ? fromHex(options.privateKey) : generateSecretKey();
         this.pubkey = getPublicKey(this.privateKey);
 
         // Initialize relay status
@@ -337,7 +336,7 @@ export class NostrClient {
         }
     }
 
-    private getConnectedRelays(): readonly string[] {
+    private getConnectedRelays(): string[] {
         return this.relays.filter(url => this.relayStatus.get(url)?.connected);
     }
 
@@ -394,4 +393,13 @@ export class NostrClient {
             console.warn(`[NostrClient] Published to ${successCount}/${connectedRelays.length} relays`);
         }
     }
+}
+
+function fromHex(hex: string): Uint8Array {
+    if (hex.length % 2 !== 0) throw new Error('Invalid hex private key length');
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+    }
+    return bytes;
 }
