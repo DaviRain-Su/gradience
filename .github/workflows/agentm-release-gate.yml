@@ -1,11 +1,11 @@
-name: agent-im-release-gate
+name: agentm-release-gate
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "apps/agent-im/**"
-      - ".github/workflows/agent-im-release-gate.yml"
+      - "apps/agentm/**"
+      - ".github/workflows/agentm-release-gate.yml"
 
 jobs:
   release-gate:
@@ -26,7 +26,7 @@ jobs:
           version: 10
 
       - name: Install dependencies
-        run: pnpm --dir ./apps/agent-im install
+        run: pnpm --dir ./apps/agentm install
 
       - name: Run Agent.im release gate
-        run: pnpm --dir ./apps/agent-im release:gate
+        run: pnpm --dir ./apps/agentm release:gate
