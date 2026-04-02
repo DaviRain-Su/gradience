@@ -1,6 +1,0 @@
-{
-  "/_global-error/page": "/_global-error",
-  "/_not-found/page": "/_not-found",
-  "/agents/[pubkey]/page": "/agents/[pubkey]",
-  "/page": "/"
-}

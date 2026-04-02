@@ -4,6 +4,11 @@ version = "0.0.1"
 edition = "2021"
 description = "Rust client for the Pinocchio Counter Program"
 license = "MIT"
+include = [
+    "Cargo.toml",
+    "src/lib.rs",
+    "src/generated/**",
+]
 
 [dependencies]
 borsh = { workspace = true }

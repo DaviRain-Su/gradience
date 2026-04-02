@@ -10,6 +10,7 @@ import {
 } from '@solana/kit';
 
 import {
+    decodeTaskCompletionAttestation,
     GradienceSDK,
     type EnsureLookupTableRequest,
     type SendTransactionOptions,
@@ -94,6 +95,48 @@ test('task.post SPL path returns signature and keeps token accounts', async () =
     const accounts = instruction.accounts;
     assert.ok(accounts);
     assert.equal(accounts.length, 13);
+});
+
+test('task.postSimple derives task id from on-chain config and uses default deadlines', async () => {
+    const sdk = new GradienceSDK({
+        rpc: createMockRpc(
+            encodeProgramConfigAccount(
+                (await generateKeyPairSigner()).address,
+                (await generateKeyPairSigner()).address,
+                1_000_000_000n,
+                17n,
+            ),
+        ) as RpcClient,
+    });
+    const wallet = await createMockWallet();
+
+    const result = await sdk.task.postSimple(wallet, {
+        evalRef: 'ipfs://eval-simple',
+        category: 3,
+        reward: 3_000_000,
+    });
+
+    assert.equal(result.signature, 'mock-signature-1');
+    assert.equal(result.taskId, 17n);
+    assert.equal(wallet.sentBatches.length, 1);
+    const instruction = wallet.sentBatches[0]?.[0];
+    assert.ok(instruction?.accounts);
+    assert.equal(instruction.accounts.length, 8);
+});
+
+test('task.postSimple rejects designated mode without judge', async () => {
+    const sdk = new GradienceSDK();
+    const wallet = await createMockWallet();
+    await assert.rejects(
+        () =>
+            sdk.task.postSimple(wallet, {
+                evalRef: 'ipfs://eval-designated',
+                category: 0,
+                reward: 1_000,
+                judgeMode: 0,
+            }),
+        /judge is required when judgeMode=0/,
+    );
 });
 
 test('task.apply SOL path returns signature and strips optional token accounts', async () => {
@@ -210,6 +253,25 @@ test('task.cancel auto-enables ALT flow when remaining accounts exceed threshold
     assert.equal(wallet.sendOptions[0]?.addressLookupTableAddresses?.length, 1);
 });
 
+test('task.cancel keeps legacy flow when remaining accounts stay within threshold', async () => {
+    const sdk = new GradienceSDK();
+    const wallet = await createMockWallet();
+
+    const refunds = await Promise.all(
+        Array.from({ length: 10 }, async () => ({ agent: (await generateKeyPairSigner()).address })),
+    );
+
+    const signature = await sdk.task.cancel(wallet, {
+        taskId: 9,
+        refunds,
+    });
+
+    assert.equal(signature, 'mock-signature-1');
+    assert.equal(wallet.lookupRequests.length, 0);
+    assert.equal(wallet.sendOptions[0]?.useVersionedTransaction, undefined);
+    assert.equal(wallet.sendOptions[0]?.addressLookupTableAddresses, undefined);
+});
+
 test('reputation.get returns null when reputation PDA does not exist', async () => {
     const sdk = new GradienceSDK({ rpc: createMockRpc(null) as RpcClient });
     const agent = (await generateKeyPairSigner()).address;
@@ -246,6 +308,21 @@ test('judgePool.list decodes on-chain judge entries', async () => {
     assert.equal(result.length, 1);
     assert.equal(result[0]?.judge, judge);
     assert.equal(result[0]?.weight, 42);
+});
+
+test('config.get decodes on-chain program config', async () => {
+    const treasury = (await generateKeyPairSigner()).address;
+    const authority = (await generateKeyPairSigner()).address;
+    const sdk = new GradienceSDK({
+        rpc: createMockRpc(encodeProgramConfigAccount(treasury, authority, 2_000_000_000n, 99n)) as RpcClient,
+    });
+
+    const result = await sdk.config.get();
+    assert.ok(result);
+    assert.equal(result.treasury, treasury);
+    assert.equal(result.upgradeAuthority, authority);
+    assert.equal(result.minJudgeStake, 2_000_000_000n);
+    assert.equal(result.taskCount, 99n);
 });
 
 test('task.submissions returns null on indexer 404', async () => {
@@ -312,6 +389,56 @@ test('attestations.list returns attestation array', async () => {
     }
 });
 
+test('attestations.listDecoded normalizes fields to bigint', async () => {
+    const sdk = new GradienceSDK();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () =>
+        new Response(
+            JSON.stringify([
+                {
+                    task_id: 42,
+                    task_category: 2,
+                    judge_method: 1,
+                    score: 88,
+                    reward_amount: '1000000',
+                    completed_at: 1710000000,
+                    credential: 'cred-pda',
+                    schema: 'task-completion',
+                },
+            ]),
+            { status: 200 },
+        );
+
+    try {
+        const result = await sdk.attestations.listDecoded('agent-known');
+        assert.ok(result);
+        assert.equal(result.length, 1);
+        assert.equal(result[0]?.taskId, 42n);
+        assert.equal(result[0]?.rewardAmount, 1_000_000n);
+        assert.equal(result[0]?.credential, 'cred-pda');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('attestations.decode decodes TaskCompletion payload bytes', () => {
+    const encoded = encodeTaskCompletionAttestationData({
+        taskId: 9n,
+        taskCategory: 3,
+        judgeMethod: 1,
+        score: 92,
+        rewardAmount: 7_500_000n,
+        completedAt: 1_710_000_123n,
+    });
+    const decoded = decodeTaskCompletionAttestation(encoded);
+    assert.equal(decoded.taskId, 9n);
+    assert.equal(decoded.taskCategory, 3);
+    assert.equal(decoded.judgeMethod, 1);
+    assert.equal(decoded.score, 92);
+    assert.equal(decoded.rewardAmount, 7_500_000n);
+    assert.equal(decoded.completedAt, 1_710_000_123n);
+});
+
 function createMockRpc(data: Uint8Array | null): unknown {
     return {
         getAccountInfo: () => ({
@@ -375,6 +502,51 @@ function encodeReputationAccount(agent: Address): Uint8Array {
         offset += 4;
     }
     bytes[offset] = 1;
+    return bytes;
+}
+
+function encodeProgramConfigAccount(
+    treasury: Address,
+    upgradeAuthority: Address,
+    minJudgeStake: bigint,
+    taskCount: bigint,
+): Uint8Array {
+    const bytes = new Uint8Array(83);
+    const view = new DataView(bytes.buffer);
+    let offset = 0;
+    bytes[offset++] = 0x09; // discriminator
+    bytes[offset++] = 0x01; // version
+    bytes.set(getAddressEncoder().encode(treasury) as unknown as Uint8Array, offset);
+    offset += 32;
+    bytes.set(getAddressEncoder().encode(upgradeAuthority) as unknown as Uint8Array, offset);
+    offset += 32;
+    view.setBigUint64(offset, minJudgeStake, true);
+    offset += 8;
+    view.setBigUint64(offset, taskCount, true);
+    offset += 8;
+    bytes[offset] = 1; // bump
+    return bytes;
+}
+
+function encodeTaskCompletionAttestationData(data: {
+    taskId: bigint;
+    taskCategory: number;
+    judgeMethod: number;
+    score: number;
+    rewardAmount: bigint;
+    completedAt: bigint;
+}): Uint8Array {
+    const bytes = new Uint8Array(27);
+    const view = new DataView(bytes.buffer);
+    let offset = 0;
+    view.setBigUint64(offset, data.taskId, true);
+    offset += 8;
+    bytes[offset++] = data.taskCategory;
+    bytes[offset++] = data.judgeMethod;
+    bytes[offset++] = data.score;
+    view.setBigUint64(offset, data.rewardAmount, true);
+    offset += 8;
+    view.setBigInt64(offset, data.completedAt, true);
     return bytes;
 }
 

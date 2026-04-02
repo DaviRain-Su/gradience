@@ -1,4 +1,4 @@
-use litesvm::LiteSVM;
+use litesvm::{types::TransactionMetadata, LiteSVM};
 use solana_program::clock::Clock;
 use solana_sdk::{
     account::Account,
@@ -43,6 +43,11 @@ pub struct TestContext {
     pub svm: LiteSVM,
     pub payer: Keypair,
     pub cu_tracker: Option<CuTracker>,
+}
+
+pub struct TxExecutionStats {
+    pub compute_units: u64,
+    pub tx_size_bytes: usize,
 }
 
 impl TestContext {
@@ -108,8 +113,29 @@ impl TestContext {
         instruction: Instruction,
         signers: &[&Keypair],
     ) -> Result<u64, Box<dyn std::error::Error>> {
-        self.send_transaction_inner(instruction, signers)
+        self.send_transaction_with_stats(instruction, signers)
+            .map(|stats| stats.compute_units)
             .map_err(|e| format!("Transaction failed: {:?}", e).into())
+    }
+
+    pub fn send_transaction_with_meta(
+        &mut self,
+        instruction: Instruction,
+        signers: &[&Keypair],
+    ) -> Result<TransactionMetadata, Box<dyn std::error::Error>> {
+        let mut all_signers = vec![&self.payer as &dyn Signer];
+        all_signers.extend(signers.iter().map(|k| *k as &dyn Signer));
+
+        let transaction = Transaction::new_signed_with_payer(
+            &[instruction],
+            Some(&self.payer.pubkey()),
+            &all_signers,
+            self.svm.latest_blockhash(),
+        );
+
+        self.svm
+            .send_transaction(transaction)
+            .map_err(|e| format!("Transaction failed: {:?}", e.err).into())
     }
 
     pub fn send_transaction_expect_error(
@@ -119,6 +145,33 @@ impl TestContext {
     ) -> TransactionError {
         self.send_transaction_inner(instruction, signers)
             .expect_err("Transaction should fail")
+    }
+
+    pub fn send_transaction_with_stats(
+        &mut self,
+        instruction: Instruction,
+        signers: &[&Keypair],
+    ) -> Result<TxExecutionStats, Box<dyn std::error::Error>> {
+        let mut all_signers = vec![&self.payer as &dyn Signer];
+        all_signers.extend(signers.iter().map(|k| *k as &dyn Signer));
+
+        let transaction = Transaction::new_signed_with_payer(
+            &[instruction],
+            Some(&self.payer.pubkey()),
+            &all_signers,
+            self.svm.latest_blockhash(),
+        );
+        let tx_size_bytes = estimate_serialized_transaction_size(&transaction);
+        let compute_units = self
+            .svm
+            .send_transaction(transaction)
+            .map(|meta| meta.compute_units_consumed)
+            .map_err(|e| format!("Transaction failed: {:?}", e.err))?;
+
+        Ok(TxExecutionStats {
+            compute_units,
+            tx_size_bytes,
+        })
     }
 
     fn send_transaction_inner(
@@ -180,5 +233,22 @@ impl TestContext {
 impl Default for TestContext {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+fn estimate_serialized_transaction_size(transaction: &Transaction) -> usize {
+    let signatures_len = transaction.signatures.len();
+    shortvec_len(signatures_len) + signatures_len * 64 + transaction.message_data().len()
+}
+
+fn shortvec_len(value: usize) -> usize {
+    let mut remaining = value;
+    let mut count = 0;
+    loop {
+        count += 1;
+        remaining >>= 7;
+        if remaining == 0 {
+            return count;
+        }
     }
 }

@@ -38,11 +38,48 @@ before(async () => {
             return;
         }
 
+        if (url.pathname === '/api/tasks/1') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                task_id: 1,
+                poster: 'alice',
+                judge: 'judge-1',
+                reward: 1000,
+                state: 'open',
+                category: 0,
+                deadline: '12345',
+                submission_count: 2,
+                winner: null,
+                created_at: '12300',
+            }));
+            return;
+        }
+
         if (url.pathname === '/api/judge-pool/0') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify([
                 { judge: 'alice', stake: 5000, weight: 1500 },
                 { judge: 'bob', stake: 2000, weight: 800 },
+            ]));
+            return;
+        }
+
+        if (url.pathname === '/api/tasks/1/submissions') {
+            const sort = url.searchParams.get('sort');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify([
+                {
+                    task_id: 1,
+                    agent: 'alice',
+                    result_ref: `result-${sort ?? 'default'}`,
+                    trace_ref: 'trace-1',
+                    runtime_provider: null,
+                    runtime_model: null,
+                    runtime_runtime: null,
+                    runtime_version: null,
+                    submission_slot: 123,
+                    submitted_at: '2026-04-02T00:00:00.000Z',
+                },
             ]));
             return;
         }
@@ -93,5 +130,21 @@ describe('IndexerClient', () => {
         assert.equal(rep, null);
         const tasks = await client.getTasks();
         assert.deepEqual(tasks, []);
+    });
+
+    it('getTaskById returns task details', async () => {
+        const client = new IndexerClient(`http://127.0.0.1:${mockPort}`);
+        const task = await client.getTaskById(1);
+        assert.ok(task);
+        assert.equal(task.task_id, 1);
+        assert.equal(task.judge, 'judge-1');
+    });
+
+    it('getTaskSubmissions passes sort query and returns typed rows', async () => {
+        const client = new IndexerClient(`http://127.0.0.1:${mockPort}`);
+        const submissions = await client.getTaskSubmissions(1, { sort: 'slot' });
+        assert.equal(submissions.length, 1);
+        assert.equal(submissions[0].agent, 'alice');
+        assert.equal(submissions[0].result_ref, 'result-slot');
     });
 });

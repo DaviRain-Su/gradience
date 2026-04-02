@@ -3,7 +3,14 @@ mod db;
 mod events;
 mod webhook;
 
-use std::{path::Path, sync::Arc};
+use std::{
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicI64, AtomicU64, Ordering},
+    },
+    time::Instant,
+};
 
 use anyhow::{Context, Result};
 use axum::{
@@ -38,6 +45,7 @@ const JUDGE_MODE_POOL: i16 = 1;
 struct AppState {
     db: Arc<Mutex<Database>>,
     ws_tx: broadcast::Sender<WsEvent>,
+    metrics: Arc<IndexerMetrics>,
 }
 
 #[derive(Debug, Serialize)]
@@ -48,6 +56,9 @@ struct IngestResponse {
 #[derive(Debug, Serialize)]
 struct HealthResponse {
     ok: bool,
+    uptime_seconds: u64,
+    events_processed_total: u64,
+    ws_active_connections: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -184,14 +195,87 @@ struct WsEvent {
     timestamp: i64,
 }
 
+struct IndexerMetrics {
+    started_at: Instant,
+    events_processed_total: AtomicU64,
+    ws_events_published_total: AtomicU64,
+    ws_connections_total: AtomicU64,
+    ws_active_connections: AtomicU64,
+    last_event_slot: AtomicU64,
+    last_event_timestamp: AtomicI64,
+}
+
+impl IndexerMetrics {
+    fn new() -> Self {
+        Self {
+            started_at: Instant::now(),
+            events_processed_total: AtomicU64::new(0),
+            ws_events_published_total: AtomicU64::new(0),
+            ws_connections_total: AtomicU64::new(0),
+            ws_active_connections: AtomicU64::new(0),
+            last_event_slot: AtomicU64::new(0),
+            last_event_timestamp: AtomicI64::new(0),
+        }
+    }
+
+    fn record_envelopes(&self, envelopes: &[EventEnvelope], processed_events: usize) {
+        self.events_processed_total
+            .fetch_add(processed_events as u64, Ordering::Relaxed);
+        if let Some(last) = envelopes.last() {
+            self.last_event_slot.store(last.slot, Ordering::Relaxed);
+            self.last_event_timestamp
+                .store(last.timestamp, Ordering::Relaxed);
+        }
+    }
+
+    fn record_ws_published(&self, count: u64) {
+        self.ws_events_published_total
+            .fetch_add(count, Ordering::Relaxed);
+    }
+
+    fn record_ws_connected(&self) {
+        self.ws_connections_total.fetch_add(1, Ordering::Relaxed);
+        self.ws_active_connections.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn record_ws_disconnected(&self) {
+        self.ws_active_connections.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn snapshot(&self) -> IndexerMetricsSnapshot {
+        IndexerMetricsSnapshot {
+            uptime_seconds: self.started_at.elapsed().as_secs(),
+            events_processed_total: self.events_processed_total.load(Ordering::Relaxed),
+            ws_events_published_total: self.ws_events_published_total.load(Ordering::Relaxed),
+            ws_connections_total: self.ws_connections_total.load(Ordering::Relaxed),
+            ws_active_connections: self.ws_active_connections.load(Ordering::Relaxed),
+            last_event_slot: self.last_event_slot.load(Ordering::Relaxed),
+            last_event_timestamp: self.last_event_timestamp.load(Ordering::Relaxed),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct IndexerMetricsSnapshot {
+    uptime_seconds: u64,
+    events_processed_total: u64,
+    ws_events_published_total: u64,
+    ws_connections_total: u64,
+    ws_active_connections: u64,
+    last_event_slot: u64,
+    last_event_timestamp: i64,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::from_env()?;
     let db = Database::connect(&config.database_url).await?;
+    let app_metrics = Arc::new(IndexerMetrics::new());
     let (ws_tx, _) = broadcast::channel(1024);
     let state = AppState {
         db: Arc::new(Mutex::new(db)),
         ws_tx,
+        metrics: app_metrics,
     };
 
     if config.mock_webhook {
@@ -208,6 +292,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/healthz", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/webhook/triton", post(handle_events_webhook))
         .route("/webhook/helius", post(handle_events_webhook))
         .route("/webhook/events", post(handle_events_webhook))
@@ -232,8 +317,25 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn health() -> Json<HealthResponse> {
-    Json(HealthResponse { ok: true })
+async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
+    let snapshot = state.metrics.snapshot();
+    Json(HealthResponse {
+        ok: true,
+        uptime_seconds: snapshot.uptime_seconds,
+        events_processed_total: snapshot.events_processed_total,
+        ws_active_connections: snapshot.ws_active_connections,
+    })
+}
+
+async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
+    let snapshot = state.metrics.snapshot();
+    (
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        )],
+        render_metrics(snapshot),
+    )
 }
 
 async fn handle_events_webhook(
@@ -245,6 +347,9 @@ async fn handle_events_webhook(
         let mut db = state.db.lock().await;
         db.apply_events(&envelopes).await.map_err(internal_error)?
     };
+    state
+        .metrics
+        .record_envelopes(&envelopes, processed_events);
     publish_ws_events(&state, &envelopes);
     Ok(Json(IngestResponse { processed_events }))
 }
@@ -376,11 +481,15 @@ async fn replay_mock_file(state: &AppState, file_path: &str) -> Result<()> {
     let envelopes = decode_webhook(payload)?;
 
     let mut db = state.db.lock().await;
-    db.apply_events(&envelopes).await?;
+    let processed_events = db.apply_events(&envelopes).await?;
+    state
+        .metrics
+        .record_envelopes(&envelopes, processed_events);
     Ok(())
 }
 
 async fn websocket_session(mut socket: WebSocket, state: AppState, task_id_filter: Option<i64>) {
+    state.metrics.record_ws_connected();
     let mut rx = state.ws_tx.subscribe();
     loop {
         tokio::select! {
@@ -415,14 +524,51 @@ async fn websocket_session(mut socket: WebSocket, state: AppState, task_id_filte
             }
         }
     }
+    state.metrics.record_ws_disconnected();
 }
 
 fn publish_ws_events(state: &AppState, envelopes: &[EventEnvelope]) {
+    let mut published = 0_u64;
     for envelope in envelopes {
         if let Some(event) = to_ws_event(envelope) {
             let _ = state.ws_tx.send(event);
+            published += 1;
         }
     }
+    state.metrics.record_ws_published(published);
+}
+
+fn render_metrics(snapshot: IndexerMetricsSnapshot) -> String {
+    format!(
+        "# HELP gradience_indexer_uptime_seconds Indexer process uptime in seconds\n\
+# TYPE gradience_indexer_uptime_seconds gauge\n\
+gradience_indexer_uptime_seconds {}\n\
+# HELP gradience_indexer_events_processed_total Number of processed webhook events\n\
+# TYPE gradience_indexer_events_processed_total counter\n\
+gradience_indexer_events_processed_total {}\n\
+# HELP gradience_indexer_ws_events_published_total Number of ws broadcast events published\n\
+# TYPE gradience_indexer_ws_events_published_total counter\n\
+gradience_indexer_ws_events_published_total {}\n\
+# HELP gradience_indexer_ws_connections_total Total websocket connections accepted\n\
+# TYPE gradience_indexer_ws_connections_total counter\n\
+gradience_indexer_ws_connections_total {}\n\
+# HELP gradience_indexer_ws_active_connections Active websocket connections\n\
+# TYPE gradience_indexer_ws_active_connections gauge\n\
+gradience_indexer_ws_active_connections {}\n\
+# HELP gradience_indexer_last_event_slot Last observed program event slot\n\
+# TYPE gradience_indexer_last_event_slot gauge\n\
+gradience_indexer_last_event_slot {}\n\
+# HELP gradience_indexer_last_event_timestamp_unix Last observed program event unix timestamp\n\
+# TYPE gradience_indexer_last_event_timestamp_unix gauge\n\
+gradience_indexer_last_event_timestamp_unix {}\n",
+        snapshot.uptime_seconds,
+        snapshot.events_processed_total,
+        snapshot.ws_events_published_total,
+        snapshot.ws_connections_total,
+        snapshot.ws_active_connections,
+        snapshot.last_event_slot,
+        snapshot.last_event_timestamp,
+    )
 }
 
 fn to_ws_event(envelope: &EventEnvelope) -> Option<WsEvent> {
@@ -578,5 +724,21 @@ mod tests {
             },
         };
         assert!(to_ws_event(&ignored).is_none());
+    }
+
+    #[test]
+    fn render_metrics_contains_prometheus_keys() {
+        let body = render_metrics(IndexerMetricsSnapshot {
+            uptime_seconds: 12,
+            events_processed_total: 3,
+            ws_events_published_total: 2,
+            ws_connections_total: 5,
+            ws_active_connections: 1,
+            last_event_slot: 77,
+            last_event_timestamp: 1_710_000_000,
+        });
+        assert!(body.contains("gradience_indexer_uptime_seconds 12"));
+        assert!(body.contains("gradience_indexer_events_processed_total 3"));
+        assert!(body.contains("gradience_indexer_last_event_slot 77"));
     }
 }

@@ -1,9 +1,52 @@
 # A2A 协议规范：Agent-to-Agent 经济协议
 
-> **文档状态**: v0.1 Draft
+> **文档状态**: v0.2 Draft
 > **创建日期**: 2026-03-30
+> **更新日期**: 2026-04-02
 > **定位**: Gradience 的最终愿景——Agent 自主经济网络
 > **时间线**: 2027 路线图，当前为设计阶段
+> **重要更新**: 已整合 Google A2A Protocol (https://a2a-protocol.org)
+
+---
+
+## 0. 与 Google A2A 协议的关系
+
+### 0.1 定位说明
+
+**Google A2A** (https://a2a-protocol.org) 是 Google 联合 Linux Foundation 推出的开放标准，定义了 Agent 之间的通信协议。
+
+**Gradience A2A** 在 Google A2A 基础上增加了**经济层**：信誉系统、任务结算、微支付通道。
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Google A2A Protocol                    │
+│              (Agent 通信标准 - 开放标准)                  │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │           Gradience A2A Extension               │   │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐         │   │
+│  │  │Reputation│  │Settlement│  │  Stake  │         │   │
+│  │  │  信誉层  │  │  结算层  │  │  质押层  │         │   │
+│  │  └─────────┘  └─────────┘  └─────────┘         │   │
+│  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 0.2 整合价值
+
+| Google A2A 提供 | Gradience 增强 |
+|----------------|---------------|
+| Agent 发现机制 | + 链上信誉验证 |
+| 任务通信协议 | + 经济激励结算 |
+| 安全消息传输 | + 质押 slash 保障 |
+| 能力声明标准 | + 可验证战绩历史 |
+
+### 0.3 与 MCP 的关系
+
+Google A2A 官方定义了与 MCP (Model Context Protocol) 的关系：
+- **MCP**: Agent-to-Tool 通信（Agent 调用工具、API）
+- **A2A**: Agent-to-Agent 通信（Agent 之间协作）
+- **Gradience**: 为两者提供经济层（信誉 + 结算）
 
 ---
 
@@ -572,16 +615,27 @@ MagicBlock ER:
 
 ---
 
-## 8. 实现路线图
+## 8. 实现路线图（整合 Google A2A）
 
 | 阶段 | 时间 | 里程碑 | 依赖 |
 |------|------|--------|------|
-| **A2A-0: 基础通信** | 2027 Q1 | Agent 消息协议 + libp2p 集成 | Agent Layer v2 |
-| **A2A-1: 微支付通道** | 2027 Q1-Q2 | 支付通道 open/close/dispute | Solana Program |
-| **A2A-2: 任务分解** | 2027 Q2 | Agent 可分解任务并广播子任务 | A2A-0 |
-| **A2A-3: ER 集成** | 2027 Q2-Q3 | MagicBlock ER 作为 A2A 执行环境 | MagicBlock SDK |
-| **A2A-4: 信誉传播** | 2027 Q3 | A2A 协作信誉 + 批量回写 L1 | A2A-1 + A2A-2 |
-| **A2A-5: 自主 Agent** | 2027 H2 | Agent 自主发起任务和经济决策 | 全部上述 |
+| **A2A-0: Google A2A 兼容** | 2026 Q2 | 实现 A2A Server/Client 标准接口 | Agent Layer v2 |
+| **A2A-1: Agent Card 扩展** | 2026 Q2 | 扩展 Agent Card 加入 Gradience 信誉字段 | A2A-0 |
+| **A2A-2: 微支付通道** | 2026 Q3 | 支付通道 open/close/dispute | Solana Program |
+| **A2A-3: 任务分解** | 2026 Q4 | Agent 可分解任务并广播子任务 | A2A-0 |
+| **A2A-4: ER 集成** | 2027 Q1 | MagicBlock ER 作为 A2A 执行环境 | MagicBlock SDK |
+| **A2A-5: 信誉传播** | 2027 Q2 | A2A 协作信誉 + 批量回写 L1 | A2A-1 + A2A-2 |
+| **A2A-6: 自主 Agent** | 2027 H2 | Agent 自主发起任务和经济决策 | 全部上述 |
+
+### Google A2A 整合检查清单
+
+- [ ] 实现 A2A Server 标准接口 (`/agents/list`, `/tasks/send`, etc.)
+- [ ] 实现 A2A Client 标准接口
+- [ ] Agent Card 格式验证
+- [ ] 扩展 Agent Card 加入 `gradienceExtension` 字段
+- [ ] 扩展 Task 对象加入 `gradienceExtension` 字段
+- [ ] 实现 `gradience/*` 方法族
+- [ ] 与 Google A2A 参考实现互操作测试
 
 ---
 
@@ -597,8 +651,106 @@ MagicBlock ER:
 
 ---
 
+## 附录 A: Google A2A 整合规范
+
+### A.1 Agent Card 扩展
+
+Google A2A 定义了 Agent Card 标准，Gradience 扩展该标准加入信誉字段：
+
+```json
+{
+  "name": "DataAnalysisAgent",
+  "description": "Professional data analysis agent",
+  "version": "1.0.0",
+  "capabilities": ["data_cleaning", "visualization"],
+  "skills": ["python", "pandas", "matplotlib"],
+  
+  "gradienceExtension": {
+    "version": "1.0",
+    "walletAddress": "7xKL...9mPz",
+    "reputation": {
+      "globalScore": 850,
+      "winRate": 0.73,
+      "completedTasks": 127,
+      "attestationCID": "QmXyz...123"
+    },
+    "settlement": {
+      "supportedTokens": ["USDC", "SOL", "GRAD"],
+      "minTaskValue": "10 USDC",
+      "paymentChannel": true
+    }
+  }
+}
+```
+
+### A.2 Task 对象扩展
+
+```json
+{
+  "id": "task-123",
+  "status": "submitted",
+  "gradienceExtension": {
+    "escrowAddress": "EscrowPDA...",
+    "reward": {
+      "amount": "1000",
+      "token": "USDC"
+    },
+    "judge": {
+      "type": "pool",
+      "category": "data-analysis"
+    },
+    "deadline": 1712345678,
+    "minStake": "50 USDC"
+  }
+}
+```
+
+### A.3 Gradience 扩展方法
+
+```typescript
+// 结算相关
+interface GradienceMethods {
+  "gradience/channel/open": {
+    partner: string;
+    deposit: string;
+    token: string;
+  };
+  
+  "gradience/channel/closeCooperative": {
+    channelId: string;
+    balanceA: string;
+    balanceB: string;
+    signatureA: string;
+    signatureB: string;
+  };
+  
+  "gradience/reputation/get": (agentId: string) => {
+    score: number;
+    completedTasks: number;
+    winRate: number;
+    proof: string;
+  };
+  
+  "gradience/settlement/submit": {
+    taskId: string;
+    resultCID: string;
+    traceCID: string;
+  };
+}
+```
+
+### A.4 参考资源
+
+- **Google A2A**: https://a2a-protocol.org
+- **GitHub**: https://github.com/a2aproject/A2A
+- **MCP**: https://modelcontextprotocol.io/
+
+---
+
 *A2A 不是一个新协议，是 Agent Layer 的自然延伸。*
 *当 Agent 有了信誉、有了结算、有了 Stake——它们自然会开始互相合作。*
 *我们要做的不是设计合作，而是让合作可能。*
 
-_Gradience A2A Protocol Spec v0.1 · 2026-03-30_
+*Gradience A2A 与 Google A2A 标准整合，构建完整的 Agent 经济基础设施。*
+
+_Gradience A2A Protocol Spec v0.2 · 2026-04-02_

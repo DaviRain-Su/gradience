@@ -81,6 +81,39 @@ export interface AgentDiscoveryRow {
     } | null;
 }
 
+// ── Arena Task Flow (local workflow tracking) ───────────────────────
+
+export type TaskFlowStatus =
+    | 'available'
+    | 'applied'
+    | 'submitted'
+    | 'won'
+    | 'lost'
+    | 'refunded';
+
+export interface ArenaTaskSummary {
+    taskId: number;
+    poster: string;
+    judge: string;
+    reward: number;
+    state: string;
+    category: number;
+    deadline: string;
+    submissionCount: number;
+    winner: string | null;
+}
+
+export interface TaskFlowRecord {
+    taskId: number;
+    status: TaskFlowStatus;
+    appliedAt: number;
+    updatedAt: number;
+    resultRef: string | null;
+    traceRef: string | null;
+    lastKnownTaskState: string | null;
+    winner: string | null;
+}
+
 // ── App Views ────────────────────────────────────────────────────────
 
 export type ActiveView = 'me' | 'discover' | 'chat';
@@ -94,6 +127,18 @@ export interface InteropStatusSnapshot {
     evmReputationCount: number;
     istranaFeedbackCount: number;
     attestationCount: number;
+    identityRoleCounts: {
+        winner: number;
+        poster: number;
+        judge: number;
+        loser: number;
+    };
+    feedbackRoleCounts: {
+        winner: number;
+        poster: number;
+        judge: number;
+        loser: number;
+    };
     lastTaskId: number | null;
     lastScore: number | null;
     lastChainTx: string | null;
@@ -114,4 +159,34 @@ export interface InteropSyncEvent {
     evmReputationPublished?: boolean;
     istranaFeedbackPublished: boolean;
     attestationPublished: boolean;
+    participants?: string[];
+    identityRecipients?: string[];
+    identityDispatches?: Array<{
+        role: 'winner' | 'poster' | 'judge' | 'loser';
+        agent: string;
+    }>;
+    feedbackPublishedCount?: number;
+    feedbackRecipients?: Array<{
+        sink: string;
+        role: 'winner' | 'poster' | 'judge' | 'loser';
+        agent: string;
+    }>;
+}
+
+// ── Identity Registration (Metaplex / ERC-8004 relay) ──────────────
+
+export type IdentityRegistrationState =
+    | 'unknown'
+    | 'pending'
+    | 'registered'
+    | 'failed'
+    | 'disabled';
+
+export interface IdentityRegistrationStatus {
+    agent: string;
+    state: IdentityRegistrationState;
+    agentId: string | null;
+    txHash: string | null;
+    error: string | null;
+    updatedAt: number;
 }

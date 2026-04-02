@@ -2,6 +2,8 @@ import { createHmac } from 'node:crypto';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { address, createSolanaRpc, type Address } from '@solana/kit';
+
 import type { RetryPolicy } from './evaluators.js';
 
 export interface ReputationInteropSignal {
@@ -16,7 +18,10 @@ export interface ReputationInteropSignal {
     chainTx: string;
     judgedAt: number;
     judgeMode: string;
+    participants?: string[];
 }
+
+type InteropRole = 'winner' | 'poster' | 'judge' | 'loser';
 
 export interface InteropPublisher {
     onTaskJudged(signal: ReputationInteropSignal): Promise<void>;
@@ -34,6 +39,63 @@ interface InteropOutboxEntry {
     attempts: number;
     lastError: string;
     queuedAt: number;
+}
+
+interface IdentityDispatch {
+    signal: ReputationInteropSignal;
+    role: InteropRole;
+    agent: string;
+}
+
+interface FeedbackDispatch {
+    signal: ReputationInteropSignal;
+    role: InteropRole;
+    agent: string;
+    roleScore: number;
+}
+
+export interface SasOnChainAttestationOptions {
+    wallet: OnChainAttestationWallet;
+    rpcEndpoint: string;
+    credentialPda: Address;
+    schemaPda: Address;
+    moduleName?: string;
+    idempotent?: boolean;
+}
+
+export interface OnChainAttestationWallet {
+    signer: unknown;
+    signAndSendTransaction(instructions: readonly unknown[]): Promise<string>;
+}
+
+interface SasLibLike {
+    fetchSchema: (
+        rpc: unknown,
+        schema: Address,
+    ) => Promise<{ data?: unknown } | unknown>;
+    fetchMaybeAttestation?: (
+        rpc: unknown,
+        attestation: Address,
+    ) => Promise<{ exists?: boolean } | null>;
+    serializeAttestationData: (
+        schema: unknown,
+        data: Record<string, unknown>,
+    ) => Uint8Array;
+    deriveAttestationPda: (input: {
+        credential: Address;
+        schema: Address;
+        nonce: Address;
+    }) => Promise<readonly [Address, number]> | readonly [Address, number];
+    getCreateAttestationInstruction: (input: {
+        payer: OnChainAttestationWallet['signer'];
+        authority: OnChainAttestationWallet['signer'];
+        credential: Address;
+        schema: Address;
+        attestation: Address;
+        nonce: Address;
+        data: Uint8Array;
+        expiry: bigint;
+    }) => unknown;
 }
 
 export interface InteropSink {
@@ -100,14 +162,103 @@ export class HttpJsonSink implements InteropSink {
 export class MappedInteropSink implements InteropSink {
     constructor(
         private readonly sink: InteropSink,
-        private readonly mapper: (signal: ReputationInteropSignal) => unknown,
+        private readonly mapper: (payload: unknown) => unknown | unknown[],
+        private readonly validator?: (payload: unknown) => boolean,
     ) {}
 
     async publish(payload: unknown): Promise<void> {
-        if (!isReputationInteropSignal(payload)) {
+        if (this.validator && !this.validator(payload)) {
             throw new Error('invalid interop payload');
         }
-        await this.sink.publish(this.mapper(payload));
+        const mapped = this.mapper(payload);
+        if (Array.isArray(mapped)) {
+            for (const entry of mapped) {
+                await this.sink.publish(entry);
+            }
+            return;
+        }
+        await this.sink.publish(mapped);
+    }
+}
+
+export class SasOnChainAttestationSink implements InteropSink {
+    private readonly rpc: ReturnType<typeof createSolanaRpc>;
+    private readonly moduleName: string;
+    private readonly idempotent: boolean;
+    private modulePromise: Promise<SasLibLike> | null = null;
+
+    constructor(private readonly options: SasOnChainAttestationOptions) {
+        this.rpc = createSolanaRpc(
+            options.rpcEndpoint as unknown as Parameters<typeof createSolanaRpc>[0],
+        );
+        this.moduleName = options.moduleName ?? 'sas-lib';
+        this.idempotent = options.idempotent ?? true;
+    }
+
+    async publish(payload: unknown): Promise<void> {
+        if (!isReputationInteropSignal(payload)) {
+            throw new Error('invalid attestation payload');
+        }
+        const signal = payload;
+        const sas = await this.loadSasModule();
+        const schemaAccount = await sas.fetchSchema(this.rpc, this.options.schemaPda);
+        const schemaData = (schemaAccount as { data?: unknown })?.data ?? schemaAccount;
+        const nonce = address(signal.winner);
+        const [attestationPda] = await Promise.resolve(
+            sas.deriveAttestationPda({
+                credential: this.options.credentialPda,
+                schema: this.options.schemaPda,
+                nonce,
+            }),
+        );
+
+        if (this.idempotent && sas.fetchMaybeAttestation) {
+            const maybe = await sas.fetchMaybeAttestation(this.rpc, attestationPda);
+            if (maybe && (maybe as { exists?: boolean }).exists) {
+                return;
+            }
+        }
+
+        const serializedData = sas.serializeAttestationData(schemaData, {
+            taskId: BigInt(signal.taskId),
+            taskCategory: signal.category,
+            judgeMethod: judgeMethodToCode(signal.judgeMode),
+            score: clampScore(signal.score),
+            rewardAmount: BigInt(Math.max(0, Math.round(signal.reward))),
+            completedAt: BigInt(signal.judgedAt),
+        });
+
+        const instruction = sas.getCreateAttestationInstruction({
+            payer: this.options.wallet.signer,
+            authority: this.options.wallet.signer,
+            credential: this.options.credentialPda,
+            schema: this.options.schemaPda,
+            attestation: attestationPda,
+            nonce,
+            data: serializedData,
+            expiry: 0n,
+        });
+        await this.options.wallet.signAndSendTransaction([instruction]);
+    }
+
+    private async loadSasModule(): Promise<SasLibLike> {
+        if (!this.modulePromise) {
+            this.modulePromise = import(this.moduleName).then((mod) => {
+                const required = [
+                    'fetchSchema',
+                    'serializeAttestationData',
+                    'deriveAttestationPda',
+                    'getCreateAttestationInstruction',
+                ] as const;
+                for (const key of required) {
+                    if (typeof (mod as Record<string, unknown>)[key] !== 'function') {
+                        throw new Error(`sas module missing required export: ${key}`);
+                    }
+                }
+                return mod as unknown as SasLibLike;
+            });
+        }
+        return this.modulePromise;
     }
 }
 
@@ -173,21 +324,39 @@ export class InteropPipeline implements InteropPublisher {
     private async publishSignal(signal: ReputationInteropSignal): Promise<void> {
         let identityPublished = false;
         let attestationPublished = false;
-        const feedbackTargets: string[] = [];
+        const identityRecipients: string[] = [];
+        const identityDispatches: Array<{ role: InteropRole; agent: string }> = [];
+        const feedbackTargets = new Set<string>();
+        const feedbackRecipients: Array<{ sink: string; role: InteropRole; agent: string }> = [];
 
         if (this.options.identitySink) {
-            await this.withRetry('identity_sink', () =>
-                this.options.identitySink?.publish(signal),
-            );
-            identityPublished = true;
+            for (const dispatch of buildIdentityDispatches(signal)) {
+                await this.withRetry('identity_sink', () =>
+                    this.options.identitySink?.publish(dispatch),
+                );
+                identityRecipients.push(dispatch.agent);
+                identityDispatches.push({
+                    role: dispatch.role,
+                    agent: dispatch.agent,
+                });
+                identityPublished = true;
+            }
         }
 
         const feedbackSinks = this.options.feedbackSinks ?? [];
+        const feedbackDispatches = buildFeedbackDispatches(signal);
         for (const feedbackSink of feedbackSinks) {
-            await this.withRetry(`feedback_sink:${feedbackSink.name}`, () =>
-                feedbackSink.sink.publish(signal),
-            );
-            feedbackTargets.push(feedbackSink.name);
+            for (const dispatch of feedbackDispatches) {
+                await this.withRetry(`feedback_sink:${feedbackSink.name}`, () =>
+                    feedbackSink.sink.publish(dispatch),
+                );
+                feedbackTargets.add(feedbackSink.name);
+                feedbackRecipients.push({
+                    sink: feedbackSink.name,
+                    role: dispatch.role,
+                    agent: dispatch.agent,
+                });
+            }
         }
 
         if (
@@ -210,11 +379,16 @@ export class InteropPipeline implements InteropPublisher {
                     category: signal.category,
                     chainTx: signal.chainTx,
                     judgedAt: signal.judgedAt,
+                    participants: signal.participants ?? [],
                     identityRegistered: identityPublished,
-                    feedbackTargets,
-                    erc8004FeedbackPublished: feedbackTargets.includes('erc8004_feedback'),
-                    istranaFeedbackPublished: feedbackTargets.includes('istrana_feedback'),
-                    evmReputationPublished: feedbackTargets.includes(
+                    identityRecipients,
+                    identityDispatches,
+                    feedbackTargets: [...feedbackTargets],
+                    feedbackRecipients,
+                    feedbackPublishedCount: feedbackRecipients.length,
+                    erc8004FeedbackPublished: feedbackTargets.has('erc8004_feedback'),
+                    istranaFeedbackPublished: feedbackTargets.has('istrana_feedback'),
+                    evmReputationPublished: feedbackTargets.has(
                         'evm_reputation_relay',
                     ),
                     attestationPublished,
@@ -324,6 +498,10 @@ export function buildInteropPublisherFromEnv(
     options: {
         retryPolicy?: RetryPolicy;
         logger?: Pick<Console, 'warn' | 'error'>;
+        sasOnChain?: {
+            wallet: WalletAdapter;
+            rpcEndpoint: string;
+        };
     } = {},
 ): InteropPublisher | null {
     const token = env.JUDGE_DAEMON_INTEROP_AUTH_TOKEN;
@@ -335,6 +513,10 @@ export function buildInteropPublisherFromEnv(
         env.JUDGE_DAEMON_EVM_REPUTATION_RELAY_ENDPOINT;
     const istranaEndpoint = env.JUDGE_DAEMON_ISTRANA_FEEDBACK_ENDPOINT;
     const attestationEndpoint = env.JUDGE_DAEMON_SAS_ATTESTATION_ENDPOINT;
+    const attestationMode = env.JUDGE_DAEMON_SAS_ATTESTATION_MODE ?? 'http';
+    const sasCredentialPda = env.JUDGE_DAEMON_SAS_CREDENTIAL_PDA;
+    const sasSchemaPda = env.JUDGE_DAEMON_SAS_SCHEMA_PDA;
+    const sasModuleName = env.JUDGE_DAEMON_SAS_MODULE;
     const agentImInteropEndpoint = env.JUDGE_DAEMON_AGENT_IM_INTEROP_ENDPOINT;
     const feedbackSinks: Array<{ name: string; sink: InteropSink }> = [];
 
@@ -350,6 +532,7 @@ export function buildInteropPublisherFromEnv(
                         signatureSecret,
                     }),
                     toErc8004FeedbackPayload,
+                    isFeedbackDispatch,
                 ),
             },
         );
@@ -366,6 +549,7 @@ export function buildInteropPublisherFromEnv(
                         signatureSecret,
                     }),
                     toIstranaFeedbackPayload,
+                    isFeedbackDispatch,
                 ),
             },
         );
@@ -381,18 +565,51 @@ export function buildInteropPublisherFromEnv(
                     signatureSecret,
                 }),
                 toEvmReputationRelayPayload,
+                isFeedbackDispatch,
             ),
         });
     }
+
+    const shouldUseOnChainAttestation =
+        attestationMode === 'onchain' &&
+        !!sasCredentialPda &&
+        !!sasSchemaPda &&
+        !!options.sasOnChain;
 
     if (
         !identityEndpoint &&
         feedbackSinks.length === 0 &&
         !attestationEndpoint &&
+        !shouldUseOnChainAttestation &&
         !agentImInteropEndpoint
     ) {
         return null;
     }
+
+    const attestationSink = shouldUseOnChainAttestation
+        ? new SasOnChainAttestationSink({
+              wallet: options.sasOnChain!.wallet,
+              rpcEndpoint: options.sasOnChain!.rpcEndpoint,
+              credentialPda: address(sasCredentialPda!),
+              schemaPda: address(sasSchemaPda!),
+              moduleName: sasModuleName,
+              idempotent: parseBoolEnv(env.JUDGE_DAEMON_SAS_ATTESTATION_IDEMPOTENT, true),
+          })
+        : attestationEndpoint
+          ? new MappedInteropSink(
+                new HttpJsonSink({
+                    endpoint: attestationEndpoint,
+                    name: 'sas_attestation',
+                    authToken: token,
+                    signatureSecret,
+                }),
+                (payload) =>
+                    toTaskCompletionAttestationPayload(
+                        payload as ReputationInteropSignal,
+                    ),
+                isReputationInteropSignal,
+            )
+          : undefined;
 
     return new InteropPipeline({
         identitySink: identityEndpoint
@@ -404,20 +621,11 @@ export function buildInteropPublisherFromEnv(
                       signatureSecret,
                   }),
                   toErc8004RegistrationPayload,
+                  isIdentityDispatch,
               )
             : undefined,
         feedbackSinks,
-        attestationSink: attestationEndpoint
-            ? new MappedInteropSink(
-                  new HttpJsonSink({
-                      endpoint: attestationEndpoint,
-                      name: 'sas_attestation',
-                      authToken: token,
-                      signatureSecret,
-                  }),
-                  toTaskCompletionAttestationPayload,
-              )
-            : undefined,
+        attestationSink,
         statusSink: agentImInteropEndpoint
             ? new HttpJsonSink({
                   endpoint: agentImInteropEndpoint,
@@ -441,10 +649,15 @@ function signPayload(secret: string, timestamp: string, body: string): string {
     return createHmac('sha256', secret).update(value).digest('hex');
 }
 
-function toErc8004RegistrationPayload(signal: ReputationInteropSignal): unknown {
+function toErc8004RegistrationPayload(payload: unknown): unknown {
+    if (!isIdentityDispatch(payload)) {
+        throw new Error('invalid identity dispatch payload');
+    }
+    const { signal, role, agent } = payload;
     return {
         type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
-        name: signal.winner,
+        agentPubkey: agent,
+        name: agent,
         description: 'Agent participating in Gradience Protocol',
         services: [
             {
@@ -461,29 +674,40 @@ function toErc8004RegistrationPayload(signal: ReputationInteropSignal): unknown 
         supportedTrust: ['reputation', 'crypto-economic'],
         registrations: [
             {
-                agentId: signal.winner,
+                agentId: agent,
                 agentRegistry: 'solana:101:metaplex',
             },
         ],
         gradience: {
+            role,
             firstTaskId: signal.taskId,
             firstJudgeTx: signal.chainTx,
         },
     };
 }
 
-function toErc8004FeedbackPayload(signal: ReputationInteropSignal): unknown {
+function toErc8004FeedbackPayload(payload: unknown): unknown {
+    if (!isFeedbackDispatch(payload)) {
+        throw new Error('invalid feedback dispatch payload');
+    }
+    const { signal, role, agent, roleScore } = payload;
     return {
+        agentPubkey: agent,
         tag1: 'taskScore',
         tag2: `category-${signal.category}`,
-        value: signal.score,
+        tag3: `role-${role}`,
+        value: roleScore,
         valueDecimals: 0,
         endpoint: 'solana:gradience',
+        feedbackURI: signal.reasonRef,
         gradience: {
             taskId: signal.taskId,
+            feedbackRole: role,
+            feedbackAgent: agent,
             winner: signal.winner,
             poster: signal.poster,
             judge: signal.judge,
+            participants: signal.participants ?? [],
             reward: signal.reward,
             reasonRef: signal.reasonRef,
             chainTx: signal.chainTx,
@@ -492,16 +716,23 @@ function toErc8004FeedbackPayload(signal: ReputationInteropSignal): unknown {
     };
 }
 
-function toIstranaFeedbackPayload(signal: ReputationInteropSignal): unknown {
+function toIstranaFeedbackPayload(payload: unknown): unknown {
+    if (!isFeedbackDispatch(payload)) {
+        throw new Error('invalid feedback dispatch payload');
+    }
+    const { signal, role, agent, roleScore } = payload;
     return {
         protocol: 'gradience',
         event: 'task_judged',
         taskId: signal.taskId,
         category: signal.category,
-        score: signal.score,
+        score: roleScore,
+        role,
+        agent,
         winner: signal.winner,
         poster: signal.poster,
         judge: signal.judge,
+        participants: signal.participants ?? [],
         reward: signal.reward,
         txSignature: signal.chainTx,
         judgedAt: signal.judgedAt,
@@ -526,17 +757,22 @@ function toTaskCompletionAttestationPayload(signal: ReputationInteropSignal): un
     };
 }
 
-function toEvmReputationRelayPayload(signal: ReputationInteropSignal): unknown {
+function toEvmReputationRelayPayload(payload: unknown): unknown {
+    if (!isFeedbackDispatch(payload)) {
+        throw new Error('invalid feedback dispatch payload');
+    }
+    const { signal, role, agent, roleScore } = payload;
     const categoryScores = [0, 0, 0, 0, 0, 0, 0, 0];
     if (signal.category >= 0 && signal.category < categoryScores.length) {
-        categoryScores[signal.category] = clampScore(signal.score);
+        categoryScores[signal.category] = clampScore(roleScore);
     }
     return {
         protocol: 'gradience',
         event: 'submit_reputation',
         payload: {
-            agentPubkey: signal.winner,
-            globalScore: clampScore(signal.score),
+            agentPubkey: agent,
+            role,
+            globalScore: clampScore(roleScore),
             categoryScores,
             sourceChain: 'solana',
             timestamp: signal.judgedAt,
@@ -545,9 +781,102 @@ function toEvmReputationRelayPayload(signal: ReputationInteropSignal): unknown {
             taskId: signal.taskId,
             reasonRef: signal.reasonRef,
             txSignature: signal.chainTx,
+            feedbackRole: role,
+            feedbackAgent: agent,
             judge: signal.judge,
         },
     };
+}
+
+function buildIdentityDispatches(signal: ReputationInteropSignal): IdentityDispatch[] {
+    const dispatches: IdentityDispatch[] = [];
+    const seen = new Set<string>();
+    const append = (role: InteropRole, agent: string) => {
+        const normalized = agent.trim();
+        if (!normalized) {
+            return;
+        }
+        if (seen.has(normalized)) {
+            return;
+        }
+        seen.add(normalized);
+        dispatches.push({ signal, role, agent: normalized });
+    };
+
+    append('winner', signal.winner);
+    append('poster', signal.poster);
+    append('judge', signal.judge);
+    for (const participant of signal.participants ?? []) {
+        if (participant === signal.winner) {
+            continue;
+        }
+        append('loser', participant);
+    }
+
+    return dispatches;
+}
+
+function buildFeedbackDispatches(signal: ReputationInteropSignal): FeedbackDispatch[] {
+    const dispatches: FeedbackDispatch[] = [];
+    const seen = new Set<string>();
+    const append = (role: InteropRole, agent: string, roleScore: number) => {
+        const normalized = agent.trim();
+        if (!normalized) {
+            return;
+        }
+        const key = `${role}:${normalized}`;
+        if (seen.has(key)) {
+            return;
+        }
+        seen.add(key);
+        dispatches.push({
+            signal,
+            role,
+            agent: normalized,
+            roleScore: clampScore(roleScore),
+        });
+    };
+
+    append('winner', signal.winner, signal.score);
+    append('poster', signal.poster, signal.score);
+    append('judge', signal.judge, signal.score);
+    for (const participant of signal.participants ?? []) {
+        if (participant === signal.winner) {
+            continue;
+        }
+        append('loser', participant, 0);
+    }
+
+    return dispatches;
+}
+
+function isIdentityDispatch(value: unknown): value is IdentityDispatch {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const dispatch = value as Partial<IdentityDispatch>;
+    return (
+        isReputationInteropSignal(dispatch.signal) &&
+        isInteropRole(dispatch.role) &&
+        typeof dispatch.agent === 'string'
+    );
+}
+
+function isFeedbackDispatch(value: unknown): value is FeedbackDispatch {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const dispatch = value as Partial<FeedbackDispatch>;
+    return (
+        isReputationInteropSignal(dispatch.signal) &&
+        isInteropRole(dispatch.role) &&
+        typeof dispatch.agent === 'string' &&
+        typeof dispatch.roleScore === 'number'
+    );
+}
+
+function isInteropRole(value: unknown): value is InteropRole {
+    return value === 'winner' || value === 'poster' || value === 'judge' || value === 'loser';
 }
 
 function isReputationInteropSignal(value: unknown): value is ReputationInteropSignal {
@@ -566,7 +895,10 @@ function isReputationInteropSignal(value: unknown): value is ReputationInteropSi
         typeof signal.reasonRef === 'string' &&
         typeof signal.chainTx === 'string' &&
         typeof signal.judgedAt === 'number' &&
-        typeof signal.judgeMode === 'string'
+        typeof signal.judgeMode === 'string' &&
+        (typeof signal.participants === 'undefined' ||
+            (Array.isArray(signal.participants) &&
+                signal.participants.every((value) => typeof value === 'string')))
     );
 }
 
@@ -592,6 +924,20 @@ function asMessage(error: unknown): string {
         return error.message;
     }
     return String(error);
+}
+
+function parseBoolEnv(value: string | undefined, fallback: boolean): boolean {
+    if (!value) {
+        return fallback;
+    }
+    return !['0', 'false', 'False', 'FALSE', 'no', 'off'].includes(value);
+}
+
+function judgeMethodToCode(judgeMode: string): number {
+    if (judgeMode === 'pool') {
+        return 1;
+    }
+    return 0;
 }
 
 function clampScore(score: number): number {

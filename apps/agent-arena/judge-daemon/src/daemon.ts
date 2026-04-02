@@ -9,6 +9,9 @@ export interface JudgeDaemonOptions {
     heliusSource: EventSource;
     pollingSource: EventSource;
     logger?: Pick<Console, 'info' | 'warn' | 'error'>;
+    onEventProcessed?: (event: EventEnvelope, mode: ListenerMode) => void | Promise<void>;
+    onSourceError?: (mode: ListenerMode, error: unknown) => void | Promise<void>;
+    onModeChanged?: (mode: ListenerMode) => void | Promise<void>;
 }
 
 export class JudgeDaemon {
@@ -60,6 +63,9 @@ export class JudgeDaemon {
     private async activate(mode: ListenerMode, source: EventSource): Promise<void> {
         this.currentMode = mode;
         this.activeSource = source;
+        if (this.options.onModeChanged) {
+            await this.options.onModeChanged(mode);
+        }
         await source.start(
             async (event) => this.handleEvent(event),
             async (error) => this.handleSourceError(mode, error),
@@ -69,6 +75,9 @@ export class JudgeDaemon {
 
     private async handleEvent(event: EventEnvelope): Promise<void> {
         await this.engine.handleEvent(event);
+        if (this.currentMode && this.options.onEventProcessed) {
+            await this.options.onEventProcessed(event, this.currentMode);
+        }
     }
 
     private async handleSourceError(mode: ListenerMode, error: unknown): Promise<void> {
@@ -77,6 +86,9 @@ export class JudgeDaemon {
         }
 
         this.logger.error(`${mode} source error: ${asMessage(error)}`);
+        if (this.options.onSourceError) {
+            await this.options.onSourceError(mode, error);
+        }
         if (mode === 'triton') {
             try {
                 await this.switchToFallback('helius', this.options.heliusSource, 'polling');

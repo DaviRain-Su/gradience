@@ -127,6 +127,44 @@
 | T51 | SAS Attestation 自动颁发 | `judge_and_pay` 确认后，Judge Daemon 通过 `sas-lib` 颁发 `TaskCompletion` Attestation（技术规格 §3.12）；包含 taskId、score、category、winner；SDK 新增 `getAgentAttestations(address)` 查询方法；Attestation 可在钱包/8004scan 中展示为"能力凭证" | T18a, T49 | 3h | P1 | devnet 上 `fetchAllAttestation` 返回正确凭证；`decodeTaskCompletionAttestation` 解码验证通过 |
 | T52 | Agent.im MVP | 见 `apps/agent-im/docs/01-prd.md`；Electrobun 桌面应用，Google OAuth 登录，"我的"+ "社交"双视角，A2A 消息，Agent 发现广场，双界面（GUI + API） | T40, T49 | 2w | P1 | PRD 中 6 项成功标准全部达标 |
 
+### 🔶 生产分阶段实施（白皮书对齐）
+
+> 目标：从“可演示 Demo”进入“可上线运行”的生产实施闭环，按 P0→P1 执行并保留验收证据。
+
+| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
+|---|---------|------|------|------|--------|----------|
+| T53 | Stage A1 — 启动栈与端口统一 | 统一 Agent.im 与 Indexer 的默认端口/基址配置（Agent.im 默认指向 Indexer `:3001`）；更新 `start-dev-stack.sh`（移除 agent-me/agent-social 窗口，改为 agent-im）；确保 `judge-daemon/indexer/agent-im` 一键拉起 | T52 | 2h | P0 | 单命令启动后 Agent.im 可读取真实 Indexer 数据；脚本窗口仅包含 indexer/judge-daemon/agent-arena/agent-im（+可选 evm）；无端口冲突 |
+| T54 | Stage A2 — Privy 真实认证接入 | 将 Agent.im 从 MockAuth 切到真实 Privy（Google OAuth + 嵌入式钱包）；加入依赖、环境变量检查与错误回退；保持未配置时可切回 demo 模式 | T53 | 4h | P0 | 登录后 `publicKey` 非 `DEMO_*`；Google OAuth 完整成功；未配置 App ID 时 UI 给出清晰提示且不崩溃 |
+| T55 | Stage A3 — Demo 闭环脚本固化 | 固化“登录→发现→任务数据→互通状态”演示脚本与环境变量模板；输出可重复的命令序列和验收输出 | T54 | 2h | P0 | 10 分钟内可重复演示成功；脚本化命令执行无人工修补 |
+| T56 | Stage B1 — Program P0 边界测试补全 | 补齐 `apps/agent-arena/docs/05-test-spec.md` 标记缺口：重复初始化、reward=0、重复 apply、score<MIN_SCORE 退款路径、unstake 冷却期；补 Token-2022 路径（P1） | T55, T19d | 6h | P0 | P0 缺口测试全部通过并纳入 CI 命令；新增测试在本地与 devnet 复现一致 |
+| T57 | Stage B2 — W5 稳定性验收（T46~T48） | 执行异常全路径联调、Pool 压测+ALT 切换、Program→Indexer→WS→Judge Daemon 事件闭环；包含断线恢复、幂等去重、回放一致性 | T56, T46, T47, T48 | 8h | P0 | 形成可重放脚本+指标基线（成功率/延迟/CU/tx size）；断连恢复后无重复裁决或状态漂移 |
+| T58 | Stage B3 — ERC-8004 生产闭环 | 固化身份注册触发点（首参与自动注册）；扩展反馈到 winner/loser/judge/poster 角色并可追踪；完成 8004 relay 状态审计与 8004scan 对账 | T57, T49, T50 | 6h | P0 | 8004scan 可查身份与 feedback 增量；反馈计数与链上事件一致；失败重试与告警可观测 |
+| T59 | Stage B4 — SAS Attestation 真上链 | 将当前 HTTP sink 形态切换为 `sas-lib` 真实颁发流程；完成 Credential/Schema 使用、`TaskCompletion` 数据编码、SDK 查询/解码闭环 | T58, T51 | 6h | P1 | devnet 上可查询到真实 `TaskCompletion` attestation；字段与任务数据一致；重复颁发具备幂等保护 |
+| T60 | Stage B5/B6 — Agent.im 生产化与发布门槛 | Agent.im 接入 Metaplex 注册流程（登录后身份闭环）；完成打包指标、持久化恢复、CI+运维脚本+发布清单（env matrix/回滚） | T59 | 8h | P1 | Agent.im PRD 六项成功标准全部达标；发布清单可在新环境 30 分钟内完成拉起并通过 smoke |
+
+### 🔷 执行重排 Backlog（2026-04-02，双线并行）
+
+> 依据最新 Gap Analysis，对“Agent.im 主线 + 协议并行”进行可执行重排。该节作为 `T53~T60` 的落地执行层，不替代原任务定义。
+
+| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
+|---|---------|------|------|------|--------|----------|
+| T61 | Track-A1 Agent.im 真实登录闭环 | 完成 Privy Google OAuth、会话绑定（`privy_user_id ↔ wallet ↔ agent_id`）、生产环境 demo-login 禁用与鉴权回归 | T54 | 4h | P0 | 用户可稳定登录并获得真实 wallet；鉴权错误路径可观测；测试通过 |
+| T62 | Track-A2 Me 数据聚合 API | 新增 `GET /me`、`/me/tasks`、`/me/submissions`（分页、排序、错误码一致）并对接 indexer | T61, T53 | 4h | P0 | API 返回结构稳定；分页/筛选正确；无登录返回 401 |
+| T63 | Track-A3 Agent.im MVP 前端流程 | 完成 Me 视图（统计+历史）与 Arena 任务流（浏览→报名→提交→状态追踪） | T62, T55 | 6h | P0 | 从登录到任务提交全链路可操作；UI 状态与后端一致 |
+| T64 | Track-A4 GUI/API 双入口 + 桌面化 | 完成 localhost Agent API 与 GUI 共享会话，补 Electrobun 打包与语音 fallback（Whisper 不可用时自动降级） | T63, T60 | 6h | P1 | GUI/API 均可完成关键流程；桌面包可启动；语音降级可用 |
+| T65 | Track-B1 Pool Judge 生产化 | 完成 Pool 模式分配、账户验证与高并发边界测试（含 ALT 场景） | T56, T57 | 6h | P0 | Pool 模式在 20/50+ 参与者下稳定；资金与事件一致 |
+| T66 | Track-B2 Agent Staking + Slash 闭环 | 补 Agent staking 与 slash 触发路径（异常提交/超时/违规）及事件断言 | T65 | 6h | P0 | 质押/罚没路径完整；所有资金转移和状态迁移可验证 |
+| T67 | Track-B3 排名与分类信誉强化 | 落地 `avg_score × win_rate` 排名辅助；补 `by_category(8类)` 写入与查询一致性测试 | T66 | 4h | P1 | 排名结果可复现；8 类别统计通过集成测试 |
+| T68 | Track-C1 SDK 高层封装与发布 | 提供 3 行任务操作高层 API，补 npm/crates 发布流水线与版本规范 | T27, T29, T30 | 4h | P0 | 可从注册表安装并执行发任务全流程；版本发布可自动化 |
+| T69 | Track-C2 可运维与发布门槛 | 补 CI/CD gate、Indexer/Judge health & metrics、Devnet 自动部署与回滚脚本 | T57, T68 | 6h | P1 | pipeline 稳定；告警与健康探针生效；新环境可快速恢复 |
+| T70 | Sprint 验收与回归基线 | 以 Sprint 1/2/3 组织 T61~T69，输出通过率、延迟、CU、交易体积基线报告 | T61, T62, T63, T64, T65, T66, T67, T68, T69 | 4h | P0 | 形成可复放验收清单；每个 Sprint 有明确通过证据 |
+
+**Sprint 建议（执行顺序）**
+
+- **Sprint 1**：T61 + T62 + T65  
+- **Sprint 2**：T63 + T64 + T66 + T67  
+- **Sprint 3**：T68 + T69 + T70
+
 ---
 
 ## 4.3 任务依赖图

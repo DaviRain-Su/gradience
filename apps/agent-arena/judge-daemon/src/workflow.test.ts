@@ -488,6 +488,18 @@ test('Workflow publishes interoperability signal after successful judgement', as
                 submission_slot: 190,
                 submitted_at: 0,
             },
+            {
+                task_id: 19,
+                agent: '22222222222222222222222222222222',
+                result_ref: 'cid://result-2',
+                trace_ref: 'cid://trace-2',
+                runtime_provider: 'x',
+                runtime_model: 'x',
+                runtime_runtime: 'x',
+                runtime_version: 'x',
+                submission_slot: 191,
+                submitted_at: 0,
+            },
         ],
         judge: async () => 'sig-interop-1',
     };
@@ -539,6 +551,10 @@ test('Workflow publishes interoperability signal after successful judgement', as
     assert.equal(signal.taskId, 19);
     assert.equal(signal.chainTx, 'sig-interop-1');
     assert.equal(signal.score, 91);
+    assert.deepEqual(signal.participants, [
+        '11111111111111111111111111111111',
+        '22222222222222222222222222222222',
+    ]);
 });
 
 test('Workflow still completes when interop publisher fails', async () => {

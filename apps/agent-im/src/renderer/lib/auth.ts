@@ -48,71 +48,9 @@ export class MockAuthProvider implements AuthProvider {
 }
 
 /**
- * Privy auth provider (production).
- * Requires @privy-io/react-auth to be installed.
- *
- * Usage in React:
- *   const { login, logout, user } = usePrivy();
- *   const solanaWallet = useSolanaWallets().wallets[0];
- *
- * This class wraps Privy's hooks for use outside React components.
- * In practice, the React hooks are used directly in components.
- */
-export class PrivyAuthProvider implements AuthProvider {
-    private state: AuthState = EMPTY_AUTH;
-    private privyLogin: (() => Promise<void>) | null = null;
-    private privyLogout: (() => Promise<void>) | null = null;
-
-    /**
-     * Bind Privy hooks from a React component.
-     * Call this from App.tsx after PrivyProvider is mounted.
-     */
-    bind(hooks: {
-        login: () => Promise<void>;
-        logout: () => Promise<void>;
-        user: { wallet?: { address: string }; email?: { address: string }; id: string } | null;
-    }) {
-        this.privyLogin = hooks.login;
-        this.privyLogout = hooks.logout;
-        if (hooks.user) {
-            this.state = {
-                authenticated: true,
-                publicKey: hooks.user.wallet?.address ?? null,
-                email: hooks.user.email?.address ?? null,
-                privyUserId: hooks.user.id,
-            };
-        }
-    }
-
-    async login(): Promise<AuthState> {
-        if (this.privyLogin) {
-            await this.privyLogin();
-        }
-        return this.state;
-    }
-
-    async logout(): Promise<void> {
-        if (this.privyLogout) {
-            await this.privyLogout();
-        }
-        this.state = EMPTY_AUTH;
-    }
-
-    getState(): AuthState {
-        return this.state;
-    }
-}
-
-/**
- * Create auth provider based on environment.
+ * Create auth provider for non-React contexts (API server, tests).
+ * Real Privy auth is handled directly via usePrivy() hooks in App.tsx.
  */
 export function createAuthProvider(): AuthProvider {
-    const privyAppId = typeof import.meta !== 'undefined'
-        ? (import.meta as any).env?.VITE_PRIVY_APP_ID
-        : undefined;
-
-    if (privyAppId) {
-        return new PrivyAuthProvider();
-    }
     return new MockAuthProvider();
 }

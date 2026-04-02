@@ -1,5 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -21,6 +22,8 @@ import {
     AsyncStreamEventSource,
     MockEventSource,
     PollingEventSource,
+    type EventHandler,
+    type SourceErrorHandler,
     type EventSource,
 } from './sources.js';
 import {
@@ -29,6 +32,7 @@ import {
     type WorkflowStore,
 } from './store.js';
 import type { EventEnvelope } from './types.js';
+import { createMetricsTracker, renderPrometheusMetrics } from './observability.js';
 import {
     JudgeWorkflowRunner,
     SdkJudgeChainClient,
@@ -45,22 +49,140 @@ export interface JudgeDaemonRuntime {
 export async function startJudgeDaemon(env: NodeJS.ProcessEnv = process.env): Promise<JudgeDaemonRuntime> {
     const store = createWorkflowStore(env);
     const engine = new AbsurdWorkflowEngine(store);
+    const metrics = createMetricsTracker();
     const runner = await createWorkflowRunner(env, engine);
-    if (runner) {
-        engine.setOnWorkflowQueued((workflow) => runner.process(workflow));
-    }
+    engine.setOnWorkflowQueued(async (workflow) => {
+        metrics.recordWorkflowQueued();
+        if (runner) {
+            await runner.process(workflow);
+        }
+    });
     const { tritonSource, heliusSource, pollingSource } = await createSources(env);
 
     const daemon = new JudgeDaemon(engine, {
-        tritonSource,
-        heliusSource,
-        pollingSource,
+        tritonSource: wrapEventSource(tritonSource, metrics.recordEvent.bind(metrics)),
+        heliusSource: wrapEventSource(heliusSource, metrics.recordEvent.bind(metrics)),
+        pollingSource: wrapEventSource(pollingSource, metrics.recordEvent.bind(metrics)),
+        onSourceError: () => metrics.recordSourceError(),
+        onModeChanged: (mode) => metrics.setMode(mode),
     });
     await daemon.start();
+    const observabilityServer = await startObservabilityServer(env, daemon, engine, metrics);
 
     return {
         daemon,
-        stop: async () => daemon.stop(),
+        stop: async () => {
+            await daemon.stop();
+            await observabilityServer?.close();
+        },
+    };
+}
+
+interface ObservabilityServer {
+    close(): Promise<void>;
+}
+
+async function startObservabilityServer(
+    env: NodeJS.ProcessEnv,
+    daemon: JudgeDaemon,
+    engine: AbsurdWorkflowEngine,
+    metrics: ReturnType<typeof createMetricsTracker>,
+): Promise<ObservabilityServer | null> {
+    if (isTruthy(env.JUDGE_DAEMON_HEALTH_DISABLED)) {
+        return null;
+    }
+    const bindAddr = env.JUDGE_DAEMON_HEALTH_BIND_ADDR ?? '127.0.0.1:9797';
+    const { host, port } = parseBindAddress(bindAddr);
+    const server = createServer((req, res) => {
+        void handleObservabilityRequest(req, res, daemon, engine, metrics);
+    });
+    await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(port, host, () => {
+            server.off('error', reject);
+            resolve();
+        });
+    });
+    console.info(`[judge-daemon] observability server listening on ${bindAddr}`);
+    return {
+        close: async () =>
+            new Promise<void>((resolve, reject) => {
+                server.close((error) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+                    resolve();
+                });
+            }),
+    };
+}
+
+async function handleObservabilityRequest(
+    req: IncomingMessage,
+    res: ServerResponse<IncomingMessage>,
+    daemon: JudgeDaemon,
+    engine: AbsurdWorkflowEngine,
+    metrics: ReturnType<typeof createMetricsTracker>,
+): Promise<void> {
+    const pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname;
+    const pendingWorkflows = (await engine.listPending(1_000)).length;
+    const snapshot = metrics.snapshot(pendingWorkflows);
+    snapshot.mode = daemon.mode();
+
+    if (pathname === '/healthz') {
+        const ok = snapshot.mode !== null;
+        const status = ok ? 200 : 503;
+        const payload = JSON.stringify({
+            ok,
+            mode: snapshot.mode,
+            uptime_seconds: snapshot.uptimeSeconds,
+            events_processed_total: snapshot.eventsProcessedTotal,
+            source_errors_total: snapshot.sourceErrorsTotal,
+            workflows_queued_total: snapshot.workflowsQueuedTotal,
+            pending_workflows: snapshot.pendingWorkflows,
+        });
+        res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(payload);
+        return;
+    }
+
+    if (pathname === '/metrics') {
+        res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' });
+        res.end(renderPrometheusMetrics(snapshot));
+        return;
+    }
+
+    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'not found' }));
+}
+
+function parseBindAddress(bindAddr: string): { host: string; port: number } {
+    const [host, portRaw] = bindAddr.split(':');
+    const port = Number(portRaw);
+    if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) {
+        throw new Error(
+            `Invalid JUDGE_DAEMON_HEALTH_BIND_ADDR: ${bindAddr} (expected host:port)`,
+        );
+    }
+    return { host, port };
+}
+
+function wrapEventSource(
+    source: EventSource,
+    onEvent: (event: EventEnvelope) => void,
+): EventSource {
+    return {
+        name: source.name,
+        async start(onEventHandler: EventHandler, onError: SourceErrorHandler): Promise<void> {
+            await source.start(async (event) => {
+                onEvent(event);
+                await onEventHandler(event);
+            }, onError);
+        },
+        async stop(): Promise<void> {
+            await source.stop();
+        },
     };
 }
 
@@ -114,6 +236,10 @@ async function createWorkflowRunner(
     const interopPublisher = buildInteropPublisherFromEnv(env, {
         retryPolicy,
         logger: console,
+        sasOnChain: {
+            wallet,
+            rpcEndpoint,
+        },
     });
     if (interopPublisher?.flushOutbox) {
         try {

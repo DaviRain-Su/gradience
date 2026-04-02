@@ -121,6 +121,7 @@ export class JudgeWorkflowRunner {
             if (!submission) {
                 throw new Error(`No submission found for task ${workflow.taskId}`);
             }
+            const participants = uniqueParticipants(submissions);
 
             const criteriaRaw = await this.options.refResolver.fetchText(task.eval_ref);
             const criteriaDoc = parseCriteria(criteriaRaw);
@@ -176,6 +177,7 @@ export class JudgeWorkflowRunner {
                 chainTx,
                 judgedAt: Math.floor(Date.now() / 1000),
                 judgeMode: task.judge_mode,
+                participants,
             });
             await this.engine.markCompleted(workflow.id);
             this.logger.info(
@@ -262,6 +264,13 @@ function pickSubmission(
     return filtered.reduce((latest, current) =>
         current.submission_slot > latest.submission_slot ? current : latest,
     );
+}
+
+function uniqueParticipants(submissions: SubmissionApi[] | null): string[] {
+    if (!submissions || submissions.length === 0) {
+        return [];
+    }
+    return [...new Set(submissions.map((item) => item.agent).filter((agent) => agent.length > 0))];
 }
 
 function parseCriteria(raw: string): {

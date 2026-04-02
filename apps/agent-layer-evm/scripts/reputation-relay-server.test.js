@@ -1,6 +1,12 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { once } = require("node:events");
+const os = require("node:os");
+const path = require("node:path");
+const { mkdtemp } = require("node:fs/promises");
+
+const bs58Module = require("bs58");
+const { ethers } = require("ethers");
 
 const {
     createRelayServer,
@@ -8,8 +14,12 @@ const {
     toVerifierPayload,
 } = require("./reputation-relay-server.js");
 
-function makeAgentPubkey() {
-    return "11111111111111111111111111111111";
+const bs58 = bs58Module.default ?? bs58Module;
+
+function makeAgentPubkey(seed = 0) {
+    const bytes = new Uint8Array(32);
+    bytes.fill(seed);
+    return bs58.encode(bytes);
 }
 
 test("toVerifierPayload normalizes scores and source chain", () => {
@@ -86,6 +96,145 @@ test("relay server accepts signed submit and updates status", async () => {
         const status = await statusResponse.json();
         assert.equal(status.success, 1);
         assert.equal(status.lastTxHash, "0xtx123");
+    } finally {
+        server.close();
+    }
+});
+
+test("relay server supports ERC-8004 registration and feedback routes", async () => {
+    const authToken = "token-1";
+    const signingSecret = "secret-1";
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), "gradience-erc8004-"));
+    const mapFile = path.join(tmpDir, "agent-map.json");
+
+    let registerCalls = 0;
+    const feedbackCalls = [];
+    const identityInterface = new ethers.Interface([
+        "event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
+    ]);
+    const identityRegistry = {
+        interface: identityInterface,
+        register: async () => {
+            registerCalls += 1;
+            const encoded = identityInterface.encodeEventLog(
+                identityInterface.getEvent("Registered"),
+                [42n, "data:application/json;base64,eyJvayI6dHJ1ZX0=", "0x0000000000000000000000000000000000000001"],
+            );
+            return {
+                hash: "0xidentity42",
+                wait: async () => ({ logs: [{ ...encoded }] }),
+            };
+        },
+    };
+    const reputationRegistry = {
+        giveFeedback: async (...args) => {
+            feedbackCalls.push(args);
+            return {
+                hash: "0xfeedback42",
+                wait: async () => ({ blockNumber: 123 }),
+            };
+        },
+    };
+
+    const server = createRelayServer({
+        env: {
+            RELAY_AUTH_TOKEN: authToken,
+            RELAY_SIGNING_SECRET: signingSecret,
+            ERC8004_AGENT_MAP_FILE: mapFile,
+            ERC8004_AUTO_REGISTER_ON_FEEDBACK: "true",
+        },
+        registryClient: { identityRegistry, reputationRegistry },
+        logger: { error: () => {} },
+    });
+
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    assert.ok(address && typeof address === "object");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const agent = makeAgentPubkey(0);
+
+    async function postSigned(pathname, bodyObject) {
+        const body = JSON.stringify(bodyObject);
+        const ts = String(Math.floor(Date.now() / 1000));
+        const signature = signHttpPayload(signingSecret, ts, body);
+        return fetch(`${baseUrl}${pathname}`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${authToken}`,
+                "x-gradience-signature-ts": ts,
+                "x-gradience-signature": signature,
+            },
+            body,
+        });
+    }
+
+    try {
+        const registrationPayload = {
+            type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+            agentPubkey: agent,
+            registrations: [
+                {
+                    agentId: agent,
+                    agentRegistry: "solana:101:metaplex",
+                },
+            ],
+            services: [{ name: "a2a", endpoint: "a2a:gradience", version: "0.1" }],
+            supportedTrust: ["reputation", "crypto-economic"],
+        };
+
+        const registerResponse = await postSigned(
+            "/relay/erc8004/register-identity",
+            registrationPayload,
+        );
+        assert.equal(registerResponse.status, 200);
+        const registerResult = await registerResponse.json();
+        assert.equal(registerResult.ok, true);
+        assert.equal(registerResult.agentId, "42");
+        assert.equal(registerResult.reused, false);
+
+        const registerAgainResponse = await postSigned(
+            "/relay/erc8004/register-identity",
+            registrationPayload,
+        );
+        assert.equal(registerAgainResponse.status, 200);
+        const registerAgainResult = await registerAgainResponse.json();
+        assert.equal(registerAgainResult.reused, true);
+        assert.equal(registerCalls, 1);
+
+        const feedbackResponse = await postSigned(
+            "/relay/erc8004/give-feedback",
+            {
+                agentPubkey: agent,
+                value: 88,
+                valueDecimals: 0,
+                tag1: "taskScore",
+                tag2: "category-1",
+                endpoint: "solana:gradience",
+                gradience: {
+                    taskId: 1201,
+                    winner: agent,
+                    category: 1,
+                    reasonRef: "cid://reason-1",
+                    chainTx: "solana-tx-1",
+                },
+            },
+        );
+        assert.equal(feedbackResponse.status, 200);
+        const feedbackResult = await feedbackResponse.json();
+        assert.equal(feedbackResult.ok, true);
+        assert.equal(feedbackResult.agentId, "42");
+        assert.equal(feedbackCalls.length, 1);
+        assert.equal(feedbackCalls[0][0], 42n);
+        assert.equal(feedbackCalls[0][1], 88n);
+
+        const statusResponse = await fetch(`${baseUrl}/status`);
+        assert.equal(statusResponse.status, 200);
+        const status = await statusResponse.json();
+        assert.equal(status.erc8004.identity.success, 2);
+        assert.equal(status.erc8004.feedback.success, 1);
+        assert.equal(status.erc8004.knownAgents, 1);
     } finally {
         server.close();
     }

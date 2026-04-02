@@ -6,6 +6,8 @@ describe('NoopVoiceEngine', () => {
     it('supported is false', () => {
         const engine = new NoopVoiceEngine();
         assert.equal(engine.supported, false);
+        assert.equal(engine.provider, 'noop');
+        assert.equal(engine.fallbackFrom, null);
     });
 
     it('stopAndTranscribe returns empty string', async () => {
@@ -25,6 +27,13 @@ describe('createVoiceEngine', () => {
     it('returns NoopVoiceEngine in Node.js (no browser APIs)', () => {
         const engine = createVoiceEngine();
         assert.equal(engine.supported, false);
+        assert.equal(engine.provider, 'noop');
         assert.equal(engine.isRecording(), false);
+    });
+
+    it('marks whisper fallback when preferWhisper=true', () => {
+        const engine = createVoiceEngine({ preferWhisper: true });
+        assert.equal(engine.provider, 'noop');
+        assert.equal(engine.fallbackFrom, 'whisper');
     });
 });

@@ -6,6 +6,8 @@
  */
 
 export interface VoiceEngine {
+    readonly provider: 'web_speech' | 'noop';
+    readonly fallbackFrom: 'whisper' | null;
     readonly supported: boolean;
     startRecording(): void;
     stopAndTranscribe(): Promise<string>;
@@ -44,10 +46,16 @@ type SpeechGlobals = typeof globalThis & {
  * Works in Chrome, Edge, Safari, and system webviews (Electrobun).
  */
 export class WebSpeechVoiceEngine implements VoiceEngine {
+    readonly provider = 'web_speech' as const;
+    readonly fallbackFrom: 'whisper' | null;
     private recognition: SpeechRecognitionLike | null = null;
     private _isRecording = false;
     private _transcriptResolve: ((text: string) => void) | null = null;
     private _transcriptReject: ((err: Error) => void) | null = null;
+
+    constructor(options: { fallbackFrom?: 'whisper' | null } = {}) {
+        this.fallbackFrom = options.fallbackFrom ?? null;
+    }
 
     get supported(): boolean {
         const speechGlobals = globalThis as SpeechGlobals;
@@ -144,6 +152,11 @@ export class WebSpeechVoiceEngine implements VoiceEngine {
  * Returns empty strings, never crashes.
  */
 export class NoopVoiceEngine implements VoiceEngine {
+    readonly provider = 'noop' as const;
+    readonly fallbackFrom: 'whisper' | null;
+    constructor(options: { fallbackFrom?: 'whisper' | null } = {}) {
+        this.fallbackFrom = options.fallbackFrom ?? null;
+    }
     get supported() { return false; }
     startRecording() {}
     async stopAndTranscribe() { return ''; }
@@ -152,20 +165,29 @@ export class NoopVoiceEngine implements VoiceEngine {
     isRecording() { return false; }
 }
 
+export interface CreateVoiceEngineOptions {
+    preferWhisper?: boolean;
+}
+
 /**
  * Create the best available voice engine for the current environment.
  */
-export function createVoiceEngine(): VoiceEngine {
+export function createVoiceEngine(options: CreateVoiceEngineOptions = {}): VoiceEngine {
     const speechGlobals = globalThis as SpeechGlobals;
+    const prefersWhisper = options.preferWhisper === true;
 
     // Browser with Web Speech API
     if (
         typeof speechGlobals.SpeechRecognition !== 'undefined' ||
         typeof speechGlobals.webkitSpeechRecognition !== 'undefined'
     ) {
-        return new WebSpeechVoiceEngine();
+        return new WebSpeechVoiceEngine({
+            fallbackFrom: prefersWhisper ? 'whisper' : null,
+        });
     }
 
     // Fallback (Node.js, unsupported browsers)
-    return new NoopVoiceEngine();
+    return new NoopVoiceEngine({
+        fallbackFrom: prefersWhisper ? 'whisper' : null,
+    });
 }

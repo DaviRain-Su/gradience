@@ -38,9 +38,60 @@
 
 ---
 
+## 4.4 开发步骤级执行清单（2026-04-02）
+
+> 对 Stage A/B 做可直接开工的步骤拆分，默认按 Sprint 执行；每项控制在 0.5h~2h。
+
+### Sprint 1（认证 + 数据面）
+
+| # | 步骤任务 | 描述 | 依赖 | 时间 | 验收 |
+|---|---------|------|------|------|------|
+| IM-S01 | Auth 环境矩阵与启动守卫 | 校验 `PRIVY_APP_ID` / `PRIVY_CLIENT_ID` / demo fallback 开关，缺失时给出可读错误 | IM-T01 | 1h | 缺失配置不崩溃，提示可读 |
+| IM-S02 | Privy Provider 接线 | 在 renderer 层接入 Privy provider 与登录状态监听 | IM-S01 | 1h | 登录态可稳定更新到 store |
+| IM-S03 | 会话绑定模型落库 | 写入 `privyUserId/publicKey/email/sessionAt`，支持重启恢复 | IM-S02 | 1h | 重启后仍可识别登录状态 |
+| IM-S04 | `/me` API 聚合 | 汇总 profile + reputation + interop status | IM-S03 | 1.5h | `/me` 返回结构稳定且字段完整 |
+| IM-S05 | `/me/tasks` API 聚合 | 聚合 poster/agent 视角任务，支持分页和状态筛选 | IM-S04 | 1.5h | 分页正确、空数据返回一致 |
+| IM-S06 | `/me/submissions` API 聚合 | 聚合提交历史（score/status/ref）并支持倒序 | IM-S04 | 1h | 数据顺序和筛选正确 |
+
+### Sprint 2（前端闭环 + 双入口）
+
+| # | 步骤任务 | 描述 | 依赖 | 时间 | 验收 |
+|---|---------|------|------|------|------|
+| IM-S07 | Me 视图数据绑定 | 将 `/me*` API 数据接入 Me 页面（统计卡 + 列表） | IM-S05, IM-S06 | 1.5h | 页面与 API 数据一致 |
+| IM-S08 | Task 发现/报名前端流 | Discover 页面补齐报名和状态回显 | IM-S07 | 1.5h | 报名后状态实时更新 |
+| IM-S09 | 提交结果与历史追踪 | Chat/Task 页面支持提交结果并可追踪状态 | IM-S08 | 2h | 提交后能在历史中追踪 |
+| IM-S10 | GUI/API 会话共享 | 本地 Agent API（3939）复用 GUI 登录会话与权限 | IM-S09 | 1.5h | GUI/API 鉴权行为一致 |
+| IM-S11 | 语音 fallback 完整化 | Whisper 不可用时自动降级到 Web Speech API | IM-S09 | 1h | 降级链路可用且无崩溃 |
+
+### Sprint 3（发布门槛）
+
+| # | 步骤任务 | 描述 | 依赖 | 时间 | 验收 |
+|---|---------|------|------|------|------|
+| IM-S12 | Electrobun 打包与 smoke | 完成桌面包构建、启动时长和核心路径 smoke | IM-S10, IM-S11 | 2h | 新环境可启动并跑通关键路径 |
+
+---
+
+## 4.5 与项目级 Backlog 映射（T61~T70）
+
+| 项目级任务 | Agent.im 对应 |
+|-----------|---------------|
+| T61 | IM-S01 ~ IM-S03 |
+| T62 | IM-S04 ~ IM-S06 |
+| T63 | IM-S07 ~ IM-S09 |
+| T64 | IM-S10 ~ IM-S12 |
+
+**并行依赖（来自协议侧 Track-B）**
+
+- T65：Pool Judge 生产化（影响 Agent.im 任务分配展示一致性）
+- T66：staking/slash 闭环（影响 Me 页资金和状态回显）
+- T67：排名与分类信誉强化（影响 Discover 排序）
+
+---
+
 ## ✅ Phase 4 验收标准
 
 - [x] 任务均 ≤ 5h，可执行且可验证
 - [x] 每项任务有清晰 Done 定义
 - [x] 与项目级 T53~T60 映射关系明确
 - [x] Stage A / Stage B 分层清晰，便于分批上线
+- [x] 已补充开发步骤级任务（可直接进入实现）

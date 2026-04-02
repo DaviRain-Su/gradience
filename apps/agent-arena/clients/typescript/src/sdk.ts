@@ -226,6 +226,36 @@ export interface JudgePoolMemberOnChain {
     weight: number;
 }
 
+export interface ProgramConfigOnChain {
+    treasury: Address;
+    upgradeAuthority: Address;
+    minJudgeStake: bigint;
+    taskCount: bigint;
+    bump: number;
+}
+
+export interface PostTaskSimpleRequest {
+    evalRef: string;
+    reward: number | bigint;
+    category: number;
+    minStake?: number | bigint;
+    judgeMode?: number;
+    judge?: Address;
+    deadline?: number | bigint;
+    judgeDeadline?: number | bigint;
+    deadlineOffsetSeconds?: number | bigint;
+    judgeDeadlineOffsetSeconds?: number | bigint;
+    mint?: Address;
+    tokenProgram?: Address;
+    posterTokenAccount?: Address;
+    escrowAta?: Address;
+}
+
+export interface PostTaskSimpleResult {
+    taskId: bigint;
+    signature: string;
+}
+
 export interface TaskCompletionAttestationApi {
     task_id: number;
     task_category: number;
@@ -233,6 +263,22 @@ export interface TaskCompletionAttestationApi {
     score: number;
     reward_amount: string;
     completed_at: number;
+    credential: string;
+    schema: string;
+    signature?: string;
+}
+
+export interface TaskCompletionAttestationData {
+    taskId: bigint;
+    taskCategory: number;
+    judgeMethod: number;
+    score: number;
+    rewardAmount: bigint;
+    completedAt: bigint;
+}
+
+export interface TaskCompletionAttestationRecord
+    extends TaskCompletionAttestationData {
     credential: string;
     schema: string;
     signature?: string;
@@ -320,6 +366,12 @@ export class GradienceSDK {
     readonly task = {
         /** Post a new task on-chain. */
         post: (wallet: WalletAdapter, request: PostTaskRequest) => this.postTask(wallet, request),
+        /**
+         * High-level helper: derive next task id from on-chain config and post task
+         * with sensible deadline defaults.
+         */
+        postSimple: (wallet: WalletAdapter, request: PostTaskSimpleRequest) =>
+            this.postTaskSimple(wallet, request),
         /** Apply to an existing task on-chain. */
         apply: (wallet: WalletAdapter, request: ApplyTaskRequest) => this.applyForTask(wallet, request),
         /** Submit task result on-chain. */
@@ -359,12 +411,30 @@ export class GradienceSDK {
         list: (category: number) => this.getJudgePoolOnChain(category),
     } as const;
 
+    readonly config = {
+        /**
+         * Fetch on-chain ProgramConfig PDA.
+         * Returns `null` when the config account does not exist.
+         */
+        get: () => this.getProgramConfigOnChain(),
+    } as const;
+
     readonly attestations = {
         /**
          * Fetch TaskCompletion attestations for a given agent.
          * Returns `null` when the attestation endpoint or agent record is not found.
          */
         list: (agent: string) => this.getAgentAttestations(agent),
+        /**
+         * Fetch and normalize TaskCompletion attestations to strongly-typed bigint fields.
+         * Returns `null` when the attestation endpoint or agent record is not found.
+         */
+        listDecoded: (agent: string) => this.getDecodedAgentAttestations(agent),
+        /**
+         * Decode on-chain TaskCompletion attestation payload bytes
+         * ordered as [U64, U8, U8, U8, U64, I64].
+         */
+        decode: decodeTaskCompletionAttestation,
     } as const;
 
     async postTask(wallet: WalletAdapter, request: PostTaskRequest): Promise<string> {
@@ -410,6 +480,45 @@ export class GradienceSDK {
             ? instruction
             : stripOptionalTail(instruction, 5, this.programAddress);
         return wallet.signAndSendTransaction([normalizedInstruction]);
+    }
+
+    async postTaskSimple(
+        wallet: WalletAdapter,
+        request: PostTaskSimpleRequest,
+    ): Promise<PostTaskSimpleResult> {
+        const judgeMode = request.judgeMode ?? 1;
+        if (judgeMode === 0 && !request.judge) {
+            throw new Error('judge is required when judgeMode=0 (designated)');
+        }
+        const now = BigInt(Math.floor(Date.now() / 1000));
+        const deadline = request.deadline
+            ? BigInt(request.deadline)
+            : now + BigInt(request.deadlineOffsetSeconds ?? 3_600);
+        const judgeDeadline = request.judgeDeadline
+            ? BigInt(request.judgeDeadline)
+            : deadline + BigInt(request.judgeDeadlineOffsetSeconds ?? 3_600);
+
+        const config = await this.getProgramConfigOnChain();
+        if (!config) {
+            throw new Error('Program config account not found; initialize program before posting');
+        }
+        const taskId = config.taskCount;
+        const signature = await this.postTask(wallet, {
+            taskId,
+            evalRef: request.evalRef,
+            deadline,
+            judgeDeadline,
+            judgeMode,
+            judge: request.judge,
+            category: request.category,
+            minStake: request.minStake ?? 0,
+            reward: request.reward,
+            mint: request.mint,
+            tokenProgram: request.tokenProgram,
+            posterTokenAccount: request.posterTokenAccount,
+            escrowAta: request.escrowAta,
+        });
+        return { taskId, signature };
     }
 
     async applyForTask(wallet: WalletAdapter, request: ApplyTaskRequest): Promise<string> {
@@ -742,6 +851,16 @@ export class GradienceSDK {
         );
     }
 
+    async getDecodedAgentAttestations(
+        agent: string,
+    ): Promise<TaskCompletionAttestationRecord[] | null> {
+        const attestations = await this.getAgentAttestations(agent);
+        if (!attestations) {
+            return null;
+        }
+        return attestations.map(normalizeTaskCompletionAttestation);
+    }
+
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
         const [reputationPda] = await findReputationPda(this.programAddress, agent);
         const maybeAccount = await fetchEncodedAccount(this.rpc, reputationPda);
@@ -762,6 +881,15 @@ export class GradienceSDK {
             judge: bytesToAddress(entry.judge),
             weight: entry.weight,
         }));
+    }
+
+    async getProgramConfigOnChain(): Promise<ProgramConfigOnChain | null> {
+        const [configPda] = await findConfigPda(this.programAddress);
+        const maybeConfig = await fetchEncodedAccount(this.rpc, configPda);
+        if (!maybeConfig.exists) {
+            return null;
+        }
+        return parseProgramConfigAccount(maybeConfig.data);
     }
 
     private async getJson<T>(path: string, query: Record<string, QueryValue> = {}): Promise<T> {
@@ -1113,6 +1241,9 @@ function sanitizeBaseUrl(value: string): string {
 const TEXT_ENCODER = new TextEncoder();
 const LOOKUP_TABLE_THRESHOLD = 20;
 const REPUTATION_DISCRIMINATOR = 0x05;
+const PROGRAM_CONFIG_DISCRIMINATOR = 0x09;
+export const SAS_PROGRAM_ID =
+    '22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq' as Address<'22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq'>;
 const SPL_TOKEN_PROGRAM_ADDRESS =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 const ASSOCIATED_TOKEN_PROGRAM_ADDRESS =
@@ -1330,6 +1461,59 @@ function parseReputationAccount(data: Uint8Array): ReputationOnChain {
     };
 }
 
+function parseProgramConfigAccount(data: Uint8Array): ProgramConfigOnChain {
+    const reader = new ByteReader(data);
+    const discriminator = reader.readU8();
+    if (discriminator !== PROGRAM_CONFIG_DISCRIMINATOR) {
+        throw new Error(`Invalid program config discriminator: ${discriminator}`);
+    }
+    reader.readU8(); // version
+
+    const treasury = bytesToAddress(reader.readFixedArray(32));
+    const upgradeAuthority = bytesToAddress(reader.readFixedArray(32));
+    const minJudgeStake = reader.readU64();
+    const taskCount = reader.readU64();
+    const bump = reader.readU8();
+
+    return {
+        treasury,
+        upgradeAuthority,
+        minJudgeStake,
+        taskCount,
+        bump,
+    };
+}
+
+export function normalizeTaskCompletionAttestation(
+    attestation: TaskCompletionAttestationApi,
+): TaskCompletionAttestationRecord {
+    return {
+        taskId: BigInt(attestation.task_id),
+        taskCategory: attestation.task_category,
+        judgeMethod: attestation.judge_method,
+        score: attestation.score,
+        rewardAmount: BigInt(attestation.reward_amount),
+        completedAt: BigInt(attestation.completed_at),
+        credential: attestation.credential,
+        schema: attestation.schema,
+        signature: attestation.signature,
+    };
+}
+
+export function decodeTaskCompletionAttestation(
+    raw: Uint8Array,
+): TaskCompletionAttestationData {
+    const reader = new ByteReader(raw);
+    return {
+        taskId: reader.readU64(),
+        taskCategory: reader.readU8(),
+        judgeMethod: reader.readU8(),
+        score: reader.readU8(),
+        rewardAmount: reader.readU64(),
+        completedAt: reader.readI64(),
+    };
+}
+
 function isNotFoundError(error: unknown): boolean {
     return (
         error instanceof Error &&
@@ -1368,6 +1552,12 @@ class ByteReader {
 
     readU64(): bigint {
         const value = this.view.getBigUint64(this.offset, true);
+        this.offset += 8;
+        return value;
+    }
+
+    readI64(): bigint {
+        const value = this.view.getBigInt64(this.offset, true);
         this.offset += 8;
         return value;
     }

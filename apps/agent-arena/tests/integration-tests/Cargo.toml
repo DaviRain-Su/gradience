@@ -16,5 +16,8 @@ borsh = { workspace = true }
 solana-sdk = "3.0.0"
 solana-program = "3.0.0"
 solana-account = "~3.2"
-solana-system-interface = "3.0.0"
+solana-system-interface = { version = "3.0.0", features = ["bincode"] }
 solana-address = "2.0.0"
+spl-token-interface = "2.0.0"
+spl-associated-token-account-interface = "2.0.0"
+spl-token-2022-interface = "2.1.0"

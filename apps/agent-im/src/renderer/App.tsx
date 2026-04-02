@@ -7,6 +7,7 @@ import { DiscoverView } from './views/DiscoverView.tsx';
 import { ChatView } from './views/ChatView.tsx';
 import { useAppStore } from './hooks/useAppStore.ts';
 import { MockAuthProvider } from './lib/auth.ts';
+import { registerIdentity } from './lib/identity-registration.ts';
 import { EMPTY_AUTH, type ActiveView } from '../shared/types.ts';
 
 export function App() {
@@ -54,6 +55,12 @@ function DemoApp() {
 function PrivyApp() {
     const activeView = useAppStore((s) => s.activeView);
     const setAuth = useAppStore((s) => s.setAuth);
+    const setIdentityRegistrationStatus = useAppStore(
+        (s) => s.setIdentityRegistrationStatus,
+    );
+    const getIdentityRegistrationStatus = useAppStore(
+        (s) => s.getIdentityRegistrationStatus,
+    );
 
     const { ready, authenticated, user, login, logout } = usePrivy();
 
@@ -75,6 +82,52 @@ function PrivyApp() {
             privyUserId: user.id,
         });
     }, [ready, authenticated, user, setAuth]);
+
+    const currentAddress = authenticated && user ? extractSolanaAddress(user) : null;
+
+    useEffect(() => {
+        if (!ready || !authenticated || !currentAddress) {
+            return;
+        }
+        const existing = getIdentityRegistrationStatus(currentAddress);
+        if (
+            existing?.state === 'registered' ||
+            existing?.state === 'pending' ||
+            existing?.state === 'disabled'
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+        setIdentityRegistrationStatus({
+            agent: currentAddress,
+            state: 'pending',
+            agentId: null,
+            txHash: null,
+            error: null,
+            updatedAt: Date.now(),
+        });
+        registerIdentity({
+            agent: currentAddress,
+            email: user?.email?.address ?? null,
+        }).then((status) => {
+            if (cancelled) {
+                return;
+            }
+            setIdentityRegistrationStatus(status);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        ready,
+        authenticated,
+        currentAddress,
+        user?.email?.address,
+        getIdentityRegistrationStatus,
+        setIdentityRegistrationStatus,
+    ]);
 
     if (!ready) {
         return (

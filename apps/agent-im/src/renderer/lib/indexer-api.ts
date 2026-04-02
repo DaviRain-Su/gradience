@@ -30,6 +30,19 @@ export interface JudgePoolEntryApi {
     weight: number;
 }
 
+export interface SubmissionApi {
+    task_id: number;
+    agent: string;
+    result_ref: string;
+    trace_ref: string;
+    runtime_provider: string | null;
+    runtime_model: string | null;
+    runtime_runtime: string | null;
+    runtime_version: string | null;
+    submission_slot: number;
+    submitted_at: string;
+}
+
 export class IndexerClient {
     constructor(private baseUrl: string = getDefaultIndexerBaseUrl()) {}
 
@@ -54,12 +67,24 @@ export class IndexerClient {
         return (await this.get<TaskApi[]>(`/api/tasks${qs ? '?' + qs : ''}`)) ?? [];
     }
 
+    async getTaskById(taskId: number): Promise<TaskApi | null> {
+        return this.get<TaskApi>(`/api/tasks/${taskId}`);
+    }
+
     async getJudgePool(category: number): Promise<JudgePoolEntryApi[]> {
         return (await this.get<JudgePoolEntryApi[]>(`/api/judge-pool/${category}`)) ?? [];
     }
 
-    async getTaskSubmissions(taskId: number): Promise<unknown[]> {
-        return (await this.get<unknown[]>(`/api/tasks/${taskId}/submissions`)) ?? [];
+    async getTaskSubmissions(
+        taskId: number,
+        params: { sort?: 'score' | 'slot' } = {},
+    ): Promise<SubmissionApi[]> {
+        const query = new URLSearchParams();
+        if (params.sort) query.set('sort', params.sort);
+        const qs = query.toString();
+        return (await this.get<SubmissionApi[]>(
+            `/api/tasks/${taskId}/submissions${qs ? `?${qs}` : ''}`,
+        )) ?? [];
     }
 
     private async get<T>(path: string): Promise<T | null> {

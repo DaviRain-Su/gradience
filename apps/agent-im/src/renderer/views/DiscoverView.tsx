@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../hooks/useAppStore.ts';
 import { useDiscover } from '../hooks/useDiscover.ts';
+import { useArenaTasks } from '../hooks/useArenaTasks.ts';
 import { sortAndFilterAgents } from '../lib/ranking.ts';
 
 export function DiscoverView() {
@@ -11,7 +12,17 @@ export function DiscoverView() {
 
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState(0);
+    const [resultRefDrafts, setResultRefDrafts] = useState<Record<number, string>>({});
+    const [traceRefDrafts, setTraceRefDrafts] = useState<Record<number, string>>({});
     const { loading, error, refresh, categories } = useDiscover(category);
+    const {
+        tasks,
+        loading: tasksLoading,
+        error: tasksError,
+        refresh: refreshTasks,
+        apply,
+        submit,
+    } = useArenaTasks();
 
     const ranked = sortAndFilterAgents(discoveryRows, query);
 
@@ -42,6 +53,13 @@ export function DiscoverView() {
                     >
                         {loading ? 'Loading...' : 'Refresh'}
                     </button>
+                    <button
+                        onClick={() => void refreshTasks()}
+                        disabled={tasksLoading}
+                        className="text-sm px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                        {tasksLoading ? 'Loading tasks...' : 'Refresh Tasks'}
+                    </button>
                     {discoveryRows.length === 0 && !loading && (
                         <button
                             onClick={loadDemoData}
@@ -56,6 +74,79 @@ export function DiscoverView() {
             {error && (
                 <p className="text-yellow-400 text-sm">Indexer offline. Showing cached/demo data.</p>
             )}
+            {tasksError && (
+                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify Indexer /api/tasks.</p>
+            )}
+
+            {/* Arena task flow */}
+            <section className="bg-gray-900 rounded-xl p-4 border border-gray-800 space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Arena Tasks</h3>
+                    <p className="text-xs text-gray-500">Browse → Apply → Submit → Track</p>
+                </div>
+                <div className="space-y-3">
+                    {tasks.map(({ task, flow, canApply, canSubmit }) => (
+                        <div key={task.taskId} className="rounded-lg border border-gray-800 bg-gray-950 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p className="font-medium">Task #{task.taskId}</p>
+                                    <p className="text-xs text-gray-500">
+                                        poster: {task.poster} · reward: {task.reward} · state: {task.state}
+                                    </p>
+                                </div>
+                                <div className="text-xs">
+                                    <StatusBadge status={flow?.status ?? 'available'} />
+                                </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2 items-center">
+                                <button
+                                    onClick={() => apply(task)}
+                                    disabled={!canApply}
+                                    className="px-3 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
+                                >
+                                    {flow ? 'Applied' : 'Apply'}
+                                </button>
+                                <input
+                                    value={resultRefDrafts[task.taskId] ?? ''}
+                                    onChange={(e) =>
+                                        setResultRefDrafts((prev) => ({ ...prev, [task.taskId]: e.target.value }))
+                                    }
+                                    placeholder="result_ref (cid/url)"
+                                    className="min-w-[180px] flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs"
+                                />
+                                <input
+                                    value={traceRefDrafts[task.taskId] ?? ''}
+                                    onChange={(e) =>
+                                        setTraceRefDrafts((prev) => ({ ...prev, [task.taskId]: e.target.value }))
+                                    }
+                                    placeholder="trace_ref (optional)"
+                                    className="min-w-[150px] flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs"
+                                />
+                                <button
+                                    onClick={() => {
+                                        const resultRef = (resultRefDrafts[task.taskId] ?? '').trim();
+                                        if (!resultRef) return;
+                                        submit(task.taskId, resultRef, (traceRefDrafts[task.taskId] ?? '').trim() || undefined);
+                                    }}
+                                    disabled={!canSubmit || !(resultRefDrafts[task.taskId] ?? '').trim()}
+                                    className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                            {flow && (
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Updated: {new Date(flow.updatedAt).toLocaleString()}
+                                    {flow.resultRef ? ` · result_ref: ${flow.resultRef}` : ''}
+                                </p>
+                            )}
+                        </div>
+                    ))}
+                    {!tasksLoading && tasks.length === 0 && (
+                        <p className="text-sm text-gray-500">No tasks available from Indexer.</p>
+                    )}
+                </div>
+            </section>
 
             {/* Category filter */}
             <div className="flex gap-2 flex-wrap">
@@ -116,4 +207,19 @@ export function DiscoverView() {
             </div>
         </div>
     );
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const style = status === 'won'
+        ? 'bg-emerald-700/30 text-emerald-300'
+        : status === 'lost'
+            ? 'bg-red-700/30 text-red-300'
+            : status === 'submitted'
+                ? 'bg-blue-700/30 text-blue-300'
+                : status === 'applied'
+                    ? 'bg-amber-700/30 text-amber-300'
+                    : status === 'refunded'
+                        ? 'bg-violet-700/30 text-violet-300'
+                        : 'bg-gray-700/30 text-gray-300';
+    return <span className={`px-2 py-1 rounded ${style}`}>{status}</span>;
 }

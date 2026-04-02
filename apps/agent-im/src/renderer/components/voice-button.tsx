@@ -5,9 +5,7 @@ interface VoiceButtonProps {
 }
 
 export function VoiceButton({ onTranscript }: VoiceButtonProps) {
-    const { recording, supported, startRecording, stopAndTranscribe } = useVoice();
-
-    if (!supported) return null; // Hide button if no speech API
+    const { recording, supported, provider, fallbackFrom, startRecording, stopAndTranscribe } = useVoice();
 
     const handleMouseDown = () => {
         startRecording();
@@ -25,14 +23,23 @@ export function VoiceButton({ onTranscript }: VoiceButtonProps) {
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp} // Stop if mouse leaves button while held
+            disabled={!supported}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition select-none ${
                 recording
                     ? 'bg-red-600 text-white animate-pulse'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                    : supported
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
-            title="Hold to speak"
+            title={
+                !supported
+                    ? 'Voice unavailable in current environment'
+                    : fallbackFrom === 'whisper'
+                        ? 'Whisper unavailable, using Web Speech fallback'
+                        : 'Hold to speak'
+            }
         >
-            {recording ? 'Recording...' : 'Voice'}
+            {recording ? 'Recording...' : provider === 'web_speech' ? 'Voice' : 'Voice Off'}
         </button>
     );
 }

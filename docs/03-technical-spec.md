@@ -647,7 +647,7 @@ for entry in judge_pool.entries:
 |------|------|
 | 调用者 | Task.poster |
 | 前置条件 | Task.state = Open；submission_count = 0（无提交则可取消）；signer = task.poster |
-| 后置条件 | Task.state = Refunded；98% 退还 Poster；2% 进 Treasury |
+| 后置条件 | Task.state = Refunded；98% 退还 Poster；2% 进 Treasury；同时 emit `TaskCancelled` + `TaskRefunded(reason=Cancelled)` |
 
 参数：无
 
@@ -1150,7 +1150,7 @@ impl From<GradienceError> for ProgramError {
 | Open | `submit_result` | clock < deadline；已申请 | Open | 更新 Submission（可多次覆盖）；记录 slot |
 | Open | `judge_and_pay` | signer = judge；score ≥ MIN_SCORE | **Completed** | 三方分账；Reputation 更新；Application 质押退回 |
 | Open | `judge_and_pay` | signer = judge；score < MIN_SCORE | **Refunded** | 全额退 Poster；Application 质押退回 |
-| Open | `cancel_task` | signer = poster；submission_count = 0 | **Refunded** | 98% 退 Poster；2% → Treasury |
+| Open | `cancel_task` | signer = poster；submission_count = 0 | **Refunded** | 98% 退 Poster；2% → Treasury；emit TaskCancelled + TaskRefunded(Cancelled) |
 | Open | `refund_expired` | clock > deadline；submission_count = 0 | **Refunded** | 100% 退 Poster |
 | Open | `force_refund` | clock > judge_deadline + 7d；submission_count > 0 | **Refunded** | 95% → Poster；3% → 最活跃 Agent；2% → Treasury；Judge Stake Slash |
 | Completed | — | — | Completed | 终态 |

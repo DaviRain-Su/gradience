@@ -4,6 +4,11 @@ import { useReputation } from '../hooks/useReputation.ts';
 export function MeView() {
     const publicKey = useAppStore((s) => s.auth.publicKey);
     const email = useAppStore((s) => s.auth.email);
+    const identityRegistration = useAppStore((s) =>
+        publicKey ? s.getIdentityRegistrationStatus(publicKey) : null,
+    );
+    const trackedTasks = useAppStore((s) => s.trackedTasks);
+    const taskFlowHistory = useAppStore((s) => s.getTaskFlowHistory());
     const { reputation, loading, error, refresh } = useReputation(publicKey);
 
     return (
@@ -60,12 +65,64 @@ export function MeView() {
                 )}
             </div>
 
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                <h3 className="text-lg font-semibold mb-3">Identity Registration</h3>
+                <p className="text-sm text-gray-300">
+                    state: <span className="font-mono">{identityRegistration?.state ?? 'unknown'}</span>
+                </p>
+                {identityRegistration?.agentId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                        agent_id: {identityRegistration.agentId}
+                    </p>
+                )}
+                {identityRegistration?.txHash && (
+                    <p className="text-xs text-gray-500 mt-1 break-all">
+                        tx: {identityRegistration.txHash}
+                    </p>
+                )}
+                {identityRegistration?.error && (
+                    <p className="text-xs text-amber-400 mt-1">{identityRegistration.error}</p>
+                )}
+            </div>
+
             {/* Task history placeholder */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                 <h3 className="text-lg font-semibold mb-4">Task History</h3>
-                <p className="text-gray-500 text-sm">
-                    No tasks yet. Post a task or apply to one from the Discover tab.
-                </p>
+                {taskFlowHistory.length === 0 ? (
+                    <p className="text-gray-500 text-sm">
+                        No tasks yet. Post a task or apply to one from the Discover tab.
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {taskFlowHistory.map((record) => {
+                            const task = trackedTasks.get(record.taskId);
+                            return (
+                                <div
+                                    key={record.taskId}
+                                    className="rounded-lg border border-gray-800 bg-gray-950 p-3 text-sm"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <p className="font-medium">Task #{record.taskId}</p>
+                                        <span className="text-xs text-gray-400">{record.status}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        state={record.lastKnownTaskState ?? 'unknown'}
+                                        {task ? ` · reward=${task.reward}` : ''}
+                                        {record.winner ? ` · winner=${record.winner}` : ''}
+                                    </p>
+                                    {record.resultRef && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            result_ref: {record.resultRef}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        updated_at: {new Date(record.updatedAt).toLocaleString()}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

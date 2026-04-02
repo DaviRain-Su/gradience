@@ -162,3 +162,14 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 8004 状态回写一致性 | `/interop/status` 与 dashboard 计数一致 |
 | Attestation 展示闭环 | `sdk.attestations.list()` 成功返回并可渲染 |
 | 生产打包 smoke | 构建产物可启动，关键页面可用 |
+
+### 6.3 开发步骤级验收映射（IM-S01~IM-S12）
+
+| 步骤任务 | 主要验证 |
+|---------|---------|
+| IM-S01 ~ IM-S03 | `src/renderer/lib/auth.test.ts` + `src/main/api-server.test.ts`（登录状态、会话同步、错误回退） |
+| IM-S04 ~ IM-S06 | `src/main/api-server.test.ts`（`/me`、`/me/tasks`、`/me/submissions` 分页/鉴权） |
+| IM-S07 ~ IM-S09 | `src/renderer/lib/store.test.ts` + `src/renderer/lib/indexer-api.test.ts`（页面状态与 API 一致） |
+| IM-S10 | `src/main/api-server.test.ts`（GUI/API 共享会话、未登录 401） |
+| IM-S11 | `src/main/voice-engine.test.ts`（Whisper 不可用自动降级） |
+| IM-S12 | `pnpm test` + 打包 smoke（构建后启动并验证关键路径） |

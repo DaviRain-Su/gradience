@@ -9,3 +9,4 @@ export * from './store.js';
 export * from './test-cases-evaluator.js';
 export * from './types.js';
 export * from './workflow.js';
+export * from './observability.js';

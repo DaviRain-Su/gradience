@@ -1,11 +1,16 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createVoiceEngine, type VoiceEngine } from '../lib/voice-engine.ts';
 
 let engineInstance: VoiceEngine | null = null;
 
 function getEngine(): VoiceEngine {
     if (!engineInstance) {
-        engineInstance = createVoiceEngine();
+        const voiceEngine = (
+            import.meta as unknown as { env?: { VITE_VOICE_ENGINE?: string } }
+        ).env?.VITE_VOICE_ENGINE;
+        engineInstance = createVoiceEngine({
+            preferWhisper: voiceEngine === 'whisper',
+        });
     }
     return engineInstance;
 }
@@ -44,6 +49,8 @@ export function useVoice() {
         recording,
         speaking,
         supported: engine.supported,
+        provider: engine.provider,
+        fallbackFrom: engine.fallbackFrom,
         startRecording,
         stopAndTranscribe,
         speak,
