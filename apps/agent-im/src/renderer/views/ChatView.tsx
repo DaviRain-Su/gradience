@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore, store } from '../hooks/useAppStore.ts';
+import { VoiceButton } from '../components/voice-button.tsx';
 import {
     InMemoryMagicBlockHub,
     InMemoryMagicBlockTransport,
@@ -137,6 +138,7 @@ export function ChatView() {
                         placeholder="Type a message..."
                         className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
                     />
+                    <VoiceButton onTranscript={(text) => setInputText((prev) => prev ? prev + ' ' + text : text)} />
                     <button
                         onClick={handleSend}
                         disabled={!inputText.trim()}
