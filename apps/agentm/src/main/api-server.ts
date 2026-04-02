@@ -4,8 +4,13 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import type { ArenaTaskSummary, ChatMessage } from '../shared/types.ts';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import type {
+    AgentProfile,
+    ArenaTaskSummary,
+    ChatMessage,
+    ProfilePublishMode,
+} from '../shared/types.ts';
 import { EMPTY_AUTH } from '../shared/types.ts';
 import { createWebEntryRuntime } from './web-entry/runtime.ts';
 import type { WebEntryConfig } from './web-entry/state.ts';
@@ -21,6 +26,10 @@ export interface ApiServerOptions {
     host?: string;
     apiToken?: string;
     interopSigningSecret?: string;
+    profileSyncSigningSecret?: string;
+    signatureMaxSkewSec?: number;
+    profileSyncAllowedSources?: string[];
+    profileSyncAllowedOrganizations?: string[];
     webEntry?: Partial<WebEntryConfig>;
 }
 
@@ -28,6 +37,16 @@ export interface ApiServerDeps {
     store: ReturnType<typeof import('../renderer/lib/store.ts').createAppStore>;
     a2aAgent: MagicBlockA2AAgent;
     indexer?: Pick<IndexerClient, 'getReputation' | 'getTasks' | 'getTaskById' | 'getTaskSubmissions'>;
+    profilePublisher?: AgentProfilePublisher;
+}
+
+export interface AgentProfilePublisher {
+    publish(input: {
+        agent: string;
+        mode: ProfilePublishMode;
+        contentRef: string;
+        profile: AgentProfile;
+    }): Promise<{ onchainRef: string; tx: string }>;
 }
 
 interface AuthBindingState {
@@ -58,8 +77,15 @@ async function readBody(req: IncomingMessage): Promise<string> {
 export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions = {}) {
     const { store, a2aAgent } = deps;
     const indexer = deps.indexer ?? getIndexerClient();
+    const profilePublisher = deps.profilePublisher ?? createLocalProfilePublisher();
     const apiToken = options.apiToken;
     const interopSigningSecret = options.interopSigningSecret;
+    const profileSyncSigningSecret = options.profileSyncSigningSecret;
+    const signatureMaxSkewSec = options.signatureMaxSkewSec ?? 300;
+    const profileSyncAllowedSources = normalizeAllowlist(options.profileSyncAllowedSources);
+    const profileSyncAllowedOrganizations = normalizeAllowlist(
+        options.profileSyncAllowedOrganizations,
+    );
     const authBindings = createAuthBindingState();
     const webEntry = createWebEntryRuntime(
         {
@@ -172,6 +198,158 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 return json(res, 200, { agents: filtered });
             }
 
+            // GET/PUT /api/agents/:agent/profile
+            const profileMatch = path.match(/^\/api\/agents\/([^/]+)\/profile$/);
+            if (profileMatch && profileMatch[1]) {
+                const agent = decodeURIComponent(profileMatch[1]);
+                if (method === 'GET') {
+                    const profile = store.getState().getAgentProfile(agent);
+                    return json(res, 200, {
+                        profile: profile ? toProfileApi(profile) : null,
+                    });
+                }
+                if (method === 'PUT') {
+                    const session = requireBoundSession(store.getState().auth, authBindings);
+                    if ('error' in session) {
+                        return json(res, 401, { error: session.error });
+                    }
+                    if (session.publicKey !== agent) {
+                        return json(res, 403, { error: 'Profile updates are only allowed for your own agent' });
+                    }
+                    const payload = JSON.parse(await readBody(req) || '{}') as Record<string, unknown>;
+                    const parsed = parseProfileUpsertPayload(payload);
+                    if ('error' in parsed) {
+                        return json(res, 400, { error: parsed.error });
+                    }
+                    const current = store.getState().getAgentProfile(agent);
+                    const profile: AgentProfile = {
+                        agent,
+                        displayName: parsed.displayName,
+                        bio: parsed.bio,
+                        links: parsed.links,
+                        onchainRef: current?.onchainRef ?? null,
+                        publishMode: parsed.publishMode ?? current?.publishMode ?? 'manual',
+                        updatedAt: Date.now(),
+                    };
+                    store.getState().setAgentProfile(profile);
+                    return json(res, 200, { profile: toProfileApi(profile) });
+                }
+            }
+
+            // POST /api/agents/:agent/profile/publish
+            const publishMatch = path.match(/^\/api\/agents\/([^/]+)\/profile\/publish$/);
+            if (method === 'POST' && publishMatch && publishMatch[1]) {
+                const agent = decodeURIComponent(publishMatch[1]);
+                const session = requireBoundSession(store.getState().auth, authBindings);
+                if ('error' in session) {
+                    return json(res, 401, { error: session.error });
+                }
+                if (session.publicKey !== agent) {
+                    return json(res, 403, { error: 'Profile publishing is only allowed for your own agent' });
+                }
+                const current = store.getState().getAgentProfile(agent);
+                if (!current) {
+                    return json(res, 404, { error: `Profile not found for agent ${agent}` });
+                }
+                const payload = JSON.parse(await readBody(req) || '{}') as Record<string, unknown>;
+                const parsed = parseProfilePublishPayload(payload);
+                if ('error' in parsed) {
+                    return json(res, 400, { error: parsed.error });
+                }
+                const contentRef =
+                    parsed.contentRef ??
+                    `sha256:${sha256Hex(JSON.stringify(toProfileApi(current)))}`;
+                const publishMode = parsed.publishMode ?? current.publishMode;
+                const published = await profilePublisher.publish({
+                    agent,
+                    mode: publishMode,
+                    contentRef,
+                    profile: current,
+                });
+                const profile: AgentProfile = {
+                    ...current,
+                    onchainRef: published.onchainRef,
+                    publishMode,
+                    updatedAt: Date.now(),
+                };
+                store.getState().setAgentProfile(profile);
+                return json(res, 200, {
+                    ok: true,
+                    onchain_tx: published.tx,
+                    profile: toProfileApi(profile),
+                });
+            }
+
+            // POST /webhooks/profile/git-sync
+            if (method === 'POST' && path === '/webhooks/profile/git-sync') {
+                const bodyText = await readBody(req);
+                if (
+                    profileSyncSigningSecret &&
+                    !verifySignedPayload(
+                        bodyText,
+                        req.headers['x-gradience-signature-ts'],
+                        req.headers['x-gradience-signature'],
+                        profileSyncSigningSecret,
+                        signatureMaxSkewSec,
+                    )
+                ) {
+                    return json(res, 401, { error: 'Invalid profile sync signature' });
+                }
+                const payload = parseJsonObject(bodyText);
+                if ('error' in payload) {
+                    return json(res, 400, { error: payload.error });
+                }
+                const parsed = parseGitSyncWebhookPayload(payload);
+                if ('error' in parsed) {
+                    return json(res, 400, { error: parsed.error });
+                }
+                if (!isAllowedProfileSyncSource(parsed.source, profileSyncAllowedSources)) {
+                    return json(res, 403, { error: 'Profile sync source is not allowed' });
+                }
+                if (
+                    !isAllowedProfileSyncOrganization(
+                        parsed.repository,
+                        profileSyncAllowedOrganizations,
+                    )
+                ) {
+                    return json(res, 403, { error: 'Profile sync organization is not allowed' });
+                }
+                const existing = store.getState().getAgentProfile(parsed.agent);
+                const draftProfile: AgentProfile = {
+                    agent: parsed.agent,
+                    displayName: parsed.displayName,
+                    bio: parsed.bio,
+                    links: parsed.links,
+                    onchainRef: existing?.onchainRef ?? null,
+                    publishMode: 'git-sync',
+                    updatedAt: Date.now(),
+                };
+                const contentRef =
+                    parsed.contentRef ??
+                    `sha256:${sha256Hex(JSON.stringify(toProfileApi(draftProfile)))}`;
+                const published = await profilePublisher.publish({
+                    agent: parsed.agent,
+                    mode: 'git-sync',
+                    contentRef,
+                    profile: draftProfile,
+                });
+                const profile: AgentProfile = {
+                    ...draftProfile,
+                    onchainRef: published.onchainRef,
+                    publishMode: 'git-sync',
+                    updatedAt: Date.now(),
+                };
+                store.getState().setAgentProfile(profile);
+                return json(res, 200, {
+                    ok: true,
+                    source: parsed.source,
+                    repository: parsed.repository,
+                    commit_sha: parsed.commitSha,
+                    onchain_tx: published.tx,
+                    profile: toProfileApi(profile),
+                });
+            }
+
             // GET /me
             if (method === 'GET' && path === '/me') {
                 const session = requireBoundSession(store.getState().auth, authBindings);
@@ -183,6 +361,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 const identityRegistration = store
                     .getState()
                     .getIdentityRegistrationStatus(session.agentId);
+                const profile = store.getState().getAgentProfile(session.agentId);
                 return json(res, 200, {
                     agentId: session.agentId,
                     auth: {
@@ -193,6 +372,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     reputation,
                     interopStatus,
                     identityRegistration,
+                    profile: profile ? toProfileApi(profile) : null,
                 });
             }
 
@@ -388,11 +568,12 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 const bodyText = await readBody(req);
                 if (
                     interopSigningSecret &&
-                    !verifyInteroperabilitySignature(
+                    !verifySignedPayload(
                         bodyText,
                         req.headers['x-gradience-signature-ts'],
                         req.headers['x-gradience-signature'],
                         interopSigningSecret,
+                        signatureMaxSkewSec,
                     )
                 ) {
                     return json(res, 401, { error: 'Invalid interoperability signature' });
@@ -527,6 +708,257 @@ function registerAuthBinding(
     state.byPrivyUserId.set(privyUserId, wallet);
     state.byWallet.set(wallet, privyUserId);
     return null;
+}
+
+interface AgentProfileApi {
+    agent: string;
+    display_name: string;
+    bio: string;
+    links: {
+        website?: string;
+        github?: string;
+        x?: string;
+    };
+    onchain_ref: string | null;
+    publish_mode: ProfilePublishMode;
+    updated_at: number;
+}
+
+type ParseError = { error: string };
+
+interface ParsedProfileUpsertPayload {
+    displayName: string;
+    bio: string;
+    links: {
+        website?: string;
+        github?: string;
+        x?: string;
+    };
+    publishMode: ProfilePublishMode | undefined;
+}
+
+interface ParsedProfilePublishPayload {
+    publishMode: ProfilePublishMode | undefined;
+    contentRef: string | null;
+}
+
+interface ParsedGitSyncWebhookPayload {
+    source: string;
+    repository: string | null;
+    commitSha: string | null;
+    contentRef: string | null;
+    agent: string;
+    displayName: string;
+    bio: string;
+    links: {
+        website?: string;
+        github?: string;
+        x?: string;
+    };
+}
+
+function toProfileApi(profile: AgentProfile): AgentProfileApi {
+    return {
+        agent: profile.agent,
+        display_name: profile.displayName,
+        bio: profile.bio,
+        links: profile.links,
+        onchain_ref: profile.onchainRef,
+        publish_mode: profile.publishMode,
+        updated_at: profile.updatedAt,
+    };
+}
+
+function parseProfileUpsertPayload(
+    payload: Record<string, unknown>,
+): ParsedProfileUpsertPayload | ParseError {
+    const displayNameRaw = typeof payload.display_name === 'string' ? payload.display_name.trim() : '';
+    if (!displayNameRaw) {
+        return { error: 'Missing required field: display_name' };
+    }
+    if (displayNameRaw.length > 64) {
+        return { error: 'Invalid display_name: expected length <= 64' };
+    }
+    const bioRaw = typeof payload.bio === 'string' ? payload.bio.trim() : '';
+    if (!bioRaw) {
+        return { error: 'Missing required field: bio' };
+    }
+    if (bioRaw.length > 280) {
+        return { error: 'Invalid bio: expected length <= 280' };
+    }
+    const links = parseProfileLinks(payload.links);
+    if ('error' in links) {
+        return links;
+    }
+    const publishMode = parseProfilePublishMode(payload.publish_mode);
+    if (publishMode && typeof publishMode === 'object' && 'error' in publishMode) {
+        return publishMode;
+    }
+    return {
+        displayName: displayNameRaw,
+        bio: bioRaw,
+        links,
+        publishMode,
+    };
+}
+
+function parseProfilePublishPayload(
+    payload: Record<string, unknown>,
+): ParsedProfilePublishPayload | ParseError {
+    const publishMode = parseProfilePublishMode(payload.publish_mode);
+    if (publishMode && typeof publishMode === 'object' && 'error' in publishMode) {
+        return publishMode;
+    }
+    if (typeof payload.content_ref !== 'undefined' && typeof payload.content_ref !== 'string') {
+        return { error: 'Invalid content_ref: expected string' };
+    }
+    const contentRef = typeof payload.content_ref === 'string'
+        ? payload.content_ref.trim()
+        : null;
+    if (contentRef !== null && contentRef.length === 0) {
+        return { error: 'Invalid content_ref: expected non-empty string' };
+    }
+    return {
+        publishMode,
+        contentRef,
+    };
+}
+
+function parseJsonObject(text: string): Record<string, unknown> | { error: string } {
+    try {
+        const parsed = JSON.parse(text) as unknown;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return { error: 'Invalid payload: expected object' };
+        }
+        return parsed as Record<string, unknown>;
+    } catch {
+        return { error: 'Invalid JSON payload' };
+    }
+}
+
+function parseGitSyncWebhookPayload(
+    payload: Record<string, unknown>,
+): ParsedGitSyncWebhookPayload | ParseError {
+    const agentRaw = typeof payload.agent === 'string' ? payload.agent.trim() : '';
+    if (!agentRaw) {
+        return { error: 'Missing required field: agent' };
+    }
+    if (!payload.profile || typeof payload.profile !== 'object' || Array.isArray(payload.profile)) {
+        return { error: 'Missing required field: profile' };
+    }
+    const profilePayload = payload.profile as Record<string, unknown>;
+    const parsedProfile = parseProfileUpsertPayload({
+        display_name: profilePayload.display_name,
+        bio: profilePayload.bio,
+        links: profilePayload.links,
+        publish_mode: 'git-sync',
+    });
+    if ('error' in parsedProfile) {
+        return parsedProfile;
+    }
+    if (typeof payload.content_ref !== 'undefined' && typeof payload.content_ref !== 'string') {
+        return { error: 'Invalid content_ref: expected string' };
+    }
+    const contentRef =
+        typeof payload.content_ref === 'string' ? payload.content_ref.trim() : null;
+    if (contentRef !== null && contentRef.length === 0) {
+        return { error: 'Invalid content_ref: expected non-empty string' };
+    }
+    const source = typeof payload.source === 'string' && payload.source.trim().length > 0
+        ? payload.source.trim()
+        : 'git';
+    const repository = typeof payload.repository === 'string' && payload.repository.trim().length > 0
+        ? payload.repository.trim()
+        : null;
+    const commitSha = typeof payload.commit_sha === 'string' && payload.commit_sha.trim().length > 0
+        ? payload.commit_sha.trim()
+        : null;
+    return {
+        source,
+        repository,
+        commitSha,
+        contentRef,
+        agent: agentRaw,
+        displayName: parsedProfile.displayName,
+        bio: parsedProfile.bio,
+        links: parsedProfile.links,
+    };
+}
+
+function parseProfilePublishMode(
+    publishMode: unknown,
+): ProfilePublishMode | { error: string } | undefined {
+    if (typeof publishMode === 'undefined') {
+        return undefined;
+    }
+    if (publishMode === 'manual' || publishMode === 'git-sync') {
+        return publishMode;
+    }
+    return { error: 'Invalid publish_mode: expected manual|git-sync' };
+}
+
+function parseProfileLinks(input: unknown): { website?: string; github?: string; x?: string } | { error: string } {
+    if (typeof input === 'undefined' || input === null) {
+        return {};
+    }
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+        return { error: 'Invalid links: expected object' };
+    }
+    const raw = input as Record<string, unknown>;
+    const website = normalizeProfileLink(raw.website, 'website');
+    if ('error' in website) return website;
+    const github = normalizeProfileLink(raw.github, 'github');
+    if ('error' in github) return github;
+    const x = normalizeProfileLink(raw.x, 'x');
+    if ('error' in x) return x;
+    return {
+        ...(website.value ? { website: website.value } : {}),
+        ...(github.value ? { github: github.value } : {}),
+        ...(x.value ? { x: x.value } : {}),
+    };
+}
+
+function normalizeProfileLink(
+    value: unknown,
+    field: 'website' | 'github' | 'x',
+): { value: string | null } | { error: string } {
+    if (typeof value === 'undefined' || value === null) {
+        return { value: null };
+    }
+    if (typeof value !== 'string') {
+        return { error: `Invalid ${field}: expected string URL` };
+    }
+    const normalized = value.trim();
+    if (!normalized) {
+        return { value: null };
+    }
+    if (!isHttpUrl(normalized)) {
+        return { error: `Invalid ${field}: expected http(s) URL` };
+    }
+    return { value: normalized };
+}
+
+function isHttpUrl(value: string): boolean {
+    try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+function createLocalProfilePublisher(): AgentProfilePublisher {
+    return {
+        publish: async (input) => {
+            const onchainRef = input.contentRef;
+            const tx = `sim-${sha256Hex(`${input.agent}:${input.mode}:${onchainRef}:${Date.now()}`).slice(0, 16)}`;
+            return { onchainRef, tx };
+        },
+    };
+}
+
+function sha256Hex(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
 }
 
 function parsePagination(url: URL) {
@@ -894,15 +1326,20 @@ function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
     );
 }
 
-function verifyInteroperabilitySignature(
+function verifySignedPayload(
     body: string,
     timestampHeader: string | string[] | undefined,
     signatureHeader: string | string[] | undefined,
     secret: string,
+    maxSkewSec: number,
 ): boolean {
     const timestamp = Array.isArray(timestampHeader) ? timestampHeader[0] : timestampHeader;
     const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
     if (!timestamp || !signature) return false;
+    const ts = Number.parseInt(timestamp, 10);
+    if (!Number.isFinite(ts)) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - ts) > maxSkewSec) return false;
     const expected = createHmac('sha256', secret)
         .update(`${timestamp}.${body}`)
         .digest('hex');

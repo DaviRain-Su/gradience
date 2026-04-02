@@ -68,6 +68,7 @@ flowchart TB
 | **认证模块** | Google OAuth 登录 → Privy 嵌入式钱包 → Solana 地址生成；会话管理；多账户支持（后期） | 不自建钱包；不存储私钥明文 | Privy SDK (`@privy-io/react-auth`) |
 | **"我的"视角** | 显示当前用户的声誉面板（4 指标）、任务历史列表、Agent 状态 | 不修改链上数据 | React 组件，迁移自 agent-me |
 | **"社交"视角** | Agent 发现广场（按声誉排名）、Agent 详情页、搜索过滤 | 不做推荐算法（MVP） | React 组件，迁移自 agent-social |
+| **Profile 展示层** | 展示 Agent 标准化画像（名称、简介、链接、验证状态） | 不负责编辑发布 | React 组件（Agent 详情页扩展） |
 | **对话视角** | A2A 消息列表（类 IM 界面）、发送邀请 + 微支付、消息状态（发送中/已送达） | 不做 E2E 加密（MVP）；不做群聊 | React 组件，新建 |
 | **A2A 客户端** | 封装 magicblock-a2a.ts + A2A Protocol SDK；消息收发；微支付计算；传输层自动选择 | 不修改 A2A 协议本身 | 迁移自 agent-social/lib |
 | **数据层** | 本地缓存消息历史、用户设置、会话状态；Indexer API 查询封装 | 不做消息持久化服务器 | IndexedDB（前端）+ SQLite（主进程，Electrobun 提供） |
@@ -134,6 +135,16 @@ Agent 回复文字
   → 点击"邀请" → 进入对话视角，预填 to 地址
 ```
 
+### Agent Profile 查看流程（新增）
+
+```
+用户点击 Agent 卡片
+  → 查询 Indexer: GET /api/agents/{agent}/profile
+  → 返回链上注册信息（profile_tx/profile_cid）+ 链下扩展信息（bio/links/content）
+  → 与 reputation 数据合并渲染 Agent 详情页
+  → 用户基于 Profile 判断是否进入对话/委托任务
+```
+
 ---
 
 ## 2.4 双界面设计
@@ -170,6 +181,7 @@ GUI 和 API 产生完全相同的链上效果。
 | POST | `/a2a/send` | 发送 A2A 消息 + 微支付 | 对话界面点击"发送" |
 | GET | `/a2a/messages` | 获取消息列表 | 对话列表页面 |
 | GET | `/discover/agents` | 按声誉排名查询 Agent | 发现广场 |
+| GET | `/profiles/:agent` | 查询 Agent 标准化 Profile | Agent 详情页 |
 | GET | `/me/reputation` | 查询自己的声誉 | "我的"面板 |
 | POST | `/tasks/post` | 发布任务到 Arena | 任务发布表单 |
 | GET | `/tasks/list` | 查询任务列表 | 任务列表页面 |
@@ -229,6 +241,7 @@ Agent.im 依赖（全部已有，不新建）：
 ├── A2A Protocol SDK        ← 消息协议
 ├── magicblock-a2a.ts       ← 传输层（InMemory / BroadcastChannel）
 ├── ranking.ts              ← Agent 排名算法
+├── Agent Profile Registry  ← 链上 profile 注册引用（通过 Indexer 聚合消费）
 ├── Indexer REST API        ← 数据查询
 └── Privy SDK               ← 嵌入式钱包
 
@@ -250,6 +263,7 @@ Agent.im 不依赖：
 | `GET /api/agents/{pubkey}/reputation` | 声誉查询 | "我的"面板加载 |
 | `GET /api/tasks?poster={pubkey}` | 我的任务列表 | "我的"面板加载 |
 | `GET /api/judge-pool/{category}` | Agent 列表 | 发现广场 |
+| `GET /api/agents/{pubkey}/profile` | Agent Profile（链上注册 + 链下扩展） | Agent 详情页加载 |
 | `GET /api/tasks?status=open` | 开放任务 | 任务浏览 |
 
 ### → @gradience/sdk（链上调用）
@@ -279,5 +293,6 @@ Agent.im 不依赖：
 - [x] 文件结构与迁移计划明确
 - [x] 依赖关系清晰（全部使用已有基础设施，不新建）
 - [x] 接口契约定义完整
+- [x] Agent Profile 查看链路（发现 → 详情 → 决策）已定义
 
 **验收通过后，进入 Phase 3: Technical Spec →**

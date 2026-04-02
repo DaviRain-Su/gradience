@@ -10,6 +10,7 @@ import type {
     Conversation,
     ChatMessage,
     AgentDiscoveryRow,
+    AgentProfile,
     ArenaTaskSummary,
     TaskFlowRecord,
     InteropStatusSnapshot,
@@ -41,6 +42,7 @@ interface PersistedAppStoreState {
     messages: Array<[string, ChatMessage[]]>;
     discoveryRows: AgentDiscoveryRow[];
     discoveryQuery: string;
+    agentProfiles: Array<[string, AgentProfile]>;
     trackedTasks: Array<[number, ArenaTaskSummary]>;
     taskFlow: Array<[number, TaskFlowRecord]>;
     interopStatus: Array<[string, InteropStatusSnapshot]>;
@@ -70,6 +72,9 @@ export interface AppStore {
     discoveryQuery: string;
     setDiscoveryQuery: (q: string) => void;
     setDiscoveryRows: (rows: AgentDiscoveryRow[]) => void;
+    agentProfiles: Map<string, AgentProfile>;
+    setAgentProfile: (profile: AgentProfile) => void;
+    getAgentProfile: (agent: string) => AgentProfile | null;
 
     // Arena task flow
     trackedTasks: Map<number, ArenaTaskSummary>;
@@ -164,6 +169,13 @@ export function createAppStore(options: {
         discoveryQuery: '',
         setDiscoveryQuery: (discoveryQuery) => set({ discoveryQuery }),
         setDiscoveryRows: (discoveryRows) => set({ discoveryRows }),
+        agentProfiles: new Map(),
+        setAgentProfile: (profile) => {
+            const next = new Map(get().agentProfiles);
+            next.set(profile.agent, profile);
+            set({ agentProfiles: next });
+        },
+        getAgentProfile: (agent) => get().agentProfiles.get(agent) ?? null,
 
         // Arena task flow
         trackedTasks: new Map(),
@@ -362,6 +374,7 @@ function snapshotStore(state: AppStore): PersistedAppStoreState {
         messages: Array.from(state.messages.entries()),
         discoveryRows: state.discoveryRows,
         discoveryQuery: state.discoveryQuery,
+        agentProfiles: Array.from(state.agentProfiles.entries()),
         trackedTasks: Array.from(state.trackedTasks.entries()),
         taskFlow: Array.from(state.taskFlow.entries()),
         interopStatus: Array.from(state.interopStatus.entries()),
@@ -381,6 +394,9 @@ function rehydrateStore(
         messages: persisted.messages ? new Map(persisted.messages) : current.messages,
         discoveryRows: persisted.discoveryRows ?? current.discoveryRows,
         discoveryQuery: persisted.discoveryQuery ?? current.discoveryQuery,
+        agentProfiles: persisted.agentProfiles
+            ? new Map(persisted.agentProfiles)
+            : current.agentProfiles,
         trackedTasks: persisted.trackedTasks
             ? new Map(persisted.trackedTasks)
             : current.trackedTasks,

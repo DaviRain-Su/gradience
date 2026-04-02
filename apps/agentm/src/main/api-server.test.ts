@@ -148,7 +148,19 @@ before(async () => {
         getTaskSubmissions: async (taskId: number) => MOCK_SUBMISSIONS[taskId] ?? [],
     };
 
-    api = createApiServer({ store, a2aAgent: agent, indexer }, { port: 0 });
+    const profilePublisher = {
+        publish: async (input: {
+            agent: string;
+            mode: 'manual' | 'git-sync';
+            contentRef: string;
+            profile: unknown;
+        }) => ({
+            onchainRef: input.contentRef,
+            tx: 'sim-profile-tx',
+        }),
+    };
+
+    api = createApiServer({ store, a2aAgent: agent, indexer, profilePublisher }, { port: 0 });
     port = await api.start();
 });
 
@@ -310,6 +322,13 @@ describe('API Server', () => {
         assert.equal(data.agents[1].agent, 'bob');
     });
 
+    it('GET /api/agents/:agent/profile returns null when profile is missing', async () => {
+        const res = await fetch(url('/api/agents/my-pubkey/profile'));
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.profile, null);
+    });
+
     it('GET /me/reputation — not authenticated → 401', async () => {
         store.getState().setAuth({
             authenticated: false,
@@ -353,6 +372,127 @@ describe('API Server', () => {
         assert.equal(data.reputation.global_completed, 7);
         assert.equal(data.identityRegistration.state, 'registered');
         assert.equal(data.identityRegistration.agentId, '11');
+    });
+
+    it('PUT /api/agents/:agent/profile stores profile for bound session wallet', async () => {
+        const res = await fetch(url('/api/agents/my-pubkey/profile'), {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                display_name: 'My Agent',
+                bio: 'Building autonomous workflows',
+                links: {
+                    website: 'https://agent.im',
+                    github: 'https://github.com/agent-im',
+                },
+                publish_mode: 'manual',
+            }),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.profile.display_name, 'My Agent');
+        assert.equal(data.profile.bio, 'Building autonomous workflows');
+
+        const getRes = await fetch(url('/api/agents/my-pubkey/profile'));
+        assert.equal(getRes.status, 200);
+        const getData = await getRes.json();
+        assert.equal(getData.profile.display_name, 'My Agent');
+        assert.equal(getData.profile.links.website, 'https://agent.im');
+        assert.equal(getData.profile.onchain_ref, null);
+    });
+
+    it('PUT /api/agents/:agent/profile rejects cross-wallet profile updates', async () => {
+        const res = await fetch(url('/api/agents/not-my-wallet/profile'), {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                display_name: 'Invalid',
+                bio: 'Should fail',
+            }),
+        });
+        assert.equal(res.status, 403);
+    });
+
+    it('POST /api/agents/:agent/profile/publish updates onchain_ref', async () => {
+        const res = await fetch(url('/api/agents/my-pubkey/profile/publish'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                publish_mode: 'manual',
+            }),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        assert.equal(data.onchain_tx, 'sim-profile-tx');
+        assert.ok(String(data.profile.onchain_ref).startsWith('sha256:'));
+    });
+
+    it('POST /api/agents/:agent/profile/publish supports git-sync mode + explicit content_ref', async () => {
+        const res = await fetch(url('/api/agents/my-pubkey/profile/publish'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                publish_mode: 'git-sync',
+                content_ref: 'sha256:git-sync-ref',
+            }),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        assert.equal(data.profile.publish_mode, 'git-sync');
+        assert.equal(data.profile.onchain_ref, 'sha256:git-sync-ref');
+    });
+
+    it('POST /webhooks/profile/git-sync stores profile and updates onchain_ref automatically', async () => {
+        const res = await fetch(url('/webhooks/profile/git-sync'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                source: 'github',
+                repository: 'github.com/gradience/agent-profile',
+                commit_sha: 'abc123',
+                content_ref: 'sha256:profile-from-git',
+                agent: 'sync-agent',
+                profile: {
+                    display_name: 'Sync Agent',
+                    bio: 'Profile updated by git webhook',
+                    links: {
+                        github: 'https://github.com/sync-agent',
+                    },
+                },
+            }),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        assert.equal(data.source, 'github');
+        assert.equal(data.profile.agent, 'sync-agent');
+        assert.equal(data.profile.publish_mode, 'git-sync');
+        assert.equal(data.profile.onchain_ref, 'sha256:profile-from-git');
+
+        const profileRes = await fetch(url('/api/agents/sync-agent/profile'));
+        assert.equal(profileRes.status, 200);
+        const profileData = await profileRes.json();
+        assert.equal(profileData.profile.display_name, 'Sync Agent');
+        assert.equal(profileData.profile.links.github, 'https://github.com/sync-agent');
+    });
+
+    it('POST /webhooks/profile/git-sync validates required payload fields', async () => {
+        const res = await fetch(url('/webhooks/profile/git-sync'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                source: 'github',
+                profile: {
+                    display_name: 'Missing Agent',
+                    bio: 'Should fail',
+                },
+            }),
+        });
+        assert.equal(res.status, 400);
+        const data = await res.json();
+        assert.equal(data.error, 'Missing required field: agent');
     });
 
     it('GET /me — returns 401 for unbound session', async () => {
@@ -1041,6 +1181,66 @@ describe('API Server interop signature verification', () => {
                 body: payload,
             });
             assert.equal(okRes.status, 200);
+        } finally {
+            await signedApi.stop();
+        }
+    });
+});
+
+describe('API Server profile git-sync webhook signature verification', () => {
+    it('rejects git-sync webhook with invalid signature', async () => {
+        const signedStore = createAppStore();
+        const hub = new InMemoryMagicBlockHub({ latencyMs: 5 });
+        const transport = new InMemoryMagicBlockTransport(hub);
+        const agent = new MagicBlockA2AAgent('profile-sig-agent', transport);
+        agent.start();
+        const signedApi = createApiServer(
+            { store: signedStore, a2aAgent: agent },
+            { port: 0, profileSyncSigningSecret: 'secret-profile' },
+        );
+        const signedPort = await signedApi.start();
+
+        try {
+            const payload = JSON.stringify({
+                source: 'github',
+                repository: 'github.com/gradience/agent-profile',
+                commit_sha: 'cafe1234',
+                agent: 'profile-signed-agent',
+                profile: {
+                    display_name: 'Signed Agent',
+                    bio: 'Signed payload profile',
+                    links: {},
+                },
+            });
+
+            const badRes = await fetch(`http://127.0.0.1:${signedPort}/webhooks/profile/git-sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-gradience-signature-ts': '123',
+                    'x-gradience-signature': 'bad',
+                },
+                body: payload,
+            });
+            assert.equal(badRes.status, 401);
+
+            const ts = String(Math.floor(Date.now() / 1000));
+            const signature = createHmac('sha256', 'secret-profile')
+                .update(`${ts}.${payload}`)
+                .digest('hex');
+            const okRes = await fetch(`http://127.0.0.1:${signedPort}/webhooks/profile/git-sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-gradience-signature-ts': ts,
+                    'x-gradience-signature': signature,
+                },
+                body: payload,
+            });
+            assert.equal(okRes.status, 200);
+            const okData = await okRes.json();
+            assert.equal(okData.profile.agent, 'profile-signed-agent');
+            assert.equal(okData.profile.publish_mode, 'git-sync');
         } finally {
             await signedApi.stop();
         }

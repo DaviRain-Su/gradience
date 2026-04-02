@@ -257,6 +257,23 @@ describe('AppStore', () => {
         assert.equal(status?.agentId, '42');
     });
 
+    it('agent profile can be stored and queried', () => {
+        store.getState().setAgentProfile({
+            agent: 'agent-a',
+            displayName: 'Agent A',
+            bio: 'A profile bio',
+            links: {
+                website: 'https://agent-a.example.com',
+            },
+            onchainRef: null,
+            publishMode: 'manual',
+            updatedAt: 10,
+        });
+        const profile = store.getState().getAgentProfile('agent-a');
+        assert.equal(profile?.displayName, 'Agent A');
+        assert.equal(profile?.links.website, 'https://agent-a.example.com');
+    });
+
     it('persists and rehydrates auth/messages/identity snapshot with adapter', () => {
         let persisted: unknown = null;
         const persistence: AppStorePersistenceAdapter = {
@@ -286,6 +303,17 @@ describe('AppStore', () => {
             error: null,
             updatedAt: 7,
         });
+        storeA.getState().setAgentProfile({
+            agent: 'persist-agent',
+            displayName: 'Persist Agent',
+            bio: 'Persisted bio',
+            links: {
+                github: 'https://github.com/persist-agent',
+            },
+            onchainRef: 'sha256:abc',
+            publishMode: 'manual',
+            updatedAt: 11,
+        });
 
         const storeB = createAppStore({ persistence });
         assert.equal(storeB.getState().auth.publicKey, 'persist-agent');
@@ -296,6 +324,10 @@ describe('AppStore', () => {
         assert.equal(
             storeB.getState().getIdentityRegistrationStatus('persist-agent')?.agentId,
             '7',
+        );
+        assert.equal(
+            storeB.getState().getAgentProfile('persist-agent')?.displayName,
+            'Persist Agent',
         );
     });
 });

@@ -11,6 +11,7 @@
 | `store.test.ts` | 6 | Zustand 状态管理、对话/消息 CRUD | P0 |
 | `api-server.test.ts` | 7 | localhost:3939 API 端点 | P0 |
 | `indexer-api.test.ts` | 4 | Indexer 客户端、离线降级 | P1 |
+| `profile-api.test.ts` | 5 | Agent Profile 查询、降级、字段校验 | P0 |
 | `voice-engine.test.ts` | 3 | 语音识别/合成、降级逻辑 | P1 |
 | `auth.test.ts` | 3 | 认证状态管理（Privy mock） | P1 |
 
@@ -30,6 +31,7 @@ pnpm exec tsx --test src/renderer/lib/ranking.test.ts
 pnpm exec tsx --test src/renderer/lib/store.test.ts
 pnpm exec tsx --test src/main/api-server.test.ts
 pnpm exec tsx --test src/renderer/lib/indexer-api.test.ts
+pnpm exec tsx --test src/renderer/lib/profile-api.test.ts
 pnpm exec tsx --test src/main/voice-engine.test.ts
 pnpm exec tsx --test src/main/auth.test.ts
 ```
@@ -107,6 +109,16 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 2 | Privy 登录失败 → 错误提示 | authenticated=false，error 有值 |
 | 3 | 登出 → 清除会话，保留本地数据 | publicKey=null，messages 不变 |
 
+### 3.8 profile-api.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | `getAgentProfile(addr)` 返回完整 Profile | display_name/bio/links 字段可解析 |
+| 2 | Profile 404 | 返回 null，不抛异常 |
+| 3 | Profile 链接非法格式 | 过滤非法链接并记录 warning |
+| 4 | Indexer 超时 | 回退最小卡片（地址 + 声誉）数据结构 |
+| 5 | 内容流缺失 | UI 显示“暂无公开更新”占位，不报错 |
+
 ---
 
 ## 4. 测试策略
@@ -131,6 +143,7 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 语音意图识别 | "发布任务" vs "发送消息" 判断准确性 |
 | 任务发布 E2E | `POST /tasks/post` → SDK `task.post` → 链上 |
 | 消息持久化恢复 | 关闭应用 → 重新打开 → 消息历史完整 |
+| Profile 内容流排序 | weekly/diary 条目按时间倒序展示 |
 
 ### P2（长期）
 
@@ -140,6 +153,7 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 多用户并发 A2A | 10 个 Agent 同时发消息 |
 | DashDomain 连接 | 本地 Agent 进程连接器 |
 | 8004 注册验证 | Agent 注册后 8004scan.io 可发现 |
+| Profile 链上签名校验 | profile 引用与链上注册哈希一致 |
 
 ---
 
@@ -162,6 +176,14 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 8004 状态回写一致性 | `/interop/status` 与 dashboard 计数一致 |
 | Attestation 展示闭环 | `sdk.attestations.list()` 成功返回并可渲染 |
 | 生产打包 smoke | 构建产物可启动，关键页面可用 |
+
+### 6.2A Stage C（Profile）
+
+| 场景 | 预期结果 |
+|------|---------|
+| Agent 详情页 Profile 展示 | display_name/bio/links 正常展示 |
+| Profile 缺失回退 | 自动降级最小卡片，提示“未发布 Profile” |
+| Profile 内容流展示 | 有内容展示摘要，无内容展示占位 |
 
 ### 6.3 开发步骤级验收映射（IM-S01~IM-S12）
 

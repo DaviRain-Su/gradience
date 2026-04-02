@@ -23,12 +23,22 @@
 | IM-T06 | B5 Metaplex 注册迁移 | 将登录后的身份初始化流程与 Metaplex/8004 注册触发点打通（避免停留在 hackathon-demo） | IM-T05 | 5h | P1 | 首次登录或首次参与任务后可观测到身份注册闭环（状态/日志/API） |
 | IM-T07 | B6 打包与运维门槛 | 验证 Electrobun 打包、启动性能、环境变量矩阵；补充生产运行脚本与 smoke 命令 | IM-T06 | 4h | P1 | 启动时间和包体达到 PRD 指标；新环境可按清单快速拉起 |
 
+## 4.2A Stage C（Agent Profile）
+
+| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
+|---|---------|------|------|------|--------|----------|
+| IM-T08 | C1 Profile 查询接入 | 接入 `GET /api/agents/{pubkey}/profile`，合并声誉与基础画像数据 | IM-T03 | 3h | P0 | Agent 详情页可展示 display_name/bio/links；接口异常可降级 |
+| IM-T09 | C2 Profile 详情页重构 | 在 Agent 详情页新增 Profile 区块（身份、简介、外链、验证状态） | IM-T08 | 3h | P0 | 用户可在 1 屏内完成“识别 Agent → 决策是否委托” |
+| IM-T10 | C3 Profile 内容流展示（P1） | 展示 Profile 扩展内容流（weekly/diary 摘要） | IM-T09 | 4h | P1 | 有内容时展示摘要，无内容时占位提示 |
+| IM-T11 | C4 信任回退策略 | 无 Profile / Profile 失效时回退“最小卡片（地址+声誉）”并提示风险 | IM-T09 | 2h | P0 | 404/超时/解析失败均不崩溃且提示清晰 |
+
 ---
 
 ## 4.3 验收节奏
 
 - **里程碑 M-A（Demo）**：IM-T01 ~ IM-T03
 - **里程碑 M-B（Prod）**：IM-T04 ~ IM-T07
+- **里程碑 M-C（Profile）**：IM-T08 ~ IM-T11
 
 阶段验收必须满足：
 
@@ -79,6 +89,7 @@
 | T62 | IM-S04 ~ IM-S06 |
 | T63 | IM-S07 ~ IM-S09 |
 | T64 | IM-S10 ~ IM-S12 |
+| Profile-Track | IM-T08 ~ IM-T11 |
 
 **并行依赖（来自协议侧 Track-B）**
 

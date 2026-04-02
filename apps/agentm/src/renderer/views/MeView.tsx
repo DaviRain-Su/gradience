@@ -1,8 +1,19 @@
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../hooks/useAppStore.ts';
 import { useReputation } from '../hooks/useReputation.ts';
 import { useAttestations } from '../hooks/useAttestations.ts';
-import type { InteropStatusSnapshot } from '../../shared/types.ts';
+import { getAgentProfileApiClient } from '../lib/profile-api.ts';
+import type { InteropStatusSnapshot, ProfilePublishMode } from '../../shared/types.ts';
 import type { AttestationSummary } from '../../main/api-server.ts';
+
+interface ProfileDraft {
+    displayName: string;
+    bio: string;
+    website: string;
+    github: string;
+    x: string;
+    publishMode: ProfilePublishMode;
+}
 
 export function MeView() {
     const publicKey = useAppStore((s) => s.auth.publicKey);
@@ -17,6 +28,122 @@ export function MeView() {
     const taskFlowHistory = useAppStore((s) => s.getTaskFlowHistory());
     const { reputation, loading, error, refresh } = useReputation(publicKey);
     const { attestations, loading: attLoading, error: attError, refresh: attRefresh } = useAttestations(publicKey);
+    const [profileDraft, setProfileDraft] = useState<ProfileDraft>({
+        displayName: '',
+        bio: '',
+        website: '',
+        github: '',
+        x: '',
+        publishMode: 'manual',
+    });
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profilePublishing, setProfilePublishing] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
+    const [profileMessage, setProfileMessage] = useState<string | null>(null);
+    const [profileOnchainRef, setProfileOnchainRef] = useState<string | null>(null);
+    const [profileOnchainTx, setProfileOnchainTx] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!publicKey) {
+            setProfileDraft({
+                displayName: '',
+                bio: '',
+                website: '',
+                github: '',
+                x: '',
+                publishMode: 'manual',
+            });
+            setProfileOnchainRef(null);
+            setProfileOnchainTx(null);
+            return;
+        }
+        let disposed = false;
+        setProfileLoading(true);
+        setProfileError(null);
+        const client = getAgentProfileApiClient();
+        void client
+            .getAgentProfile(publicKey)
+            .then((profile) => {
+                if (disposed) return;
+                if (!profile) {
+                    setProfileDraft({
+                        displayName: '',
+                        bio: '',
+                        website: '',
+                        github: '',
+                        x: '',
+                        publishMode: 'manual',
+                    });
+                    setProfileOnchainRef(null);
+                    return;
+                }
+                setProfileDraft({
+                    displayName: profile.displayName,
+                    bio: profile.bio,
+                    website: profile.links.website ?? '',
+                    github: profile.links.github ?? '',
+                    x: profile.links.x ?? '',
+                    publishMode: profile.publishMode,
+                });
+                setProfileOnchainRef(profile.onchainRef);
+            })
+            .catch((loadError: unknown) => {
+                if (disposed) return;
+                setProfileError(loadError instanceof Error ? loadError.message : String(loadError));
+            })
+            .finally(() => {
+                if (disposed) return;
+                setProfileLoading(false);
+            });
+        return () => {
+            disposed = true;
+        };
+    }, [publicKey]);
+
+    const saveProfile = async () => {
+        if (!publicKey) return;
+        setProfileSaving(true);
+        setProfileError(null);
+        setProfileMessage(null);
+        try {
+            const profile = await getAgentProfileApiClient().upsertAgentProfile(publicKey, {
+                display_name: profileDraft.displayName,
+                bio: profileDraft.bio,
+                links: {
+                    ...(profileDraft.website.trim() ? { website: profileDraft.website.trim() } : {}),
+                    ...(profileDraft.github.trim() ? { github: profileDraft.github.trim() } : {}),
+                    ...(profileDraft.x.trim() ? { x: profileDraft.x.trim() } : {}),
+                },
+                publish_mode: profileDraft.publishMode,
+            });
+            setProfileOnchainRef(profile.onchainRef);
+            setProfileMessage('Profile saved');
+        } catch (saveError) {
+            setProfileError(saveError instanceof Error ? saveError.message : String(saveError));
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
+    const publishProfile = async () => {
+        if (!publicKey) return;
+        setProfilePublishing(true);
+        setProfileError(null);
+        setProfileMessage(null);
+        try {
+            const published = await getAgentProfileApiClient().publishProfile(publicKey, {
+                publish_mode: profileDraft.publishMode,
+            });
+            setProfileOnchainRef(published.profile.onchainRef);
+            setProfileOnchainTx(published.onchain_tx);
+            setProfileMessage('Profile published');
+        } catch (publishError) {
+            setProfileError(publishError instanceof Error ? publishError.message : String(publishError));
+        } finally {
+            setProfilePublishing(false);
+        }
+    };
 
     return (
         <div className="p-6 space-y-6 overflow-y-auto">
@@ -33,6 +160,97 @@ export function MeView() {
                         <p className="text-sm text-gray-500 font-mono">{publicKey}</p>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Profile Studio</h3>
+                    {profileLoading && <span className="text-xs text-gray-500">Loading...</span>}
+                </div>
+                <input
+                    value={profileDraft.displayName}
+                    onChange={(event) =>
+                        setProfileDraft((prev) => ({ ...prev, displayName: event.target.value }))
+                    }
+                    placeholder="Display name"
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-sm"
+                />
+                <textarea
+                    value={profileDraft.bio}
+                    onChange={(event) =>
+                        setProfileDraft((prev) => ({ ...prev, bio: event.target.value }))
+                    }
+                    placeholder="Short bio"
+                    rows={3}
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-sm"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <input
+                        value={profileDraft.website}
+                        onChange={(event) =>
+                            setProfileDraft((prev) => ({ ...prev, website: event.target.value }))
+                        }
+                        placeholder="Website URL"
+                        className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
+                    />
+                    <input
+                        value={profileDraft.github}
+                        onChange={(event) =>
+                            setProfileDraft((prev) => ({ ...prev, github: event.target.value }))
+                        }
+                        placeholder="GitHub URL"
+                        className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
+                    />
+                    <input
+                        value={profileDraft.x}
+                        onChange={(event) =>
+                            setProfileDraft((prev) => ({ ...prev, x: event.target.value }))
+                        }
+                        placeholder="X URL"
+                        className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
+                    />
+                </div>
+                <select
+                    value={profileDraft.publishMode}
+                    onChange={(event) =>
+                        setProfileDraft((prev) => ({
+                            ...prev,
+                            publishMode: event.target.value as ProfilePublishMode,
+                        }))
+                    }
+                    className="bg-gray-950 border border-gray-700 rounded px-3 py-2 text-sm"
+                >
+                    <option value="manual">manual</option>
+                    <option value="git-sync">git-sync</option>
+                </select>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            void saveProfile();
+                        }}
+                        disabled={profileSaving || profilePublishing || !publicKey}
+                        className="px-3 py-1.5 text-sm rounded bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
+                    >
+                        {profileSaving ? 'Saving...' : 'Save Profile'}
+                    </button>
+                    <button
+                        onClick={() => {
+                            void publishProfile();
+                        }}
+                        disabled={profileSaving || profilePublishing || !publicKey}
+                        className="px-3 py-1.5 text-sm rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
+                    >
+                        {profilePublishing ? 'Publishing...' : 'Publish On-chain Ref'}
+                    </button>
+                </div>
+                {profileOnchainRef && (
+                    <p className="text-xs text-gray-500 break-all">onchain_ref: {profileOnchainRef}</p>
+                )}
+                {profileOnchainTx && (
+                    <p className="text-xs text-gray-500 break-all">tx: {profileOnchainTx}</p>
+                )}
+                {profileMessage && <p className="text-xs text-emerald-400">{profileMessage}</p>}
+                {profileError && <p className="text-xs text-red-400">{profileError}</p>}
             </div>
 
             {/* Reputation panel */}
