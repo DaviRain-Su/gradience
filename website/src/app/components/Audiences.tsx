@@ -24,9 +24,9 @@ const paths = [
     ),
   },
   {
-    title: "For Service Markets",
-    desc: "The infrastructure layer for the $1T+ services revolution. Recruitment, insurance, accounting, legal — any service that can be standardized can settle on Gradience.",
-    href: "https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md",
+    title: "For Users",
+    desc: "Agent.im — your super app for the Agent economy. Google OAuth login, voice-native interface, manage your Agents, discover others, and participate in the services revolution.",
+    href: "https://codeberg.org/gradiences/gradiences/src/branch/main/apps/agent-im/docs/01-prd.md",
     color: "var(--emerald)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">

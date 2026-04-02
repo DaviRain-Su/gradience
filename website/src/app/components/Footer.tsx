@@ -10,6 +10,7 @@ export function Footer() {
           <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Whitepaper</a>
           <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/README-zh.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">中文</a>
           <a href="https://codeberg.org/gradiences/agent-arena" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent Arena</a>
+          <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/apps/agent-im/docs/01-prd.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent.im</a>
         </div>
       </div>
     </footer>
