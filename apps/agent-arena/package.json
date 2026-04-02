@@ -22,7 +22,7 @@
         "generate-clients": "tsx ./scripts/generate-clients.ts",
         "generate-idl": "cd program && cargo check --features idl",
         "test:cli": "tsx --test ./cli/gradience.test.ts",
-        "test:judge-daemon": "tsx --test ./judge-daemon/src/daemon.test.ts ./judge-daemon/src/evaluators.test.ts ./judge-daemon/src/test-cases-evaluator.test.ts ./judge-daemon/src/workflow.test.ts",
+        "test:judge-daemon": "tsx --test ./judge-daemon/src/daemon.test.ts ./judge-daemon/src/evaluators.test.ts ./judge-daemon/src/interop.test.ts ./judge-daemon/src/test-cases-evaluator.test.ts ./judge-daemon/src/workflow.test.ts",
         "judge-daemon:start": "tsx ./judge-daemon/src/main.ts",
         "judge-daemon:dspy": "python3 ./judge-daemon/dspy_service/server.py",
         "t42:governance": "tsx ./scripts/t42-governance.ts",

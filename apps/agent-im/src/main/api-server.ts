@@ -4,18 +4,19 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import type { AppStore } from '../renderer/lib/store.ts';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { ChatMessage } from '../shared/types.ts';
 import {
     MagicBlockA2AAgent,
-    estimateMicropayment,
 } from '../renderer/lib/a2a-client.ts';
 import { sortAndFilterAgents } from '../renderer/lib/ranking.ts';
+import type { InteropSyncEvent } from '../shared/types.ts';
 
 export interface ApiServerOptions {
     port?: number;
     host?: string;
     apiToken?: string;
+    interopSigningSecret?: string;
 }
 
 export interface ApiServerDeps {
@@ -28,6 +29,11 @@ function json(res: ServerResponse, status: number, body: unknown) {
     res.end(JSON.stringify(body));
 }
 
+function html(res: ServerResponse, status: number, body: string) {
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(body);
+}
+
 async function readBody(req: IncomingMessage): Promise<string> {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -37,6 +43,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
 export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions = {}) {
     const { store, a2aAgent } = deps;
     const apiToken = options.apiToken;
+    const interopSigningSecret = options.interopSigningSecret;
 
     const server = createServer(async (req, res) => {
         // Optional token auth
@@ -116,6 +123,78 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 });
             }
 
+            // POST /interop/events (ingest signed events from judge-daemon)
+            if (method === 'POST' && path === '/interop/events') {
+                const bodyText = await readBody(req);
+                if (
+                    interopSigningSecret &&
+                    !verifyInteroperabilitySignature(
+                        bodyText,
+                        req.headers['x-gradience-signature-ts'],
+                        req.headers['x-gradience-signature'],
+                        interopSigningSecret,
+                    )
+                ) {
+                    return json(res, 401, { error: 'Invalid interoperability signature' });
+                }
+                const payload = JSON.parse(bodyText) as InteropSyncEvent;
+                if (!isInteropSyncEvent(payload)) {
+                    return json(res, 400, { error: 'Invalid interop payload' });
+                }
+                const snapshot = store.getState().applyInteropSyncEvent(payload);
+                return json(res, 200, { ok: true, snapshot });
+            }
+
+            // GET /interop/status?agent=<address>
+            if (method === 'GET' && path === '/interop/status') {
+                const agent = url.searchParams.get('agent');
+                if (!agent) {
+                    return json(res, 400, { error: 'Missing query param: agent' });
+                }
+                const snapshot = store.getState().getInteropStatus(agent);
+                return json(res, 200, {
+                    agent,
+                    status:
+                        snapshot ??
+                        {
+                            agent,
+                            identityRegistered: false,
+                            erc8004FeedbackCount: 0,
+                            istranaFeedbackCount: 0,
+                            attestationCount: 0,
+                            lastTaskId: null,
+                            lastScore: null,
+                            lastChainTx: null,
+                            updatedAt: 0,
+                        },
+                });
+            }
+
+            // GET /interop/dashboard?agent=<address>
+            if (method === 'GET' && path === '/interop/dashboard') {
+                const agent = url.searchParams.get('agent');
+                if (!agent) {
+                    return html(res, 400, '<h1>Missing query param: agent</h1>');
+                }
+                const snapshot = store.getState().getInteropStatus(agent);
+                const data = snapshot ?? {
+                    agent,
+                    identityRegistered: false,
+                    erc8004FeedbackCount: 0,
+                    istranaFeedbackCount: 0,
+                    attestationCount: 0,
+                    lastTaskId: null,
+                    lastScore: null,
+                    lastChainTx: null,
+                    updatedAt: 0,
+                };
+                return html(
+                    res,
+                    200,
+                    renderInteropDashboard(agent, data),
+                );
+            }
+
             json(res, 404, { error: 'Not found' });
         } catch (err) {
             json(res, 500, { error: err instanceof Error ? err.message : 'Internal error' });
@@ -138,4 +217,91 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
         }),
         server,
     };
+}
+
+function renderInteropDashboard(
+    agent: string,
+    data: {
+        identityRegistered: boolean;
+        erc8004FeedbackCount: number;
+        istranaFeedbackCount: number;
+        attestationCount: number;
+        lastTaskId: number | null;
+        lastScore: number | null;
+        lastChainTx: string | null;
+        updatedAt: number;
+    },
+): string {
+    const updated = data.updatedAt > 0 ? new Date(data.updatedAt).toISOString() : 'N/A';
+    const score = data.lastScore ?? 'N/A';
+    const lastTask = data.lastTaskId ?? 'N/A';
+    const chainTx = data.lastChainTx ?? 'N/A';
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Agent.im Interop Dashboard</title>
+  </head>
+  <body>
+    <h1>Agent.im Interop Dashboard</h1>
+    <p><strong>Agent:</strong> ${escapeHtml(agent)}</p>
+    <ul>
+      <li><strong>Identity Registered:</strong> ${data.identityRegistered ? 'Yes' : 'No'}</li>
+      <li><strong>ERC-8004 Feedback Count:</strong> ${data.erc8004FeedbackCount}</li>
+      <li><strong>Istrana Feedback Count:</strong> ${data.istranaFeedbackCount}</li>
+      <li><strong>TaskCompletion Attestations:</strong> ${data.attestationCount}</li>
+      <li><strong>Last Task:</strong> ${lastTask}</li>
+      <li><strong>Last Score:</strong> ${score}</li>
+      <li><strong>Last Chain Tx:</strong> ${escapeHtml(chainTx)}</li>
+      <li><strong>Updated At:</strong> ${updated}</li>
+    </ul>
+  </body>
+</html>`;
+}
+
+function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
+    if (!value || typeof value !== 'object') return false;
+    const event = value as Partial<InteropSyncEvent>;
+    return (
+        event.type === 'interop_sync' &&
+        typeof event.winner === 'string' &&
+        typeof event.taskId === 'number' &&
+        typeof event.score === 'number' &&
+        typeof event.category === 'number' &&
+        typeof event.chainTx === 'string' &&
+        typeof event.judgedAt === 'number' &&
+        typeof event.identityRegistered === 'boolean' &&
+        Array.isArray(event.feedbackTargets) &&
+        typeof event.erc8004FeedbackPublished === 'boolean' &&
+        typeof event.istranaFeedbackPublished === 'boolean' &&
+        typeof event.attestationPublished === 'boolean'
+    );
+}
+
+function verifyInteroperabilitySignature(
+    body: string,
+    timestampHeader: string | string[] | undefined,
+    signatureHeader: string | string[] | undefined,
+    secret: string,
+): boolean {
+    const timestamp = Array.isArray(timestampHeader) ? timestampHeader[0] : timestampHeader;
+    const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+    if (!timestamp || !signature) return false;
+    const expected = createHmac('sha256', secret)
+        .update(`${timestamp}.${body}`)
+        .digest('hex');
+    try {
+        return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    } catch {
+        return false;
+    }
+}
+
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }

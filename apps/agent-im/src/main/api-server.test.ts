@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { createApiServer } from './api-server.ts';
 import { createAppStore } from '../renderer/lib/store.ts';
 import {
@@ -103,5 +104,109 @@ describe('API Server', () => {
         assert.equal(data.version, '0.1.0');
         assert.ok(data.uptime > 0);
         assert.equal(data.authenticated, true); // from previous test
+    });
+
+    it('POST /interop/events stores interoperability status', async () => {
+        const payload = {
+            type: 'interop_sync',
+            winner: 'agent-x',
+            taskId: 21,
+            score: 93,
+            category: 2,
+            chainTx: 'sig-x',
+            judgedAt: Date.now(),
+            identityRegistered: true,
+            feedbackTargets: ['erc8004_feedback', 'istrana_feedback'],
+            erc8004FeedbackPublished: true,
+            istranaFeedbackPublished: true,
+            attestationPublished: true,
+        };
+        const res = await fetch(url('/interop/events'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        assert.equal(data.snapshot.agent, 'agent-x');
+        assert.equal(data.snapshot.erc8004FeedbackCount, 1);
+    });
+
+    it('GET /interop/status returns stored snapshot', async () => {
+        const res = await fetch(url('/interop/status?agent=agent-x'));
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.status.agent, 'agent-x');
+        assert.equal(data.status.identityRegistered, true);
+        assert.equal(data.status.istranaFeedbackCount, 1);
+    });
+
+    it('GET /interop/dashboard renders html summary', async () => {
+        const res = await fetch(url('/interop/dashboard?agent=agent-x'));
+        assert.equal(res.status, 200);
+        const html = await res.text();
+        assert.ok(html.includes('Agent.im Interop Dashboard'));
+        assert.ok(html.includes('agent-x'));
+    });
+});
+
+describe('API Server interop signature verification', () => {
+    it('rejects interop event with invalid signature', async () => {
+        const signedStore = createAppStore();
+        const hub = new InMemoryMagicBlockHub({ latencyMs: 5 });
+        const transport = new InMemoryMagicBlockTransport(hub);
+        const agent = new MagicBlockA2AAgent('sig-agent', transport);
+        agent.start();
+        const signedApi = createApiServer(
+            { store: signedStore, a2aAgent: agent },
+            { port: 0, interopSigningSecret: 'secret-interop' },
+        );
+        const signedPort = await signedApi.start();
+
+        try {
+            const payload = JSON.stringify({
+                type: 'interop_sync',
+                winner: 'agent-sig',
+                taskId: 1,
+                score: 80,
+                category: 1,
+                chainTx: 'sig',
+                judgedAt: Date.now(),
+                identityRegistered: true,
+                feedbackTargets: [],
+                erc8004FeedbackPublished: false,
+                istranaFeedbackPublished: false,
+                attestationPublished: false,
+            });
+
+            const badRes = await fetch(`http://127.0.0.1:${signedPort}/interop/events`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-gradience-signature-ts': '123',
+                    'x-gradience-signature': 'bad',
+                },
+                body: payload,
+            });
+            assert.equal(badRes.status, 401);
+
+            const ts = String(Math.floor(Date.now() / 1000));
+            const signature = createHmac('sha256', 'secret-interop')
+                .update(`${ts}.${payload}`)
+                .digest('hex');
+            const okRes = await fetch(`http://127.0.0.1:${signedPort}/interop/events`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-gradience-signature-ts': ts,
+                    'x-gradience-signature': signature,
+                },
+                body: payload,
+            });
+            assert.equal(okRes.status, 200);
+        } finally {
+            await signedApi.stop();
+        }
     });
 });

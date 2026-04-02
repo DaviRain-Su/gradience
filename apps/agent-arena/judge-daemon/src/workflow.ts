@@ -14,6 +14,7 @@ import {
     type ScoreEvaluator,
     evaluateWithRetry,
 } from './evaluators.js';
+import type { InteropPublisher, ReputationInteropSignal } from './interop.js';
 import { RefResolver } from './refs.js';
 import type { WorkflowRecord } from './types.js';
 
@@ -76,6 +77,7 @@ export interface JudgeWorkflowRunnerOptions {
     typeCEvaluator: ScoreEvaluator;
     refResolver: ReferenceClient;
     chainClient: JudgeChainClient;
+    interopPublisher?: InteropPublisher;
     logger?: Pick<Console, 'info' | 'warn' | 'error'>;
 }
 
@@ -155,12 +157,25 @@ export class JudgeWorkflowRunner {
                 ts: Math.floor(Date.now() / 1000),
             });
 
-            await this.options.chainClient.judge({
+            const chainTx = await this.options.chainClient.judge({
                 taskId: workflow.taskId,
                 winner: toAddress(submission.agent),
                 poster: toAddress(task.poster),
                 score: judged.score,
                 reasonRef,
+            });
+            await this.publishInterop({
+                taskId: workflow.taskId,
+                category: task.category,
+                winner: submission.agent,
+                poster: task.poster,
+                judge: task.judge,
+                score: judged.score,
+                reward: task.reward,
+                reasonRef,
+                chainTx,
+                judgedAt: Math.floor(Date.now() / 1000),
+                judgeMode: task.judge_mode,
             });
             await this.engine.markCompleted(workflow.id);
             this.logger.info(
@@ -202,6 +217,20 @@ export class JudgeWorkflowRunner {
             `Task ${request.taskId} confidence ${automated.confidence.toFixed(2)} < ${minConfidence}, fallback to Type A`,
         );
         return this.options.typeAEvaluator.evaluate(request);
+    }
+
+    private async publishInterop(signal: ReputationInteropSignal): Promise<void> {
+        const publisher = this.options.interopPublisher;
+        if (!publisher) {
+            return;
+        }
+        try {
+            await publisher.onTaskJudged(signal);
+        } catch (error) {
+            this.logger.error(
+                `Interop publish failed for task ${signal.taskId}: ${asMessage(error)}`,
+            );
+        }
     }
 }
 

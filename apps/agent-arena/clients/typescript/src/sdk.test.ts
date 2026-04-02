@@ -265,6 +265,53 @@ test('task.submissions returns null on indexer 404', async () => {
     }
 });
 
+test('attestations.list returns null on 404', async () => {
+    const sdk = new GradienceSDK();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () =>
+        new Response('not found', {
+            status: 404,
+            statusText: 'Not Found',
+        });
+
+    try {
+        const result = await sdk.attestations.list('agent-unknown');
+        assert.equal(result, null);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('attestations.list returns attestation array', async () => {
+    const sdk = new GradienceSDK();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () =>
+        new Response(
+            JSON.stringify([
+                {
+                    task_id: 42,
+                    task_category: 2,
+                    judge_method: 1,
+                    score: 88,
+                    reward_amount: '1000000',
+                    completed_at: 1710000000,
+                    credential: 'cred-pda',
+                    schema: 'task-completion',
+                },
+            ]),
+            { status: 200 },
+        );
+
+    try {
+        const result = await sdk.attestations.list('agent-known');
+        assert.ok(result);
+        assert.equal(result.length, 1);
+        assert.equal(result[0]?.task_id, 42);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 function createMockRpc(data: Uint8Array | null): unknown {
     return {
         getAccountInfo: () => ({
