@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore, store } from '../hooks/useAppStore.ts';
 import { VoiceButton } from '../components/voice-button.tsx';
-import {
-    InMemoryMagicBlockHub,
-    InMemoryMagicBlockTransport,
-    MagicBlockA2AAgent,
-} from '../lib/a2a-client.ts';
+import { MagicBlockA2AAgent } from '../lib/a2a-client.ts';
+import { createAutoTransport } from '../lib/relay-transport.ts';
 import type { ChatMessage } from '../../shared/types.ts';
 import { getAgentImWebEntryApiClient, type WebAgentItem } from '../lib/web-entry-api.ts';
 import {
@@ -23,8 +20,7 @@ let a2aStarted = false;
 
 function getA2AAgent(agentId: string): MagicBlockA2AAgent {
     if (!a2aAgent || a2aAgent === null) {
-        const hub = new InMemoryMagicBlockHub({ latencyMs: 20 });
-        const transport = new InMemoryMagicBlockTransport(hub);
+        const transport = createAutoTransport(agentId);
         a2aAgent = new MagicBlockA2AAgent(agentId, transport);
     }
     if (!a2aStarted) {
@@ -61,6 +57,10 @@ export function ChatView() {
 
     const [inputText, setInputText] = useState('');
     const [topic, setTopic] = useState('general');
+    const [showTaskForm, setShowTaskForm] = useState(false);
+    const [taskReward, setTaskReward] = useState('');
+    const [taskDescription, setTaskDescription] = useState('');
+    const [taskPosting, setTaskPosting] = useState(false);
     const [webAgents, setWebAgents] = useState<WebAgentItem[]>([]);
     const [webPairCode, setWebPairCode] = useState<string | null>(null);
     const [webPairExpiresAt, setWebPairExpiresAt] = useState<number | null>(null);
@@ -419,9 +419,95 @@ export function ChatView() {
                 )}
             </div>
 
+            {/* Quick Task Form */}
+            {showTaskForm && activeConversation && (
+                <div className="p-4 border-t border-gray-800 bg-gray-950 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">Post Task to {activeConversation.slice(0, 12)}...</p>
+                        <button onClick={() => setShowTaskForm(false)} className="text-xs text-gray-500 hover:text-white">Close</button>
+                    </div>
+                    <input
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        placeholder="Task description / eval_ref (CID)"
+                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm"
+                    />
+                    <div className="flex gap-2">
+                        <input
+                            value={taskReward}
+                            onChange={(e) => setTaskReward(e.target.value)}
+                            placeholder="Reward (lamports)"
+                            type="number"
+                            className="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm"
+                        />
+                        <button
+                            onClick={async () => {
+                                if (!taskDescription.trim() || !taskReward.trim()) return;
+                                setTaskPosting(true);
+                                try {
+                                    const res = await fetch('http://127.0.0.1:3939/tasks/post', {
+                                        method: 'POST',
+                                        headers: { 'content-type': 'application/json' },
+                                        body: JSON.stringify({
+                                            description: taskDescription.trim(),
+                                            evalRef: taskDescription.trim(),
+                                            reward: Number(taskReward),
+                                            category: 0,
+                                            deadline: Math.floor(Date.now() / 1000) + 86400,
+                                            judgeDeadline: Math.floor(Date.now() / 1000) + 172800,
+                                            minStake: 0,
+                                        }),
+                                        signal: AbortSignal.timeout(10000),
+                                    });
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        const agent = getA2AAgent(publicKey!);
+                                        agent.sendInvite({
+                                            to: activeConversation,
+                                            topic: 'task_posted',
+                                            message: `Task #${(data as {taskId?: number}).taskId ?? '?'} posted with reward ${taskReward} lamports. Apply now!`,
+                                        });
+                                        const msg: ChatMessage = {
+                                            id: `${Date.now()}-task-post`,
+                                            peerAddress: activeConversation,
+                                            direction: 'outgoing',
+                                            topic: 'task_posted',
+                                            message: `Posted Task #${(data as {taskId?: number}).taskId ?? '?'} — reward: ${taskReward} lamports`,
+                                            paymentMicrolamports: 0,
+                                            status: 'sent',
+                                            createdAt: Date.now(),
+                                        };
+                                        addMessage(msg);
+                                        setShowTaskForm(false);
+                                        setTaskDescription('');
+                                        setTaskReward('');
+                                    }
+                                } catch {
+                                    // Task post failed — user can retry
+                                } finally {
+                                    setTaskPosting(false);
+                                }
+                            }}
+                            disabled={taskPosting || !taskDescription.trim() || !taskReward.trim()}
+                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 rounded text-sm font-medium transition"
+                        >
+                            {taskPosting ? 'Posting...' : 'Post Task'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Input */}
             <div className="p-4 border-t border-gray-800 bg-gray-900">
                 <div className="flex gap-2">
+                    <button
+                        onClick={() => setShowTaskForm(!showTaskForm)}
+                        disabled={!activeConversation}
+                        className="px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg text-sm transition"
+                        title="Post a task"
+                    >
+                        +
+                    </button>
                     <input
                         type="text"
                         value={inputText}

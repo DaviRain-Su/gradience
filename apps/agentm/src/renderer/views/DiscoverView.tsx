@@ -3,6 +3,7 @@ import { useAppStore } from '../hooks/useAppStore.ts';
 import { useDiscover } from '../hooks/useDiscover.ts';
 import { useArenaTasks } from '../hooks/useArenaTasks.ts';
 import { sortAndFilterAgents } from '../lib/ranking.ts';
+import type { AgentDiscoveryRow } from '../../shared/types.ts';
 
 export function DiscoverView() {
     const discoveryRows = useAppStore((s) => s.discoveryRows);
@@ -12,6 +13,7 @@ export function DiscoverView() {
 
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState(0);
+    const [selectedAgent, setSelectedAgent] = useState<AgentDiscoveryRow | null>(null);
     const [resultRefDrafts, setResultRefDrafts] = useState<Record<number, string>>({});
     const [traceRefDrafts, setTraceRefDrafts] = useState<Record<number, string>>({});
     const { loading, error, refresh, categories } = useDiscover(category);
@@ -197,7 +199,11 @@ export function DiscoverView() {
             {/* Agent list */}
             <div className="space-y-2">
                 {ranked.map((row, i) => (
-                    <div key={row.agent} className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex items-center justify-between">
+                    <div
+                        key={row.agent}
+                        className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex items-center justify-between cursor-pointer hover:border-gray-600 transition"
+                        onClick={() => setSelectedAgent(row)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm font-bold">
                                 {i + 1}
@@ -212,10 +218,13 @@ export function DiscoverView() {
                             </div>
                         </div>
                         <button
-                            onClick={() => inviteAgent(row.agent)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                inviteAgent(row.agent);
+                            }}
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm transition"
                         >
-                            Invite
+                            Chat
                         </button>
                     </div>
                 ))}
@@ -224,6 +233,86 @@ export function DiscoverView() {
                         {discoveryRows.length > 0 ? 'No agents match your search.' : 'No agents found. Try loading demo data or start the Indexer.'}
                     </p>
                 )}
+            </div>
+
+            {/* Agent Detail Modal */}
+            {selectedAgent && (
+                <AgentDetailModal
+                    agent={selectedAgent}
+                    onClose={() => setSelectedAgent(null)}
+                    onChat={() => {
+                        inviteAgent(selectedAgent.agent);
+                        setSelectedAgent(null);
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+function AgentDetailModal({
+    agent,
+    onClose,
+    onChat,
+}: {
+    agent: AgentDiscoveryRow;
+    onClose: () => void;
+    onChat: () => void;
+}) {
+    const rep = agent.reputation;
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+            <div
+                className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md space-y-4"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-xl font-bold">
+                        {agent.agent.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold">{agent.agent}</h3>
+                        <p className="text-xs text-gray-500">weight: {agent.weight}</p>
+                    </div>
+                </div>
+
+                {rep ? (
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-xs text-gray-500">Avg Score</p>
+                            <p className="text-xl font-bold">{rep.global_avg_score.toFixed(1)}</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-xs text-gray-500">Completed</p>
+                            <p className="text-xl font-bold">{rep.global_completed}</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-xs text-gray-500">Applied</p>
+                            <p className="text-xl font-bold">{rep.global_total_applied}</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-xs text-gray-500">Win Rate</p>
+                            <p className="text-xl font-bold">{(rep.win_rate * 100).toFixed(0)}%</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500">No reputation data yet.</p>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                    <button
+                        onClick={onChat}
+                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition"
+                    >
+                        Start Chat
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 transition"
+                    >
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     );

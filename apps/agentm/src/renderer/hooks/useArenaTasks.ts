@@ -77,6 +77,9 @@ export function useArenaTasks() {
 
     useEffect(() => {
         void refresh();
+        // Auto-refresh every 30s for task status updates
+        const interval = setInterval(() => void refresh(), 30_000);
+        return () => clearInterval(interval);
     }, [refresh]);
 
     const enriched = useMemo(() => {

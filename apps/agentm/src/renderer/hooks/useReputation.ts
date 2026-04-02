@@ -23,7 +23,11 @@ export function useReputation(address: string | null) {
         }
     }, [address]);
 
-    useEffect(() => { refresh(); }, [refresh]);
+    useEffect(() => {
+        refresh();
+        const interval = setInterval(() => void refresh(), 30_000);
+        return () => clearInterval(interval);
+    }, [refresh]);
 
     return { reputation, loading, error, refresh };
 }
