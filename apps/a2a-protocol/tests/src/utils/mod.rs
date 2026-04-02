@@ -217,6 +217,8 @@ pub fn build_upsert_agent_profile_ix(
         capability_mask,
         transport_flags,
         metadata_uri_hash,
+        status: 1, // Active
+        heartbeat_slot: 0,
     };
     let mut ix_data = vec![1u8]; // discriminator 1 = UpsertAgentProfile
     ix_data.extend_from_slice(&borsh::to_vec(&data).unwrap());
@@ -276,7 +278,6 @@ pub fn build_create_thread_ix(
     use a2a_protocol::instructions::CreateThreadData;
 
     let (thread_pda, _) = find_thread_pda(creator, counterparty, thread_id);
-    let (config_pda, _) = find_config_pda();
     let data = CreateThreadData {
         thread_id,
         counterparty: counterparty.to_bytes(),
@@ -290,7 +291,6 @@ pub fn build_create_thread_ix(
         accounts: vec![
             AccountMeta::new(*creator, true),
             AccountMeta::new(thread_pda, false),
-            AccountMeta::new_readonly(config_pda, false),
             AccountMeta::new_readonly(system_program::id(), false),
         ],
         data: ix_data,
