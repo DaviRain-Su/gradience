@@ -73,6 +73,16 @@ export function Hero() {
             Gradience defines Agent capability exchange with Escrow + Judge + Reputation.
           </blockquote>
         </div>
+
+        {/* ChainHub as Credit Infrastructure */}
+        <div className="mt-8 max-w-2xl mx-auto text-center">
+          <p className="text-xs text-[var(--text-3)] leading-relaxed">
+            Powered by <span className="text-[var(--text-2)] font-medium">ChainHub</span> —
+            the credit infrastructure for the agent economy.
+            Any protocol can join by implementing the Agent Protocol and connecting to our reputation layer.
+            Settlement flows through Magic Block; trust is established through ChainHub.
+          </p>
+        </div>
       </div>
 
       {/* Scroll hint */}

@@ -121,5 +121,5 @@ NO_DNA=1 gradience task status 1
 
 - [Gradience Protocol](https://gradience.xyz)
 - [Whitepaper](https://github.com/gradience-protocol/gradience)
-- [AgentM](https://agentm.xyz) — User-facing desktop app
-- [AgentM Pro](https://pro.agentm.xyz) — Developer dashboard
+- [AgentM](https://agentm.gradience.syz) — User-facing desktop app
+- [AgentM Pro](https://pro.gradience.syz) — Developer dashboard

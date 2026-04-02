@@ -1,150 +1,260 @@
-# Phase 5: Test Spec — AgentM Pro
+# AgentM Pro - Test Spec (Phase 5)
 
-> **目的**: 定义 AgentM Pro 各组件的测试策略和验收用例
-> **输入**: `03-technical-spec.md` + `04-task-breakdown.md`
-> **输出物**: 本文档
-> **日期**: 2026-04-03
+## 1. 测试策略
+
+- **Unit Tests**: Jest + React Testing Library，覆盖 hooks 和 components
+- **Integration Tests**: 测试 SDK 集成和 API 调用
+- **E2E Tests**: Playwright，覆盖核心用户流程
+
+## 2. 单元测试
+
+### 2.1 Hooks
+
+#### useProfile.test.ts
+```typescript
+describe('useProfile', () => {
+  describe('create', () => {
+    it('should create profile with valid data', async () => {
+      // Arrange
+      const profile = generateValidProfile();
+      
+      // Act
+      const result = await createProfile(profile);
+      
+      // Assert
+      expect(result.id).toBeDefined();
+      expect(result.name).toBe(profile.name);
+    });
+
+    it('should reject invalid name (too short)', async () => {
+      // Arrange
+      const profile = { ...generateValidProfile(), name: 'ab' };
+      
+      // Act & Assert
+      await expect(createProfile(profile)).rejects.toThrow('INVALID_NAME');
+    });
+
+    it('should reject duplicate name', async () => {
+      // Arrange
+      const profile = generateValidProfile();
+      await createProfile(profile);
+      
+      // Act & Assert
+      await expect(createProfile(profile)).rejects.toThrow('CONFLICT');
+    });
+  });
+
+  describe('update', () => {
+    it('should update own profile', async () => {
+      // Arrange
+      const profile = await createProfile(generateValidProfile());
+      
+      // Act
+      const updated = await updateProfile(profile.id, { name: 'New Name' });
+      
+      // Assert
+      expect(updated.name).toBe('New Name');
+    });
+
+    it('should reject update to other profile', async () => {
+      // Arrange
+      const otherProfile = await createProfileAsOtherUser();
+      
+      // Act & Assert
+      await expect(
+        updateProfile(otherProfile.id, { name: 'Hacked' })
+      ).rejects.toThrow('FORBIDDEN');
+    });
+  });
+});
+```
+
+### 2.2 Components
+
+#### ProfileForm.test.tsx
+```typescript
+describe('ProfileForm', () => {
+  it('should render all required fields', () => {
+    render(<ProfileForm onSubmit={jest.fn()} />);
+    
+    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/version/i)).toBeInTheDocument();
+  });
+
+  it('should show validation error for empty name', async () => {
+    render(<ProfileForm onSubmit={jest.fn()} />);
+    
+    fireEvent.click(screen.getByText(/submit/i));
+    
+    await waitFor(() => {
+      expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should call onSubmit with form data', async () => {
+    const onSubmit = jest.fn();
+    render(<ProfileForm onSubmit={onSubmit} />);
+    
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: 'Test Agent' }
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: 'A test agent description' }
+    });
+    fireEvent.click(screen.getByText(/submit/i));
+    
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Test Agent'
+      }));
+    });
+  });
+});
+```
+
+## 3. 集成测试
+
+### 3.1 SDK 集成
+```typescript
+describe('SDK Integration', () => {
+  it('should fetch reputation from ChainHub', async () => {
+    // Arrange
+    const agentId = 'test-agent-id';
+    
+    // Act
+    const reputation = await sdk.reputation.get(agentId);
+    
+    // Assert
+    expect(reputation.overallScore).toBeGreaterThanOrEqual(0);
+    expect(reputation.overallScore).toBeLessThanOrEqual(100);
+  });
+
+  it('should handle network errors gracefully', async () => {
+    // Arrange
+    server.use(
+      rest.get('/api/v1/reputation/*', (req, res, ctx) => {
+        return res.networkError('Failed to connect');
+      })
+    );
+    
+    // Act & Assert
+    await expect(sdk.reputation.get('test-id')).rejects.toThrow();
+  });
+});
+```
+
+## 4. E2E 测试 (Playwright)
+
+### 4.1 核心流程
+
+#### create-profile.spec.ts
+```typescript
+test('developer can create and publish agent profile', async ({ page }) => {
+  // Step 1: Login
+  await page.goto('/');
+  await page.click('[data-testid="login-button"]');
+  await page.waitForSelector('[data-testid="dashboard"]');
+
+  // Step 2: Navigate to create profile
+  await page.click('[data-testid="create-profile-button"]');
+  await page.waitForURL('**/profiles/create');
+
+  // Step 3: Fill form
+  await page.fill('[data-testid="profile-name"]', 'My Test Agent');
+  await page.fill('[data-testid="profile-description"]', 
+    'This is a test agent for E2E testing');
+  await page.fill('[data-testid="profile-version"]', '1.0.0');
+  
+  // Add capability
+  await page.click('[data-testid="add-capability"]');
+  await page.fill('[data-testid="capability-name"]', 'text-generation');
+  await page.fill('[data-testid="capability-description"]', 'Generate text');
+
+  // Step 4: Submit
+  await page.click('[data-testid="submit-profile"]');
+
+  // Step 5: Verify
+  await page.waitForURL('**/profiles/*');
+  await expect(page.locator('[data-testid="profile-name-display"]'))
+    .toHaveText('My Test Agent');
+  await expect(page.locator('[data-testid="success-toast"]'))
+    .toBeVisible();
+});
+```
+
+#### view-reputation.spec.ts
+```typescript
+test('developer can view agent reputation', async ({ page }) => {
+  // Arrange: Create a profile first
+  const profile = await createTestProfile();
+  
+  // Act
+  await page.goto(`/profiles/${profile.id}`);
+  await page.click('[data-testid="reputation-tab"]');
+
+  // Assert
+  await expect(page.locator('[data-testid="reputation-score"]'))
+    .toBeVisible();
+  await expect(page.locator('[data-testid="metrics-reliability"]'))
+    .toBeVisible();
+});
+```
+
+## 5. 测试覆盖率要求
+
+| 类别 | 目标覆盖率 | 关键路径 |
+|------|-----------|----------|
+| Unit Tests | > 80% | Hooks, Utils |
+| Component Tests | > 70% | Forms, Cards |
+| Integration | > 60% | SDK calls |
+| E2E | 100% | Core flows |
+
+## 6. 测试数据
+
+### 6.1 Fixtures
+```typescript
+// fixtures/profiles.ts
+export const validProfile = {
+  name: 'Test Agent',
+  description: 'A test agent for testing purposes',
+  version: '1.0.0',
+  capabilities: [{
+    name: 'echo',
+    description: 'Echo input back',
+    inputSchema: { type: 'object', properties: { message: { type: 'string' } } },
+    outputSchema: { type: 'object', properties: { message: { type: 'string' } } }
+  }],
+  pricing: { model: 'per_call', amount: 1000000, currency: 'SOL' }
+};
+
+export const invalidProfiles = {
+  shortName: { ...validProfile, name: 'ab' },
+  longDescription: { ...validProfile, description: 'a'.repeat(501) },
+  invalidVersion: { ...validProfile, version: 'not-semver' },
+};
+```
+
+## 7. CI/CD 集成
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run test:unit -- --coverage
+      - run: npm run test:e2e
+```
 
 ---
-
-## 5.1 测试策略
-
-| 层 | 工具 | 运行环境 |
-|----|------|---------|
-| SDK 单元测试 | `tsx --test` + node:test | Node.js（无浏览器） |
-| CLI 单元测试 | `tsx --test` + node:test | Node.js + mock SDK |
-| Dashboard 组件 | 手动验证（无 E2E 框架） | 浏览器 |
-| Indexer API | curl / E2E 脚本 | Docker + PostgreSQL |
-| Profile Studio | `tsx --test` + E2E 脚本 | Node.js + Indexer |
-| 端到端集成 | `scripts/e2e-w2-integration.ts` | 全栈 |
-
----
-
-## 5.2 SDK 测试（已有 20 tests）
-
-### 现有覆盖
-
-| 测试文件 | 场景数 | 覆盖范围 |
-|----------|--------|---------|
-| `sdk.test.ts` | 20 | getTasks, getTask, getReputation, judgePool, attestations, config, postSimple, submitTaskResult |
-
-### 新增测试（Profile 相关）
-
-| # | 场景 | 输入 | 预期输出 |
-|---|------|------|---------|
-| S-01 | getAgentProfile 返回 Profile | pubkey 有 Profile | `{ display_name, bio, links }` |
-| S-02 | getAgentProfile 无 Profile 返回 null | pubkey 无记录 | `null` |
-| S-03 | updateAgentProfile 成功更新 | 有效 Profile JSON | `{ ok: true }` |
-| S-04 | updateAgentProfile 拒绝空 display_name | `display_name: ""` | 错误 |
-
----
-
-## 5.3 CLI 测试（已有 13 tests）
-
-### 现有覆盖
-
-| 测试文件 | 场景数 | 覆盖范围 |
-|----------|--------|---------|
-| `gradience.test.ts` | 13 | task post/apply/submit/judge/cancel/refund/status, judge register/unstake, NO_DNA 输出 |
-
-### 新增测试（Profile 命令）
-
-| # | 场景 | 命令 | 预期输出 |
-|---|------|------|---------|
-| C-01 | profile show 返回当前 Profile | `gradience profile show` | JSON 格式 Profile |
-| C-02 | profile update 更新 display_name | `gradience profile update --name "Alice"` | `{ ok: true }` |
-| C-03 | NO_DNA profile show 输出纯 JSON | `NO_DNA=1 gradience profile show` | 结构化 JSON |
-
----
-
-## 5.4 Profile Studio 测试
-
-### Indexer Profile API
-
-| # | 场景 | 方法 + 路径 | 预期 |
-|---|------|------------|------|
-| P-01 | GET profile 存在 | `GET /api/agents/{pubkey}/profile` | 200 + Profile JSON |
-| P-02 | GET profile 不存在 | `GET /api/agents/{unknown}/profile` | 404 |
-| P-03 | PUT profile 成功 | `PUT /api/agents/{pubkey}/profile` + auth | 200 + `{ ok: true }` |
-| P-04 | PUT profile 无认证被拒 | `PUT /api/agents/{pubkey}/profile` 无 auth | 401 |
-| P-05 | PUT profile 无效字段被拒 | `display_name` 超长 | 400 |
-
-### 链上引用一致性
-
-| # | 场景 | 预期 |
-|---|------|------|
-| P-06 | Profile 保存后链上 hash 匹配 | `AgentProfile.metadata_uri_hash == sha256(profile_json)` |
-| P-07 | Profile 更新后链上 hash 更新 | 修改 bio → 链上 hash 变化 |
-
-### AgentM 消费端
-
-| # | 场景 | 预期 |
-|---|------|------|
-| P-08 | AgentM 详情 Modal 显示 display_name | Profile 有 display_name 时显示 |
-| P-09 | AgentM 详情 Modal 无 Profile 时显示 pubkey | 降级显示 |
-| P-10 | Git webhook 同步后 AgentM 展示更新 | 无手工发布也能读取最新 Profile |
-
----
-
-## 5.5 Dashboard 测试
-
-| # | 页面 | 场景 | 预期 |
-|---|------|------|------|
-| D-01 | / (首页) | 钱包已连接 | 显示 Agent Overview（声誉/收入/任务） |
-| D-02 | / (首页) | 钱包未连接 | 显示 "Connect Wallet" 提示 |
-| D-03 | / (首页) | Indexer 离线 | 显示 "Indexer offline" |
-| D-04 | /profile | 编辑并保存 | 数据持久化，刷新后仍在 |
-| D-05 | /tasks/[id] | 查看任务详情 | 提交列表正确，Judge 按钮条件显示 |
-
----
-
-## 5.6 端到端集成测试
-
-### 已有（12 tests）
-
-`scripts/e2e-w2-integration.ts`:
-- Indexer health (2)
-- Indexer REST API (6)
-- SDK → Indexer (4)
-
-### 新增（Profile 闭环）
-
-| # | 场景 | 步骤 | 预期 |
-|---|------|------|------|
-| E-01 | Profile 发布闭环 | CLI update → Indexer GET → AgentM 详情 | 三层数据一致 |
-| E-02 | Profile 链上引用 | CLI update → SDK getAgentProfile → 链上 hash | hash 一致 |
-| E-03 | Git 同步发布闭环 | push profile repo → webhook → AgentM 详情 | 自动更新成功 |
-
----
-
-## 5.7 Agent 模板测试（P1）
-
-| # | 场景 | 预期 |
-|---|------|------|
-| T-01 | `gradience create-agent my-agent` | 生成目录结构正确 |
-| T-02 | 生成项目 `npm install` | 依赖安装成功 |
-| T-03 | 生成项目 `npm start` | 启动成功（连接 devnet） |
-
----
-
-## 5.8 测试覆盖目标
-
-| 组件 | 现有 | 新增 | 目标 |
-|------|------|------|------|
-| SDK | 20 | 4 | 24 |
-| CLI | 13 | 3 | 16 |
-| Profile API | 0 | 7 | 7 |
-| Dashboard | 0 | 5（手动） | 5 |
-| E2E | 12 | 3 | 15 |
-| Agent 模板 | 0 | 3 | 3 |
-| **合计** | **45** | **24** | **69** |
-
----
-
-## ✅ Phase 5 验收标准
-
-- [x] 每个组件（SDK/CLI/Profile/Dashboard/E2E）都有测试用例
-- [x] Happy Path + Boundary + Error 三类覆盖
-- [x] Profile Studio 闭环测试（编辑→保存→链上→消费）
-- [x] 与 Phase 4 任务一一对应
-- [x] 测试工具和运行环境已明确
+**Status:** Draft  
+**Created:** 2026-04-03  
+**Owner:** Product Manager

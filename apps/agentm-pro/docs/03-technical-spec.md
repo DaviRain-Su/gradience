@@ -1,359 +1,258 @@
-# Phase 3: Technical Spec — AgentM Pro
+# AgentM Pro - Technical Spec (Phase 3)
 
-> **目的**: 定义 AgentM Pro 每个接口的精确行为
-> **输入**: `02-architecture.md` + 现有代码
-> **输出物**: 本文档
+## 1. 数据结构
 
----
-
-## 3.1 Dashboard API
-
-Dashboard 是 Next.js 应用，通过 Indexer REST API + SDK 链上查询获取数据。
-
-### 3.1.1 页面规格
-
-#### 首页 — Agent Overview
-
-```
-路由: /
-数据源: GET /api/agents/{pubkey}/reputation + GET /api/tasks?poster={pubkey}
-```
-
-| 区域 | 字段 | 来源 |
-|------|------|------|
-| Profile Card | pubkey, balance (SOL) | 钱包 |
-| Reputation | avg_score, completed, total_applied, win_rate | Indexer |
-| Income | total_earned (lamports → SOL) | Indexer reputation |
-| Active Tasks | 我发布的 open 任务列表 | Indexer tasks?poster=&state=open |
-| Recent Activity | 最近 10 个任务变动 | Indexer tasks?limit=10 |
-
-#### 任务详情页
-
-```
-路由: /tasks/[taskId]
-数据源: GET /api/tasks/{taskId} + GET /api/tasks/{taskId}/submissions
-```
-
-| 区域 | 字段 | 来源 |
-|------|------|------|
-| Task Info | task_id, poster, judge, reward, state, category, deadline | Indexer |
-| Submissions | agent, result_ref, trace_ref, score (if judged) | Indexer |
-| Actions | Judge 按钮（仅 task.judge === 当前钱包时显示） | SDK |
-
-#### 发布任务表单
-
-```
-路由: / (内嵌 Modal)
-提交: SDK task.post()
-```
-
-| 字段 | 类型 | 验证 |
-|------|------|------|
-| description | string | 非空，≤ 500 chars |
-| eval_ref | string | 非空，≤ 128 chars (CID) |
-| reward | number | > 0，单位 lamports |
-| category | select | 0-7 |
-| deadline | datetime | > now |
-| judge_deadline | datetime | > deadline |
-| min_stake | number | ≥ 0 |
-| judge_mode | select | Designated / Pool |
-| judge | pubkey | 仅 Designated 时必填 |
-
-#### Agent Profile Studio（新增）
-
-```
-路由: /profile
-数据源: GET /api/agents/{pubkey}/profile
-提交: PUT /api/agents/{pubkey}/profile
-```
-
-| 字段 | 类型 | 验证 |
-|------|------|------|
-| display_name | string | 非空，≤ 64 chars |
-| bio | string | 非空，≤ 280 chars |
-| website | string | 可选，合法 URL |
-| github | string | 可选，合法 URL |
-| x | string | 可选，合法 URL |
-| publish_mode | select | `manual` / `git-sync` |
-
-### 3.1.2 Dashboard 钱包集成
-
+### 1.1 AgentProfile
 ```typescript
-// 注入式钱包 (浏览器扩展: Phantom / Backpack)
-interface InjectedWalletAdapter {
-    connect(): Promise<{ publicKey: PublicKey }>;
-    signTransaction(tx: Transaction): Promise<Transaction>;
-    signAllTransactions(txs: Transaction[]): Promise<Transaction[]>;
-    disconnect(): Promise<void>;
+interface AgentProfile {
+  // Identity (Required)
+  id: string;                    // UUID v4, 36 chars
+  did: string;                   // Decentralized ID, format: "did:gradience:<pubkey>"
+  owner: string;                 // Solana pubkey, 44 chars base58
+  
+  // Profile Info (Required)
+  name: string;                  // 3-50 chars
+  description: string;           // 10-500 chars
+  version: string;               // Semver, e.g., "1.0.0"
+  
+  // Capabilities (Required)
+  capabilities: Capability[];    // Min 1, Max 10
+  
+  // Pricing (Required)
+  pricing: {
+    model: 'fixed' | 'per_call' | 'per_token';
+    amount: number;              // In lamports (SOL * 10^9)
+    currency: 'SOL';
+  };
+  
+  // Metadata (Optional)
+  tags: string[];                // Max 5 tags, each 2-20 chars
+  iconUrl?: string;              // IPFS URL or HTTPS, max 2048 chars
+  website?: string;              // Valid URL
+  
+  // System
+  createdAt: number;             // Unix timestamp (ms)
+  updatedAt: number;             // Unix timestamp (ms)
+  status: 'draft' | 'published' | 'deprecated';
 }
 
-// 本地签名 (开发测试用, 从 keypair file 加载)
-interface LocalSignerAdapter {
-    publicKey: PublicKey;
-    signTransaction(tx: Transaction): Promise<Transaction>;
+interface Capability {
+  id: string;                    // UUID
+  name: string;                  // 3-30 chars
+  description: string;           // 10-200 chars
+  inputSchema: JSONSchema;       // JSON Schema for input validation
+  outputSchema: JSONSchema;      // JSON Schema for output validation
 }
 ```
 
-**优先级**: 注入式钱包 > 本地签名 > 提示安装钱包
-
----
-
-## 3.2 CLI 命令规格
-
-### 3.2.1 配置命令
-
-```
-gradience config set rpc <url>
-gradience config set keypair <path>
-gradience config show
+### 1.2 AuthState
+```typescript
+interface AuthState {
+  authenticated: boolean;
+  publicKey: string | null;      // Solana pubkey
+  email: string | null;
+  privyUserId: string | null;
+}
 ```
 
-**存储**: `~/.gradience/config.json`
+### 1.3 ReputationData
+```typescript
+interface ReputationData {
+  agentId: string;
+  overallScore: number;          // 0-100
+  metrics: {
+    reliability: number;         // 0-100, based on completion rate
+    quality: number;             // 0-100, based on ratings
+    responsiveness: number;      // 0-100, based on response time
+  };
+  totalTasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  averageRating: number;         // 1-5 stars
+  lastUpdated: number;           // Unix timestamp
+}
+```
 
-```json
+## 2. API 接口
+
+### 2.1 Profile API
+
+#### Create Profile
+```typescript
+POST /api/v1/profiles
+
+// Request
 {
-  "rpcEndpoint": "https://api.devnet.solana.com",
-  "keypairPath": "~/.config/solana/id.json"
-}
-```
-
-### 3.2.2 任务命令
-
-```
-gradience task post \
-  --eval-ref <cid> \
-  --reward <lamports> \
-  --category <0-7> \
-  --deadline <unix-ts> \
-  --judge-deadline <unix-ts> \
-  --min-stake <lamports> \
-  [--judge <pubkey>] \
-  [--judge-mode designated|pool]
-```
-
-**NO_DNA 输出**:
-```json
-{ "ok": true, "signature": "5abc...", "taskId": 42 }
-```
-
-```
-gradience task apply <task_id>
-gradience task submit <task_id> --result-ref <cid> [--trace-ref <cid>]
-gradience task judge <task_id> --winner <pubkey> --score <60-100>
-gradience task cancel <task_id>
-gradience task refund <task_id>
-gradience task status <task_id>
-```
-
-### 3.2.3 Judge 命令
-
-```
-gradience judge register --categories <0,2,5> --stake <lamports>
-gradience judge unstake
-```
-
-### 3.2.4 Profile 命令（新增）
-
-```
-gradience profile register --display-name <name> --bio <text> [--website <url>] [--github <url>] [--x <url>]
-gradience profile update --display-name <name> --bio <text> [--website <url>] [--github <url>] [--x <url>]
-gradience profile publish --mode <manual|git-sync> [--content-ref <cid-or-hash>]
-gradience profile show [--agent <pubkey>]
-```
-
-### 3.2.5 Agent 模板命令 (P1)
-
-```
-gradience create-agent [name]
-```
-
-**生成结构**:
-```
-<name>/
-├── agent.ts          ← 主入口（监听任务 → 处理 → 提交）
-├── config.ts         ← 配置（RPC、keypair、策略）
-├── package.json      ← 依赖 @gradience/sdk
-├── tsconfig.json
-└── README.md         ← 快速开始说明
-```
-
-**agent.ts 模板**:
-```typescript
-import { GradienceSDK } from '@gradience/sdk';
-
-const sdk = new GradienceSDK({ rpcEndpoint: '...' });
-
-// 1. 监听新任务
-const tasks = await sdk.getTasks({ state: 'open', category: 1 });
-
-// 2. 申请任务
-for (const task of tasks) {
-    await sdk.applyForTask(wallet, { taskId: task.task_id });
+  name: string;
+  description: string;
+  version: string;
+  capabilities: Capability[];
+  pricing: Pricing;
+  tags?: string[];
+  iconUrl?: string;
+  website?: string;
 }
 
-// 3. 处理并提交结果
-// ... your logic here ...
-await sdk.submitTaskResult(wallet, { taskId, resultRef, traceRef });
-```
-
----
-
-## 3.3 SDK 公共 API
-
-### 3.3.1 初始化
-
-```typescript
-import { GradienceSDK } from '@gradience/sdk';
-
-const sdk = new GradienceSDK({
-    indexerEndpoint?: string;       // default: http://127.0.0.1:3001
-    attestationEndpoint?: string;   // default: same as indexer
-    programAddress?: Address;       // default: deployed program ID
-    rpcEndpoint?: string;           // default: http://127.0.0.1:8899
-});
-```
-
-### 3.3.2 任务操作
-
-```typescript
-// 高级 API（推荐）
-sdk.postSimple(wallet, { evalRef, reward, category, deadline, judgeDeadline, minStake })
-sdk.submitTaskResult(wallet, { taskId, resultRef, traceRef, runtimeEnv })
-sdk.judgeTask(wallet, { taskId, winner, score, reasonRef? })
-sdk.cancelTask(wallet, { taskId })
-sdk.refundExpiredTask(wallet, { taskId })
-
-
-### 3.3.3 Profile API（新增）
-
-```typescript
-interface AgentProfileApi {
-    agent: string;
-    display_name: string;
-    bio: string;
-    links: { website?: string; github?: string; x?: string };
-    onchain_ref: string | null;
-    publish_mode: 'manual' | 'git-sync';
-    updated_at: number;
-}
-```
-// 低级 API（完全控制）
-### 3.3.4 查询操作
-sdk.applyForTask(wallet, { taskId })
-sdk.submitResult(wallet, { taskId, resultRef, traceRef, runtimeEnv })
-sdk.judgeAndPay(wallet, { taskId, winner, score, reasonRef, loserApplications })
-```
-
-### 3.3.3 查询操作
-
-```typescript
-sdk.getTasks(params?): Promise<TaskApi[]>
-sdk.getTask(taskId): Promise<TaskApi | null>
-sdk.getTaskSubmissions(taskId): Promise<SubmissionApi[]>
-sdk.getReputation(agent): Promise<ReputationApi | null>
-sdk.getJudgePoolEntries(category): Promise<JudgePoolEntryApi[]>
-sdk.attestations.list(agent): Promise<TaskCompletionAttestationApi[] | null>
-sdk.attestations.listDecoded(agent): Promise<TaskCompletionAttestationRecord[] | null>
-sdk.config.get(): Promise<ProgramConfigOnChain | null>
-sdk.profile.get(agent): Promise<AgentProfileApi | null>
-sdk.profile.upsert(wallet, input): Promise<string>
-```
-
-### 3.3.5 链上查询
-
-```typescript
-sdk.getReputationOnChain(agent: Address): Promise<ReputationOnChain | null>
-sdk.getTaskOnChain(taskId: bigint): Promise<TaskOnChain | null>
-```
-
----
-
-## 3.4 npm 包发布规格
-
-### @gradience/sdk
-
-```json
+// Response 201
 {
-  "name": "@gradience/sdk",
-  "version": "0.1.0",
-  "main": "dist/sdk.js",
-  "types": "dist/sdk.d.ts",
-  "exports": {
-    ".": { "import": "./dist/sdk.js", "types": "./dist/sdk.d.ts" }
-  },
-  "peerDependencies": {
-    "@solana/kit": "^5.5.0"
-  }
+  success: true;
+  data: AgentProfile;
 }
+
+// Error Codes
+400 - Invalid input (validation failed)
+401 - Unauthorized (not authenticated)
+409 - Conflict (name already exists)
+429 - Rate limited
 ```
 
-### @gradience/cli
-
-```json
-{
-  "name": "@gradience/cli",
-  "version": "0.1.0",
-  "bin": { "gradience": "./gradience.ts" }
-}
-```
-
----
-
-## 3.5 Judge Daemon 配置
-
-```
-GRADIENCE_RPC_ENDPOINT=https://api.devnet.solana.com
-JUDGE_DAEMON_INDEXER_ENDPOINT=http://127.0.0.1:3001
-JUDGE_DAEMON_JUDGE_KEYPAIR=/path/to/keypair.json
-JUDGE_DAEMON_EVALUATOR_MODE=type_b    # type_a | type_b | type_c1 | auto
-```
-
----
-
-## 3.6 Agent 模板系统 (P1)
-
-### 模板类型
-
-| 模板 | 说明 | 适用场景 |
-|------|------|---------|
-| `basic` | 最小 Agent（监听 → 申请 → 提交） | 入门学习 |
-| `defi-strategy` | DeFi 策略 Agent | 策略竞赛 |
-| `code-review` | 代码审查 Agent | 开发任务 |
-| `judge` | Judge 节点 | 运行评判服务 |
-
-### 生成逻辑
-
+#### Get Profile
 ```typescript
-// gradience create-agent my-agent --template basic
-// 1. 从 templates/ 目录复制骨架
-// 2. 替换 {{name}}, {{programId}} 等占位符
-// 3. npm install
-// 4. 输出 Quick Start 说明
+GET /api/v1/profiles/:id
+
+// Response 200
+{
+  success: true;
+  data: AgentProfile;
+}
+
+// Error Codes
+404 - Profile not found
 ```
 
+#### Update Profile
+```typescript
+PUT /api/v1/profiles/:id
+
+// Request (partial update)
+{
+  name?: string;
+  description?: string;
+  version?: string;
+  capabilities?: Capability[];
+  pricing?: Pricing;
+  tags?: string[];
+  status?: 'draft' | 'published' | 'deprecated';
+}
+
+// Response 200
+{
+  success: true;
+  data: AgentProfile;
+}
+
+// Error Codes
+400 - Invalid input
+401 - Unauthorized (not owner)
+404 - Profile not found
+```
+
+#### List My Profiles
+```typescript
+GET /api/v1/profiles?owner=:pubkey&page=:number&limit=:number
+
+// Response 200
+{
+  success: true;
+  data: AgentProfile[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+```
+
+### 2.2 Reputation API
+
+#### Get Reputation
+```typescript
+GET /api/v1/reputation/:agentId
+
+// Response 200
+{
+  success: true;
+  data: ReputationData;
+}
+
+// Error Codes
+404 - Agent not found
+```
+
+## 3. 状态机
+
+### 3.1 Profile 状态机
+```
+                    create
+              ┌────────────────┐
+              │                ▼
+         ┌────┴────┐      ┌─────────┐     publish      ┌───────────┐
+         │  Start  │      │  Draft  │ ───────────────▶ │ Published │
+         └────┬────┘      └────┬────┘                  └─────┬─────┘
+              │                │                             │
+              │                │ delete                      │ deprecate
+              │                ▼                             ▼
+              │           ┌─────────┐                  ┌───────────┐
+              └─────────▶ │ Deleted │                  │Deprecated │
+                          └─────────┘                  └───────────┘
+                                                         ▲
+                                                         │ reactivate
+```
+
+状态转换规则：
+- `draft` → `published`: 所有必填字段已填写
+- `published` → `deprecated`: 所有者操作，已有任务不受影响
+- `deprecated` → `published`: 重新激活，需更新版本号
+- `draft`/`published`/`deprecated` → `deleted`: 软删除，保留数据
+
+## 4. 错误码定义
+
+### 4.1 HTTP Status Codes
+| Code | Meaning | When to use |
+|------|---------|-------------|
+| 200 | OK | GET, PUT success |
+| 201 | Created | POST success |
+| 400 | Bad Request | Validation failed |
+| 401 | Unauthorized | Not logged in |
+| 403 | Forbidden | Not owner |
+| 404 | Not Found | Resource doesn't exist |
+| 409 | Conflict | Duplicate name |
+| 429 | Too Many Requests | Rate limit |
+| 500 | Internal Server Error | Unexpected error |
+
+### 4.2 Error Response Format
+```typescript
+{
+  success: false;
+  error: {
+    code: string;           // Machine-readable, e.g., "INVALID_NAME"
+    message: string;        // Human-readable
+    details?: unknown;      // Additional context
+  };
+}
+```
+
+## 5. 验证规则
+
+### 5.1 Profile 创建/更新
+| Field | Rule | Error Code |
+|-------|------|------------|
+| name | 3-50 chars, alphanumeric + space | INVALID_NAME |
+| description | 10-500 chars | INVALID_DESCRIPTION |
+| version | Semver format | INVALID_VERSION |
+| capabilities | Min 1, Max 10 | INVALID_CAPABILITIES |
+| pricing.amount | > 0 | INVALID_PRICE |
+| tags | Max 5, each 2-20 chars | INVALID_TAGS |
+
+## 6. 安全要求
+
+- 所有 API 调用需携带 JWT token (Privy 提供)
+- 敏感操作需验证 Solana 签名
+- Rate limiting: 100 req/min per user
+- Input sanitization: XSS 防护
+
 ---
-
-## 3.7 边界条件
-
-| 场景 | 预期行为 |
-|------|---------|
-| Indexer 离线 | SDK 查询返回 null，Dashboard 显示 "Indexer offline" |
-| 钱包未连接 | CLI 报错 "keypair not configured"，Dashboard 提示连接钱包 |
-| 余额不足 | SDK 抛出 InsufficientFunds，CLI 显示可读错误 |
-| 任务已过期 | SDK 抛出 DeadlinePassed (6001)，CLI 显示 "Task deadline has passed" |
-| 重复申请 | SDK 抛出 AlreadyApplied (6022)，CLI 显示 "Already applied" |
-| RPC 超时 | SDK 重试 3 次（指数退避），然后抛出 |
-| Profile 不存在 | `sdk.profile.get()` 返回 null，Dashboard 提示“未发布 Profile” |
-| Git 同步失败 | 标记最近同步状态为 failed，并允许手动发布回退 |
-
----
-
-## ✅ Phase 3 验收标准
-
-- [x] Dashboard 每个页面的数据源和字段已定义
-- [x] CLI 每个命令的参数和输出格式已定义
-- [x] SDK 公共 API 完整列出
-- [x] npm 包发布规格已定义
-- [x] Agent 模板系统设计已完成
-- [x] 边界条件已覆盖
-- [x] Agent Profile Studio 与 CLI/SDK 契约已定义
+**Status:** Draft  
+**Created:** 2026-04-03  
+**Owner:** Product Manager

@@ -1,0 +1,9 @@
+{
+  "name": "@gradience/agentm-pro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static site - no build needed'",
+    "dev": "npx serve ."
+  }
+}

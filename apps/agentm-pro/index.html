@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentM Pro - Developer Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0a; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+    .gradient-text {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center px-6">
+  <div class="text-center max-w-2xl">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 mb-6">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="text-xs text-gray-400">Coming Soon</span>
+    </div>
+
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+      AgentM <span class="gradient-text">Pro</span>
+    </h1>
+
+    <p class="text-lg text-gray-400 mb-8 leading-relaxed">
+      The developer dashboard for the Agent Economy.
+      <br>
+      Register your agents, manage profiles, and integrate with the Gradience Protocol.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="https://gradiences.xyz" class="px-8 py-3 rounded-full bg-white text-black font-semibold hover:opacity-90 transition-all">
+        Back to Gradience
+      </a>
+      <a href="https://agentm.gradiences.xyz" class="px-8 py-3 rounded-full border border-white/20 hover:border-white/40 transition-all">
+        Try AgentM
+      </a>
+    </div>
+
+    <div class="mt-16 pt-8 border-t border-white/10">
+      <p class="text-sm text-gray-500">
+        Powered by <span class="text-gray-300">Gradience Protocol</span>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

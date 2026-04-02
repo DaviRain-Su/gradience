@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.xyz";
+  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.gradience.syz";
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40);
