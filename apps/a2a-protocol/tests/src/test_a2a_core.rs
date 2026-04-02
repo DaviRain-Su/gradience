@@ -1,4 +1,6 @@
+use a2a_protocol::instructions::CooperativeCloseChannelData;
 use a2a_protocol::state::*;
+use solana_sdk::instruction::{AccountMeta, Instruction};
 use solana_sdk::signature::{Keypair, Signer};
 
 use crate::utils::*;
@@ -210,4 +212,125 @@ fn full_messaging_lifecycle() {
     let channel: PaymentChannel = read_account_data(&ctx, &channel_pda);
     assert_eq!(channel.status, ChannelStatus::Open);
     assert_eq!(channel.deposit_amount, 10_000_000);
+}
+
+// ── Payment Channel Cooperative Close ───────────────────────────────
+
+#[test]
+fn cooperative_close_channel_settles_state() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let payer = ctx.create_funded_keypair();
+    let payee = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    // Open channel
+    let ix_open = build_open_channel_ix(&payer.pubkey(), &payee.pubkey(), 10, 5_000_000, now + 3600);
+    ctx.send_tx(ix_open, &[&payer]).unwrap();
+
+    // Cooperative close — both parties sign
+    let (channel_pda, _) = find_channel_pda(&payer.pubkey(), &payee.pubkey(), 10);
+    let close_data = CooperativeCloseChannelData {
+        channel_id: 10,
+        nonce: 1,
+        spent_amount: 3_000_000, // payer spent 3M of 5M deposit
+        payer_sig_r: [0xAA; 32],
+        payer_sig_s: [0xBB; 32],
+        payee_sig_r: [0xCC; 32],
+        payee_sig_s: [0xDD; 32],
+    };
+    let mut ix_data = vec![6u8]; // discriminator 6 = CooperativeCloseChannel
+    ix_data.extend_from_slice(&borsh::to_vec(&close_data).unwrap());
+
+    let ix = Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(payer.pubkey(), true),
+            AccountMeta::new_readonly(payee.pubkey(), true),
+            AccountMeta::new(channel_pda, false),
+        ],
+        data: ix_data,
+    };
+    ctx.send_tx(ix, &[&payer, &payee]).unwrap();
+
+    let channel: PaymentChannel = read_account_data(&ctx, &channel_pda);
+    assert_eq!(channel.status, ChannelStatus::Settled);
+    assert_eq!(channel.nonce, 1);
+    assert_eq!(channel.spent_amount, 3_000_000);
+    assert_eq!(channel.pending_settle_amount, 3_000_000);
+}
+
+#[test]
+fn cooperative_close_rejects_zero_nonce() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let payer = ctx.create_funded_keypair();
+    let payee = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix_open = build_open_channel_ix(&payer.pubkey(), &payee.pubkey(), 20, 5_000_000, now + 3600);
+    ctx.send_tx(ix_open, &[&payer]).unwrap();
+
+    let (channel_pda, _) = find_channel_pda(&payer.pubkey(), &payee.pubkey(), 20);
+    let close_data = CooperativeCloseChannelData {
+        channel_id: 20,
+        nonce: 0, // invalid — must be > 0
+        spent_amount: 1_000_000,
+        payer_sig_r: [0xAA; 32],
+        payer_sig_s: [0xBB; 32],
+        payee_sig_r: [0xCC; 32],
+        payee_sig_s: [0xDD; 32],
+    };
+    let mut ix_data = vec![6u8];
+    ix_data.extend_from_slice(&borsh::to_vec(&close_data).unwrap());
+
+    let ix = Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(payer.pubkey(), true),
+            AccountMeta::new_readonly(payee.pubkey(), true),
+            AccountMeta::new(channel_pda, false),
+        ],
+        data: ix_data,
+    };
+    let _ = ctx.send_tx_expect_error(ix, &[&payer, &payee]);
+}
+
+#[test]
+fn cooperative_close_rejects_overspend() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let payer = ctx.create_funded_keypair();
+    let payee = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    let ix_open = build_open_channel_ix(&payer.pubkey(), &payee.pubkey(), 30, 5_000_000, now + 3600);
+    ctx.send_tx(ix_open, &[&payer]).unwrap();
+
+    let (channel_pda, _) = find_channel_pda(&payer.pubkey(), &payee.pubkey(), 30);
+    let close_data = CooperativeCloseChannelData {
+        channel_id: 30,
+        nonce: 1,
+        spent_amount: 10_000_000, // more than deposit
+        payer_sig_r: [0xAA; 32],
+        payer_sig_s: [0xBB; 32],
+        payee_sig_r: [0xCC; 32],
+        payee_sig_s: [0xDD; 32],
+    };
+    let mut ix_data = vec![6u8];
+    ix_data.extend_from_slice(&borsh::to_vec(&close_data).unwrap());
+
+    let ix = Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(payer.pubkey(), true),
+            AccountMeta::new_readonly(payee.pubkey(), true),
+            AccountMeta::new(channel_pda, false),
+        ],
+        data: ix_data,
+    };
+    let _ = ctx.send_tx_expect_error(ix, &[&payer, &payee]);
 }
