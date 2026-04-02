@@ -14,27 +14,55 @@ export interface VoiceEngine {
     isRecording(): boolean;
 }
 
+interface SpeechRecognitionResultEvent {
+    results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+
+interface SpeechRecognitionError {
+    error: string;
+}
+
+interface SpeechRecognitionLike {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+    onerror: ((event: SpeechRecognitionError) => void) | null;
+    onend: (() => void) | null;
+    start(): void;
+    stop(): void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+type SpeechGlobals = typeof globalThis & {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+};
+
 /**
  * Web Speech API implementation.
  * Works in Chrome, Edge, Safari, and system webviews (Electrobun).
  */
 export class WebSpeechVoiceEngine implements VoiceEngine {
-    private recognition: SpeechRecognition | null = null;
+    private recognition: SpeechRecognitionLike | null = null;
     private _isRecording = false;
     private _transcriptResolve: ((text: string) => void) | null = null;
     private _transcriptReject: ((err: Error) => void) | null = null;
 
     get supported(): boolean {
-        return typeof globalThis.SpeechRecognition !== 'undefined' ||
-               typeof (globalThis as any).webkitSpeechRecognition !== 'undefined';
+        const speechGlobals = globalThis as SpeechGlobals;
+        return typeof speechGlobals.SpeechRecognition !== 'undefined' ||
+               typeof speechGlobals.webkitSpeechRecognition !== 'undefined';
     }
 
     startRecording(): void {
         if (this._isRecording) return;
         if (!this.supported) return;
 
+        const speechGlobals = globalThis as SpeechGlobals;
         const SpeechRecognitionCtor =
-            globalThis.SpeechRecognition ?? (globalThis as any).webkitSpeechRecognition;
+            speechGlobals.SpeechRecognition ?? speechGlobals.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) return;
         this.recognition = new SpeechRecognitionCtor();
         this.recognition.continuous = false;
         this.recognition.interimResults = false;
@@ -53,14 +81,14 @@ export class WebSpeechVoiceEngine implements VoiceEngine {
             this._transcriptResolve = resolve;
             this._transcriptReject = reject;
 
-            this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+            this.recognition.onresult = (event: SpeechRecognitionResultEvent) => {
                 const transcript = event.results[0]?.[0]?.transcript ?? '';
                 this._isRecording = false;
                 this._transcriptResolve?.(transcript);
                 this._cleanup();
             };
 
-            this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+            this.recognition.onerror = (event: SpeechRecognitionError) => {
                 this._isRecording = false;
                 this._transcriptReject?.(new Error(`Speech recognition error: ${event.error}`));
                 this._cleanup();
@@ -128,10 +156,12 @@ export class NoopVoiceEngine implements VoiceEngine {
  * Create the best available voice engine for the current environment.
  */
 export function createVoiceEngine(): VoiceEngine {
+    const speechGlobals = globalThis as SpeechGlobals;
+
     // Browser with Web Speech API
     if (
-        typeof globalThis.SpeechRecognition !== 'undefined' ||
-        typeof (globalThis as any).webkitSpeechRecognition !== 'undefined'
+        typeof speechGlobals.SpeechRecognition !== 'undefined' ||
+        typeof speechGlobals.webkitSpeechRecognition !== 'undefined'
     ) {
         return new WebSpeechVoiceEngine();
     }

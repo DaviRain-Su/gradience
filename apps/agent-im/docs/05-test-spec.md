@@ -140,3 +140,25 @@ pnpm exec tsx --test src/main/auth.test.ts
 | 多用户并发 A2A | 10 个 Agent 同时发消息 |
 | DashDomain 连接 | 本地 Agent 进程连接器 |
 | 8004 注册验证 | Agent 注册后 8004scan.io 可发现 |
+
+---
+
+## 6. 生产分阶段补充验收（对应 Stage A/B）
+
+### 6.1 Stage A（P0）
+
+| 场景 | 预期结果 |
+|------|---------|
+| 默认 Indexer 基址与启动栈一致（`:3001`） | 无手工改配置即可显示任务/声誉数据 |
+| Privy 已配置 | 登录后 `publicKey` 非 `DEMO_*`，且 store/auth API 同步 |
+| Privy 未配置 | UI 明确提示 demo 模式，不崩溃 |
+| 启动脚本 smoke | 一键拉起后 `agent-im`、`judge-daemon`、`indexer` 状态正常 |
+
+### 6.2 Stage B（P0/P1）
+
+| 场景 | 预期结果 |
+|------|---------|
+| `/interop/events` 签名校验 | 非法签名 401，合法请求计数递增 |
+| 8004 状态回写一致性 | `/interop/status` 与 dashboard 计数一致 |
+| Attestation 展示闭环 | `sdk.attestations.list()` 成功返回并可渲染 |
+| 生产打包 smoke | 构建产物可启动，关键页面可用 |

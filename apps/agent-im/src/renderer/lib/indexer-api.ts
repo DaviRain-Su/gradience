@@ -31,7 +31,7 @@ export interface JudgePoolEntryApi {
 }
 
 export class IndexerClient {
-    constructor(private baseUrl: string = 'http://127.0.0.1:8787') {}
+    constructor(private baseUrl: string = getDefaultIndexerBaseUrl()) {}
 
     async getReputation(address: string): Promise<ReputationApi | null> {
         return this.get<ReputationApi>(`/api/reputation/${address}`);
@@ -82,7 +82,18 @@ let _client: IndexerClient | null = null;
 
 export function getIndexerClient(baseUrl?: string): IndexerClient {
     if (!_client) {
-        _client = new IndexerClient(baseUrl);
+        _client = new IndexerClient(baseUrl ?? getDefaultIndexerBaseUrl());
     }
     return _client;
+}
+
+function getDefaultIndexerBaseUrl(): string {
+    if (typeof import.meta !== 'undefined') {
+        const fromEnv = (import.meta as { env?: { VITE_INDEXER_BASE_URL?: string } }).env
+            ?.VITE_INDEXER_BASE_URL;
+        if (fromEnv && fromEnv.length > 0) {
+            return fromEnv;
+        }
+    }
+    return 'http://127.0.0.1:3001';
 }

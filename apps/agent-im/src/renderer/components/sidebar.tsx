@@ -7,7 +7,7 @@ const NAV_ITEMS: { view: ActiveView; label: string; icon: string }[] = [
     { view: 'chat', label: 'Chat', icon: 'C' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onLogout }: { onLogout?: () => void | Promise<void> }) {
     const activeView = useAppStore((s) => s.activeView);
     const setActiveView = useAppStore((s) => s.setActiveView);
     const publicKey = useAppStore((s) => s.auth.publicKey);
@@ -20,6 +20,14 @@ export function Sidebar() {
             <div className="p-4 border-b border-gray-800">
                 <h1 className="text-lg font-bold">Agent.im</h1>
                 <p className="text-xs text-gray-500 truncate">{publicKey}</p>
+                {onLogout && (
+                    <button
+                        onClick={() => void onLogout()}
+                        className="mt-3 text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded transition"
+                    >
+                        Sign out
+                    </button>
+                )}
             </div>
 
             {/* Navigation */}
