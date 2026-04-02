@@ -81,6 +81,26 @@ export interface AgentDiscoveryRow {
     } | null;
 }
 
+// ── Agent Profile ───────────────────────────────────────────────────
+
+export type ProfilePublishMode = 'manual' | 'git-sync';
+
+export interface AgentProfileLinks {
+    website?: string;
+    github?: string;
+    x?: string;
+}
+
+export interface AgentProfile {
+    agent: string;
+    displayName: string;
+    bio: string;
+    links: AgentProfileLinks;
+    onchainRef: string | null;
+    publishMode: ProfilePublishMode;
+    updatedAt: number;
+}
+
 // ── Arena Task Flow (local workflow tracking) ───────────────────────
 
 export type TaskFlowStatus =

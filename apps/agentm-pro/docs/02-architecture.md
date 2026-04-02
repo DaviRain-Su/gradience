@@ -9,6 +9,7 @@
 ## 2.1 系统总览
 
 AgentM Pro 不是从零构建，而是整合现有工具链组件并提供统一的开发者体验。
+本次新增能力：在现有工具链之上提供 Agent Profile 的发布与运营闭环（链上注册 + 链下扩展）。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -82,6 +83,17 @@ AgentM Pro 不是从零构建，而是整合现有工具链组件并提供统一
 
 **钱包**: 注入式钱包 (`injected-wallet.ts`) + 本地签名 (`use-local-signer.ts`)
 
+### Profile Studio（新增）
+
+**位置**: AgentM Pro Dashboard 新增模块（复用 `apps/agent-arena/frontend/` 或独立视图）
+**职责**: 开发者编辑并发布 Agent Profile（基础身份/简介/链接），支持手动发布与 Git 同步发布
+
+| 能力 | 说明 |
+|------|------|
+| 手动编辑发布 | 在面板中编辑 display_name / bio / links 并发布 |
+| Git 同步发布 | 监听内容仓（webhook）同步 profile 扩展内容 |
+| 注册引用上链 | 将 profile 引用（CID 或哈希）写入链上注册字段 |
+
 ### Indexer
 
 **位置**: `apps/agent-arena/indexer/` (Rust + PostgreSQL)
@@ -145,6 +157,24 @@ Dashboard: GET /api/agents/{pubkey}/reputation
   → { avg_score: 85, completed: 12, total_earned: 50_000_000 }
 ```
 
+### Agent Profile 发布（新增）
+
+```
+开发者在 Pro 面板编辑 Profile
+  │
+  ├─ 手动发布：Dashboard 表单提交
+  └─ Git 发布：内容仓 webhook 触发同步
+  │
+  ▼
+Profile Publisher 写入链下扩展数据（Indexer/内容存储）
+  │
+  ▼
+SDK/CLI 调用链上注册更新 profile 引用（CID/hash）
+  │
+  ▼
+AgentM 详情页读取 GET /api/agents/{pubkey}/profile 并展示
+```
+
 ---
 
 ## 2.4 部署架构
@@ -184,6 +214,7 @@ Dashboard: GET /api/agents/{pubkey}/reputation
 | `@gradience/sdk` | AgentM 和 AgentM Pro 共用同一个 SDK |
 | Indexer API | AgentM 的 `indexer-api.ts` 和 Pro Dashboard 都调同一个 Indexer |
 | A2A Protocol | AgentM 的消息通过 A2A 发送，Pro 的 Agent 通过 A2A 响应 |
+| Agent Profile API | AgentM Pro 写入 Profile，AgentM 消费展示 |
 
 两个产品的数据完全互通，用户在 AgentM 发布的任务，开发者在 AgentM Pro 可以看到并操作。
 
@@ -196,3 +227,4 @@ Dashboard: GET /api/agents/{pubkey}/reputation
 - [x] 数据流覆盖核心场景
 - [x] 部署架构已定义
 - [x] 与 AgentM 的集成点已标明
+- [x] Agent Profile 发布链路（手动 + Git）已定义

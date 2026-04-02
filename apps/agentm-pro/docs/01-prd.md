@@ -11,6 +11,7 @@
 | 版本 | 日期 | 变更说明 |
 |------|------|---------|
 | v0.1 | 2026-04-03 | 初稿 |
+| v0.2 | 2026-04-03 | 新增 Agent Profile 管理能力（链上注册 + 链下扩展，手动/Git 双发布） |
 
 ---
 
@@ -29,7 +30,7 @@
 
 ### 要解决的问题
 
-> AI Agent 开发者想让自己的 Agent 参与 Gradience 经济网络（接任务、赚钱、积累声誉），但缺少一个完整的部署和管理平台。目前只有零散的 SDK + CLI，没有统一的开发者体验。
+> AI Agent 开发者想让自己的 Agent 参与 Gradience 经济网络（接任务、赚钱、积累声誉），但缺少一个完整的部署和管理平台。目前只有零散的 SDK + CLI，没有统一的开发者体验，也缺少标准化 Agent Profile 的发布与维护能力。
 
 ### 目标状态
 
@@ -39,6 +40,7 @@
 1. **部署 Agent**: 开发 → 测试 → 一键部署到链上
 2. **管理 Agent**: 监控运行状态、查看收入、调整策略
 3. **集成协议**: 在自己的应用中集成 Gradience SDK
+4. **运营品牌**: 持续管理 Agent Profile（身份、边界、外部链接、内容更新）
 
 ---
 
@@ -53,6 +55,8 @@
 | 3 | 开发者 | 用 CLI 发布/申请/提交/评判任务 | 自动化任务流程 | P0 |
 | 4 | 开发者 | 查看 Agent 声誉分数和历史变化趋势 | 优化 Agent 策略 | P1 |
 | 5 | 开发者 | 注册 Agent 为 Judge，质押并参与评判 | 赚取 Judge 费用 | P1 |
+| 5a | 开发者 | 在 Pro 面板编辑 Agent 基础 Profile（名称/简介/链接） | 让用户快速建立信任 | P0 |
+| 5b | 开发者 | 通过 Git 内容仓自动同步 Profile 扩展内容 | 降低持续更新成本 | P1 |
 
 ### SDK 集成
 
@@ -81,6 +85,7 @@
 - **CLI 工具** (`gradience`): 任务全生命周期命令 + Agent/Judge 管理
 - **TypeScript SDK** (`@gradience/sdk`): 所有链上指令 + Indexer 查询
 - **Web Dashboard**: Agent 监控面板（声誉/收入/任务统计）
+- **Profile Studio**: Agent Profile 编辑发布（基础身份/简介/链接）
 - **SDK 文档**: Quick Start + API Reference
 
 #### P1 应做
@@ -89,6 +94,7 @@
 - **本地测试**: devnet 自动化测试脚本
 - **Judge 管理**: CLI 注册/质押/退出
 - **NO_DNA 支持**: 机器可读输出（JSON），适配 Agent 自动化
+- **Git 同步发布**: 从私有内容仓同步 Profile 扩展内容
 
 #### P2 可延后
 
@@ -114,6 +120,7 @@
 | SDK 集成 | 从 import 到第一个查询成功 | < 5 分钟 |
 | 任务全周期 | CLI: post → apply → submit → judge | 端到端成功 |
 | Dashboard | 加载 Agent 声誉和任务数据 | 正确展示 |
+| Profile 发布 | 编辑基础 Profile 并对外可见 | ≤ 1 分钟生效 |
 | NO_DNA | 所有 CLI 命令输出结构化 JSON | 100% 覆盖 |
 
 ---
@@ -127,6 +134,7 @@ AgentM Pro 整合现有工具链组件：
 | TypeScript SDK | `apps/agent-arena/clients/typescript/` | `@gradience/sdk` (npm package) |
 | CLI | `apps/agent-arena/cli/` | `@gradience/cli` (npm package) |
 | Frontend (Next.js) | `apps/agent-arena/frontend/` | AgentM Pro Web Dashboard |
+| AgentM 前端 | `apps/agentm/` | Agent Profile 消费端（展示） |
 | Judge Daemon | `apps/agent-arena/judge-daemon/` | Agent 运行时组件 |
 | Indexer | `apps/agent-arena/indexer/` | 后端数据服务 |
 
@@ -139,6 +147,7 @@ AgentM Pro 整合现有工具链组件：
 | 技术约束 | CLI 使用 Bun 运行时（与项目一致） |
 | 技术约束 | Dashboard 使用 Next.js（现有前端基础） |
 | 技术约束 | SDK 必须同时支持 Node.js 和浏览器环境 |
+| 技术约束 | Profile 数据采用“链上注册 + 链下扩展” |
 | 依赖约束 | 数据依赖 Indexer REST API |
 | 依赖约束 | 链上操作依赖 Solana devnet/mainnet RPC |
 | 资源约束 | 单人开发 + AI 辅助 |
@@ -152,7 +161,9 @@ AgentM Pro 整合现有工具链组件：
 | 登录方式 | Google OAuth | API Key / Keypair |
 | 主要界面 | 桌面 IM | CLI + Web Dashboard |
 | 找 Agent | ✅ | ❌ |
+| Profile 展示消费 | ✅（读取） | ✅（发布后预览） |
 | 发布任务 | ✅ UI | ✅ CLI / API |
+| Profile 编辑发布 | ❌ | ✅ 核心功能 |
 | SDK 集成 | ❌ | ✅ 核心功能 |
 | Agent 框架 | ❌ | ✅ 模板/一键部署 |
 | 共享内核 | @gradience/sdk + Indexer API |

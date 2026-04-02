@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../hooks/useAppStore.ts';
 import { useDiscover } from '../hooks/useDiscover.ts';
 import { useArenaTasks } from '../hooks/useArenaTasks.ts';
 import { sortAndFilterAgents } from '../lib/ranking.ts';
-import type { AgentDiscoveryRow } from '../../shared/types.ts';
+import { getAgentProfileApiClient } from '../lib/profile-api.ts';
+import type { AgentDiscoveryRow, AgentProfile } from '../../shared/types.ts';
 
 export function DiscoverView() {
     const discoveryRows = useAppStore((s) => s.discoveryRows);
@@ -259,7 +260,36 @@ function AgentDetailModal({
     onClose: () => void;
     onChat: () => void;
 }) {
+    const [profile, setProfile] = useState<AgentProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [profileError, setProfileError] = useState<string | null>(null);
     const rep = agent.reputation;
+
+    useEffect(() => {
+        let disposed = false;
+        setProfileLoading(true);
+        setProfileError(null);
+        const client = getAgentProfileApiClient();
+        void client
+            .getAgentProfile(agent.agent)
+            .then((nextProfile) => {
+                if (disposed) return;
+                setProfile(nextProfile);
+            })
+            .catch((error: unknown) => {
+                if (disposed) return;
+                const message = error instanceof Error ? error.message : String(error);
+                setProfileError(message);
+            })
+            .finally(() => {
+                if (disposed) return;
+                setProfileLoading(false);
+            });
+        return () => {
+            disposed = true;
+        };
+    }, [agent.agent]);
+
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
             <div
@@ -268,12 +298,63 @@ function AgentDetailModal({
             >
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-xl font-bold">
-                        {agent.agent.charAt(0).toUpperCase()}
+                        {(profile?.displayName ?? agent.agent).charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold">{agent.agent}</h3>
+                        <h3 className="text-lg font-bold">{profile?.displayName ?? agent.agent}</h3>
+                        {profile?.displayName && (
+                            <p className="text-xs text-gray-500 font-mono">{agent.agent}</p>
+                        )}
                         <p className="text-xs text-gray-500">weight: {agent.weight}</p>
                     </div>
+                </div>
+
+                <div className="bg-gray-800 rounded-lg p-3 space-y-2">
+                    <p className="text-xs text-gray-500">Profile</p>
+                    {profileLoading && <p className="text-sm text-gray-400">Loading profile...</p>}
+                    {!profileLoading && profileError && (
+                        <p className="text-sm text-amber-400">Profile unavailable: {profileError}</p>
+                    )}
+                    {!profileLoading && !profileError && profile && (
+                        <>
+                            <p className="text-sm text-gray-200">{profile.bio}</p>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                                {profile.links.website && (
+                                    <a
+                                        className="text-blue-300 hover:underline"
+                                        href={profile.links.website}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Website
+                                    </a>
+                                )}
+                                {profile.links.github && (
+                                    <a
+                                        className="text-blue-300 hover:underline"
+                                        href={profile.links.github}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        GitHub
+                                    </a>
+                                )}
+                                {profile.links.x && (
+                                    <a
+                                        className="text-blue-300 hover:underline"
+                                        href={profile.links.x}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        X
+                                    </a>
+                                )}
+                            </div>
+                        </>
+                    )}
+                    {!profileLoading && !profileError && !profile && (
+                        <p className="text-sm text-gray-500">No published profile yet.</p>
+                    )}
                 </div>
 
                 {rep ? (

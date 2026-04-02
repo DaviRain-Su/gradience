@@ -32,7 +32,7 @@
 
 | # | 场景 | 输入 | 预期输出 |
 |---|------|------|---------|
-| S-01 | getAgentProfile 返回 Profile | pubkey 有 Profile | `{ display_name, bio, links, tags }` |
+| S-01 | getAgentProfile 返回 Profile | pubkey 有 Profile | `{ display_name, bio, links }` |
 | S-02 | getAgentProfile 无 Profile 返回 null | pubkey 无记录 | `null` |
 | S-03 | updateAgentProfile 成功更新 | 有效 Profile JSON | `{ ok: true }` |
 | S-04 | updateAgentProfile 拒绝空 display_name | `display_name: ""` | 错误 |
@@ -82,6 +82,7 @@
 |---|------|------|
 | P-08 | AgentM 详情 Modal 显示 display_name | Profile 有 display_name 时显示 |
 | P-09 | AgentM 详情 Modal 无 Profile 时显示 pubkey | 降级显示 |
+| P-10 | Git webhook 同步后 AgentM 展示更新 | 无手工发布也能读取最新 Profile |
 
 ---
 
@@ -112,6 +113,7 @@
 |---|------|------|------|
 | E-01 | Profile 发布闭环 | CLI update → Indexer GET → AgentM 详情 | 三层数据一致 |
 | E-02 | Profile 链上引用 | CLI update → SDK getAgentProfile → 链上 hash | hash 一致 |
+| E-03 | Git 同步发布闭环 | push profile repo → webhook → AgentM 详情 | 自动更新成功 |
 
 ---
 
@@ -133,7 +135,7 @@
 | CLI | 13 | 3 | 16 |
 | Profile API | 0 | 7 | 7 |
 | Dashboard | 0 | 5（手动） | 5 |
-| E2E | 12 | 2 | 14 |
+| E2E | 12 | 3 | 15 |
 | Agent 模板 | 0 | 3 | 3 |
 | **合计** | **45** | **24** | **69** |
 
