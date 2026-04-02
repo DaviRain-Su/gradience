@@ -1,3 +1,5 @@
+> **[ARCHIVED]** Agent Social has been merged into **Agent.im**. See [apps/agent-im/](../agent-im/) for the current unified product.
+
 # Agent Social — 产品设计文档
 
 > **AI Agent 代理人社交网络**

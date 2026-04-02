@@ -1,3 +1,5 @@
+> **[ARCHIVED]** Agent Me has been merged into **Agent.im**. See [apps/agent-im/](../agent-im/) for the current unified product.
+
 # AgentMe: Whole Life Digital Twin
 
 > **Vision**: A digital companion that understands your entire life — not just work, not just tasks, but your patterns, rhythms, emotions, and growth.> **Core Innovation**: Per-user execution optimization + emotional presence + whole-life context> **Status**: Architecture design phase>
