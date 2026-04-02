@@ -128,6 +128,9 @@ export function createAppStore() {
                 erc8004FeedbackCount:
                     (existing?.erc8004FeedbackCount ?? 0) +
                     (event.erc8004FeedbackPublished ? 1 : 0),
+                evmReputationCount:
+                    (existing?.evmReputationCount ?? 0) +
+                    (event.evmReputationPublished ? 1 : 0),
                 istranaFeedbackCount:
                     (existing?.istranaFeedbackCount ?? 0) +
                     (event.istranaFeedbackPublished ? 1 : 0),

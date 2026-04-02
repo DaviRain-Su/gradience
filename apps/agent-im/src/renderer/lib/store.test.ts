@@ -99,6 +99,7 @@ describe('AppStore', () => {
         });
         assert.equal(snapshot1.identityRegistered, true);
         assert.equal(snapshot1.erc8004FeedbackCount, 1);
+        assert.equal(snapshot1.evmReputationCount, 0);
         assert.equal(snapshot1.istranaFeedbackCount, 0);
         assert.equal(snapshot1.attestationCount, 1);
 
@@ -113,11 +114,13 @@ describe('AppStore', () => {
             identityRegistered: false,
             feedbackTargets: ['istrana_feedback'],
             erc8004FeedbackPublished: false,
+            evmReputationPublished: true,
             istranaFeedbackPublished: true,
             attestationPublished: false,
         });
         assert.equal(snapshot2.identityRegistered, true);
         assert.equal(snapshot2.erc8004FeedbackCount, 1);
+        assert.equal(snapshot2.evmReputationCount, 1);
         assert.equal(snapshot2.istranaFeedbackCount, 1);
         assert.equal(snapshot2.lastTaskId, 101);
         assert.equal(snapshot2.lastScore, 92);

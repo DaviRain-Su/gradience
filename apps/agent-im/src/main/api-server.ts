@@ -160,6 +160,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                             agent,
                             identityRegistered: false,
                             erc8004FeedbackCount: 0,
+                            evmReputationCount: 0,
                             istranaFeedbackCount: 0,
                             attestationCount: 0,
                             lastTaskId: null,
@@ -181,6 +182,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     agent,
                     identityRegistered: false,
                     erc8004FeedbackCount: 0,
+                    evmReputationCount: 0,
                     istranaFeedbackCount: 0,
                     attestationCount: 0,
                     lastTaskId: null,
@@ -224,6 +226,7 @@ function renderInteropDashboard(
     data: {
         identityRegistered: boolean;
         erc8004FeedbackCount: number;
+        evmReputationCount: number;
         istranaFeedbackCount: number;
         attestationCount: number;
         lastTaskId: number | null;
@@ -248,6 +251,7 @@ function renderInteropDashboard(
     <ul>
       <li><strong>Identity Registered:</strong> ${data.identityRegistered ? 'Yes' : 'No'}</li>
       <li><strong>ERC-8004 Feedback Count:</strong> ${data.erc8004FeedbackCount}</li>
+      <li><strong>EVM Reputation Relay Count:</strong> ${data.evmReputationCount}</li>
       <li><strong>Istrana Feedback Count:</strong> ${data.istranaFeedbackCount}</li>
       <li><strong>TaskCompletion Attestations:</strong> ${data.attestationCount}</li>
       <li><strong>Last Task:</strong> ${lastTask}</li>
@@ -273,6 +277,8 @@ function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
         typeof event.identityRegistered === 'boolean' &&
         Array.isArray(event.feedbackTargets) &&
         typeof event.erc8004FeedbackPublished === 'boolean' &&
+        (typeof event.evmReputationPublished === 'undefined' ||
+            typeof event.evmReputationPublished === 'boolean') &&
         typeof event.istranaFeedbackPublished === 'boolean' &&
         typeof event.attestationPublished === 'boolean'
     );

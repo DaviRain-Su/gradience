@@ -131,6 +131,7 @@ describe('API Server', () => {
         assert.equal(data.ok, true);
         assert.equal(data.snapshot.agent, 'agent-x');
         assert.equal(data.snapshot.erc8004FeedbackCount, 1);
+        assert.equal(data.snapshot.evmReputationCount, 0);
     });
 
     it('GET /interop/status returns stored snapshot', async () => {
@@ -139,6 +140,7 @@ describe('API Server', () => {
         const data = await res.json();
         assert.equal(data.status.agent, 'agent-x');
         assert.equal(data.status.identityRegistered, true);
+        assert.equal(data.status.evmReputationCount, 0);
         assert.equal(data.status.istranaFeedbackCount, 1);
     });
 
@@ -148,6 +150,7 @@ describe('API Server', () => {
         const html = await res.text();
         assert.ok(html.includes('Agent.im Interop Dashboard'));
         assert.ok(html.includes('agent-x'));
+        assert.ok(html.includes('EVM Reputation Relay Count'));
     });
 });
 

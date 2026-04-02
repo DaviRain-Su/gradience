@@ -91,6 +91,7 @@ export interface InteropStatusSnapshot {
     agent: string;
     identityRegistered: boolean;
     erc8004FeedbackCount: number;
+    evmReputationCount: number;
     istranaFeedbackCount: number;
     attestationCount: number;
     lastTaskId: number | null;
@@ -110,6 +111,7 @@ export interface InteropSyncEvent {
     identityRegistered: boolean;
     feedbackTargets: string[];
     erc8004FeedbackPublished: boolean;
+    evmReputationPublished?: boolean;
     istranaFeedbackPublished: boolean;
     attestationPublished: boolean;
 }
