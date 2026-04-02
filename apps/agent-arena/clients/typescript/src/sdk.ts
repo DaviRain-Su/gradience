@@ -275,6 +275,32 @@ export interface TaskCompletionAttestationRecord extends TaskCompletionAttestati
     signature?: string;
 }
 
+// ── Agent Profile (off-chain extension) ─────────────────────────────
+
+export interface AgentProfileLinks {
+    website?: string;
+    github?: string;
+    x?: string;
+}
+
+export type ProfilePublishMode = 'manual' | 'git-sync';
+
+export interface AgentProfileApi {
+    agent: string;
+    display_name: string;
+    bio: string;
+    links: AgentProfileLinks;
+    onchain_ref: string | null;
+    publish_mode: ProfilePublishMode;
+    updated_at: number;
+}
+
+export interface AgentProfileUpdate {
+    display_name: string;
+    bio: string;
+    links?: AgentProfileLinks;
+}
+
 export class GradienceSDK {
     private indexerEndpoint: string;
     private attestationEndpoint: string;
@@ -399,6 +425,13 @@ export class GradienceSDK {
          * Returns `null` when the config account does not exist.
          */
         get: () => this.getProgramConfigOnChain(),
+    } as const;
+
+    readonly profile = {
+        /** Fetch agent profile from Indexer. Returns `null` when not found. */
+        get: (agent: string) => this.getAgentProfile(agent),
+        /** Update agent profile via Indexer. */
+        update: (agent: string, data: AgentProfileUpdate) => this.updateAgentProfile(agent, data),
     } as const;
 
     readonly attestations = {
@@ -821,6 +854,26 @@ export class GradienceSDK {
             return null;
         }
         return attestations.map(normalizeTaskCompletionAttestation);
+    }
+
+    async getAgentProfile(agent: string): Promise<AgentProfileApi | null> {
+        return this.getJsonOrNull<AgentProfileApi>(
+            `/api/agents/${encodeURIComponent(agent)}/profile`,
+        );
+    }
+
+    async updateAgentProfile(agent: string, data: AgentProfileUpdate): Promise<{ ok: boolean }> {
+        const url = `${this.indexerEndpoint}/api/agents/${encodeURIComponent(agent)}/profile`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(data),
+            signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok) {
+            throw new Error(`Profile update failed (${response.status}): ${await response.text()}`);
+        }
+        return { ok: true };
     }
 
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
