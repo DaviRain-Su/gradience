@@ -448,3 +448,117 @@ fn full_subtask_bidding_lifecycle() {
     let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
     assert_eq!(order.status, SubtaskStatus::Bidding);
 }
+
+#[test]
+fn assign_subtask_bid_selects_winner() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let bidder = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    // Create order + bid
+    let ix_order = build_create_subtask_order_ix(
+        &requester.pubkey(), 20, 1, 10_000_000, now + 600, now + 3600,
+    );
+    ctx.send_tx(ix_order, &[&requester]).unwrap();
+
+    let ix_bid = build_submit_subtask_bid_ix(
+        &bidder.pubkey(), 20, 1, 8_000_000, 1_000_000, 300,
+    );
+    ctx.send_tx(ix_bid, &[&bidder]).unwrap();
+
+    // Assign
+    let ix_assign = build_assign_subtask_bid_ix(
+        &requester.pubkey(), 20, 1, &bidder.pubkey(),
+    );
+    ctx.send_tx(ix_assign, &[&requester]).unwrap();
+
+    let (subtask_pda, _) = find_subtask_pda(20, 1);
+    let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+    assert_eq!(order.status, SubtaskStatus::Assigned);
+    assert_eq!(order.selected_agent, bidder.pubkey().to_bytes());
+
+    let (bid_pda, _) = find_bid_pda(20, 1, &bidder.pubkey());
+    let bid: SubtaskBid = read_account_data(&ctx, &bid_pda);
+    assert_eq!(bid.status, BidStatus::Won);
+}
+
+#[test]
+fn submit_delivery_updates_state() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let agent = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    // Create → bid → assign
+    ctx.send_tx(build_create_subtask_order_ix(
+        &requester.pubkey(), 30, 1, 10_000_000, now + 600, now + 3600,
+    ), &[&requester]).unwrap();
+
+    ctx.send_tx(build_submit_subtask_bid_ix(
+        &agent.pubkey(), 30, 1, 8_000_000, 1_000_000, 300,
+    ), &[&agent]).unwrap();
+
+    ctx.send_tx(build_assign_subtask_bid_ix(
+        &requester.pubkey(), 30, 1, &agent.pubkey(),
+    ), &[&requester]).unwrap();
+
+    // Deliver
+    let delivery_hash = [0xDDu8; 32];
+    ctx.send_tx(build_submit_subtask_delivery_ix(
+        &agent.pubkey(), 30, 1, delivery_hash,
+    ), &[&agent]).unwrap();
+
+    let (subtask_pda, _) = find_subtask_pda(30, 1);
+    let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+    assert_eq!(order.status, SubtaskStatus::Delivered);
+    assert_eq!(order.delivery_hash, delivery_hash);
+}
+
+#[test]
+fn full_subtask_order_to_delivery_lifecycle() {
+    let mut ctx = TestContext::new();
+    initialize_network(&mut ctx);
+
+    let requester = ctx.create_funded_keypair();
+    let agent_a = ctx.create_funded_keypair();
+    let agent_b = ctx.create_funded_keypair();
+    let now = ctx.get_current_timestamp();
+
+    // 1. Create subtask order
+    ctx.send_tx(build_create_subtask_order_ix(
+        &requester.pubkey(), 50, 1, 25_000_000, now + 600, now + 7200,
+    ), &[&requester]).unwrap();
+
+    // 2. Two bids
+    ctx.send_tx(build_submit_subtask_bid_ix(
+        &agent_a.pubkey(), 50, 1, 20_000_000, 3_000_000, 600,
+    ), &[&agent_a]).unwrap();
+    ctx.send_tx(build_submit_subtask_bid_ix(
+        &agent_b.pubkey(), 50, 1, 18_000_000, 2_000_000, 900,
+    ), &[&agent_b]).unwrap();
+
+    // 3. Assign to agent_b (lower quote)
+    ctx.send_tx(build_assign_subtask_bid_ix(
+        &requester.pubkey(), 50, 1, &agent_b.pubkey(),
+    ), &[&requester]).unwrap();
+
+    // Verify assignment
+    let (subtask_pda, _) = find_subtask_pda(50, 1);
+    let order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+    assert_eq!(order.status, SubtaskStatus::Assigned);
+    assert_eq!(order.selected_agent, agent_b.pubkey().to_bytes());
+
+    // 4. Agent_b delivers
+    ctx.send_tx(build_submit_subtask_delivery_ix(
+        &agent_b.pubkey(), 50, 1, [0xFFu8; 32],
+    ), &[&agent_b]).unwrap();
+
+    let final_order: SubtaskOrder = read_account_data(&ctx, &subtask_pda);
+    assert_eq!(final_order.status, SubtaskStatus::Delivered);
+    assert_eq!(final_order.delivery_hash, [0xFFu8; 32]);
+}

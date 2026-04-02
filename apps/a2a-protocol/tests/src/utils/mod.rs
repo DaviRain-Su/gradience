@@ -367,3 +367,59 @@ pub fn build_create_thread_ix(
         data: ix_data,
     }
 }
+
+pub fn build_assign_subtask_bid_ix(
+    requester: &Pubkey,
+    parent_task_id: u64,
+    subtask_id: u32,
+    winner: &Pubkey,
+) -> Instruction {
+    use a2a_protocol::instructions::AssignSubtaskBidData;
+
+    let (subtask_pda, _) = find_subtask_pda(parent_task_id, subtask_id);
+    let (bid_pda, _) = find_bid_pda(parent_task_id, subtask_id, winner);
+    let data = AssignSubtaskBidData {
+        parent_task_id,
+        subtask_id,
+        winner: winner.to_bytes(),
+    };
+    let mut ix_data = vec![11u8]; // discriminator 11 = AssignSubtaskBid
+    ix_data.extend_from_slice(&borsh::to_vec(&data).unwrap());
+
+    Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(*requester, true),
+            AccountMeta::new(subtask_pda, false),
+            AccountMeta::new(bid_pda, false),
+        ],
+        data: ix_data,
+    }
+}
+
+pub fn build_submit_subtask_delivery_ix(
+    agent: &Pubkey,
+    parent_task_id: u64,
+    subtask_id: u32,
+    delivery_hash: [u8; 32],
+) -> Instruction {
+    use a2a_protocol::instructions::SubmitSubtaskDeliveryData;
+
+    let (subtask_pda, _) = find_subtask_pda(parent_task_id, subtask_id);
+    let data = SubmitSubtaskDeliveryData {
+        parent_task_id,
+        subtask_id,
+        delivery_hash,
+    };
+    let mut ix_data = vec![12u8]; // discriminator 12 = SubmitSubtaskDelivery
+    ix_data.extend_from_slice(&borsh::to_vec(&data).unwrap());
+
+    Instruction {
+        program_id: program_id(),
+        accounts: vec![
+            AccountMeta::new(*agent, true),
+            AccountMeta::new(subtask_pda, false),
+        ],
+        data: ix_data,
+    }
+}
