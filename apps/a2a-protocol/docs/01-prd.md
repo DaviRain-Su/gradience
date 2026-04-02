@@ -19,7 +19,7 @@
 多 Agent 协作缺少统一的消息信封、可结算微支付、以及可审计的任务分解/分配协议，导致无法安全规模化协同。
 
 ### 当前状态
-- Agent Social 只有前端内存/BroadcastChannel 级别的 A2A 邀请 stub。  
+- AgentM 只有前端内存/BroadcastChannel 级别的 A2A 邀请 stub。  
 - 没有链上消息可验证层（签名信封 + 发现广播）。  
 - 没有链上可争议的微支付通道。  
 - 没有标准化的子任务竞标/分配协议与 Agent Arena/Chain Hub 联动。
@@ -81,7 +81,7 @@
 
 | 文档 | 链接 | 关系 |
 |------|------|------|
-| Agent Social 技术规格 | `apps/agent-social/docs/03-technical-spec.md` | 现有 A2A stub 基线 |
+| AgentM 技术规格 | `apps/agent-social/docs/03-technical-spec.md` | 现有 A2A stub 基线 |
 | Chain Hub 技术规格 | `apps/chain-hub/docs/03-technical-spec.md` | delegation 集成入口 |
 | Agent Arena 技术规格 | `apps/agent-arena/docs/03-technical-spec.md` | 任务/信誉联动目标 |
 

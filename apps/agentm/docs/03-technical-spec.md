@@ -1,6 +1,6 @@
-# Phase 3: Technical Spec — Agent.im
+# Phase 3: Technical Spec — AgentM
 
-> **范围**: `apps/agent-im/` — Gradience 协议参考客户端（桌面 IM 应用）
+> **范围**: `apps/agentm/` — Gradience 协议参考客户端（桌面 IM 应用）
 > **定位**: 人和 Agent 共用的超级入口，双界面设计（GUI + API）
 
 ---
@@ -26,7 +26,7 @@
 ## 2. 文件结构与职责
 
 ```
-apps/agent-im/
+apps/agentm/
 ├── docs/
 │   ├── 01-prd.md
 │   ├── 02-architecture.md
@@ -486,7 +486,7 @@ interface TTSEngine {
 
 ```
 ┌──────────────────────────────────────────────┐
-│  顶栏：Agent.im    [声誉分] [钱包地址] [设置] │
+│  顶栏：AgentM    [声誉分] [钱包地址] [设置] │
 ├──────┬───────────────────────────────────────┤
 │ 侧栏 │             内容区                    │
 │      │                                       │
@@ -540,15 +540,15 @@ class IndexerClient {
 
 | 源文件 | 目标文件 | 修改内容 |
 |--------|---------|---------|
-| `agent-me/frontend/src/components/reputation-panel.tsx` | `agent-im/src/renderer/components/reputation-panel.tsx` | 移除 `'use client'`；`createSdk()` → 从 Zustand store 获取 |
-| `agent-me/frontend/src/components/task-history.tsx` | `agent-im/src/renderer/components/task-history.tsx` | 同上 |
+| `agent-me/frontend/src/components/reputation-panel.tsx` | `agentm/src/renderer/components/reputation-panel.tsx` | 移除 `'use client'`；`createSdk()` → 从 Zustand store 获取 |
+| `agent-me/frontend/src/components/task-history.tsx` | `agentm/src/renderer/components/task-history.tsx` | 同上 |
 | `agent-me/frontend/src/components/wallet-manager.tsx` | 删除 | 被 Privy 替代，不迁移 |
-| `agent-social/frontend/src/components/agent-discovery.tsx` | `agent-im/src/renderer/components/agent-discovery.tsx` | 移除 `'use client'`；props 改为从 Zustand 读取 |
-| `agent-social/frontend/src/components/agent-profile.tsx` | `agent-im/src/renderer/components/agent-profile.tsx` | 同上 |
-| `agent-social/frontend/src/components/invite-stub.tsx` | `agent-im/src/renderer/components/chat-input.tsx` | 重构为 IM 输入框，保留微支付逻辑 |
-| `agent-social/frontend/src/lib/magicblock-a2a.ts` | `agent-im/src/renderer/lib/a2a-client.ts` | 原样迁移，不修改接口 |
-| `agent-social/frontend/src/lib/ranking.ts` | `agent-im/src/renderer/lib/ranking.ts` | 原样迁移 |
-| `agent-social/frontend/src/lib/sdk.ts` | `agent-im/src/renderer/lib/sdk.ts` | 原样迁移 |
+| `agent-social/frontend/src/components/agent-discovery.tsx` | `agentm/src/renderer/components/agent-discovery.tsx` | 移除 `'use client'`；props 改为从 Zustand 读取 |
+| `agent-social/frontend/src/components/agent-profile.tsx` | `agentm/src/renderer/components/agent-profile.tsx` | 同上 |
+| `agent-social/frontend/src/components/invite-stub.tsx` | `agentm/src/renderer/components/chat-input.tsx` | 重构为 IM 输入框，保留微支付逻辑 |
+| `agent-social/frontend/src/lib/magicblock-a2a.ts` | `agentm/src/renderer/lib/a2a-client.ts` | 原样迁移，不修改接口 |
+| `agent-social/frontend/src/lib/ranking.ts` | `agentm/src/renderer/lib/ranking.ts` | 原样迁移 |
+| `agent-social/frontend/src/lib/sdk.ts` | `agentm/src/renderer/lib/sdk.ts` | 原样迁移 |
 
 ---
 
@@ -609,7 +609,7 @@ class IndexerClient {
 - 语音交互（P1，MVP 后第一优先）
 - 任务发布/申请/评判（P1）
 - Chain Hub 技能市场（P2）
-- DashDomain 连接（P2）
+- AgentM Pro 连接（P2）
 - E2E 加密消息（P2）
 - 8004scan 集成（P2，T49-T51）
 - 移动端（后期）

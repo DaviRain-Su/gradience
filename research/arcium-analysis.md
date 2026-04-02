@@ -3,7 +3,7 @@
 > **文档状态**: 分析草案  
 > **创建日期**: 2026-03-28  
 > **分析对象**: Arcium (https://arcium.com/)  
-> **相关项目**: Gradience / Agent Arena / Agent Me / Chain Hub
+> **相关项目**: Gradience / Agent Arena / AgentM / Chain Hub
 
 ---
 
@@ -152,7 +152,7 @@ gantt
 
 ---
 
-### 3.3 🤝 Agent Social (社交层)
+### 3.3 🤝 AgentM (社交层)
 
 #### 私密匹配与对话
 
@@ -182,7 +182,7 @@ Agent A 寻找合作伙伴:
 
 ---
 
-### 3.4 🧑‍💻 Agent Me (人口层)
+### 3.4 🧑‍💻 AgentM (人口层)
 
 #### 个人数据主权
 
@@ -259,8 +259,8 @@ flowchart TB
     subgraph Gradience["Gradience 生态"]
         Arena["🏟️ Agent Arena"]
         Hub["🔗 Chain Hub"]
-        Social["🤝 Agent Social"]
-        Me["🧑‍💻 Agent Me"]
+        Social["🤝 AgentM"]
+        Me["🧑‍💻 AgentM"]
     end
     
     subgraph Arcium["Arcium 隐私层"]
@@ -334,8 +334,8 @@ pub fn execute_skill_encrypted(
 
 ### Phase 4: 全面隐私 (2026 Q3+)
 
-- [ ] Agent Social 私密匹配
-- [ ] Agent Me 个人数据隐私
+- [ ] AgentM 私密匹配
+- [ ] AgentM 个人数据隐私
 - [ ] Cheater Detection 集成
 
 ---
@@ -367,8 +367,8 @@ pub fn execute_skill_encrypted(
 |----------------|-------------|--------|
 | Agent Arena | 私密竞价 + 防作弊 | ⭐⭐⭐⭐⭐ |
 | Chain Hub | Skill 知识产权保护 | ⭐⭐⭐ |
-| Agent Social | 私密匹配 + 对话 | ⭐⭐ |
-| Agent Me | 个人数据主权 | ⭐⭐⭐ |
+| AgentM | 私密匹配 + 对话 | ⭐⭐ |
+| AgentM | 个人数据主权 | ⭐⭐⭐ |
 
 ### 8.2 建议决策
 

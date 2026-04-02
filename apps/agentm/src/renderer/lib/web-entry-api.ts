@@ -37,14 +37,14 @@ export class AgentImWebEntryApiClient {
                 signal: AbortSignal.timeout(5000),
             });
         } catch (error) {
-            throw new Error(`Agent.im API unreachable: ${asMessage(error)}`);
+            throw new Error(`AgentM API unreachable: ${asMessage(error)}`);
         }
 
         if (!response.ok) {
             const bodyText = await response.text();
             const apiError = extractApiError(bodyText);
             throw new Error(
-                `Agent.im API ${response.status}: ${
+                `AgentM API ${response.status}: ${
                     apiError?.message ?? (bodyText || response.statusText)
                 }`,
             );

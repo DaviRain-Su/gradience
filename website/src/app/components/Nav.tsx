@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.xyz";
+
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", h);
@@ -31,6 +33,14 @@ export function Nav() {
             className="px-4 py-1.5 rounded-full border border-white/10 hover:border-white/25 hover:text-white transition-all duration-200"
           >
             Whitepaper
+          </a>
+          <a
+            href={agentmUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-1.5 rounded-full bg-white text-[var(--bg)] font-semibold hover:opacity-90 transition-all duration-200"
+          >
+            Launch AgentM
           </a>
         </div>
       </div>

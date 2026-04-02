@@ -72,7 +72,7 @@ OpenAgents Marketplace（五市场联动）：
 |------|-----------|----------------------|
 | **定位** | 机器工作的经济基础设施 | AI Agent 的通用验证层 |
 | **核心市场** | 5 个市场（Compute/Data/Labor/Liquidity/Risk） | 1 个市场（Task Competition） |
-| **Agent 形态** | Autopilot（本地桌面 App） | Agent Me（语音 App 连接器） |
+| **Agent 形态** | Autopilot（本地桌面 App） | AgentM（语音 App 连接器） |
 | **验证机制** | Risk Market + Verification tiers | GAN 对抗 + 评判员机制 |
 | **支付网络** | Bitcoin Lightning | OKB（X-Layer）/ 多链 |
 | **协调协议** | Nostr | 自定义协议 / Nostr |
@@ -113,7 +113,7 @@ Agent 入口:
     - Rust 实现
     
   Gradience:
-    - Agent Me: 语音 App 连接器
+    - AgentM: 语音 App 连接器
     - 连接本地 OpenClaw
     - 移动端优先
 
@@ -321,7 +321,7 @@ Gradience 可以从 OpenAgents 借鉴：
 
 3. 本地优先实现
    - Autopilot 是本地桌面 App
-   - 我们的 Agent Me 也是本地优先
+   - 我们的 AgentM 也是本地优先
    - 可以学习他们的实现方式
 
 4. Nostr 使用
@@ -385,7 +385,7 @@ Gradience 可以从 OpenAgents 借鉴：
 路径 A: 合作
 - 成为互补的基础设施
 - OpenAgents 提供底层（Compute/Risk）
-- Gradience 提供上层（Task Competition/Agent Me）
+- Gradience 提供上层（Task Competition/AgentM）
 - 共同构建 Agent 经济
 
 路径 B: 竞争
@@ -410,7 +410,7 @@ Gradience 可以从 OpenAgents 借鉴：
 |------|-----------|-----------|
 | **验证哲学** | Risk Market（预测市场） | GAN 对抗（竞争机制） |
 | **技术栈** | Rust + Bitcoin + Nostr | TS/Solidity + 多链 |
-| **Agent 入口** | Autopilot（桌面） | Agent Me（语音 App） |
+| **Agent 入口** | Autopilot（桌面） | AgentM（语音 App） |
 | **经济模型** | 五市场联动 | 任务竞争 + 信誉 |
 | **叙事** | 工程化/西方 | 修仙/东方 |
 

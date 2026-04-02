@@ -1,6 +1,6 @@
-# Phase 4: Task Breakdown — Agent.im
+# Phase 4: Task Breakdown — AgentM
 
-> 目标：将 Agent.im 从 Demo 态推进到生产分阶段实施（与项目级 `docs/04-task-breakdown.md` 的 T53~T60 对齐）。
+> 目标：将 AgentM 从 Demo 态推进到生产分阶段实施（与项目级 `docs/04-task-breakdown.md` 的 T53~T60 对齐）。
 
 ---
 
@@ -8,7 +8,7 @@
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
-| IM-T01 | A1 端口与启动栈统一 | Indexer 基址统一到 `http://127.0.0.1:3001`；`start-dev-stack.sh` 改为 agent-im 窗口；对齐 judge-daemon/indexer/agent-im 启动变量 | 03-tech-spec | 2h | P0 | 一键启动后 Agent.im 可读取真实 Indexer 任务/声誉数据；无端口冲突 |
+| IM-T01 | A1 端口与启动栈统一 | Indexer 基址统一到 `http://127.0.0.1:3001`；`start-dev-stack.sh` 改为 agent-im 窗口；对齐 judge-daemon/indexer/agent-im 启动变量 | 03-tech-spec | 2h | P0 | 一键启动后 AgentM 可读取真实 Indexer 任务/声誉数据；无端口冲突 |
 | IM-T02 | A2 Privy 真实认证接入 | 接入 Privy provider/hooks，保留未配置时 demo 降级；登录后获取真实 Solana 地址并写入 store | IM-T01 | 4h | P0 | Google OAuth 登录成功；`publicKey` 非 `DEMO_*`；认证失败提示可读且不崩溃 |
 | IM-T03 | A3 Demo 脚本固化 | 固化登录→发现→任务/声誉→互通状态的演示路径；输出命令与预期输出 | IM-T02 | 2h | P0 | 10 分钟内可重复演示；文档化命令可直接复制运行 |
 
@@ -83,7 +83,7 @@
 
 ## 4.5 与项目级 Backlog 映射（T61~T70）
 
-| 项目级任务 | Agent.im 对应 |
+| 项目级任务 | AgentM 对应 |
 |-----------|---------------|
 | T61 | IM-S01 ~ IM-S03 |
 | T62 | IM-S04 ~ IM-S06 |
@@ -93,7 +93,7 @@
 
 **并行依赖（来自协议侧 Track-B）**
 
-- T65：Pool Judge 生产化（影响 Agent.im 任务分配展示一致性）
+- T65：Pool Judge 生产化（影响 AgentM 任务分配展示一致性）
 - T66：staking/slash 闭环（影响 Me 页资金和状态回显）
 - T67：排名与分类信誉强化（影响 Discover 排序）
 

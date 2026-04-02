@@ -81,7 +81,7 @@ const SPRINTS: SprintSpec[] = [
         commands: [
             {
                 id: 'agent-im-api',
-                command: `pnpm --dir "${path.join(REPO_ROOT, 'apps/agent-im')}" test:api`,
+                command: `pnpm --dir "${path.join(REPO_ROOT, 'apps/agentm')}" test:api`,
             },
             {
                 id: 'arena-t65',
@@ -95,7 +95,7 @@ const SPRINTS: SprintSpec[] = [
         commands: [
             {
                 id: 'agent-im-full',
-                command: `pnpm --dir "${path.join(REPO_ROOT, 'apps/agent-im')}" test`,
+                command: `pnpm --dir "${path.join(REPO_ROOT, 'apps/agentm')}" test`,
             },
             {
                 id: 'arena-t66',

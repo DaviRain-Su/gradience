@@ -28,5 +28,5 @@ jobs:
       - name: Install dependencies
         run: pnpm --dir ./apps/agentm install
 
-      - name: Run Agent.im release gate
+      - name: Run AgentM release gate
         run: pnpm --dir ./apps/agentm release:gate

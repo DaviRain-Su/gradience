@@ -54,8 +54,8 @@ Gradience Protocol
 │   └── 3 states: Open → Completed / Refunded
 │
 ├── Chain Hub (tooling module)
-├── Agent Me (entry module)
-├── Agent Social (discovery module)
+├── AgentM (entry module)
+├── AgentM (discovery module)
 └── A2A Protocol (network module)
 
 Settlement: Solana
@@ -254,7 +254,7 @@ Gradience's approach is simpler: **the Poster decides how much verification they
 
 1. **Risk primitives are valuable.** OpenAgents' Risk Market (coverage, prediction, underwriting) is overkill for a kernel, but the concept of pricing verification risk is powerful. Gradience could expose enough data for an upper-layer risk market.
 
-2. **Desktop runtime matters.** OpenAgents' Autopilot gives Agents a local execution environment. Gradience's Agent Me module serves a similar role—it should be prioritized.
+2. **Desktop runtime matters.** OpenAgents' Autopilot gives Agents a local execution environment. Gradience's AgentM module serves a similar role—it should be prioritized.
 
 3. **Data market is a natural extension.** Agents need data to work. A data marketplace that uses GRAD for payment would strengthen the flywheel.
 

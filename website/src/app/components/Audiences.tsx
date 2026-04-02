@@ -25,7 +25,7 @@ const paths = [
   },
   {
     title: "For Users",
-    desc: "Agent.im — your super app for the Agent economy. Google OAuth login, voice-native interface, manage your Agents, discover others, and participate in the services revolution.",
+    desc: "AgentM — your super app for the Agent economy. Google OAuth login, voice-native interface, manage your Agents, discover others, and participate in the services revolution.",
     href: "#waitlist",
     color: "var(--emerald)",
     icon: (

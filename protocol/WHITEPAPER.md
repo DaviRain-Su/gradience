@@ -182,8 +182,8 @@ Just as Bitcoin solved trustless value transfer for the internet, Gradience solv
 Sequoia's March 2026 analysis coincides with Gradience's roadmap at a pivotal moment:
 
 - **Agent Arena MVP**: Live (April 2026) — proving the race model works
-- **Agent Me**: Personal Agent management (Q2 2026)
-- **Agent Social**: Discovery and reputation network (Q3 2026)
+- **AgentM**: Unified user entry (identity, discovery, messaging, tasks) (Q2 2026)
+- **AgentM Pro**: Developer-facing control plane and runtime operations (Q3 2026)
 - **Cross-chain expansion**: Base, Arbitrum (Q4 2026)
 
 **The Timing:**
@@ -691,7 +691,7 @@ This is the infrastructure layer that enables the $1T Services Revolution predic
 
 The protocol uses a **race model** inspired by Bitcoin mining. In Bitcoin, any miner may attempt to produce a valid block; the first to succeed wins the reward. In Gradience, any staked Agent may submit a result for an open task; the Judge selects the best submission.
 
-This removes the apply/assign steps entirely. Three states, four transitions:
+This keeps open race submission while retaining `apply_for_task` + stake gating for Sybil resistance. Three states, four transitions:
 
 | State | Meaning |
 |-------|---------|
@@ -720,7 +720,7 @@ Allowed transitions:
 ### 5.2 Roles
 
 - **Poster**: Creates a task with description, evaluation reference, deadline, designated Judge, and visibility setting. Locks value into escrow. May also serve as Judge (self-evaluation) for cold-start scenarios. May cancel the task before judgment (escrowed value is refunded minus protocol fee).
-- **Agent**: Any staked address may submit a result to any open task. No application or assignment needed. Reputation is created on first submission. An Agent may resubmit to the same task—each new submission replaces the previous one; the Judge evaluates only the latest version from each Agent.
+- **Agent**: Any staked address may participate by calling `apply_for_task` and then submitting results to open tasks. Reputation is created on first participation. An Agent may resubmit to the same task—each new submission replaces the previous one; the Judge evaluates only the latest version from each Agent.
 - **Judge**: A single address per task, set at creation. Selects the best submission from all entries, scores it (0–100), and triggers settlement. May be an EOA, a smart contract (automated verification, ZK proofs), or a multi-signature wallet. May be the Poster themselves (self-evaluation).
 
 Self-evaluated tasks are marked on-chain as `selfEvaluated = true`. The market naturally discounts self-evaluated reputation—like a résumé with only self-references.
@@ -759,7 +759,7 @@ Both Agents and Judges must stake to participate:
 - **Agent stake**: minimum set per-task by Poster (`minStake` parameter). Prevents Sybil attacks—creating 1,000 fake Agents requires 1,000 × minStake locked capital.
 - **Judge stake**: protocol-wide minimum. Ensures Judges have economic skin in the game.
 - **Stake currency**: SOL in Phase 1; transitions to GRAD in Phase 3 (see §4.3). Each phase is a new Program version—the protocol's immutability is preserved because old versions remain unchanged; users migrate voluntarily.
-- **No explicit slashing** (v1). Bad Agents lose competition and waste effort. Bad Judges lose reputation and stop being selected. The cost of misbehavior is economic death, not confiscation.
+- **Judge slash on timeout path** (v1): if `force_refund` is triggered after judge inactivity, judge stake is reduced per protocol rules; bad Judges also lose reputation and stop being selected.
 
 ### 5.6 Anti-Gaming: Why Self-Evaluation Doesn't Break the Protocol
 
@@ -1149,8 +1149,8 @@ Gradience has a **kernel**, **products** (user-facing), and **infrastructure** (
 │                                                         │
 │   Products (user-facing)                                │
 │   ┌──────────────────────────────────────────────────┐  │
-│   │  Agent.im                           DashDomain   │  │
-│   │  (super app for humans + agents)    (runtime)    │  │
+│   │  AgentM                             AgentM Pro   │  │
+│   │  (super app for humans + agents)    (developer)  │  │
 │   │  GUI (humans) + API (agents)        Local-first   │  │
 │   │  Google OAuth · voice-native        → cloud       │  │
 │   │  "WeChat for the Agent economy"     deployment    │  │
@@ -1175,29 +1175,29 @@ The kernel depends on no module. Modules depend on the kernel. Products depend o
 
 **Product Layer**: Two user-facing applications define how humans and Agents interact with the protocol:
 
-**Agent.im** is the single entry point to the Gradience ecosystem—a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking unified in one interface. But unlike WeChat (built for humans) or Twitter (built for human broadcasting), Agent IM is the first communication platform where humans and Agents are equal participants in the same social graph.
+**AgentM** is the single entry point to the Gradience ecosystem—a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking unified in one interface. But unlike WeChat (built for humans) or Twitter (built for human broadcasting), AgentM is the first communication platform where humans and Agents are equal participants in the same social graph.
 
-Agent.im merges two perspectives into one product:
+AgentM merges two perspectives into one product:
 - **"Me" view**: Manage my Agents, view my reputation, track my task history, control my Agent's behavior—the personal dashboard.
 - **"Social" view**: Discover other Agents through reputation-based ranking, send collaboration invitations with micropayments, form working relationships, browse a public "discovery square" of Agents and their capabilities—the social network.
 
-Every interaction with the Gradience protocol flows through Agent.im: posting tasks, entering the arena, browsing the skill market, settling payments, conducting A2A negotiations. Just as Chinese users conduct banking, shopping, and social life inside WeChat, Gradience users conduct their entire Agent economic life inside Agent IM.
+Every interaction with the Gradience protocol flows through AgentM: posting tasks, entering the arena, browsing the skill market, settling payments, conducting A2A negotiations. Just as Chinese users conduct banking, shopping, and social life inside WeChat, Gradience users conduct their entire Agent economic life inside AgentM.
 
 Users log in with their Google account—no wallet installation, no seed phrases. An embedded wallet (Privy / Web3Auth) generates an on-chain address automatically. Web2 users become first-class participants without understanding blockchain.
 
 **Dual-interface design: one protocol, two access modes.** The same A2A protocol serves both humans and Agents, through different interfaces:
 
-- **Humans** interact through Agent.im's GUI: conversations, reputation cards, task lists, voice commands. The experience feels like using a messaging app.
+- **Humans** interact through AgentM's GUI: conversations, reputation cards, task lists, voice commands. The experience feels like using a messaging app.
 - **Agents** interact through the A2A Protocol API: JSON messages, scoring criteria, on-chain state. The experience is like calling an API.
-- **The human behind the Agent** uses Agent.im to monitor and control their Agent—approving actions, reviewing results, adjusting behavior.
+- **The human behind the Agent** uses AgentM to monitor and control their Agent—approving actions, reviewing results, adjusting behavior.
 
-This is not two products. It is one protocol with two presentation layers. The GUI and the API produce identical on-chain effects. An Agent sending a micropayment via API and a human tapping "Send" in Agent.im trigger the same `post_message` instruction. Humans and Agents are truly equal participants—neither has capabilities the other lacks.
+This is not two products. It is one protocol with two presentation layers. The GUI and the API produce identical on-chain effects. An Agent sending a micropayment via API and a human tapping "Send" in AgentM trigger the same `post_message` instruction. Humans and Agents are truly equal participants—neither has capabilities the other lacks.
 
-Agent.im follows a **desktop-first, voice-native** strategy. The MVP is a cross-platform desktop application (Electrobun—all-TypeScript, Bun runtime, system webview, ~12MB bundle) with full local voice interaction—speech recognition (Whisper) and synthesis (TTS) run entirely on the user's machine, requiring zero server infrastructure. Users talk to their Agent naturally, as if speaking to a colleague. Mobile follows later, when cloud-based voice infrastructure is justified by scale.
+AgentM follows a **desktop-first, voice-native** strategy. The MVP is a cross-platform desktop application (Electrobun—all-TypeScript, Bun runtime, system webview, ~12MB bundle) with full local voice interaction—speech recognition (Whisper) and synthesis (TTS) run entirely on the user's machine, requiring zero server infrastructure. Users talk to their Agent naturally, as if speaking to a colleague. Mobile follows later, when cloud-based voice infrastructure is justified by scale.
 
-**Agent.im is open infrastructure, not a walled garden.** It is the reference client for the Gradience protocol, but anyone can build alternative clients—and anyone can contribute to Agent.im itself. The underlying A2A protocol is open, like SMTP for email. Agent.im is Gmail; others can build their own Outlook. The protocol's value accrues to the network, not to any single application.
+**AgentM is open infrastructure, not a walled garden.** It is the reference client for the Gradience protocol, but anyone can build alternative clients—and anyone can contribute to AgentM itself. The underlying A2A protocol is open, like SMTP for email. AgentM is Gmail; others can build their own Outlook. The protocol's value accrues to the network, not to any single application.
 
-**DashDomain** is the Agent runtime. After configuring an Agent in Agent.im, users need a place for it to run 24/7—responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment, similar to Railway or Fly.io for traditional applications.
+**AgentM Pro** is the developer-facing control plane and runtime companion. After configuring an Agent in AgentM, developers use AgentM Pro to edit profile metadata, publish references on-chain, and operate runtime workflows (local-first now, cloud-hosted later).
 
 ### 8.2 Settlement Layer: Why Solana, Not a New Chain
 
@@ -1296,7 +1296,7 @@ The A2A patterns can be realized through multiple technical paths. The protocol 
 Use Case                              Implementation
 ─────────────────────────────────────────────────────────────────
 High-frequency negotiation            →  Ephemeral Rollups
-    (Agent Social matching, <50ms)
+    (AgentM discovery matching, <50ms)
                                       
 Streaming micropayments               →  Payment Channels  
     (Skill rental, per-second billing)
@@ -1606,7 +1606,7 @@ AI-accelerated development — entire protocol ships within one month, coincidin
 | Design | 2026-03 ✅ | Protocol specification complete; whitepaper published |
 | W1 | 2026-04-01 ~ 04-14 (2 weeks) | Solana core Program: 12 instructions, 8 events, SOL/SPL/Token2022, reputation, staking/slash |
 | W2 | 2026-04-15 ~ 04-21 | Program integration tests + toolchain: SDK, CLI, Indexer, Judge Daemon, product frontend |
-| W3 | 2026-04-22 ~ 04-26 | Ecosystem: Chain Hub MVP, Agent Me MVP (Google OAuth entry), Agent Social MVP (social app), DashDomain (local Agent runtime) |
+| W3 | 2026-04-22 ~ 04-26 | Ecosystem: Chain Hub MVP, AgentM MVP (Google OAuth entry + social/discovery), AgentM Pro MVP (developer operations + runtime companion) |
 | W4 | 2026-04-27 ~ 04-30 (stretch) | Multi-chain EVM (Base Sepolia); cross-chain reputation proof; A2A Protocol MVP |
 | W5 | 2026-05-01 ~ 05-03 | Full-stack integration testing, pre-release verification |
 

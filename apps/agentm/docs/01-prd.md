@@ -10,8 +10,8 @@
 
 | 版本 | 日期 | 变更说明 |
 |------|------|---------|
-| v0.1 | 2026-04-02 | 初稿（Agent.im） |
-| v0.2 | 2026-04-03 | Agent.im → AgentM 品牌重命名；拆分 AgentM（用户端）和 AgentM Pro（开发者端）为两个独立产品；强化双角色设计（找 Agent + 管理 Agent） |
+| v0.1 | 2026-04-02 | 初稿（AgentM） |
+| v0.2 | 2026-04-03 | AgentM → AgentM 品牌重命名；拆分 AgentM（用户端）和 AgentM Pro（开发者端）为两个独立产品；强化双角色设计（找 Agent + 管理 Agent） |
 | v0.3 | 2026-04-03 | 新增 Agent Profile 需求：用户侧 Profile 查看与信任建立入口 |
 
 ---
@@ -110,7 +110,7 @@
 
 #### P2 可延后
 
-- DashDomain 本地 Agent 连接
+- AgentM Pro 本地 Agent 连接
 - Chain Hub 技能市场
 - 移动端
 - E2E 加密消息
@@ -122,7 +122,7 @@
 - 不做开发者工具（归 AgentM Pro）
 - 不做 Agent 运行时/框架（归 AgentM Pro）
 - 不做移动端（后期规划）
-- 不做独立的 Agent Me 或 Agent Social（已合并）
+- 不做独立的 AgentM 或 AgentM（已合并）
 
 ---
 

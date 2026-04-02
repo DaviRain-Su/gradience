@@ -1,7 +1,7 @@
-# Phase 1: PRD — Agent.im Web Entry + Local Agent Voice
+# Phase 1: PRD — AgentM Web Entry + Local Agent Voice
 
-> **目的**: 为 Agent.im 增加 Web 入口，并支持连接本地 Agent 与语音对话  
-> **输入**: `apps/agent-im/docs/01-prd.md`（桌面版 PRD）  
+> **目的**: 为 AgentM 增加 Web 入口，并支持连接本地 Agent 与语音对话  
+> **输入**: `apps/agentm/docs/01-prd.md`（桌面版 PRD）  
 > **输出物**: 本文档
 
 ---
@@ -16,8 +16,8 @@
 
 ## 1.1 项目概述（必填）
 
-**项目名称**: Agent.im Web Entry  
-**所属模块**: Agent.im（子模块：Web 接入与本地 Agent 互通）  
+**项目名称**: AgentM Web Entry  
+**所属模块**: AgentM（子模块：Web 接入与本地 Agent 互通）  
 **版本**: v0.1  
 **日期**: 2026-04-02  
 **作者**: Droid + davirian
@@ -26,17 +26,17 @@
 
 ### 要解决的问题
 
-桌面版 Agent.im 已有能力，但用户无法通过网页直接登录和连接自己本机 Agent，入口成本高。
+桌面版 AgentM 已有能力，但用户无法通过网页直接登录和连接自己本机 Agent，入口成本高。
 
 ### 当前状态
 
-- 仅桌面入口，Web 用户无法直接使用 Agent.im
+- 仅桌面入口，Web 用户无法直接使用 AgentM
 - 本地 Agent 与 UI 连接主要依赖桌面进程，不支持“Web 登录后继续操控本机 Agent”
 - 语音链路仅桌面优先，Web 语音会话路径未闭环
 
 ### 目标状态
 
-- 用户可在 Web 登录 Agent.im（同一身份体系）
+- 用户可在 Web 登录 AgentM（同一身份体系）
 - 用户可在 Web 将当前会话绑定到“本机运行的 Agent”
 - 用户可在 Web 端通过语音直接与本机 Agent 对话
 
@@ -44,7 +44,7 @@
 
 | # | 角色 | 想要 | 以便 | 优先级 |
 |---|------|------|------|--------|
-| 1 | Web 用户 | 在浏览器登录 Agent.im | 不安装桌面端也能开始使用 | P0 |
+| 1 | Web 用户 | 在浏览器登录 AgentM | 不安装桌面端也能开始使用 | P0 |
 | 2 | Agent 拥有者 | 让 Web 会话连接本机 Agent | 远程管理本机 Agent 任务 | P0 |
 | 3 | Web 用户 | 在网页看见当前可连接 Agent 列表 | 快速选择要对话的 Agent | P0 |
 | 4 | Web 用户 | 用语音和本机 Agent 对话 | 提升交互自然度与效率 | P1 |
@@ -54,7 +54,7 @@
 
 ### 做什么（In Scope）
 
-- [x] Web 登录入口（沿用现有 Agent.im 认证体系）
+- [x] Web 登录入口（沿用现有 AgentM 认证体系）
 - [x] Web 会话与本地 Bridge 配对绑定（一次性配对码）
 - [x] Web 端可见本地 Agent 在线列表与状态
 - [x] Web 文本对话通道（浏览器 ↔ 本地 Agent）
@@ -81,7 +81,7 @@
 
 | 约束类型 | 具体描述 |
 |---------|---------|
-| 技术约束 | 复用 `apps/agent-im` 现有 TypeScript 技术栈，不引入新后端语言 |
+| 技术约束 | 复用 `apps/agentm` 现有 TypeScript 技术栈，不引入新后端语言 |
 | 技术约束 | 本地 Agent 连接必须走“出站连接”模式，避免公网暴露本机 |
 | 安全约束 | 配对码必须短时有效且一次性消费；会话必须绑定用户身份 |
 | 依赖约束 | 复用现有 Auth（Privy）与 A2A/任务 API 能力 |
@@ -91,9 +91,9 @@
 
 | 文档 | 链接 | 关系 |
 |------|------|------|
-| Agent.im 主 PRD | `apps/agent-im/docs/01-prd.md` | 父级产品目标 |
-| Agent.im 架构 | `apps/agent-im/docs/02-architecture.md` | 复用组件边界 |
-| Agent.im 技术规格 | `apps/agent-im/docs/03-technical-spec.md` | 复用 API/状态模型 |
+| AgentM 主 PRD | `apps/agentm/docs/01-prd.md` | 父级产品目标 |
+| AgentM 架构 | `apps/agentm/docs/02-architecture.md` | 复用组件边界 |
+| AgentM 技术规格 | `apps/agentm/docs/03-technical-spec.md` | 复用 API/状态模型 |
 
 ---
 

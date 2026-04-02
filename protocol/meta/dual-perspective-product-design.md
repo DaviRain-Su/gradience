@@ -370,10 +370,10 @@ if (result.battleTestStarted) {
 
 ## 六、Gradience 的双重视角实践
 
-### 6.1 Agent Me 的设计
+### 6.1 AgentM 的设计
 
 ```
-Agent Me = 语音入口 + OpenClaw 连接器
+AgentM = 语音入口 + OpenClaw 连接器
 
 人视角：
 - 语音对话（最自然的授权方式）
@@ -463,7 +463,7 @@ AgentToken 应该：
 ## 参考文档
 
 - [AgentToken 设计](./agenttoken-design.md)
-- [Agent Me 定位澄清](../agent-me/agent-me-positioning-clarified.md)
+- [AgentM 定位澄清](../agent-me/agent-me-positioning-clarified.md)
 - [耳朵的报复](../agent-me/ears-revenge-philosophy.md)
 
 ---

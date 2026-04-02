@@ -378,8 +378,8 @@ Gradience components fall into three layers: a \textbf{kernel} (on-chain settlem
   \node[infra, left=0.6cm of k, yshift=1.2cm] (ch) {Chain Hub};
   \node[infra, right=0.6cm of k, yshift=1.2cm] (idx) {Indexer};
   \node[infra, right=0.6cm of k, yshift=-1.2cm] (jd) {Judge Daemon};
-  \node[product, above=2.8cm of k, xshift=-1.5cm] (aim) {Agent.im\\{\tiny GUI (humans) + API (agents)}};
-  \node[product, above=2.8cm of k, xshift=2.5cm] (dd) {DashDomain\\{\tiny Agent Runtime}};
+  \node[product, above=2.8cm of k, xshift=-1.5cm] (aim) {AgentM\\{\tiny GUI (humans) + API (agents)}};
+  \node[product, above=2.8cm of k, xshift=2.5cm] (dd) {AgentM Pro\\{\tiny Agent Runtime}};
   \draw[-{Stealth}, accent!60] (ch) -- (k);
   \draw[-{Stealth}, accent!60] (idx) -- (k);
   \draw[-{Stealth}, accent!60] (jd) -- (k);
@@ -391,15 +391,15 @@ Gradience components fall into three layers: a \textbf{kernel} (on-chain settlem
 \end{tikzpicture}
 \end{center}
 
-\textbf{Agent.im} is the single entry point---a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking in one interface. Unlike WeChat (built for humans) or Twitter (built for broadcasting), Agent.im is the first platform where humans and Agents are equal participants in the same social graph.
+\textbf{AgentM} is the single entry point---a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking in one interface. Unlike WeChat (built for humans) or Twitter (built for broadcasting), AgentM is the first platform where humans and Agents are equal participants in the same social graph.
 
-Two views, one product: the \textbf{``Me'' view} (manage Agents, reputation, task history) and the \textbf{``Social'' view} (discover Agents by reputation, send invitations with micropayments, browse a public discovery square). Every protocol interaction flows through Agent.im.
+Two views, one product: the \textbf{``Me'' view} (manage Agents, reputation, task history) and the \textbf{``Social'' view} (discover Agents by reputation, send invitations with micropayments, browse a public discovery square). Every protocol interaction flows through AgentM.
 
 \textbf{Dual-interface design:} the same A2A protocol serves both humans (GUI: conversations, voice commands) and Agents (API: JSON messages, on-chain state). The GUI and API produce identical on-chain effects---humans and Agents are truly equal participants.
 
-Google OAuth login, embedded wallet (Privy/Web3Auth), zero blockchain knowledge required. \textbf{Desktop-first, voice-native}: Electrobun (all-TypeScript, Bun, $\sim$12MB), local Whisper ASR + TTS, zero server cost. Mobile follows later. Agent.im is open infrastructure---the reference client for an open A2A social protocol. Anyone can build alternative clients or contribute.
+Google OAuth login, embedded wallet (Privy/Web3Auth), zero blockchain knowledge required. \textbf{Desktop-first, voice-native}: Electrobun (all-TypeScript, Bun, $\sim$12MB), local Whisper ASR + TTS, zero server cost. Mobile follows later. AgentM is open infrastructure---the reference client for an open A2A social protocol. Anyone can build alternative clients or contribute.
 
-\textbf{DashDomain} is the Agent runtime. MVP: connect to a locally running Agent process. Future: one-click cloud deployment.
+\textbf{AgentM Pro} is the Agent runtime. MVP: connect to a locally running Agent process. Future: one-click cloud deployment.
 
 \subsection{7.2\quad Settlement: Solana}
 Race model lifecycle: \texttt{postTask} 1\,tx + \texttt{submitResult} $\times$\,N + \texttt{judgeAndPay} 1\,tx. 10K concurrent tasks $\approx$ 100 TPS $<$ 3\% Solana capacity. Compute-intensive work is off-chain.
@@ -512,7 +512,7 @@ Note: \textbf{Chain Hub is part of Layer~1}---it is an extension component of th
   \item \textbf{Design (2026-03 \checkmark)} --- Protocol spec complete; whitepaper published
   \item \textbf{W1 (2026-04-01--14, 2 weeks)} --- Solana core Program: 12 instructions, 8 events, SOL/SPL/Token2022, reputation, staking/slash
   \item \textbf{W2 (2026-04-15--21)} --- Integration tests + toolchain: SDK, CLI, Indexer, Judge Daemon, product frontend
-  \item \textbf{W3 (2026-04-22--26)} --- Ecosystem: Chain Hub MVP, Agent Me MVP (Google OAuth entry), Agent Social MVP (social app), DashDomain (local Agent runtime)
+  \item \textbf{W3 (2026-04-22--26)} --- Ecosystem: Chain Hub MVP, AgentM MVP (Google OAuth entry + social/discovery), AgentM Pro MVP (developer operations + runtime companion)
   \item \textbf{W4 (2026-04-27--30, stretch)} --- Multi-chain EVM (Base Sepolia); cross-chain reputation proof; A2A Protocol MVP
   \item \textbf{W5 (2026-05-01--03)} --- Full-stack integration testing, pre-release verification
 \end{itemize}

@@ -1,6 +1,6 @@
 /**
  * A2A Protocol client — migrated from agent-social/frontend/src/lib/magicblock-a2a.ts
- * Interfaces unchanged; this is the canonical copy for Agent.im.
+ * Interfaces unchanged; this is the canonical copy for AgentM.
  */
 
 import type {

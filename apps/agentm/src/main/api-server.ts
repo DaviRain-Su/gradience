@@ -1,5 +1,5 @@
 /**
- * Agent.im API server — localhost:3939
+ * AgentM API server — localhost:3939
  * Agents interact through this API with the same effect as GUI users.
  */
 
@@ -1540,10 +1540,10 @@ function renderInteropDashboard(
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Agent.im Interop Dashboard</title>
+    <title>AgentM Interop Dashboard</title>
   </head>
   <body>
-    <h1>Agent.im Interop Dashboard</h1>
+    <h1>AgentM Interop Dashboard</h1>
     <p><strong>Agent:</strong> ${escapeHtml(agent)}</p>
     <ul>
       <li><strong>Identity Registered:</strong> ${data.identityRegistered ? 'Yes' : 'No'}</li>

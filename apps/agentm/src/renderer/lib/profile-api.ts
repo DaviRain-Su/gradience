@@ -84,13 +84,13 @@ export class AgentProfileApiClient {
                 signal: AbortSignal.timeout(5000),
             });
         } catch (error) {
-            throw new Error(`Agent.im API unreachable: ${asMessage(error)}`);
+            throw new Error(`AgentM API unreachable: ${asMessage(error)}`);
         }
 
         if (!response.ok) {
             const body = await response.text();
             const errorMessage = extractApiError(body) ?? (body || response.statusText);
-            throw new Error(`Agent.im API ${response.status}: ${errorMessage}`);
+            throw new Error(`AgentM API ${response.status}: ${errorMessage}`);
         }
 
         return (await response.json()) as T;

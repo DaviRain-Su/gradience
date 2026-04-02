@@ -1,4 +1,4 @@
-# Phase 3: Technical Spec — Agent.im Web Entry + Local Agent Voice
+# Phase 3: Technical Spec — AgentM Web Entry + Local Agent Voice
 
 > **目的**: 给出可直接实现的 Web 入口/Bridge/语音技术契约  
 > **输入**: `web-entry/02-architecture.md`  
@@ -167,7 +167,7 @@ Gateway 发：
 
 | 错误码 | 名称 | 触发条件 | 用户提示 |
 |--------|------|---------|---------|
-| WB-1001 | AUTH_REQUIRED | 未登录访问 Web API | 请先登录 Agent.im |
+| WB-1001 | AUTH_REQUIRED | 未登录访问 Web API | 请先登录 AgentM |
 | WB-1002 | PAIR_CODE_INVALID | 配对码格式或内容无效 | 配对码无效 |
 | WB-1003 | PAIR_CODE_EXPIRED | 配对码超时 | 配对码已过期，请重新生成 |
 | WB-1004 | PAIR_CODE_ALREADY_CONSUMED | 配对码重复使用 | 配对码已使用 |

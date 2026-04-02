@@ -4,7 +4,7 @@
 > **输入**: `docs/03-technical-spec.md`
 > **输出物**: 本文档
 > **更新日期**: 2026-04-02
-> **更新说明**: 根据 Gap Analysis 重新调整优先级，T19a-d 提升为 W1 阻塞项，Agent.im 任务细化
+> **更新说明**: 根据 Gap Analysis 重新调整优先级，T19a-d 提升为 W1 阻塞项，AgentM 任务细化
 
 ---
 
@@ -25,7 +25,7 @@ W1 (4月1-14日): Program 核心 + 集成测试 (T19a-d 为唯一阻塞项)
     ↓
 W2 (4月15-21日): Indexer + SDK + CLI + Judge Daemon + 前端
     ↓
-W3 (4月22-26日): Agent.im MVP + Chain Hub + GRAD Token
+W3 (4月22-26日): AgentM MVP + Chain Hub + GRAD Token
     ↓
 W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
 ```
@@ -78,7 +78,7 @@ W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
 | T21 | Indexer — PostgreSQL Schema | 4 张表（tasks / submissions / reputations / reputation_by_category）+ 5 个索引；migration 文件 | T19d | 2h | P0 | `psql` 运行 migration 无报错；schema 与规格完全一致 |
 | T22 | Indexer — 事件流接入 + 事件解析 | **双模式事件源**：① **Triton Dragon's Mouth gRPC**（默认，Fumarole 可靠流，HA + 断线重连）；② **Helius Webhooks HTTP**（fallback，Managed CF Workers 模式备选）；解析 **8 个 Program 事件**（TaskCreated, TaskApplied, SubmissionReceived, TaskJudged, TaskCancelled, TaskRefunded, JudgeRegistered, JudgeUnstaked）；upsert 到 DB；**内置 mock 模式**（`MOCK_EVENT=true` 时用本地文件模拟推送，无需真实 RPC 连接） | T21 | 3h | P0 | Mock 模式：8 类事件 JSON → DB 行正确创建；真实模式：延迟 < 200ms；Triton 断连时自动切换 Helius fallback |
 | T23 | Indexer — REST API 端点 | `GET /api/tasks?state=&category=&page=`；`GET /api/tasks/:id`；`GET /api/tasks/:id/submissions?sort=score`；`GET /api/reputation/:agent`；`GET /api/judge-pool/:category` | T22 | 3h | P0 | curl 每个端点 → 正确 JSON；分页正确；无效参数 → 4xx；未找到 → 404 |
-| T23a | Indexer — Me 数据聚合 API | **【新增 - Agent.im 依赖】** `GET /me`（当前用户声誉统计）；`GET /me/tasks`（我发布的任务）；`GET /me/submissions`（我的提交历史）；分页、排序、错误码一致 | T23 | 2h | P0 | API 返回结构稳定；分页/筛选正确；无登录返回 401 |
+| T23a | Indexer — Me 数据聚合 API | **【新增 - AgentM 依赖】** `GET /me`（当前用户声誉统计）；`GET /me/tasks`（我发布的任务）；`GET /me/submissions`（我的提交历史）；分页、排序、错误码一致 | T23 | 2h | P0 | API 返回结构稳定；分页/筛选正确；无登录返回 401 |
 | T24 | Indexer — WebSocket 服务器 | WS 连接 ws://indexer/ws；事件广播：TaskCreated / SubmissionReceived / TaskJudged；客户端可 filter by task_id | T22 | 2h | P1 | WS 客户端订阅 → 收到 DB upsert 触发的事件；连接断开自动清理；重连不丢事件 |
 | T25 | Indexer — Cloudflare Workers + D1 适配层 | CF Workers wrapper；D1 SQLite schema（与 PG schema 对齐）；`wrangler deploy` 到 CF；REST API 路径与 Self-hosted 完全一致 | T23 | 3h | P1 | Managed 模式 CF 部署成功；相同 curl 命令返回相同格式 |
 | T25a | Indexer — Docker 镜像 + compose 文件 | `Dockerfile`（Self-hosted Rust 二进制）；`docker-compose.yml`（Indexer + PostgreSQL）；`README.md` 一键启动说明 | T23 | 2h | P1 | `docker compose up` → 服务启动；`curl localhost:3001/api/tasks` → 正确响应；镜像大小 < 100MB |
@@ -100,18 +100,18 @@ W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
 
 ---
 
-### 🟡 W3（2026-04-22 ~ 04-26）— 生态扩展（Agent.im 为核心）
+### 🟡 W3（2026-04-22 ~ 04-26）— 生态扩展（AgentM 为核心）
 
-> **W3 关键目标**：Agent.im MVP 可用 + Chain Hub 基础 + GRAD Token
-> **Agent.im 为产品层唯一入口，优先级最高**
+> **W3 关键目标**：AgentM MVP 可用 + Chain Hub 基础 + GRAD Token
+> **AgentM 为产品层唯一入口，优先级最高**
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T39 | Chain Hub MVP | Delegation Task **Pinocchio** program 骨架（与 Agent Layer 主程序技术栈一致，no_std，无 Anchor）；Skill 市场注册表；与 Agent Layer JudgePool 集成（选人 → 授权）；**代码参考**：`gh:solana-program/multi-delegator`（官方 Pinocchio + Codama + LiteSVM 实现，固定授权 / 循环授权 / 订阅计划三种委托模型，与 Delegation Task 场景直接对齐，参考其 PDA 设计、指令结构、版本迁移框架 ADR-003） | T19d | 4h | P1 | Chain Hub program 可初始化；delegation_task 指令可调用（不含完整执行逻辑）；PDA 设计参照 multi-delegator ADR-001 |
-| T40a | Agent.im — Electrobun 脚手架 + 项目结构 | **【Agent.im 子任务 1/4】** Electrobun 桌面应用初始化；React + Vite + Tailwind 配置；Zustand 状态管理；与现有 Agent Arena 前端共享组件 | T38 | 2h | P0 | `bun run dev` 启动桌面应用；窗口大小 1200x800；热重载正常 |
-| T40b | Agent.im — Privy 登录集成 | **【Agent.im 子任务 2/4】** Google OAuth 登录；Privy SDK 集成；嵌入式钱包自动生成 Solana 地址；会话持久化；登录状态管理 | T40a | 3h | P0 | Google OAuth 登录成功；`publicKey` 非空且有效；刷新后保持登录状态 |
-| T40c | Agent.im — "我的"视角（Me View） | **【Agent.im 子任务 3/4】** 声誉面板（调 Indexer `/me` API）；任务历史列表；Agent 管理（查看/编辑）；钱包余额展示 | T40b, T23a | 3h | P0 | 声誉 4 指标正确显示；任务历史分页正常；钱包余额实时更新 |
-| T40d | Agent.im — "社交"视角 + A2A 消息 | **【Agent.im 子任务 4/4】** Agent 发现广场（按声誉排名，调 Indexer）；Agent 详情页；A2A 消息列表 UI；发送/接收 A2A Envelope | T40c | 4h | P0 | Agent 列表按 `avg_score × win_rate` 排序；A2A 消息收发 < 500ms；消息持久化到本地存储 |
+| T40a | AgentM — Electrobun 脚手架 + 项目结构 | **【AgentM 子任务 1/4】** Electrobun 桌面应用初始化；React + Vite + Tailwind 配置；Zustand 状态管理；与现有 Agent Arena 前端共享组件 | T38 | 2h | P0 | `bun run dev` 启动桌面应用；窗口大小 1200x800；热重载正常 |
+| T40b | AgentM — Privy 登录集成 | **【AgentM 子任务 2/4】** Google OAuth 登录；Privy SDK 集成；嵌入式钱包自动生成 Solana 地址；会话持久化；登录状态管理 | T40a | 3h | P0 | Google OAuth 登录成功；`publicKey` 非空且有效；刷新后保持登录状态 |
+| T40c | AgentM — "我的"视角（Me View） | **【AgentM 子任务 3/4】** 声誉面板（调 Indexer `/me` API）；任务历史列表；Agent 管理（查看/编辑）；钱包余额展示 | T40b, T23a | 3h | P0 | 声誉 4 指标正确显示；任务历史分页正常；钱包余额实时更新 |
+| T40d | AgentM — "社交"视角 + A2A 消息 | **【AgentM 子任务 4/4】** Agent 发现广场（按声誉排名，调 Indexer）；Agent 详情页；A2A 消息列表 UI；发送/接收 A2A Envelope | T40c | 4h | P0 | Agent 列表按 `avg_score × win_rate` 排序；A2A 消息收发 < 500ms；消息持久化到本地存储 |
 | T42 | GRAD Token + 链上治理 | SPL Token 发行（GRAD），Squads v4 多签 DAO 设置（3/5），转移 upgrade_authority 给多签 | T19d | 4h | P1 | GRAD mint 创建；upgrade_authority = Squads PDA；多签测试可执行 `upgrade_config` |
 
 ---
@@ -125,7 +125,7 @@ W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
 |---|---------|------|------|------|--------|----------|
 | T43 | EVM Agent Layer Solidity 合约 | 将核心 Race Task 逻辑移植到 Solidity ^0.8.20；post_task / apply / submit / judge_and_pay；部署到 Base Sepolia | T19d | 4h | P1 | `npx hardhat test` 通过；合约部署到 Base Sepolia testnet；核心 4 条指令可调用 |
 | T44 | 跨链信誉证明（签名 + 验证） | Squads upgrade_authority 离线签名 Agent 信誉（agent_pubkey, score, chain=solana）；`ReputationVerifier` EVM 合约验证 ed25519 签名 | T42, T43 | 4h | P1 | E2E：Solana 信誉 → 多签签名 → EVM `verifyReputation()` 返回 true |
-| T45 | A2A 协议 MVP（MagicBlock） | Agent.im 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T40d | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
+| T45 | A2A 协议 MVP（MagicBlock） | AgentM 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T40d | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
 
 ---
 
@@ -150,15 +150,15 @@ W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
 | T49 | 8004 Agent 注册集成 | Agent 在 Gradience 首次参与时，自动通过 Metaplex Agent Registry（Solana 侧 8004 实现，Program `8oo4...`）注册身份；生成符合 ERC-8004 `#registration-v1` 格式的 JSON（含 `agentRegistry: "solana:101:metaplex"`、`services: ["a2a"]`、`supportedTrust: ["reputation", "crypto-economic"]`）；注册后 Agent 可在 8004scan.io 被全球发现 | T18a, T40d | 3h | P1 | Agent 注册后在 8004scan.io/networks/solana 可搜索到；registration JSON 格式通过 8004 schema 验证 |
 | T50 | 8004 Reputation Feedback 集成 | `judge_and_pay` 完成后，Judge Daemon 自动向 8004 Reputation Registry 提交 feedback（score, taskId, category）；Solana 侧通过 Metaplex 机制提交，EVM 侧通过 `0x8004BA...` 合约提交；确保 Gradience 声誉数据在 8004scan.io 上实时更新 | T49, T35b | 4h | P1 | 任务评判后 8004scan.io 上对应 Agent 的 feedback 数量 +1；分数与链上 Reputation PDA 一致 |
 | T51 | SAS Attestation 自动颁发 | `judge_and_pay` 确认后，Judge Daemon 通过 `sas-lib` 颁发 `TaskCompletion` Attestation（技术规格 §3.12）；包含 taskId、score、category、winner；SDK 新增 `getAgentAttestations(address)` 查询方法；Attestation 可在钱包/8004scan 中展示为"能力凭证" | T18a, T49 | 3h | P1 | devnet 上 `fetchAllAttestation` 返回正确凭证；`decodeTaskCompletionAttestation` 解码验证通过 |
-| T52 | Agent.im 生产化 | Electrobun 打包（macOS/Windows/Linux）；自动更新；崩溃报告；性能监控 | T40d | 1w | P1 | 桌面包可在三平台安装运行；自动更新机制可用；崩溃日志可收集 |
-| T53 | Stage A1 — 启动栈与端口统一 | 统一 Agent.im 与 Indexer 的默认端口/基址配置（Agent.im 默认指向 Indexer `:3001`）；更新 `start-dev-stack.sh`（移除 agent-me/agent-social 窗口，改为 agent-im）；确保 `judge-daemon/indexer/agent-im` 一键拉起 | T52 | 2h | P0 | 单命令启动后 Agent.im 可读取真实 Indexer 数据；脚本窗口仅包含 indexer/judge-daemon/agent-arena/agent-im（+可选 evm）；无端口冲突 |
-| T54 | Stage A2 — Privy 真实认证接入 | 将 Agent.im 从 MockAuth 切到真实 Privy（Google OAuth + 嵌入式钱包）；加入依赖、环境变量检查与错误回退；保持未配置时可切回 demo 模式 | T53 | 4h | P0 | 登录后 `publicKey` 非 `DEMO_*`；Google OAuth 完整成功；未配置 App ID 时 UI 给出清晰提示且不崩溃 |
+| T52 | AgentM 生产化 | Electrobun 打包（macOS/Windows/Linux）；自动更新；崩溃报告；性能监控 | T40d | 1w | P1 | 桌面包可在三平台安装运行；自动更新机制可用；崩溃日志可收集 |
+| T53 | Stage A1 — 启动栈与端口统一 | 统一 AgentM 与 Indexer 的默认端口/基址配置（AgentM 默认指向 Indexer `:3001`）；更新 `start-dev-stack.sh`（移除 agent-me/agent-social 窗口，改为 agent-im）；确保 `judge-daemon/indexer/agent-im` 一键拉起 | T52 | 2h | P0 | 单命令启动后 AgentM 可读取真实 Indexer 数据；脚本窗口仅包含 indexer/judge-daemon/agent-arena/agent-im（+可选 evm）；无端口冲突 |
+| T54 | Stage A2 — Privy 真实认证接入 | 将 AgentM 从 MockAuth 切到真实 Privy（Google OAuth + 嵌入式钱包）；加入依赖、环境变量检查与错误回退；保持未配置时可切回 demo 模式 | T53 | 4h | P0 | 登录后 `publicKey` 非 `DEMO_*`；Google OAuth 完整成功；未配置 App ID 时 UI 给出清晰提示且不崩溃 |
 | T55 | Stage A3 — Demo 闭环脚本固化 | 固化"登录→发现→任务数据→互通状态"演示脚本与环境变量模板；输出可重复的命令序列和验收输出 | T54 | 2h | P0 | 10 分钟内可重复演示成功；脚本化命令执行无人工修补 |
 | T56 | Stage B1 — Program P0 边界测试补全 | 补齐 `apps/agent-arena/docs/05-test-spec.md` 标记缺口：重复初始化、reward=0、重复 apply、score<MIN_SCORE 退款路径、unstake 冷却期；补 Token-2022 路径（P1） | T55, T19d | 6h | P0 | P0 缺口测试全部通过并纳入 CI 命令；新增测试在本地与 devnet 复现一致 |
 | T57 | Stage B2 — W5 稳定性验收（T46~T48） | 执行异常全路径联调、Pool 压测+ALT 切换、Program→Indexer→WS→Judge Daemon 事件闭环；包含断线恢复、幂等去重、回放一致性 | T56, T46, T47, T48 | 8h | P0 | 形成可重放脚本+指标基线（成功率/延迟/CU/tx size）；断连恢复后无重复裁决或状态漂移 |
 | T58 | Stage B3 — ERC-8004 生产闭环 | 固化身份注册触发点（首参与自动注册）；扩展反馈到 winner/loser/judge/poster 角色并可追踪；完成 8004 relay 状态审计与 8004scan 对账 | T57, T49, T50 | 6h | P0 | 8004scan 可查身份与 feedback 增量；反馈计数与链上事件一致；失败重试与告警可观测 |
 | T59 | Stage B4 — SAS Attestation 真上链 | 将当前 HTTP sink 形态切换为 `sas-lib` 真实颁发流程；完成 Credential/Schema 使用、`TaskCompletion` 数据编码、SDK 查询/解码闭环 | T58, T51 | 6h | P1 | devnet 上可查询到真实 `TaskCompletion` attestation；字段与任务数据一致；重复颁发具备幂等保护 |
-| T60 | Stage B5/B6 — Agent.im 生产化与发布门槛 | Agent.im 接入 Metaplex 注册流程（登录后身份闭环）；完成打包指标、持久化恢复、CI+运维脚本+发布清单（env matrix/回滚） | T59 | 8h | P1 | Agent.im PRD 六项成功标准全部达标；发布清单可在新环境 30 分钟内完成拉起并通过 smoke |
+| T60 | Stage B5/B6 — AgentM 生产化与发布门槛 | AgentM 接入 Metaplex 注册流程（登录后身份闭环）；完成打包指标、持久化恢复、CI+运维脚本+发布清单（env matrix/回滚） | T59 | 8h | P1 | AgentM PRD 六项成功标准全部达标；发布清单可在新环境 30 分钟内完成拉起并通过 smoke |
 
 ---
 
@@ -203,7 +203,7 @@ flowchart TB
         T37 --> T37a
     end
 
-    subgraph W3["🟡 W3: 生态扩展（Agent.im 为核心）"]
+    subgraph W3["🟡 W3: 生态扩展（AgentM 为核心）"]
         direction TB
         T19d --> T39
         T38 --> T40a --> T40b --> T40c --> T40d
@@ -266,13 +266,13 @@ flowchart TB
 
 ---
 
-### Milestone 3：Agent.im MVP + 生态模块（2026-04-26）
-**交付物**：Agent.im 桌面应用可用 + Chain Hub 基础 + GRAD Token
+### Milestone 3：AgentM MVP + 生态模块（2026-04-26）
+**交付物**：AgentM 桌面应用可用 + Chain Hub 基础 + GRAD Token
 
 **包含任务**：T39 ~ T42, T40a-d
 
 **验收条件**：
-- [ ] Agent.im Google OAuth 登录成功
+- [ ] AgentM Google OAuth 登录成功
 - [ ] "我的"视角：声誉面板、任务历史正确显示
 - [ ] "社交"视角：Agent 发现广场按声誉排序、A2A 消息收发 < 500ms
 - [ ] GRAD mint 创建，upgrade_authority 转交 Squads v4（3/5 多签）
@@ -324,8 +324,8 @@ flowchart TB
 - T31 ~ T38（CLI 到前端完结）
 - 目标：工具链全量可用
 
-### Sprint 5（W3）：Agent.im MVP
-- T40a ~ T40d（Agent.im 细分子任务）
+### Sprint 5（W3）：AgentM MVP
+- T40a ~ T40d（AgentM 细分子任务）
 - **目标：产品层唯一入口可用**
 
 ### Sprint 6（W3 尾 + W4）：生态扩展 + Stretch Goals
@@ -341,7 +341,7 @@ flowchart TB
 | **T19a-d 集成测试未通过（W1 阻塞项）** | 中 | **极高** | 预留 W1 第 2 周专门用于调试；若超时，W2 顺延；优先保障核心路径（SOL Designated 模式） |
 | `remaining_accounts` 质押退回在 CU 预算超限 | 中 | 高 | T13/T14 阶段测试 20+ 申请者场景的 CU 消耗；超限时拆分为多笔 tx |
 | `judge_and_pay` 整数精度 bug | 高 | 高 | T11/T12 专项精度测试（验证每笔转账余额精确到 lamport） |
-| **Agent.im Privy 登录集成复杂度** | 中 | 高 | T40b 单独拆分；预留缓冲时间；准备 MockAuth fallback |
+| **AgentM Privy 登录集成复杂度** | 中 | 高 | T40b 单独拆分；预留缓冲时间；准备 MockAuth fallback |
 | Triton Dragon's Mouth 不可用 | 低 | 中 | T34 三级 fallback：Triton → Helius LaserStream → polling |
 | DSPy 评分置信度偏低 | 中 | 中 | T35 阶段收集样本，用 MIPROv2 优化 prompt |
 | W4 Stretch Goals 超时 | 高 | 低 | W4 标记为 best effort；T43→T44 优先，T45 可延后 |
@@ -354,7 +354,7 @@ flowchart TB
 - [x] 每个任务有 Done 定义
 - [x] 依赖关系已标明，无循环依赖
 - [x] **关键路径清晰：T19a-d 为 W1 唯一阻塞项**
-- [x] **Agent.im 任务细化（T40a-d），产品层优先级明确**
+- [x] **AgentM 任务细化（T40a-d），产品层优先级明确**
 - [x] 划分为 5 个里程碑，每个均有可演示交付物
 - [x] 风险已识别（7 项，含 W1 阻塞项专项风险）
 

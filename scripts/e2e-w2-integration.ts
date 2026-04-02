@@ -2,7 +2,7 @@
 /**
  * W2 End-to-End Integration Test
  *
- * Verifies: Indexer → SDK → Agent.im API data flow
+ * Verifies: Indexer → SDK → AgentM API data flow
  *
  * Prerequisites:
  *   - PostgreSQL running on localhost:5432 (or via docker)
@@ -160,18 +160,18 @@ async function testSdkIndexerIntegration() {
     });
 }
 
-// ── Agent.im → Indexer ──────────────────────────────────────────────
+// ── AgentM → Indexer ──────────────────────────────────────────────
 
 async function testAgentImIntegration() {
-    console.log('\n🖥️  Agent.im → Indexer Integration');
+    console.log('\n🖥️  AgentM → Indexer Integration');
 
-    await test('Agent.im /status responds', async () => {
+    await test('AgentM /status responds', async () => {
         const status = await fetchJson<{ version: string }>(`${AGENT_IM_URL}/status`);
         if (!status.version) throw new Error('Missing version');
         return `version=${status.version}`;
     });
 
-    await test('Agent.im /discover/agents returns array', async () => {
+    await test('AgentM /discover/agents returns array', async () => {
         const data = await fetchJson<{ agents: unknown[] }>(`${AGENT_IM_URL}/discover/agents`);
         if (!Array.isArray(data.agents)) throw new Error('Expected agents array');
         return `${data.agents.length} agents`;
@@ -185,7 +185,7 @@ async function main() {
     console.log('  W2 End-to-End Integration Test');
     console.log('═══════════════════════════════════════════════════');
     console.log(`  Indexer:   ${INDEXER_URL}`);
-    console.log(`  Agent.im:  ${AGENT_IM_URL}`);
+    console.log(`  AgentM:  ${AGENT_IM_URL}`);
     console.log(`  Mode:      ${sdkOnly ? 'SDK-only' : 'Full'}`);
 
     // Phase 1: Indexer health
@@ -204,12 +204,12 @@ async function main() {
     // Phase 3: SDK → Indexer
     await testSdkIndexerIntegration();
 
-    // Phase 4: Agent.im (skip in sdk-only mode)
+    // Phase 4: AgentM (skip in sdk-only mode)
     if (!sdkOnly) {
         try {
             await testAgentImIntegration();
         } catch {
-            console.log('\n⚠️  Agent.im not reachable (optional).');
+            console.log('\n⚠️  AgentM not reachable (optional).');
         }
     }
 

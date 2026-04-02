@@ -1,4 +1,4 @@
-# Phase 5: Test Spec — Agent.im Web Entry + Local Agent Voice
+# Phase 5: Test Spec — AgentM Web Entry + Local Agent Voice
 
 > **目的**: 在实现前定义 Web/Bridge/语音的测试契约（TDD）  
 > **输入**: `web-entry/03-technical-spec.md`, `web-entry/04-task-breakdown.md`  

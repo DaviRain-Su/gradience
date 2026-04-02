@@ -495,6 +495,40 @@ describe('API Server', () => {
         assert.equal(data.error, 'Missing required field: agent');
     });
 
+    it('POST /webhooks/profile/git-sync accepts github push payload with profile_sync extension', async () => {
+        const res = await fetch(url('/webhooks/profile/git-sync'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ref: 'refs/heads/main',
+                after: 'feedface1234',
+                repository: {
+                    full_name: 'gradience/agent-profile',
+                    html_url: 'https://github.com/gradience/agent-profile',
+                },
+                profile_sync: {
+                    agent: 'sync-agent-github',
+                    profile: {
+                        display_name: 'Sync Agent GH',
+                        bio: 'Profile synced from GitHub push event',
+                        links: {
+                            website: 'https://agent.example',
+                        },
+                    },
+                },
+            }),
+        });
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        assert.equal(data.source, 'github');
+        assert.equal(data.repository, 'gradience/agent-profile');
+        assert.equal(data.commit_sha, 'feedface1234');
+        assert.equal(data.profile.agent, 'sync-agent-github');
+        assert.equal(data.profile.display_name, 'Sync Agent GH');
+        assert.equal(data.profile.publish_mode, 'git-sync');
+    });
+
     it('GET /me — returns 401 for unbound session', async () => {
         store.getState().setAuth({
             authenticated: true,
@@ -704,7 +738,7 @@ describe('API Server', () => {
         const res = await fetch(url('/interop/dashboard?agent=agent-x'));
         assert.equal(res.status, 200);
         const html = await res.text();
-        assert.ok(html.includes('Agent.im Interop Dashboard'));
+        assert.ok(html.includes('AgentM Interop Dashboard'));
         assert.ok(html.includes('agent-x'));
         assert.ok(html.includes('EVM Reputation Relay Count'));
     });
@@ -1243,6 +1277,76 @@ describe('API Server profile git-sync webhook signature verification', () => {
             assert.equal(okData.profile.publish_mode, 'git-sync');
         } finally {
             await signedApi.stop();
+        }
+    });
+});
+
+describe('API Server profile git-sync allowlist guard', () => {
+    it('rejects webhook when repository organization is not allowed', async () => {
+        const guardStore = createAppStore();
+        const hub = new InMemoryMagicBlockHub({ latencyMs: 5 });
+        const transport = new InMemoryMagicBlockTransport(hub);
+        const agent = new MagicBlockA2AAgent('profile-guard-agent', transport);
+        agent.start();
+        const guardedApi = createApiServer(
+            { store: guardStore, a2aAgent: agent },
+            {
+                port: 0,
+                profileSyncAllowedOrganizations: ['gradience'],
+                profileSyncAllowedSources: ['github', 'git'],
+            },
+        );
+        const guardedPort = await guardedApi.start();
+
+        try {
+            const disallowedRes = await fetch(`http://127.0.0.1:${guardedPort}/webhooks/profile/git-sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ref: 'refs/heads/main',
+                    after: 'deadbeef',
+                    repository: {
+                        full_name: 'other-org/agent-profile',
+                    },
+                    profile_sync: {
+                        agent: 'org-check-agent',
+                        profile: {
+                            display_name: 'Org Check Agent',
+                            bio: 'Should be rejected by org allowlist',
+                            links: {},
+                        },
+                    },
+                }),
+            });
+            assert.equal(disallowedRes.status, 403);
+            const disallowedBody = await disallowedRes.json();
+            assert.equal(disallowedBody.error, 'Profile sync organization is not allowed');
+
+            const allowedRes = await fetch(`http://127.0.0.1:${guardedPort}/webhooks/profile/git-sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ref: 'refs/heads/main',
+                    after: 'beadfeed',
+                    repository: {
+                        full_name: 'gradience/agent-profile',
+                    },
+                    profile_sync: {
+                        agent: 'org-allowed-agent',
+                        profile: {
+                            display_name: 'Org Allowed Agent',
+                            bio: 'Allowed by org allowlist',
+                            links: {},
+                        },
+                    },
+                }),
+            });
+            assert.equal(allowedRes.status, 200);
+            const allowedBody = await allowedRes.json();
+            assert.equal(allowedBody.profile.agent, 'org-allowed-agent');
+            assert.equal(allowedBody.profile.publish_mode, 'git-sync');
+        } finally {
+            await guardedApi.stop();
         }
     });
 });

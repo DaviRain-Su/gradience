@@ -73,7 +73,7 @@ class GradienceAgent {
 // Agent 通过 XMTP 发现对方并协商
 import { Client } from '@xmtp/xmtp-js';
 
-class AgentMessaging {
+class AgentMssaging {
   async discoverAndNegotiate(targetAgentId: string) {
     // 通过 XMTP 发送任务请求
     const conversation = await this.xmtp.conversations.newConversation(

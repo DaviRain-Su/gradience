@@ -79,7 +79,7 @@ describe('AgentImWebEntryApiClient', () => {
         const client = new AgentImWebEntryApiClient(`http://127.0.0.1:${mockPort}/fail`);
         await assert.rejects(
             () => client.listAgents(),
-            /Agent.im API 404: Bridge not connected/,
+            /AgentM API 404: Bridge not connected/,
         );
     });
 });

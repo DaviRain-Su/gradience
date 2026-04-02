@@ -16,7 +16,7 @@
 | **Agent Layer EVM** | ~70% | 基础Race Task完整，缺少cancel/force_refund/ERC20/Pool模式 |
 | **Chain Hub** | ~70% | 11个指令，Skill/Protocol注册表，Delegation Task生命周期完整，缺少交易/版税 |
 | **A2A Protocol** | ~65% | TS运行时较完整（transport + micropayment），Solana program为基础结构 |
-| **Agent Me / Social** | 0% | 只有前端和文档，无链上代码 |
+| **AgentM** | 0% | 只有前端和文档，无链上代码 |
 
 ### 🔴 真正的 P0 缺口（W1 验收阻塞）
 
@@ -197,14 +197,14 @@ transfer_program_lamports(ix.accounts.judge_stake, ix.accounts.treasury, actual_
 
 ---
 
-### Agent Me / Agent Social - 0%
+### AgentM / AgentM Pro - 0%
 
 **状态**: 只有文档和前端，**无任何链上代码**
 
 | 组件 | 文档 | 前端 | 链上代码 |
 |------|------|------|----------|
-| Agent Me | ✅ 23个文档 | ✅ 有 | ❌ 无 |
-| Agent Social | ✅ 详细 | ✅ 有 | ❌ 无 |
+| AgentM | ✅ 23个文档 | ✅ 有 | ❌ 无 |
+| AgentM Pro | ✅ 详细 | ✅ 有 | ❌ 无 |
 
 ---
 
@@ -251,8 +251,8 @@ transfer_program_lamports(ix.accounts.judge_stake, ix.accounts.treasury, actual_
 
 ```markdown
 ⏳ T39: Chain Hub MVP (Delegation Task Program)
-⏳ T40: Agent Me MVP (前端)
-⏳ T41: Agent Social MVP (前端)
+⏳ T40: AgentM MVP (前端)
+⏳ T41: AgentM MVP (前端)
 ⏳ T42: GRAD Token + Squads多签治理
 ```
 
@@ -312,7 +312,7 @@ transfer_program_lamports(ix.accounts.judge_stake, ix.accounts.treasury, actual_
 | **W1阻塞项** | 仅T19a-d集成测试 |
 | **EVM缺口** | cancel/force_refund/ERC20/Pool，计划W4 |
 | **Chain Hub缺口** | Skill交易/版税，需确认优先级 |
-| **Agent Me/Social** | 无链上代码，纯前端应用 |
+| **AgentM** | 无链上代码，纯前端应用 |
 | **白皮书远景** | 已区分当前milestone vs 长期规划 |
 
 **核心结论**: Program功能代码已高质量完成，W1只有集成测试一个阻塞项。

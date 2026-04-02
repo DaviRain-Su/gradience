@@ -2,7 +2,7 @@
 
 > **文档状态**: Draft  
 > **创建日期**: 2026-04-02  
-> **定位**: Agent.im Generative UI 层  
+> **定位**: AgentM Generative UI 层  
 > **优先级**: P1 (W2 集成)
 
 ---
@@ -17,11 +17,11 @@
 AI Prompt → JSON Schema → React Components
 ```
 
-### 1.2 与 Agent.im 的关系
+### 1.2 与 AgentM 的关系
 
 ```
 ┌─────────────────────────────────────────┐
-│           Agent.im (Electron)            │
+│           AgentM (Electron)            │
 │  ┌─────────────────────────────────┐   │
 │  │  UI Layer                       │   │
 │  │  ┌─────────┐ ┌───────────────┐ │   │
@@ -66,7 +66,7 @@ AI Prompt → JSON Schema → React Components
 
 ```
 ┌─────────────────────────────────────────┐
-│  Layer 3: Agent.im UI (Renderer)        │
+│  Layer 3: AgentM UI (Renderer)        │
 │  ┌─────────────────────────────────┐   │
 │  │  <JsonRender />                 │   │
 │  │  • 组件渲染                      │   │
@@ -119,7 +119,7 @@ User Interaction → Action → Agent Core
 ### 3.1 安装依赖
 
 ```bash
-# Agent.im renderer - 核心包
+# AgentM renderer - 核心包
 npm install @json-renderer/render-json
 
 # React 渲染器
@@ -135,7 +135,7 @@ npm install @json-render/react-pdf
 ### 3.2 组件目录结构
 
 ```
-apps/agent-im/src/renderer/components/ui/
+apps/agentm/src/renderer/components/ui/
 ├── json-render/
 │   ├── index.tsx              # 主入口
 │   ├── catalog.ts             # 组件库定义
@@ -160,7 +160,7 @@ apps/agent-im/src/renderer/components/ui/
 #### 3.3.1 组件库定义
 
 ```typescript
-// apps/agent-im/src/renderer/components/ui/json-render/catalog.ts
+// apps/agentm/src/renderer/components/ui/json-render/catalog.ts
 
 import { defineCatalog } from '@json-renderer/render-json';
 import { DataTable } from './components/DataTable';
@@ -308,7 +308,7 @@ export const AGENT_UI_CATALOG = defineCatalog({
 #### 3.3.2 渲染器组件
 
 ```typescript
-// apps/agent-im/src/renderer/components/ui/json-render/index.tsx
+// apps/agentm/src/renderer/components/ui/json-render/index.tsx
 
 import React, { useCallback } from 'react';
 import { JsonRender as VercelJsonRender } from '@vercel-labs/json-render';
@@ -339,7 +339,7 @@ export const AgentUI: React.FC<AgentUIProps> = ({ json, context }) => {
         return wallet.execute(action.params.method, action.params.args);
       
       case 'navigate':
-        // 导航到 Agent.im 其他页面
+        // 导航到 AgentM 其他页面
         window.electron.navigate(action.params.route);
         return;
       
@@ -370,7 +370,7 @@ export const AgentUI: React.FC<AgentUIProps> = ({ json, context }) => {
 #### 3.3.3 UI Generator (Agent Core)
 
 ```typescript
-// apps/agent-im/src/main/agent/ui-generator.ts
+// apps/agentm/src/main/agent/ui-generator.ts
 
 import { z } from 'zod';
 
@@ -722,10 +722,10 @@ const validateAction = (action: any) => {
   - `@json-renderer/render-json` - 核心框架
   - `@json-render/react` - React 渲染器
   - `@json-render/react-pdf` - PDF 渲染器
-- **Agent.im 架构**: `../02-architecture.md`
+- **AgentM 架构**: `../02-architecture.md`
 - **Chain Hub Skill 协议**: `../../../apps/chain-hub/skill-protocol.md`
 
 ---
 
 *json-render 集成方案 v1.0 · 2026-04-02*  
-*维护者: Gradience Agent.im Team*
+*维护者: Gradience AgentM Team*

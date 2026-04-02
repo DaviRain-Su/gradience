@@ -264,7 +264,7 @@ function LoginScreenLayout({
     return (
         <div className="flex items-center justify-center h-screen">
             <div className="text-center space-y-6">
-                <h1 className="text-4xl font-bold">Agent.im</h1>
+                <h1 className="text-4xl font-bold">AgentM</h1>
                 <p className="text-gray-400">The Super App for the Agent Economy</p>
                 <button
                     onClick={onLogin}

@@ -18,7 +18,7 @@ export function Sidebar({ onLogout }: { onLogout?: () => void | Promise<void> })
         <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-gray-800">
-                <h1 className="text-lg font-bold">Agent.im</h1>
+                <h1 className="text-lg font-bold">AgentM</h1>
                 <p className="text-xs text-gray-500 truncate">{publicKey}</p>
                 {onLogout && (
                     <button

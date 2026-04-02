@@ -51,7 +51,7 @@
 | Interop Status 面板 | ✅ MeView InteropStatusPanel | ✅ store.test |
 | Attestation 展示 | ✅ MeView AttestationsPanel | — |
 | API Server (localhost:3939) | ✅ api-server.ts | ✅ api-server.test |
-| Web Entry / DashDomain | ✅ web-entry/ | ✅ smoke test |
+| Web Entry / AgentM Pro | ✅ web-entry/ | ✅ smoke test |
 | 桌面应用 (Electrobun) | ✅ Vite build 通过 | ✅ |
 
 ### P1 已完成

@@ -1,4 +1,4 @@
-# Phase 4: Task Breakdown — Agent.im Web Entry + Local Agent Voice
+# Phase 4: Task Breakdown — AgentM Web Entry + Local Agent Voice
 
 > **目的**: 将 Web 入口专项规格拆成可执行任务  
 > **输入**: `web-entry/03-technical-spec.md`  

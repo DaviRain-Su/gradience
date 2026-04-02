@@ -16,8 +16,8 @@
 ```
 Chain Hub (工具层)    → 多链部署 (Solana + EVM)
 Agent Arena (市场层)  → Solana (主) + X-Layer (次)
-Agent Me (个人层)     → 用户选择 (跨链)
-Agent Social (社交层) → Solana (高性能要求)
+AgentM (个人层)     → 用户选择 (跨链)
+AgentM (社交层) → Solana (高性能要求)
 ```
 
 ---
@@ -167,8 +167,8 @@ L2s 的劣势:
 |--------|--------|------|
 | **Chain Hub (工具层)** | 多链 | 工具应跨链可用 |
 | **Agent Arena (市场层)** | Solana (主) | 高频交易、低费用 |
-| **Agent Me (个人层)** | 用户选择 | 主权原则，用户决定 |
-| **Agent Social (社交层)** | Solana | 高性能、实时性 |
+| **AgentM (个人层)** | 用户选择 | 主权原则，用户决定 |
+| **AgentM (社交层)** | Solana | 高性能、实时性 |
 
 ### 4.2 Agent Arena 的特殊需求
 
@@ -248,8 +248,8 @@ KPI:
 愿景:
 Chain Hub → 多链 (10+ 链)
 Agent Arena → Solana 主导
-Agent Me → 完全跨链
-Agent Social → Solana 高性能
+AgentM → 完全跨链
+AgentM → Solana 高性能
 
 技术:
 - 链抽象层 (Chain Abstraction)

@@ -542,11 +542,11 @@ class SkillVerifier {
 }
 ```
 
-### 5.3 与 Agent Me 的整合
+### 5.3 与 AgentM 的整合
 
 ```typescript
-// Agent Me 展示主人的信誉
-class AgentMeReputation {
+// AgentM 展示主人的信誉
+class AgentMReputation {
   async getMyReputation(walletAddress: string): Promise<ReputationProfile> {
     // 查询所有技能的能力证明
     const skills = await this.erc8004.getAllCapabilities(walletAddress);
@@ -680,8 +680,8 @@ async function linkSolanaIdentity(
 ### Phase 4: 生态整合 (2 周)
 
 - [ ] Chain Hub Skill 验证集成
-- [ ] Agent Me 信誉展示
-- [ ] Agent Social 信誉匹配
+- [ ] AgentM 信誉展示
+- [ ] AgentM 信誉匹配
 - [ ] 第三方 DApp 查询 API
 
 ---

@@ -128,7 +128,7 @@ program.md:
 
 ---
 
-### 4. Agent Social 的协作模式 🤝
+### 4. AgentM 的协作模式 🤝
 
 **场景：师徒传承中的 AutoResearch**
 

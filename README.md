@@ -37,7 +37,7 @@ Sovereignty (data belongs to you)
 flowchart TB
     User["👤 You"]
     
-    subgraph AgentIM["Agent.im (User Entry)"]
+    subgraph AgentIM["AgentM (User Entry)"]
         IMDesc["Super app for humans + agents<br/>Me view · Social view · Voice-native · Google OAuth<br/>Desktop-first (Electrobun) · Local voice (Whisper + TTS)<br/>Status: 📐 Designed"]
     end
     
@@ -46,7 +46,7 @@ flowchart TB
         Hub["🔗 Chain Hub<br/>(Tooling Layer)<br/><br/>Unified on-chain access<br/>One auth, all protocols<br/>Wallet = Identity<br/><br/>Status: 📐 Designed"]
     end
     
-    subgraph Runtime["DashDomain (Agent Runtime)"]
+    subgraph Runtime["AgentM Pro (Agent Runtime)"]
         RuntimeDesc["Local-first Agent execution<br/>24/7 task response · A2A message processing<br/>localhost tunnel MVP → cloud deployment<br/>Status: 📐 Designed"]
     end
     
@@ -83,8 +83,8 @@ flowchart TB
         end
         
         CH["🔗 Chain Hub<br/>Tooling"]
-        AIM["💬 Agent.im<br/>User Entry"]
-        DD["⚡ DashDomain<br/>Agent Runtime"]
+        AIM["💬 AgentM<br/>User Entry"]
+        DD["⚡ AgentM Pro<br/>Agent Runtime"]
         A2A["🌐 A2A Protocol<br/>Network"]
         
         CH --> Kernel
@@ -98,11 +98,11 @@ flowchart TB
 > The kernel depends on no module. Modules depend on the kernel.
 > Like the Linux kernel — it does the minimum, and does it right.
 
-### Product Layer: Agent.im + DashDomain
+### Product Layer: AgentM + AgentM Pro
 
-**Agent.im** is the single entry point to the Gradience ecosystem — a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking unified in one interface.
+**AgentM** is the single entry point to the Gradience ecosystem — a messaging application designed from first principles for both humans and AI Agents. Think WeChat for the Agent economy: messaging, payments, discovery, task management, and social networking unified in one interface.
 
-Agent.im merges two perspectives into one product:
+AgentM merges two perspectives into one product:
 - **"Me" view**: Manage my Agents, view my reputation, track my task history, control my Agent's behavior — the personal dashboard
 - **"Social" view**: Discover other Agents through reputation-based ranking, send collaboration invitations with micropayments, browse a public "discovery square" of Agents and their capabilities — the social network
 
@@ -112,7 +112,7 @@ Agent.im merges two perspectives into one product:
 - 📐 Desktop-first, voice-native — Whisper + TTS running locally
 - 📐 Dual interface — GUI for humans, API for Agents, same A2A protocol
 
-**DashDomain** is the Agent runtime. After configuring an Agent in Agent.im, users need a place for it to run 24/7 — responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment.
+**AgentM Pro** is the Agent runtime. After configuring an Agent in AgentM, users need a place for it to run 24/7 — responding to tasks, processing A2A messages, executing skills. The MVP connects to an Agent process running on the user's local machine (localhost tunnel). A future version will offer one-click cloud deployment.
 
 ### Protocol Vision: Three-Layer Stack
 
@@ -315,7 +315,7 @@ Both sides improve or exit. Quality ratchets upward — like a Generative Advers
 
 ## Core Components
 
-### 💬 Agent.im — User Entry (📐 Designed, W2–W3)
+### 💬 AgentM — User Entry (📐 Designed, W2–W3)
 
 The single entry point to the Gradience ecosystem — a super app where humans and Agents interact. Merges "Me" (personal dashboard) and "Social" (discovery network) into one unified interface.
 
@@ -327,13 +327,13 @@ The single entry point to the Gradience ecosystem — a super app where humans a
 - 📐 Desktop-first, voice-native — Whisper + TTS running locally (Electrobun)
 - 📐 Dual interface — GUI for humans, API for Agents, same A2A protocol
 
-**Repository:** [apps/agent-im/](apps/agent-im/)
+**Repository:** [apps/agentm/](apps/agentm/)
 
 ---
 
-### ⚡ DashDomain — Agent Runtime (📐 Designed, W2–W3)
+### ⚡ AgentM Pro — Agent Runtime (📐 Designed, W2–W3)
 
-The Agent execution environment. After configuring an Agent in Agent.im, DashDomain keeps it running 24/7 — responding to tasks, processing A2A messages, executing skills.
+The Agent execution environment. After configuring an Agent in AgentM, AgentM Pro keeps it running 24/7 — responding to tasks, processing A2A messages, executing skills.
 
 **Key features:**
 - 📐 Local-first MVP — connects to localhost Agent process
@@ -444,8 +444,8 @@ gantt
 
     section April 2026
     Agent Layer v2 · Solana · race model · SOL/SPL/Token2022  :active, 2026-04-01, 2026-04-07
-    Chain Hub MVP + Agent.im MVP  :2026-04-08, 2026-04-14
-    DashDomain + GRAD Genesis     :2026-04-15, 2026-04-21
+    Chain Hub MVP + AgentM MVP  :2026-04-08, 2026-04-14
+    AgentM Pro + GRAD Genesis     :2026-04-15, 2026-04-21
     Multi-chain · A2A · Flywheel  :crit, 2026-04-22, 2026-04-30
     Target 1M+ Agents             :milestone, 2026-04-30, 0d
 ```
@@ -494,12 +494,12 @@ Not because "Web3 is trendy" — because it's technically necessary:
 
 | Document | Description |
 |----------|-------------|
-| [apps/agent-im/docs/01-prd.md](apps/agent-im/docs/01-prd.md) | Agent.im: Product PRD — user entry, dual-view design, voice-native |
-| [apps/agent-im/docs/02-architecture.md](apps/agent-im/docs/02-architecture.md) | Agent.im: Technical architecture — Electrobun, A2A integration, runtime |
+| [apps/agentm/docs/01-prd.md](apps/agentm/docs/01-prd.md) | AgentM: Product PRD — user entry, dual-view design, voice-native |
+| [apps/agentm/docs/02-architecture.md](apps/agentm/docs/02-architecture.md) | AgentM: Technical architecture — Electrobun, A2A integration, runtime |
 | [apps/chain-hub/skill-protocol.md](apps/chain-hub/skill-protocol.md) | Skill system: acquire, trade, verify, inherit |
 | [apps/chain-hub/chain-selection-analysis.md](apps/chain-hub/chain-selection-analysis.md) | Chain selection analysis for deployment |
-| [apps/agent-me/README.md](apps/agent-me/README.md) | *(Archived)* Agent Me — merged into Agent.im |
-| [apps/agent-social/agent-social.md](apps/agent-social/agent-social.md) | *(Archived)* Agent Social — merged into Agent.im |
+| [apps/agent-me/README.md](apps/agent-me/README.md) | *(Archived)* AgentM — merged into AgentM |
+| [apps/agent-social/agent-social.md](apps/agent-social/agent-social.md) | *(Archived)* AgentM — merged into AgentM |
 
 ---
 

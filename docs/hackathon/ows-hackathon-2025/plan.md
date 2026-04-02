@@ -65,7 +65,7 @@
 ```
 输出: 口头对齐
 - OWS Wallet → Agent Identity
-- XMTP → Agent Messaging  
+- XMTP → AgentMssaging  
 - Gradience → Settlement
 - MoonPay → Fiat Bridge
 ```

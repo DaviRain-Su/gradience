@@ -1,5 +1,5 @@
 /**
- * Environment variable matrix validation for Agent.im.
+ * Environment variable matrix validation for AgentM.
  * Run: npx tsx scripts/validate-env.ts
  *
  * Checks required and optional env vars, reports missing/invalid ones.
@@ -99,7 +99,7 @@ function main() {
         });
     }
 
-    console.log('\nAgent.im Environment Matrix\n');
+    console.log('\nAgentM Environment Matrix\n');
     console.log(`${'Variable'.padEnd(40)} ${'Status'.padEnd(25)} Value`);
     console.log('-'.repeat(80));
     for (const row of rows) {

@@ -1,5 +1,5 @@
 /**
- * Agent.im global state — Zustand store.
+ * AgentM global state — Zustand store.
  * Used by both React views and API server.
  */
 

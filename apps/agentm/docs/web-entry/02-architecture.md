@@ -1,4 +1,4 @@
-# Phase 2: Architecture — Agent.im Web Entry + Local Agent Voice
+# Phase 2: Architecture — AgentM Web Entry + Local Agent Voice
 
 > **目的**: 定义 Web 入口与本地 Agent Bridge 的架构、边界、数据流  
 > **输入**: `web-entry/01-prd.md`  
@@ -10,13 +10,13 @@
 
 ### 一句话描述
 
-Agent.im Web 通过“云端会话网关 + 本地出站 Bridge”连接本机 Agent，实现网页文本/语音对话。
+AgentM Web 通过“云端会话网关 + 本地出站 Bridge”连接本机 Agent，实现网页文本/语音对话。
 
 ### 架构图
 
 ```mermaid
 flowchart LR
-    U["Web Browser<br/>Agent.im Web"] --> G["Agent.im Web Gateway<br/>Auth + Pairing + Realtime Hub"]
+    U["Web Browser<br/>AgentM Web"] --> G["AgentM Web Gateway<br/>Auth + Pairing + Realtime Hub"]
     B["Local Bridge (desktop/local daemon)"] --> G
     B --> A["Local Agents<br/>(A2A/runtime)"]
     U <--> G
@@ -27,9 +27,9 @@ flowchart LR
 
 | 组件 | 职责 | 技术选型 | 状态 |
 |------|------|---------|------|
-| Web UI | 登录、配对、Agent 列表、文本/语音会话 | React + Vite（复用 Agent.im UI） | 新建 |
+| Web UI | 登录、配对、Agent 列表、文本/语音会话 | React + Vite（复用 AgentM UI） | 新建 |
 | Web Gateway | 会话鉴权、配对码、实时转发、状态聚合 | Node/Bun HTTP + WS | 新建 |
-| Local Bridge | 与网关建立出站长连接，代理本地 Agent | TypeScript（复用 agent-im main 能力） | 新建 |
+| Local Bridge | 与网关建立出站长连接，代理本地 Agent | TypeScript（复用 agentm main 能力） | 新建 |
 | Local Agent Adapter | 统一调用本地 A2A/任务接口 | 复用 `api-server.ts`/A2A 客户端 | 已有扩展 |
 | Voice Pipeline | Web 音频采集/播放 + 语音事件协议 | Web APIs + 实时事件通道 | 新建 |
 
@@ -66,7 +66,7 @@ flowchart LR
 Web UI -> Web Gateway
 Web Gateway -> Local Bridge
 Local Bridge -> Local Agent Adapter
-Local Agent Adapter -> Existing agent-im APIs / A2A
+Local Agent Adapter -> Existing agentm APIs / A2A
 ```
 
 ### 外部依赖
@@ -129,7 +129,7 @@ stateDiagram-v2
 
 - `Gateway` 部署在受控云环境（开发先单实例）
 - `Web UI` 静态部署（同域调用 Gateway）
-- `Bridge` 跑在用户本机（由桌面 Agent.im 或独立本地进程托管）
+- `Bridge` 跑在用户本机（由桌面 AgentM 或独立本地进程托管）
 
 ---
 

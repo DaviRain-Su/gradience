@@ -171,13 +171,13 @@ export async function runStageADemo(env: NodeJS.ProcessEnv = process.env): Promi
             `/interop/dashboard?agent=${encodeURIComponent(demoAgent)}`,
         );
         assert.equal(dashboardRes.status, 200);
-        assert.ok(dashboardRes.text.includes('Agent.im Interop Dashboard'));
+        assert.ok(dashboardRes.text.includes('AgentM Interop Dashboard'));
         steps.push({
             name: 'Interop dashboard',
             command: `curl -s "${apiBaseUrl}/interop/dashboard?agent=${encodeURIComponent(demoAgent)}"`,
-            expected: 'HTTP 200, HTML contains "Agent.im Interop Dashboard"',
+            expected: 'HTTP 200, HTML contains "AgentM Interop Dashboard"',
             actual: `HTTP ${dashboardRes.status}, containsDashboardTitle=${String(
-                dashboardRes.text.includes('Agent.im Interop Dashboard'),
+                dashboardRes.text.includes('AgentM Interop Dashboard'),
             )}`,
         });
 

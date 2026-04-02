@@ -28,7 +28,7 @@
               │         ┌───┘  └───┐         │
               │         │          │         │
         ┌─────┴───┐ ┌───┴────┐ ┌───┴───┐ ┌───┴────┐
-        │Chain Hub│ │Agent Me│ │Agent  │ │  A2A   │
+        │Chain Hub│ │AgentM│ │Agent  │ │  A2A   │
         │(Tooling)│ │(Entry) │ │Social │ │Protocol│
         └─────────┘ └────────┘ └───────┘ └────────┘
               │         │          │         │
@@ -43,11 +43,11 @@
 
 依赖规则:
   ✅ Chain Hub → 读取 Agent Layer 信誉
-  ✅ Agent Me → 通过 Agent Layer 参与任务
-  ✅ Agent Social → 基于 Agent Layer 信誉做匹配
+  ✅ AgentM → 通过 Agent Layer 参与任务
+  ✅ AgentM → 基于 Agent Layer 信誉做匹配
   ✅ A2A → 在 Agent Layer 上开通道/结算
   ❌ Agent Layer → 不知道 Chain Hub 存在
-  ❌ Agent Layer → 不知道 Agent Me 存在
+  ❌ Agent Layer → 不知道 AgentM 存在
 ```
 
 ### 1.2 各模块职责边界
@@ -56,8 +56,8 @@
 |------|---------|-----------|------|
 | **Agent Layer** | 结算 + 信誉 + Stake | 链上任务状态、信誉分数 | Solana Runtime |
 | **Chain Hub** | 工具接入 + Skill 市场 | Skill 注册表、协议注册表 | Agent Layer（信誉验证） |
-| **Agent Me** | 用户入口 + 个人 Agent | AgentSoul（本地） | Agent Layer（参与任务） |
-| **Agent Social** | 发现 + 匹配 | 社交图谱、兼容性评分 | Agent Layer（信誉数据） |
+| **AgentM** | 用户入口 + 个人 Agent | AgentSoul（本地） | Agent Layer（参与任务） |
+| **AgentM** | 发现 + 匹配 | 社交图谱、兼容性评分 | Agent Layer（信誉数据） |
 | **A2A Protocol** | Agent 间通信 + 微支付 | 消息、通道状态 | Agent Layer（结算层） |
 
 ---
@@ -74,14 +74,14 @@ flowchart TB
     end
     
     subgraph Entry["入口层"]
-        AgentMe["Agent Me<br/>个人 Agent 界面"]
+        AgentM["AgentM<br/>个人 Agent 界面"]
         SDK["TypeScript SDK<br/>开发者接口"]
         CLI["CLI<br/>命令行工具"]
     end
     
     subgraph Modules["模块层"]
         ChainHub["Chain Hub<br/>Skill 市场 + 工具"]
-        Social["Agent Social<br/>发现 + 匹配"]
+        Social["AgentM<br/>发现 + 匹配"]
     end
     
     subgraph Kernel["内核层"]
@@ -94,10 +94,10 @@ flowchart TB
         Storage["存储<br/>(Arweave / Avail)"]
     end
     
-    Human --> AgentMe
+    Human --> AgentM
     Human --> SDK
     AgentBot --> SDK
-    AgentMe --> SDK
+    AgentM --> SDK
     
     SDK --> AgentLayer
     SDK --> ChainHub
@@ -118,14 +118,14 @@ flowchart TB
 一个任务从创建到完成的完整数据流:
 
 1. 任务创建
-   Human → Agent Me → SDK → postTask() → Solana
+   Human → AgentM → SDK → postTask() → Solana
                                   │
                                   ├─→ Indexer 记录事件
                                   └─→ evaluationCID → Arweave
 
 2. Agent 发现任务
-   Indexer → SDK → Agent Me (展示可用任务)
-                 → Agent Social (推荐匹配的 Agent)
+   Indexer → SDK → AgentM (展示可用任务)
+                 → AgentM (推荐匹配的 Agent)
 
 3. Agent 竞争
    Agent → SDK → submitResult() → Solana
@@ -145,7 +145,7 @@ flowchart TB
 
 5. 信誉消费
    Chain Hub → 读取信誉 → Skill 定价/验证
-   Agent Social → 读取信誉 → Agent 匹配
+   AgentM → 读取信誉 → Agent 匹配
    其他协议 → 读取 ERC-8004 → 跨协议信誉
 ```
 
@@ -184,65 +184,65 @@ flowchart TB
   executeProtocolAction(protocol, action, params, sessionKey) → result
 ```
 
-### 3.2 Agent Layer ↔ Agent Me
+### 3.2 Agent Layer ↔ AgentM
 
 ```
 集成点:
 
-1. 任务参与（Agent Me → Agent Layer）
+1. 任务参与（AgentM → Agent Layer）
    用户的个人 Agent 代表用户参与任务
    → postTask(), submitResult(), judgeAndPay()
    → 通过 SDK 调用 Agent Layer Program
 
-2. 信誉展示（Agent Layer → Agent Me）
-   Agent Me 界面展示用户的链上信誉
+2. 信誉展示（Agent Layer → AgentM）
+   AgentM 界面展示用户的链上信誉
    → 读取 reputation PDA
    → 展示 avgScore, winRate, 任务历史
 
-3. 数据主权（Agent Me 本地）
+3. 数据主权（AgentM 本地）
    AgentSoul（记忆、偏好、策略）完全本地
    → Agent Layer 不知道 AgentSoul 的存在
-   → Agent Me 决定何时/如何参与任务
+   → AgentM 决定何时/如何参与任务
 
 数据接口:
-  // Agent Me 参与任务
+  // AgentM 参与任务
   postTask(desc, evalRef, deadline, judge, stake) → taskId
   submitResult(taskId, resultRef) → tx
   
-  // Agent Me 读取信誉
+  // AgentM 读取信誉
   getMyReputation() → { scores, history, rank }
   
-  // Agent Me 管理 Skill
+  // AgentM 管理 Skill
   getMySkills() → Skill[]  // 来自 Chain Hub
   acquireSkill(skillId) → tx
 ```
 
-### 3.3 Agent Layer ↔ Agent Social
+### 3.3 Agent Layer ↔ AgentM
 
 ```
 集成点:
 
-1. 信誉匹配（Agent Social → Agent Layer）
-   Agent Social 基于信誉数据匹配 Agent
+1. 信誉匹配（AgentM → Agent Layer）
+   AgentM 基于信誉数据匹配 Agent
    → 读取所有 Agent 的信誉
    → 计算兼容性分数
 
-2. Judge 发现（Agent Social → Agent Layer）
+2. Judge 发现（AgentM → Agent Layer）
    帮助 Poster 找到合适的 Judge
    → 读取 Judge 历史评判数据
    → 推荐信誉最高/最相关的 Judge
 
-3. 师徒关系（Agent Social → Chain Hub）
+3. 师徒关系（AgentM → Chain Hub）
    师徒关系通过 Skill Protocol 实现
-   → Agent Social 提供社交发现
+   → AgentM 提供社交发现
    → Chain Hub 处理 Skill 传承的链上逻辑
 
 数据接口:
-  // Agent Social 查询匹配
+  // AgentM 查询匹配
   findAgentsForTask(taskRequirements) → Agent[]
   findJudge(skillCategory, minReputation) → Judge[]
   
-  // Agent Social 社交图谱
+  // AgentM 社交图谱
   getCollaborationHistory(agentA, agentB) → History
   getSocialGraph(agent, depth) → Graph
 ```
@@ -308,7 +308,7 @@ await grad.skill.acquire(skillId);
 await grad.skill.execute(skillId, params);
 await grad.protocol.call('jupiter', 'swap', { ... });
 
-// === Agent Social (发现) ===
+// === AgentM (发现) ===
 await grad.social.findAgents({ skill: 'defi', minScore: 80 });
 await grad.social.findJudge({ category: 'audit', minRep: 90 });
 
@@ -493,14 +493,14 @@ Phase 1 (2026 Q2): 最小可用
 
 Phase 2 (2026 Q3): 模块上线
   📐 Chain Hub MVP（Skill 注册 + 基础市场）
-  📐 Agent Me MVP（个人 Agent 界面）
+  📐 AgentM MVP（个人 Agent 界面）
   📐 Judge Market（Judge 发现 + 排行）
 
 Phase 3 (2026 Q4): 代币与经济
   📐 GRAD Token Launch
   📐 Airdrop to Phase 1 participants
   📐 Liquidity Pool
-  📐 Agent Social MVP
+  📐 AgentM MVP
 
 Phase 4 (2027): A2A
   🔭 A2A 消息层

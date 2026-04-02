@@ -117,7 +117,7 @@
 | W1: Solana Program 核心 + 集成测试 | ✅ 55 tests |
 | W2: 工具链 (Indexer/SDK/CLI/Judge Daemon/Frontend) | ✅ 全部可用 |
 | W2 E2E: Indexer → SDK 端到端 | ✅ 12/12 |
-| W3: Agent.im → AgentM 产品化 | ✅ 39 tests + Phase 7 通过 |
+| W3: AgentM → AgentM 产品化 | ✅ 39 tests + Phase 7 通过 |
 | W3: AgentM Pro Stage A+B | ✅ Profile Studio 完成 |
 | W3: Chain Hub MVP | ✅ 11 指令 + 8 tests |
 | A2A on Solana | ✅ 16 指令 + 11 tests + Runtime 35 tests |

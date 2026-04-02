@@ -90,7 +90,7 @@
 - ✅ 95/3/2 费用分割精确到 lamport
 - ✅ Judge Pool 加权随机选人
 - ✅ Reputation PDA 自动初始化
-- ✅ Agent.im MVP 可运行（桌面应用 + API 服务器）
+- ✅ AgentM MVP 可运行（桌面应用 + API 服务器）
 
 **未完成**:
 - ⬜ 没有真实用户（非团队成员）走过这个流程
@@ -103,7 +103,7 @@
 |------|------|------|
 | Manual | ✅ | Devnet 上手动走通完整生命周期 |
 | Processized | 🟡 | Demo 脚本存在但需固化；CLI 可用但未面向外部 |
-| Productized | 🟡 | Agent.im MVP 有，但 Privy 登录还在 MockAuth |
+| Productized | 🟡 | AgentM MVP 有，但 Privy 登录还在 MockAuth |
 
 ---
 
@@ -115,7 +115,7 @@
 - Solana Program（devnet 可用）
 - CLI 工具（完整生命周期命令）
 - SDK（TypeScript，可集成）
-- Agent.im 桌面应用（Electrobun，可运行）
+- AgentM 桌面应用（Electrobun，可运行）
 - Indexer（PostgreSQL + REST API）
 
 **发布一个"周末 MVP"需要什么**:
@@ -124,7 +124,7 @@
 |------|------|------|
 | 固化 devnet 部署 | 2h | 确保 Program 稳定部署在 devnet |
 | Demo 脚本固化 | 2h | 10 分钟可重复的端到端演示 |
-| Agent.im 连接真实 Indexer | 2h | 目前用 demo data，需切到真实数据 |
+| AgentM 连接真实 Indexer | 2h | 目前用 demo data，需切到真实数据 |
 | 一页 Landing Page | 2h | 说清楚是什么 + 试用入口 |
 | **合计** | **~8h** | **一个周末可以做到** |
 

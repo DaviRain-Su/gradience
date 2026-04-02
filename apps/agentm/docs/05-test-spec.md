@@ -1,4 +1,4 @@
-# Phase 5: Test Spec — Agent.im
+# Phase 5: Test Spec — AgentM
 
 ---
 
@@ -20,7 +20,7 @@
 ## 2. 运行方式
 
 ```bash
-cd apps/agent-im
+cd apps/agentm
 
 # 全部测试
 pnpm test
@@ -151,7 +151,7 @@ pnpm exec tsx --test src/main/auth.test.ts
 |------|------|
 | Electrobun 打包验证 | macOS/Windows/Linux 三平台打包成功 |
 | 多用户并发 A2A | 10 个 Agent 同时发消息 |
-| DashDomain 连接 | 本地 Agent 进程连接器 |
+| AgentM Pro 连接 | 本地 Agent 进程连接器 |
 | 8004 注册验证 | Agent 注册后 8004scan.io 可发现 |
 | Profile 链上签名校验 | profile 引用与链上注册哈希一致 |
 

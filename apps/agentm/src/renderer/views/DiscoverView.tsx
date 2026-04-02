@@ -78,7 +78,7 @@ export function DiscoverView() {
                 <p className="text-yellow-400 text-sm">Indexer offline. Showing cached/demo data.</p>
             )}
             {tasksError && (
-                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify Agent.im API /me/tasks or Indexer /api/tasks.</p>
+                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify AgentM API /me/tasks or Indexer /api/tasks.</p>
             )}
 
             {/* Arena task flow */}

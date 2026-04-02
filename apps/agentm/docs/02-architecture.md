@@ -1,7 +1,7 @@
-# Phase 2: Architecture — Agent.im
+# Phase 2: Architecture — AgentM
 
-> **目的**: 定义 Agent.im 的系统结构、组件划分、数据流
-> **输入**: `apps/agent-im/docs/01-prd.md`、白皮书 v1.2 §8.1
+> **目的**: 定义 AgentM 的系统结构、组件划分、数据流
+> **输入**: `apps/agentm/docs/01-prd.md`、白皮书 v1.2 §8.1
 > **输出物**: 本文档
 
 ---
@@ -18,13 +18,13 @@
 
 ### 一句话描述
 
-> Agent.im 是 Gradience 协议的参考客户端——一个桌面 IM 应用，人通过 GUI 操作，Agent 通过 API 操作，底层同一个 A2A 协议，产生完全相同的链上效果。
+> AgentM 是 Gradience 协议的参考客户端——一个桌面 IM 应用，人通过 GUI 操作，Agent 通过 API 操作，底层同一个 A2A 协议，产生完全相同的链上效果。
 
 ### 架构图
 
 ```mermaid
 flowchart TB
-    subgraph Desktop["Agent.im 桌面应用（Electrobun）"]
+    subgraph Desktop["AgentM 桌面应用（Electrobun）"]
         subgraph UI["前端 - React + Vite"]
             MeView["我的视角<br/>声誉 / 任务历史"]
             SocialView["社交视角<br/>发现广场 / Agent 详情"]
@@ -87,7 +87,7 @@ flowchart TB
   → Google 认证成功
   → Privy 生成/恢复 Solana keypair（用户无感知）
   → 返回 publicKey（链上地址）
-  → Agent.im 用 publicKey 查询 Indexer:
+  → AgentM 用 publicKey 查询 Indexer:
       GET /api/agents/{publicKey}/reputation
       GET /api/tasks?poster={publicKey}
   → 渲染"我的"视角
@@ -151,7 +151,7 @@ Agent 回复文字
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                 Agent.im                         │
+│                 AgentM                         │
 │                                                 │
 │   ┌─────────────────┐  ┌─────────────────────┐  │
 │   │  GUI（人用）     │  │  API（Agent 用）    │  │
@@ -185,14 +185,14 @@ GUI 和 API 产生完全相同的链上效果。
 | GET | `/me/reputation` | 查询自己的声誉 | "我的"面板 |
 | POST | `/tasks/post` | 发布任务到 Arena | 任务发布表单 |
 | GET | `/tasks/list` | 查询任务列表 | 任务列表页面 |
-| GET | `/status` | Agent.im 运行状态 | — |
+| GET | `/status` | AgentM 运行状态 | — |
 
 ---
 
 ## 2.5 文件结构
 
 ```
-apps/agent-im/
+apps/agentm/
 ├── docs/
 │   ├── 01-prd.md
 │   ├── 02-architecture.md（本文）
@@ -236,7 +236,7 @@ apps/agent-im/
 ## 2.6 依赖关系
 
 ```
-Agent.im 依赖（全部已有，不新建）：
+AgentM 依赖（全部已有，不新建）：
 ├── @gradience/sdk          ← 链上调用（task.post, reputation.get 等）
 ├── A2A Protocol SDK        ← 消息协议
 ├── magicblock-a2a.ts       ← 传输层（InMemory / BroadcastChannel）
@@ -245,11 +245,11 @@ Agent.im 依赖（全部已有，不新建）：
 ├── Indexer REST API        ← 数据查询
 └── Privy SDK               ← 嵌入式钱包
 
-Agent.im 不依赖：
+AgentM 不依赖：
 ├── Agent Arena Program     ← 通过 SDK 间接调用
 ├── Chain Hub Program       ← 通过 SDK 间接调用（P2）
-├── Judge Daemon            ← 后台服务，与 Agent.im 无关
-└── DashDomain              ← P2，后续集成
+├── Judge Daemon            ← 后台服务，与 AgentM 无关
+└── AgentM Pro              ← P2，后续集成
 ```
 
 ---

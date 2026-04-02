@@ -101,7 +101,7 @@ Beam Game Developer
 │  └─────────────────────────────────────┘    │
 │              ↓                               │
 │  ┌─────────────┐  ┌─────────────────────┐   │
-│  │  Chain Hub  │  │     Agent.im        │   │
+│  │  Chain Hub  │  │     AgentM        │   │
 │  │  (Tooling)  │  │   (User Entry)      │   │
 │  │             │  │                     │   │
 │  │ • Skill     │  │ • Wallet = Identity │   │
@@ -181,7 +181,7 @@ Phase 2: Chain Hub Integration (Weeks 5-8)
 Phase 3: Ecosystem Growth (Weeks 9-12)
 ├── Onboard 10+ Beam games
 ├── Host "Beam AI Competition" hackathon
-└── Launch Agent.im mobile for Beam users
+└── Launch AgentM mobile for Beam users
 ```
 
 ---
@@ -267,7 +267,7 @@ Phase 3: Ecosystem Growth (Weeks 9-12)
 | **M1: Beam Integration** | Weeks 1-4 | Agent Layer Program deployed on Beam; BEAM token integration; basic SDK | $XX,XXX |
 | **M2: Chain Hub + Gaming** | Weeks 5-8 | Chain Hub with Beam game services; 2 pilot games integrated; testnet live | $XX,XXX |
 | **M3: Mainnet + Launch** | Weeks 9-12 | Mainnet deployment; "Beam Agent Arena" launch; 5+ games onboarded | $XX,XXX |
-| **M4: Growth + Mobile** | Weeks 13-16 | Agent.im mobile app; 10+ games; hackathon; marketing | $XX,XXX |
+| **M4: Growth + Mobile** | Weeks 13-16 | AgentM mobile app; 10+ games; hackathon; marketing | $XX,XXX |
 
 **Total Requested:** $XXX,XXX
 
