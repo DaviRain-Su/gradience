@@ -173,7 +173,7 @@ fn open_channel_rejects_expired_deadline() {
 #[test]
 fn full_messaging_lifecycle() {
     let mut ctx = TestContext::new();
-    let config_pda = initialize_network(&mut ctx);
+    let _cfg = initialize_network(&mut ctx);
 
     // Register two agents
     let alice = ctx.create_funded_keypair();
