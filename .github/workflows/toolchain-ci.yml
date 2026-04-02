@@ -1,0 +1,52 @@
+name: toolchain-ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/agent-arena/clients/typescript/**"
+      - "apps/agent-arena/cli/**"
+      - "apps/agent-arena/judge-daemon/**"
+      - ".github/workflows/toolchain-ci.yml"
+
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install SDK deps
+        run: npm --prefix ./apps/agent-arena/clients/typescript install
+      - name: Build SDK
+        run: npm --prefix ./apps/agent-arena/clients/typescript run build
+      - name: Test SDK
+        run: npx tsx --test ./apps/agent-arena/clients/typescript/src/sdk.test.ts ./apps/agent-arena/clients/typescript/src/wallet-adapters.test.ts
+
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        run: npm --prefix ./apps/agent-arena/clients/typescript install
+      - name: Test CLI
+        run: npx tsx --test ./apps/agent-arena/cli/gradience.test.ts
+
+  judge-daemon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        working-directory: apps/agent-arena/judge-daemon
+        run: npm install
+      - name: Test Judge Daemon
+        working-directory: apps/agent-arena/judge-daemon
+        run: npx tsx --test src/*.test.ts
