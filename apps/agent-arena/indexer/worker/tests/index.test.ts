@@ -24,7 +24,10 @@ describe('indexer worker webhook auth', () => {
             body: JSON.stringify({}),
         });
 
-        const response = await worker.fetch(request, makeMockEnv() as any);
+        const response = await worker.fetch(
+            request,
+            makeMockEnv() as Parameters<typeof worker.fetch>[1],
+        );
         const payload = (await response.json()) as { error: string };
 
         expect(response.status).toBe(503);
@@ -39,7 +42,10 @@ describe('indexer worker webhook auth', () => {
             body: JSON.stringify({}),
         });
 
-        const response = await worker.fetch(request, makeMockEnv('expected-token') as any);
+        const response = await worker.fetch(
+            request,
+            makeMockEnv('expected-token') as Parameters<typeof worker.fetch>[1],
+        );
         const payload = (await response.json()) as { error: string };
 
         expect(response.status).toBe(401);
@@ -55,7 +61,10 @@ describe('indexer worker internal error sanitization', () => {
             body: JSON.stringify({ unsupported: true }),
         });
 
-        const response = await worker.fetch(request, makeMockEnv('expected-token') as any);
+        const response = await worker.fetch(
+            request,
+            makeMockEnv('expected-token') as Parameters<typeof worker.fetch>[1],
+        );
         const payload = (await response.json()) as { error: string };
 
         expect(response.status).toBe(500);
@@ -68,7 +77,10 @@ describe('indexer worker CORS preflight', () => {
         const request = new Request('https://worker.example/api/tasks', {
             method: 'OPTIONS',
         });
-        const response = await worker.fetch(request, makeMockEnv('expected-token') as any);
+        const response = await worker.fetch(
+            request,
+            makeMockEnv('expected-token') as Parameters<typeof worker.fetch>[1],
+        );
 
         expect(response.status).toBe(204);
         expect(response.headers.get('access-control-allow-origin')).toBe('*');

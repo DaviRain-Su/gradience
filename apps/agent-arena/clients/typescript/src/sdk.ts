@@ -38,6 +38,7 @@ type QueryValue = string | number | undefined;
 
 export interface GradienceSdkOptions {
     indexerEndpoint?: string;
+    attestationEndpoint?: string;
     programAddress?: Address;
     rpc?: Parameters<typeof fetchEncodedAccount>[0];
     rpcEndpoint?: string;
@@ -225,13 +226,29 @@ export interface JudgePoolMemberOnChain {
     weight: number;
 }
 
+export interface TaskCompletionAttestationApi {
+    task_id: number;
+    task_category: number;
+    judge_method: number;
+    score: number;
+    reward_amount: string;
+    completed_at: number;
+    credential: string;
+    schema: string;
+    signature?: string;
+}
+
 export class GradienceSDK {
     private indexerEndpoint: string;
+    private attestationEndpoint: string;
     private programAddress: Address;
     private rpc: Parameters<typeof fetchEncodedAccount>[0];
 
     constructor(options: GradienceSdkOptions = {}) {
         this.indexerEndpoint = sanitizeBaseUrl(options.indexerEndpoint ?? 'http://127.0.0.1:3001');
+        this.attestationEndpoint = sanitizeBaseUrl(
+            options.attestationEndpoint ?? options.indexerEndpoint ?? 'http://127.0.0.1:3001',
+        );
         this.programAddress = options.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
         const rpcEndpoint = options.rpcEndpoint ?? 'http://127.0.0.1:8899';
         this.rpc =
@@ -243,6 +260,10 @@ export class GradienceSDK {
 
     setIndexerEndpoint(endpoint: string): void {
         this.indexerEndpoint = sanitizeBaseUrl(endpoint);
+    }
+
+    setAttestationEndpoint(endpoint: string): void {
+        this.attestationEndpoint = sanitizeBaseUrl(endpoint);
     }
 
     setRpc(rpc: Parameters<typeof fetchEncodedAccount>[0]): void {
@@ -336,6 +357,14 @@ export class GradienceSDK {
          * Returns `null` when the pool account does not exist.
          */
         list: (category: number) => this.getJudgePoolOnChain(category),
+    } as const;
+
+    readonly attestations = {
+        /**
+         * Fetch TaskCompletion attestations for a given agent.
+         * Returns `null` when the attestation endpoint or agent record is not found.
+         */
+        list: (agent: string) => this.getAgentAttestations(agent),
     } as const;
 
     async postTask(wallet: WalletAdapter, request: PostTaskRequest): Promise<string> {
@@ -702,6 +731,17 @@ export class GradienceSDK {
         return this.getJsonOrNull<JudgePoolEntryApi[]>(`/api/judge-pool/${category}`);
     }
 
+    async getAgentAttestations(
+        agent: string,
+    ): Promise<TaskCompletionAttestationApi[] | null> {
+        const path = `/api/agents/${encodeURIComponent(agent)}/attestations`;
+        return this.getJsonOrNull<TaskCompletionAttestationApi[]>(
+            path,
+            {},
+            this.attestationEndpoint,
+        );
+    }
+
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
         const [reputationPda] = await findReputationPda(this.programAddress, agent);
         const maybeAccount = await fetchEncodedAccount(this.rpc, reputationPda);
@@ -725,7 +765,15 @@ export class GradienceSDK {
     }
 
     private async getJson<T>(path: string, query: Record<string, QueryValue> = {}): Promise<T> {
-        const url = new URL(path, `${this.indexerEndpoint}/`);
+        return this.getJsonWithBase<T>(path, query, this.indexerEndpoint);
+    }
+
+    private async getJsonWithBase<T>(
+        path: string,
+        query: Record<string, QueryValue>,
+        baseUrl: string,
+    ): Promise<T> {
+        const url = new URL(path, `${baseUrl}/`);
         const params = new URLSearchParams();
         for (const [key, value] of Object.entries(query)) {
             if (value !== undefined) {
@@ -747,8 +795,12 @@ export class GradienceSDK {
     private async getJsonOrNull<T>(
         path: string,
         query: Record<string, QueryValue> = {},
+        baseUrl?: string,
     ): Promise<T | null> {
         try {
+            if (baseUrl) {
+                return await this.getJsonWithBase<T>(path, query, baseUrl);
+            }
             return await this.getJson<T>(path, query);
         } catch (error) {
             if (isNotFoundError(error)) {

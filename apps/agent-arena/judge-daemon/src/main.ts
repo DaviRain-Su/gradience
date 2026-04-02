@@ -34,6 +34,7 @@ import {
     SdkJudgeChainClient,
     type JudgeMode,
 } from './workflow.js';
+import { buildInteropPublisherFromEnv } from './interop.js';
 import { WasmTestCasesEvaluator } from './test-cases-evaluator.js';
 
 export interface JudgeDaemonRuntime {
@@ -106,6 +107,14 @@ async function createWorkflowRunner(
     const typeCEvaluator = new WasmTestCasesEvaluator(refResolver, {
         timeoutMs: toPositiveNumber(env.JUDGE_DAEMON_WASM_TIMEOUT_MS, 2_000),
     });
+    const retryPolicy = {
+        maxAttempts: toPositiveNumber(env.JUDGE_DAEMON_RETRY_MAX_ATTEMPTS, 5),
+        baseDelayMs: toPositiveNumber(env.JUDGE_DAEMON_RETRY_BASE_MS, 500),
+    };
+    const interopPublisher = buildInteropPublisherFromEnv(env, {
+        retryPolicy,
+        logger: console,
+    });
     return new JudgeWorkflowRunner(engine, {
         mode,
         chainClient,
@@ -114,10 +123,8 @@ async function createWorkflowRunner(
         typeBEvaluator,
         typeCEvaluator,
         minConfidence: toConfidence(env.JUDGE_DAEMON_MIN_CONFIDENCE, 0.7),
-        retryPolicy: {
-            maxAttempts: toPositiveNumber(env.JUDGE_DAEMON_RETRY_MAX_ATTEMPTS, 5),
-            baseDelayMs: toPositiveNumber(env.JUDGE_DAEMON_RETRY_BASE_MS, 500),
-        },
+        retryPolicy,
+        interopPublisher,
     });
 }
 
