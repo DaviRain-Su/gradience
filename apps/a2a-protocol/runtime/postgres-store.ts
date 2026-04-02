@@ -1,6 +1,7 @@
 import type {
   Address,
   RelayAgentDescriptor,
+  RelayDbAlertState,
   RelayEnvelopeRecord,
   RelayMetrics,
   RelayPullResult,
@@ -61,6 +62,7 @@ interface PersistedRelayState {
     deliveredTo: Address[];
   }>;
   metrics: RelayMetrics;
+  dbAlertState?: RelayDbAlertState;
 }
 
 const DEFAULT_STATE: PersistedRelayState = {
@@ -77,6 +79,13 @@ const DEFAULT_STATE: PersistedRelayState = {
     dbQueryCount: 0,
     dbQueryFailures: 0,
     dbAvgQueryLatencyMs: 0,
+  },
+  dbAlertState: {
+    unhealthyStreak: 0,
+    healthyStreak: 0,
+    incidentActive: false,
+    incidentRepeatCounter: 0,
+    lastIncidentSignature: null,
   },
 };
 
@@ -252,6 +261,17 @@ export class PostgresRelayStore implements RelayStore {
     };
   }
 
+  async getDbAlertState(): Promise<RelayDbAlertState> {
+    const state = await this.readState();
+    return { ...normalizePersistedDbAlertState(state.dbAlertState) };
+  }
+
+  async setDbAlertState(state: RelayDbAlertState): Promise<void> {
+    await this.withState(async (persisted) => {
+      persisted.dbAlertState = normalizePersistedDbAlertState(state);
+    });
+  }
+
   private async withState<T>(
     mutation: (state: PersistedRelayState) => Promise<T> | T,
   ): Promise<T> {
@@ -324,6 +344,7 @@ export class PostgresRelayStore implements RelayStore {
       );
     }
     parsed.metrics = normalizePersistedMetrics(parsed.metrics);
+    parsed.dbAlertState = normalizePersistedDbAlertState(parsed.dbAlertState);
     return parsed;
   }
 
@@ -409,6 +430,22 @@ function normalizePersistedMetrics(metrics: Partial<RelayMetrics> | undefined): 
   };
 }
 
+function normalizePersistedDbAlertState(
+  state: Partial<RelayDbAlertState> | undefined,
+): RelayDbAlertState {
+  return {
+    unhealthyStreak: clampCounter(state?.unhealthyStreak),
+    healthyStreak: clampCounter(state?.healthyStreak),
+    incidentActive: state?.incidentActive === true,
+    incidentRepeatCounter: clampCounter(state?.incidentRepeatCounter),
+    lastIncidentSignature:
+      typeof state?.lastIncidentSignature === "string" &&
+      state.lastIncidentSignature.trim() !== ""
+        ? state.lastIncidentSignature
+        : null,
+  };
+}
+
 function clampMetric(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return 0;
@@ -417,6 +454,16 @@ function clampMetric(value: number | undefined): number {
     return 0;
   }
   return value;
+}
+
+function clampCounter(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  return Math.floor(value);
 }
 
 export function buildPgPoolConfig(

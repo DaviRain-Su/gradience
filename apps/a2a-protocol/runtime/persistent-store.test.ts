@@ -34,6 +34,13 @@ test("file relay store persists agents, envelopes, and metrics", async () => {
       { hello: "world" },
     );
     storeA.pullEnvelopes("agent-b", undefined, 1);
+    await storeA.setDbAlertState({
+      unhealthyStreak: 2,
+      healthyStreak: 0,
+      incidentActive: true,
+      incidentRepeatCounter: 1,
+      lastIncidentSignature: "db_query_failure_rate_high:warning",
+    });
 
     const storeB = new FileRelayStore(filePath);
     const agents = storeB.listAgents(1n);
@@ -48,6 +55,9 @@ test("file relay store persists agents, envelopes, and metrics", async () => {
     assert.equal(metrics.agentsUpserted, 1);
     assert.equal(metrics.envelopesPublished, 1);
     assert.equal(metrics.pullRequests >= 1, true);
+    const dbState = await storeB.getDbAlertState();
+    assert.equal(dbState.incidentActive, true);
+    assert.equal(dbState.unhealthyStreak, 2);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

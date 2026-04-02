@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import type {
   Address,
   RelayAgentDescriptor,
+  RelayDbAlertState,
   RelayEnvelopeRecord,
   RelayMetrics,
   RelayPullResult,
@@ -27,6 +28,7 @@ export class InMemoryRelayStore implements RelayStore {
     dbQueryFailures: 0,
     dbAvgQueryLatencyMs: 0,
   };
+  private dbAlertState: RelayDbAlertState = createDefaultDbAlertState();
 
   constructor(options: { maxAgents?: number; maxEnvelopes?: number } = {}) {
     this.maxAgents = options.maxAgents ?? 10_000;
@@ -115,6 +117,14 @@ export class InMemoryRelayStore implements RelayStore {
   getMetrics(): RelayMetrics {
     return { ...this.metrics };
   }
+
+  getDbAlertState(): RelayDbAlertState {
+    return { ...this.dbAlertState };
+  }
+
+  setDbAlertState(state: RelayDbAlertState): void {
+    this.dbAlertState = normalizePersistedDbAlertState(state);
+  }
 }
 
 interface PersistedRelayState {
@@ -144,6 +154,7 @@ interface PersistedRelayState {
     deliveredTo: Address[];
   }>;
   metrics: RelayMetrics;
+  dbAlertState?: RelayDbAlertState;
 }
 
 export class FileRelayStore implements RelayStore {
@@ -162,6 +173,7 @@ export class FileRelayStore implements RelayStore {
     dbQueryFailures: 0,
     dbAvgQueryLatencyMs: 0,
   };
+  private dbAlertState: RelayDbAlertState = createDefaultDbAlertState();
 
   constructor(
     private readonly filePath: string,
@@ -257,6 +269,15 @@ export class FileRelayStore implements RelayStore {
     return { ...this.metrics };
   }
 
+  getDbAlertState(): RelayDbAlertState {
+    return { ...this.dbAlertState };
+  }
+
+  setDbAlertState(state: RelayDbAlertState): void {
+    this.dbAlertState = normalizePersistedDbAlertState(state);
+    this.persist();
+  }
+
   private hydrateFromDisk(): void {
     try {
       const raw = readFileSync(this.filePath, "utf8");
@@ -309,6 +330,7 @@ export class FileRelayStore implements RelayStore {
       this.metrics.dbQueryCount = metrics.dbQueryCount;
       this.metrics.dbQueryFailures = metrics.dbQueryFailures;
       this.metrics.dbAvgQueryLatencyMs = metrics.dbAvgQueryLatencyMs;
+      this.dbAlertState = normalizePersistedDbAlertState(parsed.dbAlertState);
     } catch (error) {
       if (isFileNotFound(error)) {
         return;
@@ -348,6 +370,7 @@ export class FileRelayStore implements RelayStore {
         deliveredTo: Array.from(item.deliveredTo),
       })),
       metrics: { ...this.metrics },
+      dbAlertState: { ...this.dbAlertState },
     };
 
     mkdirSync(dirname(this.filePath), { recursive: true });
@@ -371,6 +394,22 @@ function normalizePersistedMetrics(metrics: Partial<RelayMetrics> | undefined): 
   };
 }
 
+function normalizePersistedDbAlertState(
+  state: Partial<RelayDbAlertState> | undefined,
+): RelayDbAlertState {
+  return {
+    unhealthyStreak: clampCounter(state?.unhealthyStreak),
+    healthyStreak: clampCounter(state?.healthyStreak),
+    incidentActive: state?.incidentActive === true,
+    incidentRepeatCounter: clampCounter(state?.incidentRepeatCounter),
+    lastIncidentSignature:
+      typeof state?.lastIncidentSignature === "string" &&
+      state.lastIncidentSignature.trim() !== ""
+        ? state.lastIncidentSignature
+        : null,
+  };
+}
+
 function clampMetric(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return 0;
@@ -379,6 +418,26 @@ function clampMetric(value: number | undefined): number {
     return 0;
   }
   return value;
+}
+
+function clampCounter(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  return Math.floor(value);
+}
+
+function createDefaultDbAlertState(): RelayDbAlertState {
+  return {
+    unhealthyStreak: 0,
+    healthyStreak: 0,
+    incidentActive: false,
+    incidentRepeatCounter: 0,
+    lastIncidentSignature: null,
+  };
 }
 
 function isFileNotFound(error: unknown): boolean {

@@ -61,6 +61,14 @@ export interface RelayMetrics {
   dbAvgQueryLatencyMs: number;
 }
 
+export interface RelayDbAlertState {
+  unhealthyStreak: number;
+  healthyStreak: number;
+  incidentActive: boolean;
+  incidentRepeatCounter: number;
+  lastIncidentSignature: string | null;
+}
+
 export type Awaitable<T> = T | Promise<T>;
 
 export interface RelayStore {
@@ -75,6 +83,8 @@ export interface RelayStore {
   pullEnvelopes(agent: Address, afterId?: string, limit?: number): Awaitable<RelayPullResult>;
   markPayloadRejected(): Awaitable<void>;
   getMetrics(): Awaitable<RelayMetrics>;
+  getDbAlertState(): Awaitable<RelayDbAlertState>;
+  setDbAlertState(state: RelayDbAlertState): Awaitable<void>;
 }
 
 export interface SubtaskBroadcastInput {

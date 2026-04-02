@@ -1,4 +1,4 @@
-import type { RelayMetrics, RelayStore } from "./types";
+import type { RelayDbAlertState, RelayMetrics, RelayStore } from "./types";
 
 export interface RelayAlertThresholds {
   maxRejectedPayloads: number;
@@ -123,11 +123,8 @@ export function evaluateRelayAlerts(
 
 export class RelayAlertMonitor {
   private timer: ReturnType<typeof setInterval> | null = null;
-  private dbUnhealthyStreak = 0;
-  private dbHealthyStreak = 0;
-  private dbIncidentActive = false;
-  private dbIncidentRepeatCounter = 0;
-  private lastDbIncidentSignature: string | null = null;
+  private dbAlertState: RelayDbAlertState = createDefaultDbAlertState();
+  private dbAlertStateLoaded = false;
 
   constructor(
     private readonly store: RelayStore,
@@ -139,6 +136,7 @@ export class RelayAlertMonitor {
   ) {}
 
   async checkNow(): Promise<{ alerts: RelayAlert[]; metrics: RelayMetrics }> {
+    await this.ensureDbAlertStateLoaded();
     const metrics = await this.store.getMetrics();
     const thresholds = this.options.thresholds ?? DEFAULT_RELAY_ALERT_THRESHOLDS;
     const computedAlerts = evaluateRelayAlerts(
@@ -148,58 +146,64 @@ export class RelayAlertMonitor {
     const alerts = computedAlerts.filter((item) => !isDbHealthAlert(item));
     const dbAlerts = computedAlerts.filter(isDbHealthAlert);
     const dbEligible = metrics.dbQueryCount >= thresholds.minDbQueryCountForHealthCheck;
+    const previousState = { ...this.dbAlertState };
     if (!dbEligible) {
-      this.dbUnhealthyStreak = 0;
-      this.dbHealthyStreak = 0;
+      this.dbAlertState.unhealthyStreak = 0;
+      this.dbAlertState.healthyStreak = 0;
+      await this.persistDbAlertStateIfChanged(previousState);
       return { alerts, metrics };
     }
 
     if (dbAlerts.length > 0) {
-      this.dbUnhealthyStreak += 1;
-      this.dbHealthyStreak = 0;
+      this.dbAlertState.unhealthyStreak += 1;
+      this.dbAlertState.healthyStreak = 0;
       const signature = computeIncidentSignature(dbAlerts);
-      if (!this.dbIncidentActive) {
-        if (this.dbUnhealthyStreak >= thresholds.dbConsecutiveUnhealthyChecksToAlert) {
-          this.dbIncidentActive = true;
-          this.lastDbIncidentSignature = signature;
-          this.dbIncidentRepeatCounter = 0;
+      if (!this.dbAlertState.incidentActive) {
+        if (this.dbAlertState.unhealthyStreak >= thresholds.dbConsecutiveUnhealthyChecksToAlert) {
+          this.dbAlertState.incidentActive = true;
+          this.dbAlertState.lastIncidentSignature = signature;
+          this.dbAlertState.incidentRepeatCounter = 0;
           alerts.push(...dbAlerts);
         }
+        await this.persistDbAlertStateIfChanged(previousState);
         return { alerts, metrics };
       }
 
-      if (this.lastDbIncidentSignature !== signature) {
-        this.lastDbIncidentSignature = signature;
-        this.dbIncidentRepeatCounter = 0;
+      if (this.dbAlertState.lastIncidentSignature !== signature) {
+        this.dbAlertState.lastIncidentSignature = signature;
+        this.dbAlertState.incidentRepeatCounter = 0;
         alerts.push(...dbAlerts);
+        await this.persistDbAlertStateIfChanged(previousState);
         return { alerts, metrics };
       }
 
-      this.dbIncidentRepeatCounter += 1;
-      if (this.dbIncidentRepeatCounter >= thresholds.dbIncidentRepeatCooldownChecks) {
-        this.dbIncidentRepeatCounter = 0;
+      this.dbAlertState.incidentRepeatCounter += 1;
+      if (this.dbAlertState.incidentRepeatCounter >= thresholds.dbIncidentRepeatCooldownChecks) {
+        this.dbAlertState.incidentRepeatCounter = 0;
         alerts.push(...dbAlerts);
       }
+      await this.persistDbAlertStateIfChanged(previousState);
       return { alerts, metrics };
     }
 
-    this.dbHealthyStreak += 1;
-    this.dbUnhealthyStreak = 0;
+    this.dbAlertState.healthyStreak += 1;
+    this.dbAlertState.unhealthyStreak = 0;
     if (
-      this.dbIncidentActive &&
-      this.dbHealthyStreak >= thresholds.dbConsecutiveHealthyChecksToRecover
+      this.dbAlertState.incidentActive &&
+      this.dbAlertState.healthyStreak >= thresholds.dbConsecutiveHealthyChecksToRecover
     ) {
-      this.dbIncidentActive = false;
-      this.lastDbIncidentSignature = null;
-      this.dbIncidentRepeatCounter = 0;
+      this.dbAlertState.incidentActive = false;
+      this.dbAlertState.lastIncidentSignature = null;
+      this.dbAlertState.incidentRepeatCounter = 0;
       alerts.push({
         code: "db_health_recovered",
         severity: "warning",
         message: "Database health recovered below configured alert thresholds.",
-        observed: this.dbHealthyStreak,
+        observed: this.dbAlertState.healthyStreak,
         threshold: thresholds.dbConsecutiveHealthyChecksToRecover,
       });
     }
+    await this.persistDbAlertStateIfChanged(previousState);
     return { alerts, metrics };
   }
 
@@ -242,6 +246,22 @@ export class RelayAlertMonitor {
     clearInterval(this.timer);
     this.timer = null;
   }
+
+  private async ensureDbAlertStateLoaded(): Promise<void> {
+    if (this.dbAlertStateLoaded) {
+      return;
+    }
+    const persisted = await this.store.getDbAlertState();
+    this.dbAlertState = normalizeDbAlertState(persisted);
+    this.dbAlertStateLoaded = true;
+  }
+
+  private async persistDbAlertStateIfChanged(previousState: RelayDbAlertState): Promise<void> {
+    if (!hasDbAlertStateChanged(previousState, this.dbAlertState)) {
+      return;
+    }
+    await this.store.setDbAlertState(this.dbAlertState);
+  }
 }
 
 function isDbHealthAlert(alert: RelayAlert): boolean {
@@ -256,4 +276,48 @@ function computeIncidentSignature(alerts: RelayAlert[]): string {
     .map((alert) => `${alert.code}:${alert.severity}`)
     .sort()
     .join("|");
+}
+
+function createDefaultDbAlertState(): RelayDbAlertState {
+  return {
+    unhealthyStreak: 0,
+    healthyStreak: 0,
+    incidentActive: false,
+    incidentRepeatCounter: 0,
+    lastIncidentSignature: null,
+  };
+}
+
+function normalizeDbAlertState(state: RelayDbAlertState): RelayDbAlertState {
+  return {
+    unhealthyStreak: clampCounter(state.unhealthyStreak),
+    healthyStreak: clampCounter(state.healthyStreak),
+    incidentActive: state.incidentActive === true,
+    incidentRepeatCounter: clampCounter(state.incidentRepeatCounter),
+    lastIncidentSignature:
+      typeof state.lastIncidentSignature === "string" &&
+      state.lastIncidentSignature.trim() !== ""
+        ? state.lastIncidentSignature
+        : null,
+  };
+}
+
+function clampCounter(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+  return Math.floor(value);
+}
+
+function hasDbAlertStateChanged(
+  previous: RelayDbAlertState,
+  next: RelayDbAlertState,
+): boolean {
+  return (
+    previous.unhealthyStreak !== next.unhealthyStreak ||
+    previous.healthyStreak !== next.healthyStreak ||
+    previous.incidentActive !== next.incidentActive ||
+    previous.incidentRepeatCounter !== next.incidentRepeatCounter ||
+    previous.lastIncidentSignature !== next.lastIncidentSignature
+  );
 }

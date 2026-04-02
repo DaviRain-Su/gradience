@@ -79,6 +79,13 @@ test("postgres relay store persists state in sql row", async () => {
     },
     { hello: "world" },
   );
+  await storeA.setDbAlertState({
+    unhealthyStreak: 3,
+    healthyStreak: 0,
+    incidentActive: true,
+    incidentRepeatCounter: 2,
+    lastIncidentSignature: "db_query_failure_rate_high:warning",
+  });
 
   const storeB = new PostgresRelayStore(client);
   const agents = await storeB.listAgents(1n);
@@ -92,6 +99,9 @@ test("postgres relay store persists state in sql row", async () => {
   const metrics = await storeB.getMetrics();
   assert.equal(metrics.agentsUpserted >= 1, true);
   assert.equal(metrics.envelopesPublished >= 1, true);
+  const dbState = await storeB.getDbAlertState();
+  assert.equal(dbState.incidentActive, true);
+  assert.equal(dbState.unhealthyStreak, 3);
 });
 
 test("postgres relay store rejects elevated roles when enabled", async () => {
