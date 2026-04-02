@@ -12,6 +12,7 @@ test('help lists config commands', () => {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /config set rpc <url>/);
     assert.match(result.stdout, /config set keypair <path>/);
+    assert.match(result.stdout, /profile show/);
 });
 
 test('NO_DNA help returns json schema', () => {
@@ -191,6 +192,86 @@ test('NO_DNA judge unstake returns structured payload', () => {
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; command: string };
     assert.equal(payload.signature, 'mock-unstake-signature');
     assert.equal(payload.command, 'unstake');
+});
+
+test('NO_DNA profile show returns structured payload', () => {
+    const result = runCli(['profile', 'show', '--agent', 'agent-a'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+    });
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        agent: string;
+        profile: { agent: string; display_name: string };
+    };
+    assert.equal(payload.agent, 'agent-a');
+    assert.equal(payload.profile.agent, 'agent-a');
+    assert.equal(payload.profile.display_name, 'Mock Agent');
+});
+
+test('NO_DNA profile update returns ok payload', () => {
+    const result = runCli(
+        [
+            'profile',
+            'update',
+            '--display-name',
+            'Alice',
+            '--bio',
+            'Builder',
+            '--website',
+            'https://alice.example',
+        ],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        ok: boolean;
+        profile: { display_name: string; bio: string };
+    };
+    assert.equal(payload.ok, true);
+    assert.equal(payload.profile.display_name, 'Alice');
+    assert.equal(payload.profile.bio, 'Builder');
+});
+
+test('NO_DNA profile publish returns tx payload', () => {
+    const result = runCli(
+        ['profile', 'publish', '--mode', 'git-sync', '--content-ref', 'sha256:abc'],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        ok: boolean;
+        onchain_tx: string;
+        profile: { publish_mode: string; onchain_ref: string };
+    };
+    assert.equal(payload.ok, true);
+    assert.equal(payload.onchain_tx, 'mock-profile-publish-signature');
+    assert.equal(payload.profile.publish_mode, 'git-sync');
+    assert.equal(payload.profile.onchain_ref, 'sha256:abc');
+});
+
+test('profile publish rejects invalid mode', () => {
+    const result = runCli(
+        ['profile', 'publish', '--mode', 'invalid-mode'],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stderr.trim()) as {
+        ok: boolean;
+        error: { code: string; message: string };
+    };
+    assert.equal(payload.ok, false);
+    assert.equal(payload.error.code, 'INVALID_ARGUMENT');
+    assert.match(payload.error.message, /publish mode must be manual or git-sync/);
 });
 
 function runCli(args: string[], env: NodeJS.ProcessEnv = {}) {
