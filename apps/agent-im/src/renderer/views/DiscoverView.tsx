@@ -75,7 +75,7 @@ export function DiscoverView() {
                 <p className="text-yellow-400 text-sm">Indexer offline. Showing cached/demo data.</p>
             )}
             {tasksError && (
-                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify Indexer /api/tasks.</p>
+                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify Agent.im API /me/tasks or Indexer /api/tasks.</p>
             )}
 
             {/* Arena task flow */}
@@ -85,13 +85,13 @@ export function DiscoverView() {
                     <p className="text-xs text-gray-500">Browse → Apply → Submit → Track</p>
                 </div>
                 <div className="space-y-3">
-                    {tasks.map(({ task, flow, canApply, canSubmit }) => (
+                    {tasks.map(({ task, role, flow, latestSubmission, canApply, canSubmit }) => (
                         <div key={task.taskId} className="rounded-lg border border-gray-800 bg-gray-950 p-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <p className="font-medium">Task #{task.taskId}</p>
                                     <p className="text-xs text-gray-500">
-                                        poster: {task.poster} · reward: {task.reward} · state: {task.state}
+                                        role: {role} · poster: {task.poster} · reward: {task.reward} · state: {task.state}
                                     </p>
                                 </div>
                                 <div className="text-xs">
@@ -100,7 +100,13 @@ export function DiscoverView() {
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2 items-center">
                                 <button
-                                    onClick={() => apply(task)}
+                                    onClick={() => {
+                                        void apply(task).then((ok) => {
+                                            if (ok) {
+                                                void refreshTasks();
+                                            }
+                                        });
+                                    }}
                                     disabled={!canApply}
                                     className="px-3 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
                                 >
@@ -126,7 +132,15 @@ export function DiscoverView() {
                                     onClick={() => {
                                         const resultRef = (resultRefDrafts[task.taskId] ?? '').trim();
                                         if (!resultRef) return;
-                                        submit(task.taskId, resultRef, (traceRefDrafts[task.taskId] ?? '').trim() || undefined);
+                                        void submit(
+                                            task.taskId,
+                                            resultRef,
+                                            (traceRefDrafts[task.taskId] ?? '').trim() || undefined,
+                                        ).then((ok) => {
+                                            if (ok) {
+                                                void refreshTasks();
+                                            }
+                                        });
                                     }}
                                     disabled={!canSubmit || !(resultRefDrafts[task.taskId] ?? '').trim()}
                                     className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition"
@@ -134,10 +148,16 @@ export function DiscoverView() {
                                     Submit
                                 </button>
                             </div>
-                            {flow && (
+                            {(flow || latestSubmission) && (
                                 <p className="mt-2 text-xs text-gray-500">
-                                    Updated: {new Date(flow.updatedAt).toLocaleString()}
-                                    {flow.resultRef ? ` · result_ref: ${flow.resultRef}` : ''}
+                                    Updated:{' '}
+                                    {flow
+                                        ? new Date(flow.updatedAt).toLocaleString()
+                                        : latestSubmission?.submitted_at ?? 'N/A'}
+                                    {flow?.resultRef ? ` · result_ref: ${flow.resultRef}` : ''}
+                                    {!flow?.resultRef && latestSubmission?.result_ref
+                                        ? ` · latest_submission: ${latestSubmission.result_ref}`
+                                        : ''}
                                 </p>
                             )}
                         </div>

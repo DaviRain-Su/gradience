@@ -160,6 +160,55 @@ function url(path: string) {
     return `http://127.0.0.1:${port}${path}`;
 }
 
+async function openWebSocket(wsUrl: string) {
+    const ws = new WebSocket(wsUrl);
+    await new Promise<void>((resolve, reject) => {
+        ws.addEventListener('open', () => resolve(), { once: true });
+        ws.addEventListener('error', () => reject(new Error(`Failed to connect websocket: ${wsUrl}`)), {
+            once: true,
+        });
+    });
+    return ws;
+}
+
+async function waitForWebSocketMessage(
+    ws: WebSocket,
+    timeoutMs = 1000,
+): Promise<Record<string, unknown>> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error('Timed out waiting for websocket message'));
+        }, timeoutMs);
+
+        ws.addEventListener(
+            'message',
+            async (event) => {
+                clearTimeout(timer);
+                try {
+                    const raw =
+                        typeof event.data === 'string'
+                            ? event.data
+                            : 'text' in (event.data as object)
+                                ? await (event.data as { text: () => Promise<string> }).text()
+                                : String(event.data);
+                    resolve(JSON.parse(raw) as Record<string, unknown>);
+                } catch (error) {
+                    reject(error);
+                }
+            },
+            { once: true },
+        );
+        ws.addEventListener(
+            'error',
+            () => {
+                clearTimeout(timer);
+                reject(new Error('Websocket message wait failed'));
+            },
+            { once: true },
+        );
+    });
+}
+
 describe('API Server', () => {
     it('POST /auth/demo-login sets session', async () => {
         const res = await fetch(url('/auth/demo-login'), {
@@ -424,6 +473,7 @@ describe('API Server', () => {
         assert.ok(data.uptime > 0);
         assert.equal(data.authenticated, true); // from previous test
         assert.ok(data.authBindings.totalPrivyBindings >= 1);
+        assert.equal(typeof data.webEntry.pairCodeIssuedTotal, 'number');
     });
 
     it('GET /me rejects mismatched privy-wallet binding and exposes counters in /status', async () => {
@@ -517,6 +567,385 @@ describe('API Server', () => {
         assert.ok(html.includes('Agent.im Interop Dashboard'));
         assert.ok(html.includes('agent-x'));
         assert.ok(html.includes('EVM Reputation Relay Count'));
+    });
+});
+
+describe('API Server web-entry (W1-W6)', () => {
+    it('POST /web/session/pair requires auth', async () => {
+        store.getState().setAuth({
+            authenticated: false,
+            publicKey: null,
+            email: null,
+            privyUserId: null,
+        });
+        const res = await fetch(url('/web/session/pair'), { method: 'POST' });
+        assert.equal(res.status, 401);
+        const data = await res.json();
+        assert.equal(data.code, 'WB-1001');
+    });
+
+    it('POST /web/session/pair + /local/bridge/attach consumes pair code once', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'my-pubkey',
+            email: 'test@gmail.com',
+            privyUserId: 'p1',
+        });
+
+        const pairRes = await fetch(url('/web/session/pair'), { method: 'POST' });
+        assert.equal(pairRes.status, 200);
+        const pairBody = await pairRes.json();
+        assert.equal(typeof pairBody.pairCode, 'string');
+        assert.equal(pairBody.pairCode.length, 8);
+        assert.ok(pairBody.expiresAt > Date.now());
+
+        const attachRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'test-machine',
+                bridgeVersion: '0.1.0',
+            }),
+        });
+        assert.equal(attachRes.status, 200);
+        const attachBody = await attachRes.json();
+        assert.equal(typeof attachBody.bridgeId, 'string');
+        assert.equal(typeof attachBody.bridgeToken, 'string');
+        assert.equal(attachBody.userId, 'p1');
+        assert.equal(attachBody.sessionId, 'p1');
+
+        const attachAgainRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'test-machine',
+            }),
+        });
+        assert.equal(attachAgainRes.status, 409);
+        const attachAgainBody = await attachAgainRes.json();
+        assert.equal(attachAgainBody.code, 'WB-1004');
+    });
+
+    it('GET /web/agents returns 404 when bridge is not connected', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'web-pubkey-404',
+            email: 'test@gmail.com',
+            privyUserId: 'web-user-404',
+        });
+        const res = await fetch(url('/web/agents'));
+        assert.equal(res.status, 404);
+        const body = await res.json();
+        assert.equal(body.code, 'WB-1005');
+    });
+
+    it('bridge realtime websocket heartbeat + presence updates /web/agents', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'web-pubkey-ws',
+            email: 'test@gmail.com',
+            privyUserId: 'web-user-ws',
+        });
+
+        const pairRes = await fetch(url('/web/session/pair'), { method: 'POST' });
+        const pairBody = await pairRes.json();
+        const attachRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'test-machine-2',
+            }),
+        });
+        const attachBody = await attachRes.json();
+        const ws = await openWebSocket(
+            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
+        );
+
+        ws.send(JSON.stringify({ type: 'bridge.heartbeat' }));
+        ws.send(
+            JSON.stringify({
+                type: 'bridge.agent.presence',
+                agents: [
+                    {
+                        agentId: 'local-agent-1',
+                        displayName: 'Local Agent 1',
+                        status: 'idle',
+                        capabilities: ['text', 'voice'],
+                    },
+                    {
+                        agentId: 'local-agent-2',
+                        displayName: 'Local Agent 2',
+                        status: 'busy',
+                        capabilities: ['text'],
+                    },
+                ],
+            }),
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 40));
+
+        const agentsRes = await fetch(url('/web/agents'));
+        assert.equal(agentsRes.status, 200);
+        const agentsBody = await agentsRes.json();
+        assert.equal(agentsBody.items.length, 2);
+        assert.equal(agentsBody.items[0].bridgeId, attachBody.bridgeId);
+        assert.ok(
+            agentsBody.items.some(
+                (item: { agentId: string; capabilities: string[] }) =>
+                    item.agentId === 'local-agent-1' && item.capabilities.includes('voice'),
+            ),
+        );
+
+        ws.close();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+
+        const afterCloseRes = await fetch(url('/web/agents'));
+        assert.equal(afterCloseRes.status, 404);
+    });
+
+    it('web chat websocket relays messages through bridge realtime channel', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'web-chat-pubkey',
+            email: 'chat@test.im',
+            privyUserId: 'web-chat-user',
+        });
+
+        const pairRes = await fetch(url('/web/session/pair'), { method: 'POST' });
+        const pairBody = await pairRes.json();
+        const attachRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'chat-machine',
+            }),
+        });
+        const attachBody = await attachRes.json();
+
+        const bridgeWs = await openWebSocket(
+            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
+        );
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.agent.presence',
+                agents: [
+                    {
+                        agentId: 'local-chat-agent',
+                        displayName: 'Local Chat Agent',
+                        status: 'idle',
+                        capabilities: ['text'],
+                    },
+                ],
+            }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 30));
+
+        const webWs = await openWebSocket(
+            `ws://127.0.0.1:${port}/web/chat/local-chat-agent`,
+        );
+        webWs.send(JSON.stringify({ type: 'chat.message.send', text: 'hello bridge' }));
+
+        const ackEvent = await waitForWebSocketMessage(webWs);
+        assert.equal(ackEvent.type, 'chat.message.ack');
+        const requestId = String(
+            (ackEvent.payload as { messageId?: string } | undefined)?.messageId,
+        );
+        assert.ok(requestId.length > 0);
+        assert.equal(
+            (ackEvent.payload as { messageId?: string } | undefined)?.messageId,
+            requestId,
+        );
+
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.chat.result',
+                requestId,
+                agentId: 'local-chat-agent',
+                delta: 'partial',
+            }),
+        );
+        const deltaEvent = await waitForWebSocketMessage(webWs);
+        assert.equal(deltaEvent.type, 'chat.message.delta');
+        assert.equal(
+            (deltaEvent.payload as { delta?: string } | undefined)?.delta,
+            'partial',
+        );
+
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.chat.result',
+                requestId,
+                agentId: 'local-chat-agent',
+                text: 'final reply',
+                done: true,
+            }),
+        );
+        const finalEvent = await waitForWebSocketMessage(webWs);
+        assert.equal(finalEvent.type, 'chat.message.final');
+        assert.equal(
+            (finalEvent.payload as { text?: string } | undefined)?.text,
+            'final reply',
+        );
+
+        bridgeWs.close();
+        webWs.close();
+    });
+
+    it('web voice events relay through bridge realtime and return transcript/tts events', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'web-voice-pubkey',
+            email: 'voice@test.im',
+            privyUserId: 'web-voice-user',
+        });
+
+        const pairRes = await fetch(url('/web/session/pair'), { method: 'POST' });
+        const pairBody = await pairRes.json();
+        const attachRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'voice-machine',
+            }),
+        });
+        const attachBody = await attachRes.json();
+        const bridgeWs = await openWebSocket(
+            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
+        );
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.agent.presence',
+                agents: [
+                    {
+                        agentId: 'local-voice-agent',
+                        displayName: 'Local Voice Agent',
+                        status: 'idle',
+                        capabilities: ['text', 'voice'],
+                    },
+                ],
+            }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 30));
+
+        const webWs = await openWebSocket(`ws://127.0.0.1:${port}/web/chat/local-voice-agent`);
+        webWs.send(
+            JSON.stringify({
+                type: 'voice.start',
+                requestId: 'voice-req-1',
+                codec: 'text-transcript',
+            }),
+        );
+
+        const bridgeStart = await waitForWebSocketMessage(bridgeWs);
+        assert.equal(bridgeStart.type, 'bridge.voice.request');
+        assert.equal(bridgeStart.event, 'start');
+        assert.equal(bridgeStart.requestId, 'voice-req-1');
+
+        webWs.send(
+            JSON.stringify({
+                type: 'voice.chunk',
+                requestId: 'voice-req-1',
+                seq: 0,
+                dataBase64: 'aGVsbG8=',
+            }),
+        );
+        const bridgeChunk = await waitForWebSocketMessage(bridgeWs);
+        assert.equal(bridgeChunk.type, 'bridge.voice.request');
+        assert.equal(bridgeChunk.event, 'chunk');
+        assert.equal(bridgeChunk.dataBase64, 'aGVsbG8=');
+
+        webWs.send(JSON.stringify({ type: 'voice.stop', requestId: 'voice-req-1' }));
+        const bridgeStop = await waitForWebSocketMessage(bridgeWs);
+        assert.equal(bridgeStop.type, 'bridge.voice.request');
+        assert.equal(bridgeStop.event, 'stop');
+
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.voice.result',
+                requestId: 'voice-req-1',
+                agentId: 'local-voice-agent',
+                transcriptPartial: 'hel',
+            }),
+        );
+        const partial = await waitForWebSocketMessage(webWs);
+        assert.equal(partial.type, 'voice.transcript.partial');
+        assert.equal(
+            (partial.payload as { text?: string } | undefined)?.text,
+            'hel',
+        );
+
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.voice.result',
+                requestId: 'voice-req-1',
+                agentId: 'local-voice-agent',
+                transcriptFinal: 'hello',
+                done: true,
+            }),
+        );
+        const final = await waitForWebSocketMessage(webWs);
+        assert.equal(final.type, 'voice.transcript.final');
+        assert.equal(
+            (final.payload as { text?: string } | undefined)?.text,
+            'hello',
+        );
+
+        const statusRes = await fetch(url('/status'));
+        assert.equal(statusRes.status, 200);
+        const statusBody = await statusRes.json();
+        assert.ok(statusBody.webEntry.voiceRequestsTotal >= 1);
+        assert.ok(statusBody.webEntry.voiceChunksTotal >= 1);
+        assert.ok(statusBody.webEntry.voiceResultsTotal >= 2);
+
+        bridgeWs.close();
+        webWs.close();
+    });
+
+    it('pair code expires when ttl window passed', async () => {
+        const localStore = createAppStore();
+        localStore.getState().setAuth({
+            authenticated: true,
+            publicKey: 'ttl-pubkey',
+            email: 'ttl@agent.im',
+            privyUserId: 'ttl-user',
+        });
+        const hub = new InMemoryMagicBlockHub({ latencyMs: 1 });
+        const transport = new InMemoryMagicBlockTransport(hub);
+        const localAgent = new MagicBlockA2AAgent('ttl-agent', transport);
+        localAgent.start();
+
+        const localApi = createApiServer(
+            { store: localStore, a2aAgent: localAgent },
+            { port: 0, webEntry: { pairCodeTtlMs: 10 } },
+        );
+        const localPort = await localApi.start();
+        try {
+            const pairRes = await fetch(`http://127.0.0.1:${localPort}/web/session/pair`, {
+                method: 'POST',
+            });
+            assert.equal(pairRes.status, 200);
+            const pairBody = await pairRes.json();
+            await new Promise((resolve) => setTimeout(resolve, 20));
+
+            const attachRes = await fetch(`http://127.0.0.1:${localPort}/local/bridge/attach`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pairCode: pairBody.pairCode,
+                    machineName: 'ttl-machine',
+                }),
+            });
+            assert.equal(attachRes.status, 410);
+            const attachBody = await attachRes.json();
+            assert.equal(attachBody.code, 'WB-1003');
+        } finally {
+            await localApi.stop();
+        }
     });
 });
 

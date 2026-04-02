@@ -7,6 +7,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { ArenaTaskSummary, ChatMessage } from '../shared/types.ts';
 import { EMPTY_AUTH } from '../shared/types.ts';
+import { createWebEntryRuntime } from './web-entry/runtime.ts';
+import type { WebEntryConfig } from './web-entry/state.ts';
 import {
     MagicBlockA2AAgent,
 } from '../renderer/lib/a2a-client.ts';
@@ -19,6 +21,7 @@ export interface ApiServerOptions {
     host?: string;
     apiToken?: string;
     interopSigningSecret?: string;
+    webEntry?: Partial<WebEntryConfig>;
 }
 
 export interface ApiServerDeps {
@@ -58,6 +61,12 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
     const apiToken = options.apiToken;
     const interopSigningSecret = options.interopSigningSecret;
     const authBindings = createAuthBindingState();
+    const webEntry = createWebEntryRuntime(
+        {
+            requireSession: () => requireBoundSession(store.getState().auth, authBindings),
+        },
+        options.webEntry,
+    );
 
     const server = createServer(async (req, res) => {
         // Optional token auth
@@ -315,6 +324,24 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 return json(res, 200, submissions);
             }
 
+            // GET /me/attestations?limit=20&offset=0
+            if (method === 'GET' && path === '/me/attestations') {
+                const session = requireBoundSession(store.getState().auth, authBindings);
+                if ('error' in session) {
+                    return json(res, 401, { error: session.error });
+                }
+                const pagination = parsePagination(url);
+                if ('error' in pagination) {
+                    return json(res, 400, { error: pagination.error });
+                }
+                const attestations = await getAttestations(
+                    session.publicKey,
+                    pagination.limit,
+                    pagination.offset,
+                );
+                return json(res, 200, attestations);
+            }
+
             // GET /status
             if (method === 'GET' && path === '/status') {
                 return json(res, 200, {
@@ -331,6 +358,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                         demoLoginDisabledTotal: authBindings.demoLoginDisabledTotal,
                         lastError: authBindings.lastError,
                     },
+                    webEntry: webEntry.getStatus(),
                 });
             }
 
@@ -405,10 +433,22 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 );
             }
 
+            if (await webEntry.handleHttp(req, res, method, path, url)) {
+                return;
+            }
+
             json(res, 404, { error: 'Not found' });
         } catch (err) {
             json(res, 500, { error: err instanceof Error ? err.message : 'Internal error' });
         }
+    });
+
+    server.on('upgrade', (req, socket, head) => {
+        if (webEntry.handleUpgrade(req, socket, head)) {
+            return;
+        }
+        socket.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
+        socket.destroy();
     });
 
     const host = options.host ?? '127.0.0.1';
@@ -423,6 +463,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
             });
         }),
         stop: () => new Promise<void>((resolve) => {
+            webEntry.dispose();
             server.close(() => resolve());
         }),
         server,
@@ -879,4 +920,52 @@ function escapeHtml(value: string): string {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+export interface AttestationSummary {
+    taskId: number;
+    score: number;
+    category: number;
+    completedAt: number;
+    credential: string;
+    schema: string;
+}
+
+async function getAttestations(
+    agent: string,
+    limit: number,
+    offset: number,
+): Promise<{ attestations: AttestationSummary[]; total: number }> {
+    const baseUrl = process.env.VITE_INDEXER_BASE_URL ?? 'http://127.0.0.1:3001';
+    const path = `/api/agents/${encodeURIComponent(agent)}/attestations`;
+    try {
+        const response = await fetch(`${baseUrl}${path}`, {
+            signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok) {
+            return { attestations: [], total: 0 };
+        }
+        const raw: Array<{
+            task_id: number;
+            score: number;
+            task_category: number;
+            completed_at: number;
+            credential: string;
+            schema: string;
+        }> = await response.json();
+        const all: AttestationSummary[] = raw.map((r) => ({
+            taskId: r.task_id,
+            score: r.score,
+            category: r.task_category,
+            completedAt: r.completed_at,
+            credential: r.credential,
+            schema: r.schema,
+        }));
+        return {
+            attestations: all.slice(offset, offset + limit),
+            total: all.length,
+        };
+    } catch {
+        return { attestations: [], total: 0 };
+    }
 }

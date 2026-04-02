@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/renderer/lib/a2a-client.test.ts src/renderer/lib/ranking.test.ts src/renderer/lib/store.test.ts src/renderer/lib/indexer-api.test.ts src/renderer/lib/auth.test.ts src/renderer/lib/voice-engine.test.ts src/renderer/lib/identity-registration.test.ts src/main/api-server.test.ts src/main/stage-a-demo.test.ts",
+    "test": "tsx --test src/renderer/lib/a2a-client.test.ts src/renderer/lib/ranking.test.ts src/renderer/lib/store.test.ts src/renderer/lib/indexer-api.test.ts src/renderer/lib/me-api.test.ts src/renderer/lib/web-entry-api.test.ts src/renderer/lib/web-chat-client.test.ts src/renderer/lib/auth.test.ts src/renderer/lib/voice-engine.test.ts src/renderer/lib/identity-registration.test.ts src/renderer/hooks/useArenaTasks.test.ts src/main/api-server.test.ts src/main/stage-a-demo.test.ts src/main/stage-web-entry-smoke.test.ts",
     "test:a2a": "tsx --test src/renderer/lib/a2a-client.test.ts",
     "test:ranking": "tsx --test src/renderer/lib/ranking.test.ts",
     "test:store": "tsx --test src/renderer/lib/store.test.ts",
     "test:api": "tsx --test src/main/api-server.test.ts",
     "demo:stage-a": "tsx src/main/stage-a-demo.ts",
     "smoke:stage-a": "AGENT_IM_DEMO_REQUIRE_INDEXER=0 tsx src/main/stage-a-demo.ts",
+    "smoke:web-entry": "tsx src/main/stage-web-entry-smoke.ts",
+    "validate:env": "tsx scripts/validate-env.ts",
     "release:gate": "tsx scripts/t60-release-gate.ts"
   },
   "dependencies": {
