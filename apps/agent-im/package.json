@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "tsx --test src/renderer/lib/a2a-client.test.ts src/renderer/lib/ranking.test.ts src/renderer/lib/store.test.ts src/main/api-server.test.ts",
+    "test": "tsx --test src/renderer/lib/a2a-client.test.ts src/renderer/lib/ranking.test.ts src/renderer/lib/store.test.ts src/renderer/lib/indexer-api.test.ts src/main/api-server.test.ts",
     "test:a2a": "tsx --test src/renderer/lib/a2a-client.test.ts",
     "test:ranking": "tsx --test src/renderer/lib/ranking.test.ts",
     "test:store": "tsx --test src/renderer/lib/store.test.ts",

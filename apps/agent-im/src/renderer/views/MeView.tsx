@@ -1,8 +1,10 @@
 import { useAppStore } from '../hooks/useAppStore.ts';
+import { useReputation } from '../hooks/useReputation.ts';
 
 export function MeView() {
     const publicKey = useAppStore((s) => s.auth.publicKey);
     const email = useAppStore((s) => s.auth.email);
+    const { reputation, loading, error, refresh } = useReputation(publicKey);
 
     return (
         <div className="p-6 space-y-6 overflow-y-auto">
@@ -21,22 +23,49 @@ export function MeView() {
                 </div>
             </div>
 
-            {/* Reputation panel (placeholder — connects to Indexer later) */}
+            {/* Reputation panel */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-                <h3 className="text-lg font-semibold mb-4">Reputation</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <StatCard label="Avg Score" value="--" />
-                    <StatCard label="Completed" value="--" />
-                    <StatCard label="Submitted" value="--" />
-                    <StatCard label="Win Rate" value="--" />
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Reputation</h3>
+                    <button
+                        onClick={refresh}
+                        disabled={loading}
+                        className="text-xs px-2 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-50 transition"
+                    >
+                        {loading ? 'Loading...' : 'Refresh'}
+                    </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-4">Connect to Indexer to load on-chain reputation data</p>
+
+                {error && (
+                    <p className="text-red-400 text-sm mb-3">Error: {error}</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                    <StatCard label="Avg Score" value={reputation?.global_avg_score?.toFixed(1) ?? '--'} />
+                    <StatCard label="Completed" value={reputation?.global_completed?.toString() ?? '--'} />
+                    <StatCard label="Submitted" value={reputation?.global_total_applied?.toString() ?? '--'} />
+                    <StatCard label="Win Rate" value={reputation?.win_rate ? `${(reputation.win_rate * 100).toFixed(0)}%` : '--'} />
+                </div>
+
+                {!reputation && !loading && !error && (
+                    <p className="text-xs text-gray-500 mt-4">
+                        No reputation data yet. Complete tasks in Agent Arena to build your on-chain reputation.
+                    </p>
+                )}
+
+                {!reputation && !loading && error && (
+                    <p className="text-xs text-gray-500 mt-4">
+                        Indexer offline. Start the Indexer to load on-chain data.
+                    </p>
+                )}
             </div>
 
-            {/* Task history (placeholder) */}
+            {/* Task history placeholder */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                 <h3 className="text-lg font-semibold mb-4">Task History</h3>
-                <p className="text-gray-500 text-sm">No tasks yet. Post a task or apply to one from the Discover tab.</p>
+                <p className="text-gray-500 text-sm">
+                    No tasks yet. Post a task or apply to one from the Discover tab.
+                </p>
             </div>
         </div>
     );
