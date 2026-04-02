@@ -24,6 +24,17 @@ No phase may be skipped. No code without a Technical Spec.
 3. Code must match the Technical Spec exactly. Spec wrong? Fix spec first.
 4. All phase docs go in `<project>/docs/01-prd.md` through `07-review-report.md`.
 
+### Fractal Application
+
+The methodology applies at **every level of granularity**:
+
+- **Project level**: the whole Gradience protocol goes through all 7 phases
+- **Module level**: each sub-module (indexer, judge-daemon, SDK, CLI, etc.) also goes through its own 7 phases independently
+- **Phase 1/2 of a sub-module** can reference the project-level PRD/Architecture docs — no need to rewrite
+- **Phase 3 (Technical Spec) must always be written fresh** for each sub-module — this is non-negotiable
+
+When starting any new sub-module, always check which phases are already documented before writing code.
+
 ---
 
 ## Linear Task Management
@@ -86,8 +97,9 @@ curl -s -X POST https://api.linear.app/graphql \
 
 | Project | Path | Docs |
 |---------|------|------|
-| AgentM Pro | `apps/agentm-pro/` | `apps/agentm-pro/docs/` |
+| AgentM (Electron) | `apps/agentm/` | `apps/agentm/docs/` |
 | AgentM Web | `apps/agentm-web/` | - |
+| AgentM Pro | `apps/agentm-pro/` | `apps/agentm-pro/docs/` |
 | Agent Arena | `apps/agent-arena/` | `apps/agent-arena/docs/` |
 | Agent Layer EVM | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` |
 | Chain Hub | `apps/chain-hub/` | `apps/chain-hub/docs/` |
