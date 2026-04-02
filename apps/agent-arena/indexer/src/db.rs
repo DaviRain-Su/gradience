@@ -17,8 +17,15 @@ pub struct TaskListFilter<'a> {
     pub category: Option<i16>,
     pub mint: Option<&'a str>,
     pub poster: Option<&'a str>,
+    pub sort: TaskListSort,
     pub limit: i64,
     pub offset: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TaskListSort {
+    TaskIdDesc,
+    TaskIdAsc,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -107,9 +114,8 @@ impl Database {
     }
 
     pub async fn list_tasks(&mut self, filter: TaskListFilter<'_>) -> Result<Vec<TaskRow>> {
-        let rows = self
-            .client
-            .query(
+        let query = match filter.sort {
+            TaskListSort::TaskIdDesc => {
                 "SELECT
                     task_id, poster, judge, judge_mode, reward, mint, min_stake, state,
                     category, eval_ref, deadline, judge_deadline, submission_count, winner,
@@ -120,7 +126,27 @@ impl Database {
                    AND ($3::text IS NULL OR mint = $3)
                    AND ($4::text IS NULL OR poster = $4)
                  ORDER BY task_id DESC
-                 LIMIT $5 OFFSET $6",
+                 LIMIT $5 OFFSET $6"
+            }
+            TaskListSort::TaskIdAsc => {
+                "SELECT
+                    task_id, poster, judge, judge_mode, reward, mint, min_stake, state,
+                    category, eval_ref, deadline, judge_deadline, submission_count, winner,
+                    created_at, slot
+                 FROM tasks
+                 WHERE ($1::smallint IS NULL OR state = $1)
+                   AND ($2::smallint IS NULL OR category = $2)
+                   AND ($3::text IS NULL OR mint = $3)
+                   AND ($4::text IS NULL OR poster = $4)
+                 ORDER BY task_id ASC
+                 LIMIT $5 OFFSET $6"
+            }
+        };
+
+        let rows = self
+            .client
+            .query(
+                query,
                 &[
                     &filter.state,
                     &filter.category,

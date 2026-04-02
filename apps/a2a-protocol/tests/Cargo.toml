@@ -1,0 +1,13 @@
+[package]
+name = "a2a-protocol-tests"
+version = { workspace = true }
+edition = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+a2a-protocol = { path = "../program", features = ["no-entrypoint"] }
+borsh = { workspace = true }
+litesvm = { workspace = true }
+solana-sdk = { workspace = true }

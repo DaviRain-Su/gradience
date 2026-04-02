@@ -9,6 +9,7 @@ pub struct Config {
     pub mock_webhook: bool,
     pub mock_webhook_file: String,
     pub mock_webhook_only: bool,
+    pub triton_stale_after_seconds: u64,
 }
 
 impl Config {
@@ -18,10 +19,11 @@ impl Config {
         let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
             "postgres://changeme:changeme@127.0.0.1:5432/gradience".to_string()
         });
-        let mock_webhook = parse_bool_env("MOCK_WEBHOOK")?;
+        let mock_webhook = parse_bool_env_alias(&["MOCK_WEBHOOK", "MOCK_EVENT"])?;
         let mock_webhook_file = env::var("MOCK_WEBHOOK_FILE")
             .unwrap_or_else(|_| "indexer/mock/webhook.json".to_string());
         let mock_webhook_only = parse_bool_env("MOCK_WEBHOOK_ONLY")?;
+        let triton_stale_after_seconds = parse_u64_env("TRITON_STALE_AFTER_SECONDS")?.unwrap_or(30);
 
         Ok(Self {
             bind_addr,
@@ -29,6 +31,7 @@ impl Config {
             mock_webhook,
             mock_webhook_file,
             mock_webhook_only,
+            triton_stale_after_seconds,
         })
     }
 }
@@ -44,4 +47,25 @@ fn parse_bool_env(name: &str) -> Result<bool> {
         _ => Err(anyhow::anyhow!("invalid boolean value for {name}: {value}"))
             .with_context(|| "expected one of: 1/0, true/false, yes/no, on/off"),
     }
+}
+
+fn parse_bool_env_alias(names: &[&str]) -> Result<bool> {
+    for name in names {
+        if env::var(name).is_ok() {
+            return parse_bool_env(name);
+        }
+    }
+    Ok(false)
+}
+
+fn parse_u64_env(name: &str) -> Result<Option<u64>> {
+    let value = match env::var(name) {
+        Ok(value) => value,
+        Err(_) => return Ok(None),
+    };
+    let parsed = value
+        .trim()
+        .parse::<u64>()
+        .with_context(|| format!("invalid u64 value for {name}: {value}"))?;
+    Ok(Some(parsed))
 }

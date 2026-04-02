@@ -30,13 +30,13 @@ export function Hero() {
 
         <div className="flex items-center justify-center gap-4">
           <a
-            href="#get-started"
+            href="#waitlist"
             className="px-7 py-3.5 rounded-full bg-white text-[var(--bg)] text-sm font-semibold hover:shadow-[0_0_40px_rgba(139,92,246,0.25)] transition-all duration-500"
           >
-            Get started
+            Join waitlist
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/raw/branch/main/protocol/WHITEPAPER.md"
+            href="/whitepaper.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-7 py-3.5 rounded-full border border-white/15 text-sm text-[var(--text-2)] hover:text-white hover:border-white/40 transition-all duration-300"

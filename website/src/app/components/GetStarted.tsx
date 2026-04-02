@@ -42,28 +42,24 @@ export function GetStarted() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
+            href="#waitlist"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-[var(--bg)] text-sm font-semibold hover:shadow-[0_0_40px_rgba(139,92,246,0.25)] transition-all text-center"
           >
-            📄 White paper
+            🚀 Join the waitlist
           </a>
           <a
-            href="https://codeberg.org/gradiences/agent-arena"
+            href="/whitepaper.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
           >
-            💻 Source code
+            📄 Read whitepaper
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/README-zh.md"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="mailto:hello@gradiences.xyz"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
           >
-            📜 中文文档
+            💼 Contact us
           </a>
         </div>
       </div>

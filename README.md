@@ -472,6 +472,7 @@ Not because "Web3 is trendy" — because it's technically necessary:
 | Document | Description |
 |----------|-------------|
 | [protocol/protocol-bitcoin-philosophy.md](protocol/protocol-bitcoin-philosophy.md) | Protocol kernel: Bitcoin philosophy, role emergence, 95/3/2 model, ERC-8183 comparison |
+| [protocol/design/protocol-provider-agent-model.md](protocol/design/protocol-provider-agent-model.md) | **Protocol providers as Agents**: double participation paths, permissionless entry, no official privileges |
 | [protocol/design/reputation-feedback-loop.md](protocol/design/reputation-feedback-loop.md) | Reputation → ERC-8004 feedback loop design |
 | [protocol/design/security-architecture.md](protocol/design/security-architecture.md) | Security architecture: threat model, attack vectors, defense strategies |
 | [protocol/design/a2a-protocol-spec.md](protocol/design/a2a-protocol-spec.md) | A2A Protocol: Agent-to-Agent messaging, micropayments, task decomposition |
