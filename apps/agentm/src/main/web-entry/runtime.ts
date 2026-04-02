@@ -58,6 +58,21 @@ export interface WebEntryRuntime {
         voiceResultsTotal: number;
         wsErrorsTotal: number;
     };
+    notifyProfileGitSync(input: {
+        agentId: string;
+        displayName: string;
+        bio: string;
+        links: {
+            website?: string;
+            github?: string;
+            x?: string;
+        };
+        source: string;
+        repository: string | null;
+        commitSha: string | null;
+        onchainRef: string | null;
+        updatedAt: number;
+    }): void;
     state: WebEntryState;
 }
 
@@ -69,6 +84,7 @@ export function createWebEntryRuntime(
     const state = createWebEntryState(config);
     const bridgePeers = new Map<string, WsPeer>();
     const webChatPeers = new Set<WsPeer>();
+    const webChatPeerAgents = new Map<WsPeer, string>();
     const pendingChatRequests = new Map<
         string,
         { peer: WsPeer; bridgeId: string; agentId: string }
@@ -199,6 +215,7 @@ export function createWebEntryRuntime(
             }
 
             webChatPeers.add(peer);
+            webChatPeerAgents.set(peer, agentId);
             peer.onMessage((messageText) => {
                 handleWebChatMessage({
                     messageText,
@@ -213,6 +230,7 @@ export function createWebEntryRuntime(
             });
             peer.onClose(() => {
                 webChatPeers.delete(peer);
+                webChatPeerAgents.delete(peer);
                 for (const [requestId, request] of pendingChatRequests.entries()) {
                     if (request.peer === peer) {
                         pendingChatRequests.delete(requestId);
@@ -303,8 +321,47 @@ export function createWebEntryRuntime(
         }
         bridgePeers.clear();
         webChatPeers.clear();
+        webChatPeerAgents.clear();
         pendingChatRequests.clear();
         pendingVoiceRequests.clear();
+    }
+
+    function notifyProfileGitSync(input: {
+        agentId: string;
+        displayName: string;
+        bio: string;
+        links: {
+            website?: string;
+            github?: string;
+            x?: string;
+        };
+        source: string;
+        repository: string | null;
+        commitSha: string | null;
+        onchainRef: string | null;
+        updatedAt: number;
+    }) {
+        const payload = {
+            agentId: input.agentId,
+            displayName: input.displayName,
+            bio: input.bio,
+            links: input.links,
+            publishMode: 'git-sync',
+            source: input.source,
+            repository: input.repository,
+            commitSha: input.commitSha,
+            onchainRef: input.onchainRef,
+            updatedAt: input.updatedAt,
+        };
+        for (const [peer, agentId] of webChatPeerAgents.entries()) {
+            if (agentId !== input.agentId) {
+                continue;
+            }
+            peer.sendJson({
+                type: 'agent.profile.synced',
+                payload,
+            });
+        }
     }
 
     function getStatus() {
@@ -329,7 +386,7 @@ export function createWebEntryRuntime(
         };
     }
 
-    return { handleHttp, handleUpgrade, dispose, getStatus, state };
+    return { handleHttp, handleUpgrade, dispose, getStatus, notifyProfileGitSync, state };
 }
 
 function handleBridgeRealtimeMessage(

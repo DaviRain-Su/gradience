@@ -349,6 +349,49 @@ A2A Router
 
 ---
 
+## 2.9 实际实现更新
+
+### 2.9.1 已完成的组件
+
+| 组件 | 状态 | 文件路径 |
+|------|------|----------|
+| A2ARouter | ✅ 完成 | `src/main/a2a-router/router.ts` |
+| NostrAdapter | ✅ 完成 | `src/main/a2a-router/adapters/nostr-adapter.ts` |
+| Libp2pAdapter | ✅ 完成 | `src/main/a2a-router/adapters/libp2p-adapter.ts` |
+| MagicBlockAdapter | ✅ 完成 | `src/main/a2a-router/adapters/magicblock-adapter.ts` |
+| useA2A Hook | ✅ 完成 | `src/renderer/hooks/useA2A.ts` |
+| DiscoverView 集成 | ✅ 完成 | `src/renderer/views/DiscoverView.tsx` |
+| ChatView 集成 | ✅ 完成 | `src/renderer/views/ChatView.tsx` |
+| A2ASettings 组件 | ✅ 完成 | `src/renderer/components/a2a-settings.tsx` |
+| API Server 集成 | ✅ 完成 | `src/main/a2a-api-integration.ts` |
+
+### 2.9.2 协议选择逻辑
+
+实际实现的协议选择基于 `protocolPriority` 配置：
+
+```typescript
+const router = new A2ARouter({
+  protocolPriority: {
+    broadcast: ['nostr', 'libp2p'],      // 广播优先使用 Nostr
+    direct_p2p: ['libp2p', 'nostr'],     // P2P 优先使用 libp2p
+    paid_service: ['magicblock'],         // 付费服务使用 MagicBlock
+    offline_message: ['nostr'],           // 离线消息使用 Nostr
+  },
+});
+```
+
+### 2.9.3 消息类型映射
+
+| A2A 消息类型 | Nostr | libp2p | MagicBlock |
+|-------------|-------|--------|------------|
+| `direct_message` | kind: 4 (DM) | direct protocol | topic: general |
+| `capability_offer` | kind: 10002 | gossipsub | topic: agent_presence |
+| `task_proposal` | kind: 30078 | direct protocol | topic: task_proposal |
+| `task_accept` | kind: 30078 | direct protocol | topic: task_accept |
+| `payment_request` | kind: 30078 | - | topic: payment_request |
+
+---
+
 ## ✅ Phase 2 验收标准
 
 - [x] 2.1 架构原则已定义
@@ -359,5 +402,6 @@ A2A Router
 - [x] 2.6 部署架构明确
 - [x] 2.7 安全考虑已记录
 - [x] 2.8 依赖关系清晰
+- [x] 2.9 实际实现已更新
 
-**验收通过后，进入 Phase 3: Technical Spec →**
+**验收通过 ✅ → 进入 Phase 5: 优化与文档**

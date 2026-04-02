@@ -6,6 +6,7 @@
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "strict": true,
+    "strictFunctionTypes": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "dist",

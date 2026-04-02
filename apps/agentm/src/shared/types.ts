@@ -79,6 +79,13 @@ export interface AgentDiscoveryRow {
         global_total_applied: number;
         win_rate: number;
     } | null;
+    // A2A multi-protocol fields
+    capabilities?: string[];
+    discoveredVia?: 'nostr' | 'libp2p' | 'magicblock' | 'indexer' | 'both';
+    displayName?: string;
+    nostrPubkey?: string;
+    libp2pPeerId?: string;
+    multiaddrs?: string[];
 }
 
 // ── Agent Profile ───────────────────────────────────────────────────

@@ -969,6 +969,81 @@ describe('API Server web-entry (W1-W6)', () => {
         webWs.close();
     });
 
+    it('profile git-sync webhook broadcasts sync event to subscribed web chat websocket', async () => {
+        store.getState().setAuth({
+            authenticated: true,
+            publicKey: 'web-hook-pubkey',
+            email: 'hook@test.im',
+            privyUserId: 'web-hook-user',
+        });
+
+        const pairRes = await fetch(url('/web/session/pair'), { method: 'POST' });
+        const pairBody = await pairRes.json();
+        const attachRes = await fetch(url('/local/bridge/attach'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pairCode: pairBody.pairCode,
+                machineName: 'hook-machine',
+            }),
+        });
+        const attachBody = await attachRes.json();
+
+        const bridgeWs = await openWebSocket(
+            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
+        );
+        bridgeWs.send(
+            JSON.stringify({
+                type: 'bridge.agent.presence',
+                agents: [
+                    {
+                        agentId: 'hook-agent',
+                        displayName: 'Hook Agent',
+                        status: 'idle',
+                        capabilities: ['text'],
+                    },
+                ],
+            }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 30));
+
+        const webWs = await openWebSocket(`ws://127.0.0.1:${port}/web/chat/hook-agent`);
+        const syncEventPromise = waitForWebSocketMessage(webWs);
+
+        const webhookRes = await fetch(url('/webhooks/profile/git-sync'), {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                source: 'github',
+                repository: 'github.com/gradience/hook-agent',
+                commit_sha: 'hooksha1',
+                content_ref: 'sha256:hook-ref',
+                agent: 'hook-agent',
+                profile: {
+                    display_name: 'Hook Agent',
+                    bio: 'Webhook updated profile',
+                    links: {
+                        github: 'https://github.com/hook-agent',
+                    },
+                },
+            }),
+        });
+        assert.equal(webhookRes.status, 200);
+
+        const syncEvent = await syncEventPromise;
+        assert.equal(syncEvent.type, 'agent.profile.synced');
+        const payload = (syncEvent.payload as Record<string, unknown> | undefined) ?? {};
+        assert.equal(payload.agentId, 'hook-agent');
+        assert.equal(payload.displayName, 'Hook Agent');
+        assert.equal(payload.publishMode, 'git-sync');
+        assert.equal(payload.source, 'github');
+        assert.equal(payload.commitSha, 'hooksha1');
+        assert.equal(payload.onchainRef, 'sha256:hook-ref');
+
+        bridgeWs.close();
+        webWs.close();
+    });
+
     it('web voice events relay through bridge realtime and return transcript/tts events', async () => {
         store.getState().setAuth({
             authenticated: true,

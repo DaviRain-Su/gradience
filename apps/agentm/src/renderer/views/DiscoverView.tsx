@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '../hooks/useAppStore.ts';
 import { useDiscover } from '../hooks/useDiscover.ts';
 import { useArenaTasks } from '../hooks/useArenaTasks.ts';
+import { useA2A } from '../hooks/useA2A.ts';
 import { sortAndFilterAgents } from '../lib/ranking.ts';
 import { getAgentProfileApiClient } from '../lib/profile-api.ts';
 import type { AgentDiscoveryRow, AgentProfile } from '../../shared/types.ts';
+import type { AgentInfo } from '../../shared/a2a-router-types.js';
 
 export function DiscoverView() {
     const discoveryRows = useAppStore((s) => s.discoveryRows);
@@ -27,7 +29,33 @@ export function DiscoverView() {
         submit,
     } = useArenaTasks();
 
-    const ranked = sortAndFilterAgents(discoveryRows, query);
+    // A2A multi-protocol discovery
+    const {
+        isInitialized: a2aInitialized,
+        isLoading: a2aLoading,
+        agents: a2aAgents,
+        refreshAgents,
+        health: a2aHealth,
+    } = useA2A({
+        autoInit: true,
+        enableNostr: true,
+        enableLibp2p: true,
+    });
+
+    // Refresh A2A agents periodically
+    useEffect(() => {
+        if (!a2aInitialized) return;
+
+        const interval = setInterval(() => {
+            void refreshAgents();
+        }, 30000); // Refresh every 30s
+
+        return () => clearInterval(interval);
+    }, [a2aInitialized, refreshAgents]);
+
+    // Combine Indexer and A2A discovered agents
+    const combinedAgents = combineAgents(discoveryRows, a2aAgents);
+    const ranked = sortAndFilterAgents(combinedAgents, query);
 
     // Fallback: load demo data if Indexer is offline
     const loadDemoData = () => {
@@ -80,6 +108,31 @@ export function DiscoverView() {
             {tasksError && (
                 <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify AgentM API /me/tasks or Indexer /api/tasks.</p>
             )}
+
+            {/* A2A Protocol Status */}
+            <section className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-300">A2A Multi-Protocol</h3>
+                    <div className="flex gap-2">
+                        {a2aLoading && <span className="text-xs text-gray-500">Initializing...</span>}
+                        {a2aInitialized && (
+                            <>
+                                <span className="text-xs px-2 py-1 bg-emerald-700/30 text-emerald-300 rounded">
+                                    Nostr: {a2aHealth.protocolStatus.nostr.available ? '✓' : '✗'}
+                                </span>
+                                <span className="text-xs px-2 py-1 bg-emerald-700/30 text-emerald-300 rounded">
+                                    libp2p: {a2aHealth.protocolStatus.libp2p.available ? '✓' : '✗'}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                </div>
+                {a2aInitialized && a2aAgents.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                        Discovered {a2aAgents.length} agents via P2P network
+                    </p>
+                )}
+            </section>
 
             {/* Arena task flow */}
             <section className="bg-gray-900 rounded-xl p-4 border border-gray-800 space-y-3">
@@ -412,4 +465,54 @@ function StatusBadge({ status }: { status: string }) {
                         ? 'bg-violet-700/30 text-violet-300'
                         : 'bg-gray-700/30 text-gray-300';
     return <span className={`px-2 py-1 rounded ${style}`}>{status}</span>;
+}
+
+/**
+ * Combine Indexer and A2A discovered agents
+ */
+function combineAgents(
+    indexerRows: AgentDiscoveryRow[],
+    a2aAgents: AgentInfo[]
+): AgentDiscoveryRow[] {
+    const combined = new Map<string, AgentDiscoveryRow>();
+
+    // Add Indexer agents
+    for (const row of indexerRows) {
+        combined.set(row.agent, row);
+    }
+
+    // Add/merge A2A agents
+    for (const agent of a2aAgents) {
+        const existing = combined.get(agent.address);
+        if (existing) {
+            // Merge: keep higher reputation, add capabilities
+            combined.set(agent.address, {
+                ...existing,
+                // Merge capabilities
+                capabilities: [...new Set([...(existing.capabilities || []), ...agent.capabilities])],
+                // Mark as discovered via both
+                discoveredVia: 'both' as const,
+            });
+        } else {
+            // Add new agent from A2A
+            combined.set(agent.address, {
+                agent: agent.address,
+                weight: agent.reputationScore / 100, // Convert to weight
+                reputation: {
+                    global_avg_score: agent.reputationScore / 100,
+                    global_completed: 0,
+                    global_total_applied: 0,
+                    win_rate: 0,
+                },
+                capabilities: agent.capabilities,
+                discoveredVia: agent.discoveredVia,
+                displayName: agent.displayName,
+                nostrPubkey: agent.nostrPubkey,
+                libp2pPeerId: agent.libp2pPeerId,
+                multiaddrs: agent.multiaddrs,
+            });
+        }
+    }
+
+    return Array.from(combined.values());
 }

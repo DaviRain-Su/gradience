@@ -340,6 +340,17 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     updatedAt: Date.now(),
                 };
                 store.getState().setAgentProfile(profile);
+                webEntry.notifyProfileGitSync({
+                    agentId: parsed.agent,
+                    displayName: profile.displayName,
+                    bio: profile.bio,
+                    links: profile.links,
+                    source: parsed.source,
+                    repository: parsed.repository,
+                    commitSha: parsed.commitSha,
+                    onchainRef: profile.onchainRef,
+                    updatedAt: profile.updatedAt,
+                });
                 return json(res, 200, {
                     ok: true,
                     source: parsed.source,

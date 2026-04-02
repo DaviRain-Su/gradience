@@ -3,6 +3,7 @@ import { useAppStore, store } from '../hooks/useAppStore.ts';
 import { VoiceButton } from '../components/voice-button.tsx';
 import { MagicBlockA2AAgent } from '../lib/a2a-client.ts';
 import { createAutoTransport } from '../lib/relay-transport.ts';
+import { useA2A } from '../hooks/useA2A.ts';
 import type { ChatMessage } from '../../shared/types.ts';
 import { getAgentImWebEntryApiClient, type WebAgentItem } from '../lib/web-entry-api.ts';
 import {
@@ -13,8 +14,9 @@ import {
     serializeWebVoiceStartEvent,
     serializeWebVoiceStopEvent,
 } from '../lib/web-chat-client.ts';
+import type { A2AMessage, ProtocolType } from '../../shared/a2a-router-types.js';
 
-// Singleton A2A agent (created on first use)
+// Singleton A2A agent (created on first use) - Legacy MagicBlock A2A
 let a2aAgent: MagicBlockA2AAgent | null = null;
 let a2aStarted = false;
 
@@ -71,8 +73,51 @@ export function ChatView() {
     const [webVoiceRequestId, setWebVoiceRequestId] = useState<string | null>(null);
     const [webVoiceTranscript, setWebVoiceTranscript] = useState<string>('');
     const [webTtsChunkCount, setWebTtsChunkCount] = useState(0);
+    const [preferredProtocol, setPreferredProtocol] = useState<ProtocolType>('nostr');
     const scrollRef = useRef<HTMLDivElement>(null);
     const webSocketRef = useRef<WebSocket | null>(null);
+
+    // A2A Router for multi-protocol communication
+    const {
+        isInitialized: a2aInitialized,
+        isLoading: a2aLoading,
+        send: a2aSend,
+        subscribe: a2aSubscribe,
+        health: a2aHealth,
+    } = useA2A({
+        autoInit: true,
+        enableNostr: true,
+        enableLibp2p: true,
+    });
+
+    // Subscribe to A2A messages
+    useEffect(() => {
+        if (!a2aInitialized) return;
+
+        let unsubscribe: (() => Promise<void>) | null = null;
+
+        void a2aSubscribe((message: A2AMessage) => {
+            const msg: ChatMessage = {
+                id: message.id,
+                peerAddress: message.from,
+                direction: 'incoming',
+                topic: message.type,
+                message: typeof message.payload === 'string' ? message.payload : JSON.stringify(message.payload),
+                paymentMicrolamports: 0,
+                status: 'delivered',
+                createdAt: message.timestamp,
+            };
+            addMessage(msg);
+        }).then((unsub) => {
+            unsubscribe = unsub;
+        });
+
+        return () => {
+            if (unsubscribe) {
+                void unsubscribe();
+            }
+        };
+    }, [a2aInitialized, a2aSubscribe, addMessage]);
 
     useEffect(() => {
         scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
@@ -223,9 +268,10 @@ export function ChatView() {
         };
     }, [closeWebSocket, refreshWebAgents]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim() || !activeConversation || !publicKey) return;
 
+        // Try WebSocket first (Web Entry)
         if (
             webSocketRef.current &&
             webConnectedAgent === activeConversation &&
@@ -247,6 +293,36 @@ export function ChatView() {
             return;
         }
 
+        // Try A2A Router (Nostr/libp2p) if initialized
+        if (a2aInitialized) {
+            const result = await a2aSend({
+                to: activeConversation,
+                type: 'direct_message',
+                payload: { content: inputText.trim(), topic },
+                preferredProtocol,
+            });
+
+            if (result.success) {
+                const msg: ChatMessage = {
+                    id: result.messageId,
+                    peerAddress: activeConversation,
+                    direction: 'outgoing',
+                    topic,
+                    message: inputText.trim(),
+                    paymentMicrolamports: 0,
+                    status: 'sent',
+                    createdAt: Date.now(),
+                };
+                addMessage(msg);
+                setInputText('');
+                return;
+            }
+
+            // If A2A failed, fall back to legacy MagicBlock
+            console.warn('[ChatView] A2A send failed, falling back to MagicBlock:', result.error);
+        }
+
+        // Legacy MagicBlock A2A fallback
         const agent = getA2AAgent(publicKey);
         const envelope = agent.sendInvite({
             to: activeConversation,
@@ -370,8 +446,29 @@ export function ChatView() {
 
             {/* Chat header */}
             <div className="p-4 border-b border-gray-800 bg-gray-900">
-                <p className="font-medium">{activeConversation ?? 'No conversation selected'}</p>
-                <p className="text-xs text-gray-500">Topic: {topic}</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="font-medium">{activeConversation ?? 'No conversation selected'}</p>
+                        <p className="text-xs text-gray-500">Topic: {topic}</p>
+                    </div>
+                    {activeConversation && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Protocol:</span>
+                            <select
+                                value={preferredProtocol}
+                                onChange={(e) => setPreferredProtocol(e.target.value as ProtocolType)}
+                                className="text-xs bg-gray-800 border border-gray-700 rounded px-2 py-1"
+                            >
+                                <option value="nostr">Nostr (Relay)</option>
+                                <option value="libp2p">libp2p (P2P)</option>
+                            </select>
+                            {a2aLoading && <span className="text-xs text-amber-400">Initializing...</span>}
+                            {a2aInitialized && (
+                                <span className="text-xs text-emerald-400">●</span>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Messages */}
