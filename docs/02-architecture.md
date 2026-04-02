@@ -54,41 +54,41 @@ Layer 2 和 Layer 3 是基于本协议的**未来独立协议**，不在 W1-W4 �
 ```mermaid
 flowchart TB
     subgraph Users["用户 / 开发者"]
-        Human["👤 人类用户"]
-        DevAgent["🤖 自主 Agent"]
-        Dev["👨‍💻 开发者"]
+        Human["人类用户"]
+        DevAgent["自主 Agent"]
+        Dev["开发者"]
     end
 
     subgraph Toolchain["工具链层（链下）"]
-        Frontend["🌐 产品前端<br/>gradiences.xyz"]
-        SDK["📦 @gradience/sdk<br/>TypeScript SDK"]
-        CLI["⌨️ gradience CLI"]
-        JudgeDaemon["🔮 Judge Daemon<br/>AI Judge · Oracle Judge"]
+        Frontend["产品前端<br/>gradiences.xyz"]
+        SDK["gradience/sdk<br/>TypeScript SDK"]
+        CLI["gradience CLI"]
+        JudgeDaemon["Judge Daemon<br/>AI Judge / Oracle Judge"]
     end
 
     subgraph Kernel["内核层（Solana）"]
-        AgentLayer["⚙️ Agent Layer Program<br/>Escrow · Judge · Reputation · Staking · Slash"]
-        IJudge["📋 IJudge CPI 接口<br/>合约 Judge 标准"]
+        AgentLayer["Agent Layer Program<br/>Escrow / Judge / Reputation / Staking / Slash"]
+        IJudge["IJudge CPI 接口<br/>合约 Judge 标准"]
     end
 
     subgraph Products["产品层（用户可见，W3+）"]
-        AgentIM["💬 Agent.im<br/>用户入口 IM<br/>GUI（人）+ API（Agent）<br/>Google OAuth · 语音原生"]
-        DashDomain["🖥️ DashDomain<br/>Agent 运行时<br/>本地连接 → 一键云端"]
+        AgentIM["Agent.im<br/>用户入口 IM<br/>GUI + API<br/>Google OAuth / 语音原生"]
+        DashDomain["DashDomain<br/>Agent 运行时<br/>本地 / 云端"]
     end
 
     subgraph Modules["模块层（上层，W3+）"]
-        ChainHub["🔗 Chain Hub<br/>Skill 市场 · Key Vault · Delegation Task"]
+        ChainHub["Chain Hub<br/>Skill 市场 / Key Vault / Delegation Task"]
     end
 
     subgraph EVMLayer["EVM 层（Week 4）"]
-        EVMContract["📜 Agent Layer EVM<br/>Base / Arbitrum"]
-        ReputationBridge["🔐 信誉证明验证<br/>签名验证，无桥"]
+        EVMContract["Agent Layer EVM<br/>Base / Arbitrum"]
+        ReputationBridge["信誉证明验证<br/>签名验证 无桥"]
     end
 
     subgraph Infra["基础设施"]
-        Solana["⛓️ Solana 主网"]
-        Indexer["📡 Indexer<br/>Cloudflare Workers + D1"]
-        Storage["💾 Arweave / Avail<br/>evaluationCID · resultRef"]
+        Solana["Solana 主网"]
+        Indexer2["Indexer<br/>Cloudflare Workers + D1"]
+        Storage["Arweave / Avail<br/>evaluationCID / resultRef"]
     end
 
     Human -->|"Google OAuth"| AgentIM
