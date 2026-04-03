@@ -5,6 +5,7 @@ import { Sidebar } from './components/sidebar.tsx';
 import { MeView } from './views/MeView.tsx';
 import { DiscoverView } from './views/DiscoverView.tsx';
 import { ChatView } from './views/ChatView.tsx';
+import { SocialView } from './views/SocialView.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { useAppStore, store } from './hooks/useAppStore.ts';
 import { MockAuthProvider } from './lib/auth.ts';
@@ -148,6 +149,7 @@ function AppShell({ activeView }: { activeView: ActiveView }) {
                 {activeView === 'me' && <MeView />}
                 {activeView === 'discover' && <DiscoverView />}
                 {activeView === 'chat' && <ChatView />}
+                {activeView === 'social' && <SocialView />}
             </main>
         </div>
     );

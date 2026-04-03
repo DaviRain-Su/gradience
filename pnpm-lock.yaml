@@ -229,12 +229,18 @@ importers:
 
   apps/agentm:
     dependencies:
+      '@gradiences/domain-resolver':
+        specifier: workspace:*
+        version: link:../../packages/domain-resolver
       '@gradiences/ows-adapter':
         specifier: workspace:*
         version: link:../ows-adapter
       '@gradiences/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@gradiences/soul-engine':
+        specifier: workspace:^
+        version: link:../../packages/soul-engine
       '@layerzerolabs/lz-definitions':
         specifier: ^3.0.167
         version: 3.0.167

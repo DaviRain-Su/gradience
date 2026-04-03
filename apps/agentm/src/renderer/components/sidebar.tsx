@@ -4,6 +4,7 @@ import type { ActiveView } from '../../shared/types.ts';
 const NAV_ITEMS: { view: ActiveView; label: string; icon: string }[] = [
     { view: 'me', label: 'Me', icon: 'U' },
     { view: 'discover', label: 'Discover', icon: 'D' },
+    { view: 'social', label: 'Social', icon: '💕' },
     { view: 'chat', label: 'Chat', icon: 'C' },
 ];
 

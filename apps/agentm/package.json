@@ -19,8 +19,10 @@
     "release:gate": "tsx scripts/t60-release-gate.ts"
   },
   "dependencies": {
+    "@gradiences/domain-resolver": "workspace:*",
     "@gradiences/ows-adapter": "workspace:*",
     "@gradiences/sdk": "workspace:*",
+    "@gradiences/soul-engine": "workspace:^",
     "@layerzerolabs/lz-definitions": "^3.0.167",
     "@layerzerolabs/lz-v2-utilities": "^3.0.167",
     "@libp2p/bootstrap": "^12.0.15",
