@@ -20,6 +20,7 @@ RUN npx --yes turbo@2 prune website --docker
 FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+RUN apk add --no-cache python3 make g++
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
@@ -28,8 +29,12 @@ RUN pnpm install --frozen-lockfile
 FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/website/node_modules ./website/node_modules 2>/dev/null || true
+COPY --from=deps /app/ /tmp/deps/
+RUN cp -r /tmp/deps/node_modules ./node_modules && \
+    if [ -d /tmp/deps/website/node_modules ]; then \
+      mkdir -p ./website && \
+      cp -r /tmp/deps/website/node_modules ./website/node_modules; \
+    fi && rm -rf /tmp/deps
 COPY --from=pruner /app/out/full/ .
 
 # Server-side env vars (not baked into bundle)

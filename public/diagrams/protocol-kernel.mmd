@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph Protocol["Gradience Protocol"]
+        subgraph Kernel["⚡ Agent Layer Kernel"]
+            K["Escrow + Judge + Reputation<br/>~300 lines · 3 states · 4 transitions"]
+        end
+        
+        CH["🔗 Chain Hub"]
+        AIM["💬 AgentM"]
+        A2A["🌐 A2A Protocol"]
+        
+        CH --> Kernel
+        AIM --> Kernel
+        A2A --> Kernel
+    end
+    
+    style Kernel fill:#0f7b8a,stroke:#0a5a66,stroke-width:4px,color:#fff
+    style CH fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style AIM fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    style A2A fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000

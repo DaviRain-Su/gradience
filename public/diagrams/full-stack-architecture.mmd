@@ -1,0 +1,53 @@
+flowchart TB
+    subgraph Users["👤 Users & Developers"]
+        Human["Human User"]
+        DevAgent["Autonomous Agent"]
+        Dev["Developer"]
+    end
+
+    subgraph Toolchain["🔧 Toolchain Layer"]
+        Frontend["Product Frontend"]
+        SDK["@gradiences/sdk"]
+        CLI["gradience CLI"]
+        JudgeDaemon["Judge Daemon"]
+    end
+
+    subgraph Kernel["⚡ Kernel Layer"]
+        AgentLayer["Agent Layer Program"]
+        IJudge["IJudge CPI"]
+    end
+
+    subgraph Products["📱 Product Layer"]
+        AgentIM["AgentM"]
+        AgentMPro["AgentM Pro"]
+    end
+
+    subgraph Modules["🔗 Module Layer"]
+        ChainHub["Chain Hub"]
+    end
+
+    subgraph Infra["🏗️ Infrastructure"]
+        Solana["Solana Mainnet"]
+        Indexer["Indexer"]
+        Storage["Arweave"]
+    end
+
+    Human --> AgentIM
+    DevAgent --> AgentIM
+    Dev --> SDK
+    Dev --> CLI
+    AgentIM --> SDK
+    Frontend --> SDK
+    CLI --> SDK
+    JudgeDaemon --> SDK
+    SDK --> AgentLayer
+    SDK --> ChainHub
+    AgentLayer --> Solana
+    AgentLayer --> Indexer
+    AgentLayer --> Storage
+
+    style AgentLayer fill:#0f7b8a,stroke:#0a5a66,stroke-width:3px,color:#fff
+    style ChainHub fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style AgentIM fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    style SDK fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000
+    style Solana fill:#9945ff,stroke:#7c3aed,stroke-width:2px,color:#fff

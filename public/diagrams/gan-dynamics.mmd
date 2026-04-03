@@ -1,0 +1,9 @@
+flowchart LR
+    Agent["🟣 Agent Generator"] 
+    Judge["🟡 Judge Discriminator"]
+    
+    Agent -->|"Higher Quality"| Judge
+    Judge -->|"Stricter Eval"| Agent
+    
+    style Agent fill:#8b5cf6,stroke:#6d28d9,stroke-width:3px,color:#fff
+    style Judge fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#000

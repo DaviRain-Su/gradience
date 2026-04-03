@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Open : postTask()
+    Open --> Completed : judgeAndPay()<br/>score ≥ 60
+    Open --> Refunded : refundExpired()
+    Open --> Refunded : forceRefund()
+    Completed --> [*]
+    Refunded --> [*]
+    
+    style Open fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    style Completed fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style Refunded fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff

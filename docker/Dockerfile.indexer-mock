@@ -19,6 +19,7 @@ RUN npx --yes turbo@2 prune @gradiences/indexer-mock --docker
 FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+RUN apk add --no-cache python3 make g++
 # Copying manifests separately maximises Docker layer caching:
 # this layer is invalidated only when package.json / lockfile change.
 COPY --from=pruner /app/out/json/ .
@@ -30,8 +31,12 @@ FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
 # Re-use installed deps from the previous stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/indexer-mock/node_modules ./packages/indexer-mock/node_modules 2>/dev/null || true
+COPY --from=deps /app/ /tmp/deps/
+RUN cp -r /tmp/deps/node_modules ./node_modules && \
+    if [ -d /tmp/deps/packages/indexer-mock/node_modules ]; then \
+      mkdir -p ./packages/indexer-mock && \
+      cp -r /tmp/deps/packages/indexer-mock/node_modules ./packages/indexer-mock/node_modules; \
+    fi && rm -rf /tmp/deps
 # Copy full pruned source, then compile
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @gradiences/indexer-mock build

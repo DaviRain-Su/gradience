@@ -21,3 +21,69 @@ body {
 .prose th { @apply bg-gray-900 border border-gray-800 px-3 py-2 text-left text-sm font-medium; }
 .prose td { @apply border border-gray-800 px-3 py-2 text-sm; }
 .prose blockquote { @apply border-l-4 border-indigo-500 pl-4 italic text-gray-400; }
+
+/* Mermaid diagram styling */
+.mermaid {
+    @apply flex justify-center;
+}
+
+.mermaid svg {
+    @apply max-w-full h-auto;
+}
+
+/* Mermaid node styling overrides for better contrast */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon {
+    @apply stroke-2;
+}
+
+.mermaid .node .label {
+    @apply text-sm font-medium;
+}
+
+.mermaid .edgeLabel {
+    @apply bg-gray-900 px-2 py-1 rounded text-xs;
+}
+
+.mermaid .edge-thickness-normal {
+    stroke-width: 2px;
+}
+
+.mermaid .edge-thickness-thick {
+    stroke-width: 3px;
+}
+
+/* Sequence diagram specific styling */
+.mermaid .actor {
+    @apply stroke-2;
+}
+
+.mermaid .messageLine0,
+.mermaid .messageLine1 {
+    stroke-width: 2px;
+}
+
+.mermaid .messageText {
+    @apply text-xs font-medium;
+}
+
+.mermaid .activation0,
+.mermaid .activation1 {
+    @apply fill-gray-700;
+}
+
+/* State diagram styling */
+.mermaid .state rect {
+    @apply stroke-2;
+}
+
+/* Note styling */
+.mermaid .note {
+    @apply fill-yellow-900/50 stroke-yellow-600;
+}
+
+.mermaid .noteText {
+    @apply fill-yellow-200 text-xs;
+}
