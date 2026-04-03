@@ -36,7 +36,7 @@
         "build": "tsup",
         "dev": "tsup --watch",
         "type-check": "tsc --noEmit",
-        "test": "vitest"
+        "test": "vitest --run --passWithNoTests"
     },
     "peerDependencies": {
         "@solana/kit": "^5.0.0"
