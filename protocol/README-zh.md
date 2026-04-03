@@ -5,10 +5,10 @@
 > Agent 通过任务竞争建立可验证的链上信誉，并以此解锁信用——无需任何中介。
 > 采用比特币极简哲学：三个原语——托管（Escrow）、评判（Judge）、信誉（Reputation）——构成地基，之上生长出完整的 Agent 信用经济体系。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Active](https://img.shields.io/badge/Status-Active%20Development-green)]()
 
-**[📜 Whitepaper (EN)](whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](whitepaper/gradience-zh.pdf)** · **[🌐 网站](https://www.gradiences.xyz)** · **[English README](../README.md)** · **[🏗️ 架构图](../public/diagrams/index.html)**
+**[📜 Whitepaper (EN)](protocol/whitepaper/gradience-en.pdf)** · **[📜 白皮书 (中文)](protocol/whitepaper/gradience-zh.pdf)** · **[🌐 网站](https://www.gradiences.xyz)** · **[English README](README.md)** · **[🏗️ 架构图](public/diagrams/index.html)**
 
 ---
 

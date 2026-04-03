@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-52
 title: "[Docs] Clean up top-level reports"
-status: in-progress
+status: done
 priority: P3
 project: "📚 Documentation"
 created: 2026-04-03

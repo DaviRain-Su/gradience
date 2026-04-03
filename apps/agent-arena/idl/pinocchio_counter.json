@@ -3010,8 +3010,7 @@
     "name": "gradience",
     "pdas": [],
     "publicKey": "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs",
-    "version": "0.0.1",
-    "_comment": "NOTE: publicKey is the Solana Program ID (public address), not a secret"
+    "version": "0.0.1"
   },
   "standard": "codama",
   "version": "1.0.0"

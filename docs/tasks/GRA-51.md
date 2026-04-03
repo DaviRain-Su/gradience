@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-51
 title: "[Docs] Fix README issues"
-status: in-progress
+status: done
 priority: P2
 project: "📚 Documentation"
 created: 2026-04-03
