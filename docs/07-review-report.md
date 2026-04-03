@@ -1,8 +1,41 @@
 # Phase 7: Review & Deploy Report — Gradience Protocol (项目级)
 
-> **日期**: 2026-04-03
+> **日期**: 2026-04-04
 > **审查范围**: 全项目 (`apps/`, `docs/`, `protocol/`, `scripts/`)
 > **审查人**: davirian + Claude
+> **更新**: 添加 Mid-Term Integration 成果、Devnet 部署状态、Whitepaper v1.2 整合
+
+---
+
+## 7.0 Mid-Term Integration 成果（2026-04-04）
+
+### Devnet 部署完成
+
+| 程序 | Program ID | 大小 | 指令数 | 状态 |
+|------|------------|------|--------|------|
+| **Agent Arena** | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` | 235,560 bytes | 12 | ✅ |
+| **Chain Hub** | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | 107,752 bytes | 11 | ✅ |
+| **A2A Protocol** | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | 115,768 bytes | 6 | ✅ |
+| **Workflow Marketplace** | `3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW` | 19,648 bytes | 8 | ✅ |
+
+**Explorer**: https://explorer.solana.com/?cluster=devnet
+
+### Mid-Term Integration 完成项（GRA-M1~M10）
+
+| 任务 | 名称 | 关键成果 | 状态 |
+|------|------|---------|------|
+| GRA-M1 | XMTP 支付消息标准 | A2A Payment Envelope 协议定义 | ✅ |
+| GRA-M2 | XMTP 通信 SDK | Agent 间加密通信 SDK | ✅ |
+| GRA-M3 | OWS 钱包集成 | OpenWallet Standard 适配器 | ✅ |
+| GRA-M4 | OWS 托管模式 | TEE + Policy Engine 架构 | 🔄 |
+| GRA-M5 | XMTP 支付流 | Payment → Evaluation → Settlement 闭环 | ✅ |
+| GRA-M6 | Evaluator Runtime | Playwright 沙箱 + 轨迹捕获 | ✅ |
+| GRA-M7 | Settlement Bridge | Solana 结算桥 + Proof 验证 | ✅ |
+| GRA-M8 | 支付服务 | Payment Service 核心实现 | ✅ |
+| GRA-M9 | E2E 支付流测试 | 全链路端到端测试 | ✅ |
+| GRA-M10 | 文档与示例 | 开发者文档更新 | 🔄 |
+
+**完成率**: 80% (8/10 完成)
 
 ---
 
@@ -124,10 +157,40 @@
 | Gap Closure Phase 1 | ✅ ChainHub devnet + SDK + Indexer PostgreSQL |
 | Gap Closure Phase 2 | ✅ Agent Social MVP (Profile/Follow/Feed/Messages) |
 | Gap Closure Phase 3 | ✅ Integration + A2A hardening + AgentM Web sync |
+| **Mid-Term Integration** | ✅ 8/10 任务完成，Devnet 4 程序部署 |
 
 ---
 
-## 7.8 结论
+## 7.8 Whitepaper v1.2 整合成果
+
+### 新增内容
+
+| 章节 | 内容 | 对应文档 |
+|------|------|---------|
+| §4 Agent-First Design | Sequoia Capital "Services is the New Software" 框架整合 | `docs/02-architecture.md` §2.2 |
+| §4.1 | Human-Centric → Agent-Centric 范式转变 | `docs/02-architecture.md` §2.2.1 |
+| §4.2 | The Sequoia Matrix 四象限分析 | `docs/02-architecture.md` §2.2.2 |
+| §4.3 | Protocol as Agent Runtime | `docs/02-architecture.md` §2.2.3 |
+| §4.4 | Agent-First 设计原则（5项） | `docs/02-architecture.md` §2.2.4 |
+| §4.5 | Gradience as "HTTP for Agent Services" | `docs/02-architecture.md` §2.2.5 |
+| §1.2 | The Services Revolution：$1T+ 市场机会 | `docs/01-prd.md` §1.2 |
+| - | Intelligence vs Judgement 框架 | `docs/01-prd.md` §1.2.2 |
+| - | The Wedge 切入策略 | `docs/01-prd.md` §1.2.4 |
+| - | Copilot → Autopilot 演进 | `docs/01-prd.md` §1.2.5 |
+
+### 关键洞察映射
+
+| Sequoia 洞察 | Gradience 实现 |
+|-------------|---------------|
+| "Sell the work, not the tool" | Race Model + 原子结算 |
+| Copilot → Autopilot 转变 | IJudge CPI 渐进自动化 |
+| Intelligence vs Judgement | 三层可插拔评判架构 |
+| The Wedge 战略 | Zone C 首发（内部 IT/数据标注） |
+| $1T+ 市场机会 | 结算层基础设施定位 |
+
+---
+
+## 7.9 结论
 
 **Gradience Protocol 整体审查通过。**
 
