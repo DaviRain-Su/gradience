@@ -11,3 +11,8 @@ target
 node_modules
 .turbo
 .DS_Store
+
+# Environment secrets
+.env.prod
+.env.local
+.env*.local
