@@ -36,9 +36,7 @@ export function createIndexerPollingFetcher(
     indexerEndpoint: string,
     options: IndexerPollingFetcherOptions = {},
 ): () => Promise<EventEnvelope[]> {
-    const seenTaskIds = new BoundedSeenSet<number>(
-        options.maxSeenTaskIds ?? DEFAULT_MAX_SEEN_TASK_IDS,
-    );
+    const seenTaskIds = new BoundedSeenSet<number>(options.maxSeenTaskIds ?? DEFAULT_MAX_SEEN_TASK_IDS);
     const seenSubmissionKeys = new BoundedSeenSet<string>(
         options.maxSeenSubmissionKeys ?? DEFAULT_MAX_SEEN_SUBMISSION_KEYS,
     );
@@ -140,9 +138,7 @@ export async function loadMockEvents(filePath: string): Promise<EventEnvelope[]>
     const raw = await readFile(filePath, 'utf8');
     const parsed = JSON.parse(raw) as { events: EventEnvelope[] };
     return parsed.events.filter(
-        (event) =>
-            event.event.event === 'task_created' ||
-            event.event.event === 'submission_received',
+        event => event.event.event === 'task_created' || event.event.event === 'submission_received',
     );
 }
 

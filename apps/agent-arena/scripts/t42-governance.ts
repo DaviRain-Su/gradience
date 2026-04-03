@@ -18,7 +18,7 @@ const execFile = promisify(execFileCallback);
 
 const CONFIG_DISCRIMINATOR = 0x09;
 const ACCOUNT_VERSION_V1 = 0x01;
-const DEFAULT_PROGRAM_ID = 'GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4';
+const DEFAULT_PROGRAM_ID = '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
 const BASE58_ADDRESS_PATTERN = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
 
 export interface T42RunConfig {
@@ -33,7 +33,7 @@ export interface T42RunConfig {
     gradDecimals: number;
     gradInitialSupply: bigint;
     transferProgramUpgradeAuthority: boolean;
-    currentProgramUpgradeAuthorityKeypairPath: string | null;
+    currentProgramUpgradeAuthoritySignerPath: string | null;
     commitment: Commitment;
     dryRun: boolean;
 }
@@ -71,9 +71,7 @@ export function parseT42Config(env: NodeJS.ProcessEnv): T42RunConfig {
 
     const threshold = parsePositiveInteger(env.T42_THRESHOLD, 3);
     if (threshold < 1 || threshold > memberKeypairPaths.length) {
-        throw new Error(
-            `T42_THRESHOLD must be between 1 and member count (${memberKeypairPaths.length})`,
-        );
+        throw new Error(`T42_THRESHOLD must be between 1 and member count (${memberKeypairPaths.length})`);
     }
 
     const gradDecimals = parsePositiveInteger(env.T42_GRAD_DECIMALS, 9);
@@ -92,12 +90,8 @@ export function parseT42Config(env: NodeJS.ProcessEnv): T42RunConfig {
         createGradMint: parseBoolean(env.T42_CREATE_GRAD_MINT, true),
         gradDecimals,
         gradInitialSupply: parseOptionalBigint(env.T42_GRAD_INITIAL_SUPPLY) ?? 0n,
-        transferProgramUpgradeAuthority: parseBoolean(
-            env.T42_TRANSFER_PROGRAM_UPGRADE_AUTHORITY,
-            false,
-        ),
-        currentProgramUpgradeAuthorityKeypairPath:
-            env.T42_CURRENT_PROGRAM_UPGRADE_AUTHORITY_KEYPAIR ?? null,
+        transferProgramUpgradeAuthority: parseBoolean(env.T42_TRANSFER_PROGRAM_UPGRADE_AUTHORITY, false),
+        currentProgramUpgradeAuthoritySignerPath: env.T42_CURRENT_PROGRAM_UPGRADE_AUTHORITY_KEYPAIR ?? null,
         commitment: parseCommitment(env.T42_COMMITMENT, 'confirmed'),
         dryRun: parseBoolean(env.T42_DRY_RUN, false),
     };
@@ -105,9 +99,7 @@ export function parseT42Config(env: NodeJS.ProcessEnv): T42RunConfig {
 
 export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
     const payer = await loadKeypair(config.payerKeypairPath);
-    const memberSigners = await Promise.all(
-        config.memberKeypairPaths.map((memberPath) => loadKeypair(memberPath)),
-    );
+    const memberSigners = await Promise.all(config.memberKeypairPaths.map(memberPath => loadKeypair(memberPath)));
 
     const uniqueMembers = dedupeMembers(memberSigners);
     if (uniqueMembers.length < 5) {
@@ -140,7 +132,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
     }
 
     const permissionMask = multisig.types.Permissions.all().mask;
-    const members = uniqueMembers.slice(0, 5).map((member) => ({
+    const members = uniqueMembers.slice(0, 5).map(member => ({
         key: member.publicKey,
         permissions: { mask: permissionMask },
     }));
@@ -159,7 +151,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
     });
 
     if (config.transferProgramUpgradeAuthority) {
-        const currentAuthority = config.currentProgramUpgradeAuthorityKeypairPath;
+        const currentAuthority = config.currentProgramUpgradeAuthoritySignerPath;
         if (!currentAuthority) {
             throw new Error(
                 'T42_TRANSFER_PROGRAM_UPGRADE_AUTHORITY requires T42_CURRENT_PROGRAM_UPGRADE_AUTHORITY_KEYPAIR',
@@ -175,9 +167,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
 
     const configAccount = await connection.getAccountInfo(configPda, config.commitment);
     if (!configAccount) {
-        throw new Error(
-            `ProgramConfig account not found at ${configPda.toBase58()}; initialize the program first`,
-        );
+        throw new Error(`ProgramConfig account not found at ${configPda.toBase58()}; initialize the program first`);
     }
 
     const configUpgradeAuthority = decodeProgramConfigUpgradeAuthority(configAccount.data);
@@ -187,10 +177,7 @@ export async function runT42(config: T42RunConfig): Promise<T42RunSummary> {
         );
     }
 
-    const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(
-        connection,
-        multisigPda,
-    );
+    const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
     const transactionIndex = BigInt(multisigAccount.transactionIndex.toString()) + 1n;
     const treasury = new PublicKey(config.newTreasury ?? payer.publicKey.toBase58());
 
@@ -431,8 +418,8 @@ function splitCsv(value: string | undefined): string[] {
     }
     return value
         .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
 }
 
 function requireEnv(value: string | undefined, name: string): string {

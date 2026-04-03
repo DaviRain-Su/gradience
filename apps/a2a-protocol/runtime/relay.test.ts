@@ -156,3 +156,47 @@ test("relay works with persistent file relay store", async () => {
     rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test("relay encrypts payload at rest and decrypts on pull", async () => {
+  const store = new InMemoryRelayStore();
+  const relay = new A2ARelayApi(store, {
+    transportEncryptionKey: "transport-secret",
+  });
+
+  const publish = await relay.handle({
+    method: "POST",
+    path: "/v1/envelopes/publish",
+    body: {
+      envelope: {
+        id: "enc:1",
+        threadId: 1n,
+        sequence: 1,
+        from: "agent-a",
+        to: "agent-b",
+        messageType: "invite",
+        nonce: 1n,
+        createdAt: 1,
+        bodyHash: "a".repeat(64),
+        signature: { r: "b".repeat(64), s: "c".repeat(64) },
+        paymentMicrolamports: 10n,
+      },
+      payload: { secret: "message" },
+    },
+  });
+  assert.equal(publish.status, 202);
+
+  const stored = store.pullEnvelopes("agent-b").items[0];
+  assert.equal(stored?.body.secret, undefined);
+  assert.equal(stored?.body.__transportEncrypted, true);
+
+  const pull = await relay.handle({
+    method: "GET",
+    path: "/v1/envelopes/pull",
+    query: { agent: "agent-b" },
+  });
+  assert.equal(pull.status, 200);
+  const pullBody = pull.body as {
+    items: Array<{ body: { secret: string } }>;
+  };
+  assert.equal(pullBody.items[0]?.body.secret, "message");
+});

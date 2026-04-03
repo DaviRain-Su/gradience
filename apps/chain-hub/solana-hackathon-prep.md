@@ -54,7 +54,7 @@ GuiBibeau 模板 = AI Agents + Solana 钱包 + 链上操作
 flowchart TB
     subgraph GradienceSolana["Gradience on Solana"]
         Agent["Agent Arena<br/>任务竞争市场"]
-        Me["Agent Me<br/>个人分身"]
+        Me["AgentM<br/>个人分身"]
         Hub["Chain Hub<br/>工具市场"]
     end
     

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract AgentLayerRaceTask is ReentrancyGuard {
     uint256 public constant MIN_SCORE = 60;
@@ -29,6 +30,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         string evalRef;
         address winner;
         uint8 score;
+        address paymentToken;
     }
 
     struct Application {
@@ -69,11 +71,15 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error StakeNotClaimable(uint256 taskId, address agent);
     error InvalidStakeAmount(uint256 expected, uint256 actual);
     error NotTaskJudge(uint256 taskId, address caller, address expectedJudge);
+    error NotTaskPoster(uint256 taskId, address caller, address expectedPoster);
     error InvalidScore(uint8 score);
     error WinnerNotApplied(uint256 taskId, address winner);
     error WinnerSubmissionMissing(uint256 taskId, address winner);
     error JudgeDeadlineNotReached(uint256 taskId);
+    error NoSubmittedAgents(uint256 taskId);
     error TransferFailed(address to, uint256 amount);
+    error UnexpectedEther(uint256 amount);
+    error TokenTransferFailed(address token, address from, address to, uint256 amount);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -98,6 +104,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     );
     event TaskRefunded(uint256 indexed taskId, address indexed poster, uint256 reward, uint8 score);
     event StakeRefunded(uint256 indexed taskId, address indexed agent, uint256 stake);
+    event AgentCompensated(uint256 indexed taskId, address indexed agent, uint256 amount);
 
     address public immutable treasury;
     uint256 public taskCount;
@@ -140,7 +147,8 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             state: TaskState.Open,
             evalRef: eval_ref,
             winner: address(0),
-            score: 0
+            score: 0,
+            paymentToken: address(0)
         });
 
         emit TaskCreated(
@@ -156,6 +164,55 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         );
     }
 
+    function post_task_erc20(
+        string calldata eval_ref,
+        uint64 deadline,
+        uint64 judge_deadline,
+        address judge,
+        uint8 category,
+        uint256 min_stake,
+        address token,
+        uint256 reward_amount
+    ) external returns (uint256 task_id) {
+        if (token == address(0)) revert ZeroAddress();
+        if (reward_amount == 0) revert ZeroReward();
+        if (bytes(eval_ref).length == 0 || bytes(eval_ref).length > MAX_REF_LEN) revert InvalidRefLength();
+        if (category > 7) revert InvalidCategory(category);
+        if (deadline <= block.timestamp) revert InvalidDeadline(deadline);
+        if (judge_deadline <= deadline) revert InvalidJudgeDeadline(judge_deadline);
+
+        _transferTokenFrom(token, msg.sender, address(this), reward_amount);
+
+        address taskJudge = judge == address(0) ? msg.sender : judge;
+        task_id = ++taskCount;
+        tasks[task_id] = Task({
+            poster: msg.sender,
+            judge: taskJudge,
+            category: category,
+            deadline: deadline,
+            judgeDeadline: judge_deadline,
+            minStake: min_stake,
+            reward: reward_amount,
+            state: TaskState.Open,
+            evalRef: eval_ref,
+            winner: address(0),
+            score: 0,
+            paymentToken: token
+        });
+
+        emit TaskCreated(
+            task_id,
+            msg.sender,
+            taskJudge,
+            category,
+            min_stake,
+            reward_amount,
+            deadline,
+            judge_deadline,
+            eval_ref
+        );
+    }
+
     function apply_for_task(uint256 task_id) external payable nonReentrant {
         Task storage task = _loadOpenTask(task_id);
         if (block.timestamp >= task.deadline) revert DeadlinePassed(task_id);
@@ -163,16 +220,21 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
-        if (msg.value != task.minStake) revert InvalidStakeAmount(task.minStake, msg.value);
+        if (task.paymentToken == address(0)) {
+            if (msg.value != task.minStake) revert InvalidStakeAmount(task.minStake, msg.value);
+        } else {
+            if (msg.value != 0) revert UnexpectedEther(msg.value);
+            _transferTokenFrom(task.paymentToken, msg.sender, address(this), task.minStake);
+        }
 
         app.exists = true;
-        app.stake = msg.value;
+        app.stake = task.minStake;
         _taskApplicants[task_id].push(msg.sender);
 
         Reputation storage rep = reputations[msg.sender];
         rep.totalApplied += 1;
 
-        emit TaskApplied(task_id, msg.sender, msg.value);
+        emit TaskApplied(task_id, msg.sender, task.minStake);
     }
 
     function submit_result(
@@ -219,15 +281,15 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             uint256 judgeFee = (task.reward * JUDGE_FEE_BPS) / BPS_DENOMINATOR;
             uint256 winnerPayout = task.reward - protocolFee - judgeFee;
 
-            _sendEth(winner, winnerPayout);
-            _sendEth(task.judge, judgeFee);
-            _sendEth(treasury, protocolFee);
+            _payout(task, winner, winnerPayout);
+            _payout(task, task.judge, judgeFee);
+            _payout(task, treasury, protocolFee);
 
             _updateWinnerReputation(winner, winnerPayout, score);
             emit TaskJudged(task_id, winner, score, winnerPayout, judgeFee, protocolFee);
         } else {
             task.state = TaskState.Refunded;
-            _sendEth(task.poster, task.reward);
+            _payout(task, task.poster, task.reward);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
         }
     }
@@ -237,8 +299,57 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (block.timestamp <= task.judgeDeadline) revert JudgeDeadlineNotReached(task_id);
 
         task.state = TaskState.Refunded;
-        _sendEth(task.poster, task.reward);
+        _payout(task, task.poster, task.reward);
         emit TaskRefunded(task_id, task.poster, task.reward, 0);
+    }
+
+    function force_refund(uint256 task_id) external nonReentrant {
+        Task storage task = _loadOpenTask(task_id);
+        if (block.timestamp <= task.judgeDeadline) revert JudgeDeadlineNotReached(task_id);
+
+        address[] storage applicants = _taskApplicants[task_id];
+        uint256 submittedCount;
+        for (uint256 i = 0; i < applicants.length; i++) {
+            if (applications[task_id][applicants[i]].submitted) {
+                submittedCount += 1;
+            }
+        }
+        if (submittedCount == 0) revert NoSubmittedAgents(task_id);
+
+        task.state = TaskState.Refunded;
+        uint256 protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 compensationPool = (task.reward * JUDGE_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 posterRefund = task.reward - protocolFee - compensationPool;
+        _payout(task, task.poster, posterRefund);
+        _payout(task, treasury, protocolFee);
+
+        uint256 perAgentCompensation = compensationPool / submittedCount;
+        uint256 remainder = compensationPool - (perAgentCompensation * submittedCount);
+        for (uint256 i = 0; i < applicants.length; i++) {
+            address applicant = applicants[i];
+            if (!applications[task_id][applicant].submitted) continue;
+            uint256 payout = perAgentCompensation;
+            if (remainder > 0) {
+                payout += 1;
+                remainder -= 1;
+            }
+            _payout(task, applicant, payout);
+            emit AgentCompensated(task_id, applicant, payout);
+        }
+
+        emit TaskRefunded(task_id, task.poster, posterRefund, 0);
+    }
+
+    function cancel_task(uint256 task_id) external nonReentrant {
+        Task storage task = _loadOpenTask(task_id);
+        if (msg.sender != task.poster) revert NotTaskPoster(task_id, msg.sender, task.poster);
+
+        task.state = TaskState.Refunded;
+        uint256 protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+        uint256 refund = task.reward - protocolFee;
+        _payout(task, task.poster, refund);
+        _payout(task, treasury, protocolFee);
+        emit TaskRefunded(task_id, task.poster, refund, 0);
     }
 
     function claim_stake(uint256 task_id) external nonReentrant {
@@ -251,7 +362,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (!app.exists || stake == 0) revert StakeNotClaimable(task_id, msg.sender);
 
         app.stake = 0;
-        _sendEth(msg.sender, stake);
+        _payout(task, msg.sender, stake);
         emit StakeRefunded(task_id, msg.sender, stake);
     }
 
@@ -309,5 +420,26 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (amount == 0) return;
         (bool success, ) = payable(to).call{value: amount}("");
         if (!success) revert TransferFailed(to, amount);
+    }
+
+    function _payout(Task storage task, address to, uint256 amount) internal {
+        if (amount == 0) return;
+        if (task.paymentToken == address(0)) {
+            _sendEth(to, amount);
+        } else {
+            _sendToken(task.paymentToken, to, amount);
+        }
+    }
+
+    function _transferTokenFrom(address token, address from, address to, uint256 amount) internal {
+        if (amount == 0) return;
+        bool success = IERC20(token).transferFrom(from, to, amount);
+        if (!success) revert TokenTransferFailed(token, from, to, amount);
+    }
+
+    function _sendToken(address token, address to, uint256 amount) internal {
+        if (amount == 0) return;
+        bool success = IERC20(token).transfer(to, amount);
+        if (!success) revert TokenTransferFailed(token, address(this), to, amount);
     }
 }

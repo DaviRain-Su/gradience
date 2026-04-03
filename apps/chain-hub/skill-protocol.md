@@ -372,14 +372,14 @@ flowchart LR
 
 ## 八、跨层整合
 
-### 8.1 与 Agent Me 的关系
+### 8.1 与 AgentM 的关系
 
 ```
 Agent Soul（本命）
   └── skills: [...]  — 已习得的 Skill 列表
   └── skillPreferences — 使用偏好配置
 
-Agent Me 展示：
+AgentM 展示：
   - 已拥有的 Skill（我的功法）
   - 正在学习的 Skill（修炼中）
   - 推荐的 Skill（适合当前任务）
@@ -405,10 +405,10 @@ Agent Arena = 实战验证场
   - 任务奖励可兑换 Skill
 ```
 
-### 8.4 与 Agent Social 的关系
+### 8.4 与 AgentM 的关系
 
 ```
-Agent Social = 功法交流
+AgentM = 功法交流
   - Skill 使用心得分享
   - 师徒关系建立
   - Skill 组合策略讨论

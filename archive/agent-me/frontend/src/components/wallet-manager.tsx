@@ -2,7 +2,7 @@
 
 import { address } from '@solana/kit';
 import { useEffect, useMemo, useState } from 'react';
-import { OpenWalletAdapter } from '@gradience/sdk';
+import { OpenWalletAdapter } from '@gradiences/sdk';
 
 import {
     loadActiveProfileId,

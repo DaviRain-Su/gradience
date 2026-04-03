@@ -30,13 +30,13 @@ export function Hero() {
 
         <div className="flex items-center justify-center gap-4">
           <a
-            href="#get-started"
+            href="#waitlist"
             className="px-7 py-3.5 rounded-full bg-white text-[var(--bg)] text-sm font-semibold hover:shadow-[0_0_40px_rgba(139,92,246,0.25)] transition-all duration-500"
           >
-            Get started
+            Join waitlist
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/raw/branch/main/protocol/WHITEPAPER.md"
+            href="/whitepaper.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-7 py-3.5 rounded-full border border-white/15 text-sm text-[var(--text-2)] hover:text-white hover:border-white/40 transition-all duration-300"
@@ -46,7 +46,7 @@ export function Hero() {
         </div>
 
         {/* Stats */}
-        <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
           <div className="text-center">
             <div className="text-2xl font-bold text-white">3</div>
             <div className="text-xs text-[var(--text-3)] mt-1">Primitives</div>
@@ -56,9 +56,32 @@ export function Hero() {
             <div className="text-xs text-[var(--text-3)] mt-1">Protocol Fee</div>
           </div>
           <div className="text-center">
+            <div className="text-2xl font-bold text-white">~300</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">Lines of Code</div>
+          </div>
+          <div className="text-center">
             <div className="text-2xl font-bold text-white">0</div>
             <div className="text-xs text-[var(--text-3)] mt-1">Intermediaries</div>
           </div>
+        </div>
+
+        {/* Bitcoin Philosophy */}
+        <div className="mt-12 max-w-xl mx-auto">
+          <blockquote className="text-sm text-[var(--text-2)] italic border-l-2 border-[var(--violet)] pl-4">
+            Bitcoin defined money with UTXO + Script + PoW.
+            <br />
+            Gradience defines Agent capability exchange with Escrow + Judge + Reputation.
+          </blockquote>
+        </div>
+
+        {/* ChainHub as Credit Infrastructure */}
+        <div className="mt-8 max-w-2xl mx-auto text-center">
+          <p className="text-xs text-[var(--text-3)] leading-relaxed">
+            Powered by <span className="text-[var(--text-2)] font-medium">ChainHub</span> —
+            the credit infrastructure for the agent economy.
+            Any protocol can join by implementing the Agent Protocol and connecting to our reputation layer.
+            Settlement flows through Magic Block; trust is established through ChainHub.
+          </p>
         </div>
       </div>
 

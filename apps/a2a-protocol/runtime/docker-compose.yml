@@ -11,6 +11,14 @@ services:
       - "${A2A_RELAY_POSTGRES_HOST_PORT:-55432}:5432"
     volumes:
       - relay_pg_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         [
@@ -63,6 +71,20 @@ services:
       - "3400:3400"
     volumes:
       - relay_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         [

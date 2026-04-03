@@ -29,7 +29,7 @@ Agent Me 是**面向普通用户的个人 Agent 门户**：
 | Next.js | 16.2.1 | React 服务端框架 |
 | React | 19.2.4 | UI |
 | `@solana/kit` | 5.5.1 | 地址解析、Keypair 工具 |
-| `@gradience/sdk` | workspace | GradienceSDK（查询声誉、任务） |
+| `@gradiences/sdk` | workspace | GradienceSDK（查询声誉、任务） |
 | Node.js test runner | 内置 | 测试（无第三方框架） |
 
 ---

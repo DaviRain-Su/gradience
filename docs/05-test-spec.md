@@ -246,8 +246,9 @@ const C = {
 
 | # | 测试名称 | 输入 | 预期输出 | 余额验证 |
 |---|---------|------|---------|---------|
-| H1 | 无申请者取消 | 0 applicants | tx 成功；emit TaskCancelled | Poster+=reward×98%；Treasury+=reward×2% |
-| H2 | 有申请者取消（remaining_accounts） | 2 applicants | tx 成功 | stakes via remaining_accounts returned to each agent |
+| H1 | 无申请者取消 | 0 applicants | tx 成功；emit TaskCancelled + TaskRefunded(Cancelled) | Poster+=reward×98%；Treasury+=reward×2% |
+| H2 | 有申请者取消（remaining_accounts） | 2 applicants | tx 成功；emit TaskCancelled + TaskRefunded(Cancelled) | stakes via remaining_accounts returned to each agent |
+| H3 | Cancelled reason 编码验证 | cancel_task 成功后解析 event payload | TaskRefunded.reason = 1（Cancelled） | 与 refund_amount 一致 |
 
 **边界条件**
 
@@ -392,7 +393,7 @@ const C = {
 |---|---------|------|---------|
 | I1 | **SOL 全流程（3 Agent）** | initialize → post_task(SOL) → apply×3 → submit×3 → judge_and_pay(winner=A, score=80) | A 得 9500 lamports/万；B+C stakes returned；Reputation 更新；8 events emitted |
 | I2 | **SPL Token 全流程** | post_task(SPL) → apply(SPL stake) → submit → judge_and_pay(SPL) | token_account 余额精确到 token 最小单位 |
-| I3 | **取消任务（有申请者）** | post → apply×2 → cancel_task(remaining_accounts=[app1,agent1,app2,agent2]) | Poster 98%；Treasury 2%；2 Agent stakes returned；emit TaskCancelled |
+| I3 | **取消任务（有申请者）** | post → apply×2 → cancel_task(remaining_accounts=[app1,agent1,app2,agent2]) | Poster 98%；Treasury 2%；2 Agent stakes returned；emit TaskCancelled + TaskRefunded(Cancelled) |
 | I4 | **到期退款** | post → apply → warp(deadline+1) → refund_expired | Poster 100%；Agent stake returned；emit TaskRefunded(Expired) |
 | I5 | **强制退款 + Judge Slash（充足）** | post → apply → submit → warp(judge_deadline+FORCE_REFUND_DELAY+1) → force_refund | 95/3/2 分账；Judge stake 减少；Judge 留池；emit TaskRefunded(ForceRefund) |
 | I6 | **强制退款 + Judge Slash（不足，移除）** | 同 I5，但 judge_stake=min_judge_stake | Judge 移出 JudgePool；Stake PDA 关闭 |
@@ -402,6 +403,7 @@ const C = {
 | I10 | **upgrade_config 影响后续注册** | initialize(min_judge_stake=1e9) → upgrade_config(min_judge_stake=2e9) → register_judge(stake=1.5e9) | `InsufficientJudgeStake` |
 | I11 | **SAS Attestation 颁发（score≥60）** | post_task → apply → submit → judge_and_pay(score=80) → fetchAllAttestation(agent) | 返回 1 条 TaskCompletion Attestation；taskId/score/rewardAmount 字段与链上记录一致 |
 | I12 | **SAS Attestation 不颁发（score<60）** | post_task → apply → submit → judge_and_pay(score=59) → fetchAllAttestation(agent) | 返回 0 条 Attestation；任务以低分退款结束 |
+| I13 | **TaskRefunded reason 全覆盖解析** | 触发 refund_expired / cancel_task / judge_and_pay(low score) / force_refund 并解析事件 payload | reason 分别为 0/1/2/3；每条路径的 amount 与资金流一致 |
 
 ---
 
@@ -962,9 +964,9 @@ describe("Security: Attack Scenarios", () => {
 | Boundary | 每条指令 ≥ 1 个边界值 | 本文档 §5.2 |
 | Error/Attack | 每个错误码至少触发 1 次 | 30 个错误码全覆盖 |
 | 安全场景 | 12 个攻击向量全测通 | §5.4 |
-| 集成场景 | 10 个端到端场景全绿 | §5.3 |
+| 集成场景 | 13 个端到端场景全绿 | §5.3 |
 | CU 性能 | post_task ≤ 200k；judge_and_pay ≤ 200k | `simulateTransaction` |
-| 事件验证 | 8 个链上事件（sol_log_data，8-byte EVENT_IX_TAG_LE 格式）全部验证 emit | `parseEvents(tx.meta.logMessages)` |
+| 事件验证 | 8 个链上事件（sol_log_data，8-byte EVENT_IX_TAG_LE 格式）全部验证 emit，且 TaskRefunded reason=0/1/2/3 全覆盖 | `parseEvents(tx.meta.logMessages)` |
 
 ---
 
@@ -973,9 +975,10 @@ describe("Security: Attack Scenarios", () => {
 - [x] Tech Spec 中的 11 条指令均有对应测试用例（Happy + Boundary + Error）
 - [x] 30 个错误码在 Error 场景中至少触发 1 次
 - [x] 8 个链上事件（sol_log_data，8-byte EVENT_IX_TAG_LE + 1-byte discriminator 格式）在集成测试中验证 emit（通过 parseEvents 解析 tx logs）
+- [x] TaskRefunded 的 4 个 reason（Expired/Cancelled/LowScore/ForceRefund）均有独立解析断言
 - [x] remaining_accounts 质押退回（judge_and_pay / cancel / refund / force_refund）有专项测试
 - [x] 安全测试场景 12 个（覆盖权限 / 溢出 / 账户伪造 / 重入 / 时间操控）
-- [x] 集成测试 10 个完整端到端场景
+- [x] 集成测试 13 个完整端到端场景
 - [x] 测试代码骨架已编写（使用 litesvm + @solana/web3.js，无 Anchor SDK）
 - [x] CU 性能目标已定义（≤ 200k per instruction）
 - [x] 覆盖目标已量化（分支 ≥ 95%，语句 ≥ 90%，通过 cargo llvm-cov 验证）

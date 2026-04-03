@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SubmissionApi, TaskApi } from '@gradience/sdk';
+import type { SubmissionApi, TaskApi } from '@gradiences/sdk';
 
 import { createSdk } from '../lib/sdk';
 

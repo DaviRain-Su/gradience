@@ -16,6 +16,7 @@ Judge Daemon 是**链外自动评判服务**：
 - 维护工作流状态（防重复执行、失败重试）
 
 **不做**：
+
 - 链上状态写入（除 judge_and_pay）
 - 任务数据持久化（Indexer 负责）
 - 人工评判 UI（仅提供 CLI hook）
@@ -24,13 +25,13 @@ Judge Daemon 是**链外自动评判服务**：
 
 ## 2. 技术栈
 
-| 项目 | 说明 |
-|------|------|
+| 项目                       | 说明                                                 |
+| -------------------------- | ---------------------------------------------------- |
 | TypeScript + tsx (Node.js) | 运行时（测试：`tsx --test`；生产：tsx 或编译后运行） |
-| GradienceSDK | 调用链上指令 |
-| `@solana/kit` | 密钥对管理 |
-| Python DSPy | Type B LLM 评判微服务（独立进程） |
-| PostgreSQL / InMemory | 工作流状态存储 |
+| GradienceSDK               | 调用链上指令                                         |
+| `@solana/kit`              | 密钥对管理                                           |
+| Python DSPy                | Type B LLM 评判微服务（独立进程）                    |
+| PostgreSQL / InMemory      | 工作流状态存储                                       |
 
 ---
 
@@ -72,9 +73,9 @@ dspy_service/
 
 ```typescript
 interface EventEnvelope {
-  slot: number;
-  timestamp: number;
-  event: ProgramEvent;  // TaskCreatedEvent | SubmissionReceivedEvent | GenericProgramEvent
+    slot: number;
+    timestamp: number;
+    event: ProgramEvent; // TaskCreatedEvent | SubmissionReceivedEvent | GenericProgramEvent
 }
 ```
 
@@ -82,17 +83,17 @@ interface EventEnvelope {
 
 ```typescript
 interface WorkflowRecord {
-  id: string;
-  taskId: number;
-  trigger: 'task_created' | 'submission_received';
-  slot: number;
-  timestamp: number;
-  agent: string | null;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  dedupeKey: string;   // 防重复：`${trigger}:${taskId}:${agent ?? 'null'}`
-  error: string | null;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    taskId: number;
+    trigger: 'task_created' | 'submission_received';
+    slot: number;
+    timestamp: number;
+    agent: string | null;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    dedupeKey: string; // 防重复：`${trigger}:${taskId}:${agent ?? 'null'}`
+    error: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 ```
 
@@ -100,12 +101,12 @@ interface WorkflowRecord {
 
 ## 5. 评判模式（JudgeMode）
 
-| 模式 | 环境变量值 | 说明 |
-|------|-----------|------|
-| `type_a` | `JUDGE_DAEMON_EVALUATOR_MODE=type_a` | 人工评判（等待外部注入 score） |
-| `type_b` | `JUDGE_DAEMON_EVALUATOR_MODE=type_b` | DSPy LLM 评判（HTTP 微服务） |
-| `type_c1` | `JUDGE_DAEMON_EVALUATOR_MODE=type_c1` | WASM 测试用例执行 |
-| `auto` | `JUDGE_DAEMON_EVALUATOR_MODE=auto`（默认） | 按任务 eval_ref 类型自动选择 |
+| 模式      | 环境变量值                                 | 说明                           |
+| --------- | ------------------------------------------ | ------------------------------ |
+| `type_a`  | `JUDGE_DAEMON_EVALUATOR_MODE=type_a`       | 人工评判（等待外部注入 score） |
+| `type_b`  | `JUDGE_DAEMON_EVALUATOR_MODE=type_b`       | DSPy LLM 评判（HTTP 微服务）   |
+| `type_c1` | `JUDGE_DAEMON_EVALUATOR_MODE=type_c1`      | WASM 测试用例执行              |
+| `auto`    | `JUDGE_DAEMON_EVALUATOR_MODE=auto`（默认） | 按任务 eval_ref 类型自动选择   |
 
 ---
 
@@ -147,38 +148,41 @@ JudgeWorkflowRunner.process(workflow)
 
 ## 8. 环境变量
 
-| 变量 | 必须 | 默认 | 说明 |
-|------|------|------|------|
-| `JUDGE_DAEMON_JUDGE_KEYPAIR` | ✅ | — | Judge keypair 文件路径（64 字节 JSON 数组） |
-| `GRADIENCE_RPC_ENDPOINT` | ❌ | `http://127.0.0.1:8899` | Solana RPC 端点 |
-| `JUDGE_DAEMON_INDEXER_ENDPOINT` | ❌ | `http://127.0.0.1:3001` | Indexer 地址 |
-| `JUDGE_DAEMON_EVALUATOR_MODE` | ❌ | `auto` | 评判模式（type_a/type_b/type_c1/auto） |
-| `JUDGE_DAEMON_DSPY_ENDPOINT` | ❌ | `http://127.0.0.1:8788` | DSPy 服务地址 |
-| `JUDGE_DAEMON_ARWEAVE_GATEWAY` | ❌ | — | Arweave 网关 |
-| `JUDGE_DAEMON_IPFS_GATEWAY` | ❌ | — | IPFS 网关 |
-| `JUDGE_DAEMON_REASON_PUBLISHER` | ❌ | — | 评判原因上传端点 |
-| `DATABASE_URL` | ❌ | — | 有则用 PostgreSQL store，无则用 InMemory |
-| `JUDGE_DAEMON_RETRY_MAX_ATTEMPTS` | ❌ | `5` | 最大重试次数 |
-| `JUDGE_DAEMON_RETRY_BASE_MS` | ❌ | `500` | 重试基础延迟（ms） |
-| `JUDGE_DAEMON_MIN_CONFIDENCE` | ❌ | `0.7` | Type B 评判最低置信度 |
-| `JUDGE_DAEMON_POLL_INTERVAL_MS` | ❌ | `5000` | Indexer 轮询间隔（ms） |
-| `MOCK_EVENT` | ❌ | — | 设为 `true` 启用 mock 事件源（本地测试） |
-| `MOCK_EVENT_FILE` | ❌ | `indexer/mock/webhook.json` | mock 事件文件路径 |
-| `JUDGE_DAEMON_WASM_TIMEOUT_MS` | ❌ | `2000` | WASM 执行超时（ms） |
+| 变量                              | 必须 | 默认                        | 说明                                        |
+| --------------------------------- | ---- | --------------------------- | ------------------------------------------- |
+| `JUDGE_DAEMON_JUDGE_KEYPAIR`      | ✅   | —                           | Judge keypair 文件路径（64 字节 JSON 数组） |
+| `GRADIENCE_RPC_ENDPOINT`          | ❌   | `http://127.0.0.1:8899`     | Solana RPC 端点                             |
+| `JUDGE_DAEMON_INDEXER_ENDPOINT`   | ❌   | `http://127.0.0.1:3001`     | Indexer 地址                                |
+| `JUDGE_DAEMON_EVALUATOR_MODE`     | ❌   | `auto`                      | 评判模式（type_a/type_b/type_c1/auto）      |
+| `JUDGE_DAEMON_DSPY_ENDPOINT`      | ❌   | `http://127.0.0.1:8788`     | DSPy 服务地址                               |
+| `JUDGE_DAEMON_ARWEAVE_GATEWAY`    | ❌   | —                           | Arweave 网关                                |
+| `JUDGE_DAEMON_IPFS_GATEWAY`       | ❌   | —                           | IPFS 网关                                   |
+| `JUDGE_DAEMON_REASON_PUBLISHER`   | ❌   | —                           | 评判原因上传端点                            |
+| `DATABASE_URL`                    | ❌   | —                           | 有则用 PostgreSQL store，无则用 InMemory    |
+| `JUDGE_DAEMON_RETRY_MAX_ATTEMPTS` | ❌   | `5`                         | 最大重试次数                                |
+| `JUDGE_DAEMON_RETRY_BASE_MS`      | ❌   | `500`                       | 重试基础延迟（ms）                          |
+| `JUDGE_DAEMON_MIN_CONFIDENCE`     | ❌   | `0.7`                       | Type B 评判最低置信度                       |
+| `JUDGE_DAEMON_POLL_INTERVAL_MS`   | ❌   | `5000`                      | Indexer 轮询间隔（ms）                      |
+| `MOCK_EVENT`                      | ❌   | —                           | 设为 `true` 启用 mock 事件源（本地测试）    |
+| `MOCK_EVENT_FILE`                 | ❌   | `indexer/mock/webhook.json` | mock 事件文件路径                           |
+| `JUDGE_DAEMON_WASM_TIMEOUT_MS`    | ❌   | `2000`                      | WASM 执行超时（ms）                         |
 
 ---
 
 ## 9. 接口契约
 
 ### ← Indexer（上游）
+
 - 轮询：`GET /api/tasks?status=open`
 - 实时：Triton gRPC / Helius WebSocket（stream factory 需外部注入）
 
 ### → Program（下游）
+
 - 调用：`GradienceSDK.judgeAndPay(taskId, agent, score)`
 - 最终触发链上 `judge_and_pay` 指令
 
 ### ↔ DSPy Service（Type B）
+
 - `POST http://127.0.0.1:8788/evaluate`
 - 输入：`{ task_description, submission, eval_criteria }`
 - 输出：`{ score: number, confidence: number, reason: string }`

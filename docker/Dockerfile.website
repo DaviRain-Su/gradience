@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# website — Next.js 16 marketing site (port 3003)
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.website \
+#     --build-arg RESEND_API_KEY=<key> \
+#     -t gradience/website .
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo ───────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+RUN npx --yes turbo@2 prune website --docker
+
+# ── Stage 2: Install dependencies ─────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Build Next.js ────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/website/node_modules ./website/node_modules 2>/dev/null || true
+COPY --from=pruner /app/out/full/ .
+
+# Server-side env vars (not baked into bundle)
+ARG RESEND_API_KEY
+ENV RESEND_API_KEY=$RESEND_API_KEY
+
+RUN pnpm --filter website build
+
+# ── Stage 4: Runtime ──────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3003
+
+COPY --from=builder /app/website/.next ./.next
+COPY --from=builder /app/website/package.json ./package.json
+COPY --from=builder /app/website/next.config.ts ./next.config.ts
+COPY --from=builder /app/website/public* ./public/
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 3003
+CMD ["node_modules/.bin/next", "start"]

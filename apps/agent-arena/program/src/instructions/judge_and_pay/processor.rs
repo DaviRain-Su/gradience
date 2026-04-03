@@ -22,7 +22,8 @@ use crate::{
     },
     traits::EventSerialize,
     utils::{
-        borsh_deserialize_padded, create_associated_token_account_if_needed, emit_event,
+        borsh_deserialize_padded, create_associated_token_account_if_needed,
+        derive_associated_token_address, emit_event,
         token_program_kind as resolve_token_program_kind, validate_mint_and_get_decimals,
         verify_owned_by, verify_token_account, verify_writable, TokenProgramKind,
     },
@@ -494,7 +495,12 @@ pub fn process_judge_and_pay(
                 return Err(ProgramError::InvalidAccountData);
             }
             let agent_address = Address::new_from_array(application.agent);
-            if address_to_bytes(agent_account.address()) != application.agent {
+            let expected_agent_ata = derive_associated_token_address(
+                &agent_address,
+                token_accounts.mint.address(),
+                token_accounts.token_program.address(),
+            );
+            if agent_account.address() != &expected_agent_ata {
                 return Err(ProgramError::InvalidAccountData);
             }
             verify_token_account(

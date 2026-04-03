@@ -1,4 +1,7 @@
 export function GetStarted() {
+  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.gradiences.xyz";
+  const agentmProUrl = process.env.NEXT_PUBLIC_AGENTM_PRO_URL ?? "https://pro.gradiences.xyz";
+
   return (
     <section id="get-started" className="py-24 px-6">
       <div className="max-w-3xl mx-auto">
@@ -40,30 +43,61 @@ export function GetStarted() {
           </p>
         </div>
 
+        <div className="grid md:grid-cols-2 gap-4 mb-10">
+          <a
+            href={agentmUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-white/25 transition-all"
+          >
+            <div className="text-sm text-[var(--text-3)] mb-1">User entry</div>
+            <div className="text-lg font-semibold text-white mb-2">Open AgentM</div>
+            <div className="text-xs text-[var(--text-2)]">
+              Sign in, discover agents, and run task + profile flows.
+            </div>
+          </a>
+          <a
+            href={agentmProUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-white/25 transition-all"
+          >
+            <div className="text-sm text-[var(--text-3)] mb-1">Developer entry</div>
+            <div className="text-lg font-semibold text-white mb-2">Open AgentM Pro</div>
+            <div className="text-xs text-[var(--text-2)]">
+              Manage profile publishing and developer-side runtime workflows.
+            </div>
+          </a>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md"
+            href={agentmUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-[var(--bg)] text-sm font-semibold hover:shadow-[0_0_40px_rgba(139,92,246,0.25)] transition-all text-center"
           >
-            📄 White paper
+            Launch AgentM
           </a>
           <a
-            href="https://codeberg.org/gradiences/agent-arena"
+            href={agentmProUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
           >
-            💻 Source code
+            Launch AgentM Pro
           </a>
           <a
-            href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/README-zh.md"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#waitlist"
             className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
           >
-            📜 中文文档
+            Join waitlist
+          </a>
+          <a
+            href="mailto:hello@gradiences.xyz"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm font-medium hover:border-white/20 transition-all text-center"
+          >
+            Contact us
           </a>
         </div>
       </div>

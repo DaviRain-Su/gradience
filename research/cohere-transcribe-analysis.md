@@ -1,8 +1,8 @@
-# Cohere Transcribe 分析：Agent Me 语音入口
+# Cohere Transcribe 分析：AgentM 语音入口
 
 > **模型**: CohereLabs/cohere-transcribe-03-2026  
 > **发布日期**: 2026年3月  
-> **适用场景**: Agent Me 语音交互  
+> **适用场景**: AgentM 语音交互  
 > **分析日期**: 2026-03-28
 
 ---
@@ -29,7 +29,7 @@
 日语 (ja)     韩语 (ko)
 ```
 
-**对 Gradience 的意义**: ✅ **支持中文**，Agent Me 可以中文语音交互！
+**对 Gradience 的意义**: ✅ **支持中文**，AgentM 可以中文语音交互！
 
 ---
 
@@ -71,7 +71,7 @@ audio_duration = 55  # 分钟
 transcription_time = 180  # 秒 (约3分钟)
 rtfx = 55 * 60 / 180  # 18.3x 实时因子
 
-# 对于 Agent Me 的短语音 (<30秒):
+# 对于 AgentM 的短语音 (<30秒):
 # 延迟 < 2秒，体验流畅
 ```
 
@@ -79,20 +79,20 @@ rtfx = 55 * 60 / 180  # 18.3x 实时因子
 
 ## 3. 对 Gradience 各层的价值
 
-### 3.1 🧑‍💻 Agent Me (人口层) — 核心价值
+### 3.1 🧑‍💻 AgentM (人口层) — 核心价值
 
 ```
-Agent Me 语音入口场景:
+AgentM 语音入口场景:
 ┌─────────────────────────────────────────────┐
 │ 用户: "帮我看看今天的任务"                   │
 │      ↓                                       │
 │ Cohere Transcribe (中文识别)                 │
 │      ↓                                       │
-│ Agent Me: "今天有3个任务..."                 │
+│ AgentM: "今天有3个任务..."                 │
 │      ↓                                       │
 │ 用户: "接受第二个"                           │
 │      ↓                                       │
-│ Agent Me: "已接受代码审计任务"               │
+│ AgentM: "已接受代码审计任务"               │
 └─────────────────────────────────────────────┘
 ```
 
@@ -138,7 +138,7 @@ export class VoiceInterface {
 }
 ```
 
-### 3.2 🤝 Agent Social (社交层)
+### 3.2 🤝 AgentM (社交层)
 
 ```
 师徒传承场景:
@@ -176,7 +176,7 @@ export class VoiceInterface {
 ### 4.1 方案 A: 本地运行 (隐私优先)
 
 ```
-适用场景: Agent Me (数据主权)
+适用场景: AgentM (数据主权)
 硬件要求: GPU (推荐) 或 CPU
 延迟: < 2秒 (短语音)
 成本: 免费 (自托管)
@@ -218,7 +218,7 @@ curl -X POST http://localhost:8000/v1/audio/transcriptions \
 ### 4.3 方案 C: 混合模式 (推荐)
 
 ```
-Agent Me (本地):
+AgentM (本地):
 ├── 敏感对话 → 本地 Cohere 模型
 ├── 隐私优先，数据不出设备
 └── 适合：个人 Agent 交互
@@ -231,7 +231,7 @@ Agent Arena/Social (云端):
 
 ---
 
-## 5. 与 Agent Me 架构集成
+## 5. 与 AgentM 架构集成
 
 ### 5.1 语音交互流程
 
@@ -240,7 +240,7 @@ sequenceDiagram
     actor User as 用户
     participant Recorder as 录音组件
     participant ASR as Cohere Transcribe
-    participant Agent as Agent Me
+    participant Agent as AgentM
     participant LLM as Kimi/Claude
     participant TTS as 语音合成
     
@@ -300,12 +300,12 @@ export class VoiceSession {
 
 | 方案 | 优势 | 劣势 | 适用场景 |
 |------|------|------|----------|
-| **Cohere** | 开源、2B参数、3x速度、中文支持 | 新发布，生态较小 | Agent Me (推荐) |
+| **Cohere** | 开源、2B参数、3x速度、中文支持 | 新发布，生态较小 | AgentM (推荐) |
 | **Whisper** | 成熟、多语言、社区大 | 速度较慢 | 通用场景 |
 | **Google Speech** | 准确率高、云端 | 闭源、付费、隐私问题 | 企业应用 |
 | **阿里云 ASR** | 中文优化好 | 闭源、付费、依赖云 | 国内应用 |
 
-**结论**: Cohere 最适合 Agent Me 的**主权 + 性能**需求。
+**结论**: Cohere 最适合 AgentM 的**主权 + 性能**需求。
 
 ---
 
@@ -324,7 +324,7 @@ huggingface-cli download CohereLabs/cohere-transcribe-03-2026
 python test_chinese.py  # "你好，帮我查看任务"
 ```
 
-### Phase 2: Agent Me 集成 (2 周)
+### Phase 2: AgentM 集成 (2 周)
 
 - [ ] 浏览器录音组件
 - [ ] Cohere 模型封装
@@ -343,7 +343,7 @@ python test_chinese.py  # "你好，帮我查看任务"
 
 ### 核心价值
 
-> **Cohere Transcribe 是 Agent Me 语音入口的理想选择**
+> **Cohere Transcribe 是 AgentM 语音入口的理想选择**
 
 理由：
 1. ✅ **开源 Apache 2.0** — 与主权原则一致
@@ -355,7 +355,7 @@ python test_chinese.py  # "你好，帮我查看任务"
 ### 下一步行动
 
 1. **立即**: 下载模型测试中文转录效果
-2. **本周**: 集成到 Agent Me 原型
+2. **本周**: 集成到 AgentM 原型
 3. **本月**: 完整的语音交互 Demo
 
 ---

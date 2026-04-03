@@ -1,0 +1,22 @@
+{
+    "name": "@gradiences/arena-cli",
+    "version": "0.1.0",
+    "description": "Gradience Protocol CLI — task lifecycle, judge management, agent operations",
+    "license": "MIT",
+    "type": "module",
+    "bin": {
+        "gradience": "./gradience.ts"
+    },
+    "files": [
+        "gradience.ts"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "dependencies": {
+        "@gradiences/sdk": "workspace:*"
+    },
+    "peerDependencies": {
+        "@solana/kit": "^5.0.0"
+    }
+}

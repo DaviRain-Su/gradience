@@ -1,4 +1,4 @@
-import type { JudgePoolEntryApi, ReputationApi } from '@gradience/sdk';
+import type { JudgePoolEntryApi, ReputationApi } from '@gradiences/sdk';
 
 export interface AgentDiscoveryRow {
     agent: string;

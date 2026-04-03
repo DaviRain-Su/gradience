@@ -1,94 +1,110 @@
 {
-  "events": [
-    {
-      "slot": 100,
-      "timestamp": 1710000000,
-      "event": {
-        "event": "task_created",
-        "task_id": 1,
-        "poster": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        "judge": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-        "reward": 100000,
-        "category": 2,
-        "deadline": 1710003600
-      }
-    },
-    {
-      "slot": 101,
-      "timestamp": 1710000010,
-      "event": {
-        "event": "task_applied",
-        "task_id": 1,
-        "agent": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-        "stake": 1000,
-        "slot": 101
-      }
-    },
-    {
-      "slot": 102,
-      "timestamp": 1710000020,
-      "event": {
-        "event": "submission_received",
-        "task_id": 1,
-        "agent": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-        "result_ref": "cid://result",
-        "trace_ref": "cid://trace",
-        "submission_slot": 102
-      }
-    },
-    {
-      "slot": 103,
-      "timestamp": 1710000030,
-      "event": {
-        "event": "task_judged",
-        "task_id": 1,
-        "winner": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-        "score": 80,
-        "agent_payout": 95000,
-        "judge_fee": 3000,
-        "protocol_fee": 2000
-      }
-    },
-    {
-      "slot": 104,
-      "timestamp": 1710000040,
-      "event": {
-        "event": "task_cancelled",
-        "task_id": 2,
-        "poster": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        "refund_amount": 98000,
-        "protocol_fee": 2000
-      }
-    },
-    {
-      "slot": 105,
-      "timestamp": 1710000050,
-      "event": {
-        "event": "task_refunded",
-        "task_id": 3,
-        "reason": 3,
-        "amount": 50000
-      }
-    },
-    {
-      "slot": 106,
-      "timestamp": 1710000060,
-      "event": {
-        "event": "judge_registered",
-        "judge": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-        "stake": 2000000000,
-        "categories": [0, 2]
-      }
-    },
-    {
-      "slot": 107,
-      "timestamp": 1710000070,
-      "event": {
-        "event": "judge_unstaked",
-        "judge": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-        "returned_stake": 1999000000,
-        "categories": [0, 2]
-      }
-    }
-  ]
+    "events": [
+        {
+            "slot": 100,
+            "timestamp": 1710000000,
+            "event": {
+                "event": "task_created",
+                "task_id": 1,
+                "poster": [
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                ],
+                "judge": [
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+                ],
+                "reward": 100000,
+                "category": 2,
+                "deadline": 1710003600
+            }
+        },
+        {
+            "slot": 101,
+            "timestamp": 1710000010,
+            "event": {
+                "event": "task_applied",
+                "task_id": 1,
+                "agent": [
+                    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+                ],
+                "stake": 1000,
+                "slot": 101
+            }
+        },
+        {
+            "slot": 102,
+            "timestamp": 1710000020,
+            "event": {
+                "event": "submission_received",
+                "task_id": 1,
+                "agent": [
+                    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+                ],
+                "result_ref": "cid://result",
+                "trace_ref": "cid://trace",
+                "submission_slot": 102
+            }
+        },
+        {
+            "slot": 103,
+            "timestamp": 1710000030,
+            "event": {
+                "event": "task_judged",
+                "task_id": 1,
+                "winner": [
+                    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+                ],
+                "score": 80,
+                "agent_payout": 95000,
+                "judge_fee": 3000,
+                "protocol_fee": 2000
+            }
+        },
+        {
+            "slot": 104,
+            "timestamp": 1710000040,
+            "event": {
+                "event": "task_cancelled",
+                "task_id": 2,
+                "poster": [
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                ],
+                "refund_amount": 98000,
+                "protocol_fee": 2000
+            }
+        },
+        {
+            "slot": 105,
+            "timestamp": 1710000050,
+            "event": {
+                "event": "task_refunded",
+                "task_id": 3,
+                "reason": 3,
+                "amount": 50000
+            }
+        },
+        {
+            "slot": 106,
+            "timestamp": 1710000060,
+            "event": {
+                "event": "judge_registered",
+                "judge": [
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+                ],
+                "stake": 2000000000,
+                "categories": [0, 2]
+            }
+        },
+        {
+            "slot": 107,
+            "timestamp": 1710000070,
+            "event": {
+                "event": "judge_unstaked",
+                "judge": [
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+                ],
+                "returned_stake": 1999000000,
+                "categories": [0, 2]
+            }
+        }
+    ]
 }

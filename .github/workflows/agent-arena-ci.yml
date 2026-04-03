@@ -1,0 +1,65 @@
+name: agent-arena-ci
+
+on:
+  pull_request:
+    paths:
+      - "apps/agent-arena/**"
+      - ".github/workflows/agent-arena-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/agent-arena/**"
+      - ".github/workflows/agent-arena-ci.yml"
+
+jobs:
+  typescript-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm --dir apps/agent-arena install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --dir apps/agent-arena lint
+
+      - name: CLI tests
+        run: pnpm --dir apps/agent-arena test:cli
+
+      - name: Judge daemon tests
+        run: pnpm --dir apps/agent-arena test:judge-daemon
+
+      - name: SDK tests
+        run: pnpm --dir apps/agent-arena test:sdk
+
+      - name: Ops alert gate tests
+        run: pnpm --dir apps/agent-arena test:ops-alert-gate
+
+      - name: SDK build
+        run: pnpm --dir apps/agent-arena/clients/typescript run build
+
+  rust-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Indexer tests
+        run: cargo test --manifest-path apps/agent-arena/indexer/Cargo.toml
+
+      - name: Integration tests
+        run: cargo test --manifest-path apps/agent-arena/tests/integration-tests/Cargo.toml

@@ -43,7 +43,10 @@ pub fn create_pda_account<const N: usize>(
     pda_signer_seeds: [Seed; N],
 ) -> ProgramResult {
     let rent = Rent::get()?;
-    let required_lamports = rent.try_minimum_balance(space).unwrap().max(1);
+    let required_lamports = rent
+        .try_minimum_balance(space)
+        ?
+        .max(1);
 
     let signers = [Signer::from(&pda_signer_seeds)];
 

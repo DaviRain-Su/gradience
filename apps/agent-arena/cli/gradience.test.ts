@@ -12,6 +12,7 @@ test('help lists config commands', () => {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /config set rpc <url>/);
     assert.match(result.stdout, /config set keypair <path>/);
+    assert.match(result.stdout, /profile show/);
 });
 
 test('NO_DNA help returns json schema', () => {
@@ -56,23 +57,11 @@ test('invalid arguments return clear machine-readable error in NO_DNA mode', () 
 });
 
 test('NO_DNA task post outputs structured signature payload', () => {
-    const result = runCli(
-        [
-            'task',
-            'post',
-            '--task-id',
-            '42',
-            '--eval-ref',
-            'ipfs://eval',
-            '--reward',
-            '1000000',
-        ],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-post-signature',
-        },
-    );
+    const result = runCli(['task', 'post', '--task-id', '42', '--eval-ref', 'ipfs://eval', '--reward', '1000000'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-post-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-post-signature');
@@ -80,14 +69,11 @@ test('NO_DNA task post outputs structured signature payload', () => {
 });
 
 test('NO_DNA task apply outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'apply', '--task-id', '7'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-apply-signature',
-        },
-    );
+    const result = runCli(['task', 'apply', '--task-id', '7'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-apply-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-apply-signature');
@@ -96,16 +82,7 @@ test('NO_DNA task apply outputs structured signature payload', () => {
 
 test('NO_DNA task submit outputs structured signature payload', () => {
     const result = runCli(
-        [
-            'task',
-            'submit',
-            '--task-id',
-            '3',
-            '--result-ref',
-            'ipfs://result',
-            '--trace-ref',
-            'ipfs://trace',
-        ],
+        ['task', 'submit', '--task-id', '3', '--result-ref', 'ipfs://result', '--trace-ref', 'ipfs://trace'],
         {
             NO_DNA: '1',
             GRADIENCE_CLI_MOCK: '1',
@@ -170,14 +147,11 @@ test('NO_DNA task judge outputs signature + winner + score payload', () => {
 });
 
 test('NO_DNA task cancel outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'cancel', '--task-id', '2'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-cancel-signature',
-        },
-    );
+    const result = runCli(['task', 'cancel', '--task-id', '2'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-cancel-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-cancel-signature');
@@ -185,14 +159,11 @@ test('NO_DNA task cancel outputs structured signature payload', () => {
 });
 
 test('NO_DNA task refund outputs structured signature payload', () => {
-    const result = runCli(
-        ['task', 'refund', '--task-id', '4'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-            GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-refund-signature',
-        },
-    );
+    const result = runCli(['task', 'refund', '--task-id', '4'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+        GRADIENCE_CLI_MOCK_SIGNATURE: 'mock-refund-signature',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; taskId: number };
     assert.equal(payload.signature, 'mock-refund-signature');
@@ -221,6 +192,86 @@ test('NO_DNA judge unstake returns structured payload', () => {
     const payload = JSON.parse(result.stdout.trim()) as { signature: string; command: string };
     assert.equal(payload.signature, 'mock-unstake-signature');
     assert.equal(payload.command, 'unstake');
+});
+
+test('NO_DNA profile show returns structured payload', () => {
+    const result = runCli(['profile', 'show', '--agent', 'agent-a'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+    });
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        agent: string;
+        profile: { agent: string; display_name: string };
+    };
+    assert.equal(payload.agent, 'agent-a');
+    assert.equal(payload.profile.agent, 'agent-a');
+    assert.equal(payload.profile.display_name, 'Mock Agent');
+});
+
+test('NO_DNA profile update returns ok payload', () => {
+    const result = runCli(
+        [
+            'profile',
+            'update',
+            '--display-name',
+            'Alice',
+            '--bio',
+            'Builder',
+            '--website',
+            'https://alice.example',
+        ],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        ok: boolean;
+        profile: { display_name: string; bio: string };
+    };
+    assert.equal(payload.ok, true);
+    assert.equal(payload.profile.display_name, 'Alice');
+    assert.equal(payload.profile.bio, 'Builder');
+});
+
+test('NO_DNA profile publish returns tx payload', () => {
+    const result = runCli(
+        ['profile', 'publish', '--mode', 'git-sync', '--content-ref', 'sha256:abc'],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim()) as {
+        ok: boolean;
+        onchain_tx: string;
+        profile: { publish_mode: string; onchain_ref: string };
+    };
+    assert.equal(payload.ok, true);
+    assert.equal(payload.onchain_tx, 'mock-profile-publish-signature');
+    assert.equal(payload.profile.publish_mode, 'git-sync');
+    assert.equal(payload.profile.onchain_ref, 'sha256:abc');
+});
+
+test('profile publish rejects invalid mode', () => {
+    const result = runCli(
+        ['profile', 'publish', '--mode', 'invalid-mode'],
+        {
+            NO_DNA: '1',
+            GRADIENCE_CLI_MOCK: '1',
+        },
+    );
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stderr.trim()) as {
+        ok: boolean;
+        error: { code: string; message: string };
+    };
+    assert.equal(payload.ok, false);
+    assert.equal(payload.error.code, 'INVALID_ARGUMENT');
+    assert.match(payload.error.message, /publish mode must be manual or git-sync/);
 });
 
 function runCli(args: string[], env: NodeJS.ProcessEnv = {}) {

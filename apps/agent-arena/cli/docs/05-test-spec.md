@@ -4,9 +4,9 @@
 
 ## 1. 当前测试文件
 
-| 文件 | 行数 | 测试内容 | 状态 |
-|------|------|---------|------|
-| `gradience.test.ts` | 234 行 | CLI 全命令集成测试 | ✅ |
+| 文件                | 行数   | 测试内容           | 状态 |
+| ------------------- | ------ | ------------------ | ---- |
+| `gradience.test.ts` | 234 行 | CLI 全命令集成测试 | ✅   |
 
 ---
 
@@ -24,32 +24,32 @@ pnpm run test:cli
 
 ### 已覆盖（✅）
 
-| 场景 | 说明 |
-|------|------|
-| `help` 列出 config 命令 | ✅ |
-| `config set rpc` 写配置文件 | ✅ |
-| `task post` 输出结构化 signature payload | ✅ |
-| `task apply` 输出结构化 signature payload | ✅ |
-| `task submit` 输出结构化 signature payload | ✅ |
-| `task status` 输出纯 JSON | ✅ |
-| `task judge` 输出 signature + winner + score | ✅ |
-| `task cancel` 输出退款 signature | ✅ |
-| `task refund` 输出退款 signature | ✅ |
-| 无效参数返回机器可读错误（NO_DNA 模式） | ✅ |
-| `--json` 输出格式 | ✅ |
+| 场景                                         | 说明 |
+| -------------------------------------------- | ---- |
+| `help` 列出 config 命令                      | ✅   |
+| `config set rpc` 写配置文件                  | ✅   |
+| `task post` 输出结构化 signature payload     | ✅   |
+| `task apply` 输出结构化 signature payload    | ✅   |
+| `task submit` 输出结构化 signature payload   | ✅   |
+| `task status` 输出纯 JSON                    | ✅   |
+| `task judge` 输出 signature + winner + score | ✅   |
+| `task cancel` 输出退款 signature             | ✅   |
+| `task refund` 输出退款 signature             | ✅   |
+| 无效参数返回机器可读错误（NO_DNA 模式）      | ✅   |
+| `--json` 输出格式                            | ✅   |
 
 ### 缺失（P0）
 
-| 场景 | 说明 |
-|------|------|
-| keypair 文件不存在时的错误提示 | 用户体验 |
-| RPC 不可达时的错误提示 | 网络故障处理 |
+| 场景                           | 说明         |
+| ------------------------------ | ------------ |
+| keypair 文件不存在时的错误提示 | 用户体验     |
+| RPC 不可达时的错误提示         | 网络故障处理 |
 
 ### 缺失（P1）
 
-| 场景 | 说明 |
-|------|------|
-| 配置文件不存在时自动创建 | 首次使用体验 |
+| 场景                                 | 说明         |
+| ------------------------------------ | ------------ |
+| 配置文件不存在时自动创建             | 首次使用体验 |
 | 配置优先级（参数 > 环境变量 > 文件） | 优先级正确性 |
 
 ---

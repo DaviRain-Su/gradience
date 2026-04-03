@@ -8,7 +8,7 @@ use pinocchio_token_2022::instructions::TransferChecked as Token2022TransferChec
 use crate::{
     constants::{BPS_DENOMINATOR, CANCEL_FEE_BPS},
     errors::GradienceProgramError,
-    events::TaskCancelledEvent,
+    events::{TaskCancelledEvent, TaskRefundedEvent, TASK_REFUND_REASON_CANCELLED},
     instructions::CancelTask,
     state::{
         ACCOUNT_VERSION_V1, APPLICATION_DISCRIMINATOR, ESCROW_DISCRIMINATOR, TASK_DISCRIMINATOR,
@@ -371,6 +371,18 @@ pub fn process_cancel_task(
         ix.accounts.event_authority,
         ix.accounts.program,
         &event.to_bytes(),
+    )?;
+
+    let refunded_event = TaskRefundedEvent {
+        task_id: task.task_id,
+        reason: TASK_REFUND_REASON_CANCELLED,
+        amount: poster_refund,
+    };
+    emit_event(
+        program_id,
+        ix.accounts.event_authority,
+        ix.accounts.program,
+        &refunded_event.to_bytes(),
     )?;
 
     Ok(())

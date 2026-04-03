@@ -39,8 +39,7 @@ export class EnvManualReviewProvider implements ManualReviewProvider {
 
     async getDecision(request: EvaluationRequest): Promise<ManualReviewDecision | null> {
         const scoreRaw =
-            this.env[`JUDGE_DAEMON_MANUAL_SCORE_TASK_${request.taskId}`] ??
-            this.env.JUDGE_DAEMON_MANUAL_SCORE;
+            this.env[`JUDGE_DAEMON_MANUAL_SCORE_TASK_${request.taskId}`] ?? this.env.JUDGE_DAEMON_MANUAL_SCORE;
         if (!scoreRaw) {
             return null;
         }
@@ -93,9 +92,7 @@ export class PollingManualEvaluator implements ScoreEvaluator {
             }
             await sleep(this.pollIntervalMs);
         }
-        throw new Error(
-            `Manual review timed out for task ${request.taskId} after ${this.timeoutMs}ms`,
-        );
+        throw new Error(`Manual review timed out for task ${request.taskId} after ${this.timeoutMs}ms`);
     }
 }
 
@@ -165,10 +162,7 @@ export class DspyHttpEvaluator implements ScoreEvaluator {
             };
             return {
                 score: clampScore(Number(payload.score)),
-                reasoning:
-                    typeof payload.reasoning === 'string'
-                        ? payload.reasoning
-                        : 'evaluation completed',
+                reasoning: typeof payload.reasoning === 'string' ? payload.reasoning : 'evaluation completed',
                 dimensionScores: normalizeDimensionScores(payload.dimension_scores),
                 confidence: clampConfidence(Number(payload.confidence)),
                 mode: 'type_b',
@@ -217,9 +211,7 @@ export async function evaluateWithRetry(
                 throw error;
             }
             const retryAfter = getRetryAfter(error);
-            const delayMs =
-                retryAfter ??
-                policy.baseDelayMs * Math.max(1, 2 ** (attempt - 1));
+            const delayMs = retryAfter ?? policy.baseDelayMs * Math.max(1, 2 ** (attempt - 1));
             await sleep(delayMs);
         }
     }
@@ -278,7 +270,7 @@ async function sleep(ms: number): Promise<void> {
     if (ms <= 0) {
         return;
     }
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
         setTimeout(resolve, ms);
     });
 }

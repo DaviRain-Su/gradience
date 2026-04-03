@@ -11,6 +11,7 @@ export interface RelayRuntimeConfig {
   host: string;
   port: number;
   authToken?: string;
+  transportEncryptionKey?: string;
   maxPayloadBytes: number;
   maxPaymentMicrolamports: bigint;
   httpMaxBodyBytes: number;
@@ -43,6 +44,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     host: "0.0.0.0",
     port: 3400,
     authToken: undefined,
+    transportEncryptionKey: undefined,
     maxPayloadBytes: 32 * 1024,
     maxPaymentMicrolamports: 10_000_000n,
     httpMaxBodyBytes: 1_048_576,
@@ -86,6 +88,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     host: "0.0.0.0",
     port: 3400,
     authToken: undefined,
+    transportEncryptionKey: undefined,
     maxPayloadBytes: 48 * 1024,
     maxPaymentMicrolamports: 10_000_000n,
     httpMaxBodyBytes: 1_048_576,
@@ -129,6 +132,7 @@ const PROFILE_PRESETS: Record<RelayRuntimeProfile, RelayRuntimeConfig> = {
     host: "0.0.0.0",
     port: 3400,
     authToken: undefined,
+    transportEncryptionKey: undefined,
     maxPayloadBytes: 24 * 1024,
     maxPaymentMicrolamports: 8_000_000n,
     httpMaxBodyBytes: 1_048_576,
@@ -180,6 +184,9 @@ export function resolveRelayRuntimeConfig(
     host: env.A2A_RELAY_HOST ?? preset.host,
     port: parseIntSafe(env.A2A_RELAY_PORT, preset.port),
     authToken: parseOptionalString(env.A2A_RELAY_AUTH_TOKEN) ?? preset.authToken,
+    transportEncryptionKey:
+      parseOptionalString(env.A2A_RELAY_TRANSPORT_ENCRYPTION_KEY) ??
+      preset.transportEncryptionKey,
     maxPayloadBytes: parseIntSafe(
       env.A2A_RELAY_MAX_PAYLOAD_BYTES,
       preset.maxPayloadBytes,

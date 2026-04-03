@@ -54,18 +54,13 @@ test('decodeProgramConfigUpgradeAuthority reads upgrade authority bytes', () => 
     const minStake = Buffer.alloc(8);
     minStake.writeBigUInt64LE(2_000_000_000n);
 
-    const encoded = Buffer.concat([
-        Buffer.from([0x09, 0x01]),
-        treasury,
-        upgradeAuthority.toBuffer(),
-        minStake,
-    ]);
+    const encoded = Buffer.concat([Buffer.from([0x09, 0x01]), treasury, upgradeAuthority.toBuffer(), minStake]);
     const decoded = decodeProgramConfigUpgradeAuthority(encoded);
     assert.equal(decoded.toBase58(), upgradeAuthority.toBase58());
 });
 
 test('deriveConfigPda remains deterministic for a known program id', () => {
-    const programId = new PublicKey('GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4');
+    const programId = new PublicKey('5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs');
     const pdaA = deriveConfigPda(programId);
     const pdaB = deriveConfigPda(programId);
     assert.equal(pdaA.toBase58(), pdaB.toBase58());

@@ -39,6 +39,9 @@
 | 3 | Agent | 在有效策略内执行委托并记录执行计数 | 累积可审计执行历史 | P0 |
 | 4 | Operator | 通过统一 SDK `invoke` 调用任意协议 | 屏蔽 REST/CPI 差异 | P1 |
 | 5 | Security Reviewer | 对凭证注入与策略约束可验证 | 避免 Agent 越权执行 | P1 |
+| 6 | AgentM 用户 | 在 AgentM "发现"页浏览技能市场，按类别/声誉筛选可用 Skill | 发现并使用其他 Agent 的技能 | P2 |
+| 7 | Agent | 通过 A2A 消息引用 Skill ID 发起技能调用请求 | Agent 间协商时直接调用对方技能 | P2 |
+| 8 | Skill 创建者 | 注册技能后在 AgentM 和 8004scan.io 上被发现 | 获得客户和收入 | P2 |
 
 ## 1.4 功能范围
 
@@ -53,7 +56,7 @@
 
 ### 不做什么（Out of Scope）
 - 不做生产级 HSM/Custody 集成（Fireblocks/BitGo 生产对接）
-- 不做前端 UI
+- 不自建独立前端 UI（技能市场浏览/管理通过 AgentM 呈现，见 AgentM PRD 用户故事 #9）
 - 不做跨链（EVM/Wormhole）扩展
 - 不做主网部署流程
 

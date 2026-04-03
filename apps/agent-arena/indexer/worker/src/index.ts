@@ -164,9 +164,7 @@ const worker: WorkerHandler = {
 
         if (
             request.method === 'POST' &&
-            (pathname === '/webhook/triton' ||
-                pathname === '/webhook/helius' ||
-                pathname === '/webhook/events')
+            (pathname === '/webhook/triton' || pathname === '/webhook/helius' || pathname === '/webhook/events')
         ) {
             const authFailure = validateWebhookAuth(request, env);
             if (authFailure) {
@@ -179,12 +177,12 @@ const worker: WorkerHandler = {
             return handleGetTasks(url, env);
         }
 
-        const taskDetailsMatch = pathname.match(/^\/api\/tasks\/(\d+)$/);
+        const taskDetailsMatch = pathname.match(/^\/api\/tasks\/([^/]+)$/);
         if (request.method === 'GET' && taskDetailsMatch && taskDetailsMatch[1]) {
             return handleGetTaskById(taskDetailsMatch[1], env);
         }
 
-        const taskSubmissionsMatch = pathname.match(/^\/api\/tasks\/(\d+)\/submissions$/);
+        const taskSubmissionsMatch = pathname.match(/^\/api\/tasks\/([^/]+)\/submissions$/);
         if (request.method === 'GET' && taskSubmissionsMatch && taskSubmissionsMatch[1]) {
             return handleGetTaskSubmissions(taskSubmissionsMatch[1], url, env);
         }
@@ -236,23 +234,51 @@ async function handleGetTasks(url: URL, env: Env): Promise<Response> {
         return errorResponse(400, 'invalid status value: expected open|completed|refunded');
     }
 
-    const categoryParam = url.searchParams.get('category');
-    const category = parseOptionalInt(categoryParam);
-    if (categoryParam !== null && (category === null || category < 0 || category > 7)) {
+    const categoryRaw = url.searchParams.get('category');
+    const categoryParsed = parseUnsignedIntQueryParam(categoryRaw);
+    if (categoryRaw !== null && categoryParsed === null) {
+        return errorResponse(400, 'category must be an integer');
+    }
+    const category = categoryParsed;
+    if (category !== null && category > 7) {
         return errorResponse(400, 'category must be in range 0..=7');
     }
 
-    const limit = parseOptionalInt(url.searchParams.get('limit')) ?? 20;
+    const limitRaw = url.searchParams.get('limit');
+    const limitParsed = parseUnsignedIntQueryParam(limitRaw);
+    if (limitRaw !== null && limitParsed === null) {
+        return errorResponse(400, 'limit must be an integer');
+    }
+    const limit = limitParsed ?? 20;
     if (limit < 1 || limit > 100) {
         return errorResponse(400, 'limit must be in range 1..=100');
     }
 
-    const offset = parseOptionalInt(url.searchParams.get('offset')) ?? 0;
-    if (offset < 0) {
-        return errorResponse(400, 'offset must be >= 0');
+    const offsetRaw = url.searchParams.get('offset');
+    const offset = parseUnsignedIntQueryParam(offsetRaw);
+    if (offsetRaw !== null && offset === null) {
+        return errorResponse(400, 'offset must be an integer');
     }
 
+    const pageRaw = url.searchParams.get('page');
+    const page = parseUnsignedIntQueryParam(pageRaw);
+    if (pageRaw !== null && page === null) {
+        return errorResponse(400, 'page must be an integer');
+    }
+
+    const offsetResult = resolveTaskOffset(offset, page, limit);
+    if (offsetResult === null) {
+        return errorResponse(400, 'page must be >= 1');
+    }
+    const sortParam = url.searchParams.get('sort');
+    const sort = parseTaskSort(sortParam);
+    if (sort === null) {
+        return errorResponse(400, `invalid sort value: ${sortParam} (expected task_id_desc|task_id_asc)`);
+    }
+    const finalOffset = offsetResult;
+
     try {
+        const orderClause = sort === 'task_id_asc' ? 'ASC' : 'DESC';
         const rows = await queryAll<TaskRow>(
             env.DB,
             `SELECT
@@ -264,9 +290,9 @@ async function handleGetTasks(url: URL, env: Env): Promise<Response> {
                AND (?2 IS NULL OR category = ?2)
                AND (?3 IS NULL OR mint = ?3)
                AND (?4 IS NULL OR poster = ?4)
-             ORDER BY task_id DESC
+             ORDER BY task_id ${orderClause}
              LIMIT ?5 OFFSET ?6`,
-            [state, category, url.searchParams.get('mint'), url.searchParams.get('poster'), limit, offset],
+            [state, category, url.searchParams.get('mint'), url.searchParams.get('poster'), limit, finalOffset],
         );
         return jsonResponse(rows.map(mapTask));
     } catch (error) {
@@ -275,10 +301,11 @@ async function handleGetTasks(url: URL, env: Env): Promise<Response> {
 }
 
 async function handleGetTaskById(taskIdRaw: string, env: Env): Promise<Response> {
-    const taskId = parsePositiveInt(taskIdRaw);
-    if (taskId === null) {
-        return errorResponse(400, 'invalid task_id');
+    const taskIdResult = parseTaskId(taskIdRaw);
+    if (typeof taskIdResult === 'string') {
+        return errorResponse(400, taskIdResult);
     }
+    const taskId = taskIdResult;
 
     try {
         const row = await queryFirst<TaskRow>(
@@ -301,14 +328,16 @@ async function handleGetTaskById(taskIdRaw: string, env: Env): Promise<Response>
 }
 
 async function handleGetTaskSubmissions(taskIdRaw: string, url: URL, env: Env): Promise<Response> {
-    const taskId = parsePositiveInt(taskIdRaw);
-    if (taskId === null) {
-        return errorResponse(400, 'invalid task_id');
+    const taskIdResult = parseTaskId(taskIdRaw);
+    if (typeof taskIdResult === 'string') {
+        return errorResponse(400, taskIdResult);
     }
+    const taskId = taskIdResult;
 
-    const sort = url.searchParams.get('sort');
-    if (sort !== null && sort !== 'score' && sort !== 'slot') {
-        return errorResponse(400, 'invalid sort value: expected score|slot');
+    const sortParam = url.searchParams.get('sort');
+    const sort = parseSubmissionSort(sortParam);
+    if (sort === null) {
+        return errorResponse(400, `invalid sort value: ${sortParam} (expected score|slot)`);
     }
 
     try {
@@ -474,7 +503,7 @@ function extractLogsFromTransaction(tx: unknown): string[] | null {
 }
 
 function decodeMockEvents(events: unknown[]): EventEnvelope[] {
-    return events.map((item) => {
+    return events.map(item => {
         const record = asRecord(item);
         if (!record) {
             throw new Error('mock event envelope is not an object');
@@ -883,12 +912,7 @@ async function applyEvent(db: D1Database, envelope: EventEnvelope): Promise<void
     }
 }
 
-async function ensureTaskExists(
-    db: D1Database,
-    taskId: number,
-    slot: number,
-    timestamp: number,
-): Promise<void> {
+async function ensureTaskExists(db: D1Database, taskId: number, slot: number, timestamp: number): Promise<void> {
     await run(
         db,
         `INSERT INTO tasks (
@@ -900,26 +924,27 @@ async function ensureTaskExists(
     );
 }
 
-async function queryAll<T>(
-    db: D1Database,
-    sql: string,
-    params: unknown[],
-): Promise<T[]> {
-    const response = await db.prepare(sql).bind(...params).all();
+async function queryAll<T>(db: D1Database, sql: string, params: unknown[]): Promise<T[]> {
+    const response = await db
+        .prepare(sql)
+        .bind(...params)
+        .all();
     return response.results as T[];
 }
 
-async function queryFirst<T>(
-    db: D1Database,
-    sql: string,
-    params: unknown[],
-): Promise<T | null> {
-    const row = await db.prepare(sql).bind(...params).first();
+async function queryFirst<T>(db: D1Database, sql: string, params: unknown[]): Promise<T | null> {
+    const row = await db
+        .prepare(sql)
+        .bind(...params)
+        .first();
     return (row as T | null) ?? null;
 }
 
 async function run(db: D1Database, sql: string, params: unknown[]): Promise<void> {
-    await db.prepare(sql).bind(...params).run();
+    await db
+        .prepare(sql)
+        .bind(...params)
+        .run();
 }
 
 function mapTask(task: TaskRow): Record<string, unknown> {
@@ -971,12 +996,12 @@ function parseState(value: string | null): number | null {
     return null;
 }
 
-function parseOptionalInt(value: string | null): number | null {
+function parseUnsignedIntQueryParam(value: string | null): number | null {
     if (value === null) {
         return null;
     }
     const parsed = Number(value);
-    if (!Number.isInteger(parsed)) {
+    if (!Number.isInteger(parsed) || parsed < 0) {
         return null;
     }
     return parsed;
@@ -988,6 +1013,50 @@ function parsePositiveInt(value: string): number | null {
         return null;
     }
     return parsed;
+}
+
+function parseTaskId(value: string): number | string {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) {
+        return 'invalid task_id';
+    }
+    if (parsed < 0) {
+        return 'task_id must be >= 0';
+    }
+    return parsed;
+}
+
+function parseTaskSort(value: string | null): 'task_id_desc' | 'task_id_asc' | null {
+    if (value === null || value === 'task_id_desc' || value === 'desc') {
+        return 'task_id_desc';
+    }
+    if (value === 'task_id_asc' || value === 'asc') {
+        return 'task_id_asc';
+    }
+    return null;
+}
+
+function parseSubmissionSort(value: string | null): 'score' | 'slot' | null {
+    if (value === null || value === 'score' || value === 'score_desc') {
+        return 'score';
+    }
+    if (value === 'slot' || value === 'slot_desc' || value === 'submission_slot_desc') {
+        return 'slot';
+    }
+    return null;
+}
+
+function resolveTaskOffset(offset: number | null, page: number | null, limit: number): number | null {
+    if (offset !== null) {
+        return offset;
+    }
+    if (page === null) {
+        return 0;
+    }
+    if (page < 1) {
+        return null;
+    }
+    return (page - 1) * limit;
 }
 
 function parseInteger(value: unknown, fallback: number): number {
@@ -1014,7 +1083,7 @@ function parseByteArray(value: unknown, exactLength?: number): number[] {
     if (!Array.isArray(value)) {
         throw new Error('expected byte array field');
     }
-    const out = value.map((entry) => {
+    const out = value.map(entry => {
         if (typeof entry !== 'number' || !Number.isInteger(entry) || entry < 0 || entry > 255) {
             throw new Error('byte array contains invalid value');
         }
@@ -1041,7 +1110,7 @@ function asStringArray(value: unknown): string[] | null {
     if (!Array.isArray(value)) {
         return null;
     }
-    if (value.some((entry) => typeof entry !== 'string')) {
+    if (value.some(entry => typeof entry !== 'string')) {
         return null;
     }
     return value as string[];

@@ -77,7 +77,7 @@ chainhub tool call "okx/dex" --swap     # 按次调用
 在 Agent 世界叫"深度伪造诈骗"
 ```
 
-**Agent Me 的设计原则：**
+**AgentM 的设计原则：**
 原始 Soul Data 永远只存在你的本地 Pod，加密，不上云，不可交易，不可转让。
 
 ### 元神 = 主 Agent 控制权（私钥）
@@ -147,11 +147,11 @@ flowchart TB
 **Chain Hub（工具层）**
 → 开放 Skill 市场和 Tool 租赁市场，这两类是安全的可交易资产
 
-**Agent Me（人口层）**
+**AgentM（人口层）**
 → 本地 Soul Data 加密存储，不上云，不可导出，不可交易
 → OnchainOS TEE 保护元神（私钥），永不暴露
 
-**Agent Social（社交层）**
+**AgentM（社交层）**
 → 只暴露 Agent 的 profile（公开偏好），不暴露 Soul Data
 → 连接确认后，主人决定解锁多少信息，Soul Data 永远不在这个流程里
 
@@ -169,4 +169,4 @@ flowchart TB
 ---
 
 _此文档是 Gradience 协议资产分类的核心原则文档。_
-_适用于：Chain Hub 技能市场设计、Agent Me 隐私设计、Agent Social 数据边界设计。_
+_适用于：Chain Hub 技能市场设计、AgentM 隐私设计、AgentM 数据边界设计。_

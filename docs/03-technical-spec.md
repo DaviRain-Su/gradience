@@ -647,7 +647,7 @@ for entry in judge_pool.entries:
 |------|------|
 | 调用者 | Task.poster |
 | 前置条件 | Task.state = Open；submission_count = 0（无提交则可取消）；signer = task.poster |
-| 后置条件 | Task.state = Refunded；98% 退还 Poster；2% 进 Treasury |
+| 后置条件 | Task.state = Refunded；98% 退还 Poster；2% 进 Treasury；同时 emit `TaskCancelled` + `TaskRefunded(reason=Cancelled)` |
 
 参数：无
 
@@ -872,7 +872,7 @@ if (remainingAccounts.length > 20) {
 
 ---
 
-### 3.3.2 SDK 公开接口（`@gradience/sdk`）
+### 3.3.2 SDK 公开接口（`@gradiences/sdk`）
 
 ```typescript
 interface GradienceSDK {
@@ -1150,7 +1150,7 @@ impl From<GradienceError> for ProgramError {
 | Open | `submit_result` | clock < deadline；已申请 | Open | 更新 Submission（可多次覆盖）；记录 slot |
 | Open | `judge_and_pay` | signer = judge；score ≥ MIN_SCORE | **Completed** | 三方分账；Reputation 更新；Application 质押退回 |
 | Open | `judge_and_pay` | signer = judge；score < MIN_SCORE | **Refunded** | 全额退 Poster；Application 质押退回 |
-| Open | `cancel_task` | signer = poster；submission_count = 0 | **Refunded** | 98% 退 Poster；2% → Treasury |
+| Open | `cancel_task` | signer = poster；submission_count = 0 | **Refunded** | 98% 退 Poster；2% → Treasury；emit TaskCancelled + TaskRefunded(Cancelled) |
 | Open | `refund_expired` | clock > deadline；submission_count = 0 | **Refunded** | 100% 退 Poster |
 | Open | `force_refund` | clock > judge_deadline + 7d；submission_count > 0 | **Refunded** | 95% → Poster；3% → 最活跃 Agent；2% → Treasury；Judge Stake Slash |
 | Completed | — | — | Completed | 终态 |
@@ -1779,14 +1779,14 @@ if (score >= MIN_SCORE) {
 ### 3.12.4 SDK 查询接口
 
 ```typescript
-// @gradience/sdk — agentAttestations 查询
+// @gradiences/sdk — agentAttestations 查询
 
 import { fetchAllAttestation } from "sas-lib";
 import type { Address } from "@solana/kit";
 
 /**
  * 查询某 Agent 获得的全部能力凭证（TaskCompletion Attestations）
- * 可用于：Agent.im 页面展示、外部协议验证 Agent 能力
+ * 可用于：AgentM 页面展示、外部协议验证 Agent 能力
  */
 export async function getAgentAttestations(agentAddress: Address) {
   // sas-lib 支持按 signer 过滤（signer = 颁发该 Attestation 的 Daemon 公钥）

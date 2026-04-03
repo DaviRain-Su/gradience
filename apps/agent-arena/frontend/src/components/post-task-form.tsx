@@ -90,10 +90,7 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
             if (!evalRef) {
                 throw new Error('eval-ref is required.');
             }
-            const deadlineSeconds = parsePositiveInteger(
-                form.deadlineSeconds,
-                'deadline in seconds from now',
-            );
+            const deadlineSeconds = parsePositiveInteger(form.deadlineSeconds, 'deadline in seconds from now');
             const judgeDeadlineSeconds = parsePositiveInteger(
                 form.judgeDeadlineSeconds,
                 'judge-deadline in seconds from now',
@@ -114,7 +111,7 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
                 judgeDeadline: BigInt(now + judgeDeadlineSeconds),
             });
             setStatus(signature);
-            setForm((current) => ({ ...current, taskId: '', evalRef: '' }));
+            setForm(current => ({ ...current, taskId: '', evalRef: '' }));
             onPosted();
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : String(submitError));
@@ -134,7 +131,7 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
             <div className="mt-3 space-y-2">
                 {injectedWallets.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                        {injectedWallets.map((wallet) => (
+                        {injectedWallets.map(wallet => (
                             <button
                                 key={wallet.id}
                                 type="button"
@@ -171,9 +168,9 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
                 )}
                 <textarea
                     value={secretInput}
-                    onChange={(event) => setSecretInput(event.target.value)}
+                    onChange={event => setSecretInput(event.target.value)}
                     className="h-20 w-full rounded border border-zinc-700 bg-transparent p-2 text-xs"
-                    placeholder='[12,34,...,64 bytes]'
+                    placeholder="[12,34,...,64 bytes]"
                 />
                 <div className="flex gap-2">
                     <button
@@ -204,64 +201,62 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
             <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
                 <input
                     value={form.taskId}
-                    onChange={(event) => setForm({ ...form, taskId: event.target.value })}
+                    onChange={event => setForm({ ...form, taskId: event.target.value })}
                     placeholder="task-id (u64)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.evalRef}
-                    onChange={(event) => setForm({ ...form, evalRef: event.target.value })}
+                    onChange={event => setForm({ ...form, evalRef: event.target.value })}
                     placeholder="eval-ref (cid/ipfs/ar)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.reward}
-                    onChange={(event) => setForm({ ...form, reward: event.target.value })}
+                    onChange={event => setForm({ ...form, reward: event.target.value })}
                     placeholder="reward (lamports)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.minStake}
-                    onChange={(event) => setForm({ ...form, minStake: event.target.value })}
+                    onChange={event => setForm({ ...form, minStake: event.target.value })}
                     placeholder="min-stake (lamports)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.category}
-                    onChange={(event) => setForm({ ...form, category: event.target.value })}
+                    onChange={event => setForm({ ...form, category: event.target.value })}
                     placeholder="category (0-7)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.judgeMode}
-                    onChange={(event) => setForm({ ...form, judgeMode: event.target.value })}
+                    onChange={event => setForm({ ...form, judgeMode: event.target.value })}
                     placeholder="judge-mode (0 designated, 1 pool)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.judge}
-                    onChange={(event) => setForm({ ...form, judge: event.target.value })}
+                    onChange={event => setForm({ ...form, judge: event.target.value })}
                     placeholder="judge address (optional)"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                 />
                 <input
                     value={form.deadlineSeconds}
-                    onChange={(event) => setForm({ ...form, deadlineSeconds: event.target.value })}
+                    onChange={event => setForm({ ...form, deadlineSeconds: event.target.value })}
                     placeholder="deadline in seconds from now"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
                 />
                 <input
                     value={form.judgeDeadlineSeconds}
-                    onChange={(event) =>
-                        setForm({ ...form, judgeDeadlineSeconds: event.target.value })
-                    }
+                    onChange={event => setForm({ ...form, judgeDeadlineSeconds: event.target.value })}
                     placeholder="judge-deadline in seconds from now"
                     className="rounded border border-zinc-700 bg-transparent p-2 text-sm"
                     required
@@ -275,11 +270,7 @@ export function PostTaskForm({ onPosted }: { onPosted: () => void }) {
                 </button>
             </form>
             {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
-            {status && (
-                <p className="mt-2 break-all text-xs text-emerald-400">
-                    Task posted. Signature: {status}
-                </p>
-            )}
+            {status && <p className="mt-2 break-all text-xs text-emerald-400">Task posted. Signature: {status}</p>}
         </section>
     );
 }

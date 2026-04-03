@@ -1,6 +1,6 @@
 {
-    "name": "@gradience/sdk",
-    "version": "0.0.1",
+    "name": "@gradiences/arena-sdk",
+    "version": "0.1.0",
     "description": "TypeScript SDK for Gradience Protocol",
     "license": "MIT",
     "type": "module",
@@ -15,8 +15,17 @@
     "files": [
         "dist"
     ],
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    },
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "docs": "typedoc --out docs/api src/index.ts --plugin typedoc-plugin-markdown"
+    },
+    "devDependencies": {
+        "typedoc": "^0.27.0",
+        "typedoc-plugin-markdown": "^4.0.0"
     },
     "peerDependencies": {
         "@solana/kit": "^5.0.0"

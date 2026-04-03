@@ -46,17 +46,9 @@ export interface GradienceSdkOptions {
 
 export interface WalletAdapter {
     signer: TransactionSigner;
-    sign?(
-        instructions: readonly Instruction[],
-        options?: SendTransactionOptions,
-    ): Promise<unknown>;
-    signAndSendTransaction(
-        instructions: readonly Instruction[],
-        options?: SendTransactionOptions,
-    ): Promise<string>;
-    ensureAddressLookupTable?(
-        request: EnsureLookupTableRequest,
-    ): Promise<Address | null>;
+    sign?(instructions: readonly Instruction[], options?: SendTransactionOptions): Promise<unknown>;
+    signAndSendTransaction(instructions: readonly Instruction[], options?: SendTransactionOptions): Promise<string>;
+    ensureAddressLookupTable?(request: EnsureLookupTableRequest): Promise<Address | null>;
 }
 
 export interface SendTransactionOptions {
@@ -226,6 +218,36 @@ export interface JudgePoolMemberOnChain {
     weight: number;
 }
 
+export interface ProgramConfigOnChain {
+    treasury: Address;
+    upgradeAuthority: Address;
+    minJudgeStake: bigint;
+    taskCount: bigint;
+    bump: number;
+}
+
+export interface PostTaskSimpleRequest {
+    evalRef: string;
+    reward: number | bigint;
+    category: number;
+    minStake?: number | bigint;
+    judgeMode?: number;
+    judge?: Address;
+    deadline?: number | bigint;
+    judgeDeadline?: number | bigint;
+    deadlineOffsetSeconds?: number | bigint;
+    judgeDeadlineOffsetSeconds?: number | bigint;
+    mint?: Address;
+    tokenProgram?: Address;
+    posterTokenAccount?: Address;
+    escrowAta?: Address;
+}
+
+export interface PostTaskSimpleResult {
+    taskId: bigint;
+    signature: string;
+}
+
 export interface TaskCompletionAttestationApi {
     task_id: number;
     task_category: number;
@@ -236,6 +258,47 @@ export interface TaskCompletionAttestationApi {
     credential: string;
     schema: string;
     signature?: string;
+}
+
+export interface TaskCompletionAttestationData {
+    taskId: bigint;
+    taskCategory: number;
+    judgeMethod: number;
+    score: number;
+    rewardAmount: bigint;
+    completedAt: bigint;
+}
+
+export interface TaskCompletionAttestationRecord extends TaskCompletionAttestationData {
+    credential: string;
+    schema: string;
+    signature?: string;
+}
+
+// ── Agent Profile (off-chain extension) ─────────────────────────────
+
+export interface AgentProfileLinks {
+    website?: string;
+    github?: string;
+    x?: string;
+}
+
+export type ProfilePublishMode = 'manual' | 'git-sync';
+
+export interface AgentProfileApi {
+    agent: string;
+    display_name: string;
+    bio: string;
+    links: AgentProfileLinks;
+    onchain_ref: string | null;
+    publish_mode: ProfilePublishMode;
+    updated_at: number;
+}
+
+export interface AgentProfileUpdate {
+    display_name: string;
+    bio: string;
+    links?: AgentProfileLinks;
 }
 
 export class GradienceSDK {
@@ -251,11 +314,7 @@ export class GradienceSDK {
         );
         this.programAddress = options.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
         const rpcEndpoint = options.rpcEndpoint ?? 'http://127.0.0.1:8899';
-        this.rpc =
-            options.rpc ??
-            createSolanaRpc(
-                rpcEndpoint as unknown as Parameters<typeof createSolanaRpc>[0],
-            );
+        this.rpc = options.rpc ?? createSolanaRpc(rpcEndpoint as unknown as Parameters<typeof createSolanaRpc>[0]);
     }
 
     setIndexerEndpoint(endpoint: string): void {
@@ -320,27 +379,28 @@ export class GradienceSDK {
     readonly task = {
         /** Post a new task on-chain. */
         post: (wallet: WalletAdapter, request: PostTaskRequest) => this.postTask(wallet, request),
+        /**
+         * High-level helper: derive next task id from on-chain config and post task
+         * with sensible deadline defaults.
+         */
+        postSimple: (wallet: WalletAdapter, request: PostTaskSimpleRequest) => this.postTaskSimple(wallet, request),
         /** Apply to an existing task on-chain. */
         apply: (wallet: WalletAdapter, request: ApplyTaskRequest) => this.applyForTask(wallet, request),
         /** Submit task result on-chain. */
-        submit: (wallet: WalletAdapter, request: SubmitTaskResultRequest) =>
-            this.submitResult(wallet, request),
+        submit: (wallet: WalletAdapter, request: SubmitTaskResultRequest) => this.submitResult(wallet, request),
         /** Judge a task and settle funds on-chain. */
         judge: (wallet: WalletAdapter, request: JudgeTaskRequest) => this.judgeTask(wallet, request),
         /** Cancel a task and refund stakes/reward on-chain. */
         cancel: (wallet: WalletAdapter, request: CancelTaskRequest) => this.cancelTask(wallet, request),
         /** Refund expired task on-chain. */
-        refund: (wallet: WalletAdapter, request: RefundExpiredRequest) =>
-            this.refundExpiredTask(wallet, request),
+        refund: (wallet: WalletAdapter, request: RefundExpiredRequest) => this.refundExpiredTask(wallet, request),
         /** Force refund path on-chain with judge slash logic. */
-        forceRefund: (wallet: WalletAdapter, request: ForceRefundRequest) =>
-            this.forceRefundTask(wallet, request),
+        forceRefund: (wallet: WalletAdapter, request: ForceRefundRequest) => this.forceRefundTask(wallet, request),
         /**
          * Fetch submissions for a task from indexer.
          * Returns `null` when the task is not found.
          */
-        submissions: (taskId: number, params?: { sort?: 'score' | 'slot' }) =>
-            this.getTaskSubmissions(taskId, params),
+        submissions: (taskId: number, params?: { sort?: 'score' | 'slot' }) => this.getTaskSubmissions(taskId, params),
     } as const;
 
     readonly reputation = {
@@ -359,12 +419,37 @@ export class GradienceSDK {
         list: (category: number) => this.getJudgePoolOnChain(category),
     } as const;
 
+    readonly config = {
+        /**
+         * Fetch on-chain ProgramConfig PDA.
+         * Returns `null` when the config account does not exist.
+         */
+        get: () => this.getProgramConfigOnChain(),
+    } as const;
+
+    readonly profile = {
+        /** Fetch agent profile from Indexer. Returns `null` when not found. */
+        get: (agent: string) => this.getAgentProfile(agent),
+        /** Update agent profile via Indexer. */
+        update: (agent: string, data: AgentProfileUpdate) => this.updateAgentProfile(agent, data),
+    } as const;
+
     readonly attestations = {
         /**
          * Fetch TaskCompletion attestations for a given agent.
          * Returns `null` when the attestation endpoint or agent record is not found.
          */
         list: (agent: string) => this.getAgentAttestations(agent),
+        /**
+         * Fetch and normalize TaskCompletion attestations to strongly-typed bigint fields.
+         * Returns `null` when the attestation endpoint or agent record is not found.
+         */
+        listDecoded: (agent: string) => this.getDecodedAgentAttestations(agent),
+        /**
+         * Decode on-chain TaskCompletion attestation payload bytes
+         * ordered as [U64, U8, U8, U8, U64, I64].
+         */
+        decode: decodeTaskCompletionAttestation,
     } as const;
 
     async postTask(wallet: WalletAdapter, request: PostTaskRequest): Promise<string> {
@@ -410,6 +495,42 @@ export class GradienceSDK {
             ? instruction
             : stripOptionalTail(instruction, 5, this.programAddress);
         return wallet.signAndSendTransaction([normalizedInstruction]);
+    }
+
+    async postTaskSimple(wallet: WalletAdapter, request: PostTaskSimpleRequest): Promise<PostTaskSimpleResult> {
+        const judgeMode = request.judgeMode ?? 1;
+        if (judgeMode === 0 && !request.judge) {
+            throw new Error('judge is required when judgeMode=0 (designated)');
+        }
+        const now = BigInt(Math.floor(Date.now() / 1000));
+        const deadline = request.deadline
+            ? BigInt(request.deadline)
+            : now + BigInt(request.deadlineOffsetSeconds ?? 3_600);
+        const judgeDeadline = request.judgeDeadline
+            ? BigInt(request.judgeDeadline)
+            : deadline + BigInt(request.judgeDeadlineOffsetSeconds ?? 3_600);
+
+        const config = await this.getProgramConfigOnChain();
+        if (!config) {
+            throw new Error('Program config account not found; initialize program before posting');
+        }
+        const taskId = config.taskCount;
+        const signature = await this.postTask(wallet, {
+            taskId,
+            evalRef: request.evalRef,
+            deadline,
+            judgeDeadline,
+            judgeMode,
+            judge: request.judge,
+            category: request.category,
+            minStake: request.minStake ?? 0,
+            reward: request.reward,
+            mint: request.mint,
+            tokenProgram: request.tokenProgram,
+            posterTokenAccount: request.posterTokenAccount,
+            escrowAta: request.escrowAta,
+        });
+        return { taskId, signature };
     }
 
     async applyForTask(wallet: WalletAdapter, request: ApplyTaskRequest): Promise<string> {
@@ -524,10 +645,7 @@ export class GradienceSDK {
         const normalizedInstruction = tokenCtx.isSpl
             ? instruction
             : stripOptionalTail(instruction, 8, this.programAddress);
-        const instructionWithRemaining = appendRemainingAccounts(
-            normalizedInstruction,
-            remaining.metas,
-        );
+        const instructionWithRemaining = appendRemainingAccounts(normalizedInstruction, remaining.metas);
         const sendOptions = await this.resolveSendOptions(wallet, taskId, remaining.addresses);
         return wallet.signAndSendTransaction([instructionWithRemaining], sendOptions);
     }
@@ -548,7 +666,7 @@ export class GradienceSDK {
         });
         const treasuryAta =
             tokenCtx.isSpl && tokenCtx.mint && tokenCtx.tokenProgram
-                ? request.treasuryAta ??
+                ? (request.treasuryAta ??
                   (
                       await findAssociatedTokenAddress(
                           treasury,
@@ -556,7 +674,7 @@ export class GradienceSDK {
                           tokenCtx.tokenProgram,
                           ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
                       )
-                  )[0]
+                  )[0])
                 : undefined;
 
         const remaining = await this.resolveRefundPairs(taskId, request.refunds, {
@@ -581,10 +699,7 @@ export class GradienceSDK {
         const normalizedInstruction = tokenCtx.isSpl
             ? instruction
             : stripOptionalTail(instruction, 6, this.programAddress);
-        const instructionWithRemaining = appendRemainingAccounts(
-            normalizedInstruction,
-            remaining.metas,
-        );
+        const instructionWithRemaining = appendRemainingAccounts(normalizedInstruction, remaining.metas);
         const sendOptions = await this.resolveSendOptions(wallet, taskId, remaining.addresses);
         return wallet.signAndSendTransaction([instructionWithRemaining], sendOptions);
     }
@@ -622,10 +737,7 @@ export class GradienceSDK {
         const normalizedInstruction = tokenCtx.isSpl
             ? removeAccountsAtIndexes(instruction, [1])
             : stripOptionalTail(instruction, 4, this.programAddress);
-        const instructionWithRemaining = appendRemainingAccounts(
-            normalizedInstruction,
-            remaining.metas,
-        );
+        const instructionWithRemaining = appendRemainingAccounts(normalizedInstruction, remaining.metas);
         const sendOptions = await this.resolveSendOptions(wallet, taskId, remaining.addresses);
         return wallet.signAndSendTransaction([instructionWithRemaining], sendOptions);
     }
@@ -652,7 +764,7 @@ export class GradienceSDK {
             treasury,
         });
         const judgePools = await Promise.all(
-            request.judgeCategories.map((category) => findJudgePoolPda(this.programAddress, category)),
+            request.judgeCategories.map(category => findJudgePoolPda(this.programAddress, category)),
         );
         const judgePoolMetas: AccountMeta[] = judgePools.map(([pool]) => ({
             address: pool,
@@ -699,14 +811,16 @@ export class GradienceSDK {
         return wallet.signAndSendTransaction([instructionWithRemaining], sendOptions);
     }
 
-    async getTasks(params: {
-        status?: 'open' | 'completed' | 'refunded';
-        category?: number;
-        mint?: string;
-        poster?: string;
-        limit?: number;
-        offset?: number;
-    } = {}): Promise<TaskApi[]> {
+    async getTasks(
+        params: {
+            status?: 'open' | 'completed' | 'refunded';
+            category?: number;
+            mint?: string;
+            poster?: string;
+            limit?: number;
+            offset?: number;
+        } = {},
+    ): Promise<TaskApi[]> {
         return this.getJson<TaskApi[]>('/api/tasks', params);
     }
 
@@ -722,24 +836,44 @@ export class GradienceSDK {
     }
 
     async getReputation(agent: string): Promise<ReputationApi | null> {
-        return this.getJsonOrNull<ReputationApi>(
-            `/api/agents/${encodeURIComponent(agent)}/reputation`,
-        );
+        return this.getJsonOrNull<ReputationApi>(`/api/agents/${encodeURIComponent(agent)}/reputation`);
     }
 
     async getJudgePool(category: number): Promise<JudgePoolEntryApi[] | null> {
         return this.getJsonOrNull<JudgePoolEntryApi[]>(`/api/judge-pool/${category}`);
     }
 
-    async getAgentAttestations(
-        agent: string,
-    ): Promise<TaskCompletionAttestationApi[] | null> {
+    async getAgentAttestations(agent: string): Promise<TaskCompletionAttestationApi[] | null> {
         const path = `/api/agents/${encodeURIComponent(agent)}/attestations`;
-        return this.getJsonOrNull<TaskCompletionAttestationApi[]>(
-            path,
-            {},
-            this.attestationEndpoint,
+        return this.getJsonOrNull<TaskCompletionAttestationApi[]>(path, {}, this.attestationEndpoint);
+    }
+
+    async getDecodedAgentAttestations(agent: string): Promise<TaskCompletionAttestationRecord[] | null> {
+        const attestations = await this.getAgentAttestations(agent);
+        if (!attestations) {
+            return null;
+        }
+        return attestations.map(normalizeTaskCompletionAttestation);
+    }
+
+    async getAgentProfile(agent: string): Promise<AgentProfileApi | null> {
+        return this.getJsonOrNull<AgentProfileApi>(
+            `/api/agents/${encodeURIComponent(agent)}/profile`,
         );
+    }
+
+    async updateAgentProfile(agent: string, data: AgentProfileUpdate): Promise<{ ok: boolean }> {
+        const url = `${this.indexerEndpoint}/api/agents/${encodeURIComponent(agent)}/profile`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(data),
+            signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok) {
+            throw new Error(`Profile update failed (${response.status}): ${await response.text()}`);
+        }
+        return { ok: true };
     }
 
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
@@ -758,21 +892,26 @@ export class GradienceSDK {
             return null;
         }
 
-        return maybePool.data.entries.map((entry) => ({
+        return maybePool.data.entries.map(entry => ({
             judge: bytesToAddress(entry.judge),
             weight: entry.weight,
         }));
+    }
+
+    async getProgramConfigOnChain(): Promise<ProgramConfigOnChain | null> {
+        const [configPda] = await findConfigPda(this.programAddress);
+        const maybeConfig = await fetchEncodedAccount(this.rpc, configPda);
+        if (!maybeConfig.exists) {
+            return null;
+        }
+        return parseProgramConfigAccount(maybeConfig.data);
     }
 
     private async getJson<T>(path: string, query: Record<string, QueryValue> = {}): Promise<T> {
         return this.getJsonWithBase<T>(path, query, this.indexerEndpoint);
     }
 
-    private async getJsonWithBase<T>(
-        path: string,
-        query: Record<string, QueryValue>,
-        baseUrl: string,
-    ): Promise<T> {
+    private async getJsonWithBase<T>(path: string, query: Record<string, QueryValue>, baseUrl: string): Promise<T> {
         const url = new URL(path, `${baseUrl}/`);
         const params = new URLSearchParams();
         for (const [key, value] of Object.entries(query)) {
@@ -928,12 +1067,7 @@ export class GradienceSDK {
         const treasuryAta =
             params.treasuryAta ??
             (
-                await findAssociatedTokenAddress(
-                    treasury,
-                    params.mint,
-                    tokenProgram,
-                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-                )
+                await findAssociatedTokenAddress(treasury, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS)
             )[0];
         const escrowAta =
             params.escrowAta ??
@@ -1113,6 +1247,9 @@ function sanitizeBaseUrl(value: string): string {
 const TEXT_ENCODER = new TextEncoder();
 const LOOKUP_TABLE_THRESHOLD = 20;
 const REPUTATION_DISCRIMINATOR = 0x05;
+const PROGRAM_CONFIG_DISCRIMINATOR = 0x09;
+export const SAS_PROGRAM_ID =
+    '22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq' as Address<'22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq'>;
 const SPL_TOKEN_PROGRAM_ADDRESS =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 const ASSOCIATED_TOKEN_PROGRAM_ADDRESS =
@@ -1122,30 +1259,21 @@ async function findConfigPda(programAddress: Address): Promise<readonly [Address
     return getProgramDerivedAddress({ programAddress, seeds: [TEXT_ENCODER.encode('config')] });
 }
 
-async function findTaskPda(
-    programAddress: Address,
-    taskId: bigint,
-): Promise<readonly [Address, number]> {
+async function findTaskPda(programAddress: Address, taskId: bigint): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress,
         seeds: [TEXT_ENCODER.encode('task'), u64LeBytes(taskId)],
     });
 }
 
-async function findEscrowPda(
-    programAddress: Address,
-    taskId: bigint,
-): Promise<readonly [Address, number]> {
+async function findEscrowPda(programAddress: Address, taskId: bigint): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress,
         seeds: [TEXT_ENCODER.encode('escrow'), u64LeBytes(taskId)],
     });
 }
 
-async function findJudgePoolPda(
-    programAddress: Address,
-    category: number,
-): Promise<readonly [Address, number]> {
+async function findJudgePoolPda(programAddress: Address, category: number): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress,
         seeds: [TEXT_ENCODER.encode('judge_pool'), Uint8Array.of(category)],
@@ -1174,20 +1302,14 @@ async function findSubmissionPda(
     });
 }
 
-async function findReputationPda(
-    programAddress: Address,
-    agent: Address,
-): Promise<readonly [Address, number]> {
+async function findReputationPda(programAddress: Address, agent: Address): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress,
         seeds: [TEXT_ENCODER.encode('reputation'), getAddressEncoder().encode(agent)],
     });
 }
 
-async function findStakePda(
-    programAddress: Address,
-    judge: Address,
-): Promise<readonly [Address, number]> {
+async function findStakePda(programAddress: Address, judge: Address): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress,
         seeds: [TEXT_ENCODER.encode('stake'), getAddressEncoder().encode(judge)],
@@ -1209,7 +1331,11 @@ async function findAssociatedTokenAddress(
 ): Promise<readonly [Address, number]> {
     return getProgramDerivedAddress({
         programAddress: associatedTokenProgram,
-        seeds: [getAddressEncoder().encode(owner), getAddressEncoder().encode(tokenProgram), getAddressEncoder().encode(mint)],
+        seeds: [
+            getAddressEncoder().encode(owner),
+            getAddressEncoder().encode(tokenProgram),
+            getAddressEncoder().encode(mint),
+        ],
     });
 }
 
@@ -1252,7 +1378,7 @@ function stripOptionalTail<TInstruction extends Instruction>(
         .slice(pivot)
         // Codama's optional-account strategy ("programId") encodes omitted optionals
         // as readonly placeholders pointing at the program address.
-        .filter((account) => !isCodamaOptionalPlaceholder(account, placeholderAddress));
+        .filter(account => !isCodamaOptionalPlaceholder(account, placeholderAddress));
     return {
         ...instruction,
         accounts: [...required, ...optional],
@@ -1286,10 +1412,7 @@ function appendRemainingAccounts<TInstruction extends Instruction>(
     };
 }
 
-function isCodamaOptionalPlaceholder(
-    account: AccountMeta,
-    placeholderAddress: Address,
-): boolean {
+function isCodamaOptionalPlaceholder(account: AccountMeta, placeholderAddress: Address): boolean {
     return account.address === placeholderAddress && account.role === AccountRole.READONLY;
 }
 
@@ -1330,11 +1453,61 @@ function parseReputationAccount(data: Uint8Array): ReputationOnChain {
     };
 }
 
+function parseProgramConfigAccount(data: Uint8Array): ProgramConfigOnChain {
+    const reader = new ByteReader(data);
+    const discriminator = reader.readU8();
+    if (discriminator !== PROGRAM_CONFIG_DISCRIMINATOR) {
+        throw new Error(`Invalid program config discriminator: ${discriminator}`);
+    }
+    reader.readU8(); // version
+
+    const treasury = bytesToAddress(reader.readFixedArray(32));
+    const upgradeAuthority = bytesToAddress(reader.readFixedArray(32));
+    const minJudgeStake = reader.readU64();
+    const taskCount = reader.readU64();
+    const bump = reader.readU8();
+
+    return {
+        treasury,
+        upgradeAuthority,
+        minJudgeStake,
+        taskCount,
+        bump,
+    };
+}
+
+export function normalizeTaskCompletionAttestation(
+    attestation: TaskCompletionAttestationApi,
+): TaskCompletionAttestationRecord {
+    return {
+        taskId: BigInt(attestation.task_id),
+        taskCategory: attestation.task_category,
+        judgeMethod: attestation.judge_method,
+        score: attestation.score,
+        rewardAmount: BigInt(attestation.reward_amount),
+        completedAt: BigInt(attestation.completed_at),
+        credential: attestation.credential,
+        schema: attestation.schema,
+        signature: attestation.signature,
+    };
+}
+
+export function decodeTaskCompletionAttestation(raw: Uint8Array): TaskCompletionAttestationData {
+    const reader = new ByteReader(raw);
+    return {
+        taskId: reader.readU64(),
+        taskCategory: reader.readU8(),
+        judgeMethod: reader.readU8(),
+        score: reader.readU8(),
+        rewardAmount: reader.readU64(),
+        completedAt: reader.readI64(),
+    };
+}
+
 function isNotFoundError(error: unknown): boolean {
     return (
         error instanceof Error &&
-        (error.message.includes('Indexer request failed (404)') ||
-            error.message.includes('404'))
+        (error.message.includes('Indexer request failed (404)') || error.message.includes('404'))
     );
 }
 
@@ -1368,6 +1541,12 @@ class ByteReader {
 
     readU64(): bigint {
         const value = this.view.getBigUint64(this.offset, true);
+        this.offset += 8;
+        return value;
+    }
+
+    readI64(): bigint {
+        const value = this.view.getBigInt64(this.offset, true);
         this.offset += 8;
         return value;
     }

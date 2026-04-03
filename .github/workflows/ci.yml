@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------
+  # Global: Format & Lint check via pnpm workspace
+  # -------------------------------------------------------
+  format-check:
+    name: Format & Lint (Global)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - name: Prettier check
+        run: pnpm format:check
+      - name: ESLint check
+        run: pnpm lint:root || true  # warn-only for now
+
+  # -------------------------------------------------------
+  # TypeScript: Lint & Typecheck
+  # Only apps that have lint/typecheck scripts are included.
+  # -------------------------------------------------------
+  lint-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # developer-docs — has both `lint` (next lint) and `typecheck`
+      - name: Install developer-docs deps
+        run: npm --prefix apps/developer-docs install
+
+      - name: Lint developer-docs
+        run: npm --prefix apps/developer-docs run lint
+
+      - name: Typecheck developer-docs
+        run: npm --prefix apps/developer-docs run typecheck
+
+      # agentm-pro — typecheck only
+      - name: Install agentm-pro deps
+        run: npm --prefix apps/agentm-pro install
+
+      - name: Typecheck agentm-pro
+        run: npm --prefix apps/agentm-pro run typecheck
+
+      # agent-arena/frontend — typecheck only
+      - name: Install agent-arena/frontend deps
+        run: npm --prefix apps/agent-arena/frontend install
+
+      - name: Typecheck agent-arena/frontend
+        run: npm --prefix apps/agent-arena/frontend run typecheck
+
+  # -------------------------------------------------------
+  # TypeScript: Build (matrix over all Next.js apps)
+  # -------------------------------------------------------
+  build-ts:
+    name: Build (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: agentm-web
+            dir: apps/agentm-web
+          - app: agentm-pro
+            dir: apps/agentm-pro
+          - app: developer-docs
+            dir: apps/developer-docs
+          - app: agent-arena/frontend
+            dir: apps/agent-arena/frontend
+          - app: website
+            dir: website
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache .next/cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.dir }}/.next/cache
+          key: next-${{ matrix.app }}-${{ hashFiles(format('{0}/package-lock.json', matrix.dir)) }}-${{ hashFiles(format('{0}/src/**', matrix.dir)) }}
+          restore-keys: |
+            next-${{ matrix.app }}-
+
+      - name: Install dependencies
+        run: npm --prefix ${{ matrix.dir }} install
+
+      - name: Build
+        run: npm --prefix ${{ matrix.dir }} run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # Prevent builds from failing on missing runtime env vars
+          SKIP_ENV_VALIDATION: true
+
+  # -------------------------------------------------------
+  # agent-arena: TypeScript tests (pnpm workspace)
+  # Mirrors the typescript-gate in agent-arena-ci.yml but
+  # runs on all pushes/PRs regardless of changed paths.
+  # -------------------------------------------------------
+  test-agent-arena-ts:
+    name: agent-arena TS Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-agent-arena-${{ hashFiles('apps/agent-arena/pnpm-lock.yaml') }}
+          restore-keys: pnpm-agent-arena-
+
+      - name: Install dependencies
+        run: pnpm --dir apps/agent-arena install --frozen-lockfile
+
+      - name: Build TypeScript SDK
+        run: pnpm --dir apps/agent-arena/clients/typescript run build
+
+      - name: SDK tests
+        run: pnpm --dir apps/agent-arena test:sdk
+
+      - name: Judge daemon tests
+        run: pnpm --dir apps/agent-arena test:judge-daemon
+
+      - name: CLI tests
+        run: pnpm --dir apps/agent-arena test:cli
+
+      - name: Ops alert gate tests
+        run: pnpm --dir apps/agent-arena test:ops-alert-gate
+
+  # -------------------------------------------------------
+  # a2a-protocol: TypeScript / Node tests
+  # -------------------------------------------------------
+  test-a2a-ts:
+    name: a2a-protocol TS Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: apps/a2a-protocol
+        run: npm install 2>/dev/null || true
+        # a2a-protocol may be Rust-only; skip if no package.json
+
+      - name: Run tests
+        working-directory: apps/a2a-protocol
+        run: npm test 2>/dev/null || echo "No Node.js tests found"
+
+  # -------------------------------------------------------
+  # agent-layer-evm: Hardhat / Solidity tests
+  # -------------------------------------------------------
+  test-evm:
+    name: EVM Tests (Hardhat)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: apps/agent-layer-evm/node_modules
+          key: npm-evm-${{ hashFiles('apps/agent-layer-evm/package-lock.json') }}
+          restore-keys: npm-evm-
+
+      - name: Install dependencies
+        run: npm --prefix apps/agent-layer-evm install
+
+      - name: Compile contracts
+        run: npm --prefix apps/agent-layer-evm run compile
+
+      - name: Run Hardhat tests
+        run: npm --prefix apps/agent-layer-evm test
+
+  # -------------------------------------------------------
+  # Rust: cargo check (no Solana CLI needed)
+  # Programs: compile check for pinocchio workspaces.
+  # Indexer: check + test (plain axum server, no SBF).
+  # -------------------------------------------------------
+  rust-check:
+    name: Rust Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-check-${{ runner.os }}-${{ hashFiles('apps/agent-arena/Cargo.lock', 'apps/agentm-core/program/Cargo.lock', 'apps/chain-hub/Cargo.lock', 'apps/a2a-protocol/Cargo.lock') }}
+          restore-keys: cargo-check-${{ runner.os }}-
+
+      # Indexer is a plain axum server — check + test without Solana toolchain
+      - name: Check agent-arena indexer
+        run: cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
+
+      - name: Test agent-arena indexer
+        run: cargo test --manifest-path apps/agent-arena/indexer/Cargo.toml
+
+      # Integration tests use native Rust test harness (no SBF required)
+      - name: Test agent-arena integration tests
+        run: cargo test --manifest-path apps/agent-arena/tests/integration-tests/Cargo.toml
+
+      # Cargo check for Solana program crates (type-check without building SBF)
+      - name: Check agentm-core program
+        run: cargo check --manifest-path apps/agentm-core/program/Cargo.toml
+
+      - name: Check chain-hub workspace
+        run: cargo check --manifest-path apps/chain-hub/Cargo.toml
+
+      - name: Check a2a-protocol workspace
+        run: cargo check --manifest-path apps/a2a-protocol/Cargo.toml

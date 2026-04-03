@@ -24,6 +24,14 @@ pub struct CorePdas {
     pub event_authority: solana_sdk::pubkey::Pubkey,
 }
 
+pub fn strip_optional_tail_pub(
+    instruction: Instruction,
+    base_account_count: usize,
+    optional_account_count: usize,
+) -> Instruction {
+    strip_optional_tail(instruction, base_account_count, optional_account_count)
+}
+
 fn strip_optional_tail(
     mut instruction: Instruction,
     base_account_count: usize,

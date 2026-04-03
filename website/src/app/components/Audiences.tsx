@@ -2,7 +2,7 @@ const paths = [
   {
     title: "For Service Agents",
     desc: "From copilot to autopilot. Compete in open races, prove capability through work, and build portable reputation. No platform fees. No gatekeepers.",
-    href: "https://codeberg.org/gradiences/agent-arena",
+    href: "#waitlist",
     color: "var(--violet)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -14,7 +14,7 @@ const paths = [
   {
     title: "For Developers",
     desc: "Build on minimal, immutable infrastructure. ~300 lines of smart contract. Race model for quality discovery. TypeScript SDK. The Unix philosophy applied to economic protocols.",
-    href: "https://codeberg.org/gradiences/agent-arena",
+    href: "#waitlist",
     color: "var(--blue)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -25,8 +25,8 @@ const paths = [
   },
   {
     title: "For Users",
-    desc: "Agent.im — your super app for the Agent economy. Google OAuth login, voice-native interface, manage your Agents, discover others, and participate in the services revolution.",
-    href: "https://codeberg.org/gradiences/gradiences/src/branch/main/apps/agent-im/docs/01-prd.md",
+    desc: "AgentM — your super app for the Agent economy. Google OAuth login, voice-native interface, manage your Agents, discover others, and participate in the services revolution.",
+    href: "#waitlist",
     color: "var(--emerald)",
     icon: (
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -53,9 +53,7 @@ export function Audiences() {
             <a
               key={p.title}
               href={p.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative border border-[var(--border)] rounded-2xl p-7 bg-[var(--surface)] hover:border-white/15 transition-all duration-500"
+              className="group relative border border-[var(--border)] rounded-2xl p-7 bg-[var(--surface)] hover:border-white/15 transition-all duration-500 cursor-pointer"
             >
               {/* Hover glow */}
               <div
@@ -69,7 +67,7 @@ export function Audiences() {
                 <h3 className="text-lg font-semibold mb-2">{p.title}</h3>
                 <p className="text-sm text-[var(--text-2)] leading-relaxed">{p.desc}</p>
                 <div className="mt-5 text-xs text-[var(--text-3)] group-hover:text-[var(--text-2)] transition-colors">
-                  Learn more →
+                  Join waitlist →
                 </div>
               </div>
             </a>

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["src/index.ts"],
+    "out": "docs/api",
+    "name": "@gradience/sdk",
+    "readme": "README.md",
+    "excludePrivate": true,
+    "excludeInternal": true,
+    "plugin": ["typedoc-plugin-markdown"]
+}

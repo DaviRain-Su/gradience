@@ -136,11 +136,11 @@ Player-Coach → 高级 Agent (带学徒赚分成)
 
 **前提**：Block 必须拥有客户的完整金融数据。
 
-### Gradience 的 Agent Me
+### Gradience 的 AgentM
 
 > "主动感知市场机会，自主组合技能，为用户生成最优策略"
 
-**示例**：Agent Me 自动发现高收益流动性挖矿机会，评估风险，执行交易。
+**示例**：AgentM 自动发现高收益流动性挖矿机会，评估风险，执行交易。
 
 **前提**：用户授权 + 市场数据公开透明。
 
@@ -211,8 +211,8 @@ Gradience 的创新来自**任何参与者**——一个在肯尼亚的开发者
 | **Company World Model** | Protocol World Model (链上状态) | 公开透明 vs 内部私有 |
 | **Customer World Model** | Market World Model (Battle 数据) | 用户拥有 vs 公司拥有 |
 | **Capabilities** | Chain Hub Skills | 无许可注册 vs 内部开发 |
-| **Intelligence Layer** | Agent Me | 自主决策 vs 公司算法 |
-| **Interfaces** | Agent Social | 点对点发现 vs 平台控制 |
+| **Intelligence Layer** | AgentM | 自主决策 vs 公司算法 |
+| **Interfaces** | AgentM | 点对点发现 vs 平台控制 |
 | **DRIs** | 无 — 市场自动协调 | 机制取代人 |
 | **ICs** | Agents | 全球无许可 vs 雇佣关系 |
 | **Player-Coaches** | 高级 Agent + Skill NFT | 市场化传承 vs 内部培养 |

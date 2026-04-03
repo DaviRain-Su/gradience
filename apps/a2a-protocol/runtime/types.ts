@@ -25,6 +25,14 @@ export interface SignedEnvelope {
   paymentMicrolamports: bigint;
 }
 
+export interface TransportEncryptedPayload {
+  __transportEncrypted: true;
+  alg: "aes-256-gcm";
+  iv: string;
+  tag: string;
+  ciphertext: string;
+}
+
 export interface RelayEnvelopeRecord {
   envelope: SignedEnvelope;
   body: Record<string, unknown>;

@@ -37,37 +37,19 @@ export class KeypairAdapter implements WalletAdapter {
         this.commitment = options.commitment ?? 'confirmed';
         this.rpc =
             options.rpc ??
-            createSolanaRpc(
-                (options.rpcEndpoint ?? 'http://127.0.0.1:8899') as Parameters<
-                    typeof createSolanaRpc
-                >[0],
-            );
+            createSolanaRpc((options.rpcEndpoint ?? 'http://127.0.0.1:8899') as Parameters<typeof createSolanaRpc>[0]);
     }
 
-    async sign(
-        instructions: readonly Instruction[],
-        options?: SendTransactionOptions,
-    ): Promise<SignedTransaction> {
-        const { value: latestBlockhash } = await this.rpc
-            .getLatestBlockhash({ commitment: this.commitment })
-            .send();
+    async sign(instructions: readonly Instruction[], options?: SendTransactionOptions): Promise<SignedTransaction> {
+        const { value: latestBlockhash } = await this.rpc.getLatestBlockhash({ commitment: this.commitment }).send();
 
         if (options?.useVersionedTransaction) {
             const transactionMessage = createTransactionMessage({ version: 0 });
             const withFeePayer = setTransactionMessageFeePayerSigner(this.signer, transactionMessage);
-            const withLifetime = setTransactionMessageLifetimeUsingBlockhash(
-                latestBlockhash,
-                withFeePayer,
-            );
-            const withInstructions = appendTransactionMessageInstructions(
-                instructions as Instruction[],
-                withLifetime,
-            );
+            const withLifetime = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, withFeePayer);
+            const withInstructions = appendTransactionMessageInstructions(instructions as Instruction[], withLifetime);
 
-            if (
-                options.addressLookupTableAddresses &&
-                options.addressLookupTableAddresses.length > 0
-            ) {
+            if (options.addressLookupTableAddresses && options.addressLookupTableAddresses.length > 0) {
                 const addressesByLookupTableAddress = await fetchAddressesForLookupTables(
                     options.addressLookupTableAddresses,
                     this.rpc,
@@ -84,10 +66,7 @@ export class KeypairAdapter implements WalletAdapter {
 
         const legacyMessage = createTransactionMessage({ version: 'legacy' });
         const legacyWithFeePayer = setTransactionMessageFeePayerSigner(this.signer, legacyMessage);
-        const legacyWithLifetime = setTransactionMessageLifetimeUsingBlockhash(
-            latestBlockhash,
-            legacyWithFeePayer,
-        );
+        const legacyWithLifetime = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, legacyWithFeePayer);
         const legacyWithInstructions = appendTransactionMessageInstructions(
             instructions as Instruction[],
             legacyWithLifetime,

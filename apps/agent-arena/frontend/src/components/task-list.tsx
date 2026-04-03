@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { TaskApi } from '@gradience/sdk';
+import type { TaskApi } from '@gradiences/sdk';
 
 import { createSdk } from '../lib/sdk';
 
@@ -50,30 +50,19 @@ export function TaskList({ refreshToken }: { refreshToken: number }) {
             </div>
             {loading && <p className="text-sm text-zinc-400">Loading tasks…</p>}
             {error && <p className="text-sm text-red-400">{error}</p>}
-            {!loading && tasks.length === 0 && (
-                <p className="text-sm text-zinc-400">No tasks yet.</p>
-            )}
+            {!loading && tasks.length === 0 && <p className="text-sm text-zinc-400">No tasks yet.</p>}
             <ul className="space-y-3">
-                {tasks.map((task) => (
+                {tasks.map(task => (
                     <li key={task.task_id} className="rounded border border-zinc-800 p-3 text-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="font-medium">Task #{task.task_id}</span>
-                            <span className="rounded bg-zinc-800 px-2 py-0.5 uppercase">
-                                {task.state}
-                            </span>
+                            <span className="rounded bg-zinc-800 px-2 py-0.5 uppercase">{task.state}</span>
                         </div>
                         <p className="mt-1 text-xs text-zinc-400">Category: {task.category}</p>
                         <p className="mt-1 text-xs text-zinc-400">Reward: {task.reward}</p>
-                        <p className="mt-1 break-all text-xs text-zinc-400">
-                            Poster: {task.poster}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-400">
-                            Deadline: {formatUnixTime(task.deadline)}
-                        </p>
-                        <Link
-                            href={`/tasks/${task.task_id}`}
-                            className="mt-2 inline-block text-xs underline"
-                        >
+                        <p className="mt-1 break-all text-xs text-zinc-400">Poster: {task.poster}</p>
+                        <p className="mt-1 text-xs text-zinc-400">Deadline: {formatUnixTime(task.deadline)}</p>
+                        <Link href={`/tasks/${task.task_id}`} className="mt-2 inline-block text-xs underline">
                             Open detail
                         </Link>
                     </li>

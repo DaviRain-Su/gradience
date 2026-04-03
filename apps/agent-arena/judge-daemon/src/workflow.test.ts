@@ -29,15 +29,13 @@ test('Type B high-confidence result submits judge_and_pay directly', async () =>
     });
 
     const engine = new AbsurdWorkflowEngine(store);
-    let judged:
-        | {
-              taskId: number;
-              winner: string;
-              poster: string;
-              score: number;
-              reasonRef: string;
-          }
-        | null = null;
+    let judged: {
+        taskId: number;
+        winner: string;
+        poster: string;
+        score: number;
+        reasonRef: string;
+    } | null = null;
     const chainClient: JudgeChainClient = {
         getTask: async () => ({
             task_id: 9,
@@ -71,7 +69,7 @@ test('Type B high-confidence result submits judge_and_pay directly', async () =>
                 submitted_at: 0,
             },
         ],
-        judge: async (request) => {
+        judge: async request => {
             judged = {
                 taskId: request.taskId,
                 winner: request.winner,
@@ -88,7 +86,7 @@ test('Type B high-confidence result submits judge_and_pay directly', async () =>
         minConfidence: 0.7,
         chainClient,
         refResolver: {
-            fetchText: async (ref) => {
+            fetchText: async ref => {
                 if (ref === 'cid://eval') {
                     return JSON.stringify({
                         task_description: 'judge output',
@@ -183,7 +181,7 @@ test('Type B low-confidence result falls back to Type A manual evaluator', async
                 submitted_at: 0,
             },
         ],
-        judge: async (request) => {
+        judge: async request => {
             submittedScore = request.score;
             return 'sig';
         },
@@ -194,7 +192,7 @@ test('Type B low-confidence result falls back to Type A manual evaluator', async
         minConfidence: 0.7,
         chainClient,
         refResolver: {
-            fetchText: async (ref) => {
+            fetchText: async ref => {
                 if (ref === 'cid://eval') {
                     return JSON.stringify({ min_confidence: 0.7 });
                 }
@@ -286,7 +284,7 @@ test('Auto mode routes test_cases tasks to Type C-1 evaluator', async () => {
                 submitted_at: 0,
             },
         ],
-        judge: async (request) => {
+        judge: async request => {
             submittedScore = request.score;
             return 'sig';
         },
@@ -296,7 +294,7 @@ test('Auto mode routes test_cases tasks to Type C-1 evaluator', async () => {
         mode: 'auto',
         chainClient,
         refResolver: {
-            fetchText: async (ref) => {
+            fetchText: async ref => {
                 if (ref === 'cid://eval') {
                     return JSON.stringify({
                         type: 'test_cases',
@@ -404,7 +402,7 @@ test('Workflow processing is single-claim and skips duplicate runners', async ()
         mode: 'type_b',
         chainClient,
         refResolver: {
-            fetchText: async (ref) => {
+            fetchText: async ref => {
                 if (ref === 'cid://eval') {
                     return JSON.stringify({ min_confidence: 0.7 });
                 }
@@ -488,6 +486,18 @@ test('Workflow publishes interoperability signal after successful judgement', as
                 submission_slot: 190,
                 submitted_at: 0,
             },
+            {
+                task_id: 19,
+                agent: '22222222222222222222222222222222',
+                result_ref: 'cid://result-2',
+                trace_ref: 'cid://trace-2',
+                runtime_provider: 'x',
+                runtime_model: 'x',
+                runtime_runtime: 'x',
+                runtime_version: 'x',
+                submission_slot: 191,
+                submitted_at: 0,
+            },
         ],
         judge: async () => 'sig-interop-1',
     };
@@ -496,10 +506,7 @@ test('Workflow publishes interoperability signal after successful judgement', as
         mode: 'type_b',
         chainClient,
         refResolver: {
-            fetchText: async (ref) =>
-                ref === 'cid://eval'
-                    ? JSON.stringify({ min_confidence: 0.7 })
-                    : `${ref}-content`,
+            fetchText: async ref => (ref === 'cid://eval' ? JSON.stringify({ min_confidence: 0.7 }) : `${ref}-content`),
             publishReason: async () => 'cid://reason',
         },
         typeAEvaluator: new StaticEvaluator({
@@ -524,7 +531,7 @@ test('Workflow publishes interoperability signal after successful judgement', as
             mode: 'type_c1',
         }),
         interopPublisher: {
-            onTaskJudged: async (value) => {
+            onTaskJudged: async value => {
                 signal = value;
             },
         },
@@ -539,6 +546,7 @@ test('Workflow publishes interoperability signal after successful judgement', as
     assert.equal(signal.taskId, 19);
     assert.equal(signal.chainTx, 'sig-interop-1');
     assert.equal(signal.score, 91);
+    assert.deepEqual(signal.participants, ['11111111111111111111111111111111', '22222222222222222222222222222222']);
 });
 
 test('Workflow still completes when interop publisher fails', async () => {
@@ -594,10 +602,7 @@ test('Workflow still completes when interop publisher fails', async () => {
         mode: 'type_b',
         chainClient,
         refResolver: {
-            fetchText: async (ref) =>
-                ref === 'cid://eval'
-                    ? JSON.stringify({ min_confidence: 0.7 })
-                    : `${ref}-content`,
+            fetchText: async ref => (ref === 'cid://eval' ? JSON.stringify({ min_confidence: 0.7 }) : `${ref}-content`),
             publishReason: async () => 'cid://reason',
         },
         typeAEvaluator: new StaticEvaluator({

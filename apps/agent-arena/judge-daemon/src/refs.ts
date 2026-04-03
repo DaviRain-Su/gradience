@@ -16,15 +16,9 @@ export class RefResolver {
     private readonly fetcher: typeof fetch;
 
     constructor(options: RefResolverOptions = {}) {
-        this.arweaveGateway = normalizeGateway(
-            options.arweaveGateway ?? 'https://arweave.net',
-        );
-        this.ipfsGateway = normalizeGateway(
-            options.ipfsGateway ?? 'https://ipfs.io/ipfs',
-        );
-        this.cidGateway = normalizeGateway(
-            options.cidGateway ?? options.arweaveGateway ?? 'https://arweave.net',
-        );
+        this.arweaveGateway = normalizeGateway(options.arweaveGateway ?? 'https://arweave.net');
+        this.ipfsGateway = normalizeGateway(options.ipfsGateway ?? 'https://ipfs.io/ipfs');
+        this.cidGateway = normalizeGateway(options.cidGateway ?? options.arweaveGateway ?? 'https://arweave.net');
         this.reasonPublisherEndpoint = options.reasonPublisherEndpoint;
         this.fetcher = options.fetcher ?? fetch;
     }
@@ -64,17 +58,14 @@ export class RefResolver {
                 cid?: unknown;
                 id?: unknown;
             };
-            const fromJson =
-                asString(json.reason_ref) ?? asString(json.cid) ?? asString(json.id);
+            const fromJson = asString(json.reason_ref) ?? asString(json.cid) ?? asString(json.id);
             if (!fromJson) {
                 throw new Error('Reason publisher returned no reason reference');
             }
             return fromJson;
         }
 
-        const digest = createHash('sha256')
-            .update(JSON.stringify(payload))
-            .digest('hex');
+        const digest = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
         return `reason://sha256/${digest}`;
     }
 

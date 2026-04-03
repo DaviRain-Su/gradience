@@ -34,6 +34,7 @@ fn create_delegation_ix(
     selected_judge: Pubkey,
     max_executions: u32,
     expires_at: i64,
+    policy_hash: [u8; 32],
 ) -> Instruction {
     Instruction {
         program_id: chain_hub_program_id(),
@@ -56,7 +57,7 @@ fn create_delegation_ix(
                 selected_judge_authority: selected_judge.to_bytes(),
                 max_executions,
                 expires_at,
-                policy_hash: [7u8; 32],
+                policy_hash,
             },
         ),
     }
@@ -90,6 +91,7 @@ fn test_delegation_full_lifecycle_to_completed() {
         judge.pubkey(),
         1,
         now + 3_600,
+        [7u8; 32],
     );
     ctx.send_instruction(create_ix, &[]).unwrap();
 
@@ -162,6 +164,7 @@ fn test_delegation_unauthorized_and_expired_paths() {
         judge.pubkey(),
         2,
         now + 100,
+        [7u8; 32],
     );
     ctx.send_instruction(create_ix, &[]).unwrap();
 
@@ -236,6 +239,7 @@ fn test_delegation_unauthorized_and_expired_paths() {
         judge.pubkey(),
         2,
         ctx.get_current_timestamp() + 600,
+        [7u8; 32],
     );
     ctx.send_instruction(create_ix_2, &[]).unwrap();
 
@@ -252,4 +256,93 @@ fn test_delegation_unauthorized_and_expired_paths() {
     let cancelled: DelegationTaskAccount =
         decode_padded(&cancelled.data, DELEGATION_TASK_DISCRIMINATOR);
     assert_eq!(cancelled.status, DelegationTaskStatus::Cancelled);
+}
+
+#[test]
+fn test_delegation_rejects_zero_policy_hash() {
+    let mut ctx = TestContext::new();
+    let agent_layer_program = Pubkey::new_unique();
+    initialize(&mut ctx, agent_layer_program);
+    register_skill(&mut ctx, 1, 2);
+    register_protocol(&mut ctx, "sdp");
+    let expected_judge_pool =
+        Pubkey::find_program_address(&[b"judge_pool", &[2]], &agent_layer_program).0;
+    ctx.set_program_owned_account(expected_judge_pool, agent_layer_program, 1, 8);
+
+    let agent = Keypair::new();
+    let judge = Keypair::new();
+    ctx.svm.airdrop(&agent.pubkey(), 1_000_000_000).unwrap();
+    ctx.svm.airdrop(&judge.pubkey(), 1_000_000_000).unwrap();
+
+    let create_ix = create_delegation_ix(
+        ctx.payer.pubkey(),
+        1,
+        1,
+        "sdp",
+        expected_judge_pool,
+        2,
+        agent.pubkey(),
+        judge.pubkey(),
+        1,
+        ctx.get_current_timestamp() + 3_600,
+        [0u8; 32],
+    );
+
+    let err = ctx.send_instruction(create_ix, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        TransactionError::InstructionError(_, InstructionError::Custom(code))
+            if code == ChainHubError::InvalidPolicyHash as u32
+    ));
+}
+
+#[test]
+fn test_cancel_requires_requester_authority() {
+    let mut ctx = TestContext::new();
+    let agent_layer_program = Pubkey::new_unique();
+    initialize(&mut ctx, agent_layer_program);
+    register_skill(&mut ctx, 1, 2);
+    register_protocol(&mut ctx, "sdp");
+    let expected_judge_pool =
+        Pubkey::find_program_address(&[b"judge_pool", &[2]], &agent_layer_program).0;
+    ctx.set_program_owned_account(expected_judge_pool, agent_layer_program, 1, 8);
+
+    let agent = Keypair::new();
+    let judge = Keypair::new();
+    let attacker = Keypair::new();
+    ctx.svm.airdrop(&agent.pubkey(), 1_000_000_000).unwrap();
+    ctx.svm.airdrop(&judge.pubkey(), 1_000_000_000).unwrap();
+    ctx.svm.airdrop(&attacker.pubkey(), 1_000_000_000).unwrap();
+
+    let create_ix = create_delegation_ix(
+        ctx.payer.pubkey(),
+        1,
+        1,
+        "sdp",
+        expected_judge_pool,
+        2,
+        agent.pubkey(),
+        judge.pubkey(),
+        2,
+        ctx.get_current_timestamp() + 3_600,
+        [7u8; 32],
+    );
+    ctx.send_instruction(create_ix, &[]).unwrap();
+
+    let unauthorized_cancel_ix = Instruction {
+        program_id: chain_hub_program_id(),
+        accounts: vec![
+            AccountMeta::new(attacker.pubkey(), true),
+            AccountMeta::new(derive_task_pda(1), false),
+        ],
+        data: encode_ix(9, &CancelDelegationTaskData { task_id: 1 }),
+    };
+    let err = ctx
+        .send_instruction(unauthorized_cancel_ix, &[&attacker])
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        TransactionError::InstructionError(_, InstructionError::Custom(code))
+            if code == ChainHubError::UnauthorizedRequester as u32
+    ));
 }

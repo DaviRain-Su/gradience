@@ -9,6 +9,9 @@ export interface JudgeDaemonOptions {
     heliusSource: EventSource;
     pollingSource: EventSource;
     logger?: Pick<Console, 'info' | 'warn' | 'error'>;
+    onEventProcessed?: (event: EventEnvelope, mode: ListenerMode) => void | Promise<void>;
+    onSourceError?: (mode: ListenerMode, error: unknown) => void | Promise<void>;
+    onModeChanged?: (mode: ListenerMode) => void | Promise<void>;
 }
 
 export class JudgeDaemon {
@@ -60,15 +63,21 @@ export class JudgeDaemon {
     private async activate(mode: ListenerMode, source: EventSource): Promise<void> {
         this.currentMode = mode;
         this.activeSource = source;
+        if (this.options.onModeChanged) {
+            await this.options.onModeChanged(mode);
+        }
         await source.start(
-            async (event) => this.handleEvent(event),
-            async (error) => this.handleSourceError(mode, error),
+            async event => this.handleEvent(event),
+            async error => this.handleSourceError(mode, error),
         );
         this.logger.info(`Judge daemon listening via ${mode}`);
     }
 
     private async handleEvent(event: EventEnvelope): Promise<void> {
         await this.engine.handleEvent(event);
+        if (this.currentMode && this.options.onEventProcessed) {
+            await this.options.onEventProcessed(event, this.currentMode);
+        }
     }
 
     private async handleSourceError(mode: ListenerMode, error: unknown): Promise<void> {
@@ -77,13 +86,14 @@ export class JudgeDaemon {
         }
 
         this.logger.error(`${mode} source error: ${asMessage(error)}`);
+        if (this.options.onSourceError) {
+            await this.options.onSourceError(mode, error);
+        }
         if (mode === 'triton') {
             try {
                 await this.switchToFallback('helius', this.options.heliusSource, 'polling');
             } catch (fallbackError) {
-                this.logger.error(
-                    `Unable to switch from Triton after source error: ${asMessage(fallbackError)}`,
-                );
+                this.logger.error(`Unable to switch from Triton after source error: ${asMessage(fallbackError)}`);
             }
             return;
         }
@@ -91,9 +101,7 @@ export class JudgeDaemon {
             try {
                 await this.switchToFallback('polling', this.options.pollingSource);
             } catch (fallbackError) {
-                this.logger.error(
-                    `Unable to switch from Helius after source error: ${asMessage(fallbackError)}`,
-                );
+                this.logger.error(`Unable to switch from Helius after source error: ${asMessage(fallbackError)}`);
             }
         }
     }
@@ -109,9 +117,7 @@ export class JudgeDaemon {
         try {
             await this.activate(preferredMode, preferredSource);
         } catch (error) {
-            this.logger.error(
-                `Fallback source ${preferredMode} failed: ${asMessage(error)}`,
-            );
+            this.logger.error(`Fallback source ${preferredMode} failed: ${asMessage(error)}`);
             if (!secondaryMode) {
                 throw error;
             }
@@ -119,9 +125,7 @@ export class JudgeDaemon {
                 try {
                     await this.activate('polling', this.options.pollingSource);
                 } catch (secondaryError) {
-                    this.logger.error(
-                        `Secondary fallback ${secondaryMode} failed: ${asMessage(secondaryError)}`,
-                    );
+                    this.logger.error(`Secondary fallback ${secondaryMode} failed: ${asMessage(secondaryError)}`);
                     throw secondaryError;
                 }
             }

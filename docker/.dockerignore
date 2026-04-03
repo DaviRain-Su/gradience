@@ -1,0 +1,51 @@
+# docker/.dockerignore
+# Place this file (or a copy) at the repo root as .dockerignore.
+# Docker uses the .dockerignore relative to the build context root.
+# Newer BuildKit also reads <dockerfile-dir>/.dockerignore as an override.
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+**/node_modules
+**/.pnpm-store
+**/.npm
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+**/.next
+**/dist
+**/build
+**/*.tsbuildinfo
+**/.turbo
+
+# ── Rust / Solana ─────────────────────────────────────────────────────────────
+**/target
+apps/agentm-core/program/target
+
+# ── Version control ───────────────────────────────────────────────────────────
+**/.git
+**/.gitignore
+**/.gitattributes
+
+# ── Secrets / local env ───────────────────────────────────────────────────────
+**/.env
+**/.env.local
+**/.env.*.local
+**/secrets
+
+# ── Tests & coverage ──────────────────────────────────────────────────────────
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/coverage
+**/.vitest
+
+# ── Docs (not needed in images) ───────────────────────────────────────────────
+**/docs
+**/*.md
+!**/package.json
+
+# ── OS artefacts ──────────────────────────────────────────────────────────────
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+
+# ── Archive / unused apps ─────────────────────────────────────────────────────
+archive/

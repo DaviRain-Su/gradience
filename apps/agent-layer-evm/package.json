@@ -1,14 +1,16 @@
 {
-  "name": "@gradience/agent-layer-evm",
+  "name": "@gradiences/agent-layer-evm",
   "version": "0.0.1",
   "private": true,
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:t44": "hardhat test test/ReputationVerifier.test.js",
+    "test:relay": "node --test scripts/reputation-relay-server.test.js",
     "deploy:base-sepolia": "hardhat run scripts/deploy-base-sepolia.js --network baseSepolia",
     "deploy:reputation-verifier:base-sepolia": "hardhat run scripts/deploy-reputation-verifier.js --network baseSepolia",
-    "sign:t44": "node scripts/sign-reputation.js"
+    "sign:t44": "node scripts/sign-reputation.js",
+    "relay:start": "node scripts/reputation-relay-server.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

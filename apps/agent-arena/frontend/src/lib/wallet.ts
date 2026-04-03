@@ -1,14 +1,11 @@
-import {
-    createKeyPairSignerFromBytes,
-    type TransactionSigner,
-} from '@solana/kit';
+import { createKeyPairSignerFromBytes, type TransactionSigner } from '@solana/kit';
 
 const LOCAL_STORAGE_KEY = 'gradience.frontend.keypair';
 const SESSION_STORAGE_KEY = 'gradience.frontend.keypair.session';
 
 export async function signerFromSecret(secretText: string): Promise<TransactionSigner> {
     const parsed = JSON.parse(secretText) as unknown;
-    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some((value) => !isByte(value))) {
+    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some(value => !isByte(value))) {
         throw new Error('Secret key must be a JSON array with 64 bytes');
     }
     return createKeyPairSignerFromBytes(Uint8Array.from(parsed as number[]));

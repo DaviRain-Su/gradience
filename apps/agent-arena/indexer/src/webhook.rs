@@ -178,4 +178,66 @@ mod tests {
             ProgramEvent::TaskRefunded { task_id: 7, .. }
         ));
     }
+
+    #[test]
+    fn decode_transactions_batch_payload() {
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&EVENT_IX_TAG_LE);
+        encoded.push(0x04); // TaskRefunded
+        encoded.extend_from_slice(&9_u64.to_le_bytes());
+        encoded.push(2);
+        encoded.extend_from_slice(&9_999_u64.to_le_bytes());
+        let line = format!("Program data: {}", STANDARD.encode(encoded));
+
+        let raw = json!([
+            {
+                "slot": 456,
+                "block_time": 1710000100,
+                "logs": [line]
+            }
+        ]);
+
+        let payload: IncomingWebhook =
+            serde_json::from_value(raw).expect("batch payload should decode");
+        let envelopes = decode_webhook(payload).expect("batch payload should be accepted");
+        assert_eq!(envelopes.len(), 1);
+        assert_eq!(envelopes[0].slot, 456);
+        assert!(matches!(
+            envelopes[0].event,
+            ProgramEvent::TaskRefunded { task_id: 9, .. }
+        ));
+    }
+
+    #[test]
+    fn decode_payload_with_meta_log_messages_alias() {
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&EVENT_IX_TAG_LE);
+        encoded.push(0x04); // TaskRefunded
+        encoded.extend_from_slice(&12_u64.to_le_bytes());
+        encoded.push(3);
+        encoded.extend_from_slice(&12_345_u64.to_le_bytes());
+        let line = format!("Program data: {}", STANDARD.encode(encoded));
+
+        let raw = json!({
+            "transactions": [
+                {
+                    "slot": 789,
+                    "blockTime": 1710000200,
+                    "meta": {
+                        "log_messages": [line]
+                    }
+                }
+            ]
+        });
+
+        let payload: IncomingWebhook =
+            serde_json::from_value(raw).expect("meta alias payload should decode");
+        let envelopes = decode_webhook(payload).expect("meta alias payload should be accepted");
+        assert_eq!(envelopes.len(), 1);
+        assert_eq!(envelopes[0].slot, 789);
+        assert!(matches!(
+            envelopes[0].event,
+            ProgramEvent::TaskRefunded { task_id: 12, .. }
+        ));
+    }
 }

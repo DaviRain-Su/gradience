@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./store";
 export * from "./postgres-store";
 export * from "./relay";
+export * from "./transport-crypto";
 export * from "./config";
 export * from "./monitor";
 export * from "./alert-sink";

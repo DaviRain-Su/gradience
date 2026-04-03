@@ -1,0 +1,8 @@
+# A2A Protocol Runtime Data
+runtime/data/
+*.log
+.env
+.env.local
+dist/
+node_modules/
+

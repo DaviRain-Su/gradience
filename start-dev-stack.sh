@@ -29,11 +29,8 @@ tmux new-window -t "$SESSION_NAME" -n judge-daemon \
 tmux new-window -t "$SESSION_NAME" -n agent-arena \
     "pnpm --dir \"$ROOT_DIR/apps/agent-arena\" frontend:dev"
 
-tmux new-window -t "$SESSION_NAME" -n agent-me \
-    "pnpm --dir \"$ROOT_DIR/apps/agent-me/frontend\" exec next dev -p 3002"
-
-tmux new-window -t "$SESSION_NAME" -n agent-social \
-    "pnpm --dir \"$ROOT_DIR/apps/agent-social/frontend\" exec next dev -p 3003"
+tmux new-window -t "$SESSION_NAME" -n agentm \
+    "VITE_INDEXER_BASE_URL=\"$INDEXER_ENDPOINT\" pnpm --dir \"$ROOT_DIR/apps/agentm\" dev"
 
 if [[ "${START_EVM:-0}" == "1" ]]; then
     tmux new-window -t "$SESSION_NAME" -n evm \
