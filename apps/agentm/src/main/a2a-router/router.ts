@@ -266,6 +266,8 @@ export class A2ARouter {
             webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
             'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
             layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
+            wormhole: { available: false, peerCount: 0, subscribedTopics: [] },
+            debridge: { available: false, peerCount: 0, subscribedTopics: [] },
         };
 
         let totalPeers = 0;

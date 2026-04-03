@@ -78,6 +78,8 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
             webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
             'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
             layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
+            wormhole: { available: false, peerCount: 0, subscribedTopics: [] },
+            debridge: { available: false, peerCount: 0, subscribedTopics: [] },
         },
         totalPeers: 0,
         activeSubscriptions: 0,

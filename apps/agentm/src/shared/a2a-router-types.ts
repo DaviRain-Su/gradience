@@ -12,7 +12,7 @@ import type { Libp2pSubscription } from './libp2p-types.js';
 // ============ Protocol Types ============
 
 /** Supported transport protocols */
-export type ProtocolType = 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero';
+export type ProtocolType = 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge';
 
 /** Protocol priority for selection */
 export type ProtocolPriority = 'broadcast' | 'direct_p2p' | 'paid_service' | 'offline_message';

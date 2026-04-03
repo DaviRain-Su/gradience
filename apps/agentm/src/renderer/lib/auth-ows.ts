@@ -14,8 +14,8 @@
 import type { AuthState } from '../../shared/types.ts';
 import { EMPTY_AUTH } from '../../shared/types.ts';
 import type { AuthProvider } from './auth.ts';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
-import type { OWSAgentConfig, AgentIdentity } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '../../shared/ows-adapter.ts';
+import type { OWSAgentConfig, AgentIdentity } from '../../shared/ows-adapter.ts';
 
 /**
  * OWS Auth State extends AuthState with OWS-specific fields
@@ -75,7 +75,7 @@ export class OWSAuthProvider implements AuthProvider {
                     solana: this.config.defaultChain === 'solana' ? wallet.address : undefined,
                     ethereum: this.config.defaultChain === 'ethereum' ? wallet.address : undefined,
                 },
-                credentials: identity.credentials.map(c => ({
+                credentials: identity.credentials.map((c: { type: string; issuer: string; data: unknown }) => ({
                     type: c.type,
                     issuer: c.issuer,
                     data: c.data,

@@ -1,199 +1,149 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import type { User } from '@privy-io/react-auth';
 import { Sidebar } from './components/sidebar.tsx';
 import { MeView } from './views/MeView.tsx';
 import { DiscoverView } from './views/DiscoverView.tsx';
 import { ChatView } from './views/ChatView.tsx';
-import { useAppStore } from './hooks/useAppStore.ts';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { useAppStore, store } from './hooks/useAppStore.ts';
 import { MockAuthProvider } from './lib/auth.ts';
-import { registerIdentity } from './lib/identity-registration.ts';
 import { EMPTY_AUTH, type ActiveView } from '../shared/types.ts';
 
+// Get Privy App ID from env
+const PRIVY_APP_ID = (import.meta as unknown as { env?: { VITE_PRIVY_APP_ID?: string } }).env?.VITE_PRIVY_APP_ID ?? '';
+
 export function App() {
-    const privyAppId = (
-        import.meta as unknown as { env?: { VITE_PRIVY_APP_ID?: string } }
-    ).env?.VITE_PRIVY_APP_ID;
-
-    if (privyAppId) {
-        return (
-            <PrivyProvider
-                appId={privyAppId}
-                config={{
-                    loginMethods: ['google'],
-                    embeddedWallets: {
-                        solana: { createOnLogin: 'users-without-wallets' },
-                    },
-                }}
-            >
-                <PrivyApp />
-            </PrivyProvider>
-        );
-    }
-
-    return <DemoApp />;
+    return (
+        <ErrorBoundary>
+            {PRIVY_APP_ID ? (
+                <PrivyProvider
+                    appId={PRIVY_APP_ID}
+                    config={{
+                        loginMethods: ['google'],
+                        embeddedWallets: {
+                            solana: { createOnLogin: 'users-without-wallets' },
+                        },
+                    }}
+                >
+                    <PrivyAppContent />
+                </PrivyProvider>
+            ) : (
+                <DemoAppContent />
+            )}
+        </ErrorBoundary>
+    );
 }
 
-function DemoApp() {
+// Demo mode without Privy
+function DemoAppContent() {
+    const [authState, setAuthState] = useState(() => store.getState().auth);
     const activeView = useAppStore((s) => s.activeView);
-    const authenticated = useAppStore((s) => s.auth.authenticated);
-    const setAuth = useAppStore((s) => s.setAuth);
+    
     const authProvider = useMemo(() => new MockAuthProvider(), []);
 
-    if (!authenticated) {
-        return <DemoLoginScreen authProvider={authProvider} />;
-    }
-
-    const handleLogout = async () => {
-        await authProvider.logout();
-        setAuth(EMPTY_AUTH);
-    };
-
-    return <AppShell activeView={activeView} onLogout={handleLogout} />;
-}
-
-function PrivyApp() {
-    const activeView = useAppStore((s) => s.activeView);
-    const setAuth = useAppStore((s) => s.setAuth);
-    const setIdentityRegistrationStatus = useAppStore(
-        (s) => s.setIdentityRegistrationStatus,
-    );
-    const getIdentityRegistrationStatus = useAppStore(
-        (s) => s.getIdentityRegistrationStatus,
-    );
-
-    const { ready, authenticated, user, login, logout } = usePrivy();
-
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
+    // Sync with store once on mount
     useEffect(() => {
-        if (!ready) return;
-
-        if (!authenticated || !user) {
-            setAuth(EMPTY_AUTH);
-            return;
-        }
-
-        setAuth({
-            authenticated: true,
-            publicKey: extractSolanaAddress(user),
-            email: user.email?.address ?? null,
-            privyUserId: user.id,
+        const unsubscribe = store.subscribe((state) => {
+            setAuthState(state.auth);
         });
-    }, [ready, authenticated, user, setAuth]);
+        return unsubscribe;
+    }, []);
 
-    const currentAddress = authenticated && user ? extractSolanaAddress(user) : null;
-
-    useEffect(() => {
-        if (!ready || !authenticated || !currentAddress) {
-            return;
-        }
-        const existing = getIdentityRegistrationStatus(currentAddress);
-        if (
-            existing?.state === 'registered' ||
-            existing?.state === 'pending' ||
-            existing?.state === 'disabled'
-        ) {
-            return;
-        }
-
-        let cancelled = false;
-        setIdentityRegistrationStatus({
-            agent: currentAddress,
-            state: 'pending',
-            agentId: null,
-            txHash: null,
-            error: null,
-            updatedAt: Date.now(),
-        });
-        registerIdentity({
-            agent: currentAddress,
-            email: user?.email?.address ?? null,
-        }).then((status) => {
-            if (cancelled) {
-                return;
-            }
-            setIdentityRegistrationStatus(status);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [
-        ready,
-        authenticated,
-        currentAddress,
-        user?.email?.address,
-        getIdentityRegistrationStatus,
-        setIdentityRegistrationStatus,
-    ]);
-
-    if (!ready) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-sm text-gray-400">Initializing Privy...</p>
-            </div>
-        );
-    }
-
-    const handleLogin = async () => {
-        setLoading(true);
-        setError(null);
+    const handleLogin = useCallback(async () => {
         try {
-            await login();
+            const state = await authProvider.login();
+            store.setState({ auth: state });
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Login failed');
-        } finally {
-            setLoading(false);
+            console.error('Login failed:', e);
         }
-    };
+    }, [authProvider]);
 
-    const handleLogout = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            await logout();
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Logout failed');
-        } finally {
-            setAuth(EMPTY_AUTH);
-            setLoading(false);
-        }
-    };
-
-    if (!authenticated) {
+    if (!authState.authenticated) {
         return (
-            <PrivyLoginScreen
-                loading={loading}
-                error={error}
+            <LoginScreen
                 onLogin={handleLogin}
+                modeLabel="Demo mode (set VITE_PRIVY_APP_ID for real Google OAuth)"
             />
         );
     }
 
-    return (
-        <>
-            {error && (
-                <p className="fixed top-2 right-2 z-50 text-xs text-red-300 bg-red-950/80 border border-red-700 rounded px-2 py-1">
-                    {error}
-                </p>
-            )}
-            <AppShell activeView={activeView} onLogout={handleLogout} />
-        </>
-    );
+    return <AppShell activeView={activeView} />;
 }
 
-function AppShell({
-    activeView,
-    onLogout,
-}: {
-    activeView: ActiveView;
-    onLogout: () => Promise<void>;
-}) {
+// Privy mode
+function PrivyAppContent() {
+    const { ready, authenticated, user, login } = usePrivy();
+    const activeView = useAppStore((s) => s.activeView);
+    const [authState, setAuthState] = useState(() => store.getState().auth);
+
+    // Sync auth state with store
+    useEffect(() => {
+        if (!ready) return;
+
+        if (!authenticated || !user) {
+            if (store.getState().auth.authenticated) {
+                store.setState({ auth: EMPTY_AUTH });
+            }
+            return;
+        }
+
+        const address = extractSolanaAddress(user);
+        const currentAuth = store.getState().auth;
+        
+        // Only update if changed
+        if (currentAuth.publicKey !== address || !currentAuth.authenticated) {
+            store.setState({
+                auth: {
+                    authenticated: true,
+                    publicKey: address,
+                    email: user.email?.address ?? null,
+                    privyUserId: user.id,
+                }
+            });
+        }
+    }, [ready, authenticated, user?.id]);
+
+    // Subscribe to store changes
+    useEffect(() => {
+        const unsubscribe = store.subscribe((state) => {
+            setAuthState(state.auth);
+        });
+        return unsubscribe;
+    }, []);
+
+    const handleLogin = useCallback(async () => {
+        try {
+            await login();
+        } catch (e) {
+            console.error('Login failed:', e);
+        }
+    }, [login]);
+
+    if (!ready) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <p className="text-sm text-gray-400">Initializing...</p>
+            </div>
+        );
+    }
+
+    if (!authenticated || !authState.authenticated) {
+        return (
+            <LoginScreen
+                onLogin={handleLogin}
+                modeLabel="Powered by Privy (Google OAuth + embedded Solana wallet)"
+            />
+        );
+    }
+
+    return <AppShell activeView={activeView} />;
+}
+
+function AppShell({ activeView }: { activeView: ActiveView }) {
     return (
         <div className="flex h-screen">
-            <Sidebar onLogout={onLogout} />
+            <Sidebar />
             <main className="flex-1 flex flex-col overflow-hidden">
                 {activeView === 'me' && <MeView />}
                 {activeView === 'discover' && <DiscoverView />}
@@ -203,77 +153,36 @@ function AppShell({
     );
 }
 
-function DemoLoginScreen({ authProvider }: { authProvider: MockAuthProvider }) {
-    const setAuth = useAppStore((s) => s.setAuth);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleLogin = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const state = await authProvider.login();
-            setAuth(state);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Login failed');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <LoginScreenLayout
-            loading={loading}
-            error={error}
-            onLogin={handleLogin}
-            modeLabel="Demo mode (set VITE_PRIVY_APP_ID for real Google OAuth)"
-        />
-    );
-}
-
-function PrivyLoginScreen({
-    loading,
-    error,
-    onLogin,
-}: {
-    loading: boolean;
-    error: string | null;
-    onLogin: () => Promise<void>;
-}) {
-    return (
-        <LoginScreenLayout
-            loading={loading}
-            error={error}
-            onLogin={onLogin}
-            modeLabel="Powered by Privy (Google OAuth + embedded Solana wallet)"
-        />
-    );
-}
-
-function LoginScreenLayout({
-    loading,
-    error,
-    onLogin,
-    modeLabel,
-}: {
-    loading: boolean;
-    error: string | null;
+function LoginScreen({ 
+    onLogin, 
+    modeLabel 
+}: { 
     onLogin: () => void | Promise<void>;
     modeLabel: string;
 }) {
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleClick = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            await onLogin();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [onLogin]);
+
     return (
         <div className="flex items-center justify-center h-screen">
             <div className="text-center space-y-6">
                 <h1 className="text-4xl font-bold">AgentM</h1>
                 <p className="text-gray-400">The Super App for the Agent Economy</p>
                 <button
-                    onClick={onLogin}
-                    disabled={loading}
+                    onClick={handleClick}
+                    disabled={isLoading}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 rounded-lg font-medium transition"
                 >
-                    {loading ? 'Signing in...' : 'Sign in with Google'}
+                    {isLoading ? 'Signing in...' : 'Sign in with Google'}
                 </button>
-                {error && <p className="text-red-400 text-sm">{error}</p>}
                 <p className="text-xs text-gray-500">{modeLabel}</p>
             </div>
         </div>

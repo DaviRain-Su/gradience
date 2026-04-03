@@ -586,8 +586,21 @@ function createDefaultPersistenceAdapter(): AppStorePersistenceAdapter | null {
                 return null;
             }
             try {
-                return JSON.parse(raw) as Partial<PersistedAppStoreState>;
-            } catch {
+                const parsed = JSON.parse(raw) as Partial<PersistedAppStoreState>;
+                // Validate required fields
+                if (!parsed.auth || typeof parsed.auth !== 'object') {
+                    console.warn('[AgentM] Invalid storage data, resetting...');
+                    return null;
+                }
+                return parsed;
+            } catch (e) {
+                console.error('[AgentM] Failed to parse storage:', e);
+                // Clear corrupted storage
+                try {
+                    storage.removeItem(DEFAULT_PERSIST_KEY);
+                } catch {
+                    // ignore
+                }
                 return null;
             }
         },

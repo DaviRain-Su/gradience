@@ -18,7 +18,7 @@
 import type { AuthState } from '../../shared/types.ts';
 import { EMPTY_AUTH } from '../../shared/types.ts';
 import { OWSAuthProvider } from './auth-ows.ts';
-import type { OWSAgentConfig } from '@gradience/ows-adapter';
+import type { OWSAgentConfig } from '../../shared/ows-adapter.ts';
 
 export type AuthProviderType = 'mock' | 'ows' | 'privy';
 
