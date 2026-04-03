@@ -545,7 +545,8 @@ Not because "Web3 is trendy" — because it's technically necessary:
 | A2A Runtime | 35 | All green |
 | AgentM Desktop | 56 | All green |
 | AgentM Web | 13 | All green |
-| **Total** | **261+** | **All green** |
+| AgentM Pro | 110 | All green |
+| **Total** | **371+** | **All green** |
 
 ## Quick Start
 
