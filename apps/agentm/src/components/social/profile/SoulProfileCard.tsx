@@ -1,7 +1,7 @@
 /**
  * Soul Profile Card Component
  * 
- * Display Soul Profile in a compact card format
+ * Modern minimal design - clean, sophisticated, focused
  */
 
 import type { SoulProfile } from '@gradiences/soul-engine';
@@ -14,92 +14,110 @@ interface SoulProfileCardProps {
 }
 
 export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActions = true }: SoulProfileCardProps) {
+    const isAgent = profile.soulType === 'agent';
+    
     return (
-        <div className="bg-gray-800 rounded-lg p-6 space-y-4 border border-gray-700 hover:border-gray-600 transition">
+        <div className="group bg-[#1a1a1a] rounded-xl p-6 border border-[#222] hover:border-[#333] transition-all duration-300 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5">
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold">{profile.identity.displayName}</h3>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                            profile.soulType === 'agent' 
-                                ? 'bg-purple-600/20 text-purple-400' 
-                                : 'bg-blue-600/20 text-blue-400'
-                        }`}>
-                            {profile.soulType === 'agent' ? '🤖 Agent' : '👤 Human'}
+            <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div className={`
+                    w-12 h-12 rounded-xl flex items-center justify-center text-xl
+                    ${isAgent 
+                        ? 'bg-purple-500/10 text-purple-400' 
+                        : 'bg-blue-500/10 text-blue-400'}
+                `}>
+                    {isAgent ? '🤖' : '👤'}
+                </div>
+                
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-white truncate">
+                            {profile.identity.displayName}
+                        </h3>
+                        <span className={`
+                            text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider
+                            ${isAgent 
+                                ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}
+                        `}>
+                            {profile.soulType}
                         </span>
                     </div>
-                    <p className="text-sm text-gray-400 mt-1">{profile.identity.bio}</p>
+                    <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed">
+                        {profile.identity.bio}
+                    </p>
                 </div>
             </div>
             
-            {/* Core Values */}
-            <div>
-                <h4 className="text-sm font-semibold text-gray-400 mb-2">Core Values</h4>
-                <div className="flex flex-wrap gap-2">
-                    {profile.values.core.slice(0, 4).map((value, i) => (
-                        <span key={i} className="text-xs px-2 py-1 bg-green-600/20 text-green-400 rounded">
+            {/* Tags */}
+            <div className="mt-4 space-y-3">
+                {/* Core Values */}
+                <div className="flex flex-wrap gap-1.5">
+                    {profile.values.core.slice(0, 3).map((value, i) => (
+                        <span 
+                            key={i} 
+                            className="text-xs px-2.5 py-1 bg-[#222] text-gray-300 rounded-lg border border-[#333] hover:border-[#444] transition-colors"
+                        >
                             {value}
                         </span>
                     ))}
-                    {profile.values.core.length > 4 && (
-                        <span className="text-xs px-2 py-1 bg-gray-700 text-gray-400 rounded">
-                            +{profile.values.core.length - 4} more
+                    {profile.values.core.length > 3 && (
+                        <span className="text-xs px-2.5 py-1 text-gray-500">
+                            +{profile.values.core.length - 3}
                         </span>
                     )}
                 </div>
-            </div>
-            
-            {/* Interests */}
-            <div>
-                <h4 className="text-sm font-semibold text-gray-400 mb-2">Interests</h4>
-                <div className="flex flex-wrap gap-2">
-                    {profile.interests.topics.slice(0, 5).map((topic, i) => (
-                        <span key={i} className="text-xs px-2 py-1 bg-blue-600/20 text-blue-400 rounded">
-                            {topic}
+                
+                {/* Interests */}
+                <div className="flex flex-wrap gap-1.5">
+                    {profile.interests.topics.slice(0, 4).map((topic, i) => (
+                        <span 
+                            key={i}
+                            className="text-xs px-2 py-0.5 text-gray-400 hover:text-gray-300 transition-colors"
+                        >
+                            #{topic}
                         </span>
                     ))}
-                    {profile.interests.topics.length > 5 && (
-                        <span className="text-xs px-2 py-1 bg-gray-700 text-gray-400 rounded">
-                            +{profile.interests.topics.length - 5} more
-                        </span>
-                    )}
                 </div>
             </div>
             
             {/* Communication Style */}
-            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-gray-700">
-                <div>
-                    <p className="text-xs text-gray-500">Tone</p>
-                    <p className="text-sm font-medium capitalize">{profile.communication.tone}</p>
-                </div>
-                <div>
-                    <p className="text-xs text-gray-500">Pace</p>
-                    <p className="text-sm font-medium capitalize">{profile.communication.pace}</p>
-                </div>
-                <div>
-                    <p className="text-xs text-gray-500">Depth</p>
-                    <p className="text-sm font-medium capitalize">{profile.communication.depth}</p>
+            <div className="mt-4 pt-4 border-t border-[#222]">
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+                        <span className="capitalize">{profile.communication.tone}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50" />
+                        <span className="capitalize">{profile.communication.pace}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
+                        <span className="capitalize">{profile.communication.depth}</span>
+                    </div>
                 </div>
             </div>
             
             {/* Actions */}
             {showActions && (
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 mt-4 pt-4 border-t border-[#222]">
                     {onViewDetails && (
                         <button
                             onClick={onViewDetails}
-                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition"
+                            className="flex-1 px-4 py-2 bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200 border border-[#333] hover:border-[#444]"
                         >
-                            View Full Profile
+                            View Profile
                         </button>
                     )}
                     {onStartProbe && (
                         <button
                             onClick={onStartProbe}
-                            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition"
+                            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5"
                         >
-                            Start Probe 🔍
+                            Start Probe
                         </button>
                     )}
                 </div>
