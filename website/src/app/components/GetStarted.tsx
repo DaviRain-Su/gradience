@@ -1,6 +1,6 @@
 export function GetStarted() {
-  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.gradience.syz";
-  const agentmProUrl = process.env.NEXT_PUBLIC_AGENTM_PRO_URL ?? "https://pro.gradience.syz";
+  const agentmUrl = process.env.NEXT_PUBLIC_AGENTM_URL ?? "https://agentm.gradiences.xyz";
+  const agentmProUrl = process.env.NEXT_PUBLIC_AGENTM_PRO_URL ?? "https://pro.gradiences.xyz";
 
   return (
     <section id="get-started" className="py-24 px-6">

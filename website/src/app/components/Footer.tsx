@@ -6,11 +6,11 @@ export function Footer() {
           Gradience Protocol · 2026 · v1.2
         </div>
         <div className="flex items-center gap-6 text-xs text-[var(--text-3)]">
-          <a href="https://codeberg.org/gradiences/gradiences" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Source</a>
-          <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/WHITEPAPER.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Whitepaper</a>
-          <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/protocol/README-zh.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">中文</a>
-          <a href="https://codeberg.org/gradiences/agent-arena" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent Layer</a>
-          <a href="https://codeberg.org/gradiences/gradiences/src/branch/main/apps/agentm/docs/01-prd.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">AgentM</a>
+          <a href="https://docs.gradiences.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Docs</a>
+          <a href="https://docs.gradiences.xyz/whitepaper-en.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Whitepaper</a>
+          <a href="https://docs.gradiences.xyz/zh" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">中文</a>
+          <a href="https://docs.gradiences.xyz/arena" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Agent Arena</a>
+          <a href="https://docs.gradiences.xyz/chain-hub" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Chain Hub</a>
         </div>
       </div>
     </footer>
