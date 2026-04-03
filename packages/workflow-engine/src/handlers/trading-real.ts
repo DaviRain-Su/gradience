@@ -1,10 +1,10 @@
 /**
  * Real Solana Trading Handlers
  * 
- * Actual implementation using @solana/web3.js
- * - swap: Jupiter API integration
+ * Actual implementation using @solana/web3.js and Triton Cascade
+ * - swap: Jupiter API integration with Triton Cascade transaction delivery
  * - bridge: Wormhole SDK (placeholder for now)
- * - transfer: Native SOL and SPL token transfers
+ * - transfer: Native SOL and SPL token transfers via Triton Cascade
  * - stake: Solana native staking
  */
 import {
@@ -23,6 +23,11 @@ import {
 } from '@solana/spl-token';
 import type { ActionHandler, ExecutionContext } from '../engine/step-executor.js';
 import type { SupportedChain } from '../schema/types.js';
+import {
+  TritonCascadeClient,
+  createConfigFromEnv,
+  type SendTransactionOptions,
+} from '../triton-cascade/index.js';
 
 // Jupiter API types
 interface JupiterQuote {
@@ -57,11 +62,28 @@ interface JupiterSwapResponse {
 }
 
 /**
- * Get Solana connection
+ * Get Solana connection (legacy - kept for backward compatibility)
+ * @deprecated Use getCascadeClient instead
  */
 function getConnection(): Connection {
   const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
   return new Connection(rpcUrl, 'confirmed');
+}
+
+/**
+ * Get Triton Cascade client for high-performance transaction delivery
+ */
+function getCascadeClient(): TritonCascadeClient {
+  return new TritonCascadeClient({
+    rpcEndpoint: process.env.TRITON_RPC_ENDPOINT || 'https://api.triton.one/rpc',
+    apiToken: process.env.TRITON_API_TOKEN,
+    network: (process.env.SOLANA_NETWORK as 'mainnet' | 'devnet') || 'devnet',
+    connectionTimeoutMs: 10000,
+    confirmationTimeoutMs: 60000,
+    maxRetries: 3,
+    enableJitoBundle: process.env.ENABLE_JITO_BUNDLE === 'true',
+    priorityFeeStrategy: 'auto',
+  });
 }
 
 /**
@@ -74,20 +96,25 @@ async function getSigner(context: ExecutionContext): Promise<Signer> {
 }
 
 /**
- * Create a real swap handler using Jupiter API
+ * Create a real swap handler using Jupiter API with Triton Cascade
  */
 export function createRealSwapHandler(
   config: {
     jupiterApiUrl?: string;
     defaultSlippage?: number;
     connection?: Connection;
+    useTritonCascade?: boolean;
   } = {}
 ): ActionHandler {
   const {
     jupiterApiUrl = 'https://quote-api.jup.ag/v6',
     defaultSlippage = 0.5,
     connection = getConnection(),
+    useTritonCascade = true,
   } = config;
+
+  // Initialize Triton Cascade client if enabled
+  const cascadeClient = useTritonCascade ? getCascadeClient() : null;
 
   return {
     async execute(
@@ -104,13 +131,15 @@ export function createRealSwapHandler(
         to,
         amount,
         slippage = defaultSlippage,
-        signer, // Required: Signer for the transaction
+        signer,
+        useJitoBundle = false,
       } = params as {
         from: string;
         to: string;
         amount: string;
         slippage?: number;
         signer: Signer;
+        useJitoBundle?: boolean;
       };
 
       if (!signer) {
@@ -118,13 +147,28 @@ export function createRealSwapHandler(
       }
 
       try {
-        // Step 1: Get quote from Jupiter
+        // Step 1: Get quote from Jupiter (with retry)
         const slippageBps = Math.floor(slippage * 100);
         const quoteUrl = `${jupiterApiUrl}/quote?inputMint=${from}&outputMint=${to}&amount=${amount}&slippageBps=${slippageBps}`;
         
-        const quoteResponse = await fetch(quoteUrl);
-        if (!quoteResponse.ok) {
-          throw new Error(`Jupiter quote failed: ${quoteResponse.statusText}`);
+        // Retry logic for network issues
+        let quoteResponse;
+        let lastError;
+        for (let i = 0; i < 3; i++) {
+          try {
+            quoteResponse = await fetch(quoteUrl, { 
+              signal: AbortSignal.timeout(10000)
+            });
+            if (quoteResponse.ok) break;
+          } catch (e) {
+            lastError = e;
+            console.log(`[Swap] Retry ${i + 1}/3...`);
+            await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+          }
+        }
+        
+        if (!quoteResponse || !quoteResponse.ok) {
+          throw new Error(`Jupiter quote failed after 3 retries: ${lastError?.message || quoteResponse?.statusText}`);
         }
         
         const quote: JupiterQuote = await quoteResponse.json();
@@ -157,21 +201,50 @@ export function createRealSwapHandler(
         // Sign the transaction
         transaction.sign(signer);
 
-        // Step 4: Send transaction
-        const signature = await connection.sendRawTransaction(transaction.serialize(), {
-          maxRetries: 3,
-          skipPreflight: false,
-        });
+        // Step 4: Send transaction via Triton Cascade or standard RPC
+        let signature: string;
+        let deliveryPath = 'standard_rpc';
+        
+        if (cascadeClient) {
+          // Use Triton Cascade for high-performance delivery
+          const cascadeResponse = await cascadeClient.sendTransaction(
+            transaction.serialize().toString('base64'),
+            {
+              transactionType: 'swap',
+              useJitoBundle,
+              commitment: 'confirmed',
+              metadata: {
+                signature: transaction.signatures[0]?.signature?.toString('base64'),
+                recentBlockhash: transaction.recentBlockhash,
+                lastValidBlockHeight: swapData.lastValidBlockHeight,
+                sender: signer.publicKey.toBase58(),
+              },
+            }
+          );
+          
+          signature = cascadeResponse.signature;
+          deliveryPath = cascadeResponse.deliveryPath;
+          
+          if (cascadeResponse.status === 'failed') {
+            throw new Error(`Transaction failed: ${cascadeResponse.error?.message}`);
+          }
+        } else {
+          // Fallback to standard RPC
+          signature = await connection.sendRawTransaction(transaction.serialize(), {
+            maxRetries: 3,
+            skipPreflight: false,
+          });
+          
+          // Confirm transaction
+          const confirmation = await connection.confirmTransaction({
+            signature,
+            blockhash: transaction.recentBlockhash!,
+            lastValidBlockHeight: swapData.lastValidBlockHeight,
+          }, 'confirmed');
 
-        // Step 5: Confirm transaction
-        const confirmation = await connection.confirmTransaction({
-          signature,
-          blockhash: transaction.recentBlockhash!,
-          lastValidBlockHeight: swapData.lastValidBlockHeight,
-        }, 'confirmed');
-
-        if (confirmation.value.err) {
-          throw new Error(`Transaction failed: ${confirmation.value.err}`);
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${confirmation.value.err}`);
+          }
         }
 
         return {
@@ -183,6 +256,7 @@ export function createRealSwapHandler(
           slippage,
           priceImpact: quote.priceImpactPct,
           route: quote.routePlan.map(r => r.swapInfo.label),
+          deliveryPath,
           explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
         };
       } catch (error) {
@@ -194,14 +268,18 @@ export function createRealSwapHandler(
 }
 
 /**
- * Create a real transfer handler for SOL and SPL tokens
+ * Create a real transfer handler for SOL and SPL tokens with Triton Cascade
  */
 export function createRealTransferHandler(
   config: {
     connection?: Connection;
+    useTritonCascade?: boolean;
   } = {}
 ): ActionHandler {
-  const { connection = getConnection() } = config;
+  const { connection = getConnection(), useTritonCascade = true } = config;
+  
+  // Initialize Triton Cascade client if enabled
+  const cascadeClient = useTritonCascade ? getCascadeClient() : null;
 
   return {
     async execute(
@@ -217,12 +295,14 @@ export function createRealTransferHandler(
         token,
         to,
         amount,
-        signer, // Required
+        signer,
+        useJitoBundle = false,
       } = params as {
         token: string;
         to: string;
         amount: string;
         signer: Signer;
+        useJitoBundle?: boolean;
       };
 
       if (!signer) {
@@ -233,6 +313,7 @@ export function createRealTransferHandler(
         const recipient = new PublicKey(to);
         const lamports = BigInt(amount);
         let signature: string;
+        let deliveryPath = 'standard_rpc';
 
         if (token === 'SOL' || token === '11111111111111111111111111111111') {
           // Native SOL transfer
@@ -244,7 +325,34 @@ export function createRealTransferHandler(
             })
           );
 
-          signature = await connection.sendTransaction(transaction, [signer]);
+          if (cascadeClient) {
+            // Use Triton Cascade
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+            transaction.sign(signer);
+            
+            const cascadeResponse = await cascadeClient.sendTransaction(
+              transaction.serialize().toString('base64'),
+              {
+                transactionType: 'transfer',
+                useJitoBundle,
+                commitment: 'confirmed',
+                metadata: {
+                  signature: transaction.signatures[0]?.signature?.toString('base64'),
+                  recentBlockhash: blockhash,
+                  lastValidBlockHeight,
+                  sender: signer.publicKey.toBase58(),
+                },
+              }
+            );
+            
+            signature = cascadeResponse.signature;
+            deliveryPath = cascadeResponse.deliveryPath;
+          } else {
+            // Fallback to standard RPC
+            signature = await connection.sendTransaction(transaction, [signer]);
+            await connection.confirmTransaction(signature, 'confirmed');
+          }
         } else {
           // SPL token transfer
           const mint = new PublicKey(token);
@@ -274,11 +382,35 @@ export function createRealTransferHandler(
             )
           );
 
-          signature = await connection.sendTransaction(transaction, [signer]);
+          if (cascadeClient) {
+            // Use Triton Cascade
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+            transaction.sign(signer);
+            
+            const cascadeResponse = await cascadeClient.sendTransaction(
+              transaction.serialize().toString('base64'),
+              {
+                transactionType: 'transfer',
+                useJitoBundle,
+                commitment: 'confirmed',
+                metadata: {
+                  signature: transaction.signatures[0]?.signature?.toString('base64'),
+                  recentBlockhash: blockhash,
+                  lastValidBlockHeight,
+                  sender: signer.publicKey.toBase58(),
+                },
+              }
+            );
+            
+            signature = cascadeResponse.signature;
+            deliveryPath = cascadeResponse.deliveryPath;
+          } else {
+            // Fallback to standard RPC
+            signature = await connection.sendTransaction(transaction, [signer]);
+            await connection.confirmTransaction(signature, 'confirmed');
+          }
         }
-
-        // Confirm transaction
-        await connection.confirmTransaction(signature, 'confirmed');
 
         return {
           txHash: signature,
@@ -286,6 +418,7 @@ export function createRealTransferHandler(
           to,
           amount,
           from: signer.publicKey.toBase58(),
+          deliveryPath,
           explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
         };
       } catch (error) {
@@ -434,6 +567,7 @@ export function createRealBridgeHandler(
 export function createRealTradingHandlers(config?: {
   connection?: Connection;
   jupiterApiUrl?: string;
+  useTritonCascade?: boolean;
 }): Map<string, ActionHandler> {
   return new Map([
     ['swap', createRealSwapHandler(config)],
