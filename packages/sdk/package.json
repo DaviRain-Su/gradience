@@ -1,0 +1,69 @@
+{
+    "name": "@gradiences/sdk",
+    "version": "0.1.0",
+    "description": "Unified TypeScript SDK for Gradience Protocol — Agent Arena + Chain Hub",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./arena": {
+            "import": "./dist/arena.js",
+            "types": "./dist/arena.d.ts"
+        },
+        "./chain-hub": {
+            "import": "./dist/chain-hub.js",
+            "types": "./dist/chain-hub.d.ts"
+        },
+        "./wallet": {
+            "import": "./dist/wallet.js",
+            "types": "./dist/wallet.d.ts"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    },
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "type-check": "tsc --noEmit",
+        "test": "vitest"
+    },
+    "peerDependencies": {
+        "@solana/kit": "^5.0.0"
+    },
+    "dependencies": {
+        "@gradiences/arena-sdk": "workspace:*",
+        "@solana-program/address-lookup-table": "^0.11.0"
+    },
+    "devDependencies": {
+        "@solana/kit": "^5.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.9.0",
+        "vitest": "^1.6.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "keywords": [
+        "gradience",
+        "solana",
+        "agents",
+        "sdk",
+        "blockchain"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gradience-protocol/gradience.git",
+        "directory": "packages/sdk"
+    }
+}

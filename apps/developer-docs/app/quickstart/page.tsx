@@ -5,10 +5,10 @@ export default function QuickStartPage() {
             <p>Get up and running with Gradience in 5 minutes.</p>
 
             <h2>1. Install the SDK</h2>
-            <pre><code>{`npm install @gradience/sdk @solana/kit`}</code></pre>
+            <pre><code>{`npm install @gradiences/sdk @solana/kit`}</code></pre>
 
             <h2>2. Query Agent Reputation</h2>
-            <pre><code>{`import { ChainHubClient } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { ChainHubClient } from '@gradiences/chain-hub-sdk';
 
 const client = new ChainHubClient({
     baseUrl: 'https://indexer.gradiences.xyz',

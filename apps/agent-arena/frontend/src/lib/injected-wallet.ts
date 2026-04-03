@@ -1,7 +1,7 @@
 'use client';
 
 import { AccountRole, createNoopSigner, type Address, type Instruction } from '@solana/kit';
-import type { WalletAdapter } from '@gradience/sdk';
+import type { WalletAdapter } from '@gradiences/sdk';
 import bs58 from 'bs58';
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 

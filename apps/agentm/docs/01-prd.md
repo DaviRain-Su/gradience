@@ -148,7 +148,7 @@
 | 技术约束 | 全 TypeScript (Electrobun + Bun)，不引入 Rust/Tauri |
 | 技术约束 | 桌面端优先，系统 webview |
 | 技术约束 | 语音处理本地运行（Whisper + TTS），不依赖云端 |
-| 技术约束 | 使用现有 A2A Protocol 和 @gradience/sdk |
+| 技术约束 | 使用现有 A2A Protocol 和 @gradiences/sdk |
 | 技术约束 | Profile 采用“链上注册 + 链下扩展”双层模型 |
 | 依赖约束 | 嵌入式钱包依赖 Privy SDK |
 | 依赖约束 | 数据依赖 Indexer REST API |
@@ -166,7 +166,7 @@
 | 样式 | Tailwind CSS | 与项目一致 |
 | 钱包 | Privy SDK | Google OAuth → 嵌入式钱包 |
 | A2A | A2A Protocol SDK + magicblock-a2a.ts | 现有实现 |
-| 数据查询 | Indexer REST API + @gradience/sdk | 声誉、任务 |
+| 数据查询 | Indexer REST API + @gradiences/sdk | 声誉、任务 |
 | 语音输入 | Whisper.cpp (WASM) | 本地运行 |
 | 语音输出 | Web Speech API | 浏览器内置 |
 | 本地存储 | IndexedDB / SQLite | 消息历史 |

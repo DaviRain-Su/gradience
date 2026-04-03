@@ -1,4 +1,11 @@
 /**
+ * ⚠️ DEMO MODE: This adapter simulates cross-chain messaging.
+ * Real deBridge integration is not yet implemented.
+ * All transaction hashes and sequence numbers are fake.
+ * DO NOT use in production with real user funds.
+ */
+
+/**
  * Debridge Cross-Chain Adapter
  *
  * Integration with Debridge DLN (Debridge Liquidity Network)
@@ -17,6 +24,8 @@ import type {
   ProtocolHealthStatus,
 } from '../../../shared/a2a-router-types.js';
 import { A2A_ERROR_CODES } from '../constants.js';
+
+const DEMO_MODE = true;
 
 export interface DebridgeAdapterOptions {
   /** Agent ID on Solana chain */
@@ -151,14 +160,19 @@ export class DebridgeAdapter implements ProtocolAdapter {
   // ============ Messaging ============
 
   async send(message: A2AMessage): Promise<A2AResult> {
+    if (DEMO_MODE) {
+      console.warn('[DEMO MODE] This is a simulated cross-chain transaction. No real assets are transferred.');
+    }
+
     if (!this.isAvailable()) {
       return {
         success: false,
         messageId: message.id,
         protocol: 'debridge',
-        error: 'Debridge adapter not connected',
+        error: '[DEMO] Debridge adapter not connected',
         errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     }
 
@@ -174,6 +188,7 @@ export class DebridgeAdapter implements ProtocolAdapter {
         messageId: message.id,
         protocol: 'debridge',
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -181,9 +196,10 @@ export class DebridgeAdapter implements ProtocolAdapter {
         success: false,
         messageId: message.id,
         protocol: 'debridge',
-        error: err.message,
+        error: `[DEMO] ${err.message}`,
         errorCode: A2A_ERROR_CODES.PROTOCOL_SEND_FAILED,
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     }
   }

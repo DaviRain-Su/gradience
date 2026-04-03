@@ -1,4 +1,11 @@
 /**
+ * ⚠️ DEMO MODE: This adapter simulates cross-chain messaging.
+ * Real LayerZero integration is not yet implemented.
+ * All transaction hashes and sequence numbers are fake.
+ * DO NOT use in production with real user funds.
+ */
+
+/**
  * LayerZero Cross-Chain Adapter
  *
  * Integration with LayerZero V2 for cross-chain message passing
@@ -16,6 +23,8 @@ import type {
   ProtocolHealthStatus,
 } from '../../../shared/a2a-router-types.js';
 import { A2A_ERROR_CODES } from '../constants.js';
+
+const DEMO_MODE = true;
 
 // LayerZero imports (will be available after npm install)
 // import { Endpoint } from '@layerzerolabs/lz-v2-utilities';
@@ -132,14 +141,19 @@ export class LayerZeroAdapter implements ProtocolAdapter {
   // ============ Messaging ============
 
   async send(message: A2AMessage): Promise<A2AResult> {
+    if (DEMO_MODE) {
+      console.warn('[DEMO MODE] This is a simulated cross-chain transaction. No real assets are transferred.');
+    }
+
     if (!this.isAvailable()) {
       return {
         success: false,
         messageId: message.id,
         protocol: 'layerzero',
-        error: 'LayerZero adapter not connected',
+        error: '[DEMO] LayerZero adapter not connected',
         errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     }
 
@@ -158,6 +172,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
         messageId: message.id,
         protocol: 'layerzero',
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -165,9 +180,10 @@ export class LayerZeroAdapter implements ProtocolAdapter {
         success: false,
         messageId: message.id,
         protocol: 'layerzero',
-        error: err.message,
+        error: `[DEMO] ${err.message}`,
         errorCode: A2A_ERROR_CODES.PROTOCOL_SEND_FAILED,
         timestamp: Date.now(),
+        metadata: { demo: true },
       };
     }
   }

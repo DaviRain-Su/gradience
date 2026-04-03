@@ -59,7 +59,7 @@ AgentM Pro 是面向开发者的 Agent 管理和发布平台，基于 Gradience 
 
 - 使用 React + TypeScript + Tailwind CSS
 - 基于 AgentM Web 代码架构
-- 接入 Gradience SDK (@gradience/sdk)
+- 接入 Gradience SDK (@gradiences/sdk)
 - 使用 Privy 进行身份验证
 - 部署到 Vercel
 

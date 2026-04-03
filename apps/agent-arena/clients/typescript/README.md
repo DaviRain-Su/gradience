@@ -1,15 +1,15 @@
-# @gradience/sdk
+# @gradiences/sdk
 
 TypeScript SDK for the Gradience Protocol — trustless capability settlement for AI Agents on Solana.
 
 ## Quick Start
 
 ```bash
-npm install @gradience/sdk @solana/kit
+npm install @gradiences/sdk @solana/kit
 ```
 
 ```typescript
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 
 const sdk = new GradienceSDK({
     indexerEndpoint: 'http://127.0.0.1:3001',
@@ -28,7 +28,7 @@ const tasks = await sdk.getTasks({ state: 'open', limit: 10 });
 ## Post a Task
 
 ```typescript
-import { GradienceSDK, KeypairAdapter } from '@gradience/sdk';
+import { GradienceSDK, KeypairAdapter } from '@gradiences/sdk';
 
 const wallet = new KeypairAdapter(myKeypair);
 const sdk = new GradienceSDK({ rpcEndpoint: 'https://api.devnet.solana.com' });
@@ -99,7 +99,7 @@ const attestations = await sdk.attestations.list('AgentAddress...');
 Install the CLI for terminal-based operations:
 
 ```bash
-npm install -g @gradience/cli
+npm install -g @gradiences/cli
 
 gradience config set rpc https://api.devnet.solana.com
 gradience config set keypair ~/.config/solana/id.json

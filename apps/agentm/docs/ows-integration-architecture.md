@@ -157,8 +157,8 @@ apps/agentm/src/renderer/lib/
 
 ```json
 {
-  "@gradience/ows-adapter": "file:../ows-adapter",
-  "@gradience/sdk": "file:../agent-arena/clients/typescript"
+  "@gradiences/ows-adapter": "file:../ows-adapter",
+  "@gradiences/sdk": "file:../agent-arena/clients/typescript"
 }
 ```
 

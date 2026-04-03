@@ -1,5 +1,5 @@
 {
-    "name": "@gradience/agent-daemon",
+    "name": "@gradiences/agent-daemon",
     "version": "0.1.0",
     "description": "Local daemon bridging Agent UIs to the Gradience network",
     "type": "module",

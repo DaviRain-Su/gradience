@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { WalletAdapter } from '@gradience/sdk';
+import type { WalletAdapter } from '@gradiences/sdk';
 import type { Address } from '@solana/kit';
 
 import { createWalletAdapter } from './sdk';

@@ -98,7 +98,7 @@ class AgentMssaging {
 
 ```typescript
 // 托管资金到 Gradience Escrow
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 
 class AgentSettlement {
   async escrowFunds(taskId: string, amount: number) {

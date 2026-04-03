@@ -287,9 +287,9 @@ flowchart TB
 ### 4.1 SDK 是所有模块的统一入口
 
 ```typescript
-// @gradience/sdk — 开发者使用的统一接口
+// @gradiences/sdk — 开发者使用的统一接口
 
-import { Gradience } from '@gradience/sdk';
+import { Gradience } from '@gradiences/sdk';
 
 const grad = new Gradience({
   connection: 'mainnet',
@@ -321,7 +321,7 @@ await grad.a2a.message(partner, content);
 ### 4.2 SDK 内部架构
 
 ```
-@gradience/sdk
+@gradiences/sdk
 ├── core/
 │   ├── connection.ts      — Solana RPC 管理
 │   ├── wallet.ts          — 钱包抽象
@@ -476,7 +476,7 @@ ws://indexer/ws
     │  Frontend / SDK     │
     │                     │
     │  gradiences.xyz     │
-    │  @gradience/sdk     │
+    │  @gradiences/sdk     │
     │  gradience-cli      │
     └─────────────────────┘
 ```

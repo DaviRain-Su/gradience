@@ -148,7 +148,7 @@ flowchart TB
 | **IJudge CPI 接口** | 定义合约 Judge 标准，任意 Solana Program 实现后可充当 Judge；**三层可插拔评判架构**：① **TestCasesEvaluator**（链下测试用例跑分，客观确定性，适合代码/算法/DeFi验证）；② **LLMScoreEvaluator**（DSPy 标准化 LLM 打分，结构化 I/O + 跨模型可移植 + 可用历史数据优化，适合报告/策略分析/创作类任务）；③ **OnChainEvaluator**（链上/链下确定性验证，含 oracle_hash / wasm_exec / zk_proof，适合量化回测/DeFi计算/zkML证明/隐私计算）；W4 扩展 zkML（RISC Zero / EZKL 集成），可密码学确定性验证 Agent 使用了声明的 AI 模型 | 不内嵌 AI 逻辑；不托管资金 | Pinocchio CPI + DSPy（Python，Judge Daemon 侧） | 新建 |
 | **Judge Daemon** | 链下持久化评测工作流：通过 **gRPC 事件流**超低延迟监听任务事件，下载 result_ref + trace_ref，回放 Agent 执行轨迹（白盒评测），综合评分后提交 judge_and_pay；**基于 Absurd 实现**，崩溃可续跑，完整评测历史存 PostgreSQL；Type B 评分通过 **DSPy LLMScoreEvaluator** 实现（结构化评分、跨模型可移植、可用历史数据用 MIPROv2 自动优化）；**gRPC 事件流支持两个提供商**：① **Helius LaserStream**（默认，DX 优，MCP 集成）；② **Triton Dragon's Mouth**（Geyser-fed gRPC，多节点可用，备选） | 不持有资金；不修改链上状态（只提交 judgeAndPay 指令） | TypeScript + Absurd + **Helius LaserStream 或 Triton Dragon's Mouth** + **DSPy（Python 微服务 / RPC）** | 新建 |
 | **Agent 执行运行时** | Agent 用 Absurd 包裹每一步 LLM 调用（ctx.step），自动将 prompt 序列 + 中间推理 + 决策事件存入 PostgreSQL checkpoint；执行完成后导出为 trace_ref 上传 Arweave；内置 **MPP/x402 客户端**（`@solana/kit`），Agent 调用外部付费 API（LLM / 数据 / 搜索）时自动处理 HTTP 402 挑战，用 Solana 钱包按需付款，无需管理 API Key | 不是链上组件；trace 内容不上链，只有 CID 引用上链；MPP 仅用于调用外部服务，不影响任务悬赏结算 | TypeScript + Absurd + LLM SDK + **@solana/kit**；x402 参考：`gh:solana-foundation/templates/community/kit-node-solanax402`（Facilitator + Server 完整实现）；AI Agent + x402 集成参考：`gh:solana-foundation/templates/community/solana-chatgpt-kit`（MCP + Jupiter + 自然语言调用模式） | 新建 |
-| **@gradience/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + **@solana/kit** + Codama 生成客户端（无 Anchor SDK，无旧版 @solana/web3.js） | 新建 |
+| **@gradiences/sdk** | 所有 Program 指令的 TypeScript 封装，统一入口 | 不内嵌业务逻辑 | TypeScript + **@solana/kit** + Codama 生成客户端（无 Anchor SDK，无旧版 @solana/web3.js） | 新建 |
 | **gradience CLI** | 命令行工具，支持完整任务生命周期操作和节点启动；**原生支持 `NO_DNA` 标准**（`no-dna.org`）：检测 `NO_DNA=1` 环境变量，切换为 Agent 模式——所有输出为 JSON、不交互式提示、绝对时间戳、stderr 机器可解析错误；与 Anchor / Surfpool 等 Solana 工具链统一约定，使 AI Agent 可直接调用 CLI 无需人工干预 | 不提供 GUI | TypeScript / Commander.js | 新建 |
 | **产品前端** | 任务浏览、发布、竞争状态、评判触发；Agent 能力凭证展示（SAS Attestations） | 不存储链下私有数据 | Next.js + Tailwind + **@solana/kit** + Cloudflare Pages；脚手架：`gh:solana-foundation/templates/kit/nextjs`（与 Codama 生成客户端天然匹配，非旧 wallet-adapter 体系）；**Kora gasless**（`@solana/kora` + `createKitKoraClient`，用户用 USDC 支付 Gas，无需持有 SOL） | 新建 |
 | **Indexer** | 接收 Program 事件推送（延迟 <200ms），提供 REST API + WebSocket；支持两种部署模式：**Managed**（Cloudflare Workers + D1，零运维）和 **Self-hosted**（Docker + PostgreSQL，任何人可运行）；若需对高级 API 端点收费，可用 x402 保护；**事件源支持两个提供商**：① **Helius Webhooks**（默认，Managed 模式首选，开箱即用）；② **Triton Fumarole**（Self-hosted 生产级首选——多节点 HA、断线自动重连、Consumer Group 水平扩展，不丢事件）；历史数据查询（信誉回溯）可接入 **Triton Old Faithful**（Solana 全历史，创世区块至今）；JudgePool 查询加速可用 **Triton Steamboat**（getProgramAccounts 自定义索引，~30ms vs ~1700ms） | 不是共识的一部分，宕机不影响协议；链上数据是唯一真相，Indexer 只是链上状态的可查询视图 | Rust（自托管核心）/ TypeScript（CF Workers 适配层）+ PostgreSQL / D1 + **Helius Webhooks（Managed）或 Triton Fumarole（Self-hosted）**；Rust x402 服务端参考：`gh:solana-foundation/templates/community/x402-solana-rust`（Axum/Actix/Rocket） | 已有（重构） |
@@ -158,7 +158,7 @@ flowchart TB
 | **Privy 适配器** | 开发者基础设施级 Agent 钱包 Fleet：TEE 保护，Policy Engine（转账上限 / 合约白名单 / 时间窗口），Authorization Key 控制，无限子钱包；原生支持 Solana + EVM；内置 MPP/x402 支持；两种控制模型：开发者全控（Model 1）/ 用户持有授权 Agent 签名（Model 2）；适合开发者运营多 Agent 并行策略 | 依赖 Privy 基础设施 | Privy Node SDK (`@privy-io/node`) | 外部集成 |
 | **Kite Agent Passport 适配器** | Kite AI 链原生三层身份体系（User → Agent → Session 派生）；ERC-4337 账户抽象，programmable spending constraints；x402 支持；适合部署在 Kite AI 链上的任务和 Kite 生态 Agent | 依赖 Kite AI 链（Avalanche Subnet） | Kite AA SDK（gokite-aa-sdk） | 外部集成（Week 4） |
 | **Chain Hub** | Delegation Task、Skill 市场、**Protocol Registry（双轨注册）**、Key Vault；Protocol Registry 支持两条接入路径：**① 中心化服务（REST API）**——服务方提供 endpoint + 能力声明，API Key 由 Key Vault 自动注入，Agent 无感调用，典型例：SDP（首个注册协议）、Helius、第三方 AI 服务；**② 链上 Solana Program（CPI）**——项目方提供 Program ID + IDL，Agent 直接 CPI 调用，无需 API Key，完全无需信任，典型例：Orca、Kamino、任何自建合约的开发者；两条路径对 Agent 暴露统一接口 `chainHub.invoke(skillId, params)`，底层自动路由；Key Vault 由 OpenWallet Policy Engine 实现，Poster 设定执行参数（滑点/频率上限），Agent 物理上无法超出；底层金融原语由 SDP 提供 | 不修改 Agent Layer 内核；不自建支付/托管基础设施；不强迫链上 Program 做任何改造（只需提供 Program ID + IDL） | Rust + Pinocchio + TS + OpenWallet + **SDP REST API** | 新建（Week 3） |
-| **AgentM** | **用户唯一入口应用**（由历史 Me/Social 体验收敛而来）。Google OAuth 登录 → 嵌入式钱包（Privy）。"我的"视角（声誉/任务历史）+ "社交"视角（发现广场/A2A 通讯）。**双界面设计**：人通过 GUI（对话/语音），Agent 通过 API（JSON/链上），同一 A2A 协议产生完全相同的链上效果。所有协议交互都通过 AgentM 完成。开放基础设施，任何人可贡献或构建替代客户端 | 不上传用户私有记忆和私钥；不做链上合约修改；不做移动端（MVP） | Electrobun（TypeScript + Bun）+ React + Vite + Privy SDK + @gradience/sdk + A2A Protocol | 新建（Week 3） |
+| **AgentM** | **用户唯一入口应用**（由历史 Me/Social 体验收敛而来）。Google OAuth 登录 → 嵌入式钱包（Privy）。"我的"视角（声誉/任务历史）+ "社交"视角（发现广场/A2A 通讯）。**双界面设计**：人通过 GUI（对话/语音），Agent 通过 API（JSON/链上），同一 A2A 协议产生完全相同的链上效果。所有协议交互都通过 AgentM 完成。开放基础设施，任何人可贡献或构建替代客户端 | 不上传用户私有记忆和私钥；不做链上合约修改；不做移动端（MVP） | Electrobun（TypeScript + Bun）+ React + Vite + Privy SDK + @gradiences/sdk + A2A Protocol | 新建（Week 3） |
 | **AgentM Pro** | **开发者侧控制台与运行时配套**。开发者在 AgentM 侧配置完成后，通过 AgentM Pro 进行 Profile 发布、自动化运维和运行时管理。**MVP（本地模式）**：连接开发者本地 Agent 进程；**后期（云端模式）**：一键部署到云服务器 | 不参与链上结算；不托管用户私钥（仅托管 Agent 进程） | TypeScript + Docker（云端模式）；MVP 阶段为本地进程连接 | 新建（Week 3 本地 / 后期云端） |
 | **Agent Layer EVM** | EVM 链上的协议移植，含信誉证明验证（Week 4）；支持三条 EVM 链：Base、Arbitrum（通用流动性）、Kite AI（AI Agent 原生受众，x402 + Agent Passport 生态）；多链扩展分两层：**跨链价值流**（LI.FI：reward token 桥接、Agent 执行资金跨链准备）+ **跨链信息流**（Wormhole VAA / LayerZero：EVM 执行结果传递到 Solana、信誉证明跨链广播）；详见 §2.10 | 不是 Solana 内核的替代，不做通用跨链桥 | Solidity ^0.8.20 + Hardhat；`@lifi/sdk`；Wormhole SDK / LayerZero SDK | 新建（Week 4） |
 
@@ -420,7 +420,7 @@ pub trait IJudge {
 ### SDK 接口概览
 
 ```typescript
-// @gradience/sdk — 主要接口（详细在 Phase 3）
+// @gradiences/sdk — 主要接口（详细在 Phase 3）
 grad.task.post(params)           // 发布任务
 grad.task.apply(taskId)          // 申请任务
 grad.task.submit(taskId, ref)    // 提交结果
@@ -547,7 +547,7 @@ WS   /ws                                  实时事件订阅
                 │ REST / WebSocket（接口完全一致）
 ┌───────────────┴──────────────────────────────────────┐
 │              客户端层                                  │
-│  gradiences.xyz (前端)  @gradience/sdk  gradience CLI │
+│  gradiences.xyz (前端)  @gradiences/sdk  gradience CLI │
 │  Judge Daemon (AI + Oracle)                           │
 └───────────────────────────────────────────────────────┘
 
@@ -574,7 +574,7 @@ W1 (04-01 ~ 04-14, 2 周): 内核
   （W1 延长为 2 周以保证充分的集成测试缓冲）
 
 W2 (04-15 ~ 04-21): 工具链
-  ✅ @gradience/sdk
+  ✅ @gradiences/sdk
   ✅ gradience CLI
   ✅ Judge Daemon（AI + Oracle 两种模式）
   ✅ 产品前端（Cloudflare Pages）

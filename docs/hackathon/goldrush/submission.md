@@ -71,7 +71,7 @@ AI Agents face three critical challenges:
 
 ```typescript
 import { GoldRushClient } from '@covalenthq/goldrush-client';
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 
 class GoldRushAgent {
   private goldrush: GoldRushClient;

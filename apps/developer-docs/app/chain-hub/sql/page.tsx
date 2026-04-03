@@ -62,7 +62,7 @@ const result = await client.query(
             <h2>Security</h2>
 
             <h3>Permission Guard</h3>
-            <pre><code>{`import { SqlPermissionGuard } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { SqlPermissionGuard } from '@gradiences/chain-hub-sdk';
 
 const guard = new SqlPermissionGuard({
     allowedTables: ['tasks', 'reputations'],

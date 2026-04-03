@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { ProductSwitcher } from "./ProductSwitcher";
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -31,7 +32,7 @@ export function Nav() {
         >
           Launch
         </a>
-        <div className="hidden md:flex items-center gap-8 text-[13px] text-[var(--text-2)]">
+        <div className="hidden md:flex items-center gap-6 text-[13px] text-[var(--text-2)]">
           <a href="#get-started" className="hover:text-white transition-colors duration-200">Get Started</a>
           <a href="https://docs.gradiences.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">Docs</a>
           <a
@@ -42,6 +43,7 @@ export function Nav() {
           >
             Whitepaper
           </a>
+          <ProductSwitcher />
           <a
             href={agentmUrl}
             target="_blank"

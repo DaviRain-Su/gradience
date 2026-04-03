@@ -68,6 +68,7 @@ function Sidebar() {
             items: [
                 { label: 'Indexer REST API', href: '/api/indexer' },
                 { label: 'Agent API', href: '/api/agent' },
+                { label: 'Playground', href: '/playground' },
             ],
         },
     ];

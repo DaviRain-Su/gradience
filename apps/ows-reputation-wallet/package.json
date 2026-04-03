@@ -1,5 +1,5 @@
 {
-  "name": "@gradience/ows-reputation-wallet",
+  "name": "@gradiences/ows-reputation-wallet",
   "version": "0.1.0",
   "description": "Reputation-powered wallet MVP for OWS Hackathon",
   "main": "dist/index.js",
@@ -20,8 +20,8 @@
   "author": "Gradience Team",
   "license": "MIT",
   "dependencies": {
-    "@gradience/ows-adapter": "file:../ows-adapter",
-    "@gradience/sdk": "file:../agent-arena/sdk",
+    "@gradiences/ows-adapter": "workspace:*",
+    "@gradiences/sdk": "workspace:*",
     "@solana/web3.js": "^1.91.0"
   },
   "devDependencies": {

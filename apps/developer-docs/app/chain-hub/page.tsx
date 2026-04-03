@@ -9,7 +9,7 @@ export default function ChainHubDocs() {
             </p>
 
             <h2>Getting Started</h2>
-            <pre><code>{`import { ChainHubRouter, EnvKeyVaultAdapter } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { ChainHubRouter, EnvKeyVaultAdapter } from '@gradiences/chain-hub-sdk';
 
 const vault = new EnvKeyVaultAdapter({
     allowedCapabilities: ['invoke', 'query'],

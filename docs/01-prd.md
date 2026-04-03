@@ -128,7 +128,7 @@ Agent Layer 内核不关心任务的业务类型，只问一件事：**谁干得
 
 #### 🟠 W2（2026-04-15 ~ 04-21）— 工具链
 
-- **TypeScript SDK**: `@gradience/sdk`，封装所有 Program 指令，3 行代码发任务
+- **TypeScript SDK**: `@gradiences/sdk`，封装所有 Program 指令，3 行代码发任务
 - **CLI 工具**: `gradience` 命令行，支持 `post`、`apply`、`submit`、`judge`、`refund`、`status` 等子命令
 - **Judge Daemon**: 链下服务，监听 Program 事件，支持两种自动评判模式：
   - **AI Judge 模式**: 调用 Claude/GPT API，将任务描述 + 提交结果发给 LLM，返回 0-100 分并上链

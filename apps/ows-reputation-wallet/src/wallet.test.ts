@@ -1,8 +1,8 @@
 import { ReputationWallet } from './wallet';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 // Mock the OWS adapter
-jest.mock('@gradience/ows-adapter');
+jest.mock('@gradiences/ows-adapter');
 
 describe('ReputationWallet', () => {
   let mockAdapter: jest.Mocked<OWSWalletAdapter>;

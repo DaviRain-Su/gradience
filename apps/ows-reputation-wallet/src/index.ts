@@ -11,8 +11,8 @@
  * 
  * @example
  * ```typescript
- * import { ReputationWallet } from '@gradience/ows-reputation-wallet';
- * import { OWSWalletAdapter } from '@gradience/ows-adapter';
+ * import { ReputationWallet } from '@gradiences/ows-reputation-wallet';
+ * import { OWSWalletAdapter } from '@gradiences/ows-adapter';
  * 
  * const owsAdapter = new OWSWalletAdapter({
  *   network: 'devnet',

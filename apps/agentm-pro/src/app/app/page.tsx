@@ -83,7 +83,7 @@ function ProShell({
     const activeView = useProStore((state) => state.activeView);
     const setActiveView = useProStore((state) => state.setActiveView);
     const setAuth = useProStore((state) => state.setAuth);
-    const demoAddress = useMemo(() => 'DEMO_' + Math.random().toString(36).slice(2, 8), []);
+    const demoAddress = useMemo(() => 'DEMO_9cyTob', []);
 
     useEffect(() => {
         setAuth({

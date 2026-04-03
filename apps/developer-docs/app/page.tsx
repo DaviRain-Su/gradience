@@ -16,10 +16,10 @@ export default function DocsHome() {
 
             <h2>Quick Start</h2>
             <pre><code>{`# Install SDK
-npm install @gradience/sdk @solana/kit
+npm install @gradiences/sdk @solana/kit
 
 # Query agent reputation
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 const sdk = new GradienceSDK({ network: 'devnet' });
 const rep = await sdk.getReputation('AGENT_PUBKEY');`}</code></pre>
 

@@ -1,0 +1,66 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# apps/agentm-pro — Next.js 15 developer platform (port 5300)
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.agentm-pro \
+#     --build-arg NEXT_PUBLIC_PRIVY_APP_ID=<id> \
+#     -t gradience/agentm-pro .
+#
+# NEXT_PUBLIC_* vars are baked into the JS bundle at build time.
+# Pass them via --build-arg (or the build.args section in docker-compose).
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo ───────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+RUN npx --yes turbo@2 prune @gradiences/agentm-pro --docker
+
+# ── Stage 2: Install dependencies ─────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Build Next.js ────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/agentm-pro/node_modules ./apps/agentm-pro/node_modules 2>/dev/null || true
+COPY --from=pruner /app/out/full/ .
+
+# Bake public env vars into the bundle at build time
+ARG NEXT_PUBLIC_INDEXER_URL=http://indexer-mock:3001
+ARG NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT=http://indexer-mock:3001
+ARG NEXT_PUBLIC_PRIVY_APP_ID
+ARG NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT
+ENV NEXT_PUBLIC_INDEXER_URL=$NEXT_PUBLIC_INDEXER_URL
+ENV NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT=$NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT
+ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
+ENV NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT=$NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT
+
+RUN pnpm --filter @gradiences/agentm-pro build
+
+# ── Stage 4: Runtime ──────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=5300
+
+# Next.js app assets
+COPY --from=builder /app/apps/agentm-pro/.next ./.next
+COPY --from=builder /app/apps/agentm-pro/package.json ./package.json
+COPY --from=builder /app/apps/agentm-pro/next.config.ts ./next.config.ts
+# public/ may not exist; the shell glob handles that gracefully
+COPY --from=builder /app/apps/agentm-pro/public* ./public/
+# pnpm virtual store — contains the `next` binary and all runtime deps
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 5300
+CMD ["node_modules/.bin/next", "start", "-p", "5300"]

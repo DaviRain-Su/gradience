@@ -1206,14 +1206,14 @@ async function handleCreateAgent(args: string[], noDna: boolean): Promise<void> 
             dev: 'tsx --watch agent.ts',
         },
         dependencies: {
-            '@gradience/sdk': '^0.1.0',
+            '@gradiences/sdk': '^0.1.0',
             '@solana/kit': '^5.5.0',
             tsx: '^4.20.0',
             typescript: '^5.9.0',
         },
     }, null, 2);
 
-    const agentTs = `import { GradienceSDK, KeypairAdapter } from '@gradience/sdk';
+    const agentTs = `import { GradienceSDK, KeypairAdapter } from '@gradiences/sdk';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';

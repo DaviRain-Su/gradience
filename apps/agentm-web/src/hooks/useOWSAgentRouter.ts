@@ -1,21 +1,40 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     OWSAgentRouter,
     type OWSAgentRoutingState,
     type OWSAgentSubWallet,
 } from '@/lib/ows/agent-router';
+import { OWSSdkClient, type OWSSignRouteReceipt } from '@/lib/ows/sdk-client';
+import type { EncryptionProvider } from '@/lib/ows/encrypted-store';
+import type { CosignParams, MasterCosignReceipt } from '@/lib/ows/cosign';
+import { submitSubWalletCreation, submitRouteSignature } from '@/lib/ows/indexer-submit';
+
+export interface SignRouteResult {
+    receipt: OWSSignRouteReceipt;
+    cosign: MasterCosignReceipt | null;
+}
 
 export function useOWSAgentRouter(params: {
     accountKey: string | null;
     masterWallet: string | null;
+    cosign?: ((p: CosignParams) => Promise<MasterCosignReceipt | null>) | null;
+    encryptionProvider?: EncryptionProvider | null;
+    indexerBase?: string | null;
 }) {
     const { accountKey, masterWallet } = params;
-    const routerRef = useRef(new OWSAgentRouter());
     const [state, setState] = useState<OWSAgentRoutingState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+
+    const router = useMemo(() => {
+        const sdk = new OWSSdkClient(params.encryptionProvider ?? null);
+        return new OWSAgentRouter(sdk);
+    }, [params.encryptionProvider]);
+
+    const routerRef = useRef(router);
+    routerRef.current = router;
 
     useEffect(() => {
         if (!accountKey || !masterWallet) {
@@ -30,7 +49,7 @@ export function useOWSAgentRouter(params: {
             setError(err instanceof Error ? err.message : 'Failed to init OWS agent router');
             setState(null);
         }
-    }, [accountKey, masterWallet]);
+    }, [accountKey, masterWallet, router]);
 
     const createSubWallet = useCallback(
         async (handle: string): Promise<OWSAgentRoutingState | null> => {
@@ -44,6 +63,17 @@ export function useOWSAgentRouter(params: {
                 });
                 setState(next);
                 setError(null);
+
+                const created = next.subWallets.find((w) => w.handle === handle.trim().toLowerCase().replace(/\s+/g, '-'));
+                if (created && params.indexerBase) {
+                    submitSubWalletCreation(params.indexerBase, {
+                        masterWallet,
+                        subWalletAddress: created.walletAddress,
+                        handle: created.handle,
+                        receipt: created.createReceipt,
+                    }).catch(() => {});
+                }
+
                 return next;
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to create agent sub wallet');
@@ -52,7 +82,7 @@ export function useOWSAgentRouter(params: {
                 setBusy(false);
             }
         },
-        [accountKey, masterWallet]
+        [accountKey, masterWallet, params.indexerBase],
     );
 
     const setActiveSubWallet = useCallback(
@@ -68,24 +98,46 @@ export function useOWSAgentRouter(params: {
                 return null;
             }
         },
-        [accountKey]
+        [accountKey],
     );
 
     const signActiveRoute = useCallback(
-        async (routeType: 'task_settlement' | 'agent_payment' | 'custom', payload: unknown) => {
+        async (
+            routeType: 'task_settlement' | 'agent_payment' | 'custom',
+            payload: unknown,
+        ): Promise<SignRouteResult | null> => {
             if (!accountKey) return null;
             try {
                 setBusy(true);
                 const result = await routerRef.current.signWithActiveSubWallet({
                     accountKey,
-                    request: {
-                        routeType,
-                        payload,
-                    },
+                    request: { routeType, payload },
                 });
                 setState(result.state);
                 setError(null);
-                return result.receipt;
+
+                let cosignReceipt: MasterCosignReceipt | null = null;
+                const activeWallet = result.state.subWallets.find(
+                    (w) => w.id === result.state.activeSubWalletId,
+                );
+                if (params.cosign && activeWallet) {
+                    cosignReceipt = await params.cosign({
+                        subWalletAddress: activeWallet.walletAddress,
+                        subWalletSignature: result.receipt.signature,
+                        routeType,
+                    });
+                }
+
+                if (params.indexerBase && activeWallet) {
+                    submitRouteSignature(params.indexerBase, {
+                        walletAddress: activeWallet.walletAddress,
+                        routeType,
+                        receipt: result.receipt,
+                        cosign: cosignReceipt,
+                    }).catch(() => {});
+                }
+
+                return { receipt: result.receipt, cosign: cosignReceipt };
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to sign route');
                 return null;
@@ -93,7 +145,7 @@ export function useOWSAgentRouter(params: {
                 setBusy(false);
             }
         },
-        [accountKey]
+        [accountKey, params.cosign, params.indexerBase],
     );
 
     const activeSubWallet: OWSAgentSubWallet | null =

@@ -32,7 +32,7 @@ Gradience + OWS
 ## Quick Start
 
 ```typescript
-import { AgentOWSIdentity } from '@gradience/agent';
+import { AgentOWSIdentity } from '@gradiences/agent';
 
 const agent = new AgentOWSIdentity();
 await agent.initialize();

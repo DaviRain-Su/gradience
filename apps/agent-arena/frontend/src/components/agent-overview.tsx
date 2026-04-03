@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { INDEXER_ENDPOINT } from '../lib/config';
+import { fetchWithMockFallback } from '../lib/sdk';
+import { getMockAgentReputation, getMockAgentTasks } from '../lib/mock-data';
 
 interface ReputationData {
     avg_score: number;
@@ -28,15 +30,17 @@ export function AgentOverview({ publicKey }: { publicKey: string | null }) {
         setLoading(true);
 
         Promise.all([
-            fetch(`${INDEXER_ENDPOINT}/api/agents/${publicKey}/reputation`)
-                .then((r) => (r.ok ? r.json() : null))
-                .catch(() => null),
-            fetch(`${INDEXER_ENDPOINT}/api/tasks?poster=${publicKey}&state=open&limit=10`)
-                .then((r) => (r.ok ? r.json() : []))
-                .catch(() => []),
+            fetchWithMockFallback(
+                `${INDEXER_ENDPOINT}/api/agents/${publicKey}/reputation`,
+                () => getMockAgentReputation(publicKey)
+            ),
+            fetchWithMockFallback(
+                `${INDEXER_ENDPOINT}/api/tasks?poster=${publicKey}&state=open&limit=10`,
+                () => getMockAgentTasks(publicKey)
+            ),
         ]).then(([rep, tasks]) => {
             setReputation(rep as ReputationData | null);
-            setActiveTasks(tasks as TaskSummary[]);
+            setActiveTasks((tasks as TaskSummary[]) || []);
             setLoading(false);
         });
     }, [publicKey]);

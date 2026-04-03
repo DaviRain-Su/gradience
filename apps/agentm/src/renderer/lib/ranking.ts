@@ -1,6 +1,6 @@
 /**
  * Agent discovery ranking — migrated from agent-social/frontend/src/lib/ranking.ts
- * Simplified: no longer depends on @gradience/sdk types directly.
+ * Simplified: no longer depends on @gradiences/sdk types directly.
  */
 
 import type { AgentDiscoveryRow } from '../../shared/types.ts';

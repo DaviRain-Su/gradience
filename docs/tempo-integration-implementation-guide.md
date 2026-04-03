@@ -721,7 +721,7 @@ async confidentialSettle(
 ### 5.1 完整任务流程
 
 ```typescript
-import { GradienceHub } from '@gradience/chain-hub';
+import { GradienceHub } from '@gradiences/chain-hub';
 
 async function fullTaskWithTempo() {
   // 初始化 Hub

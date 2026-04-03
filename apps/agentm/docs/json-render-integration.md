@@ -536,7 +536,7 @@ export const DeFiPortfolioSkill = {
 ```typescript
 // apps/chain-hub/src/ui/registry.ts
 
-import { AGENT_UI_CATALOG } from '@gradience/agent-ui';
+import { AGENT_UI_CATALOG } from '@gradiences/agent-ui';
 
 export const ChainHubUIRegistry = {
   // 注册 Skill 的 UI 组件需求

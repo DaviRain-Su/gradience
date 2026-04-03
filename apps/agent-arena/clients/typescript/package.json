@@ -1,5 +1,5 @@
 {
-    "name": "@gradience/sdk",
+    "name": "@gradiences/arena-sdk",
     "version": "0.1.0",
     "description": "TypeScript SDK for Gradience Protocol",
     "license": "MIT",

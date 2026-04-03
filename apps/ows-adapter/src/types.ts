@@ -1,7 +1,7 @@
 /**
  * OWS (Open Wallet Standard) Adapter Types
- * 
- * @module @gradience/ows-adapter
+ *
+ * @module @gradiences/ows-adapter
  */
 
 /**
@@ -73,6 +73,8 @@ export interface OWSAgentConfig {
   defaultChain: 'solana' | 'ethereum';
   /** XMTP environment */
   xmtpEnv?: 'production' | 'dev';
+  /** Solana RPC endpoint (optional) */
+  rpcEndpoint?: string;
 }
 
 /**

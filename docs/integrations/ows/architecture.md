@@ -63,21 +63,21 @@ sequenceDiagram
 
 ## Components
 
-### OWS Adapter (`@gradience/ows-adapter`)
+### OWS Adapter (`@gradiences/ows-adapter`)
 
 - Wallet connection management
 - Identity retrieval
 - Message signing
 - Credential access
 
-### XMTP Adapter (`@gradience/xmtp-adapter`)
+### XMTP Adapter (`@gradiences/xmtp-adapter`)
 
 - Agent-to-agent messaging
 - Conversation management
 - Message encryption
 - OWS authentication
 
-### Task Orchestrator (`@gradience/integration`)
+### Task Orchestrator (`@gradiences/integration`)
 
 - Links XMTP negotiation to Gradience settlement
 - Manages task lifecycle

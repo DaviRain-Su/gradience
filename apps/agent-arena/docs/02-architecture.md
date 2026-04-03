@@ -233,13 +233,13 @@ Devnet (当前)
 ├── Program ID: [部署地址]
 ├── RPC: https://api.devnet.solana.com
 ├── Indexer: Cloudflare Workers (dev)
-└── SDK: @gradience/sdk@dev
+└── SDK: @gradiences/sdk@dev
 
 Mainnet (未来)
 ├── Program ID: [待部署]
 ├── RPC: https://api.mainnet-beta.solana.com
 ├── Indexer: Cloudflare Workers (prod)
-└── SDK: @gradience/sdk@latest
+└── SDK: @gradiences/sdk@latest
 ```
 
 ### 构建流程

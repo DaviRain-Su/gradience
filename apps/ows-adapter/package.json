@@ -1,5 +1,5 @@
 {
-  "name": "@gradience/ows-adapter",
+  "name": "@gradiences/ows-adapter",
   "version": "0.1.0",
   "description": "Open Wallet Standard (OWS) adapter for Gradience Protocol",
   "main": "dist/index.js",

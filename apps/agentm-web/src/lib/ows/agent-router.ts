@@ -37,7 +37,11 @@ export interface OWSAgentRoutingState {
 const STORAGE_KEY = 'agentm:ows:agent-router:v1';
 
 export class OWSAgentRouter {
-    private sdkClient = new OWSSdkClient();
+    private sdkClient: OWSSdkClient;
+
+    constructor(sdkClient?: OWSSdkClient) {
+        this.sdkClient = sdkClient ?? new OWSSdkClient();
+    }
 
     getState(accountKey: string): OWSAgentRoutingState | null {
         const map = this.readMap();

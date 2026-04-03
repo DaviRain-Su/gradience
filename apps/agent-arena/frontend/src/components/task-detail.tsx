@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { address } from '@solana/kit';
-import type { SubmissionApi, TaskApi } from '@gradience/sdk';
+import type { SubmissionApi, TaskApi } from '@gradiences/sdk';
 
 import { createSdk } from '../lib/sdk';
 import { useFrontendWallet } from '../lib/use-frontend-wallet';

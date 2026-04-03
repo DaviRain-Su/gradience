@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { address } from '@solana/kit';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ReputationApi, ReputationOnChain } from '@gradience/sdk';
+import type { ReputationApi, ReputationOnChain } from '@gradiences/sdk';
 
 import { createSdk } from '../lib/sdk';
 

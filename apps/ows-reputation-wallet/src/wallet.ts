@@ -1,5 +1,5 @@
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
-import { AgentIdentity, AgentCredential } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
+import { AgentIdentity, AgentCredential } from '@gradiences/ows-adapter';
 
 /**
  * Reputation Score

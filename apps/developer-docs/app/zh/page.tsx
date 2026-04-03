@@ -55,10 +55,10 @@ export default function ChineseReadmePage() {
 
             <h2>快速开始</h2>
             <pre><code>{`# 安装 SDK
-npm install @gradience/sdk @solana/kit
+npm install @gradiences/sdk @solana/kit
 
 # 查询 Agent 声誉
-import { ChainHubClient } from '@gradience/chain-hub-sdk';
+import { ChainHubClient } from '@gradiences/chain-hub-sdk';
 const client = new ChainHubClient({ network: 'devnet' });
 const rep = await client.getReputation('AGENT_PUBKEY');`}</code></pre>
 

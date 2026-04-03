@@ -1,4 +1,4 @@
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 
 const INDEXER_ENDPOINT =
     process.env.NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT ?? 'http://127.0.0.1:3001';

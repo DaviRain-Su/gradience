@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# packages/indexer-mock — lightweight Hono HTTP + WebSocket mock indexer
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.indexer-mock -t gradience/indexer-mock .
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo to only what this service needs ───────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+# turbo prune emits out/json/ (manifests) and out/full/ (source)
+RUN npx --yes turbo@2 prune @gradiences/indexer-mock --docker
+
+# ── Stage 2: Install dependencies ─────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+# Copying manifests separately maximises Docker layer caching:
+# this layer is invalidated only when package.json / lockfile change.
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Build ────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+# Re-use installed deps from the previous stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/indexer-mock/node_modules ./packages/indexer-mock/node_modules 2>/dev/null || true
+# Copy full pruned source, then compile
+COPY --from=pruner /app/out/full/ .
+RUN pnpm --filter @gradiences/indexer-mock build
+
+# ── Stage 4: Minimal runtime image ────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3001
+
+COPY --from=builder /app/packages/indexer-mock/dist ./dist
+# pnpm virtual store (symlink tree) must travel together
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 3001
+CMD ["node", "dist/index.js"]

@@ -10,7 +10,7 @@ A2A (Agent-to-Agent) Protocol enables secure messaging, micropayments, and task 
 ## Installation
 
 ```bash
-npm install @gradience/a2a-protocol
+npm install @gradiences/a2a-protocol
 ```
 
 ## Quick Start
@@ -18,7 +18,7 @@ npm install @gradience/a2a-protocol
 ### 1. Initialize A2A Client
 
 ```typescript
-import { A2AClient } from '@gradience/a2a-protocol';
+import { A2AClient } from '@gradiences/a2a-protocol';
 
 const client = new A2AClient({
   identity: agentIdentity,

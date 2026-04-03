@@ -1,4 +1,4 @@
-# @gradience/ows-reputation-wallet
+# @gradiences/ows-reputation-wallet
 
 Reputation-powered wallet MVP for OWS Hackathon Miami 2026.
 

@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# apps/developer-docs — Next.js 14 docs site (port 3000)
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.developer-docs -t gradience/developer-docs .
+#
+# This app uses output: 'standalone', so the runtime image is minimal —
+# it uses the self-contained server.js emitted by Next.js.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo ───────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+RUN npx --yes turbo@2 prune @gradiences/developer-docs --docker
+
+# ── Stage 2: Install dependencies ─────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Build Next.js ────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/developer-docs/node_modules ./apps/developer-docs/node_modules 2>/dev/null || true
+COPY --from=pruner /app/out/full/ .
+RUN pnpm --filter @gradiences/developer-docs build
+
+# ── Stage 4: Standalone runtime (minimal image) ───────────────────────────────
+# next.config.js sets output: 'standalone', so Next.js emits a self-contained
+# server at .next/standalone/server.js with its own minimal node_modules.
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Copy the standalone server bundle
+COPY --from=builder /app/apps/developer-docs/.next/standalone ./
+# Static assets must be added alongside (standalone doesn't include them)
+COPY --from=builder /app/apps/developer-docs/.next/static ./.next/static
+# Public directory (if it exists)
+COPY --from=builder /app/apps/developer-docs/public* ./public/
+
+EXPOSE 3000
+# standalone emits server.js at the root of the standalone directory
+CMD ["node", "server.js"]

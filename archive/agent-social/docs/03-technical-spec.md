@@ -28,7 +28,7 @@ Agent Social 是**去中心化 Agent 社交层**：
 | Next.js | 16.2.1 | React 框架 |
 | React | 19.2.4 | UI |
 | `@solana/kit` | 5.5.1 | 地址工具 |
-| `@gradience/sdk` | workspace | 声誉查询、JudgePool 查询 |
+| `@gradiences/sdk` | workspace | 声誉查询、JudgePool 查询 |
 | BroadcastChannel API | 浏览器内置 | 多 Tab A2A 消息传递 |
 | Node.js test runner | 内置 | 测试 |
 

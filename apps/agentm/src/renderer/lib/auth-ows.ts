@@ -9,13 +9,19 @@
  * - Unified identity across chains
  * - Credential management
  * - Reputation-based access control
+ * - Graceful fallback when OWS SDK is not available
  */
 
 import type { AuthState } from '../../shared/types.ts';
 import { EMPTY_AUTH } from '../../shared/types.ts';
 import type { AuthProvider } from './auth.ts';
-import { OWSWalletAdapter } from '../../shared/ows-adapter.ts';
-import type { OWSAgentConfig, AgentIdentity } from '../../shared/ows-adapter.ts';
+import { 
+    OWSWalletAdapter, 
+    isOWSSDKAvailable,
+    createDefaultOWSConfig,
+    type OWSAgentConfig, 
+    type AgentIdentity 
+} from '../../shared/ows-adapter.ts';
 
 /**
  * OWS Auth State extends AuthState with OWS-specific fields
@@ -32,31 +38,45 @@ export interface OWSAuthState extends AuthState {
     credentials?: Array<{
         type: string;
         issuer: string;
-        data: any;
+        data: unknown;
     }>;
+    /** Whether using real OWS SDK or stub */
+    usingRealOWS?: boolean;
 }
 
 /**
  * OWS Auth Provider
  * 
  * Uses Open Wallet Standard for authentication and wallet management.
+ * Falls back gracefully to stub implementation if OWS SDK is unavailable.
  */
 export class OWSAuthProvider implements AuthProvider {
     private state: OWSAuthState = EMPTY_AUTH;
     private owsAdapter: OWSWalletAdapter | null = null;
     private config: OWSAgentConfig;
 
-    constructor(config: OWSAgentConfig = { network: 'devnet', defaultChain: 'solana' }) {
-        this.config = config;
+    constructor(config?: OWSAgentConfig) {
+        this.config = config ?? createDefaultOWSConfig();
+    }
+
+    /**
+     * Check if real OWS SDK is available
+     */
+    isRealOWSAvailable(): boolean {
+        return isOWSSDKAvailable();
     }
 
     /**
      * Login with OWS Wallet
+     * 
+     * If OWS SDK is available, connects to real wallet.
+     * If not available, uses stub implementation (marked in state.usingRealOWS).
      */
     async login(): Promise<OWSAuthState> {
         try {
-            // Initialize OWS adapter
+            // Initialize OWS adapter (automatically selects real or stub)
             this.owsAdapter = new OWSWalletAdapter(this.config);
+            const usingRealOWS = this.owsAdapter.isReal();
             
             // Connect to OWS Wallet
             const wallet = await this.owsAdapter.connect();
@@ -68,7 +88,7 @@ export class OWSAuthProvider implements AuthProvider {
             this.state = {
                 authenticated: true,
                 publicKey: wallet.address,
-                email: this.extractEmailFromDID(identity.did),
+                email: this.extractEmailFromIdentity(identity),
                 privyUserId: null, // Not using Privy
                 owsDID: identity.did,
                 addresses: {
@@ -80,7 +100,15 @@ export class OWSAuthProvider implements AuthProvider {
                     issuer: c.issuer,
                     data: c.data,
                 })),
+                usingRealOWS,
             };
+
+            // Log which implementation is being used
+            if (usingRealOWS) {
+                console.log('[OWS Auth] Logged in with real OWS SDK');
+            } else {
+                console.log('[OWS Auth] Logged in with stub implementation (OWS SDK not available)');
+            }
 
             return this.state;
         } catch (error) {
@@ -94,7 +122,11 @@ export class OWSAuthProvider implements AuthProvider {
      */
     async logout(): Promise<void> {
         if (this.owsAdapter) {
-            await this.owsAdapter.disconnect();
+            try {
+                await this.owsAdapter.disconnect();
+            } catch (error) {
+                console.warn('[OWS Auth] Error during disconnect:', error);
+            }
             this.owsAdapter = null;
         }
         this.state = EMPTY_AUTH;
@@ -123,6 +155,8 @@ export class OWSAuthProvider implements AuthProvider {
 
     /**
      * Sign a message with OWS Wallet
+     * 
+     * @throws Error if not authenticated
      */
     async signMessage(message: string): Promise<string> {
         if (!this.owsAdapter) {
@@ -133,8 +167,10 @@ export class OWSAuthProvider implements AuthProvider {
 
     /**
      * Sign a transaction with OWS Wallet
+     * 
+     * @throws Error if not authenticated
      */
-    async signTransaction(tx: any): Promise<any> {
+    async signTransaction(tx: unknown): Promise<unknown> {
         if (!this.owsAdapter) {
             throw new Error('Not authenticated with OWS');
         }
@@ -151,27 +187,35 @@ export class OWSAuthProvider implements AuthProvider {
     /**
      * Get credentials
      */
-    getCredentials(): Array<{ type: string; issuer: string; data: any }> {
+    getCredentials(): Array<{ type: string; issuer: string; data: unknown }> {
         return this.state.credentials || [];
     }
 
     /**
-     * Extract email from DID (placeholder)
+     * Extract email from identity
      * @private
      */
-    private extractEmailFromDID(did: string): string {
-        // In real implementation, this would resolve the DID
-        // For now, return a placeholder
-        const id = did.split(':').pop() || 'unknown';
-        return `user_${id.slice(0, 8)}@ows.wallet`;
+    private extractEmailFromIdentity(identity: AgentIdentity): string {
+        // Extract identifier from DID
+        const id = identity.did.split(':').pop() || 'unknown';
+        // Return placeholder email format
+        return `user_${id.slice(0, 16)}@ows.wallet`;
     }
 }
 
 /**
  * Create OWS auth provider
+ * 
+ * @param config - Optional OWS configuration. If not provided, uses defaults.
+ * @returns Configured OWSAuthProvider instance
  */
-export function createOWSAuthProvider(
-    config: OWSAgentConfig = { network: 'devnet', defaultChain: 'solana' }
-): OWSAuthProvider {
+export function createOWSAuthProvider(config?: OWSAgentConfig): OWSAuthProvider {
     return new OWSAuthProvider(config);
+}
+
+/**
+ * Check if OWS authentication is available (real SDK loaded)
+ */
+export function isOWSAuthAvailable(): boolean {
+    return isOWSSDKAvailable();
 }

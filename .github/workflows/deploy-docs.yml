@@ -1,0 +1,81 @@
+name: Deploy Developer Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/developer-docs/**
+      - .github/workflows/deploy-docs.yml
+  workflow_dispatch:
+
+# Required for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one concurrent deployment; cancel in-progress runs.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Static Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache .next/cache
+        uses: actions/cache@v4
+        with:
+          path: apps/developer-docs/.next/cache
+          key: next-docs-${{ hashFiles('apps/developer-docs/package-lock.json') }}-${{ hashFiles('apps/developer-docs/src/**') }}
+          restore-keys: next-docs-
+
+      - name: Install dependencies
+        run: npm --prefix apps/developer-docs install
+
+      # next.config.js uses output: 'standalone' for local dev. Switch to
+      # 'export' for the GitHub Pages static build without modifying the
+      # committed config.
+      - name: Patch next.config.js for static export
+        working-directory: apps/developer-docs
+        run: |
+          sed -i "s/output: 'standalone'/output: 'export'/" next.config.js
+
+      # Configure basePath / assetPrefix for the GitHub Pages subpath.
+      # actions/configure-pages reads the repo name and sets NEXT_PUBLIC_BASE_PATH.
+      - uses: actions/configure-pages@v5
+        id: pages
+        with:
+          static_site_generator: next
+
+      - name: Build static export
+        working-directory: apps/developer-docs
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # basePath injected by configure-pages (e.g. /gradience)
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/developer-docs/out
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -552,15 +552,15 @@ Not because "Web3 is trendy" — because it's technically necessary:
 
 ```bash
 # Install SDK
-npm install @gradience/sdk @solana/kit
+npm install @gradiences/sdk @solana/kit
 
 # Query agent reputation
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 const sdk = new GradienceSDK({ rpcEndpoint: 'https://api.devnet.solana.com' });
 const rep = await sdk.getReputation('AgentPublicKey...');
 
 # CLI
-npm install -g @gradience/cli
+npm install -g @gradiences/cli
 gradience task post --eval-ref "ipfs://..." --reward 1000000000 --category 0
 gradience task status 1
 

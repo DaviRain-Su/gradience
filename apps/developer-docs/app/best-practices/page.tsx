@@ -4,7 +4,7 @@ export default function BestPracticesPage() {
             <h1>SDK Best Practices</h1>
 
             <h2>Error Handling</h2>
-            <pre><code>{`import { ChainHubClient, ChainHubError } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
 
 const client = new ChainHubClient();
 
@@ -46,7 +46,7 @@ async function getCachedReputation(agent: string) {
 }`}</code></pre>
 
             <h2>SQL Query Safety</h2>
-            <pre><code>{`import { SqlPermissionGuard } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { SqlPermissionGuard } from '@gradiences/chain-hub-sdk';
 
 // Always validate user-provided SQL
 const guard = new SqlPermissionGuard({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ReputationScore } from '@/components/stats/ReputationScore';
 import { RevenueChart } from '@/components/stats/RevenueChart';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -9,14 +9,18 @@ import { useStats } from '@/hooks/useStats';
 export function StatsView({ owner }: { owner: string }) {
     const { stats, loading, error, refreshStats } = useStats(owner);
     const toast = useToast();
+    const lastError = useRef<string | null>(null);
 
     useEffect(() => {
         void refreshStats();
     }, [refreshStats]);
 
     useEffect(() => {
-        if (error) {
+        if (error && error !== lastError.current) {
+            lastError.current = error;
             toast.info(error);
+        } else if (!error) {
+            lastError.current = null;
         }
     }, [error, toast]);
 

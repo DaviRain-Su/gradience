@@ -13,8 +13,8 @@
 | Agent Arena (Solana Program) | 55 | ✅ | LiteSVM 集成测试 |
 | A2A Protocol (Solana Program) | 11 | ✅ | LiteSVM 集成测试 |
 | Chain Hub (Solana Program) | 8 | ✅ | LiteSVM 集成测试 |
-| SDK (@gradience/sdk) | 20 | ✅ | Node.js 单元测试 |
-| CLI (@gradience/cli) | 13+ | ✅ | NO_DNA + profile 命令 |
+| SDK (@gradiences/sdk) | 20 | ✅ | Node.js 单元测试 |
+| CLI (@gradiences/cli) | 13+ | ✅ | NO_DNA + profile 命令 |
 | Judge Daemon | 35 | ✅ | 工作流 + 评估器 + interop |
 | A2A Runtime | 35 | ✅ | Relay + Orchestrator + Server |
 | AgentM | 39 | ✅ | Store + API + A2A + Identity |

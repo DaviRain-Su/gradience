@@ -1,0 +1,33 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "outDir": "./dist",
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ESNext",
+        "paths": {
+            "@gradience/chain-hub-sdk": ["../../apps/chain-hub/sdk/index.ts"],
+            "@gradience/chain-hub-sdk/*": ["../../apps/chain-hub/sdk/*"]
+        }
+    },
+    "include": [
+        "src/**/*",
+        "../../apps/chain-hub/sdk/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "src/**/*.test.ts",
+        "../../apps/chain-hub/sdk/**/*.test.ts"
+    ]
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@gradience/agentm",
+  "name": "@gradiences/agentm",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,8 @@
     "release:gate": "tsx scripts/t60-release-gate.ts"
   },
   "dependencies": {
-    "@gradience/sdk": "file:../agent-arena/clients/typescript",
+    "@gradiences/ows-adapter": "workspace:*",
+    "@gradiences/sdk": "workspace:*",
     "@layerzerolabs/lz-definitions": "^3.0.167",
     "@layerzerolabs/lz-v2-utilities": "^3.0.167",
     "@libp2p/bootstrap": "^12.0.15",

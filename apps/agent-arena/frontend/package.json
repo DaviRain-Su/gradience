@@ -1,5 +1,5 @@
 {
-    "name": "@gradience/frontend",
+    "name": "@gradiences/frontend",
     "version": "0.0.1",
     "private": true,
     "scripts": {
@@ -9,7 +9,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@gradience/sdk": "file:../clients/typescript",
+        "@gradiences/sdk": "workspace:*",
         "@solana/kit": "^5.5.1",
         "@solana/web3.js": "^1.98.4",
         "bs58": "^6.0.0",

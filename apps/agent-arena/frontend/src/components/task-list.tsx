@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { TaskApi } from '@gradience/sdk';
+import type { TaskApi } from '@gradiences/sdk';
 
 import { createSdk } from '../lib/sdk';
 

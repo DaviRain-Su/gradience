@@ -8,7 +8,7 @@
 ## Installation
 
 ```bash
-npm install @gradience/ows-adapter
+npm install @gradiences/ows-adapter
 ```
 
 ## Basic Usage
@@ -16,7 +16,7 @@ npm install @gradience/ows-adapter
 ### 1. Initialize OWS Adapter
 
 ```typescript
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 const adapter = new OWSWalletAdapter({
   network: 'devnet', // or 'mainnet'
@@ -45,7 +45,7 @@ const signature = await adapter.signTaskAgreement(taskHash);
 ## Integration with Gradience Agent
 
 ```typescript
-import { AgentOWSIdentity } from '@gradience/agent';
+import { AgentOWSIdentity } from '@gradiences/agent';
 
 const agent = new AgentOWSIdentity();
 await agent.initialize();

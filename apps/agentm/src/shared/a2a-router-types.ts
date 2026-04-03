@@ -12,7 +12,7 @@ import type { Libp2pSubscription } from './libp2p-types.js';
 // ============ Protocol Types ============
 
 /** Supported transport protocols */
-export type ProtocolType = 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge';
+export type ProtocolType = 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge' | 'google-a2a';
 
 /** Protocol priority for selection */
 export type ProtocolPriority = 'broadcast' | 'direct_p2p' | 'paid_service' | 'offline_message';
@@ -81,6 +81,8 @@ export interface A2AResult {
     errorCode?: string;
     /** Timestamp */
     timestamp: number;
+    /** Additional metadata (e.g. demo mode flags) */
+    metadata?: Record<string, unknown>;
 }
 
 // ============ Discovery Types ============
@@ -115,6 +117,8 @@ export interface AgentInfo {
     nostrPubkey?: string;
     /** libp2p peer ID (if available) */
     libp2pPeerId?: string;
+    /** Google A2A endpoint URL (if available) */
+    googleA2AEndpoint?: string;
     /** Multiaddrs for direct connection */
     multiaddrs?: string[];
     /** Last seen timestamp */
@@ -224,6 +228,15 @@ export interface A2ARouterOptions {
             baseMicrolamports: number;
             perByteMicrolamports: number;
         };
+    };
+    /** Google A2A adapter options */
+    googleA2AOptions?: {
+        /** URL where this agent's Agent Card is served */
+        agentCardUrl?: string;
+        /** Port for local JSON-RPC server */
+        serverPort?: number;
+        /** Known peer Agent Card URLs for discovery */
+        knownPeers?: string[];
     };
     /** Agent ID (required for MagicBlock) */
     agentId?: string;

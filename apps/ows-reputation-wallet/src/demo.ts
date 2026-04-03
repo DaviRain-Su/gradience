@@ -1,5 +1,5 @@
 import { ReputationWallet } from './wallet';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 /**
  * Run demo of reputation-powered wallet

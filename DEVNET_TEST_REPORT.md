@@ -122,7 +122,7 @@ RPC URL: https://api.devnet.solana.com
 
 需要 ChainHub SDK 来测试合约交互:
 ```typescript
-import { ChainHub } from '@gradience/chain-hub-sdk';
+import { ChainHub } from '@gradiences/chain-hub-sdk';
 
 const chainHub = new ChainHub({
   programId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',

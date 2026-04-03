@@ -1,0 +1,60 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# apps/agent-daemon — Fastify + WebSocket + SQLite agent daemon
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.agent-daemon -t gradience/agent-daemon .
+#
+# NOTE: better-sqlite3 is a native addon — build tools are required at compile
+# time; only libstdc++ / libgcc are kept in the final image.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo ───────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+RUN npx --yes turbo@2 prune @gradiences/agent-daemon --docker
+
+# ── Stage 2: Install dependencies (with native build tools) ───────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+# Native build tools required by better-sqlite3
+RUN apk add --no-cache python3 make g++
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Compile TypeScript ───────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+RUN apk add --no-cache python3 make g++
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/agent-daemon/node_modules ./apps/agent-daemon/node_modules 2>/dev/null || true
+COPY --from=pruner /app/out/full/ .
+RUN pnpm --filter @gradiences/agent-daemon build
+
+# ── Stage 4: Runtime ──────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+# Runtime C++ stdlib required by the better-sqlite3 native addon
+RUN apk add --no-cache libstdc++ libgcc
+
+ENV NODE_ENV=production
+# Bind on all interfaces so Docker port mapping works
+ENV AGENTD_HOST=0.0.0.0
+ENV AGENTD_PORT=4001
+ENV AGENTD_LOG_LEVEL=info
+# Persist the SQLite database via a mounted volume
+ENV AGENTD_DB_PATH=/data/agentd.db
+
+COPY --from=builder /app/apps/agent-daemon/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+
+# Mount a volume at /data for persistent SQLite storage
+VOLUME ["/data"]
+EXPOSE 4001
+CMD ["node", "dist/index.js"]

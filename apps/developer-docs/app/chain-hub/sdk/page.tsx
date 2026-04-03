@@ -4,7 +4,7 @@ export default function ChainHubSDKRef() {
             <h1>Chain Hub SDK Reference</h1>
 
             <h2>ChainHubClient</h2>
-            <pre><code>{`import { ChainHubClient } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { ChainHubClient } from '@gradiences/chain-hub-sdk';
 
 const client = new ChainHubClient({
     baseUrl: 'https://indexer.gradiences.xyz',
@@ -79,7 +79,7 @@ interface SqlQueryResult {
 }`}</code></pre>
 
             <h2>Router (Low-Level)</h2>
-            <pre><code>{`import { ChainHubRouter, EnvKeyVaultAdapter } from '@gradience/chain-hub-sdk';
+            <pre><code>{`import { ChainHubRouter, EnvKeyVaultAdapter } from '@gradiences/chain-hub-sdk';
 
 const vault = new EnvKeyVaultAdapter({
     allowedCapabilities: ['invoke'],

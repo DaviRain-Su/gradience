@@ -237,7 +237,7 @@ apps/agentm/
 
 ```
 AgentM 依赖（全部已有，不新建）：
-├── @gradience/sdk          ← 链上调用（task.post, reputation.get 等）
+├── @gradiences/sdk          ← 链上调用（task.post, reputation.get 等）
 ├── A2A Protocol SDK        ← 消息协议
 ├── magicblock-a2a.ts       ← 传输层（InMemory / BroadcastChannel）
 ├── ranking.ts              ← Agent 排名算法
@@ -266,7 +266,7 @@ AgentM 不依赖：
 | `GET /api/agents/{pubkey}/profile` | Agent Profile（链上注册 + 链下扩展） | Agent 详情页加载 |
 | `GET /api/tasks?status=open` | 开放任务 | 任务浏览 |
 
-### → @gradience/sdk（链上调用）
+### → @gradiences/sdk（链上调用）
 
 | 方法 | 用途 | 调用时机 |
 |------|------|---------|

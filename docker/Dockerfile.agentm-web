@@ -1,0 +1,60 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# apps/agentm-web — Next.js 15 user-facing app (port 5200)
+# Build context: repository root
+#
+#   docker build -f docker/Dockerfile.agentm-web \
+#     --build-arg NEXT_PUBLIC_PRIVY_APP_ID=<id> \
+#     -t gradience/agentm-web .
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_VERSION=22
+
+# ── Stage 1: Prune monorepo ───────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS pruner
+WORKDIR /app
+COPY . .
+RUN npx --yes turbo@2 prune @gradiences/agentm-web --docker
+
+# ── Stage 2: Install dependencies ─────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: Build Next.js ────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/agentm-web/node_modules ./apps/agentm-web/node_modules 2>/dev/null || true
+COPY --from=pruner /app/out/full/ .
+
+ARG NEXT_PUBLIC_INDEXER_URL=http://indexer-mock:3001
+ARG NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT=http://indexer-mock:3001
+ARG NEXT_PUBLIC_PRIVY_APP_ID
+ARG NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT
+ENV NEXT_PUBLIC_INDEXER_URL=$NEXT_PUBLIC_INDEXER_URL
+ENV NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT=$NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT
+ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
+ENV NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT=$NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT
+
+RUN pnpm --filter @gradiences/agentm-web build
+
+# ── Stage 4: Runtime ──────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# next start respects the PORT env variable
+ENV PORT=5200
+
+COPY --from=builder /app/apps/agentm-web/.next ./.next
+COPY --from=builder /app/apps/agentm-web/package.json ./package.json
+COPY --from=builder /app/apps/agentm-web/next.config.ts ./next.config.ts
+COPY --from=builder /app/apps/agentm-web/public* ./public/
+COPY --from=builder /app/node_modules ./node_modules
+
+EXPOSE 5200
+CMD ["node_modules/.bin/next", "start"]

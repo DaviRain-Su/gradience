@@ -15,7 +15,7 @@
 | Tailwind CSS | 样式 |
 | Zustand | 状态管理 |
 | @privy-io/react-auth | Google OAuth → 嵌入式 Solana 钱包 |
-| @gradience/sdk | 链上调用（声誉、任务） |
+| @gradiences/sdk | 链上调用（声誉、任务） |
 | magicblock-a2a.ts | A2A 传输层（迁移自 agent-social） |
 | ranking.ts | Agent 排名算法（迁移自 agent-social） |
 | Whisper.cpp (WASM) | 语音识别（本地） |
@@ -564,7 +564,7 @@ class IndexerClient {
 | `GET /api/tasks/{id}/submissions` | 提交列表 |
 | `GET /api/agents/{pubkey}/profile` | Agent 标准化 Profile |
 
-### → @gradience/sdk
+### → @gradiences/sdk
 
 | 方法 | 用途 |
 |------|------|

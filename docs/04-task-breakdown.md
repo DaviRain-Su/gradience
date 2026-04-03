@@ -63,7 +63,7 @@
 | T24 | Indexer — WebSocket 服务器 | WS 连接 ws://indexer/ws；事件广播：TaskCreated / SubmissionReceived / TaskJudged；客户端可 filter by task_id | T22 | 2h | P1 | WS 客户端订阅 → 收到 DB upsert 触发的事件；连接断开自动清理；重连不丢事件 |
 | T25 | Indexer — Cloudflare Workers + D1 适配层 | CF Workers wrapper；D1 SQLite schema（与 PG schema 对齐）；`wrangler deploy` 到 CF；REST API 路径与 Self-hosted 完全一致 | T23 | 3h | P1 | Managed 模式 CF 部署成功；相同 curl 命令返回相同格式 |
 | T25a | Indexer — Docker 镜像 + compose 文件 | `Dockerfile`（Self-hosted Rust 二进制）；`docker-compose.yml`（Indexer + PostgreSQL）；`README.md` 一键启动说明 | T23 | 2h | P1 | `docker compose up` → 服务启动；`curl localhost:3001/api/tasks` → 正确响应；镜像大小 < 100MB |
-| T26 | SDK — Codama IDL 生成 + TypeScript 客户端 | `@gradience/sdk` 包初始化；在 Rust 账户/指令结构体上添加 `#[derive(CodamaAccount)]` / `#[derive(CodamaInstruction)]` 注解；运行 `cargo codama --output sdk/src/generated` 生成 IDL JSON 和 TypeScript 客户端代码；`GradienceSDK` class 包装生成代码；`SDK_README.md` 快速开始文档 | T19d | 2h | P0 | `cargo codama` 运行成功，生成 IDL JSON + 9 个账户 TS 类型 + 11 个指令 builder；`import { GradienceSDK } from '@gradience/sdk'` 编译通过；README 3 行代码示例可运行 |
+| T26 | SDK — Codama IDL 生成 + TypeScript 客户端 | `@gradiences/sdk` 包初始化；在 Rust 账户/指令结构体上添加 `#[derive(CodamaAccount)]` / `#[derive(CodamaInstruction)]` 注解；运行 `cargo codama --output sdk/src/generated` 生成 IDL JSON 和 TypeScript 客户端代码；`GradienceSDK` class 包装生成代码；`SDK_README.md` 快速开始文档 | T19d | 2h | P0 | `cargo codama` 运行成功，生成 IDL JSON + 9 个账户 TS 类型 + 11 个指令 builder；`import { GradienceSDK } from '@gradiences/sdk'` 编译通过；README 3 行代码示例可运行 |
 | T27 | SDK — task.post / apply / submit | 三个核心方法；SOL + SPL 双路径；wallet adapter 调用 sign/sendTx | T26 | 3h | P0 | 单元测试（mock Program）：3 方法返回 tx signature；devnet 端测通过 |
 | T28 | SDK — task.judge / cancel / refund / forceRefund | 4 个方法包装剩余指令；`remaining_accounts` 自动组装落败者 Application PDA 列表；**ALT 自动处理**：`pnpm add @solana-program/address-lookup-table`，当 remaining_accounts > 20 时自动查找/创建 ALT（seeds: [task_id]），批量扩展地址，构建 v0 VersionedTransaction（每地址节省 31 字节，保障大参与者数任务的交易不超 1232 字节限制）；≤ 20 时走普通 Legacy Transaction | T27 | 2h | P0 | 单元测试通过；devnet 端到端可用；权限错误（`NotTaskJudge` / `NotTaskPoster` / `NotUpgradeAuthority` 等）时抛出含 Gradience 错误码的异常；**额外验证**：mock 50 个落败者时 `task.judge()` 使用 v0 tx 且成功上链；10 个落败者时使用 Legacy tx |
 | T29 | SDK — reputation / JudgePool 查询 | `reputation.get(agent)`（读链上 PDA）；`judgePool.list(category)`；`task.submissions(taskId, {sort})`（查 Indexer） | T26 | 2h | P1 | 查询返回带类型的响应；未找到时返回 null 而非抛出；JSDoc 注释完整 |
@@ -253,7 +253,7 @@ flowchart LR
 包含任务：T17, T18, T18a, T19a ~ T19d, T21 ~ T25a, T26 ~ T35a, T35b, T36 ~ T37, T37a, T38
 
 **验收条件**：
-- `npm install @gradience/sdk` → 3 行代码发任务成功
+- `npm install @gradiences/sdk` → 3 行代码发任务成功
 - `gradience task post ...` 在 devnet 创建任务
 - Judge Daemon Type B（Claude API）自动评判一个测试任务并上链
 - 前端可完整操作任务生命周期

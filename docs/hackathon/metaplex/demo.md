@@ -82,7 +82,7 @@ Next: Gold Tier (60+ reputation)
 
 ```typescript
 import { MetaplexAgentKit } from '@metaplex/agent-kit';
-import { GradienceSDK } from '@gradience/sdk';
+import { GradienceSDK } from '@gradiences/sdk';
 
 const agent = new MetaplexAgentKit({
   gradience: new GradienceSDK(),

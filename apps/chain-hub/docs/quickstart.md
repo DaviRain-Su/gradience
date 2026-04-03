@@ -10,7 +10,7 @@ Chain Hub is the "Stripe for blockchain" - enabling Agents to access any on-chai
 ## Installation
 
 ```bash
-npm install @gradience/chain-hub
+npm install @gradiences/chain-hub
 ```
 
 ## Quick Start
@@ -18,7 +18,7 @@ npm install @gradience/chain-hub
 ### 1. Initialize Chain Hub Client
 
 ```typescript
-import { ChainHub } from '@gradience/chain-hub';
+import { ChainHub } from '@gradiences/chain-hub';
 
 const hub = new ChainHub({
   network: 'devnet',

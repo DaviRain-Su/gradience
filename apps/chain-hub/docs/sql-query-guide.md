@@ -110,7 +110,7 @@ LIMIT 50;
 ## API Integration
 
 ```typescript
-import { ChainHubIndexer } from '@gradience/chain-hub';
+import { ChainHubIndexer } from '@gradiences/chain-hub';
 
 const indexer = new ChainHubIndexer({
   databaseUrl: 'postgres://...'

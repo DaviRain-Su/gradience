@@ -10,8 +10,8 @@
 
 | 组件 | 测试数 | 状态 |
 |------|--------|------|
-| SDK (@gradience/sdk) | 23 | ✅ (含 wallet adapters) |
-| CLI (@gradience/cli) | 17 | ✅ (含 profile 命令) |
+| SDK (@gradiences/sdk) | 23 | ✅ (含 wallet adapters) |
+| CLI (@gradiences/cli) | 17 | ✅ (含 profile 命令) |
 | Judge Daemon | 35 | ✅ |
 | A2A Runtime | 35 | ✅ |
 | **合计** | **110** | **全绿** |

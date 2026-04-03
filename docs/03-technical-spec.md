@@ -872,7 +872,7 @@ if (remainingAccounts.length > 20) {
 
 ---
 
-### 3.3.2 SDK 公开接口（`@gradience/sdk`）
+### 3.3.2 SDK 公开接口（`@gradiences/sdk`）
 
 ```typescript
 interface GradienceSDK {
@@ -1779,7 +1779,7 @@ if (score >= MIN_SCORE) {
 ### 3.12.4 SDK 查询接口
 
 ```typescript
-// @gradience/sdk — agentAttestations 查询
+// @gradiences/sdk — agentAttestations 查询
 
 import { fetchAllAttestation } from "sas-lib";
 import type { Address } from "@solana/kit";

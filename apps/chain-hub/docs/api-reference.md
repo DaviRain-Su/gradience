@@ -152,7 +152,7 @@ POST /query
 ## SDK Usage
 
 ```typescript
-import { ChainHub } from '@gradience/chain-hub';
+import { ChainHub } from '@gradiences/chain-hub';
 
 const hub = new ChainHub({ apiKey: 'YOUR_KEY' });
 

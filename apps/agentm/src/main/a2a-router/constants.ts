@@ -98,15 +98,52 @@ export const LIBP2P_CONFIG = {
     },
 } as const;
 
+// ============ Google A2A Configuration ============
+
+export const GOOGLE_A2A_CONFIG = {
+    /** Well-known Agent Card path */
+    AGENT_CARD_PATH: '/.well-known/agent.json',
+
+    /** JSON-RPC methods */
+    METHODS: {
+        TASKS_SEND: 'tasks/send',
+        TASKS_GET: 'tasks/get',
+        TASKS_CANCEL: 'tasks/cancel',
+        TASKS_PUSH_NOTIFICATION_SET: 'tasks/pushNotification/set',
+        TASKS_PUSH_NOTIFICATION_GET: 'tasks/pushNotification/get',
+        TASKS_RESUBSCRIBE: 'tasks/resubscribe',
+    },
+
+    /** Task states */
+    TASK_STATES: {
+        SUBMITTED: 'submitted',
+        WORKING: 'working',
+        INPUT_REQUIRED: 'input-required',
+        COMPLETED: 'completed',
+        CANCELED: 'canceled',
+        FAILED: 'failed',
+    },
+
+    /** Timeouts in milliseconds */
+    TIMEOUTS: {
+        REQUEST: 10000,
+        AGENT_CARD_FETCH: 5000,
+        POLL_INTERVAL: 30000,
+    },
+
+    /** Gradience extension key in Agent Card */
+    EXTENSION_KEY: 'x-gradience',
+} as const;
+
 // ============ Router Configuration ============
 
 export const ROUTER_CONFIG = {
     /** Protocol selection priority */
     PROTOCOL_PRIORITY: {
-        BROADCAST: ['nostr', 'libp2p'],
-        DIRECT_P2P: ['libp2p', 'nostr'],
+        BROADCAST: ['nostr', 'libp2p', 'google-a2a'],
+        DIRECT_P2P: ['libp2p', 'google-a2a', 'nostr'],
         PAID_SERVICE: ['magicblock'],
-        OFFLINE_MESSAGE: ['nostr'],
+        OFFLINE_MESSAGE: ['nostr', 'google-a2a'],
     },
 
     /** Health check interval (ms) */
@@ -130,6 +167,10 @@ export const A2A_ERROR_CODES = {
 
     MAGICBLOCK_PAYMENT_FAILED: '1200',
     MAGICBLOCK_INSUFFICIENT_BALANCE: '1201',
+
+    GOOGLE_A2A_AGENT_CARD_FETCH_FAILED: '1300',
+    GOOGLE_A2A_RPC_ERROR: '1301',
+    GOOGLE_A2A_TASK_FAILED: '1302',
 
     // Router layer errors (2000-2999)
     NO_AVAILABLE_PROTOCOL: '2000',

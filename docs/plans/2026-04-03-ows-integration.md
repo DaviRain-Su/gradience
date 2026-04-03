@@ -214,7 +214,7 @@ export interface AgentCredential {
 
 ```typescript
 // apps/agentm/src/lib/ows-identity.ts
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 import { AgentIdentity } from '../shared/types';
 
 export class AgentOWSIdentity {
@@ -276,7 +276,7 @@ git commit -m "feat(agent): integrate OWS identity with Agent types"
 
 ```bash
 cd packages/xmtp-adapter
-npm install @xmtp/xmtp-js @gradience/ows-adapter
+npm install @xmtp/xmtp-js @gradiences/ows-adapter
 ```
 
 **Step 2: Create XMTP adapter**
@@ -284,7 +284,7 @@ npm install @xmtp/xmtp-js @gradience/ows-adapter
 ```typescript
 // packages/xmtp-adapter/src/client.ts
 import { Client } from '@xmtp/xmtp-js';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 export interface XMTPMessage {
   id: string;
@@ -445,14 +445,14 @@ git commit -m "feat(protocol): define task negotiation message types"
 
 ```typescript
 // packages/integration/src/task-orchestrator.ts
-import { XMTPAgentClient } from '@gradience/xmtp-adapter';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
-import { GradienceSDK } from '@gradience/sdk';
+import { XMTPAgentClient } from '@gradiences/xmtp-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
+import { GradienceSDK } from '@gradiences/sdk';
 import { 
   TaskNegotiationProtocol, 
   MessageType,
   TaskRequestMessage 
-} from '@gradience/protocol';
+} from '@gradiences/protocol';
 
 export class TaskOrchestrator {
   private xmtp: XMTPAgentClient;
@@ -541,7 +541,7 @@ git commit -m "feat(integration): create task orchestrator linking XMTP and Grad
 // apps/agentm/src/views/OWSDashboard.tsx
 import { useEffect, useState } from 'react';
 import { AgentOWSIdentity } from '../lib/ows-identity';
-import { XMTPAgentClient } from '@gradience/xmtp-adapter';
+import { XMTPAgentClient } from '@gradiences/xmtp-adapter';
 
 export function OWSDashboard() {
   const [identity, setIdentity] = useState<any>(null);
@@ -678,7 +678,7 @@ Gradience uses OWS (Open Wallet Standard) for agent identity and authentication.
 ## Quick Start
 
 ```typescript
-import { AgentOWSIdentity } from '@gradience/agent';
+import { AgentOWSIdentity } from '@gradiences/agent';
 
 const agent = new AgentOWSIdentity();
 await agent.initialize();
@@ -718,10 +718,10 @@ git commit -m "docs: add OWS integration documentation"
 
 ### Deliverables
 
-1. ✅ OWS Adapter package (`@gradience/ows-adapter`)
-2. ✅ XMTP Adapter package (`@gradience/xmtp-adapter`)
-3. ✅ Task Negotiation Protocol (`@gradience/protocol`)
-4. ✅ Integration Layer (`@gradience/integration`)
+1. ✅ OWS Adapter package (`@gradiences/ows-adapter`)
+2. ✅ XMTP Adapter package (`@gradiences/xmtp-adapter`)
+3. ✅ Task Negotiation Protocol (`@gradiences/protocol`)
+4. ✅ Integration Layer (`@gradiences/integration`)
 5. ✅ Agent Dashboard with OWS identity
 6. ✅ Comprehensive tests
 7. ✅ Developer documentation

@@ -122,7 +122,7 @@ async function testIndexerApi() {
 async function testSdkIndexerIntegration() {
     console.log('\n🔗 SDK → Indexer Integration');
 
-    // Dynamic import so script works without @gradience/sdk installed globally
+    // Dynamic import so script works without @gradiences/sdk installed globally
     let GradienceSDK: any;
     try {
         const sdk = await import('../apps/agent-arena/clients/typescript/src/sdk.ts');

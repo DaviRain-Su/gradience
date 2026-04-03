@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { ReputationWallet } from './wallet';
-import { OWSWalletAdapter } from '@gradience/ows-adapter';
+import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 /**
  * Reputation-Powered Wallet CLI
