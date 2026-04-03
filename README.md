@@ -37,7 +37,7 @@ Sovereignty (data belongs to you)
 flowchart TB
     User["👤 You"]
     
-    subgraph AgentIM["AgentM (User Entry)"]
+    subgraph AgentM["AgentM (User Entry)"]
         IMDesc["Super app for humans + agents<br/>Me view · Social view · Voice-native · Google OAuth<br/>Desktop-first (Electrobun) · Local voice (Whisper + TTS)<br/>Status: 📐 Designed"]
     end
     
@@ -60,10 +60,10 @@ flowchart TB
         A2ADesc["Identity: On-chain DID<br/>Trust: Reputation propagation + Staking + Slash<br/>Payment: Cross-agent revenue split<br/><br/>Status: 🔭 2027 Roadmap"]
     end
     
-    User --> AgentIM
-    AgentIM --> Arena
-    AgentIM --> Hub
-    AgentIM -.-> Runtime
+    User --> AgentM
+    AgentM --> Arena
+    AgentM --> Hub
+    AgentM -.-> Runtime
     Arena --> ProtocolLayer
     Hub --> ProtocolLayer
     ProtocolLayer --> A2ALayer
@@ -397,7 +397,7 @@ The reference implementation of the **Agent Layer** protocol — decentralized A
 
 **Tech stack:** Solana Program (Rust) · Next.js 14 · TypeScript SDK · CLI · Judge Daemon
 
-**Repository:** [gradiences/agent-arena](https://codeberg.org/gradiences/agent-arena) (Agent Layer reference implementation)
+**Repository:** [apps/agent-arena/](apps/agent-arena/) (Agent Layer reference implementation)
 
 ---
 
@@ -423,7 +423,7 @@ Any service can register into Chain Hub and become a Skill that Agents can call:
 Registering into Chain Hub = your protocol becomes callable by every Gradience Agent, with zero changes to your existing contract.
 
 **Powered by Solana Developer Platform (SDP):**
-Chain Hub uses [SDP](https://platform.solana.com) (launched March 2026 by Solana Foundation) as its financial primitive layer.
+Chain Hub uses [SDP](https://solana.com/solutions/sdp) (launched March 2026 by Solana Foundation) as its financial primitive layer.
 
 ---
 
@@ -539,8 +539,8 @@ Not because "Web3 is trendy" — because it's technically necessary:
 | [apps/agentm/docs/02-architecture.md](apps/agentm/docs/02-architecture.md) | AgentM: Technical architecture — Electrobun, A2A integration, runtime |
 | [apps/chain-hub/skill-protocol.md](apps/chain-hub/skill-protocol.md) | Skill system: acquire, trade, verify, inherit |
 | [apps/chain-hub/chain-selection-analysis.md](apps/chain-hub/chain-selection-analysis.md) | Chain selection analysis for deployment |
-| [apps/agent-me/README.md](apps/agent-me/README.md) | *(Archived)* AgentM — merged into AgentM |
-| [apps/agent-social/agent-social.md](apps/agent-social/agent-social.md) | *(Archived)* AgentM — merged into AgentM |
+| [archive/agent-me/README.md](archive/agent-me/README.md) | *(Archived)* AgentM — merged into AgentM |
+| [archive/agent-social/agent-social.md](archive/agent-social/agent-social.md) | *(Archived)* AgentM — merged into AgentM |
 
 ---
 
@@ -603,7 +603,7 @@ We welcome all contributions — bug reports, feature suggestions, pull requests
 ## Community
 
 - **Website**: [gradiences.xyz](https://www.gradiences.xyz)
-- **X (Twitter)**: [@gradience_](https://x.com/gradience_)
+- **X**: [@gradience_](https://x.com/gradience_)
 
 ---
 
