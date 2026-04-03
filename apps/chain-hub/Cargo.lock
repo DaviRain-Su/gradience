@@ -601,7 +601,6 @@ dependencies = [
  "borsh",
  "pinocchio",
  "pinocchio-system",
- "solana-address 2.5.0",
  "thiserror 2.0.18",
 ]
 

@@ -12,14 +12,14 @@
 |------|--------|------|------|
 | Agent Arena (Solana Program) | 55 | ✅ | LiteSVM 集成测试 |
 | A2A Protocol (Solana Program) | 11 | ✅ | LiteSVM 集成测试 |
-| Chain Hub (Solana Program) | 8 | ✅ | LiteSVM 集成测试 |
+| Chain Hub (Solana Program) | 12 | ✅ | LiteSVM 集成测试 (10 integration + 2 unit) |
 | SDK (@gradiences/sdk) | 20 | ✅ | Node.js 单元测试 |
 | CLI (@gradiences/cli) | 13+ | ✅ | NO_DNA + profile 命令 |
 | Judge Daemon | 35 | ✅ | 工作流 + 评估器 + interop |
 | A2A Runtime | 35 | ✅ | Relay + Orchestrator + Server |
 | AgentM | 39 | ✅ | Store + API + A2A + Identity |
 | W2 E2E Integration | 12 | ✅ | Indexer → SDK 数据流 |
-| **合计** | **228+** | **全绿** | |
+| **合计** | **232+** | **全绿** | |
 
 ---
 
@@ -119,8 +119,11 @@
 | W2 E2E: Indexer → SDK 端到端 | ✅ 12/12 |
 | W3: AgentM → AgentM 产品化 | ✅ 39 tests + Phase 7 通过 |
 | W3: AgentM Pro Stage A+B | ✅ Profile Studio 完成 |
-| W3: Chain Hub MVP | ✅ 11 指令 + 8 tests |
+| W3: Chain Hub MVP | ✅ 11 指令 + 12 tests, Devnet 已部署 |
 | A2A on Solana | ✅ 16 指令 + 11 tests + Runtime 35 tests |
+| Gap Closure Phase 1 | ✅ ChainHub devnet + SDK + Indexer PostgreSQL |
+| Gap Closure Phase 2 | ✅ Agent Social MVP (Profile/Follow/Feed/Messages) |
+| Gap Closure Phase 3 | ✅ Integration + A2A hardening + AgentM Web sync |
 
 ---
 
@@ -128,7 +131,7 @@
 
 **Gradience Protocol 整体审查通过。**
 
-- **228+ 测试全绿**，覆盖所有核心模块
+- **232+ 测试全绿**，覆盖所有核心模块
 - **3 个 Solana 程序**（Agent Arena + A2A Protocol + Chain Hub）全部构建并测试通过
 - **两个产品**（AgentM + AgentM Pro）完成 7 阶段 dev-lifecycle
 - **部署就绪**：所有组件可独立启动，E2E 数据流验证通过
@@ -139,3 +142,16 @@
 3. Dragon's Mouth / Helius 事件源真实接入
 
 **Phase 7 验收**: ✅ 通过
+
+---
+
+## 7.9 Gap Closure 补充记录 (2026-04-03)
+
+详见: `docs/plans/2026-04-03-gap-closure-plan.md`
+
+19 个新任务 (GRA-119 ~ GRA-137) 全部完成。主要交付:
+- ChainHub devnet 部署 (Program ID: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec`)
+- Indexer PostgreSQL 基础设施 + DataStore 抽象层 + PgStore
+- Social API 后端路由 (follow/posts/feed/search/notifications)
+- AgentM Web 新增 FeedView + SocialView, 7 tabs 导航
+- 16/16 包构建成功, 11/11 TypeScript typecheck 通过

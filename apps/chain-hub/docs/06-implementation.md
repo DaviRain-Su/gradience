@@ -55,7 +55,7 @@
 | test_skill_protocol_lifecycle.rs | Skill/Protocol 注册 + 状态管理 | ✅ |
 | state.rs unit tests | 状态长度验证 | ✅ |
 | SDK unit tests | router, key-vault, royalty, invoke | ✅ |
-| **合计** | **8 integration + SDK tests** | **全绿** |
+| **合计** | **12 tests (10 integration + 2 unit) + SDK tests** | **全绿** |
 
 ---
 
@@ -93,6 +93,23 @@ Created → Active → Completed
 - `created_at` + `deadline` 控制过期
 - `execution_count` 追踪执行次数
 - 仅 agent/judge 角色可推进状态
+
+---
+
+## Devnet 部署
+
+| 项目 | 值 |
+|------|------|
+| Program ID | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` |
+| Network | Devnet |
+| Data Length | 107,752 bytes |
+| Build | `cargo-build-sbf -- --package chain-hub` |
+| Deploy Tx | `2TVARSjuC9K6RbveLm2CKJGNXacDLeX39mtxTpFmYXtg14Wur6Cp6KhjCDnautdmDEaYCaYwiVYwveGZUuCNv5RD` |
+
+### 部署修复
+
+- 移除 `solana-address` (带 `curve25519` feature) 依赖，解决 `getrandom` 在 SBF 目标上的编译错误
+- 使用 `cargo-build-sbf -- --package chain-hub` 单独编译 program，避免 workspace 其他成员的依赖影响
 
 ---
 

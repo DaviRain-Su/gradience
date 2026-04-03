@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-84
 title: "[A2A] Harden Runtime for production"
-status: todo
+status: done
 priority: P2
 project: "📡 A2A Protocol"
 created: 2026-04-03

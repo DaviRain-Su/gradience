@@ -15,6 +15,5 @@ no-entrypoint = []
 [dependencies]
 pinocchio = { workspace = true, features = ["cpi", "copy"] }
 pinocchio-system = { workspace = true }
-solana-address = { workspace = true }
 borsh = { workspace = true }
 thiserror = { workspace = true }

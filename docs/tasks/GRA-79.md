@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-79
 title: "[Core] Integrate Core with AgentM Pro"
-status: todo
+status: done
 priority: P2
 project: "🧠 AgentM Core"
 created: 2026-04-03

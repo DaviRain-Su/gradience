@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-65
 title: "[Indexer] Setup Indexer service infrastructure"
-status: in-progress
+status: done
 priority: P1
 project: "🔍 Chain Hub Indexer"
 created: 2026-04-03

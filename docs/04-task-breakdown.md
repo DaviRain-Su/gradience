@@ -1,8 +1,10 @@
-# Phase 4: Task Breakdown — Agent Layer v2
+# Phase 4: Task Breakdown — Agent Layer v2 (Updated)
 
 > **目的**: 将技术规格拆解为可执行、可分配、可验收的独立任务
 > **输入**: `docs/03-technical-spec.md`
 > **输出物**: 本文档
+> **更新日期**: 2026-04-02
+> **更新说明**: 根据 Gap Analysis 重新调整优先级，T19a-d 提升为 W1 阻塞项，AgentM 任务细化
 
 ---
 
@@ -12,15 +14,31 @@
 2. **每个任务有明确的 Done 定义**（可验证）
 3. **任务之间的依赖关系必须标明**
 4. **先基础后上层**（按依赖顺序排列）
+5. **关键路径优先**（P0 阻塞项优先于 P1）
 
 ---
 
-## 4.2 任务列表
+## 4.2 关键路径总览
 
-### 🔴 W1（2026-04-01 ~ 04-14，2 周）— Solana 核心 Program
+```
+W1 (4月1-14日): Program 核心 + 集成测试 (T19a-d 为唯一阻塞项)
+    ↓
+W2 (4月15-21日): Indexer + SDK + CLI + Judge Daemon + 前端
+    ↓
+W3 (4月22-26日): AgentM MVP + Chain Hub + GRAD Token
+    ↓
+W4 (4月27-30日): EVM + 跨链 + A2A (Stretch Goals)
+```
 
-> **W1 容量说明**：2 周 × ~4h/天（含 AI 辅助）≈ 56h 可用；本节任务合计 **38h**，留 18h 调试和迭代缓冲。
-> T17/T18（Program 附属指令）和 T19a-T19d（集成测试）移至 W2，与工具链联调统一执行。
+---
+
+## 4.3 任务列表
+
+### 🔴 W1（2026-04-01 ~ 04-14，2 周）— Solana 核心 Program + 集成测试
+
+> **W1 关键目标**：完成 Solana Program 核心功能 + 集成测试（T19a-d 为唯一阻塞项）
+> **容量**：2 周 × ~4h/天 ≈ 56h；本节任务合计 **52h**，留 4h 缓冲
+> **验收标准**：T19a-d 全部通过方可进入 W2
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
@@ -30,7 +48,7 @@
 | T04 | 账户结构体 — Submission / RuntimeEnv | `Submission`（497B）嵌套 `RuntimeEnv`（176B，MAX_VERSION_LEN=32）；所有字段、String 最大长度注解；`#[derive(BorshSerialize, BorshDeserialize)]` | T02 | 2h | P0 | `const SUBMISSION_SIZE: usize = 497` 正确；RuntimeEnv 4 字段 Borsh 总和 = 36+68+36+36=176 |
 | T05 | 账户结构体 — Reputation / Stake / JudgePool / Treasury / ProgramConfig | `Reputation`（109B）、`Stake`（66B）、`JudgePool`（7210B）、`Treasury`（1B）、`ProgramConfig`（81B）；枚举 `TaskState` / `JudgeMode` / `Category`（`#[repr(u8)] + BorshSerialize/BorshDeserialize`） | T02 | 2h | P0 | 各结构体大小常量与规格一致；所有枚举 `repr(u8)` 正确；Borsh 单元测试通过 |
 | T06 | `initialize` 指令 | 初始化 `ProgramConfig`（upgrade_authority、min_judge_stake）和 `Treasury` PDA；一次性调用；Pinocchio 手动检查 config account data_len == 0 防止重复初始化 | T05 | 2h | P0 | 测试：`initialize` → ProgramConfig 字段值正确；二次调用因 data_len > 0 而失败（`ProgramError::AccountAlreadyInUse`，非自定义码） |
-| T07 | `post_task` — SOL 路径 | Task PDA 创建，SOL reward 转入 Escrow，`config.task_count++`；Pool 模式链上加权随机（sha256 seed）抽 Judge；**sol_log_data TaskCreated 事件** | T06, T16 | 3h | P0 | 测试：发 SOL 任务 → `Task.state=Open`，Escrow 余额 = reward；Pool 模式 judge 字段被协议填写；reward=0 → `ZeroReward`；TaskCreated 事件通过 parseEvents 验证 |
+| T07 | `post_task` — SOL 路径 | Task PDA 创建，SOL reward 转入 Escrow，`config.task_count++`；Pool 模式链上加权随机（sha256 seed）抽 Judge；**sol_log_data TaskCreated 事件** | T06, T16 | 3h | P0 | 测试：发 SOL 任务 → `Task.state=Open`，Escrow 余额 = reward；Pool 模式 judge 字段由协议填写；reward=0 → `ZeroReward`；TaskCreated 事件通过 parseEvents 验证 |
 | T08a | SPL Token ATA 工具函数 | 封装 `create_associated_token_account` 工具函数；验证 ATA owner（authority = escrow PDA）；统一处理 Poster / Agent / Judge / Treasury 的 ATA 初始化逻辑；供 T08 / T09 / T11 / T13-T15 复用 | T06 | 2h | P0 | 工具函数编译通过；单元测试：创建 ATA → owner 正确；已存在 ATA 时幂等不报错 |
 | T08 | `post_task` — SPL / Token-2022 路径 | SPL Token / Token-2022 版本：ATA 初始化，`token::transfer` 锁入 escrow_ata；检查 mint 是否启用 Transfer Hook / Confidential Transfer，有则返回 `UnsupportedMintExtension` | T07, T08a | 3h | P0 | 测试：SPL 任务 → escrow_ata 余额 = reward；带 Transfer Hook 的 Token-2022 mint → `UnsupportedMintExtension` |
 | T09 | `apply_for_task` — SOL + SPL 路径 | Application PDA 手动创建，Reputation PDA 按需创建（data_len==0 检查），SOL / SPL 质押转入 Escrow（调用 T08a 工具函数）；**`rep.global.total_applied++`**（win_rate 分母）；前置条件：state=Open，deadline 未过，未重复申请；**sol_log_data TaskApplied 事件** | T08a, T07, T08 | 3h | P0 | 测试：apply → Application created，stake 锁入 Escrow，**`reputation.global.total_applied` 递增**；重复申请 → `AlreadyApplied`；`min_stake=0` 无需质押；TaskApplied 事件通过 parseEvents 验证 |
@@ -41,25 +59,26 @@
 | T14 | `refund_expired` | 任何人调用；前置条件：state=Open、**clock > task.deadline**（提交截止，非 judge_deadline）；通过 `remaining_accounts` 批量退回 Agent 质押；全额退还 Poster；`Task.state=Refunded`；**sol_log_data TaskRefunded（reason=Expired）事件** | T08a, T07 | 2h | P0 | 测试：设时钟过期 → `refund_expired` 成功；**截止时间未到 → `DeadlineNotPassed`**（6006，非 JudgeDeadlineNotPassed）；TaskRefunded 事件携带 reason=Expired |
 | T15 | `force_refund` + Slash 逻辑 | **T16 完成并通过测试后方可开始**；任何人调用；clock > judge_deadline + FORCE_REFUND_DELAY；Slash 三步；**资金分配：95% → Poster，3% → 提交数最多的 Agent，2% → Treasury**（非全额退款）；所有申请者 stakes 退回；**sol_log_data TaskRefunded（reason=ForceRefund）事件** | T08a, T07, T16 | 3h | P0 | 测试：force_refund → Poster 得 95%，最活跃 Agent 得 3%，Treasury 得 2%；Judge stake 扣减；stake 不足时从 Pool 移除；延迟未过 → `ForceRefundDelayNotPassed` |
 | T16 | `register_judge` + `unstake_judge` | `register_judge`：质押 ≥ min_judge_stake，声明 category，首次调用手动检查 JudgePool data_len==0 并创建 PDA（7210B），计算初始权重；**sol_log_data JudgeRegistered 事件**；`unstake_judge`：冷却期检查，从 JudgePool 移除，退还质押；**sol_log_data JudgeUnstaked 事件** | T06 | 2h | P0 | 测试：首次 register → JudgePool 创建，JudgeRegistered 事件通过 parseEvents 验证；200 人后注册 → `JudgePoolFull`；unstake → Stake PDA 关闭，JudgeUnstaked 事件验证；冷却前 unstake → `CooldownNotExpired` |
+| T17 | `upgrade_config` 指令 | 仅 upgrade_authority 可调用；更新 `treasury` 地址和 `min_judge_stake` | T06 | 1h | **P0** | 测试：upgrade_config 更新两字段后值正确；非 authority 调用 → `NotUpgradeAuthority` |
+| T18 | IJudge 三层评判接口定义 | 定义 `IJudge` trait 和 CPI 接口；三层架构：① `TestCasesEvaluator`（C-1/C-2，测试用例 + 哈希对比，存根返回固定分数 80）；② `LLMScoreEvaluator` 接口存根（Type B，DSPy 实现在 T35）；③ `OnChainEvaluator` 接口存根（C-3/C-4，W4 实现）；接口注释文档 | T05 | 2h | P1 | 编译通过；三层接口均可被外部 Program 实现；`evaluationCID` JSON schema 与 §3.11 定义一致 |
+| **T19a** | **集成测试 — initialize + post_task** | **【W1 阻塞项 - P0】** devnet 部署后：`initialize` → `post_task`（SOL Designated 模式）→ `post_task`（SOL Pool 模式）→ `post_task`（SPL）→ `post_task`（Token-2022 带 Hook → 拒绝）；升级路径：`upgrade_config` | T12, T13, T14, T15, T16, T17, T18, T08 | 3h | **P0** | litesvm + `@solana/web3.js` 5 个 post_task 场景全绿；Pool 模式 judge 字段由协议填写；TaskCreated 事件通过 parseEvents 验证 |
+| **T19b** | **集成测试 — apply + submit** | **【W1 阻塞项 - P0】** `apply_for_task`（SOL stake、SPL stake、min_stake=0）→ `submit_result`（首次、覆盖）；RuntimeEnv 字段验证；重复申请；**验证 `total_applied` 每次 apply 递增** | T19a | 3h | **P0** | 申请 + 提交 6 个场景全绿；`AlreadyApplied`、`InvalidRuntimeEnv` 错误码正确触发；total_applied 计数正确 |
+| **T19c** | **集成测试 — judge_and_pay + cancel + refund** | **【W1 阻塞项 - P0】** `judge_and_pay`（SOL + SPL，正常赢家；tie-break by slot；score < MIN_SCORE 退款）；`cancel_task`（**无申请 + 有申请两路径，验证 remaining_accounts 质押退回**）；`refund_expired`；`HasSubmissions` 错误验证 | T19b | 3h | **P0** | 分账精度逐 lamport 验证；3 条退款路径全绿；cancel 有申请时 remaining_accounts 质押退回正确；信誉 global + category 更新验证 |
+| **T19d** | **集成测试 — force_refund/slash + 安全测试** | **【W1 阻塞项 - P0】** `force_refund`（slash 充足 / slash 不足两路径）；JudgePoolFull（200 人）；重入攻击模拟；CU 消耗验证（`post_task` ≤ 200k、`judge_and_pay` ≤ 200k） | T19c | 3h | **P0** | 15 个边界用例全绿；分支覆盖率 ≥ 95%；0 Critical 漏洞；CU 未超限 |
 
 ---
 
-### 🟠 W2（2026-04-15 ~ 04-21）— Program 完结 + 工具链
+### 🟠 W2（2026-04-15 ~ 04-21）— 工具链（依赖 T19d 通过）
 
-> **W2 前置**：T17/T18 完成 Program 剩余指令；T19a-T19d 为集成测试（依赖 devnet 部署）；工具链并行开发。
+> **W2 关键目标**：Indexer + SDK + CLI + Judge Daemon + 前端全部可用
+> **前置条件**：T19a-d 全部通过
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
-| T17 | `upgrade_config` 指令 | 仅 upgrade_authority 可调用；更新 `treasury` 地址和 `min_judge_stake` | T06 | 1h | P1 | 测试：upgrade_config 更新两字段后值正确；非 authority 调用 → `NotUpgradeAuthority` |
-| T18 | IJudge 三层评判接口定义 | 定义 `IJudge` trait 和 CPI 接口；三层架构：① `TestCasesEvaluator`（C-1/C-2，测试用例 + 哈希对比，存根返回固定分数 80）；② `LLMScoreEvaluator` 接口存根（Type B，DSPy 实现在 T35）；③ `OnChainEvaluator` 接口存根（C-3/C-4，W4 实现）；接口注释文档 | T05 | 2h | P1 | 编译通过；三层接口均可被外部 Program 实现；`evaluationCID` JSON schema 与 §3.11 定义一致 |
-| T18a | SAS 协议凭证 + Schema 初始化 | **一次性链上初始化**（devnet + mainnet 各执行一次）：① 用 `sas-lib` 调用 `getCreateCredentialInstruction` 创建 `"Gradience Protocol"` Credential（authority = upgrade_authority，signers = [judge_daemon_keypair]）；② 调用 `getCreateSchemaInstruction` 创建 `TaskCompletion` Schema（fieldNames / layout 与 §3.12.2 精确一致）；③ 将两个 PDA 地址写入 SDK 常量 `GRADIENCE_CREDENTIAL_PDA` / `TASK_COMPLETION_SCHEMA_PDA`；④ Judge Daemon T35 集成 `sas-lib` 颁发逻辑（`judge_and_pay` 确认后自动颁发）；⑤ SDK 新增 `getAgentAttestations(agentAddress)` 查询方法 | T18, T26 | 2h | P1 | devnet 上 Credential + Schema 账户可 fetch；测试场景：T35 E2E 任务完成后 `fetchAllAttestation` 返回含正确 taskId + score 的 Attestation；`decodeTaskCompletionAttestation` 解码正确 |
-| T19a | 集成测试 — initialize + post_task | devnet 部署后：`initialize` → `post_task`（SOL Designated 模式）→ `post_task`（SOL Pool 模式）→ `post_task`（SPL）→ `post_task`（Token-2022 带 Hook → 拒绝）；升级路径：`upgrade_config` | T12, T13, T14, T15, T16, T17, T18, T08 | 3h | P0 | litesvm + `@solana/web3.js` 5 个 post_task 场景全绿；Pool 模式 judge 字段由协议填写；TaskCreated 事件通过 parseEvents 验证 |
-| T19b | 集成测试 — apply + submit | `apply_for_task`（SOL stake、SPL stake、min_stake=0）→ `submit_result`（首次、覆盖）；RuntimeEnv 字段验证；重复申请；**验证 `total_applied` 每次 apply 递增** | T19a | 3h | P0 | 申请 + 提交 6 个场景全绿；`AlreadyApplied`、`InvalidRuntimeEnv` 错误码正确触发；total_applied 计数正确 |
-| T19c | 集成测试 — judge_and_pay + cancel + refund | `judge_and_pay`（SOL + SPL，正常赢家；tie-break by slot；score < MIN_SCORE 退款）；`cancel_task`（**无申请 + 有申请两路径，验证 remaining_accounts 质押退回**）；`refund_expired`；`HasSubmissions` 错误验证 | T19b | 3h | P0 | 分账精度逐 lamport 验证；3 条退款路径全绿；cancel 有申请时 remaining_accounts 质押退回正确；信誉 global + category 更新验证 |
-| T19d | 集成测试 — force_refund/slash + 安全测试 | `force_refund`（slash 充足 / slash 不足两路径）；JudgePoolFull（200 人）；重入攻击模拟；CU 消耗验证（`post_task` ≤ 200k、`judge_and_pay` ≤ 200k） | T19c | 3h | P0 | 15 个边界用例全绿；分支覆盖率 ≥ 95%；0 Critical 漏洞；CU 未超限 |
 | T21 | Indexer — PostgreSQL Schema | 4 张表（tasks / submissions / reputations / reputation_by_category）+ 5 个索引；migration 文件 | T19d | 2h | P0 | `psql` 运行 migration 无报错；schema 与规格完全一致 |
 | T22 | Indexer — 事件流接入 + 事件解析 | **双模式事件源**：① **Triton Dragon's Mouth gRPC**（默认，Fumarole 可靠流，HA + 断线重连）；② **Helius Webhooks HTTP**（fallback，Managed CF Workers 模式备选）；解析 **8 个 Program 事件**（TaskCreated, TaskApplied, SubmissionReceived, TaskJudged, TaskCancelled, TaskRefunded, JudgeRegistered, JudgeUnstaked）；upsert 到 DB；**内置 mock 模式**（`MOCK_EVENT=true` 时用本地文件模拟推送，无需真实 RPC 连接） | T21 | 3h | P0 | Mock 模式：8 类事件 JSON → DB 行正确创建；真实模式：延迟 < 200ms；Triton 断连时自动切换 Helius fallback |
 | T23 | Indexer — REST API 端点 | `GET /api/tasks?state=&category=&page=`；`GET /api/tasks/:id`；`GET /api/tasks/:id/submissions?sort=score`；`GET /api/reputation/:agent`；`GET /api/judge-pool/:category` | T22 | 3h | P0 | curl 每个端点 → 正确 JSON；分页正确；无效参数 → 4xx；未找到 → 404 |
+| T23a | Indexer — Me 数据聚合 API | **【新增 - AgentM 依赖】** `GET /me`（当前用户声誉统计）；`GET /me/tasks`（我发布的任务）；`GET /me/submissions`（我的提交历史）；分页、排序、错误码一致 | T23 | 2h | P0 | API 返回结构稳定；分页/筛选正确；无登录返回 401 |
 | T24 | Indexer — WebSocket 服务器 | WS 连接 ws://indexer/ws；事件广播：TaskCreated / SubmissionReceived / TaskJudged；客户端可 filter by task_id | T22 | 2h | P1 | WS 客户端订阅 → 收到 DB upsert 触发的事件；连接断开自动清理；重连不丢事件 |
 | T25 | Indexer — Cloudflare Workers + D1 适配层 | CF Workers wrapper；D1 SQLite schema（与 PG schema 对齐）；`wrangler deploy` 到 CF；REST API 路径与 Self-hosted 完全一致 | T23 | 3h | P1 | Managed 模式 CF 部署成功；相同 curl 命令返回相同格式 |
 | T25a | Indexer — Docker 镜像 + compose 文件 | `Dockerfile`（Self-hosted Rust 二进制）；`docker-compose.yml`（Indexer + PostgreSQL）；`README.md` 一键启动说明 | T23 | 2h | P1 | `docker compose up` → 服务启动；`curl localhost:3001/api/tasks` → 正确响应；镜像大小 < 100MB |
@@ -81,12 +100,18 @@
 
 ---
 
-### 🟡 W3（2026-04-22 ~ 04-26）— 生态扩展
+### 🟡 W3（2026-04-22 ~ 04-26）— 生态扩展（AgentM 为核心）
+
+> **W3 关键目标**：AgentM MVP 可用 + Chain Hub 基础 + GRAD Token
+> **AgentM 为产品层唯一入口，优先级最高**
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
 | T39 | Chain Hub MVP | Delegation Task **Pinocchio** program 骨架（与 Agent Layer 主程序技术栈一致，no_std，无 Anchor）；Skill 市场注册表；与 Agent Layer JudgePool 集成（选人 → 授权）；**代码参考**：`gh:solana-program/multi-delegator`（官方 Pinocchio + Codama + LiteSVM 实现，固定授权 / 循环授权 / 订阅计划三种委托模型，与 Delegation Task 场景直接对齐，参考其 PDA 设计、指令结构、版本迁移框架 ADR-003） | T19d | 4h | P1 | Chain Hub program 可初始化；delegation_task 指令可调用（不含完整执行逻辑）；PDA 设计参照 multi-delegator ADR-001 |
-| T40 | AgentM MVP | 用户入口 IM 应用（由历史 Me/Social 体验收敛而来）：Electrobun 桌面应用，Google OAuth 登录（Privy 嵌入式钱包），"我的"视角（声誉面板 + 任务历史）+ "社交"视角（Agent 发现广场 + A2A 消息），双界面设计（GUI + API 同一 A2A 协议）；迁移 legacy 组件到 `apps/agentm/` | T38 | 8h | P1 | Google OAuth 登录成功；声誉正确展示；Agent 发现排名正确；A2A 消息收发 < 500ms |
+| T40a | AgentM — Electrobun 脚手架 + 项目结构 | **【AgentM 子任务 1/4】** Electrobun 桌面应用初始化；React + Vite + Tailwind 配置；Zustand 状态管理；与现有 Agent Arena 前端共享组件 | T38 | 2h | P0 | `bun run dev` 启动桌面应用；窗口大小 1200x800；热重载正常 |
+| T40b | AgentM — Privy 登录集成 | **【AgentM 子任务 2/4】** Google OAuth 登录；Privy SDK 集成；嵌入式钱包自动生成 Solana 地址；会话持久化；登录状态管理 | T40a | 3h | P0 | Google OAuth 登录成功；`publicKey` 非空且有效；刷新后保持登录状态 |
+| T40c | AgentM — "我的"视角（Me View） | **【AgentM 子任务 3/4】** 声誉面板（调 Indexer `/me` API）；任务历史列表；Agent 管理（查看/编辑）；钱包余额展示 | T40b, T23a | 3h | P0 | 声誉 4 指标正确显示；任务历史分页正常；钱包余额实时更新 |
+| T40d | AgentM — "社交"视角 + A2A 消息 | **【AgentM 子任务 4/4】** Agent 发现广场（按声誉排名，调 Indexer）；Agent 详情页；A2A 消息列表 UI；发送/接收 A2A Envelope | T40c | 4h | P0 | Agent 列表按 `avg_score × win_rate` 排序；A2A 消息收发 < 500ms；消息持久化到本地存储 |
 | T42 | GRAD Token + 链上治理 | SPL Token 发行（GRAD），Squads v4 多签 DAO 设置（3/5），转移 upgrade_authority 给多签 | T19d | 4h | P1 | GRAD mint 创建；upgrade_authority = Squads PDA；多签测试可执行 `upgrade_config` |
 
 ---
@@ -100,13 +125,13 @@
 |---|---------|------|------|------|--------|----------|
 | T43 | EVM Agent Layer Solidity 合约 | 将核心 Race Task 逻辑移植到 Solidity ^0.8.20；post_task / apply / submit / judge_and_pay；部署到 Base Sepolia | T19d | 4h | P1 | `npx hardhat test` 通过；合约部署到 Base Sepolia testnet；核心 4 条指令可调用 |
 | T44 | 跨链信誉证明（签名 + 验证） | Squads upgrade_authority 离线签名 Agent 信誉（agent_pubkey, score, chain=solana）；`ReputationVerifier` EVM 合约验证 ed25519 签名 | T42, T43 | 4h | P1 | E2E：Solana 信誉 → 多签签名 → EVM `verifyReputation()` 返回 true |
-| T45 | A2A 协议 MVP（MagicBlock） | AgentM 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T40 | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
+| T45 | A2A 协议 MVP（MagicBlock） | AgentM 底层 MagicBlock 实时通道；Agent 发现广播；微支付通道 stub | T40d | 4h | P2 | 两个 Agent 进程通过 MagicBlock 互发消息；延迟 < 500ms |
 
 ---
 
 ### 🟣 W5（2026-05-01 ~ 05-03）— 全链路联调与发布前验证
 
-> **W5 目标**：在本地 Surfpool + devnet 完成“异常分支 / 压测 / 事件闭环”三类发布前联调，补齐 W1-W4 的系统性验证。
+> **W5 目标**：在本地 Surfpool + devnet 完成"异常分支 / 压测 / 事件闭环"三类发布前联调，补齐 W1-W4 的系统性验证。
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
@@ -116,111 +141,84 @@
 
 ---
 
-### 🔶 后续任务（W5 之后）— 8004 集成 + AgentM
+### 🔶 后续任务（W5 之后）— 生产实施与扩展
 
 > **非当前 milestone，但需记录以防遗漏。**
 
 | # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
 |---|---------|------|------|------|--------|----------|
-| T49 | 8004 Agent 注册集成 | Agent 在 Gradience 首次参与时，自动通过 Metaplex Agent Registry（Solana 侧 8004 实现，Program `8oo4...`）注册身份；生成符合 ERC-8004 `#registration-v1` 格式的 JSON（含 `agentRegistry: "solana:101:metaplex"`、`services: ["a2a"]`、`supportedTrust: ["reputation", "crypto-economic"]`）；注册后 Agent 可在 8004scan.io 被全球发现 | T18a, T40 | 3h | P1 | Agent 注册后在 8004scan.io/networks/solana 可搜索到；registration JSON 格式通过 8004 schema 验证 |
+| T49 | 8004 Agent 注册集成 | Agent 在 Gradience 首次参与时，自动通过 Metaplex Agent Registry（Solana 侧 8004 实现，Program `8oo4...`）注册身份；生成符合 ERC-8004 `#registration-v1` 格式的 JSON（含 `agentRegistry: "solana:101:metaplex"`、`services: ["a2a"]`、`supportedTrust: ["reputation", "crypto-economic"]`）；注册后 Agent 可在 8004scan.io 被全球发现 | T18a, T40d | 3h | P1 | Agent 注册后在 8004scan.io/networks/solana 可搜索到；registration JSON 格式通过 8004 schema 验证 |
 | T50 | 8004 Reputation Feedback 集成 | `judge_and_pay` 完成后，Judge Daemon 自动向 8004 Reputation Registry 提交 feedback（score, taskId, category）；Solana 侧通过 Metaplex 机制提交，EVM 侧通过 `0x8004BA...` 合约提交；确保 Gradience 声誉数据在 8004scan.io 上实时更新 | T49, T35b | 4h | P1 | 任务评判后 8004scan.io 上对应 Agent 的 feedback 数量 +1；分数与链上 Reputation PDA 一致 |
 | T51 | SAS Attestation 自动颁发 | `judge_and_pay` 确认后，Judge Daemon 通过 `sas-lib` 颁发 `TaskCompletion` Attestation（技术规格 §3.12）；包含 taskId、score、category、winner；SDK 新增 `getAgentAttestations(address)` 查询方法；Attestation 可在钱包/8004scan 中展示为"能力凭证" | T18a, T49 | 3h | P1 | devnet 上 `fetchAllAttestation` 返回正确凭证；`decodeTaskCompletionAttestation` 解码验证通过 |
-| T52 | AgentM MVP | 见 `apps/agentm/docs/01-prd.md`；Electrobun 桌面应用，Google OAuth 登录，"我的"+ "社交"双视角，A2A 消息，Agent 发现广场，双界面（GUI + API） | T40, T49 | 2w | P1 | PRD 中 6 项成功标准全部达标 |
-
-### 🔶 生产分阶段实施（白皮书对齐）
-
-> 目标：从“可演示 Demo”进入“可上线运行”的生产实施闭环，按 P0→P1 执行并保留验收证据。
-
-| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
-|---|---------|------|------|------|--------|----------|
+| T52 | AgentM 生产化 | Electrobun 打包（macOS/Windows/Linux）；自动更新；崩溃报告；性能监控 | T40d | 1w | P1 | 桌面包可在三平台安装运行；自动更新机制可用；崩溃日志可收集 |
 | T53 | Stage A1 — 启动栈与端口统一 | 统一 AgentM 与 Indexer 的默认端口/基址配置（AgentM 默认指向 Indexer `:3001`）；更新 `start-dev-stack.sh`（移除 agent-me/agent-social 窗口，改为 agent-im）；确保 `judge-daemon/indexer/agent-im` 一键拉起 | T52 | 2h | P0 | 单命令启动后 AgentM 可读取真实 Indexer 数据；脚本窗口仅包含 indexer/judge-daemon/agent-arena/agent-im（+可选 evm）；无端口冲突 |
 | T54 | Stage A2 — Privy 真实认证接入 | 将 AgentM 从 MockAuth 切到真实 Privy（Google OAuth + 嵌入式钱包）；加入依赖、环境变量检查与错误回退；保持未配置时可切回 demo 模式 | T53 | 4h | P0 | 登录后 `publicKey` 非 `DEMO_*`；Google OAuth 完整成功；未配置 App ID 时 UI 给出清晰提示且不崩溃 |
-| T55 | Stage A3 — Demo 闭环脚本固化 | 固化“登录→发现→任务数据→互通状态”演示脚本与环境变量模板；输出可重复的命令序列和验收输出 | T54 | 2h | P0 | 10 分钟内可重复演示成功；脚本化命令执行无人工修补 |
+| T55 | Stage A3 — Demo 闭环脚本固化 | 固化"登录→发现→任务数据→互通状态"演示脚本与环境变量模板；输出可重复的命令序列和验收输出 | T54 | 2h | P0 | 10 分钟内可重复演示成功；脚本化命令执行无人工修补 |
 | T56 | Stage B1 — Program P0 边界测试补全 | 补齐 `apps/agent-arena/docs/05-test-spec.md` 标记缺口：重复初始化、reward=0、重复 apply、score<MIN_SCORE 退款路径、unstake 冷却期；补 Token-2022 路径（P1） | T55, T19d | 6h | P0 | P0 缺口测试全部通过并纳入 CI 命令；新增测试在本地与 devnet 复现一致 |
 | T57 | Stage B2 — W5 稳定性验收（T46~T48） | 执行异常全路径联调、Pool 压测+ALT 切换、Program→Indexer→WS→Judge Daemon 事件闭环；包含断线恢复、幂等去重、回放一致性 | T56, T46, T47, T48 | 8h | P0 | 形成可重放脚本+指标基线（成功率/延迟/CU/tx size）；断连恢复后无重复裁决或状态漂移 |
 | T58 | Stage B3 — ERC-8004 生产闭环 | 固化身份注册触发点（首参与自动注册）；扩展反馈到 winner/loser/judge/poster 角色并可追踪；完成 8004 relay 状态审计与 8004scan 对账 | T57, T49, T50 | 6h | P0 | 8004scan 可查身份与 feedback 增量；反馈计数与链上事件一致；失败重试与告警可观测 |
 | T59 | Stage B4 — SAS Attestation 真上链 | 将当前 HTTP sink 形态切换为 `sas-lib` 真实颁发流程；完成 Credential/Schema 使用、`TaskCompletion` 数据编码、SDK 查询/解码闭环 | T58, T51 | 6h | P1 | devnet 上可查询到真实 `TaskCompletion` attestation；字段与任务数据一致；重复颁发具备幂等保护 |
 | T60 | Stage B5/B6 — AgentM 生产化与发布门槛 | AgentM 接入 Metaplex 注册流程（登录后身份闭环）；完成打包指标、持久化恢复、CI+运维脚本+发布清单（env matrix/回滚） | T59 | 8h | P1 | AgentM PRD 六项成功标准全部达标；发布清单可在新环境 30 分钟内完成拉起并通过 smoke |
 
-### 🔷 执行重排 Backlog（2026-04-02，双线并行）
-
-> 依据最新 Gap Analysis，对“AgentM 主线 + 协议并行”进行可执行重排。该节作为 `T53~T60` 的落地执行层，不替代原任务定义。
-
-| # | 任务名称 | 描述 | 依赖 | 时间 | 优先级 | Done 定义 |
-|---|---------|------|------|------|--------|----------|
-| T61 | Track-A1 AgentM 真实登录闭环 | 完成 Privy Google OAuth、会话绑定（`privy_user_id ↔ wallet ↔ agent_id`）、生产环境 demo-login 禁用与鉴权回归 | T54 | 4h | P0 | 用户可稳定登录并获得真实 wallet；鉴权错误路径可观测；测试通过 |
-| T62 | Track-A2 Me 数据聚合 API | 新增 `GET /me`、`/me/tasks`、`/me/submissions`（分页、排序、错误码一致）并对接 indexer | T61, T53 | 4h | P0 | API 返回结构稳定；分页/筛选正确；无登录返回 401 |
-| T63 | Track-A3 AgentM MVP 前端流程 | 完成 Me 视图（统计+历史）与 Arena 任务流（浏览→报名→提交→状态追踪） | T62, T55 | 6h | P0 | 从登录到任务提交全链路可操作；UI 状态与后端一致 |
-| T64 | Track-A4 GUI/API 双入口 + 桌面化 | 完成 localhost Agent API 与 GUI 共享会话，补 Electrobun 打包与语音 fallback（Whisper 不可用时自动降级） | T63, T60 | 6h | P1 | GUI/API 均可完成关键流程；桌面包可启动；语音降级可用 |
-| T65 | Track-B1 Pool Judge 生产化 | 完成 Pool 模式分配、账户验证与高并发边界测试（含 ALT 场景） | T56, T57 | 6h | P0 | Pool 模式在 20/50+ 参与者下稳定；资金与事件一致 |
-| T66 | Track-B2 Agent Staking + Slash 闭环 | 补 Agent staking 与 slash 触发路径（异常提交/超时/违规）及事件断言 | T65 | 6h | P0 | 质押/罚没路径完整；所有资金转移和状态迁移可验证 |
-| T67 | Track-B3 排名与分类信誉强化 | 落地 `avg_score × win_rate` 排名辅助；补 `by_category(8类)` 写入与查询一致性测试 | T66 | 4h | P1 | 排名结果可复现；8 类别统计通过集成测试 |
-| T68 | Track-C1 SDK 高层封装与发布 | 提供 3 行任务操作高层 API，补 npm/crates 发布流水线与版本规范 | T27, T29, T30 | 4h | P0 | 可从注册表安装并执行发任务全流程；版本发布可自动化 |
-| T69 | Track-C2 可运维与发布门槛 | 补 CI/CD gate、Indexer/Judge health & metrics、Devnet 自动部署与回滚脚本 | T57, T68 | 6h | P1 | pipeline 稳定；告警与健康探针生效；新环境可快速恢复 |
-| T70 | Sprint 验收与回归基线 | 以 Sprint 1/2/3 组织 T61~T69，输出通过率、延迟、CU、交易体积基线报告 | T61, T62, T63, T64, T65, T66, T67, T68, T69 | 4h | P0 | 形成可复放验收清单；每个 Sprint 有明确通过证据 |
-
-**Sprint 建议（执行顺序）**
-
-- **Sprint 1**：T61 + T62 + T65  
-- **Sprint 2**：T63 + T64 + T66 + T67  
-- **Sprint 3**：T68 + T69 + T70
-
 ---
 
-## 4.3 任务依赖图
+## 4.4 任务依赖图（更新版）
 
 ```mermaid
-flowchart LR
-    T01 --> T02 --> T03 --> T04 --> T05
-    T05 --> T06
-    T06 --> T07
-    T06 --> T08a
-    T07 --> T08
-    T08a --> T08
-    T08a --> T09
-    T07 --> T09
-    T08 --> T09
-    T09 --> T10 --> T11 --> T12
-    T07 --> T13
-    T08a --> T13
-    T09 --> T13
-    T07 --> T14
-    T08a --> T14
-    T06 --> T16
-    T16 -->|Pool 模式需要 JudgePool 有 Judge| T07
-    T08a --> T15
-    T07 --> T15
-    T16 --> T15
-
-    subgraph W2["W2 工具链"]
+flowchart TB
+    subgraph W1["🔴 W1: Program + 集成测试（阻塞项）"]
+        direction TB
+        T01 --> T02 --> T03 --> T04 --> T05 --> T06
+        T06 --> T07
+        T06 --> T08a
+        T07 --> T08
+        T08a --> T08
+        T08a --> T09
+        T07 --> T09
+        T08 --> T09 --> T10 --> T11 --> T12
+        T07 --> T13
+        T08a --> T13
+        T09 --> T13
+        T07 --> T14
+        T08a --> T14
+        T06 --> T16 --> T07
+        T08a --> T15
+        T07 --> T15
+        T16 --> T15
         T06 --> T17
         T05 --> T18
-        T18 --> T18a
-        T26 --> T18a
         T12 & T13 & T14 & T15 & T16 & T17 & T18 & T08 --> T19a --> T19b --> T19c --> T19d
-        T19d --> T21 --> T22 --> T23 --> T24
+    end
+
+    subgraph W2["🟠 W2: 工具链（依赖 T19d）"]
+        direction TB
+        T19d --> T21 --> T22 --> T23 --> T23a --> T24
         T23 --> T25
         T23 --> T25a
         T19d --> T26 --> T27 --> T28 --> T29
         T26 --> T30
         T26 --> T31 --> T32 --> T33
         T22 --> T34 --> T35a --> T35b --> T36
-        T23 --> T37 --> T37a --> T38
+        T23 --> T37 --> T38
+        T37 --> T37a
     end
 
-    subgraph W3["W3 生态"]
+    subgraph W3["🟡 W3: 生态扩展（AgentM 为核心）"]
+        direction TB
         T19d --> T39
-        T38 --> T40
-        T38 --> T41
+        T38 --> T40a --> T40b --> T40c --> T40d
+        T23a --> T40c
         T19d --> T42
     end
 
-    subgraph W4["W4 多链"]
+    subgraph W4["🔵 W4: 全链扩展（Stretch）"]
+        direction TB
         T42 --> T43 --> T44
-        T41 --> T45
+        T40d --> T45
     end
 
-    subgraph W5["W5 联调与验收"]
+    subgraph W5["🟣 W5: 联调与验收"]
+        direction TB
         T19d --> T46 --> T47 --> T48
         T28 --> T47
         T24 --> T48
@@ -228,97 +226,136 @@ flowchart LR
         T38 --> T46
         T33 --> T46
     end
+
+    T19d -.->|"阻塞"| W2
+    T38 -.->|"依赖"| W3
+    T40d -.->|"依赖"| W4
 ```
 
 ---
 
-## 4.4 里程碑划分
+## 4.5 里程碑划分（更新版）
 
 ### Milestone 1：协议内核可用（2026-04-14）
-**交付物**：Solana Program 全量部署到 devnet；所有指令可调用；测试覆盖率 ≥ 95%
+**交付物**：Solana Program 全量部署到 devnet；T19a-d 集成测试全部通过
 
-包含任务：T01 ~ T16, T08a
+**包含任务**：T01 ~ T19d
 
 **验收条件**：
-- `cargo test-sbf` + litesvm 全绿（含边界条件）
-- `solana program deploy target/deploy/agent_layer.so --url devnet` 成功
-- 手动调用 `post_task → apply → submit → judge_and_pay` 全流程链上验证
-- Slash、force_refund、Pool 随机、Token-2022 拒绝均测试通过
+- [ ] `cargo test-sbf` + litesvm 全绿（含边界条件）
+- [ ] **T19a-d 集成测试全部通过（阻塞项）**
+- [ ] `solana program deploy target/deploy/agent_layer.so --url devnet` 成功
+- [ ] 手动调用 `post_task → apply → submit → judge_and_pay` 全流程链上验证
+- [ ] Slash、force_refund、Pool 随机、Token-2022 拒绝均测试通过
+
+**失败处理**：若 T19a-d 未通过，W2 顺延，直至集成测试通过
 
 ---
 
 ### Milestone 2：开发者工具链可用（2026-04-21）
 **交付物**：SDK + CLI + Indexer + Judge Daemon + 前端产品 MVP，所有工具联通 devnet
 
-包含任务：T17, T18, T18a, T19a ~ T19d, T21 ~ T25a, T26 ~ T35a, T35b, T36 ~ T37, T37a, T38
+**包含任务**：T21 ~ T38
 
 **验收条件**：
-- `npm install @gradiences/sdk` → 3 行代码发任务成功
-- `gradience task post ...` 在 devnet 创建任务
-- Judge Daemon Type B（Claude API）自动评判一个测试任务并上链
-- 前端可完整操作任务生命周期
+- [ ] `npm install @gradiences/sdk` → 3 行代码发任务成功
+- [ ] `gradience task post ...` 在 devnet 创建任务
+- [ ] Indexer `/me` API 返回正确用户数据
+- [ ] Judge Daemon Type B（Claude API）自动评判一个测试任务并上链
+- [ ] 前端可完整操作任务生命周期
 
 ---
 
-### Milestone 3：生态模块 MVP（2026-04-26）
-**交付物**：Chain Hub / AgentM / GRAD Token / Squads 多签治理
+### Milestone 3：AgentM MVP + 生态模块（2026-04-26）
+**交付物**：AgentM 桌面应用可用 + Chain Hub 基础 + GRAD Token
 
-包含任务：T39 ~ T42
+**包含任务**：T39 ~ T42, T40a-d
 
 **验收条件**：
-- GRAD mint 创建，upgrade_authority 转交 Squads v4（3/5 多签）
-- Chain Hub delegation_task 指令可调用
-- AgentM 可展示声誉 + 搜索 Agent + A2A 消息收发
+- [ ] AgentM Google OAuth 登录成功
+- [ ] "我的"视角：声誉面板、任务历史正确显示
+- [ ] "社交"视角：Agent 发现广场按声誉排序、A2A 消息收发 < 500ms
+- [ ] GRAD mint 创建，upgrade_authority 转交 Squads v4（3/5 多签）
+- [ ] Chain Hub delegation_task 指令可调用
 
 ---
 
 ### Milestone 4：全链扩展（2026-04-30，best effort）
 **交付物**：EVM 合约 + 跨链信誉 + A2A 通道 MVP
 
-包含任务：T43 ~ T45
+**包含任务**：T43 ~ T45
 
 **验收条件**：
-- EVM 合约部署到 Base Sepolia，核心指令通过
-- Solana 信誉证明在 EVM 可验证
-- MagicBlock 两 Agent 互通消息
+- [ ] EVM 合约部署到 Base Sepolia，核心指令通过
+- [ ] Solana 信誉证明在 EVM 可验证
+- [ ] MagicBlock 两 Agent 互通消息
 
 ---
 
 ### Milestone 5：发布前全链路验证（2026-05-03）
 **交付物**：异常分支联调报告 + 压测基线 + 事件闭环验收清单
 
-包含任务：T46 ~ T48
+**包含任务**：T46 ~ T48
 
 **验收条件**：
-- 超时与异常分支（cancel/refund/force_refund/low-score）在 SOL/SPL/Token-2022 全覆盖
-- Pool 压测在大参与者场景稳定运行，ALT 自动切换可验证
-- Program/Indexer/WS/Judge Daemon 端到端链路在断连恢复后保持一致性
+- [ ] 超时与异常分支（cancel/refund/force_refund/low-score）在 SOL/SPL/Token-2022 全覆盖
+- [ ] Pool 压测在大参与者场景稳定运行，ALT 自动切换可验证
+- [ ] Program/Indexer/WS/Judge Daemon 端到端链路在断连恢复后保持一致性
 
 ---
 
-## 4.5 风险识别
+## 4.6 Sprint 执行建议
+
+基于更新后的优先级，建议按以下 Sprint 执行：
+
+### Sprint 1（W1 第 1 周）：Program 核心
+- T01 ~ T10（脚手架到 submit_result）
+- 目标：核心指令代码完成
+
+### Sprint 2（W1 第 2 周）：Program 完结 + 集成测试
+- T11 ~ T19d（judge_and_pay 到集成测试完结）
+- **目标：T19a-d 全部通过（W1 阻塞项）**
+
+### Sprint 3（W2 第 1 周）：Indexer + SDK
+- T21 ~ T30（Indexer 全量 + SDK 核心）
+- 目标：数据层和 SDK 可用
+
+### Sprint 4（W2 第 2 周）：CLI + Judge Daemon + 前端
+- T31 ~ T38（CLI 到前端完结）
+- 目标：工具链全量可用
+
+### Sprint 5（W3）：AgentM MVP
+- T40a ~ T40d（AgentM 细分子任务）
+- **目标：产品层唯一入口可用**
+
+### Sprint 6（W3 尾 + W4）：生态扩展 + Stretch Goals
+- T39, T42 ~ T45（Chain Hub + GRAD + EVM/跨链/A2A）
+- 目标：生态完整
+
+---
+
+## 4.7 风险识别（更新版）
 
 | 风险 | 概率 | 影响 | 缓解措施 |
 |------|------|------|---------|
-| W1 实际工时超出估算（当前 38h，缓冲 18h） | 中 | 中 | 若调试超时，优先保障 T01-T12（核心结算路径）；T13-T16 可推入 W2 前两天完成 |
-| `remaining_accounts` 质押退回在 CU 预算超限（申请者数量多时） | 中 | 中 | T13/T14 阶段测试 20+ 申请者场景的 CU 消耗；超限时拆分为多笔 tx |
-| `judge_and_pay` SOL + SPL 分账计算有 off-by-one 整数精度 bug | 高 | 高 | T11/T12 专项精度测试（验证每笔转账余额精确到 lamport） |
-| Token-2022 扩展检测在 Pinocchio 中需手动解析 mint account data | 中 | 高 | T08 阶段手动解析 mint account 的 extension 字节，验证 TransferHook / ConfidentialTransfer 检测正确性 |
-| JudgePool 加权随机在 Solana CU 预算内超限 | 中 | 中 | T07 测量 `post_task` CU 消耗（≤ 200k），若超限改为 VRF 异步方案 |
-| Triton Dragon's Mouth / Fumarole 不可用 | 低 | 中 | T34 三级 fallback：Triton → Helius LaserStream → polling（5s 轮询 RPC）；多节点 HA 本身已大幅降低中断概率 |
-| DSPy LLMScoreEvaluator 评分置信度偏低（< 0.7），触发大量人工复核 | 中 | 中 | T35 阶段收集评分样本，积累 50+ 条后用 MIPROv2 优化 prompt；短期内提高 min_confidence 阈值至 0.6 可减少人工干预 |
-| Claude API Rate Limit 影响 Type B Judge 自动评判 | 低 | 中 | T35 实现指数退避重试 + 本地 queue，限速时排队而非丢失任务 |
-| W4 时间窗口（4 天）不足以完成 EVM + 跨链 + A2A | 高 | 低 | W4 标记为 best effort；T43→T44 优先，T45 可延后；不影响 W1-W3 验收 |
-| Squads v4 多签与 Pinocchio program 交互兼容性 | 低 | 中 | T42 提前验证 `@sqds-multisig` npm 包可正常与 Pinocchio program 交互，必要时用 CLI 手工签名替代 |
+| **T19a-d 集成测试未通过（W1 阻塞项）** | 中 | **极高** | 预留 W1 第 2 周专门用于调试；若超时，W2 顺延；优先保障核心路径（SOL Designated 模式） |
+| `remaining_accounts` 质押退回在 CU 预算超限 | 中 | 高 | T13/T14 阶段测试 20+ 申请者场景的 CU 消耗；超限时拆分为多笔 tx |
+| `judge_and_pay` 整数精度 bug | 高 | 高 | T11/T12 专项精度测试（验证每笔转账余额精确到 lamport） |
+| **AgentM Privy 登录集成复杂度** | 中 | 高 | T40b 单独拆分；预留缓冲时间；准备 MockAuth fallback |
+| Triton Dragon's Mouth 不可用 | 低 | 中 | T34 三级 fallback：Triton → Helius LaserStream → polling |
+| DSPy 评分置信度偏低 | 中 | 中 | T35 阶段收集样本，用 MIPROv2 优化 prompt |
+| W4 Stretch Goals 超时 | 高 | 低 | W4 标记为 best effort；T43→T44 优先，T45 可延后 |
 
 ---
 
-## ✅ Phase 4 验收标准
+## ✅ Phase 4 验收标准（更新版）
 
 - [x] 每个任务 ≤ 4 小时
 - [x] 每个任务有 Done 定义
 - [x] 依赖关系已标明，无循环依赖
-- [x] 划分为 4 个里程碑，每个均有可演示交付物
-- [x] 风险已识别（10 项）
+- [x] **关键路径清晰：T19a-d 为 W1 唯一阻塞项**
+- [x] **AgentM 任务细化（T40a-d），产品层优先级明确**
+- [x] 划分为 5 个里程碑，每个均有可演示交付物
+- [x] 风险已识别（7 项，含 W1 阻塞项专项风险）
 
 **验收通过后，进入 Phase 5: Test Spec →**

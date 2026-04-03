@@ -17,7 +17,10 @@ import { AesGcmEncryption, type EncryptionProvider } from '@/lib/ows/encrypted-s
 import type { OWSAgentWalletBinding } from '@/lib/ows/agent-wallet';
 import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
-type ActiveView = 'discover' | 'tasks' | 'me' | 'chat' | 'settings';
+import { FeedView } from './views/FeedView';
+import { SocialView } from './views/SocialView';
+
+type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
 const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL ?? '';
 
@@ -91,6 +94,8 @@ function PrivyOrWalletApp() {
         >
             {view === 'discover' && <DiscoverView />}
             {view === 'tasks' && <TaskMarketView address={address} />}
+            {view === 'feed' && <FeedView address={address} />}
+            {view === 'social' && <SocialView address={address} />}
             {view === 'me' && (
                 <MeView
                     address={address}
@@ -212,6 +217,8 @@ function PrivyApp() {
             onLogout={logout}
         >
             {view === 'discover' && <DiscoverView />}
+            {view === 'feed' && <FeedView address={runtimeAddress} />}
+            {view === 'social' && <SocialView address={runtimeAddress} />}
             {view === 'me' && (
                 <MeView
                     address={runtimeAddress}
@@ -255,6 +262,8 @@ function DemoApp() {
             onLogout={() => {}}
         >
             {view === 'discover' && <DiscoverView />}
+            {view === 'feed' && <FeedView address={demoAddr} />}
+            {view === 'social' && <SocialView address={demoAddr} />}
             {view === 'me' && (
                 <MeView
                     address={demoAddr}
@@ -309,6 +318,8 @@ function Shell({
     const tabs: { key: ActiveView; label: string }[] = [
         { key: 'discover', label: 'Discover' },
         { key: 'tasks', label: 'Tasks' },
+        { key: 'feed', label: 'Feed' },
+        { key: 'social', label: 'Social' },
         { key: 'me', label: 'My Agent' },
         { key: 'chat', label: 'Chat' },
         { key: 'settings', label: 'Settings' },

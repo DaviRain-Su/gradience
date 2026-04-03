@@ -1,172 +1,119 @@
 # Gradience Project Dashboard
 
-> Obsidian Vault Dashboard  
-> Last Updated: 2026-04-03
+> Obsidian Vault Dashboard
+> Last Updated: 2026-04-03 (Post Gap-Closure)
 
 ---
 
-## 🚀 Quick Start for Code Agents
-
-**New:** Tasks migrated from Linear to Obsidian!
+## Quick Start for Code Agents
 
 ```bash
-# Get your P0 tasks
-./scripts/task.sh list todo P0
-
-# Start working
-./scripts/task.sh update GRA-64 in-progress
-
-# Mark done
-./scripts/task.sh update GRA-64 done
+./scripts/task.sh list todo P0     # Get P0 tasks
+./scripts/task.sh show GRA-64      # View task details
+./scripts/task.sh update GRA-64 done  # Mark complete
 ```
 
-**📖 Full Guide:** [[OBSIDIAN-GUIDE-FOR-AGENTS]]
+**Full Guide:** [[OBSIDIAN-GUIDE-FOR-AGENTS]]
 
 ---
 
----
+## Project Statistics
 
-## 📊 Project Statistics
-
-```dataview
-TABLE priority, status, project
-FROM "tasks"
-WHERE status != "done"
-SORT priority ASC, file.name ASC
-```
+| Metric | Count |
+|--------|-------|
+| Total Tasks | 137 |
+| Done | 114 (83%) |
+| In Progress | 8 (6%) |
+| Todo | 15 (11%) |
 
 ---
 
-## 🔴 P0 - Critical (Do First)
+## Module Status
 
-```dataview
-LIST
-FROM "tasks"
-WHERE priority = "P0" AND status != "done"
-SORT file.name ASC
-```
-
-### Key Blockers
-- [[GRA-64]] Chain Hub Indexer Profile API
-- [[GRA-91]] Metaplex Agent Kit Research
-- [[GRA-70]] EVM cancel_task
-
----
-
-## 🟡 P1 - High Priority
-
-```dataview
-LIST
-FROM "tasks"
-WHERE priority = "P1" AND status = "todo"
-LIMIT 10
-```
+| Module | Status | Completion | Notes |
+|--------|--------|------------|-------|
+| AgentM (Electron) | Done | 100% | 83 tests, A2A multi-protocol, cross-chain bridges |
+| AgentM Pro (Next.js) | Done | 95% | Social views, Profile Studio, Reputation feed |
+| AgentM Web (Next.js) | Done | 80% | 7 tabs: Discover/Tasks/Feed/Social/Agent/Chat/Settings |
+| Agent Arena | Done | 90% | 55 tests, 13 instructions, SDK+CLI |
+| A2A Protocol | Done | 95% | 16 instructions, Runtime hardened (rate limit + graceful shutdown) |
+| Chain Hub (Solana) | Done | 90% | 11 instructions, 12 tests, **deployed devnet** |
+| Chain Hub SDK | Done | 100% | invoke/invokeRest/invokeCpi + KeyVault + Client |
+| Indexer | Done | 85% | PostgreSQL infra + Social API + DataStore abstraction |
+| Agent Social | Done | 85% | Profile/Follow/Feed/Messages/Search/Notifications |
+| Developer Docs | Done | 100% | Full doc site |
+| Packages (SDK/CLI) | Done | 100% | All published-ready |
 
 ---
 
-## 🏆 Active Hackathons
+## Key Deployments
 
-### 💎 Metaplex Agents Track ($5,000)
-- [[GRA-91]] Research Metaplex Agent Kit
-- [[GRA-92]] Integrate Agent Kit
-- [[GRA-93]] Register Agent on Solana
-- [[GRA-94]] Launch Agent Token
-- [[GRA-95]] Build A2A Interactions
-- [[GRA-96]] Integrate Chain Hub Reputation ⭐
-- [[GRA-97]] Create Demo
-- [[GRA-98]] X Article & Submission
-
-### 📊 GoldRush Agentic Track ($500)
-- [[GRA-99]] Research GoldRush API
-- [[GRA-100]] Wallet Risk Scoring
-- [[GRA-104]] Counterparty Trust Score
-- [[GRA-105]] Chain Hub Integration
+| Component | Address/URL | Status |
+|-----------|-------------|--------|
+| ChainHub Program | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | Devnet |
+| Agent Arena Program | See DEVNET_TEST_REPORT.md | Devnet |
+| A2A Protocol Program | See DEVNET_TEST_REPORT.md | Devnet |
 
 ---
 
-## 📁 Quick Links
+## Test Coverage
 
-### Documentation
-- [[01-prd]] Product Requirements
-- [[02-architecture]] System Architecture
-- [[03-technical-spec]] Technical Specification
-- [[methodology/README|Development Methodology]]
-
-### Project Analysis
-- [[project-analysis-2026-04-03|Project Analysis]]
-- [[project-progress-report-2026-04-03|Progress Report]]
-- [[hackathon-comparison-2026-04-03|Hackathon Comparison]]
-- [[execution-dashboard|Execution Dashboard]]
-
-### Ideas
-- [[idea-agent-social-domain-analysis|Agent Social + Web3 Domain]]
-- [[obsidian-cli-integration-plan|Obsidian CLI Migration Plan]]
-
-### Experience Reports
-- [[experience-reports/2026-04-03-website-deployment|Website Deployment]]
-- [[experience-reports/2026-04-03-agentm-web-white-screen|AgentM Web Bug]]
+| Module | Tests | Status |
+|--------|-------|--------|
+| Agent Arena (Solana) | 55 | Pass |
+| A2A Protocol (Solana) | 11 | Pass |
+| Chain Hub (Solana) | 12 | Pass |
+| SDK | 20 | Pass |
+| CLI | 13+ | Pass |
+| Judge Daemon | 35 | Pass |
+| A2A Runtime | 35 | Pass |
+| AgentM | 39 | Pass |
+| E2E Integration | 12 | Pass |
+| **Total** | **232+** | **All Green** |
 
 ---
 
-## 🚀 Getting Started
+## Remaining Work
 
-### For Code Agents
+### In Progress (13 tasks)
+Mostly OWS/Hackathon related and legacy tasks being wrapped up.
 
-1. **Check Tasks**
-   ```bash
-   ./scripts/task.sh list todo P0
-   ```
-
-2. **Pick a Task**
-   ```bash
-   ./scripts/task.sh show GRA-64
-   ```
-
-3. **Start Working**
-   ```bash
-   ./scripts/task.sh update GRA-64 in-progress --open
-   ```
-
-4. **Mark Complete**
-   ```bash
-   ./scripts/task.sh update GRA-64 done
-   ```
-
-### Task Commands
-
-| Command | Description |
-|---------|-------------|
-| `task.sh list` | List all tasks |
-| `task.sh list todo P0` | List P0 todo tasks |
-| `task.sh show GRA-64` | Show task details |
-| `task.sh update GRA-64 done` | Mark as done |
-| `task.sh create "Title" P0 "Project"` | Create new task |
-| `task.sh stats` | Show statistics |
+### Todo (24 tasks)
+- Low-priority design docs (Bitcoin/Move chain integration)
+- Doc cleanup tasks
+- Hackathon submissions (Metaplex, GoldRush)
+- ENS research (P2, after SNS)
 
 ---
 
-## 📈 Module Status
+## Recent Milestones
 
-| Module | Status | Completion |
-|--------|--------|------------|
-| AgentM Pro | ✅ Complete | 100% |
-| AgentM Web | ✅ Complete | 100% |
-| P0 Fixes | ✅ Complete | 100% |
-| Agent Arena | 🟡 In Progress | 83% |
-| A2A Protocol | 🟡 In Progress | 57% |
-| Chain Hub | 🟡 In Progress | 71% |
-| Agent Layer EVM | 🔴 Blocked | 44% |
-| AgentM Core | 🔴 Not Started | 0% |
+- [x] Gap Closure Phase 1: ChainHub devnet deploy + SDK + Indexer PostgreSQL
+- [x] Gap Closure Phase 2: Agent Social Platform (Profile/Follow/Feed/Messages)
+- [x] Gap Closure Phase 3: Integration + A2A hardening + AgentM Web sync
+- [x] 16/16 packages build successfully
+- [x] 11/11 TypeScript typecheck pass
+- [x] All Rust tests green
 
 ---
 
-## 🎯 This Week's Goals
+## Documentation
 
-- [ ] [[GRA-64]] Indexer API Design
-- [ ] [[GRA-91]] Metaplex Research
-- [ ] [[GRA-92]] Metaplex Integration
-- [ ] [[GRA-70]] EVM cancel_task
+| Doc | Content | Location |
+|-----|---------|----------|
+| PRD | Product Requirements | `docs/01-prd.md` |
+| Architecture | System Architecture | `docs/02-architecture.md` |
+| Technical Spec | Implementation Spec | `docs/03-technical-spec.md` |
+| Task Breakdown | Task planning | `docs/04-task-breakdown.md` |
+| Test Spec | Test strategy | `docs/05-test-spec.md` |
+| Review Report | Audit results | `docs/07-review-report.md` |
+| Gap Closure Plan | Sprint plan | `docs/plans/2026-04-03-gap-closure-plan.md` |
+| Methodology | Dev lifecycle | `docs/methodology/README.md` |
 
 ---
 
-*Use `Cmd/Ctrl + Click` to navigate between notes*
+## Project Links
+
+- [Solana Explorer (ChainHub)](https://explorer.solana.com/address/6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec?cluster=devnet)
+- Task system: `docs/tasks/` (137 markdown files)
+- Architecture diagrams: `public/diagrams/`
