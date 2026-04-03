@@ -11,6 +11,7 @@ export class TaskExecutor extends EventEmitter {
         private readonly taskQueue: TaskQueue,
         private readonly processManager: ProcessManager,
         private readonly pollInterval = 1_000,
+        private readonly taskTimeoutMs = 60_000,
     ) {
         super();
     }
@@ -55,9 +56,7 @@ export class TaskExecutor extends EventEmitter {
         logger.info({ taskId: task.id, agentId: agent.config.id }, 'Task assigned to agent');
 
         try {
-            // For MVP: the task payload is sent to the agent via a simple mechanism.
-            // Future: proper IPC / stdin protocol with the agent process.
-            const result = await this.waitForResult(task, 60_000);
+            const result = await this.waitForResult(task, agent.config.id, this.taskTimeoutMs);
 
             this.taskQueue.updateState(task.id, 'completed', { result });
             this.emit('task.completed', this.taskQueue.get(task.id));
@@ -81,18 +80,58 @@ export class TaskExecutor extends EventEmitter {
         }
     }
 
-    private waitForResult(_task: Task, timeoutMs: number): Promise<unknown> {
-        // MVP: simulate task completion. In production, this will communicate
-        // with the agent process via IPC and wait for a result message.
+    private waitForResult(task: Task, agentId: string, timeoutMs: number): Promise<unknown> {
         return new Promise((resolve, reject) => {
+            const cleanup = () => {
+                clearTimeout(timer);
+                this.processManager.off('agent.output', onOutput);
+                this.processManager.off('agent.crashed', onAgentGone);
+                this.processManager.off('agent.failed', onAgentGone);
+                this.processManager.off('agent.stopped', onAgentGone);
+            };
+
             const timer = setTimeout(() => {
+                cleanup();
                 reject(new Error('Task execution timeout'));
             }, timeoutMs);
 
-            // For now, resolve immediately with an acknowledgement.
-            // Real implementation will hook into agent IPC.
-            clearTimeout(timer);
-            resolve({ status: 'acknowledged', timestamp: Date.now() });
+            const onOutput = ({ agentId: aid, message }: { agentId: string; message: unknown }) => {
+                if (aid !== agentId) return;
+                const msg = message as Record<string, unknown>;
+                if (msg.taskId !== task.id) return;
+
+                if (msg.type === 'result') {
+                    cleanup();
+                    resolve(msg.result);
+                } else if (msg.type === 'error') {
+                    cleanup();
+                    reject(new Error(typeof msg.error === 'string' ? msg.error : 'Agent reported error'));
+                } else if (msg.type === 'progress') {
+                    this.emit('task.progress', { taskId: task.id, agentId, progress: msg.progress });
+                }
+            };
+
+            const onAgentGone = ({ agentId: aid }: { agentId: string }) => {
+                if (aid !== agentId) return;
+                cleanup();
+                reject(new Error(`Agent '${agentId}' exited during task execution`));
+            };
+
+            this.processManager.on('agent.output', onOutput);
+            this.processManager.on('agent.crashed', onAgentGone);
+            this.processManager.on('agent.failed', onAgentGone);
+            this.processManager.on('agent.stopped', onAgentGone);
+
+            try {
+                this.processManager.sendToAgent(agentId, {
+                    type: 'task',
+                    taskId: task.id,
+                    payload: task.payload,
+                });
+            } catch (err) {
+                cleanup();
+                reject(err);
+            }
         });
     }
 }

@@ -683,6 +683,46 @@ Just as HTTP enabled the web by standardizing how browsers request and servers r
 
 This is the infrastructure layer that enables the $1T Services Revolution predicted by Sequoia. Without it, every Agent service must build its own trust layer. With it, the entire ecosystem can interoperate.
 
+### 4.7 From IM to Operating System
+
+AgentM begins as a messaging app—but messaging is only the entry point. The deeper vision: **AgentM as the universal agent-first interface for all digital services**.
+
+Today's platforms (TikTok, WeRead, Meituan, Spotify) each hold a slice of your data and attention. They build recommendations on top of what they know about you—but what they know is locked inside their servers, used to serve their business interests, not yours. You get personalization as a product; you pay with your data and autonomy.
+
+The AgentM model inverts this:
+
+```
+Today's Platform Model:
+  Your Data → Platform Server → Platform Recommendation → You
+  (data owned by platform, optimization serves platform)
+
+AgentM Model:
+  Your Data (local) → Your Agent → Service Protocol → Result
+  (data owned by you, optimization serves you)
+```
+
+**Agent + Local Data + Protocol = Personalized Services Without Platform Lock-in.**
+
+Any service category that today requires a centralized platform can be rebuilt on this stack:
+
+| Service Category | Today | AgentM Vision |
+|-----------------|-------|---------------|
+| **Short video / content** | TikTok algorithm owns your taste profile | Local agent learns your preferences, fetches open content feeds |
+| **Reading / knowledge** | WeRead recommends within its catalog | Agent curates across all sources, remembers what you've read |
+| **Commerce / delivery** | Meituan matches you to merchants by platform incentive | Agent negotiates directly with providers via Gradience protocol |
+| **Music / media** | Spotify optimizes engagement for retention | Agent builds your sonic identity locally, streams from any source |
+| **Professional services** | Upwork matches you to freelancers for 20% | Agent Arena settles work trustlessly for 5% |
+
+The key insight is that **personalization does not require a centralized platform**—it requires *memory* and *agency*. When a user's preferences, behavior history, and context live locally with their Agent, every service becomes personalized without surrendering data sovereignty.
+
+**AgentM as OS**: In this framing, AgentM is not a messaging app that also does tasks. It is an **agent-first operating system layer** where:
+- The Agent is the process scheduler—routing requests to the right services
+- Local memory is the filesystem—persistent, private, user-owned
+- Protocol adapters are device drivers—connecting to any external service
+- The Gradience settlement layer is the kernel's IPC mechanism—ensuring value flows correctly between services
+
+Every service a user interacts with—content, commerce, communication, professional work—flows through their Agent. The Agent learns, accumulates context, and improves. Platforms compete to serve the Agent, not to capture the user. This is the end state of the "Services is the New Software" transition: not just AI doing work, but AI mediating *all* services on the user's behalf, with the user's interests encoded in the Agent's behavior rather than the platform's algorithm.
+
 ---
 
 ## 5. Protocol Specification
@@ -1158,8 +1198,8 @@ Gradience has a **kernel**, **products** (user-facing), and **infrastructure** (
 │                            │                             │
 │   Infrastructure           │                             │
 │   ┌────────────────────────┼─────────────────────────┐  │
-│   │  Chain Hub    Indexer  │  Judge Daemon            │  │
-│   │  (skills)    (query)   │  (auto-judge)            │  │
+│   │  Chain Hub  Indexer  Judge Daemon  Agent Daemon   │  │
+│   │  (skills)  (query)  (auto-judge)  (local runtime) │  │
 │   │                        │                          │  │
 │   │         ┌──────────────┴──────────────┐           │  │
 │   │         │      Agent Layer (Kernel)   │           │  │
@@ -1248,6 +1288,22 @@ The A2A (Agent-to-Agent) layer implements four foundational patterns proven acro
 ```
 
 **Design Principle**: L2 handles interaction volume and latency; L1 guarantees final settlement and dispute resolution. Solana remains the trust anchor; A2A enables the throughput required for real-time Agent economies.
+
+**Transport Adapters**: The A2A protocol ships with **9 built-in transport adapters**, making it trivially composable with any existing Agent ecosystem:
+
+| Adapter | Protocol | Use Case |
+|---------|----------|----------|
+| `http-json` | HTTP/REST | Default Agent API calls |
+| `websocket` | WebSocket | Real-time streaming |
+| `grpc` | gRPC | High-throughput service mesh |
+| `solana-rpc` | Solana JSON-RPC | On-chain instruction submission |
+| `google-a2a` | Google A2A spec | Interop with Google Agent ecosystem |
+| `openai-compat` | OpenAI API format | Drop-in for OpenAI-compatible agents |
+| `mcp` | Model Context Protocol | Tool-calling Agents (Claude, etc.) |
+| `libp2p` | libp2p | Peer-to-peer Agent communication |
+| `nostr` | Nostr protocol | Censorship-resistant messaging |
+
+**Wallet Integration**: Client SDKs ship with **Solana Wallet Adapter** support out of the box. Any Solana-compatible wallet (Phantom, Backpack, Privy embedded) can sign Gradience protocol transactions without custom integration. Web2 users on AgentM use an embedded wallet (Privy / Web3Auth); power users connect hardware or browser wallets through the standard adapter interface.
 
 ### 8.4 Execution Layer: Implementation Options
 
@@ -1593,48 +1649,156 @@ Benefits:
 
 **Note**: Unlike IBC (Cosmos-centric), Wormhole and LayerZero have proven Solana integration and wider adoption. Gradience will use these for cross-chain Agent identity and reputation sync when the time comes—not IBC.
 
+### 8.8 Local-First Architecture & Agent Memory
+
+#### All Data Stays Local
+
+AgentM and AgentM Pro follow a **local-first** principle: all user data—conversation history, preferences, agent configuration, task records, and reputation signals—is stored on the user's own machine. No user data transits to or is stored on Gradience servers. The network is used only for:
+
+- Solana on-chain settlement (task events, reputation anchors)
+- Agent-to-Agent messaging via the A2A protocol
+- Optional, user-initiated cloud sync (encrypted, user-keyed)
+
+This is not a privacy feature bolted on after the fact. It is the foundational architectural constraint from which everything else derives.
+
+```
+Traditional Cloud Architecture:
+  User Action → App → Cloud Server (stores data) → Response
+
+Gradience Local-First Architecture:
+  User Action → Local Agent Runtime → Local DB → Response
+                      │
+                      └── (when needed) → Solana / A2A Protocol
+```
+
+#### Agent Memory Store
+
+Each user's Agent maintains a **persistent memory store**—a structured local database of everything the Agent has learned about the user:
+
+| Memory Layer | Contents | Update Mechanism |
+|-------------|----------|-----------------|
+| **Preference Memory** | Communication style, task priorities, quality standards, tool preferences | Updated after each interaction |
+| **Behavior Memory** | Recurring workflows, frequently used skills, habitual task patterns | Inferred from action history |
+| **Context Memory** | Current projects, ongoing relationships, active task state | Maintained in real time |
+| **Capability Memory** | Which Skills and Agents the user's Agent has worked with, outcome quality | Updated after each task settlement |
+
+The memory store uses a **tiered architecture**:
+- **Hot tier** (in-process): Last N interactions, current session context — millisecond access
+- **Warm tier** (local SQLite): Full history, indexed for retrieval — sub-second access
+- **Cold tier** (local archive): Long-term records, searchable — used for deep context retrieval
+
+Agents use Retrieval-Augmented Generation (RAG) over the local memory store to ground every response and task decision in the user's actual history and preferences—without sending that history to any remote model provider.
+
+#### Plugin & Skills Framework
+
+The Agent runtime exposes a **plugin interface** for extending Agent capabilities without modifying the core:
+
+```
+Agent Runtime
+├── Core (immutable)
+│   ├── Memory store
+│   ├── Task queue
+│   └── Protocol adapter
+│
+└── Plugin Layer (extensible)
+    ├── Skills (from Chain Hub Skill Market)
+    │   ├── web-search
+    │   ├── code-execution
+    │   ├── image-generation
+    │   └── ... (community-contributed)
+    │
+    ├── Integrations (user-configured)
+    │   ├── Calendar / email
+    │   ├── Local file system
+    │   └── Custom APIs
+    │
+    └── Behaviors (user-defined)
+        ├── Auto-approve task types
+        ├── Budget limits
+        └── Notification rules
+```
+
+Skills are fetched from the Chain Hub Skill Market and cached locally. The Agent downloads a Skill once and runs it on-device—the Skill author never sees the user's data or usage patterns. Skill quality and reputation are tracked via the Gradience protocol (Skills are themselves Agents with on-chain reputation).
+
+#### Vision: Personalized AI Services, Fully Local
+
+The local-first + memory architecture unlocks a new class of AI-powered services that are impossible on today's cloud platforms:
+
+**Content (like TikTok, but yours)**: The Agent builds a precise model of your content preferences from everything you've consumed—stored locally. It fetches open content feeds and ranks them against your local taste model. The algorithm is yours, running on your machine, optimized for your enjoyment rather than platform engagement metrics.
+
+**Reading (like WeRead, but sovereign)**: Your reading history, annotations, highlights, and comprehension patterns live in your Agent's memory store. When you start a new book, the Agent surfaces relevant past reads, explains concepts in your preferred depth, and builds a knowledge graph connecting new material to what you already know—all offline-capable.
+
+**Commerce (like Meituan, but peer-to-peer)**: Your Agent knows your dietary preferences, budget patterns, past orders, and quality standards. When you want food, it negotiates directly with provider Agents via the Gradience protocol—no middleman platform extracting rent. Settlement is atomic; reputation is on-chain.
+
+**The unifying principle**: Services should be personalized to *you*, not to what a platform wants you to be. Local-first memory makes this possible. The Gradience protocol makes it trustless. AgentM makes it accessible.
+
 ---
 
 ## 9. Roadmap
 
-### 8.1 Protocol Development (April 2026)
+### 9.1 Phase 1 — Foundation (April 2026) ✅
 
-AI-accelerated development — entire protocol ships within one month, coinciding with Sequoia's identified inflection point for the Services Revolution.
+Core protocol shipped. Agent Arena live. First participants onboarded.
 
-| Phase | Timeline | Milestone |
-|-------|----------|-----------|
-| Design | 2026-03 ✅ | Protocol specification complete; whitepaper published |
-| W1 | 2026-04-01 ~ 04-14 (2 weeks) | Solana core Program: 12 instructions, 8 events, SOL/SPL/Token2022, reputation, staking/slash |
-| W2 | 2026-04-15 ~ 04-21 | Program integration tests + toolchain: SDK, CLI, Indexer, Judge Daemon, product frontend |
-| W3 | 2026-04-22 ~ 04-26 | Ecosystem: Chain Hub MVP, AgentM MVP (Google OAuth entry + social/discovery), AgentM Pro MVP (developer operations + runtime companion) |
-| W4 | 2026-04-27 ~ 04-30 (stretch) | Multi-chain EVM (Base Sepolia); cross-chain reputation proof; A2A Protocol MVP |
-| W5 | 2026-05-01 ~ 05-03 | Full-stack integration testing, pre-release verification |
+| Milestone | Status |
+|-----------|--------|
+| Protocol specification & whitepaper | ✅ Done |
+| Solana core Program (12 instructions, 8 events, SOL/SPL/Token2022) | ✅ Done |
+| Reputation system, staking/slash | ✅ Done |
+| SDK, CLI, Indexer, Judge Daemon | ✅ Done |
+| Agent Daemon MVP (local runtime, task queue, process management) | ✅ Done |
+| Chain Hub MVP (9 transport adapters incl. google-a2a, Skill Market) | ✅ Done |
+| AgentM MVP (Google OAuth, social/discovery, embedded wallet) | ✅ Done |
+| AgentM Pro MVP (developer operations, runtime companion) | ✅ Done |
 
-### 8.2 Market Expansion Strategy (2026-2027)
+### 9.2 Phase 2 — Growth (May–June 2026)
 
-Aligned with Sequoia's market analysis, Gradience will target high-intelligence, high-outsourcing-maturity service categories first:
+Ecosystem expansion and developer adoption. Aligned with Sequoia's "wedge" strategy: start where outsourcing already exists.
 
-**Phase 1 (Q2 2026): Infrastructure & Developer Adoption**
-- SDK release for Solana ecosystem
-- Developer documentation and examples
-- Integration partnerships with Agent frameworks
+**Infrastructure**
+- Agent Daemon cloud deployment mode (local → cloud migration path)
+- A2A Protocol v1 (state channels, streaming micropayments)
+- Cross-chain reputation proof (Solana → Base Sepolia)
+- GRAD token launch + genesis airdrop to Phase 1 participants
 
-**Phase 2 (Q3 2026): First Service Verticals**
-- **Content/Design Services**: High intelligence, clear deliverables, existing outsourcing market
-- **Data Processing**: Standardized inputs/outputs, verifiable quality
-- **Code/Development**: Natural fit for AI Agents, existing marketplace demand
+**Developer Adoption**
+- SDK v1.0 release for Solana and EVM ecosystems
+- Developer documentation, examples, and integration guides
+- Hackathon program; first cohort of Agent-native applications
+- Integration partnerships with major Agent frameworks (LangChain, AutoGen, CrewAI)
 
-**Phase 3 (Q4 2026): Professional Services**
-- **Accounting/Bookkeeping**: Following Rillet, Basis model—AI-native ERP integration
-- **Legal Documentation**: NDAs, contract drafting (Crosby playbook)
-- **Insurance Claims**: High-volume, rule-based processing
+**First Service Verticals**
+- **Content/Design**: High intelligence, clear deliverables, existing outsourcing market
+- **Data Processing**: Standardized I/O, verifiable quality
+- **Code/Development**: Natural AI Agent fit, large existing demand
 
-**Phase 4 (2027): Enterprise & Complex Services**
-- **Supply Chain/Procurement**: $200B+ market, high outsourcing maturity
-- **Recruitment/Staffing**: $200B+ market, proven AI use cases (Juicebox, Mercor)
-- **IT Managed Services**: $100B+ market, outcome-based purchasing
+### 9.3 Phase 3 — Verticals (Q3 2026)
 
-### 8.3 The Wedge Strategy
+Professional service categories. AgentM Pro reaches production. Local-first architecture fully realized across the product stack.
+
+- **AgentM Pro** v1.0: Full developer control plane, cloud hosting, team management
+- **Agent Memory Store** v1.0: Persistent local memory, RAG retrieval, preference learning
+- **Professional Services Verticals**:
+  - Accounting/Bookkeeping (following Rillet, Basis model — AI-native ERP integration)
+  - Legal Documentation (NDAs, contract drafting — Crosby playbook)
+  - Insurance Claims (high-volume, rule-based processing)
+- GRAD mining rewards activated; buyback-and-burn flywheel running
+- ZK-KYC integration (Tier 2 identity, uncollateralized lending)
+
+### 9.4 Phase 4 — Scale (Q4 2026)
+
+Enterprise and complex services. Cross-chain full deployment. Protocol becomes self-sustaining.
+
+- **Enterprise Verticals**:
+  - Supply Chain/Procurement ($200B+ market, high outsourcing maturity)
+  - Recruitment/Staffing ($200B+ market — Juicebox, Mercor model)
+  - IT Managed Services ($100B+ market, outcome-based purchasing)
+- **Cross-chain expansion**: Base, Arbitrum full deployment; unified reputation layer
+- **gUSD launch**: Credit-backed stablecoin minted from collective Agent earning capacity
+- **Protocol independence**: Task fee revenue exceeds mining rewards; protocol fully self-sustaining
+- **Key Metrics Target**: 10,000+ active Agents; $10M+ task value settled; top-3 service categories with active competition
+
+### 9.5 The Wedge Strategy
 
 Following Sequoia's recommendation to start where outsourcing already exists:
 

@@ -56,6 +56,31 @@ CREATE TABLE IF NOT EXISTS cache (
     value         TEXT NOT NULL,
     expires_at    INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS wallet_authorizations (
+    agent_wallet  TEXT PRIMARY KEY,
+    master_wallet TEXT NOT NULL,
+    authorized    INTEGER NOT NULL DEFAULT 0,
+    policy        TEXT NOT NULL,
+    authorized_at INTEGER NOT NULL,
+    expires_at    INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS wallet_challenges (
+    challenge     TEXT PRIMARY KEY,
+    created_at    INTEGER NOT NULL,
+    expires_at    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS wallet_spend_log (
+    id              TEXT PRIMARY KEY,
+    amount_lamports INTEGER NOT NULL,
+    program         TEXT NOT NULL,
+    tx_signature    TEXT NOT NULL,
+    created_at      INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_spend_log_created ON wallet_spend_log(created_at);
 `;
 
 export function initDatabase(dbPath: string): Database.Database {

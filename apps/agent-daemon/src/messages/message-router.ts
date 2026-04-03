@@ -36,8 +36,13 @@ export class MessageRouter extends EventEmitter {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
+        // Listen to both legacy 'message' events and new structured 'message-event' events
         this.connectionManager.on('message', (data: unknown) => {
             this.handleInbound(data);
+        });
+        
+        this.connectionManager.on('message-event', (messageEvent: any) => {
+            this.handleStructuredMessage(messageEvent);
         });
     }
 
@@ -112,6 +117,34 @@ export class MessageRouter extends EventEmitter {
 
         this.emit('message.received', message);
         logger.debug({ id: message.id, type: message.type, from: message.from }, 'Inbound message routed');
+    }
+
+    private handleStructuredMessage(messageEvent: {
+        id: string;
+        from: string;
+        to: string;
+        type: string;
+        payload: unknown;
+        timestamp: number;
+    }): void {
+        const message: A2AMessage = {
+            id: messageEvent.id,
+            from: messageEvent.from,
+            to: messageEvent.to,
+            type: messageEvent.type,
+            timestamp: messageEvent.timestamp,
+            payload: messageEvent.payload,
+        };
+
+        this.persistMessage(message, 'inbound');
+
+        if (TASK_MESSAGE_TYPES.has(message.type)) {
+            const priority = message.type === 'task_proposal' ? 0 : 1;
+            this.taskQueue.enqueue(message.id, message.type, message.payload, priority as 0 | 1 | 2);
+        }
+
+        this.emit('message.received', message);
+        logger.debug({ id: message.id, type: message.type, from: message.from }, 'Structured inbound message routed');
     }
 
     private persistMessage(message: A2AMessage, direction: 'inbound' | 'outbound'): void {

@@ -10,6 +10,8 @@ import { TaskExecutor } from './tasks/task-executor.js';
 import { ProcessManager } from './agents/process-manager.js';
 import { MessageRouter } from './messages/message-router.js';
 import { FileKeyManager } from './keys/key-manager.js';
+import { AuthorizationManager } from './wallet/authorization.js';
+import { TransactionManager } from './solana/transaction-manager.js';
 import { createAPIServer } from './api/server.js';
 import { logger } from './utils/logger.js';
 
@@ -26,6 +28,8 @@ export class Daemon {
     private processManager: ProcessManager | null = null;
     private messageRouter: MessageRouter | null = null;
     private keyManager: FileKeyManager | null = null;
+    private authorizationManager: AuthorizationManager | null = null;
+    private transactionManager: TransactionManager | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -51,11 +55,18 @@ export class Daemon {
         await this.keyManager.initialize();
         logger.info({ publicKey: this.keyManager.getPublicKey() }, 'KeyManager initialized');
 
+        this.authorizationManager = new AuthorizationManager(db, this.keyManager.getPublicKey());
+        logger.info(
+            { authorized: this.authorizationManager.authorized, masterWallet: this.authorizationManager.masterWallet },
+            'AuthorizationManager initialized',
+        );
+
         this.connectionManager = new ConnectionManager(this.config);
         this.taskQueue = new TaskQueue(db);
         this.processManager = new ProcessManager(db, this.config.maxAgentProcesses);
         this.messageRouter = new MessageRouter(db, this.connectionManager, this.taskQueue);
         this.taskExecutor = new TaskExecutor(this.taskQueue, this.processManager);
+        this.transactionManager = new TransactionManager(this.config.solanaRpcUrl, this.keyManager);
 
         const recovered = this.taskQueue.recoverOnStartup();
         if (recovered > 0) {
@@ -64,9 +75,34 @@ export class Daemon {
 
         await this.processManager.initialize();
 
-        this.connectionManager.on('state-changed', (state) => {
-            logger.info({ connectionState: state }, 'Connection state changed');
+        this.connectionManager.on('state-changed', (peerId: string, state: string) => {
+            logger.info({ peerId, connectionState: state }, 'Connection state changed');
         });
+
+        // Wire task events from ConnectionManager to TaskQueue
+        this.connectionManager.on('task-event', (taskEvent: any) => {
+            logger.debug({ taskId: taskEvent.id, taskType: taskEvent.type }, 'Received task event from connection');
+            this.taskQueue!.enqueue(
+                taskEvent.id,
+                taskEvent.type,
+                taskEvent.payload,
+                Math.min(Math.max(taskEvent.priority, 0), 2) as 0 | 1 | 2
+            );
+        });
+
+        // Wire health metrics and fallback mode events
+        if (this.config.connectionHealthMetrics) {
+            this.connectionManager.on('health-metrics', (peerId: string, metrics: any) => {
+                logger.debug({ peerId, metrics }, 'Connection health metrics');
+            });
+        }
+
+        this.connectionManager.on('fallback-mode', (enabled: boolean) => {
+            logger.info({ fallbackMode: enabled }, 'REST API fallback mode changed');
+        });
+
+        // Set the agent public key for subscriptions
+        this.connectionManager.setAgentPubkey(this.keyManager.getPublicKey());
 
         this.server = await createAPIServer({
             host: this.config.host,
@@ -77,6 +113,8 @@ export class Daemon {
             processManager: this.processManager,
             messageRouter: this.messageRouter,
             keyManager: this.keyManager,
+            authorizationManager: this.authorizationManager,
+            transactionManager: this.transactionManager,
             startedAt: this.startedAt,
             version: VERSION,
         });

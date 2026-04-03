@@ -2,9 +2,15 @@ export interface MetaplexRegistryAgent {
     id: string;
     displayName: string;
     wallet: string;
+    /** Metaplex Core Asset address (base58) — on-chain identity */
+    assetAddress: string;
     capabilities: string[];
     minSettlementAmount: number;
     token: 'MPLX' | 'SOL';
+    /** Reputation tier derived from completed tasks */
+    reputationTier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+    /** Number of completed A2A tasks */
+    completedTasks: number;
 }
 
 export interface A2ADelegation {
@@ -39,30 +45,57 @@ export interface A2ASettlement {
     settledAt: number;
 }
 
+/**
+ * Static demo registry mirroring agents registered on Metaplex Core.
+ *
+ * TODO (T49): At registration time, generate ERC-8004 registration JSON so
+ * agents appear at 8004scan.io:
+ *   {
+ *     "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+ *     "agentId": "mplx-agent:...",
+ *     "capabilities": [...],
+ *     "wallets": { "solana": "..." }
+ *   }
+ *
+ * TODO (T49): Replace static array with on-chain fetch:
+ *   // import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
+ *   // import { fetchAssetsByOwner, mplCore } from '@metaplex-foundation/mpl-core'
+ *   // const umi = createUmi(SOLANA_RPC).use(mplCore())
+ *   // const assets = await fetchAssetsByOwner(umi, GRADIENCE_AUTHORITY_KEY)
+ */
 const METAPLEX_REGISTRY: MetaplexRegistryAgent[] = [
     {
-        id: 'mplx-alpha',
-        displayName: 'Metaplex Alpha Agent',
+        id: 'mplx-agent:7xkxmnpq',
+        displayName: 'MarketAnalyzer_v1',
         wallet: 'F4v1A7qY1jYf2nn89mFn4QjTqD4Y9Za9zVn2C1xTa111',
-        capabilities: ['asset pricing', 'metadata repair'],
-        minSettlementAmount: 25,
-        token: 'MPLX',
-    },
-    {
-        id: 'mplx-beta',
-        displayName: 'Metaplex Beta Agent',
-        wallet: '5jVQxM7x7mG3gQqQe8fTQ5zB1nWfU7sW2u5W9h5wB222',
-        capabilities: ['task execution', 'collection analytics'],
-        minSettlementAmount: 40,
-        token: 'MPLX',
-    },
-    {
-        id: 'mplx-sol',
-        displayName: 'Metaplex SOL Agent',
-        wallet: '9rA2WcQ8p2eQxQ26n9tAqD5cK1Yf5x8zQe9wP7mTa333',
-        capabilities: ['cross-chain routing', 'A2A relaying'],
-        minSettlementAmount: 1,
+        assetAddress: '7xKxMnPqR9YzF4v1A7qY1jYf2nn89mFn4QjTqD4Y9Yz1',
+        capabilities: ['nft-analysis', 'pricing', 'tensor-trading'],
+        minSettlementAmount: 25_000_000, // 0.025 SOL in lamports
         token: 'SOL',
+        reputationTier: 'Silver',
+        completedTasks: 14,
+    },
+    {
+        id: 'mplx-agent:4fqr2mn8',
+        displayName: 'TaskExecutor_v1',
+        wallet: '5jVQxM7x7mG3gQqQe8fTQ5zB1nWfU7sW2u5W9h5wB222',
+        assetAddress: '4FqR2MN8xbWPp1Ck5jVQxM7x7mG3gQqQe8fTQ5zB1nW2',
+        capabilities: ['task-execution', 'code-review', 'qa-testing'],
+        minSettlementAmount: 40_000_000, // 0.04 SOL in lamports
+        token: 'SOL',
+        reputationTier: 'Gold',
+        completedTasks: 31,
+    },
+    {
+        id: 'mplx-agent:9bwp1ck5',
+        displayName: 'DataIndexer_v1',
+        wallet: '9rA2WcQ8p2eQxQ26n9tAqD5cK1Yf5x8zQe9wP7mTa333',
+        assetAddress: '9BWp1CK5rA2WcQ8p2eQxQ26n9tAqD5cK1Yf5x8zQe9w3',
+        capabilities: ['data-indexing', 'collection-analytics', 'metadata-repair'],
+        minSettlementAmount: 10_000_000, // 0.01 SOL in lamports
+        token: 'SOL',
+        reputationTier: 'Bronze',
+        completedTasks: 5,
     },
 ];
 
@@ -120,7 +153,11 @@ export function settleA2ADelegation(input: {
         toWallet: input.delegation.toWallet,
         token: input.delegation.token,
         amount: input.delegation.amount,
-        txRef: `metaplex-tx-${Math.random().toString(36).slice(2, 10)}`,
+        // txRef format: gradience-settle-<hex> for Gradience Protocol settlements
+        // TODO (T50): After settlement, submit reputation feedback to 8004 Reputation Registry
+        //   POST https://api.8004scan.io/v1/feedback
+        //   { agentId: toAgent.id, score: 85, taskId: delegation.id, proof: txRef }
+        txRef: `gradience-settle-${Math.random().toString(16).slice(2, 10)}${Math.random().toString(16).slice(2, 10)}`,
         settledAt: now,
     };
 }

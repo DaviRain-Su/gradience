@@ -30,6 +30,7 @@ export interface AgentProcess {
 export class ProcessManager extends EventEmitter {
     private readonly processes = new Map<string, AgentProcess>();
     private readonly childProcesses = new Map<string, ChildProcess>();
+    private readonly lineBuffers = new Map<string, string>();
     private readonly maxProcesses: number;
     private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -143,7 +144,20 @@ export class ProcessManager extends EventEmitter {
             proc.lastStartedAt = Date.now();
 
             child.stdout?.on('data', (data: Buffer) => {
-                logger.debug({ agentId: id, stdout: data.toString().trim() }, 'Agent stdout');
+                let buf = (this.lineBuffers.get(id) ?? '') + data.toString();
+                const lines = buf.split('\n');
+                buf = lines.pop() ?? '';
+                this.lineBuffers.set(id, buf);
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    try {
+                        const message = JSON.parse(trimmed);
+                        this.emit('agent.output', { agentId: id, message });
+                    } catch {
+                        logger.debug({ agentId: id, line: trimmed }, 'Agent stdout (non-JSON)');
+                    }
+                }
             });
 
             child.stderr?.on('data', (data: Buffer) => {
@@ -204,6 +218,29 @@ export class ProcessManager extends EventEmitter {
         this.emit('agent.stopped', { agentId: id });
     }
 
+    sendToAgent(agentId: string, data: unknown): void {
+        const child = this.childProcesses.get(agentId);
+        const proc = this.processes.get(agentId);
+        if (!child || !proc || proc.state !== 'running') {
+            throw new DaemonError(ErrorCodes.AGENT_NOT_FOUND, `Agent '${agentId}' is not running`, 409);
+        }
+        const line = JSON.stringify(data) + '\n';
+        child.stdin?.write(line);
+    }
+
+    async remove(id: string): Promise<void> {
+        const proc = this.processes.get(id);
+        if (!proc) throw new DaemonError(ErrorCodes.AGENT_NOT_FOUND, 'Agent not found', 404);
+
+        if (proc.state === 'running' || proc.state === 'starting') {
+            await this.stop(id);
+        }
+
+        this.db.prepare('DELETE FROM agents WHERE id = ?').run(id);
+        this.processes.delete(id);
+        logger.info({ agentId: id }, 'Agent removed');
+    }
+
     list(): AgentProcess[] {
         return [...this.processes.values()];
     }
@@ -219,6 +256,7 @@ export class ProcessManager extends EventEmitter {
         proc.pid = null;
         proc.lastExitCode = code;
         this.childProcesses.delete(id);
+        this.lineBuffers.delete(id);
 
         if (proc.state === 'stopping') {
             proc.state = 'stopped';

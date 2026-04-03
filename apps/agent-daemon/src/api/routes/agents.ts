@@ -46,4 +46,17 @@ export function registerAgentRoutes(app: FastifyInstance, processManager: Proces
             throw err;
         }
     });
+
+    app.delete<{ Params: { id: string } }>('/api/v1/agents/:id', async (request, reply) => {
+        try {
+            await processManager.remove(request.params.id);
+            reply.code(204).send();
+        } catch (err) {
+            if (err instanceof DaemonError) {
+                reply.code(err.statusCode).send({ error: err.code, message: err.message });
+                return;
+            }
+            throw err;
+        }
+    });
 }

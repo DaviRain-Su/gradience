@@ -6,11 +6,15 @@ import { registerTaskRoutes } from './routes/tasks.js';
 import { registerAgentRoutes } from './routes/agents.js';
 import { registerMessageRoutes } from './routes/messages.js';
 import { registerKeyRoutes } from './routes/keys.js';
+import { registerWalletRoutes } from './routes/wallet.js';
+import { registerSolanaRoutes } from './routes/solana.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
 import type { MessageRouter } from '../messages/message-router.js';
 import type { KeyManager } from '../keys/key-manager.js';
+import type { AuthorizationManager } from '../wallet/authorization.js';
+import type { TransactionManager } from '../solana/transaction-manager.js';
 
 export interface APIServerDeps {
     host: string;
@@ -21,6 +25,8 @@ export interface APIServerDeps {
     processManager: ProcessManager;
     messageRouter: MessageRouter;
     keyManager: KeyManager;
+    authorizationManager: AuthorizationManager;
+    transactionManager: TransactionManager;
     startedAt: number;
     version: string;
 }
@@ -41,6 +47,8 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerAgentRoutes(app, deps.processManager);
     registerMessageRoutes(app, deps.messageRouter);
     registerKeyRoutes(app, deps.keyManager);
+    registerWalletRoutes(app, deps.authorizationManager);
+    registerSolanaRoutes(app, deps.transactionManager);
 
     await app.listen({ host: deps.host, port: deps.port });
     logger.info({ host: deps.host, port: deps.port }, 'API server listening');
