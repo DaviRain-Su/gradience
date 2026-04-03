@@ -1,3 +1,5 @@
+import { reverseResolveSolAddress, resolveSolDomain } from '@/lib/sns';
+
 /**
  * Domain Resolution for Agent Social Platform
  *
@@ -19,8 +21,6 @@ export interface DomainResolverConfig {
 }
 
 const DEFAULT_SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
-const SNS_API_BASE = 'https://sns-api.bonfida.com';
-
 export class DomainResolver {
     private config: Required<DomainResolverConfig>;
     private cache = new Map<string, DomainResolution>();
@@ -50,11 +50,7 @@ export class DomainResolver {
 
     async resolveSNS(domain: string): Promise<DomainResolution | null> {
         try {
-            const name = domain.replace(/\.sol$/, '');
-            const res = await fetch(`${SNS_API_BASE}/v2/domain/resolve/${name}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            const address = data.result as string;
+            const address = await resolveSolDomain(domain, this.config.solanaRpcUrl);
             if (!address) return null;
 
             const resolution: DomainResolution = {
@@ -98,28 +94,22 @@ export class DomainResolver {
 
     async reverseResolve(address: string): Promise<DomainResolution | null> {
         // Try SNS reverse resolution first (Solana addresses are base58)
-        if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
-            try {
-                const res = await fetch(`${SNS_API_BASE}/v2/domain/reverse-lookup/${address}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const domain = data.result as string;
-                    if (domain) {
-                        const resolution: DomainResolution = {
-                            domain: `${domain}.sol`,
-                            address,
-                            chain: 'solana',
-                            source: 'sns',
-                            resolvedAt: Date.now(),
-                        };
-                        this.cache.set(domain, resolution);
-                        this.cache.set(address, resolution);
-                        return resolution;
-                    }
-                }
-            } catch {
-                // Fall through
+        try {
+            const domain = await reverseResolveSolAddress(address, this.config.solanaRpcUrl);
+            if (domain) {
+                const resolution: DomainResolution = {
+                    domain,
+                    address,
+                    chain: 'solana',
+                    source: 'sns',
+                    resolvedAt: Date.now(),
+                };
+                this.cache.set(domain, resolution);
+                this.cache.set(address, resolution);
+                return resolution;
             }
+        } catch {
+            // Fall through
         }
 
         return null;

@@ -1,6 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useDomain } from '@/hooks/useDomain';
+import {
+    checkSolDomainOwnership,
+    isValidSolDomain,
+    normalizeSolDomain,
+    resolveSolDomain,
+} from '@/lib/sns';
+import {
+    getLinkedDomain,
+    removeLinkedDomain,
+    setLinkedDomain,
+} from '@/lib/social/domain-linking';
+import { ProfileHeader } from './ProfileHeader';
 import type { ReputationData } from '@/types';
 
 interface AgentSocialCardProps {
@@ -33,37 +46,100 @@ export function AgentSocialCard({
     isFollowing = false,
 }: AgentSocialCardProps) {
     const { displayName: domainName, resolution, loading } = useDomain(address);
+    const [linkedDomain, setLinkedDomainState] = useState<string | null>(null);
+    const [domainLinking, setDomainLinking] = useState(false);
+    const [domainError, setDomainError] = useState<string | null>(null);
 
     const name = displayName ?? (loading ? '...' : domainName);
 
+    useEffect(() => {
+        setLinkedDomainState(getLinkedDomain(address));
+    }, [address]);
+
+    async function handleLinkDomain(domain: string) {
+        const input = domain.trim().toLowerCase();
+        if (!input) return;
+        setDomainError(null);
+
+        const looksLikeSol = input.endsWith('.sol') || !input.includes('.');
+        if (looksLikeSol) {
+            const normalized = normalizeSolDomain(input);
+            if (!isValidSolDomain(normalized)) {
+                setDomainError('Invalid .sol domain format');
+                return;
+            }
+
+            setDomainLinking(true);
+            try {
+                const ownership = await checkSolDomainOwnership(normalized, address);
+                if (ownership === false) {
+                    setDomainError('Domain ownership does not match this agent address');
+                    return;
+                }
+
+                const resolved = await resolveSolDomain(normalized);
+                if (resolved && resolved !== address) {
+                    setDomainError('Domain resolves to a different address');
+                    return;
+                }
+            } finally {
+                setDomainLinking(false);
+            }
+
+            setLinkedDomain(address, normalized);
+            setLinkedDomainState(normalized);
+            return;
+        }
+
+        if (!/^[a-z0-9-]+\.eth$/i.test(input)) {
+            setDomainError('Unsupported domain format');
+            return;
+        }
+
+        setLinkedDomain(address, input);
+        setLinkedDomainState(input);
+    }
+
+    function handleUnlinkDomain() {
+        removeLinkedDomain(address);
+        setLinkedDomainState(null);
+        setDomainError(null);
+    }
+
     return (
         <div data-testid="agent-social-card" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
-            <div className="flex items-start justify-between">
-                <div>
-                    {ranking !== undefined && (
-                        <p data-testid="agent-social-rank" className="text-xs text-gray-500">
-                            Rank #{ranking}
-                        </p>
-                    )}
-                    <h3 className="text-lg font-semibold">{name}</h3>
-                    {resolution?.domain && (
-                        <p className="text-sm text-indigo-400">{resolution.domain}</p>
-                    )}
-                    <p className="text-xs text-gray-500 font-mono mt-1 truncate max-w-[240px]">{address}</p>
-                </div>
-                {onFollow && (
-                    <button
-                        onClick={onFollow}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-                            isFollowing
-                                ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                        }`}
-                    >
-                        {isFollowing ? 'Following' : 'Follow'}
-                    </button>
-                )}
-            </div>
+            {ranking !== undefined && (
+                <p data-testid="agent-social-rank" className="text-xs text-gray-500">
+                    Rank #{ranking}
+                </p>
+            )}
+            <ProfileHeader
+                address={address}
+                displayName={name}
+                linkedDomain={linkedDomain}
+                onLinkDomain={handleLinkDomain}
+                onUnlinkDomain={handleUnlinkDomain}
+                domainLinking={domainLinking}
+                domainError={domainError}
+                rightSlot={
+                    onFollow ? (
+                        <button
+                            onClick={onFollow}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                                isFollowing
+                                    ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                            }`}
+                        >
+                            {isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    ) : undefined
+                }
+            />
+
+            {!linkedDomain && resolution?.domain && (
+                <p className="text-xs text-indigo-400">resolved: {resolution.domain}</p>
+            )}
 
             {verifiedBadge && (
                 <span data-testid="agent-social-verified" className="inline-block text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-300">

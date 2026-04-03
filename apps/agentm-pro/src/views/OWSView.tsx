@@ -23,6 +23,16 @@ import {
     type GoldRushCapabilityProbeResult,
 } from '@/lib/goldrush/capability-probe';
 import { buildMetaplexReputationBridge } from '@/lib/metaplex/reputation-bridge';
+import {
+    buildAgentTokenLaunchPlan,
+    calculateGovernanceVotingPower,
+    calculateStakingReputationWeight,
+    estimateServiceFeeWithToken,
+    simulateAgentTokenLaunch,
+    validateDistribution,
+    type AgentTokenLaunchPlan,
+    type AgentTokenLaunchResult,
+} from '@/lib/metaplex/token-launch';
 import { scoreWalletRisk, type WalletRiskReport } from '@/lib/goldrush/risk-scoring';
 import { fetchReputationByAddress } from '@/lib/ows/reputation';
 import type { ReputationData } from '@/types';
@@ -45,6 +55,12 @@ export function OWSView() {
     const [tradingError, setTradingError] = useState<string | null>(null);
     const [probeLoading, setProbeLoading] = useState(false);
     const [probeResult, setProbeResult] = useState<GoldRushCapabilityProbeResult | null>(null);
+    const [tokenName, setTokenName] = useState('Gradience Agent Token');
+    const [tokenSymbol, setTokenSymbol] = useState('GAT');
+    const [tokenMetadataUri, setTokenMetadataUri] = useState('https://gradience.xyz/token-metadata.json');
+    const [tokenLaunchPlan, setTokenLaunchPlan] = useState<AgentTokenLaunchPlan | null>(null);
+    const [tokenLaunchResult, setTokenLaunchResult] = useState<AgentTokenLaunchResult | null>(null);
+    const [tokenLaunchError, setTokenLaunchError] = useState<string | null>(null);
 
     const address = identity?.address ?? publicKey;
 
@@ -86,6 +102,15 @@ export function OWSView() {
         if (!reputation || !address) return null;
         return buildMetaplexReputationBridge(address, reputation);
     }, [address, reputation]);
+    const tokenUtilityPreview = useMemo(() => {
+        const staked = reputation ? Math.max(500, reputation.completed * 100) : 500;
+        const totalStaked = Math.max(20_000, staked * 25);
+        return {
+            stakingWeight: calculateStakingReputationWeight(staked, totalStaked),
+            serviceFeeAfterDiscount: estimateServiceFeeWithToken(1_000_000, 500),
+            governancePower: calculateGovernanceVotingPower(staked * 2, staked),
+        };
+    }, [reputation]);
 
     async function handleRunRiskScan() {
         setRiskError(null);
@@ -127,6 +152,35 @@ export function OWSView() {
         } finally {
             setProbeLoading(false);
         }
+    }
+
+    function handlePrepareTokenLaunchPlan() {
+        const plan = buildAgentTokenLaunchPlan({
+            name: tokenName,
+            symbol: tokenSymbol,
+            metadataUri: tokenMetadataUri,
+        });
+        const validation = validateDistribution(plan.distribution);
+        if (!validation.valid) {
+            setTokenLaunchError(`Token distribution must total 100%, got ${validation.total}%.`);
+            setTokenLaunchPlan(null);
+            setTokenLaunchResult(null);
+            return;
+        }
+        setTokenLaunchError(null);
+        setTokenLaunchPlan(plan);
+        setTokenLaunchResult(null);
+    }
+
+    function handleExecuteTokenLaunch() {
+        if (!tokenLaunchPlan) {
+            setTokenLaunchError('Prepare token launch plan first.');
+            return;
+        }
+        const authority = address ?? 'demo-genesis-authority';
+        const result = simulateAgentTokenLaunch(tokenLaunchPlan, authority);
+        setTokenLaunchResult(result);
+        setTokenLaunchError(null);
     }
 
     function handleGenerateTradingSignal() {
@@ -487,6 +541,112 @@ export function OWSView() {
                         Connect wallet and load ChainHub reputation to generate Metaplex bridge metadata.
                     </p>
                 )}
+            </div>
+
+            <div data-testid="metaplex-token-launch-panel" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+                <div>
+                    <p className="text-lg font-semibold">Metaplex Genesis Agent Token</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Configure token launch plan for staking reputation weight, service fee payments, and governance voting.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <input
+                        data-testid="token-launch-name-input"
+                        value={tokenName}
+                        onChange={(event) => setTokenName(event.target.value)}
+                        placeholder="Token Name"
+                        className="px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 text-sm"
+                    />
+                    <input
+                        data-testid="token-launch-symbol-input"
+                        value={tokenSymbol}
+                        onChange={(event) => setTokenSymbol(event.target.value)}
+                        placeholder="Symbol"
+                        className="px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 text-sm"
+                    />
+                    <input
+                        data-testid="token-launch-uri-input"
+                        value={tokenMetadataUri}
+                        onChange={(event) => setTokenMetadataUri(event.target.value)}
+                        placeholder="Metadata URI"
+                        className="px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 text-sm"
+                    />
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        data-testid="token-launch-plan-button"
+                        onClick={handlePrepareTokenLaunchPlan}
+                        className="px-4 py-2 rounded-lg bg-fuchsia-700 hover:bg-fuchsia-600 text-sm"
+                    >
+                        Prepare Plan
+                    </button>
+                    <button
+                        data-testid="token-launch-execute-button"
+                        onClick={handleExecuteTokenLaunch}
+                        disabled={!tokenLaunchPlan}
+                        className="px-4 py-2 rounded-lg bg-purple-700 hover:bg-purple-600 disabled:bg-purple-900 text-sm"
+                    >
+                        Launch Demo
+                    </button>
+                </div>
+
+                {tokenLaunchError && (
+                    <p data-testid="token-launch-error" className="text-sm text-red-400">
+                        {tokenLaunchError}
+                    </p>
+                )}
+
+                {tokenLaunchPlan && (
+                    <div data-testid="token-launch-plan-result" className="bg-gray-950 rounded-lg p-4 space-y-1 text-sm">
+                        <p>
+                            token: <span className="font-semibold">{tokenLaunchPlan.name}</span> ({tokenLaunchPlan.symbol})
+                        </p>
+                        <p>total_supply: {tokenLaunchPlan.totalSupply.toLocaleString()}</p>
+                        <p>distribution: community {tokenLaunchPlan.distribution.community}% · team {tokenLaunchPlan.distribution.team}% · treasury {tokenLaunchPlan.distribution.treasury}% · liquidity {tokenLaunchPlan.distribution.liquidity}%</p>
+                        <p className="text-xs text-gray-500">metadata_uri: {tokenLaunchPlan.metadataUri}</p>
+                    </div>
+                )}
+
+                {tokenLaunchResult && (
+                    <div data-testid="token-launch-result" className="bg-gray-950 rounded-lg p-4 space-y-1 text-sm">
+                        <p>
+                            mint_address:{' '}
+                            <span data-testid="token-launch-mint" className="font-semibold">
+                                {tokenLaunchResult.mintAddress}
+                            </span>
+                        </p>
+                        <p>
+                            tx_ref:{' '}
+                            <span data-testid="token-launch-tx" className="font-semibold">
+                                {tokenLaunchResult.txRef}
+                            </span>
+                        </p>
+                    </div>
+                )}
+
+                <div data-testid="token-utility-preview" className="bg-gray-950 rounded-lg p-4 text-sm space-y-1">
+                    <p>
+                        staking_weight:{' '}
+                        <span data-testid="token-utility-staking-weight" className="font-semibold">
+                            {tokenUtilityPreview.stakingWeight}
+                        </span>
+                    </p>
+                    <p>
+                        service_fee_after_discount(lamports):{' '}
+                        <span data-testid="token-utility-service-fee" className="font-semibold">
+                            {tokenUtilityPreview.serviceFeeAfterDiscount}
+                        </span>
+                    </p>
+                    <p>
+                        governance_voting_power:{' '}
+                        <span data-testid="token-utility-governance-power" className="font-semibold">
+                            {tokenUtilityPreview.governancePower}
+                        </span>
+                    </p>
+                </div>
             </div>
         </div>
     );

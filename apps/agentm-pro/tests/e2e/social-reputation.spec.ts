@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+const ALPHA_ADDRESS = '11111111111111111111111111111111';
+const BETA_ADDRESS = 'Vote111111111111111111111111111111111111111';
+
 test.describe('AgentM Pro social reputation integration', () => {
     test.beforeEach(async ({ page }) => {
         await page.addInitScript(() => {
@@ -13,7 +16,7 @@ test.describe('AgentM Pro social reputation integration', () => {
                 body: JSON.stringify([
                     {
                         task_id: 1,
-                        poster: 'agent-alpha',
+                        poster: ALPHA_ADDRESS,
                         judge: 'judge-1',
                         judge_mode: 'designated',
                         reward: 100,
@@ -25,13 +28,13 @@ test.describe('AgentM Pro social reputation integration', () => {
                         deadline: 1,
                         judge_deadline: 2,
                         submission_count: 2,
-                        winner: 'agent-alpha',
+                        winner: ALPHA_ADDRESS,
                         created_at: 1,
                         slot: 1,
                     },
                     {
                         task_id: 2,
-                        poster: 'agent-beta',
+                        poster: BETA_ADDRESS,
                         judge: 'judge-2',
                         judge_mode: 'designated',
                         reward: 100,
@@ -43,7 +46,7 @@ test.describe('AgentM Pro social reputation integration', () => {
                         deadline: 1,
                         judge_deadline: 2,
                         submission_count: 1,
-                        winner: 'agent-beta',
+                        winner: BETA_ADDRESS,
                         created_at: 2,
                         slot: 2,
                     },
@@ -55,9 +58,9 @@ test.describe('AgentM Pro social reputation integration', () => {
             const url = new URL(route.request().url());
             const pubkey = url.pathname.split('/')[3];
             const payload =
-                pubkey === 'agent-alpha'
+                pubkey === ALPHA_ADDRESS
                     ? {
-                          agent: 'agent-alpha',
+                          agent: ALPHA_ADDRESS,
                           display_name: 'Alpha Agent',
                           bio: 'High reputation strategy agent',
                           links: { website: 'https://alpha.test' },
@@ -65,9 +68,9 @@ test.describe('AgentM Pro social reputation integration', () => {
                           publish_mode: 'manual',
                           updated_at: 1,
                       }
-                    : pubkey === 'agent-beta'
+                    : pubkey === BETA_ADDRESS
                       ? {
-                            agent: 'agent-beta',
+                            agent: BETA_ADDRESS,
                             display_name: 'Beta Agent',
                             bio: 'Emerging market participant',
                             links: { website: 'https://beta.test' },
@@ -92,9 +95,9 @@ test.describe('AgentM Pro social reputation integration', () => {
             const url = new URL(route.request().url());
             const pubkey = url.pathname.split('/')[3];
             const payload =
-                pubkey === 'agent-alpha'
+                pubkey === ALPHA_ADDRESS
                     ? {
-                          agent: 'agent-alpha',
+                          agent: ALPHA_ADDRESS,
                           global_avg_score: 9100,
                           global_win_rate: 8600,
                           global_completed: 22,
@@ -102,9 +105,9 @@ test.describe('AgentM Pro social reputation integration', () => {
                           total_earned: 100000,
                           updated_slot: 1,
                       }
-                    : pubkey === 'agent-beta'
+                    : pubkey === BETA_ADDRESS
                       ? {
-                            agent: 'agent-beta',
+                            agent: BETA_ADDRESS,
                             global_avg_score: 7300,
                             global_win_rate: 6400,
                             global_completed: 8,
@@ -132,10 +135,18 @@ test.describe('AgentM Pro social reputation integration', () => {
         await expect(page.getByTestId('discover-view')).toBeVisible();
         await expect(page.getByTestId('discover-reputation-source')).toHaveText('live');
         await expect(page.getByTestId('discover-ranking-1')).toContainText('Alpha Agent');
-        await expect(page.getByTestId('social-verified-1')).toBeVisible();
-        await expect(page.getByTestId('social-trust-1')).toBeVisible();
+        await expect(page.getByTestId('discover-ranking-1').getByTestId('agent-social-verified')).toBeVisible();
+        await expect(page.getByTestId('discover-ranking-1').getByTestId('agent-social-trust')).toBeVisible();
+        await expect(page.getByTestId('discover-ranking-1').getByTestId('profile-share-url')).toBeVisible();
 
-        await page.getByPlaceholder('Search by address, alice.sol, or vitalik.eth').fill('agent-beta');
+        await page.getByTestId('discover-ranking-1').getByTestId('profile-domain-toggle').click();
+        await page.getByTestId('discover-ranking-1').getByTestId('domain-input').fill('alpha.sol');
+        await page.getByTestId('discover-ranking-1').getByTestId('domain-link-button').click();
+        await expect(page.getByTestId('discover-ranking-1').getByTestId('domain-badge')).toContainText('alpha.sol');
+        await page.getByTestId('discover-ranking-1').getByTestId('domain-unlink-button').click();
+        await expect(page.getByTestId('discover-ranking-1').getByTestId('domain-badge')).not.toContainText('alpha.sol');
+
+        await page.getByPlaceholder('Search by address, alice.sol, or vitalik.eth').fill(BETA_ADDRESS);
         await page.getByRole('button', { name: 'Search' }).click();
         await expect(page.getByTestId('discover-search-result')).toContainText('Beta Agent');
         await expect(page.getByTestId('discover-search-result')).toContainText('Trust:');
