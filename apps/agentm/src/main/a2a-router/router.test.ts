@@ -14,8 +14,6 @@ describe('A2ARouter', () => {
     beforeEach(() => {
         router = new A2ARouter({
             enableNostr: true,
-            enableLibp2p: false, // Disable to avoid bootstrap requirement
-            enableMagicBlock: false,
             nostrOptions: {
                 relays: [], // Empty to avoid network
             },
@@ -70,8 +68,7 @@ describe('A2ARouter', () => {
             assert.strictEqual(health.initialized, true);
             assert.ok(Array.isArray(health.availableProtocols));
             assert.ok(health.protocolStatus.nostr);
-            assert.ok(health.protocolStatus.libp2p);
-            assert.ok(health.protocolStatus.magicblock);
+            assert.ok(health.protocolStatus.xmtp);
         });
 
         it('should report not initialized when not started', () => {
@@ -96,8 +93,6 @@ describe('A2ARouter', () => {
             // Create router with all protocols disabled
             const emptyRouter = new A2ARouter({
                 enableNostr: false,
-                enableLibp2p: false,
-                enableMagicBlock: false,
             });
             await emptyRouter.initialize();
 
@@ -188,13 +183,12 @@ describe('A2ARouter', () => {
         it('should use custom protocol priority', async () => {
             const customRouter = new A2ARouter({
                 enableNostr: true,
-                enableLibp2p: false,
-                enableMagicBlock: false,
                 protocolPriority: {
                     broadcast: ['nostr'],
-                    direct_p2p: ['nostr'],
-                    paid_service: ['nostr'],
-                    offline_message: ['nostr'],
+                    discovery: ['nostr'],
+                    direct_message: ['nostr'],
+                    task_negotiation: ['nostr'],
+                    interop: ['nostr'],
                 },
                 nostrOptions: { relays: [] },
             });

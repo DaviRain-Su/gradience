@@ -37,12 +37,14 @@
     "@multiformats/multiaddr": "^13.0.1",
     "@privy-io/react-auth": "^3.18.0",
     "@solana/kit": "^5.5.1",
+    "@xmtp/agent-sdk": "^1.2.4",
     "ethers": "^6.16.0",
     "libp2p": "^3.1.7",
     "multiformats": "^13.4.2",
     "nostr-tools": "^2.23.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "zod": "^3.23.8",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

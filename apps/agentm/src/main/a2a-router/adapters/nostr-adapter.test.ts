@@ -128,3 +128,74 @@ describe('NostrAdapter with mock relay', () => {
         assert.strictEqual(health.available, false);
     });
 });
+
+describe('NostrAdapter - Soul Profile Features', () => {
+    let adapter: NostrAdapter;
+
+    beforeEach(() => {
+        adapter = new NostrAdapter({
+            relays: [], // Empty to avoid network
+        });
+    });
+
+    afterEach(async () => {
+        if (adapter.isAvailable()) {
+            await adapter.shutdown();
+        }
+    });
+
+    describe('broadcastSoulProfile()', () => {
+        it('should not throw when broadcasting soul profile', async () => {
+            await adapter.initialize();
+
+            // Should not throw even with no relays
+            await assert.doesNotReject(async () => {
+                await adapter.broadcastSoulProfile(
+                    {
+                        address: 'test-address',
+                        displayName: 'Test Agent',
+                        capabilities: ['coding', 'research'],
+                        reputationScore: 85,
+                        available: true,
+                        discoveredVia: 'nostr',
+                        lastSeenAt: Date.now(),
+                    },
+                    {
+                        cid: 'QmTest123',
+                        type: 'agent',
+                        embeddingHash: 'embed-hash-123',
+                        visibility: 'public',
+                        tags: ['AI', 'blockchain', 'DeFi'],
+                    }
+                );
+            });
+        });
+    });
+
+    describe('discoverAgents() with Soul filters', () => {
+        it('should return empty when no relays configured', async () => {
+            await adapter.initialize();
+            
+            const agents = await adapter.discoverAgents({
+                soulType: 'agent',
+                interestTags: ['AI', 'blockchain'],
+            });
+            
+            assert.deepStrictEqual(agents, []);
+        });
+
+        it('should support all Soul filter combinations', async () => {
+            await adapter.initialize();
+            
+            // Should not throw with all filters
+            await assert.doesNotReject(async () => {
+                await adapter.discoverAgents({
+                    soulType: 'agent',
+                    interestTags: ['AI'],
+                    soulVisibility: 'public',
+                    minReputation: 60,
+                });
+            });
+        });
+    });
+});

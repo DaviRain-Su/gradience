@@ -10,7 +10,6 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { A2ARouter } from './router.js';
 import { NostrAdapter } from './adapters/nostr-adapter.js';
-import { Libp2pAdapter } from './adapters/libp2p-adapter.js';
 
 describe('A2A E2E', () => {
     let router1: A2ARouter;
@@ -20,20 +19,10 @@ describe('A2A E2E', () => {
         // Create two routers for testing
         router1 = new A2ARouter({
             enableNostr: false, // Disable to avoid network
-            enableLibp2p: true,
-            libp2pOptions: {
-                bootstrapList: [], // Empty to avoid network
-                topics: [],
-            },
         });
 
         router2 = new A2ARouter({
             enableNostr: false,
-            enableLibp2p: true,
-            libp2pOptions: {
-                bootstrapList: [],
-                topics: [],
-            },
         });
 
         // Initialize both routers
@@ -92,13 +81,6 @@ describe('A2A E2E', () => {
             assert.strictEqual(adapter.protocol, 'nostr');
         });
 
-        it('should create Libp2pAdapter', () => {
-            const adapter = new Libp2pAdapter({
-                bootstrapList: [],
-            } as any);
-            assert.ok(adapter);
-            assert.strictEqual(adapter.protocol, 'libp2p');
-        });
     });
 });
 

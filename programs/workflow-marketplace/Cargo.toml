@@ -1,0 +1,25 @@
+[package]
+name = "workflow-marketplace"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+codama = "0.7.2"
+const-crypto = "0.3.0"
+pinocchio = { version = "0.10.1", features = ["cpi", "copy"] }
+solana-address = { version = "2.0", features = ["curve25519"] }
+pinocchio-log = "0.5.1"
+pinocchio-system = "0.5.0"
+pinocchio-token = "0.5"
+thiserror = "2.0.17"
+borsh = { version = "1.6.0", features = ["derive"] }
+
+[build-dependencies]
+codama = "0.7.2"
+serde_json = "1.0.145"

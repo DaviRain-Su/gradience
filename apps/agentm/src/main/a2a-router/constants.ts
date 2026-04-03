@@ -40,63 +40,6 @@ export const NOSTR_CONFIG = {
     },
 } as const;
 
-// ============ libp2p Configuration ============
-
-export const LIBP2P_CONFIG = {
-    /** Bootstrap nodes for DHT discovery */
-    BOOTSTRAP_LIST: [
-        '/dns4/bootstrap.libp2p.io/tcp/443/wss/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-    ] as const,
-
-    /** GossipSub topics */
-    TOPICS: {
-        /** Agent capability announcements */
-        AGENT_DISCOVERY: 'gradience/agent/discovery/v1',
-        /** Task negotiation */
-        TASK_NEGOTIATION: 'gradience/task/negotiation/v1',
-        /** Reputation queries */
-        REPUTATION_QUERY: 'gradience/reputation/query/v1',
-        /** Direct messages */
-        DIRECT_MESSAGES: 'gradience/messages/dm/v1',
-    },
-
-    /** DHT configuration */
-    DHT: {
-        /** Protocol prefix for Gradience DHT */
-        PROTOCOL_PREFIX: '/gradience/kad/1.0.0',
-        /** Client mode (don't provide DHT server) */
-        CLIENT_MODE: true,
-        /** Announce interval (ms) */
-        ANNOUNCE_INTERVAL_MS: 60000,
-        /** Max providers to find */
-        MAX_PROVIDERS: 20,
-    },
-
-    /** Connection configuration */
-    CONNECTION: {
-        /** Max connections */
-        MAX_CONNECTIONS: 50,
-        /** Min connections */
-        MIN_CONNECTIONS: 5,
-        /** Auto dial interval (ms) */
-        AUTO_DIAL_INTERVAL: 10000,
-    },
-
-    /** Timeouts in milliseconds */
-    TIMEOUTS: {
-        START: 30000,
-        DIAL: 10000,
-        PUBLISH: 10000,
-        DHT_QUERY: 60000,
-    },
-
-    /** Retry configuration */
-    RETRY: {
-        MAX_ATTEMPTS: 3,
-        BACKOFF_MS: 2000,
-    },
-} as const;
-
 // ============ Google A2A Configuration ============
 
 export const GOOGLE_A2A_CONFIG = {
@@ -139,10 +82,11 @@ export const GOOGLE_A2A_CONFIG = {
 export const ROUTER_CONFIG = {
     /** Protocol selection priority */
     PROTOCOL_PRIORITY: {
-        BROADCAST: ['nostr', 'libp2p', 'google-a2a'],
-        DIRECT_P2P: ['libp2p', 'google-a2a', 'nostr'],
-        PAID_SERVICE: ['magicblock'],
-        OFFLINE_MESSAGE: ['nostr', 'google-a2a'],
+        BROADCAST: ['nostr'],
+        DISCOVERY: ['nostr'],
+        DIRECT_MESSAGE: ['xmtp', 'nostr'],
+        TASK_NEGOTIATION: ['nostr', 'xmtp'],
+        INTEROP: ['google-a2a'],
     },
 
     /** Health check interval (ms) */
@@ -159,13 +103,6 @@ export const A2A_ERROR_CODES = {
     NOSTR_PUBLISH_FAILED: '1000',
     NOSTR_RELAY_UNAVAILABLE: '1001',
     NOSTR_ENCRYPTION_FAILED: '1002',
-
-    LIBP2P_DIAL_FAILED: '1100',
-    LIBP2P_PEER_NOT_FOUND: '1101',
-    LIBP2P_PUBLISH_FAILED: '1102',
-
-    MAGICBLOCK_PAYMENT_FAILED: '1200',
-    MAGICBLOCK_INSUFFICIENT_BALANCE: '1201',
 
     GOOGLE_A2A_AGENT_CARD_FETCH_FAILED: '1300',
     GOOGLE_A2A_RPC_ERROR: '1301',

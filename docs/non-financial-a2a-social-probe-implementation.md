@@ -1,132 +1,193 @@
-# 非金融 A2A 社交探路实现指南：libp2p + A2A + Chain Hub
+# 非金融 A2A 社交探路实现指南：Nostr + XMTP + Google A2A + Chain Hub
 
-> **文档类型**: 技术实现指南  > **日期**: 2026-04-03  > **核心栈**: libp2p (传输) + Google A2A Protocol (应用层) + Chain Hub (匹配引擎)  
-> **可选增强**: MagicBlock TEE (隐私计算)
+> **文档类型**: 技术实现指南  
+> **更新日期**: 2026-04-04  
+> **核心栈**: Nostr (发现) + XMTP (消息) + Google A2A (互操作) + Chain Hub (匹配引擎)  
+> **可选增强**: MagicBlock ER (实时通信) + TEE (隐私计算)
 
 ---
 
 ## 执行摘要
 
-### 推荐技术栈 (2026-04 现状)
+### 推荐技术栈 (2026-04 当前实现)
 
 | 层级 | 技术 | 作用 | 状态 |
 |------|------|------|------|
-| **发现** | Google A2A Agent Card | 能力发现 + Soul 摘要 | v1.0+, Linux Foundation |
-| **传输** | libp2p | P2P 连接 + 加密通道 | 成熟稳定 |
-| **应用** | A2A Protocol | 结构化消息 + 任务生命周期 | 50+ 企业支持 |
-| **匹配** | Chain Hub Soul Engine | Embedding + LLM 分析 | Gradience 自研 |
-| **增强** | MagicBlock PER | TEE 隐私计算 (可选) | 执行插件 |
+| **发现** | Nostr (NIP-01/04) | Agent 在线状态 + 能力广播 | ✅ 已实现 |
+| **消息** | XMTP (v3) | 点对点加密通信 | ✅ 已实现 |
+| **互操作** | Google A2A Protocol | 跨框架 Agent 互通 | ✅ 已实现 |
+| **匹配** | Chain Hub Soul Engine | Embedding + LLM 分析 | 🟡 设计完成 |
+| **实时** | MagicBlock ER (可选) | 高频实时消息通道 | 🔵 适配器已有 |
 
-### 关键决策
+### 架构决策变更
 
+**原架构 (已废弃)**:
 ```
-✅ libp2p + A2A = 通信主干 (轻量、标准、去中心化)
-❌ MagicBlock ≠ 通信层 (过重、不必要)
-✅ MagicBlock = 可选隐私计算层 (TEE 增强)
+❌ libp2p + A2A = 通信主干 (P2P 复杂度过高)
 ```
+
+**新架构 (当前实现)**:
+```
+✅ Nostr = 发现层 (轻量、开放、无需中心化服务器)
+✅ XMTP = 消息层 (端到端加密、Web3 原生)
+✅ Google A2A = 互操作层 (跨生态兼容)
+✅ MagicBlock ER = 可选实时层 (高频场景)
+```
+
+**变更原因**:
+1. **libp2p 复杂度过高** - NAT 穿透、连接管理、中继节点运维成本高
+2. **Nostr + XMTP 更轻量** - 开发者无需运行节点，依赖公共中继
+3. **更好的 Web3 集成** - XMTP 原生支持钱包身份，Nostr 生态成熟
 
 ---
 
 ## 1. 架构设计
 
-### 1.1 三层架构
+### 1.1 三层架构 (更新后)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Layer 3: 应用层 (Application)                                 │
+│  ├── AgentM (用户入口)                                         │
+│  │   ├── GUI: 社交发现、探路、匹配报告                        │
+│  │   ├── API: Agent 自动化调用                                │
+│  │   └── A2A Router (协议路由)                                │
+│  │                                                           │
 │  ├── Google A2A Protocol                                      │
-│  │   ├── Agent Card (发现)                                    │
-│  │   ├── Task/Message (对话)                                  │
-│  │   └── 受 SOUL.md 边界约束                                   │
+│  │   ├── Agent Card (能力声明)                                │
+│  │   ├── Task/Message (结构化对话)                            │
+│  │   └── 跨框架互操作 (LangChain/CrewAI/AutoGen)            │
 │  │                                                           │
-│  └── MCP (Model Context Protocol)                             │
-│      └── 本地工具访问 (读取 SOUL.md)                          │
+│  └── SOUL.md Profile System                                   │
+│      ├── 身份：价值观、边界、兴趣                            │
+│      ├── 隐私：public / zk-selective / private               │
+│      └── 存储：IPFS / Arweave (链上仅存 hash)                │
 └──────────────────────┬──────────────────────────────────────────┘
-                       │ A2A 消息
+                       │ 消息路由
 ┌──────────────────────▼──────────────────────────────────────────┐
-│  Layer 2: 传输层 (Transport)                                   │
-│  ├── libp2p                                                   │
-│  │   ├── Noise Protocol (加密)                                │
-│  │   ├── NAT 穿透                                            │
-│  │   ├── GossipSub (可选)                                     │
-│  │   └── 端到端连接                                           │
+│  Layer 2: 协议层 (Protocol Layer)                              │
+│  ├── Nostr (发现层)                                           │
+│  │   ├── NIP-01: 基础事件                                     │
+│  │   ├── NIP-04: 加密消息 (已迁移到 XMTP)                    │
+│  │   ├── Agent Presence (在线状态)                           │
+│  │   └── Capability Broadcast (能力广播)                     │
 │  │                                                           │
-│  └── 连接管理                                                 │
-│      ├── 发现对等节点                                         │
-│      ├── 维护连接池                                           │
-│      └── 优雅断开                                             │
+│  ├── XMTP v3 (消息层)                                         │
+│  │   ├── 端到端加密 (Signal Protocol)                        │
+│  │   ├── 钱包身份 (无需额外注册)                            │
+│  │   ├── 消息历史同步                                        │
+│  │   └── 跨设备支持                                         │
+│  │                                                           │
+│  └── MagicBlock ER (可选实时层)                               │
+│      ├── Ephemeral Rollup (短暂状态)                         │
+│      ├── 高频消息 (游戏、实时协作)                          │
+│      └── TEE 隐私保护                                        │
 └──────────────────────┬──────────────────────────────────────────┘
-                       │ 调用
+                       │ 数据处理
 ┌──────────────────────▼──────────────────────────────────────────┐
-│  Layer 1: 计算层 (Compute)                                     │
+│  Layer 1: 计算与结算层 (Compute & Settlement)                  │
 │  ├── Chain Hub Soul Matching Engine                           │
-│  │   ├── Embedding 相似度                                     │
-│  │   ├── LLM 结构化分析                                       │
-│  │   └── 生成匹配报告                                         │
+│  │   ├── Embedding 快速筛选 (sentence-transformers)          │
+│  │   ├── LLM 深度分析 (GPT-4o-mini / Claude-3-haiku)        │
+│  │   ├── 多维度评分 (价值观/语气/边界/兴趣)                  │
+│  │   └── 生成匹配报告 + 建议话题                             │
 │  │                                                           │
-│  └── 可选: MagicBlock PER (TEE)                              │
-│      ├── 隐私计算 (embedding + LLM)                          │
+│  ├── Solana Settlement                                        │
+│  │   ├── Reputation PDA (社交准确率)                         │
+│  │   ├── Escrow (付费匹配服务)                               │
+│  │   └── Judge Verification (可选)                           │
+│  │                                                           │
+│  └── 可选: MagicBlock TEE                                     │
+│      ├── 隐私匹配计算                                         │
 │      ├── ZK 证明生成                                         │
-│      └── 结果回传 Solana                                     │
+│      └── 结果签名上链                                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 数据流
+### 1.2 数据流 (更新后)
 
 ```
 发现阶段:
-Agent A ←──A2A Agent Card──→ Agent B
-            (包含 SOUL.md hash)
+Agent A → Nostr Relay → 查询 Agent Presence 事件
+       ← 返回: Agent B (pubkey, capabilities, reputation, SOUL hash)
 
-连接阶段:
-Agent A ←──libp2p (Noise加密)──→ Agent B
+建立连接:
+Agent A → XMTP Network → 发起加密会话 → Agent B
+       (Signal Protocol 端到端加密，钱包签名身份验证)
 
-对话阶段:
-Agent A ←──A2A Task/Message──→ Agent B
-            (受边界约束的受控对话)
+社交探路:
+Agent A ─ XMTP 加密通道 ─→ Agent B
+        (15 轮结构化对话，受 SOUL.md 边界约束)
+        
+        对话记录 (加密存储) → IPFS / Arweave
 
-匹配阶段:
-对话记录 → Chain Hub Soul Engine
+匹配分析:
+对话记录 CID → Chain Hub Soul Engine
+                ↓
+            1. Embedding 相似度 (快速)
+                ↓
+            2. LLM 深度分析 (主观)
+                ↓
+            3. 生成匹配报告
+                ├── 总分 (0-100)
+                ├── 维度评分 (价值观/语气/边界/兴趣)
+                ├── 匹配亮点 (共同点)
+                ├── 风险提示 (冲突点)
+                └── 建议话题 (破冰)
+
+可选 TEE 增强 (高隐私场景):
+对话记录 → MagicBlock TEE 环境
             ↓
-         Embedding + LLM 分析
+        隐私计算 (Agent 看不到原始数据)
             ↓
-         匹配报告 (可选 MagicBlock TEE)
+        ZK 证明 + 匹配结果哈希
 
-结算阶段:
-匹配结果哈希 → Solana (Reputation 更新)
+链上结算:
+匹配结果 hash → Solana Reputation PDA
+                ├── 更新 Agent 社交准确率
+                └── 记录匹配历史 (仅 hash)
 ```
 
 ---
 
 ## 2. Chain Hub SDK 接口定义
 
-### 2.1 核心接口
+### 2.1 核心接口 (更新后)
 
 ```typescript
 // packages/chain-hub/src/social/index.ts
 
-import { Libp2pOptions } from 'libp2p';
-import { A2AClientOptions } from '@google/a2a';
+import { A2ARouter } from '@gradience/agentm/a2a-router';
+import { NostrAdapterOptions } from '@gradience/agentm/a2a-router/adapters/nostr-adapter';
+import { XMTPAdapterOptions } from '@gradience/agentm/a2a-router/adapters/xmtp-adapter';
+import { GoogleA2AAdapterOptions } from '@gradience/agentm/a2a-router/adapters/google-a2a-adapter';
 
 interface SocialProbeConfig {
   // 身份
   agentId: string;
   soulProfile: SoulProfile;
+  walletPrivateKey: string;  // 用于 XMTP 和 Nostr 签名
   
-  // libp2p 配置
-  libp2p: Libp2pOptions;
-  
-  // A2A 配置
-  a2a: A2AClientOptions;
+  // A2A Router 配置 (多协议支持)
+  router: {
+    enableNostr: boolean;      // 默认 true (发现层)
+    enableXMTP: boolean;       // 默认 true (消息层)
+    enableGoogleA2A: boolean;  // 默认 true (互操作层)
+    enableMagicBlock?: boolean; // 可选 (实时层)
+    
+    nostrOptions?: NostrAdapterOptions;
+    xmtpOptions?: XMTPAdapterOptions;
+    googleA2AOptions?: GoogleA2AAdapterOptions;
+  };
   
   // 匹配引擎配置
   matching: {
-    embeddingModel: string;
-    llmModel: string;
-    minScoreThreshold: number;
+    embeddingModel: string;       // 'sentence-transformers/all-MiniLM-L6-v2'
+    llmModel: string;             // 'gpt-4o-mini' | 'claude-3-haiku'
+    minScoreThreshold: number;    // 默认 75
   };
   
-  // 可选: MagicBlock 增强
+  // 可选: MagicBlock TEE 增强
   magicblock?: {
     enabled: boolean;
     endpoint: string;
@@ -135,14 +196,21 @@ interface SocialProbeConfig {
 }
 
 class ChainHubSocial {
-  private libp2p: Libp2p;
-  private a2a: A2AClient;
+  private router: A2ARouter;
   private matchingEngine: SoulMatchingEngine;
   private magicblock?: MagicBlockClient;
   
   constructor(config: SocialProbeConfig) {
-    this.libp2p = createLibp2p(config.libp2p);
-    this.a2a = new A2AClient(config.a2a);
+    // 初始化 A2A Router (Nostr + XMTP + Google A2A)
+    this.router = new A2ARouter({
+      agentId: config.agentId,
+      enableNostr: config.router.enableNostr,
+      enableXMTP: config.router.enableXMTP,
+      nostrOptions: config.router.nostrOptions,
+      xmtpOptions: config.router.xmtpOptions,
+      googleA2AOptions: config.router.googleA2AOptions,
+    });
+    
     this.matchingEngine = new SoulMatchingEngine(config.matching);
     
     if (config.magicblock?.enabled) {
@@ -150,9 +218,15 @@ class ChainHubSocial {
     }
   }
   
+  async initialize(): Promise<void> {
+    await this.router.initialize();
+    console.log('[ChainHubSocial] Initialized with protocols:', 
+      this.router.getAvailableProtocols());
+  }
+  
   /**
    * =====================================
-   * 1. 发现对等 Agent (A2A Agent Card)
+   * 1. 发现对等 Agent (多协议发现)
    * =====================================
    */
   
@@ -162,47 +236,80 @@ class ChainHubSocial {
     soulType?: 'human' | 'agent';
     capabilities?: string[];
   }): Promise<PeerInfo[]> {
-    // 1. 通过 A2A 发现
-    const a2aPeers = await this.a2a.discover({
-      capabilities: ['social-probe', 'soul-matching'],
-      ...filters
+    const allPeers: PeerInfo[] = [];
+    
+    // 1. Nostr 发现 (主要方式 - 轻量、实时)
+    try {
+      const nostrAdapter = this.router.getAdapter('nostr');
+      if (nostrAdapter) {
+        const nostrPeers = await nostrAdapter.discoverAgents({
+          minReputation: filters.minReputation,
+          capabilities: filters.capabilities,
+          availableOnly: true,  // 只返回在线 Agent
+          limit: 100
+        });
+        allPeers.push(...nostrPeers.map(p => ({
+          id: p.address,
+          address: p.address,
+          displayName: p.displayName,
+          capabilities: p.capabilities,
+          reputationScore: p.reputationScore,
+          nostrPubkey: p.nostrPubkey,
+          discoveredVia: 'nostr' as const,
+          lastSeenAt: p.lastSeenAt
+        })));
+      }
+    } catch (error) {
+      console.error('[ChainHubSocial] Nostr discovery failed:', error);
+    }
+    
+    // 2. Google A2A 发现 (补充 - 跨生态)
+    try {
+      const a2aAdapter = this.router.getAdapter('google-a2a');
+      if (a2aAdapter) {
+        const a2aPeers = await a2aAdapter.discoverAgents({
+          capabilities: ['social-probe', 'soul-matching'],
+        });
+        allPeers.push(...a2aPeers.map(p => ({
+          id: p.address,
+          address: p.address,
+          displayName: p.displayName,
+          capabilities: p.capabilities,
+          reputationScore: p.reputationScore,
+          a2aEndpoint: p.a2aEndpoint,
+          discoveredVia: 'google-a2a' as const,
+          lastSeenAt: p.lastSeenAt
+        })));
+      }
+    } catch (error) {
+      console.error('[ChainHubSocial] Google A2A discovery failed:', error);
+    }
+    
+    // 3. 合并、去重、过滤
+    const uniquePeers = deduplicateByAddress(allPeers);
+    
+    return uniquePeers.filter(peer => {
+      if (filters.minReputation && peer.reputationScore < filters.minReputation) {
+        return false;
+      }
+      if (filters.capabilities && 
+          !filters.capabilities.some(c => peer.capabilities.includes(c))) {
+        return false;
+      }
+      return true;
     });
-    
-    // 2. 通过 libp2p DHT 发现
-    const dhtPeers = await this.libp2p.contentRouting.getMany(
-      cidFromString('gradience:soul-probe:v1'),
-      20
-    );
-    
-    // 3. 合并并去重
-    const allPeers = [...a2aPeers, ...dhtPeers];
-    const uniquePeers = deduplicateById(allPeers);
-    
-    // 4. 获取 Agent Card 详情
-    const peersWithCards = await Promise.all(
-      uniquePeers.map(async (peer) => {
-        try {
-          const card = await this.a2a.getAgentCard(peer.endpoint);
-          return { ...peer, card };
-        } catch {
-          return null;
-        }
-      })
-    );
-    
-    return peersWithCards.filter(Boolean);
   }
   
   /**
    * =====================================
-   * 2. 发起社交探路 (核心方法)
+   * 2. 发起社交探路 (核心方法 - 更新版)
    * =====================================
    */
   
   async probe(params: {
     // 目标
-    targetPeerId: string;
-    targetEndpoint: string;
+    targetAddress: string;      // Solana 地址 (用于 XMTP)
+    targetNostrPubkey?: string; // 可选 Nostr 公钥
     
     // 探路配置
     probeConfig: {
@@ -219,6 +326,9 @@ class ChainHubSocial {
       target: SoulBoundaries;
     };
     
+    // 协议选择
+    preferredProtocol?: 'xmtp' | 'nostr' | 'google-a2a';
+    
     // 回调
     onProgress?: (turn: number, message: A2AMessage) => void;
     onComplete?: (result: ProbeResult) => void;
@@ -226,21 +336,35 @@ class ChainHubSocial {
   }): Promise<ProbeSession> {
     const sessionId = generateSessionId();
     
-    // 1. libp2p 建立连接
-    const connection = await this.libp2p.dial(multiaddr(params.targetEndpoint));
+    // 1. 选择协议 (默认 XMTP)
+    const protocol = params.preferredProtocol ?? 'xmtp';
     
-    // 2. 创建 A2A Task
-    const task = await this.a2a.createTask({
-      sessionId,
-      type: 'social-probe',
-      parameters: {
+    // 2. 发送探路邀请
+    const inviteResult = await this.router.send({
+      to: params.targetAddress,
+      type: 'task_proposal',
+      preferredProtocol: protocol,
+      payload: {
+        sessionId,
+        type: 'social-probe',
         depth: params.probeConfig.depth,
         maxTurns: params.probeConfig.maxTurns,
-        proberSoulHash: hashSoul(this.soulProfile)
+        proberSoulHash: hashSoul(this.soulProfile),
+        timestamp: Date.now()
       }
     });
     
-    // 3. 执行受控对话
+    if (!inviteResult.success) {
+      throw new Error(`Failed to send probe invite: ${inviteResult.error}`);
+    }
+    
+    // 3. 等待对方接受 (订阅回复)
+    const accepted = await this.waitForAcceptance(sessionId, params.probeConfig.timeoutMs);
+    if (!accepted) {
+      throw new Error('Probe invitation not accepted');
+    }
+    
+    // 4. 执行受控对话
     const conversation: A2AMessage[] = [];
     
     for (let turn = 0; turn < params.probeConfig.maxTurns; turn++) {
@@ -253,27 +377,51 @@ class ChainHubSocial {
         avoidTopics: params.probeConfig.avoidTopics
       });
       
-      // 发送消息
-      const message = await this.a2a.sendMessage({
-        taskId: task.id,
-        role: 'prober',
-        content: question,
-        metadata: {
+      // 通过 A2A Router 发送
+      const sendResult = await this.router.send({
+        to: params.targetAddress,
+        type: 'direct_message',
+        preferredProtocol: protocol,
+        payload: {
+          sessionId,
           turn,
+          role: 'prober',
+          content: question,
           timestamp: Date.now()
         }
       });
       
-      conversation.push(message);
-      params.onProgress?.(turn, message);
+      if (!sendResult.success) {
+        console.error(`Turn ${turn} send failed:`, sendResult.error);
+        break;
+      }
       
-      // 等待回复
-      const response = await this.a2a.receiveMessage({
-        taskId: task.id,
-        timeout: params.probeConfig.timeoutMs
+      conversation.push({
+        id: sendResult.messageId,
+        from: this.agentId,
+        to: params.targetAddress,
+        type: 'direct_message',
+        protocol,
+        timestamp: sendResult.timestamp,
+        payload: { content: question, turn, role: 'prober' }
       });
       
+      params.onProgress?.(turn, conversation[conversation.length - 1]);
+      
+      // 等待回复
+      const response = await this.waitForResponse(
+        sessionId,
+        turn,
+        params.probeConfig.timeoutMs
+      );
+      
+      if (!response) {
+        console.error(`Turn ${turn} timeout, ending probe`);
+        break;
+      }
+      
       conversation.push(response);
+      params.onProgress?.(turn, response);
       
       // 检查是否应结束
       if (await this.shouldEndProbe(conversation, params.boundaries)) {
@@ -281,20 +429,67 @@ class ChainHubSocial {
       }
     }
     
-    // 4. 关闭连接
-    await connection.close();
+    // 5. 上传对话记录到 IPFS/Arweave (加密)
+    const conversationCID = await this.uploadEncryptedConversation(conversation);
     
-    // 5. 返回会话
+    // 6. 返回会话
     const session: ProbeSession = {
       id: sessionId,
-      taskId: task.id,
-      targetPeerId: params.targetPeerId,
+      targetAddress: params.targetAddress,
+      protocol,
       conversation,
+      conversationCID,
       status: 'completed',
       timestamp: Date.now()
     };
     
+    params.onComplete?.(session);
+    
     return session;
+  }
+  
+  /**
+   * 等待对方接受探路邀请
+   */
+  private async waitForAcceptance(
+    sessionId: string,
+    timeoutMs: number
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => resolve(false), timeoutMs);
+      
+      const unsubscribe = this.router.subscribe(async (message) => {
+        if (message.payload?.sessionId === sessionId &&
+            message.type === 'task_accept') {
+          clearTimeout(timeout);
+          await unsubscribe();
+          resolve(true);
+        }
+      });
+    });
+  }
+  
+  /**
+   * 等待特定轮次的回复
+   */
+  private async waitForResponse(
+    sessionId: string,
+    turn: number,
+    timeoutMs: number
+  ): Promise<A2AMessage | null> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => resolve(null), timeoutMs);
+      
+      const unsubscribe = this.router.subscribe(async (message) => {
+        if (message.payload?.sessionId === sessionId &&
+            message.payload?.turn === turn &&
+            message.payload?.role === 'target') {
+          clearTimeout(timeout);
+          await unsubscribe();
+          resolve(message);
+        }
+      });
+    });
   }
   
   /**

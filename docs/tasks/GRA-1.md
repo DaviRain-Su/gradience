@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-1
 title: "Get familiar with Linear"
-status: todo
+status: done
 priority: P0
 project: "General"
 created: 2026-04-03

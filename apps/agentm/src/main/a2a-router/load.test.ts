@@ -18,9 +18,8 @@ describe('A2A Load Testing', () => {
     // Create multiple routers
     for (let i = 0; i < ROUTER_COUNT; i++) {
       const router = new A2ARouter({
-        enableNostr: false,
-        enableLibp2p: false,
-        enableMagicBlock: true,
+        enableNostr: true,
+        nostrOptions: { relays: [] },
         agentId: `agent-${i}`,
       });
       await router.initialize();
@@ -45,7 +44,7 @@ describe('A2A Load Testing', () => {
       const healths = routers.map((r) => r.health());
       for (const health of healths) {
         assert.strictEqual(health.initialized, true);
-        assert.ok(health.availableProtocols.includes('magicblock'));
+        assert.ok(health.availableProtocols.includes('nostr'));
       }
     });
 
@@ -67,7 +66,7 @@ describe('A2A Load Testing', () => {
               to: targetAgent,
               type: 'direct_message',
               payload: { content: `Message ${i}`, timestamp: Date.now() },
-              preferredProtocol: 'magicblock',
+              preferredProtocol: 'nostr',
             })
             .then((result) => {
               results.push({
@@ -112,7 +111,7 @@ describe('A2A Load Testing', () => {
           to: 'agent-1',
           type: 'direct_message',
           payload: { seq: i },
-          preferredProtocol: 'magicblock',
+          preferredProtocol: 'nostr',
         });
         latencies.push(Date.now() - start);
       }
@@ -146,7 +145,7 @@ describe('A2A Load Testing', () => {
           to: 'agent-1',
           type: 'direct_message',
           payload: { data: 'x'.repeat(1000) }, // 1KB payload
-          preferredProtocol: 'magicblock',
+          preferredProtocol: 'nostr',
         });
       }
 
@@ -186,7 +185,7 @@ describe('A2A Load Testing', () => {
           to: 'agent-1',
           type: 'direct_message',
           payload: { timestamp: Date.now() },
-          preferredProtocol: 'magicblock',
+          preferredProtocol: 'nostr',
         });
         messageCount++;
       }
@@ -237,7 +236,8 @@ describe('A2A Load Testing', () => {
 describe('A2A Benchmark', () => {
   it('should benchmark message latency', async () => {
     const router = new A2ARouter({
-      enableMagicBlock: true,
+      enableNostr: true,
+      nostrOptions: { relays: [] },
       agentId: 'benchmark-agent',
     });
 
@@ -252,7 +252,7 @@ describe('A2A Benchmark', () => {
         to: 'recipient',
         type: 'direct_message',
         payload: { test: i },
-        preferredProtocol: 'magicblock',
+        preferredProtocol: 'nostr',
       });
       latencies.push(performance.now() - start);
     }

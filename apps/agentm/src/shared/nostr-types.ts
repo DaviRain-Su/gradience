@@ -24,6 +24,22 @@ export interface AgentPresenceEvent {
 }
 
 /**
+ * Soul Profile metadata (for social matching)
+ */
+export interface SoulProfileMetadata {
+    /** SOUL.md storage CID (IPFS/Arweave) */
+    cid: string;
+    /** Soul type: human or agent */
+    type: 'human' | 'agent';
+    /** Embedding hash for fast matching */
+    embeddingHash: string;
+    /** Privacy level */
+    visibility: 'public' | 'zk-selective' | 'private';
+    /** Interest tags for filtering (e.g., ['AI', 'blockchain', 'DeFi']) */
+    tags: string[];
+}
+
+/**
  * Content of agent presence event
  */
 export interface AgentPresenceContent {
@@ -33,6 +49,9 @@ export interface AgentPresenceContent {
     reputation_score: number;
     available: boolean;
     endpoint?: string;       // Optional: libp2p multiaddr
+    
+    /** Optional: Soul Profile for social matching */
+    soul?: SoulProfileMetadata;
 }
 
 // NOTE: EncryptedDMEvent and EncryptedDMContent have been removed.

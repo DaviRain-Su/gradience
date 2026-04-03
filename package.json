@@ -30,7 +30,7 @@
     "dev:docs": "pnpm --filter @gradiences/developer-docs dev",
     "dev:website": "pnpm --filter website dev",
     "dev:arena": "pnpm --filter @gradiences/frontend dev",
-    "dev:indexer": "pnpm --filter @gradiences/indexer-mock start",
+
     "dev:all": "concurrently \"pnpm dev:web\" \"pnpm dev:pro\" \"pnpm dev:docs\" \"pnpm dev:website\""
   },
   "devDependencies": {

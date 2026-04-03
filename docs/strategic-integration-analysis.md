@@ -1,108 +1,146 @@
-# Gradience 战略整合分析：Harness Engineering + OWS + 自主进化
+# Gradience u6218u7565u6574u5408u5206u6790uff1aHarness Engineering + OWS + u81eau4e3bu8fdbu5316
 
-> **文档类型**: 战略规划  
-> **日期**: 2026-04-03  
-> **核心目标**: 整合 Harness Engineering 三维度 + OWS 生态 + 自主进化方法论，指导 Gradience 下一阶�段建设
+> **u6587u6863u7c7bu578b**: u6218u7565u89c4u5212  
+> **u521du59cbu65e5u671f**: 2026-04-03  
+> **u66f4u65b0u65e5u671f**: 2026-04-04 u2014 u6839u636eu5b9eu9645u67b6u6784u73b0u72b6u540cu6b65  
+> **u6838u5fc3u76eeu6807**: u6574u5408 Harness Engineering u4e09u7ef4u5ea6 + OWS u751fu6001 + u81eau4e3bu8fdbu5316u65b9u6cd5u8bbauff0cu6307u5bfc Gradience u4e0bu4e00u9636u6bb5u5efau8bbe
 
 ---
 
-## 1. 外部输入整合
+## 1. u5916u90e8u8f93u5165u6574u5408
 
-### 1.1 三个关键外部输入
+### 1.1 u4e09u4e2au5173u952eu5916u90e8u8f93u5165
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  输入 1: OWS Hackathon                                          │
-│  ├── 赛道 02: Agent Spend Governance & Identity                 │
-│  ├── 赛道 04: Multi-Agent Systems                               │
-│  └── 核心需求: 钱包治理 + 声誉系统 + 多 Agent 协作               │
-├─────────────────────────────────────────────────────────────────┤
-│  输入 2: Harness Engineering (yage.ai)                          │
-│  ├── 时间维度: Agent 连续跑几小时 (Anthropic)                   │
-│  ├── 空间维度: 几百 Agent 并行 (Cursor)                         │
-│  └── 交互维度: 人类最小介入管理 (OpenAI/Symphony)               │
-├─────────────────────────────────────────────────────────────────┤
-│  输入 3: 自主进化 SDK (Vercel + Autoresearch)                   │
-│  ├── Know: 知识嵌入                                             │
-│  ├── See: 系统感知                                              │
-│  ├── Control: 执行控制                                          │
-│  └── Evolve: 自动实验闭环                                       │
-└─────────────────────────────────────────────────────────────────┘
+u250cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2510
+u2502  u8f93u5165 1: OWS Hackathon                                          u2502
+u2502  u251cu2500u2500 u8d5bu9053 02: Agent Spend Governance & Identity                 u2502
+u2502  u251cu2500u2500 u8d5bu9053 04: Multi-Agent Systems                               u2502
+u2502  u2514u2500u2500 u6838u5fc3u9700u6c42: u94b1u5305u6cbbu7406 + u58f0u8a89u7cfbu7edf + u591a Agent u534fu4f5c               u2502
+u251cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2524
+u2502  u8f93u5165 2: Harness Engineering (yage.ai)                          u2502
+u2502  u251cu2500u2500 u65f6u95f4u7ef4u5ea6: Agent u8fdeu7eedu8dd1u51e0u5c0fu65f6 (Anthropic)                   u2502
+u2502  u251cu2500u2500 u7a7au95f4u7ef4u5ea6: u51e0u767e Agent u5e76u884c (Cursor)                         u2502
+u2502  u2514u2500u2500 u4ea4u4e92u7ef4u5ea6: u4ebau7c7bu6700u5c0fu4ecbu5165u7ba1u7406 (OpenAI/Symphony)               u2502
+u251cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2524
+u2502  u8f93u5165 3: u81eau4e3bu8fdbu5316 SDK (Vercel + Autoresearch)                   u2502
+u2502  u251cu2500u2500 Know: u77e5u8bc6u5d4cu5165                                             u2502
+u2502  u251cu2500u2500 See: u7cfbu7edfu611fu77e5                                              u2502
+u2502  u251cu2500u2500 Control: u6267u884cu63a7u5236                                          u2502
+u2502  u2514u2500u2500 Evolve: u81eau52a8u5b9eu9a8cu95edu73af                                       u2502
+u2514u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2518
 ```
 
-### 1.2 与 Gradience 的映射
+### 1.2 u4e0e Gradience u7684u6620u5c04
 
-| 外部输入 | Gradience 现状 | 差距 | 机会 |
+> **u66f4u65b0u8bf4u660e**: u4e0bu8868u53cdu6620 2026-04-04 u5b9eu9645u67b6u6784u73b0u72b6u3002
+
+| u5916u90e8u8f93u5165 | Gradience u73b0u72b6 | u5deeu8ddd | u673au4f1a |
 |---------|---------------|------|------|
-| **OWS Track 02** | Reputation + Judge | 钱包集成 | Agent 信用层 |
-| **OWS Track 04** | Agent Arena + A2A | 多 Agent 编排 | Agent 经济体 |
-| **时间 Scaling** | Judge 机制 | 长时间运行评估 | Evaluator 升级 |
-| **空间 Scaling** | Workflow 功法 | 并行执行架构 | 递归 Planner-Worker |
-| **交互 Scaling** | Hermes + Linear | Ticket 驱动 | Symphony 集成 |
-| **自主进化** | 文档体系 | 自动优化 | 进化型 SDK |
+| **OWS Track 02** | Reputation + Judge (u94feu4e0au539fu8bed) + OWS adapter u5df2u5b9eu73b0 | Wallet-per-Agent u7b56u7565 | Agent u4fe1u7528u5c42 |
+| **OWS Track 04** | A2A Protocol + Workflow Engine (schema u5c42) | u6267u884cu5f15u64ce + u591a Agent u7f16u6392 | Agent u7ecfu6d4eu4f53 |
+| **u65f6u95f4 Scaling** | Judge u662fu94feu4e0au72ecu7acbu89d2u8272 (score 0-100 + u81eau52a8u5206u8d26) | u94feu4e0bu957fu65f6u95f4u8fd0u884cu8bc4u4f30 | Evaluator u5347u7ea7 |
+| **u7a7au95f4 Scaling** | Workflow Engine u76eeu524du4ec5 schema u9a8cu8bc1uff0cu65e0u6267u884cu5c42 | u5e76u884cu6267u884cu67b6u6784 | u9012u5f52 Planner-Worker |
+| **u4ea4u4e92 Scaling** | Obsidian u4efbu52a1u7cfbu7edf (170+ u4efbu52a1) + 7-phase u65b9u6cd5u8bba | u81eau52a8u8c03u5ea6 | Symphony u96c6u6210 |
+| **u81eau4e3bu8fdbu5316** | u6587u6863u4f53u7cfb + u65b9u6cd5u8bba | u81eau52a8u4f18u5316 | u8fdbu5316u578b SDK |
 
 ---
 
-## 2. 战略整合：三维度增强
+## 2. u5f53u524du67b6u6784u73b0u72b6 (u65b0u589eu7ae0u8282)
 
-### 2.1 时间维度增强：从 Judge 到 Evaluator
+> u4efbu4f55u6218u7565u89c4u5212u5fc5u987bu57fau4e8eu5b9eu9645u67b6u6784u73b0u72b6u3002u4ee5u4e0bu662fu5df2u5b9eu73b0u7684u6838u5fc3u57fau7840u8bbeu65bdu3002
 
-**现状**: Judge 是规则-based 或简单 LLM 评估
-**目标**: Anthropic 式独立 Evaluator
+### 2.1 u4e94u5c42u67b6u6784 (u5df2u786eu7acb)
+
+```
+u4e92u64cdu4f5cu5c42  u2500u2500  Google A2A + MCP + OpenAI-compat
+u53d1u73b0u5c42    u2500u2500  Nostr NIP-89/90 DVM (u53bbu4e2du5fc3u5316 Agent u53d1u73b0 + u4efbu52a1u5e02u573a)
+u901au4fe1u5c42    u2500u2500  XMTP (MLS E2E u52a0u5bc6uff0cu94b1u5305u5730u5740u5373u8eabu4efd)
+u6267u884cu5c42    u2500u2500  Agent Daemon (u672cu5730u5b88u62a4u8fdbu7a0buff0c16/18 u4efbu52a1u5b8cu6210)
+u7ed3u7b97u5c42    u2500u2500  Solana (Chain Hub u5408u7ea6 devnet u5df2u90e8u7f72) + MagicBlock (u53efu9009u589eu5f3a)
+```
+
+### 2.2 u5df2u5b9eu73b0u7684u6838u5fc3u6a21u5757
+
+| u6a21u5757 | u72b6u6001 | u8bf4u660e |
+|------|------|------|
+| **Chain Hub** | u2705 devnet u5df2u90e8u7f72 | 11 instructions, 12 tests pass, program ID `6G39W7...WJWec` |
+| **Agent Daemon** | u2705 MVP u5b8cu6210 | 16/18 u4efbu52a1: Fastify API, SQLite, Ed25519, WebSocket |
+| **A2A Protocol** | u2705 u6838u5fc3u5b8cu6210 | A2ARouter + RateLimiter + GracefulShutdown + Monitor |
+| **Nostr Adapter** | u2705 u5df2u5b9eu73b0 | NIP-89/90 DVM u53d1u73b0u5c42 |
+| **XMTP** | u2705 u5df2u96c6u6210 | Agent E2E u52a0u5bc6u901au4fe1 (u767du76aeu4e66 u00a78.6) |
+| **OWS Adapter** | u2705 u5df2u5b9eu73b0 | `lib/ows/adapter.ts`, `useOWS.ts`, `OWSView.tsx` |
+| **Workflow Engine** | u26a0ufe0f schema-only | u4ec5 schema u9a8cu8bc1uff0cu7f3au6267u884cu5f15u64ce |
+| **Agent Social** | u2705 MVP | u524du540eu7aefu5b8cu6574 (Feed/Follow/Messages/Notifications) |
+| **AgentM Pro** | u2705 u5b8cu6574 | u6240u6709 views u5df2u8fdeu63a5uff0ctypecheck pass |
+| **AgentM Web** | u2705 7 tabs | Feed/Social u5df2u540cu6b65 |
+| **MagicBlock** | u2705 u5b9au4f4du786eu7acb | u7ed3u7b97u5c42u53efu9009u589eu5f3a (ER/PER/VRF)uff0cu975eu6267u884cu5c42 |
+
+### 2.3 u5173u952eu67b6u6784u51b3u7b56 (u5df2u786eu7acb)
+
+| u51b3u7b56 | u9009u62e9 | u65e5u671f |
+|------|------|------|
+| u901au4fe1u5c42 | XMTP u66ffu4ee3 libp2p/WebRTC | 2026-04 |
+| u53d1u73b0u5c42 | Nostr NIP-89/90 u66ffu4ee3u81eau5efa Indexer | 2026-04 |
+| MagicBlock u5b9au4f4d | u7ed3u7b97u5c42u53efu9009u589eu5f3auff0cu975eu72ecu7acbu6267u884cu5c42 | 2026-04 |
+| u4efbu52a1u7ba1u7406 | Obsidian CLI u66ffu4ee3 Linear | 2026-04 |
+| u672cu5730u6267u884c | Agent Daemon (u5b88u62a4u8fdbu7a0bu6a21u5f0f) | 2026-04 |
+
+---
+
+## 3. u6218u7565u6574u5408uff1au4e09u7ef4u5ea6u589eu5f3a
+
+### 3.1 u65f6u95f4u7ef4u5ea6u589eu5f3auff1au4eceu94feu4e0a Judge u5230u94feu4e0b Evaluator
+
+**u73b0u72b6**: Judge u662f Chain Hub u5408u7ea6u4e2du7684u94feu4e0au72ecu7acbu89d2u8272uff0cu901au8fc7 `judge_task` instruction u8bc4u5206 0-100uff0cu89e6u53d1u81eau52a8u5206u8d26 (95% Agent / 3% Judge / 2% Protocol)u3002u8fd9u662fu7ed3u7b97u5c42u7684u539fu5b50u64cdu4f5cuff0cu4e0du662fu201cu7b80u5355 LLM u8bc4u4f30u201du3002
+
+**u5deeu8ddd**: u94feu4e0a Judge u53eau80fdu5904u7406u5355u6b21u8bc4u5206uff0cu65e0u6cd5u5904u7406u94feu4e0bu957fu65f6u95f4u8fd0u884cu4efbu52a1u7684u8fc7u7a0bu8bc4u4f30u3002
+
+**u76eeu6807**: u5728u94feu4e0a Judge u4e4bu4e0au589eu52a0u94feu4e0b Evaluator u5c42uff0cu7c7bu4f3c Anthropic u7684u72ecu7acbu8bc4u4f30u6a21u5f0fu3002
 
 ```typescript
-// 当前 Judge
-const judge = {
-  type: 'rule-based' | 'simple-llm',
-  criteria: ['success_rate', 'output_quality'],
-  score: (task) => number
-};
+// Chain Hub u94feu4e0a Judge (u5df2u5b9eu73b0) u2014 u539fu5b50u7ed3u7b97
+// judge_task instruction: score 0-100 u2192 u81eau52a8u5206u8d26
 
-// 增强后 Evaluator
+// u94feu4e0b Evaluator (u5f85u5b9eu73b0) u2014 u8fc7u7a0bu8bc4u4f30
 const evaluator = {
   type: 'independent-agent',
-  model: 'opus-4.6', // 专门评估模型
-  independence: true, // 与 Generator 无共享状态
+  independence: true, // u4e0e Generator u65e0u5171u4eabu72b6u6001
   verification: {
-    type: 'playwright', // 实际操作验证
+    type: 'playwright', // u5b9eu9645u64cdu4f5cu9a8cu8bc1
     env: 'isolated-runtime'
   },
   driftDetection: {
     contextWindow: 128000,
     resetStrategy: 'sprint-boundary'
   },
-  cost: {
-    budget: 100, // $100 per evaluation
-    timeLimit: '4h'
-  }
+  // Evaluator u8bc4u5206u540euff0cu901au8fc7 Agent Daemon u8c03u7528 Chain Hub judge_task u4e0au94fe
+  settlement: 'chain-hub-judge-task'
 };
 ```
 
-**应用场景**:
-- Workflow 功法长时间执行评估
-- Agent Arena Battle 结果验证
-- A2A Commerce 交易质量确认
+**u5e94u7528u573au666f**:
+- Workflow u529fu6cd5u957fu65f6u95f4u6267u884cu8bc4u4f30 u2192 Evaluator u94feu4e0bu5224u5b9a u2192 judge_task u94feu4e0au7ed3u7b97
+- Agent Arena Battle u7ed3u679cu9a8cu8bc1 u2192 Playwright u5b9eu9645u64cdu4f5cu6d4bu8bd5
+- A2A Commerce u4ea4u6613u8d28u91cfu786eu8ba4 u2192 XMTP u901au9053u4ea4u4ed8u7ed3u679c u2192 u94feu4e0au7ed3u7b97
 
-### 2.2 空间维度增强：递归 Workflow 编排
+### 3.2 u7a7au95f4u7ef4u5ea6u589eu5f3auff1au9012u5f52 Workflow u7f16u6392
 
-**现状**: Workflow 线性执行
-**目标**: Cursor 式递归 Planner-Worker
+**u73b0u72b6**: `packages/workflow-engine/` u76eeu524du4ec5u6709 schema u9a8cu8bc1u5c42 (types, schemas, validate)uff0c**u65e0u6267u884cu5f15u64ce**u3002
+
+**u76eeu6807**: u57fau4e8eu73b0u6709 schema u6784u5efa Cursor u5f0fu9012u5f52 Planner-Worker u6267u884cu5f15u64ceu3002
 
 ```typescript
-// 当前 Workflow
-const workflow = {
-  steps: [step1, step2, step3],
-  execution: 'sequential'
-};
+// u73b0u6709: schema u9a8cu8bc1u5c42 (packages/workflow-engine/src/schema/)
+// u5f85u5efa: u6267u884cu5f15u64ce
 
-// 增强后递归 Workflow
 const recursiveWorkflow = {
   type: 'recursive-planner-worker',
   
   planner: {
-    maxScope: 1000, // 超过则生成子 Planner
+    maxScope: 1000,
     decomposition: 'automatic',
-    subPlanner: 'self', // 递归调用
+    subPlanner: 'self', // u9012u5f52u8c03u7528
     handoff: {
       format: 'structured-markdown',
       content: ['done', 'discovered', 'concerns']
@@ -110,66 +148,71 @@ const recursiveWorkflow = {
   },
   
   worker: {
-    isolation: 'git-worktree', // 完全隔离
-    resources: {
-      cpu: '2 cores',
-      memory: '4gb',
-      timeout: '1h'
-    },
+    isolation: 'git-worktree', // u5b8cu5168u9694u79bb
+    // Agent Daemon u63d0u4f9bu8fdbu7a0bu7ba1u7406u548cu5065u5eb7u68c0u67e5
+    runtime: 'agent-daemon-process-manager',
     output: 'handoff-document'
   },
   
   aggregator: {
     type: 'llm-merge',
     conflictResolution: 're-plan'
-  }
+  },
+  
+  // Agent u95f4u534fu8c03u901au8fc7 XMTP u52a0u5bc6u901au9053
+  coordination: 'xmtp-group-channel',
+  // u4efbu52a1u53d1u73b0u901au8fc7 Nostr DVM
+  discovery: 'nostr-nip90-dvm'
 };
 ```
 
-**应用场景**:
-- 复杂 Workflow 功法并行开发
-- Agent Arena 多 Battle 同时评估
-- Chain Hub 跨链操作并行执行
+**u5e94u7528u573au666f**:
+- u590du6742 Workflow u529fu6cd5u5e76u884cu5f00u53d1
+- Agent Arena u591a Battle u540cu65f6u8bc4u4f30
+- Chain Hub u8de8u94feu64cdu4f5cu5e76u884cu6267u884c
 
-### 2.3 交互维度增强：Ticket 驱动开发
+### 3.3 u4ea4u4e92u7ef4u5ea6u589eu5f3auff1aTicket u9a71u52a8u5f00u53d1
 
-**现状**: Hermes + Linear 手动管理
-**目标**: Symphony 式自动调度
+**u73b0u72b6**: u5df2u8fc1u79fbu5230 Obsidian u4efbu52a1u7cfbu7edf (170+ u4efbu52a1uff0c`docs/tasks/GRA-*.md`)uff0cu901au8fc7 `scripts/task.sh` CLI u7ba1u7406uff0cu9075u5faa 7-phase u65b9u6cd5u8bbau3002
+
+**u76eeu6807**: Symphony u5f0fu81eau52a8u8c03u5ea6uff0cu57fau4e8e Obsidian u4efbu52a1u72b6u6001u89e6u53d1u3002
 
 ```typescript
-// 当前 Hermes
-const hermes = {
-  role: 'coordinator',
-  tools: ['linear', 'github'],
-  workflow: '7-phase-manual'
+// u73b0u72b6: Obsidian CLI + 7-phase u65b9u6cd5u8bba (u5df2u8fc1u79fbu81ea Linear)
+const currentSystem = {
+  taskManager: 'obsidian-cli', // scripts/task.sh
+  tasks: 170, // GRA-1 ~ GRA-170
+  workflow: '7-phase-methodology',
+  stats: { done: 122, inProgress: 8, todo: 22 }
 };
 
-// 增强后 Symphony-Style
+// u589eu5f3au540e Symphony-Style (u57fau4e8e Obsidian u4efbu52a1u72b6u6001)
 const symphonyGradience = {
-  trigger: 'linear-ticket-status',
+  trigger: 'obsidian-task-status', // u4e0du518du662f linear-ticket-status
   
-  onTicketMove: {
-    'Todo': {
+  onTaskMove: {
+    'todo': {
       action: 'create-workspace',
       config: {
         type: 'fresh-clone',
         isolation: 'docker-container'
       }
     },
-    'In Progress': {
+    'in-progress': {
       action: 'dispatch-agent',
       agent: 'coding-specialist',
-      harness: 'embedded-knowledge'
+      // Agent Daemon u63d0u4f9bu8fdbu7a0bu7ba1u7406
+      runtime: 'agent-daemon'
     }
   },
   
   proofOfWork: {
-    required: ['ci-pass', 'walkthrough', 'demo-recording'],
+    required: ['ci-pass', 'typecheck', 'build'],
     format: 'pr-description'
   },
   
   failure: {
-    handling: 'supervision-tree', // BEAM 风格
+    handling: 'supervision-tree',
     retry: 'exponential-backoff',
     escalation: 'human-review'
   },
@@ -177,108 +220,87 @@ const symphonyGradience = {
   humanInterface: {
     upstream: 'write-ticket-and-harness',
     downstream: 'review-pow-and-merge',
-    sparse: true // 最小介入
+    sparse: true
   }
 };
 ```
 
-**应用场景**:
-- Workflow 功法自动开发
-- Agent Arena 新 Battle 自动部署
-- Chain Hub 新链集成自动实现
-
 ---
 
-## 3. OWS 集成战略
+## 4. OWS u96c6u6210u6218u7565
 
-### 3.1 双赛道同时参与
+### 4.1 u53ccu8d5bu9053u540cu65f6u53c2u4e0e
 
 ```
 Track 02: Agent Spend Governance & Identity
-├── Gradience Reputation → 声誉门控策略
-├── Gradience Judge → 交易质量验证
-├── Gradience Escrow → 资金托管
-└── OWS Wallet → 钱包基础设施
+u251cu2500u2500 Gradience Reputation u2192 u58f0u8a89u95e8u63a7u7b56u7565
+u251cu2500u2500 Gradience Judge (u94feu4e0au539fu8bed) u2192 u4ea4u6613u8d28u91cfu9a8cu8bc1
+u251cu2500u2500 Gradience Escrow (u94feu4e0au539fu8bed) u2192 u8d44u91d1u6258u7ba1
+u2514u2500u2500 OWS Wallet u2192 u94b1u5305u57fau7840u8bbeu65bd
 
 Track 04: Multi-Agent Systems  
-├── Gradience A2A Commerce → Agent 间交易
-├── Gradience Workflow → Agent 供应链
-├── Gradience Agent Arena → 竞技声誉
-└── OWS x402 → 支付基础设施
+u251cu2500u2500 Gradience A2A Protocol u2192 Agent u95f4u4ea4u6613
+u251cu2500u2500 Gradience Workflow Engine u2192 Agent u4f9bu5e94u94fe
+u251cu2500u2500 XMTP u2192 Agent u95f4 E2E u52a0u5bc6u901au4fe1
+u251cu2500u2500 Nostr DVM u2192 u53bbu4e2du5fc3u5316u4efbu52a1u53d1u73b0
+u2514u2500u2500 OWS x402 u2192 u652fu4ed8u57fau7840u8bbeu65bd
 ```
 
-### 3.2 技术整合方案
+### 4.2 u6280u672fu6574u5408u65b9u6848
+
+> **u73b0u72b6u6ce8u610f**: `apps/agentm-pro/src/lib/ows/` u5df2u6709 adapter.ts, types.ts, reputation.ts, index.tsuff0cu4ee5u53ca `useOWS.ts` hook u548c `OWSView.tsx`u3002u4ee5u4e0bu4ee3u7801u5e94u57fau4e8eu73b0u6709u5b9eu73b0u6269u5c55u3002
 
 ```typescript
-// Gradience × OWS 核心集成
+// Gradience u00d7 OWS u6838u5fc3u96c6u6210
+// u57fau4e8eu73b0u6709 apps/agentm-pro/src/lib/ows/adapter.ts u6269u5c55
 
 class GradienceOWSAdapter {
-  // 1. 用户登录 (Privy)
+  // 1. u7528u6237u767bu5f55 (Privy u5df2u96c6u6210)
   async login() {
     const user = await privy.login();
     return user;
   }
   
-  // 2. 创建 OWS 主钱包
+  // 2. u521bu5efa OWS u4e3bu94b1u5305
   async createMasterWallet(user: User) {
     const wallet = await ows.wallet.create({
       name: `gradience-${user.id}`,
       owner: user.id
     });
-    
-    // 注册 ENS (可选)
-    await ows.domains.register({
-      name: `${user.id}.ows.eth`,
-      addresses: wallet.multiChainAddresses
-    });
-    
     return wallet;
   }
   
-  // 3. 为 Agent 创建子钱包 (核心创新)
+  // 3. u4e3a Agent u521bu5efau5b50u94b1u5305 (u6838u5fc3u521bu65b0)
   async createAgentWallet(params: {
     parentWallet: OWSWallet;
     agentId: string;
     reputation: ReputationScore;
   }) {
-    // 获取 Gradience Reputation
     const rep = await gradience.getReputation(params.agentId);
     
     const agentWallet = await ows.wallet.create({
       parent: params.parentWallet,
       name: `${params.agentId}.sub`,
-      // 声誉决定策略
       policy: {
-        dailyLimit: rep.score * 10, // 声誉 = 额度
+        dailyLimit: rep.score * 10,
         maxTransaction: rep.score * 2,
         allowedChains: this.getChainsByReputation(rep),
         requireApproval: (amount) => amount > rep.score * 5
       }
     });
     
-    // 绑定 Reputation 到 ENS 文本记录
-    await ows.domains.setText({
-      name: agentWallet.ensName,
-      key: 'gradience.reputation',
-      value: JSON.stringify({
-        score: rep.score,
-        battles: rep.battleCount,
-        judgeAvg: rep.judgeAverage
-      })
-    });
-    
     return agentWallet;
   }
   
-  // 4. Agent 间支付 (x402 + Gradience Judge)
+  // 4. Agent u95f4u652fu4ed8 (x402 + Chain Hub Judge)
   async agentPayment(params: {
     from: AgentWallet;
     to: AgentWallet;
     amount: number;
     service: string;
   }) {
-    // 先走 Gradience Judge 验证服务质量
-    const quality = await gradience.judge.evaluate({
+    // u94feu4e0b Evaluator u9a8cu8bc1u670du52a1u8d28u91cf
+    const quality = await evaluator.evaluate({
       agent: params.to.agentId,
       service: params.service
     });
@@ -287,7 +309,8 @@ class GradienceOWSAdapter {
       throw new Error('Service quality below threshold');
     }
     
-    // 再走 OWS x402 支付
+    // u94feu4e0a Chain Hub judge_task u7ed3u7b97
+    // + OWS x402 u652fu4ed8
     return await ows.pay({
       from: params.from,
       to: params.to,
@@ -296,100 +319,89 @@ class GradienceOWSAdapter {
     });
   }
   
-  // 5. 声誉更新触发策略调整
+  // 5. u58f0u8a89u66f4u65b0u89e6u53d1u7b56u7565u8c03u6574
   async onReputationUpdate(agentId: string, newRep: Reputation) {
     const wallet = await this.getAgentWallet(agentId);
-    
-    // 自动调整钱包策略
     await ows.wallet.updatePolicy(wallet, {
       dailyLimit: newRep.score * 10,
-      // 高声誉 Agent 获得更宽松策略
       requireApproval: newRep.score < 80
     });
   }
 }
 ```
 
-### 3.3 12小时冲刺 MVP
+### 4.3 12u5c0fu65f6u51b2u523a MVP
 
 ```
-Hour 1-2:  基础搭建
-├── Privy 登录集成
-├── OWS CLI 钱包创建
-└── ENS 注册 (可选)
+Hour 1-2:  u57fau7840u642du5efa
+u251cu2500u2500 Privy u767bu5f55u96c6u6210 (u5df2u6709)
+u251cu2500u2500 OWS CLI u94b1u5305u521bu5efa
+u2514u2500u2500 ENS u6ce8u518c (u53efu9009)
 
-Hour 3-4:  核心功能
-├── Wallet-per-Agent 实现
-├── Reputation 读取
-└── 策略绑定
+Hour 3-4:  u6838u5fc3u529fu80fd
+u251cu2500u2500 Wallet-per-Agent u5b9eu73b0
+u251cu2500u2500 Reputation u8bfbu53d6 (u57fau4e8eu73b0u6709 lib/ows/reputation.ts)
+u2514u2500u2500 u7b56u7565u7ed1u5b9a
 
-Hour 5-6:  支付流
-├── x402 支付集成
-├── Judge 验证钩子
-└── 交易记录上链
+Hour 5-6:  u652fu4ed8u6d41
+u251cu2500u2500 x402 u652fu4ed8u96c6u6210
+u251cu2500u2500 Chain Hub judge_task u94feu4e0au7ed3u7b97
+u2514u2500u2500 u4ea4u6613u8bb0u5f55u4e0au94fe
 
-Hour 7-8:  Demo 场景
-├── 2个 Agent 演示
-├── 声誉差异对比
-└── 额度限制演示
+Hour 7-8:  Demo u573au666f
+u251cu2500u2500 2u4e2a Agent u6f14u793a
+u251cu2500u2500 u58f0u8a89u5deeu5f02u5bf9u6bd4
+u2514u2500u2500 u989du5ea6u9650u5236u6f14u793a
 
-Hour 9-10: 视频 + 文档
-├── 2分钟 Demo 视频
-├── README 说明
-└── 架构图
+Hour 9-10: u89c6u9891 + u6587u6863
+u251cu2500u2500 2u5206u949f Demo u89c6u9891
+u251cu2500u2500 README u8bf4u660e
+u2514u2500u2500 u67b6u6784u56fe
 
-Hour 11-12: 提交
-├── GitHub 最终检查
-├── 表单填写
-└── 提交确认
+Hour 11-12: u63d0u4ea4
+u251cu2500u2500 GitHub u6700u7ec8u68c0u67e5
+u251cu2500u2500 u8868u5355u586bu5199
+u2514u2500u2500 u63d0u4ea4u786eu8ba4
 ```
 
 ---
 
-## 4. 自主进化 SDK 应用
+## 5. u81eau4e3bu8fdbu5316 SDK u5e94u7528
 
-### 4.1 让 Gradience SDK 自我进化
+### 5.1 u8ba9 Gradience SDK u81eau6211u8fdbu5316
 
 ```typescript
 // packages/gradience-sdk/.agent/evolve.ts
 
 const gradienceEvolvingSDK = {
-  // Know: 嵌入知识
+  // Know: u5d4cu5165u77e5u8bc6
   knowledge: {
-    // 打包进 SDK 的文档
     'chain-hub-schema.json': chainHubSchema,
     'workflow-spec.md': workflowSpec,
     'reputation-formula.ts': reputationFormula,
-    
-    // 最佳实践
     'solana-optimization.md': solanaBestPractices,
     'cross-chain-patterns.md': crossChainPatterns
   },
   
-  // See: 感知运行时
+  // See: u611fu77e5u8fd0u884cu65f6
   observe: {
-    // SDK 性能指标
     performance: () => ({
       bundleSize: number,
       treeShaking: number,
       initTime: number
     }),
-    
-    // 使用遥测 (opt-in)
     telemetry: () => ({
       mostUsedAPIs: string[],
       errorPatterns: string[],
       chainDistribution: Record<Chain, number>
     }),
-    
-    // 测试覆盖
     coverage: () => ({
       overall: number,
       byModule: Record<string, number>
     })
   },
   
-  // Control: 执行控制
+  // Control: u6267u884cu63a7u5236
   control: {
     build: (opts) => sdkBuild(opts),
     test: (scope) => sdkTest(scope),
@@ -397,26 +409,14 @@ const gradienceEvolvingSDK = {
     publish: (version) => sdkPublish(version)
   },
   
-  // Evolve: 进化循环
+  // Evolve: u8fdbu5316u5faau73af
   async evolve() {
     while (true) {
-      // 1. 读取进化目标
       const goal = await this.readProgramMd();
-      // e.g., "Reduce bundle size by 15%, keep coverage > 90%"
-      
-      // 2. 感知现状
       const state = await this.observe.performance();
-      
-      // 3. 生成假设
       const hypothesis = await this.generateImprovement(goal, state);
-      
-      // 4. 应用修改 (仅 core/)
       await this.applyChange(hypothesis);
-      
-      // 5. 运行评估
       const score = await this.runEvaluator();
-      
-      // 6. 决策
       if (score > baseline) {
         await this.commit(hypothesis, score);
         baseline = score;
@@ -428,7 +428,7 @@ const gradienceEvolvingSDK = {
 };
 ```
 
-### 4.2 program.md 模板 (Gradience SDK)
+### 5.2 program.md u6a21u677f (Gradience SDK)
 
 ```markdown
 # Gradience SDK Evolution Program
@@ -444,22 +444,20 @@ Optimize cross-chain transaction latency by 20% while maintaining
 - MUST support Solana, Ethereum, Base, Sui, NEAR
 
 ## Metrics (Evaluator Formula)
-```
 score = (latency_improvement * 50) + 
         (reliability * 100) + 
         (coverage * 30) + 
         (bundle_size_reduction * 10)
-```
 
 ## Allowed Modifications
-- `core/chain-hub/optimizer.ts` — 路由优化
-- `core/providers/*.ts` — 提供商实现
-- `core/utils/batch.ts` — 批处理逻辑
+- `core/chain-hub/optimizer.ts`
+- `core/providers/*.ts`
+- `core/utils/batch.ts`
 
 ## Forbidden
-- `tests/` — 测试套件不可修改
-- `api/` — 公共 API 不可修改
-- `evaluator.py` — 评估脚本神圣不可侵犯
+- `tests/` u2014 u6d4bu8bd5u5957u4ef6u4e0du53efu4feeu6539
+- `api/` u2014 u516cu5171 API u4e0du53efu4feeu6539
+- `evaluator.py` u2014 u8bc4u4f30u811au672cu795eu5723u4e0du53efu4fb5u72af
 
 ## Evolution Strategy
 Focus areas:
@@ -471,96 +469,109 @@ Focus areas:
 
 ---
 
-## 5. 整合路线图
+## 6. u6574u5408u8defu7ebfu56fe
 
-### Phase 1: OWS Hackathon (立即，12小时)
-
-```
-目标: 提交 Track 02 + Track 04
-核心: Gradience Reputation + OWS Wallet
-输出: MVP + Demo 视频 + 文档
-```
-
-### Phase 2: Harness 三维度增强 (4周)
+### Phase 1: OWS Hackathon (u7acbu5373uff0c12u5c0fu65f6)
 
 ```
-Week 1: 时间维度
-├── 升级 Judge → Evaluator
-├── 独立验证机制
-└── 长时间运行支持
-
-Week 2: 空间维度
-├── 递归 Workflow 架构
-├── Planner-Worker 分离
-└── 并行执行优化
-
-Week 3: 交互维度
-├── Symphony 式 Ticket 驱动
-├── Linear 自动集成
-└── Proof of Work 系统
-
-Week 4: 整合测试
-├── 三维度协同测试
-├── 性能基准
-└── 文档完善
+u76eeu6807: u63d0u4ea4 Track 02 + Track 04
+u6838u5fc3: Gradience Reputation + OWS Wallet
+u57fau7840: u5df2u6709 OWS adapter + useOWS hook + OWSView
+u8f93u51fa: MVP + Demo u89c6u9891 + u6587u6863
 ```
 
-### Phase 3: 自主进化 (4周)
+### Phase 2: Harness u4e09u7ef4u5ea6u589eu5f3a (4u5468)
 
 ```
-Week 1: 知识嵌入
-├── SDK 文档打包
-├── Schema 嵌入
-└── 最佳实践整理
+Week 1: u65f6u95f4u7ef4u5ea6
+u251cu2500u2500 u6784u5efau94feu4e0b Evaluator (u57fau4e8e Agent Daemon)
+u251cu2500u2500 u72ecu7acbu9a8cu8bc1u673au5236 (Playwright)
+u2514u2500u2500 Evaluator u2192 Chain Hub judge_task u6865u63a5
 
-Week 2: 感知系统
-├── 性能监控
-├── 遥测集成
-└── 测试覆盖追踪
+Week 2: u7a7au95f4u7ef4u5ea6
+u251cu2500u2500 Workflow Engine u6267u884cu5f15u64ce (u57fau4e8eu73b0u6709 schema)
+u251cu2500u2500 Planner-Worker u5206u79bb
+u2514u2500u2500 XMTP u534fu8c03u901au9053 + Nostr DVM u53d1u73b0
 
-Week 3: 进化循环
-├── Evaluator 脚本
-├── program.md 定义
-└── 自动化执行
+Week 3: u4ea4u4e92u7ef4u5ea6
+u251cu2500u2500 Symphony u5f0f Obsidian u4efbu52a1u81eau52a8u8c03u5ea6
+u251cu2500u2500 Agent Daemon u4efbu52a1u5206u53d1
+u2514u2500u2500 Proof of Work u7cfbu7edf
 
-Week 4: 验证迭代
-├── 首轮进化实验
-├── 结果分析
-└── 参数调优
+Week 4: u6574u5408u6d4bu8bd5
+u251cu2500u2500 u4e09u7ef4u5ea6u534fu540cu6d4bu8bd5
+u251cu2500u2500 u6027u80fdu57fau51c6
+u2514u2500u2500 u6587u6863u5b8cu5584
+```
+
+### Phase 3: u81eau4e3bu8fdbu5316 (4u5468)
+
+```
+Week 1: u77e5u8bc6u5d4cu5165
+u251cu2500u2500 SDK u6587u6863u6253u5305
+u251cu2500u2500 Schema u5d4cu5165
+u2514u2500u2500 u6700u4f73u5b9eu8df5u6574u7406
+
+Week 2: u611fu77e5u7cfbu7edf
+u251cu2500u2500 u6027u80fdu76d1u63a7
+u251cu2500u2500 u9065u6d4bu96c6u6210
+u2514u2500u2500 u6d4bu8bd5u8986u76d6u8ffdu8e2a
+
+Week 3: u8fdbu5316u5faau73af
+u251cu2500u2500 Evaluator u811au672c
+u251cu2500u2500 program.md u5b9au4e49
+u2514u2500u2500 u81eau52a8u5316u6267u884c
+
+Week 4: u9a8cu8bc1u8fedu4ee3
+u251cu2500u2500 u9996u8f6eu8fdbu5316u5b9eu9a8c
+u251cu2500u2500 u7ed3u679cu5206u6790
+u2514u2500u2500 u53c2u6570u8c03u4f18
 ```
 
 ---
 
-## 6. 核心决策总结
+## 7. u6838u5fc3u51b3u7b56u603bu7ed3
 
-| 决策 | 选择 | 理由 |
+| u51b3u7b56 | u9009u62e9 | u7406u7531 |
 |------|------|------|
-| **OWS 赛道** | Track 02 + 04 | Reputation + Multi-Agent 完美匹配 |
-| **Harness 维度** | 三维度全部增强 | 时间/空间/交互互补 |
-| **Agent 模型** | 专用模型 per 角色 | Planner/Worker/Evaluator 分离 |
-| **进化策略** | 夜间自动运行 | 低成本持续优化 |
-| **人机边界** | Human: Ticket/Review; Agent: Execution | 稀疏交互 |
+| **OWS u8d5bu9053** | Track 02 + 04 | Reputation + Multi-Agent u5b8cu7f8eu5339u914d |
+| **Harness u7ef4u5ea6** | u4e09u7ef4u5ea6u5168u90e8u589eu5f3a | u65f6u95f4/u7a7au95f4/u4ea4u4e92u4e92u8865 |
+| **Judge u67b6u6784** | u94feu4e0au539fu8bed + u94feu4e0b Evaluator | u7ed3u7b97u548cu8bc4u4f30u5206u79bb |
+| **u901au4fe1u5c42** | XMTP (MLS E2E) | u94b1u5305u5730u5740u5373u8eabu4efduff0cu4e0e OWS u517cu5bb9 |
+| **u53d1u73b0u5c42** | Nostr NIP-89/90 DVM | u53bbu4e2du5fc3u5316uff0cu65e0u8fd0u7ef4 |
+| **u6267u884cu5c42** | Agent Daemon (u672cu5730u5b88u62a4) | 16/18 u4efbu52a1u5df2u5b8cu6210 |
+| **MagicBlock** | u7ed3u7b97u5c42u53efu9009u589eu5f3a | u975eu6267u884cu5c42uff0cu4ec5u9ad8u9891u573au666f |
+| **u4efbu52a1u7ba1u7406** | Obsidian CLI | u5df2u4ece Linear u8fc1u79fb |
+| **Agent u6a21u578b** | u4e13u7528u6a21u578b per u89d2u8272 | Planner/Worker/Evaluator u5206u79bb |
+| **u8fdbu5316u7b56u7565** | u591cu95f4u81eau52a8u8fd0u884c | u4f4eu6210u672cu6301u7eedu4f18u5316 |
+| **u4ebau673au8fb9u754c** | Human: Ticket/Review; Agent: Execution | u7a00u758fu4ea4u4e92 |
 
 ---
 
-## 7. 立即行动清单
+## 8. u7acbu5373u884cu52a8u6e05u5355
 
-### 今天 (OWS Hackathon)
-- [ ] 报名 Track 02 + Track 04
-- [ ] 实现 Wallet-per-Agent MVP
-- [ ] 录制 Demo 视频
-- [ ] 提交作品
+### u4ecau5929 (OWS Hackathon)
+- [ ] u62a5u540d Track 02 + Track 04
+- [ ] u57fau4e8eu73b0u6709 OWS adapter u5b9eu73b0 Wallet-per-Agent MVP
+- [ ] u5f55u5236 Demo u89c6u9891
+- [ ] u63d0u4ea4u4f5cu54c1
 
-### 下周 (Harness 增强)
-- [ ] 升级 Judge → Evaluator
-- [ ] 设计递归 Workflow 架构
-- [ ] 集成 Symphony 式调度
+### u4e0bu5468 (Harness u589eu5f3a)
+- [ ] u6784u5efau94feu4e0b Evaluator (u57fau4e8e Agent Daemon)
+- [ ] Workflow Engine u6267u884cu5f15u64ce (u57fau4e8eu73b0u6709 schema)
+- [ ] u96c6u6210 Symphony u5f0f Obsidian u8c03u5ea6
 
-### 下月 (自主进化)
-- [ ] 实现 SDK 知识嵌入
-- [ ] 部署进化循环
-- [ ] 首轮自动优化实验
+### u4e0bu6708 (u81eau4e3bu8fdbu5316)
+- [ ] u5b9eu73b0 SDK u77e5u8bc6u5d4cu5165
+- [ ] u90e8u7f72u8fdbu5316u5faau73af
+- [ ] u9996u8f6eu81eau52a8u4f18u5316u5b9eu9a8c
 
 ---
 
-**一句话总结**: 用 Harness Engineering 三维度增强 Gradience 的 Agent 能力，用 OWS 集成打开 Agent 经济生态，用自主进化让 SDK 持续提升。🚀
+**u4e00u53e5u8bddu603bu7ed3**: u7528 Harness Engineering u4e09u7ef4u5ea6u589eu5f3a Gradience u7684 Agent u80fdu529buff0cu7528 OWS u96c6u6210u6253u5f00 Agent u7ecfu6d4eu751fu6001uff0cu7528u81eau4e3bu8fdbu5316u8ba9 SDK u6301u7eedu63d0u5347u3002
+
+---
+
+*u6218u7565u7248u672c: v1.1*  
+*u521du59cbu65e5u671f: 2026-04-03*  
+*u66f4u65b0u65e5u671f: 2026-04-04 u2014 u6839u636eu5b9eu9645u67b6u6784u73b0u72b6u540cu6b65 (Judge u5b9au4f4du3001Workflow u73b0u72b6u3001u4e94u5c42u67b6u6784u3001XMTP/Nostr/Agent Daemon u8865u5145u3001Linearu2192Obsidian)*

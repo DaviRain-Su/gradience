@@ -6,16 +6,13 @@
  * @module shared/a2a-router-types
  */
 
-import type { NostrSubscription } from './nostr-types.js';
-import type { Libp2pSubscription } from './libp2p-types.js';
-
 // ============ Protocol Types ============
 
 /** Supported transport protocols */
-export type ProtocolType = 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge' | 'google-a2a';
+export type ProtocolType = 'nostr' | 'xmtp' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge' | 'google-a2a';
 
 /** Protocol priority for selection */
-export type ProtocolPriority = 'broadcast' | 'direct_p2p' | 'paid_service' | 'offline_message';
+export type ProtocolPriority = 'broadcast' | 'discovery' | 'direct_message' | 'task_negotiation' | 'interop';
 
 // ============ Message Types ============
 
@@ -98,6 +95,14 @@ export interface AgentFilter {
     availableOnly?: boolean;
     /** Maximum results */
     limit?: number;
+    
+    // Soul Profile filters (for social matching)
+    /** Filter by soul type */
+    soulType?: 'human' | 'agent';
+    /** Filter by interest tags */
+    interestTags?: string[];
+    /** Filter by privacy level */
+    soulVisibility?: 'public' | 'zk-selective' | 'private';
 }
 
 /** Discovered agent info */
@@ -116,8 +121,6 @@ export interface AgentInfo {
     discoveredVia: ProtocolType;
     /** Nostr pubkey (if available) */
     nostrPubkey?: string;
-    /** libp2p peer ID (if available) */
-    libp2pPeerId?: string;
     /** Google A2A endpoint URL (if available) */
     googleA2AEndpoint?: string;
     /** Multiaddrs for direct connection */
@@ -206,29 +209,19 @@ export interface ProtocolSubscription {
 export interface A2ARouterOptions {
     /** Enable Nostr protocol */
     enableNostr?: boolean;
-    /** Enable libp2p protocol */
-    enableLibp2p?: boolean;
-    /** Enable MagicBlock protocol */
-    enableMagicBlock?: boolean;
     /** Nostr client options */
     nostrOptions?: {
         relays?: string[];
         privateKey?: string;
     };
-    /** libp2p node options */
-    libp2pOptions?: {
-        bootstrapList?: string[];
-        topics?: string[];
-        dhtClientMode?: boolean;
-        maxConnections?: number;
-    };
-    /** MagicBlock adapter options */
-    magicblockOptions?: {
-        agentId?: string;
-        paymentPolicy?: {
-            baseMicrolamports: number;
-            perByteMicrolamports: number;
-        };
+    /** Enable XMTP protocol */
+    enableXMTP?: boolean;
+    /** XMTP client options */
+    xmtpOptions?: {
+        env?: 'production' | 'dev';
+        privateKey?: string;
+        address?: string;
+        enableStreaming?: boolean;
     };
     /** Google A2A adapter options */
     googleA2AOptions?: {
@@ -239,7 +232,7 @@ export interface A2ARouterOptions {
         /** Known peer Agent Card URLs for discovery */
         knownPeers?: string[];
     };
-    /** Agent ID (required for MagicBlock) */
+    /** Agent ID */
     agentId?: string;
     /** Protocol priority override */
     protocolPriority?: Record<ProtocolPriority, ProtocolType[]>;

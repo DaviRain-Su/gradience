@@ -1,0 +1,413 @@
+/**
+ * Workflow Engine — Main execution engine for Gradience Workflows
+ * 
+ * Features:
+ * - Execute linear workflows (step by step)
+ * - Execute DAG workflows (topological order)
+ * - Simulate workflows (dry run)
+ * - Cancel running workflows
+ * - Track execution state
+ */
+import { v4 as uuidv4 } from 'uuid';
+import type {
+  GradienceWorkflow,
+  WorkflowStep,
+  WorkflowDAG,
+  WorkflowExecutionResult,
+  StepResult,
+  SupportedChain,
+} from '../schema/types.js';
+import { validate, ErrorCodes } from '../schema/validate.js';
+import {
+  StepExecutor,
+  ActionHandler,
+  StepExecutionOptions,
+} from './step-executor.js';
+import { createAllHandlers } from '../handlers/index.js';
+
+/**
+ * Workflow execution options
+ */
+export interface WorkflowExecutionOptions {
+  /** Workflow ID to execute */
+  workflowId: string;
+  /** User configuration variables */
+  config?: Record<string, unknown>;
+  /** Executor address/identifier */
+  executor?: string;
+  /** Whether to wait for completion */
+  wait?: boolean;
+  /** Maximum execution time (ms) */
+  timeout?: number;
+  /** Callback when step starts */
+  onStepStart?: (stepId: string) => void;
+  /** Callback when step completes */
+  onStepComplete?: (result: StepResult) => void;
+  /** Callback when workflow completes */
+  onComplete?: (result: WorkflowExecutionResult) => void;
+  /** Whether to enable verbose logging */
+  verbose?: boolean;
+}
+
+/**
+ * Workflow Engine class
+ */
+export class WorkflowEngine {
+  private stepExecutor: StepExecutor;
+  private workflows = new Map<string, GradienceWorkflow>();
+  private executions = new Map<string, WorkflowExecutionResult>();
+  private abortControllers = new Map<string, AbortController>();
+
+  constructor(handlers?: Map<string, ActionHandler>) {
+    this.stepExecutor = new StepExecutor();
+    
+    // Register default handlers if not provided
+    if (handlers) {
+      this.stepExecutor.registerHandlers(handlers as Map<import('../schema/types.js').WorkflowAction, ActionHandler>);
+    } else {
+      this.stepExecutor.registerHandlers(createAllHandlers() as Map<import('../schema/types.js').WorkflowAction, ActionHandler>);
+    }
+  }
+
+  /**
+   * Register a workflow definition
+   */
+  registerWorkflow(workflow: GradienceWorkflow): void {
+    const validation = validate(workflow);
+    if (!validation.success) {
+      throw new Error(`Invalid workflow: ${validation.error?.message}`);
+    }
+    this.workflows.set(workflow.id, workflow);
+  }
+
+  /**
+   * Get a registered workflow
+   */
+  getWorkflow(workflowId: string): GradienceWorkflow | undefined {
+    return this.workflows.get(workflowId);
+  }
+
+  /**
+   * Execute a workflow
+   */
+  async execute(
+    workflowId: string,
+    options: Omit<WorkflowExecutionOptions, 'workflowId'> = {}
+  ): Promise<WorkflowExecutionResult> {
+    const {
+      config = {},
+      executor = 'anonymous',
+      wait = true,
+      timeout = 300000, // 5 minutes default
+      onStepStart,
+      onStepComplete,
+      onComplete,
+      verbose = false,
+    } = options;
+
+    // Get workflow
+    const workflow = this.workflows.get(workflowId);
+    if (!workflow) {
+      throw new Error(`Workflow not found: ${workflowId}`);
+    }
+
+    // Create execution ID
+    const executionId = uuidv4();
+    
+    // Create abort controller for cancellation
+    const abortController = new AbortController();
+    this.abortControllers.set(executionId, abortController);
+
+    // Initialize execution result
+    const execution: WorkflowExecutionResult = {
+      executionId,
+      workflowId,
+      executor,
+      status: 'running',
+      stepResults: [],
+      duration: 0,
+      totalGas: '0',
+      startedAt: Date.now(),
+    };
+
+    this.executions.set(executionId, execution);
+
+    try {
+      // Execute with timeout
+      const executionPromise = this.runWorkflow(
+        workflow,
+        execution,
+        config,
+        executor,
+        onStepStart,
+        onStepComplete,
+        abortController.signal,
+        verbose
+      );
+
+      if (wait) {
+        // Wait for completion with timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Workflow timeout')), timeout);
+        });
+
+        await Promise.race([executionPromise, timeoutPromise]);
+      } else {
+        // Fire and forget
+        executionPromise.then(() => {
+          onComplete?.(execution);
+        }).catch((error) => {
+          execution.status = 'failed';
+          execution.error = {
+            stepId: execution.stepResults[execution.stepResults.length - 1]?.stepId || 'unknown',
+            code: ErrorCodes.STEP_EXECUTION_FAILED,
+            message: error.message,
+          };
+          onComplete?.(execution);
+        });
+      }
+
+      return execution;
+    } catch (error) {
+      execution.status = 'failed';
+      execution.error = {
+        stepId: execution.stepResults[execution.stepResults.length - 1]?.stepId || 'unknown',
+        code: ErrorCodes.STEP_EXECUTION_FAILED,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      };
+      execution.completedAt = Date.now();
+      execution.duration = execution.completedAt - execution.startedAt;
+      
+      onComplete?.(execution);
+      throw error;
+    } finally {
+      this.abortControllers.delete(executionId);
+    }
+  }
+
+  /**
+   * Simulate a workflow (dry run)
+   */
+  async simulate(
+    workflow: GradienceWorkflow,
+    config: Record<string, unknown> = {}
+  ): Promise<WorkflowExecutionResult> {
+    // Validate workflow
+    const validation = validate(workflow);
+    if (!validation.success) {
+      throw new Error(`Invalid workflow: ${validation.error?.message}`);
+    }
+
+    const executionId = `sim-${uuidv4()}`;
+    const execution: WorkflowExecutionResult = {
+      executionId,
+      workflowId: workflow.id,
+      executor: 'simulator',
+      status: 'running',
+      stepResults: [],
+      duration: 0,
+      totalGas: '0',
+      startedAt: Date.now(),
+    };
+
+    try {
+      // Run in simulation mode
+      await this.runWorkflowSimulation(workflow, execution, config);
+      execution.status = 'completed';
+    } catch (error) {
+      execution.status = 'failed';
+      execution.error = {
+        stepId: execution.stepResults[execution.stepResults.length - 1]?.stepId || 'unknown',
+        code: ErrorCodes.STEP_EXECUTION_FAILED,
+        message: error instanceof Error ? error.message : 'Simulation failed',
+      };
+    }
+
+    execution.completedAt = Date.now();
+    execution.duration = execution.completedAt - execution.startedAt;
+
+    return execution;
+  }
+
+  /**
+   * Cancel a running workflow
+   */
+  cancel(executionId: string): boolean {
+    const controller = this.abortControllers.get(executionId);
+    if (controller) {
+      controller.abort();
+      const execution = this.executions.get(executionId);
+      if (execution) {
+        execution.status = 'cancelled';
+        execution.completedAt = Date.now();
+        execution.duration = execution.completedAt - execution.startedAt;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get execution result
+   */
+  getExecution(executionId: string): WorkflowExecutionResult | undefined {
+    return this.executions.get(executionId);
+  }
+
+  /**
+   * Get all executions for a workflow
+   */
+  getExecutions(workflowId: string): WorkflowExecutionResult[] {
+    return Array.from(this.executions.values())
+      .filter((e) => e.workflowId === workflowId);
+  }
+
+  /**
+   * Run workflow execution
+   */
+  private async runWorkflow(
+    workflow: GradienceWorkflow,
+    execution: WorkflowExecutionResult,
+    config: Record<string, unknown>,
+    executor: string,
+    onStepStart?: (stepId: string) => void,
+    onStepComplete?: (result: StepResult) => void,
+    abortSignal?: AbortSignal,
+    verbose?: boolean
+  ): Promise<void> {
+    const stepResults = new Map<string, StepResult>();
+
+    // Determine execution order
+    const stepsToExecute = workflow.dag
+      ? this.getDAGExecutionOrder(workflow.dag)
+      : workflow.steps;
+
+    for (const step of stepsToExecute) {
+      // Check for abort
+      if (abortSignal?.aborted) {
+        throw new Error('Workflow cancelled');
+      }
+
+      // Merge config into step params
+      const stepWithConfig: WorkflowStep = {
+        ...step,
+        params: { ...config, ...step.params },
+      };
+
+      try {
+        const result = await this.stepExecutor.execute(stepWithConfig, {
+          workflowId: workflow.id,
+          executor,
+          stepResults,
+          onStepStart,
+          onStepComplete,
+        });
+
+        stepResults.set(step.id, result);
+        execution.stepResults.push(result);
+
+        if (verbose) {
+          console.log(`[Workflow:${workflow.id}] Step ${step.id}: ${result.status}`);
+        }
+
+        // Handle goto condition
+        if (step.condition?.onFalse === 'goto' && result.status === 'skipped') {
+          // Find the target step and continue from there
+          const targetIndex = stepsToExecute.findIndex((s) => s.id === step.condition!.gotoStep);
+          if (targetIndex !== -1) {
+            // Skip to target (will be handled in next iteration)
+            continue;
+          }
+        }
+      } catch (error) {
+        if (verbose) {
+          console.error(`[Workflow:${workflow.id}] Step ${step.id} failed:`, error);
+        }
+        throw error;
+      }
+    }
+
+    execution.status = 'completed';
+    execution.completedAt = Date.now();
+    execution.duration = execution.completedAt - execution.startedAt;
+  }
+
+  /**
+   * Run workflow simulation (dry run)
+   */
+  private async runWorkflowSimulation(
+    workflow: GradienceWorkflow,
+    execution: WorkflowExecutionResult,
+    config: Record<string, unknown>
+  ): Promise<void> {
+    const stepsToExecute = workflow.dag
+      ? this.getDAGExecutionOrder(workflow.dag)
+      : workflow.steps;
+
+    for (const step of stepsToExecute) {
+      // Simulate step execution
+      const simulatedResult: StepResult = {
+        stepId: step.id,
+        status: 'completed',
+        chain: step.chain,
+        action: step.action,
+        output: { simulated: true, params: { ...config, ...step.params } },
+        duration: 0,
+        retryCount: 0,
+      };
+
+      execution.stepResults.push(simulatedResult);
+    }
+  }
+
+  /**
+   * Get DAG execution order (topological sort)
+   */
+  private getDAGExecutionOrder(dag: WorkflowDAG): WorkflowStep[] {
+    const visited = new Set<string>();
+    const result: WorkflowStep[] = [];
+
+    // Build adjacency list
+    const adjacency = new Map<string, string[]>();
+    for (const node of dag.nodes) {
+      adjacency.set(node.id, []);
+    }
+    for (const edge of dag.edges) {
+      const list = adjacency.get(edge.from);
+      if (list) {
+        list.push(edge.to);
+      }
+    }
+
+    // Topological sort using DFS
+    const visit = (nodeId: string) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+
+      const neighbors = adjacency.get(nodeId) || [];
+      for (const neighbor of neighbors) {
+        visit(neighbor);
+      }
+
+      const node = dag.nodes.find((n) => n.id === nodeId);
+      if (node) {
+        result.unshift(node);
+      }
+    };
+
+    for (const node of dag.nodes) {
+      visit(node.id);
+    }
+
+    return result;
+  }
+}
+
+/**
+ * Create a workflow engine instance
+ */
+export function createWorkflowEngine(
+  handlers?: Map<string, ActionHandler>
+): WorkflowEngine {
+  return new WorkflowEngine(handlers);
+}

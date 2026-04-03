@@ -7,7 +7,7 @@
 #     docker compose --profile prod up --build
 #
 #   Single service:
-#     docker compose --profile prod up --build indexer-mock
+#     docker compose --profile prod up --build agent-daemon
 #
 #   Development (hot-reload, source volumes mounted):
 #     docker compose --profile dev up --build
@@ -21,45 +21,22 @@
 #   RESEND_API_KEY                       (website subscribe API)
 #
 # Optional:
-#   NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT  (defaults to http://indexer-mock:3001)
+#   NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT  (defaults to http://localhost:3001)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Shared build args ─────────────────────────────────────────────────────────
 x-next-build-args: &next-build-args
-  NEXT_PUBLIC_INDEXER_URL: http://indexer-mock:3001
-  NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: http://indexer-mock:3001
+  NEXT_PUBLIC_INDEXER_URL: ${NEXT_PUBLIC_INDEXER_URL:-http://localhost:3001}
+  NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT:-http://localhost:3001}
   NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
   NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
 
 # ── Shared Next.js runtime env ────────────────────────────────────────────────
 x-next-env: &next-env
-  NEXT_PUBLIC_INDEXER_URL: http://indexer-mock:3001
-  NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: http://indexer-mock:3001
+  NEXT_PUBLIC_INDEXER_URL: ${NEXT_PUBLIC_INDEXER_URL:-http://localhost:3001}
+  NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT:-http://localhost:3001}
 
 services:
-
-  # ── indexer-mock ─────────────────────────────────────────────────────────────
-  # Lightweight mock Chain Hub indexer (Hono + WebSocket)
-  indexer-mock:
-    profiles: [prod]
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.indexer-mock
-    image: gradience/indexer-mock
-    ports:
-      - "3001:3001"
-    environment:
-      NODE_ENV: production
-      PORT: "3001"
-    networks:
-      - gradience
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
 
   # ── agent-daemon ──────────────────────────────────────────────────────────────
   # Fastify + SQLite daemon; data persisted in the `agent-daemon-data` volume
@@ -84,9 +61,6 @@ services:
       - agent-daemon-data:/data
     networks:
       - gradience
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     restart: unless-stopped
 
   # ── agentm-web ────────────────────────────────────────────────────────────────
@@ -107,9 +81,6 @@ services:
       PORT: "5200"
     networks:
       - gradience
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     restart: unless-stopped
 
   # ── agentm-pro ────────────────────────────────────────────────────────────────
@@ -130,9 +101,6 @@ services:
       PORT: "5300"
     networks:
       - gradience
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     restart: unless-stopped
 
   # ── developer-docs ────────────────────────────────────────────────────────────
@@ -178,24 +146,6 @@ services:
   # The builder stage of each Dockerfile is used (has pnpm + devDeps installed).
   # ═══════════════════════════════════════════════════════════════════════════════
 
-  indexer-mock-dev:
-    profiles: [dev]
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.indexer-mock
-      target: builder
-    ports:
-      - "3001:3001"
-    environment:
-      NODE_ENV: development
-      PORT: "3001"
-    volumes:
-      # Mount source for ts-node hot-reload
-      - ./packages/indexer-mock/src:/app/packages/indexer-mock/src
-    command: pnpm --filter @gradiences/indexer-mock dev
-    networks:
-      - gradience
-
   agent-daemon-dev:
     profiles: [dev]
     build:
@@ -217,8 +167,6 @@ services:
     command: pnpm --filter @gradiences/agent-daemon dev
     networks:
       - gradience
-    depends_on:
-      - indexer-mock-dev
 
   agentm-web-dev:
     profiles: [dev]
@@ -231,8 +179,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: "5200"
-      NEXT_PUBLIC_INDEXER_URL: http://indexer-mock-dev:3001
-      NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: http://indexer-mock-dev:3001
+      NEXT_PUBLIC_INDEXER_URL: ${NEXT_PUBLIC_INDEXER_URL:-http://localhost:3001}
+      NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT:-http://localhost:3001}
       NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
       NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
     volumes:
@@ -240,8 +188,6 @@ services:
     command: pnpm --filter @gradiences/agentm-web dev
     networks:
       - gradience
-    depends_on:
-      - indexer-mock-dev
 
   agentm-pro-dev:
     profiles: [dev]
@@ -253,8 +199,8 @@ services:
       - "5300:5300"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_INDEXER_URL: http://indexer-mock-dev:3001
-      NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: http://indexer-mock-dev:3001
+      NEXT_PUBLIC_INDEXER_URL: ${NEXT_PUBLIC_INDEXER_URL:-http://localhost:3001}
+      NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_INDEXER_ENDPOINT:-http://localhost:3001}
       NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
       NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
     volumes:
@@ -262,8 +208,6 @@ services:
     command: pnpm --filter @gradiences/agentm-pro dev
     networks:
       - gradience
-    depends_on:
-      - indexer-mock-dev
 
   developer-docs-dev:
     profiles: [dev]

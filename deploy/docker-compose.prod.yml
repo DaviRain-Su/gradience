@@ -1,34 +1,35 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Gradience — Production Docker Compose (DigitalOcean)
+# Gradience Production Docker Compose (DigitalOcean)
 #
-# Services deployed:
-#   postgres        — PostgreSQL 16 (for real indexer, future use)
-#   indexer-mock    — Node.js mock indexer on port 3001 (initial backend)
-#   agent-daemon    — Fastify daemon on port 4001
+# Architecture (v2 -- Five-Layer Stack):
+#   Layer 3: Discovery via Nostr NIP-89/90 (decentralized, no server needed)
+#   Layer 2: Communication via XMTP (decentralized, no server needed)
+#   Layer 1: Settlement -- Solana programs (deployed separately)
+#   Layer 0: Protocol Kernel -- Escrow + Judge + Reputation
+#
+# Services deployed here:
+#   postgres        -- PostgreSQL 16 (Chain Hub data)
+#   agent-daemon    -- Fastify + SQLite daemon (Agent runtime backend)
+#   agentm-web      -- Next.js user entry app
+#   agentm-pro      -- Next.js developer dashboard
+#   developer-docs  -- Next.js documentation site
+#   website         -- Next.js landing page
 #
 # Usage:
-#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d
-#
-# Build context must be the repo root:
-#   cd /opt/gradience && docker compose -f deploy/docker-compose.prod.yml ...
-# ─────────────────────────────────────────────────────────────────────────────
+#   cd /opt/gradience
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
 
 services:
 
-  # ── PostgreSQL 16 ────────────────────────────────────────────────────────────
-  # Reserved for the real Rust indexer. indexer-mock doesn't use it, but it's
-  # provisioned now so data is durable when you swap in the real indexer.
+  # -- PostgreSQL 16 (Chain Hub data, future use)
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: gradience
       POSTGRES_USER: ${POSTGRES_USER:-gradience}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}   # required — no default in prod
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # Run all migrations on first start
-      - ../apps/agent-arena/indexer/migrations:/docker-entrypoint-initdb.d:ro
     networks:
       - backend
     healthcheck:
@@ -38,32 +39,7 @@ services:
       retries: 10
       start_period: 20s
 
-  # ── indexer-mock ─────────────────────────────────────────────────────────────
-  # Hono + WebSocket mock; swap for the real Rust indexer when ready.
-  indexer-mock:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.indexer-mock
-    image: gradience/indexer-mock:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: "3001"
-      SOLANA_RPC_ENDPOINT: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    # Not exposed directly — nginx proxies api.gradiences.xyz → this service
-    ports:
-      - "127.0.0.1:3001:3001"
-
-  # ── agent-daemon ──────────────────────────────────────────────────────────────
-  # Fastify + SQLite daemon; SQLite file persisted in named volume.
+  # -- agent-daemon (Fastify + SQLite, Agent runtime backend)
   agent-daemon:
     build:
       context: ..
@@ -78,13 +54,14 @@ services:
       AGENTD_DB_PATH: /data/agentd.db
       AGENTD_ALLOW_ALL_INTERFACES: "true"
       AGENTD_CHAIN_HUB_URL: ${AGENTD_CHAIN_HUB_URL:-}
+      SOLANA_RPC_ENDPOINT: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - agent-daemon-data:/data
     networks:
       - backend
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4001/health"]
       interval: 15s
@@ -94,7 +71,7 @@ services:
     ports:
       - "127.0.0.1:4001:4001"
 
-# ── Volumes ───────────────────────────────────────────────────────────────────
+  # -- agentm-web (Next.js user entry app)
   agentm-web:
     build:
       context: ..
@@ -109,12 +86,10 @@ services:
       PORT: "5200"
     networks:
       - backend
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     ports:
       - "127.0.0.1:5200:5200"
 
+  # -- agentm-pro (Next.js developer dashboard)
   agentm-pro:
     build:
       context: ..
@@ -129,12 +104,10 @@ services:
       PORT: "5300"
     networks:
       - backend
-    depends_on:
-      indexer-mock:
-        condition: service_healthy
     ports:
       - "127.0.0.1:5300:5300"
 
+  # -- developer-docs (Next.js documentation)
   developer-docs:
     build:
       context: ..
@@ -149,6 +122,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
 
+  # -- website (Next.js landing page)
   website:
     build:
       context: ..
@@ -172,7 +146,6 @@ volumes:
   agent-daemon-data:
     driver: local
 
-# ── Networks ──────────────────────────────────────────────────────────────────
 networks:
   backend:
     driver: bridge

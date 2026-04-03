@@ -7,8 +7,7 @@
  */
 
 import { NostrAdapter } from './adapters/nostr-adapter.js';
-import { Libp2pAdapter } from './adapters/libp2p-adapter.js';
-import { MagicBlockAdapter } from './adapters/magicblock-adapter.js';
+import { XMTPAdapter } from './adapters/xmtp-adapter.js';
 import { ROUTER_CONFIG, A2A_ERROR_CODES } from './constants.js';
 import type {
     A2ARouterOptions,
@@ -34,24 +33,23 @@ export class A2ARouter {
 
     constructor(options: A2ARouterOptions = {}) {
         const protocolPriority = options.protocolPriority ?? {
-            broadcast: ['nostr', 'libp2p'],
-            direct_p2p: ['libp2p', 'nostr'],
-            paid_service: ['magicblock'],
-            offline_message: ['nostr'],
+            broadcast: ['nostr'],
+            discovery: ['nostr'],
+            direct_message: ['xmtp', 'nostr'],
+            task_negotiation: ['xmtp', 'nostr'],
+            interop: ['google-a2a'],
         };
 
         this.options = {
             enableNostr: options.enableNostr ?? true,
-            enableLibp2p: options.enableLibp2p ?? true,
-            enableMagicBlock: options.enableMagicBlock ?? false,
             nostrOptions: options.nostrOptions ?? {},
-            libp2pOptions: options.libp2pOptions ?? {},
-            magicblockOptions: options.magicblockOptions ?? {},
             googleA2AOptions: options.googleA2AOptions ?? {},
             agentId: options.agentId ?? 'unknown',
             protocolPriority,
             healthCheckInterval: options.healthCheckInterval ?? ROUTER_CONFIG.HEALTH_CHECK_INTERVAL_MS,
             messageTimeout: options.messageTimeout ?? ROUTER_CONFIG.MESSAGE_TIMEOUT_MS,
+            enableXMTP: options.enableXMTP ?? true,
+            xmtpOptions: options.xmtpOptions ?? {},
         };
     }
 
@@ -70,21 +68,12 @@ export class A2ARouter {
             console.log('[A2ARouter] Nostr adapter initialized');
         }
 
-        if (this.options.enableLibp2p) {
-            const libp2pAdapter = new Libp2pAdapter(this.options.libp2pOptions as any);
-            await libp2pAdapter.initialize();
-            this.adapters.set('libp2p', libp2pAdapter);
-            console.log('[A2ARouter] libp2p adapter initialized');
-        }
-
-        if (this.options.enableMagicBlock) {
-            const magicblockAdapter = new MagicBlockAdapter({
-                agentId: this.options.agentId ?? 'unknown',
-                ...this.options.magicblockOptions,
-            });
-            await magicblockAdapter.initialize();
-            this.adapters.set('magicblock', magicblockAdapter);
-            console.log('[A2ARouter] MagicBlock adapter initialized');
+        // Initialize XMTP adapter
+        if (this.options.enableXMTP) {
+            const xmtpAdapter = new XMTPAdapter(this.options.xmtpOptions);
+            await xmtpAdapter.initialize();
+            this.adapters.set('xmtp', xmtpAdapter);
+            console.log('[A2ARouter] XMTP adapter initialized');
         }
 
         // Start health check
@@ -141,7 +130,7 @@ export class A2ARouter {
         };
 
         // Select protocol
-        const protocol = intent.preferredProtocol ?? this.selectProtocol('direct_p2p');
+        const protocol = intent.preferredProtocol ?? this.selectProtocol('direct_message');
 
         if (!protocol) {
             return {
@@ -262,9 +251,7 @@ export class A2ARouter {
     health(): RouterHealthStatus {
         const protocolStatus: Record<ProtocolType, ProtocolHealthStatus> = {
             nostr: { available: false, peerCount: 0, subscribedTopics: [] },
-            libp2p: { available: false, peerCount: 0, subscribedTopics: [] },
-            magicblock: { available: false, peerCount: 0, subscribedTopics: [] },
-            webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
+            xmtp: { available: false, peerCount: 0, subscribedTopics: [] },
             'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
             layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
             wormhole: { available: false, peerCount: 0, subscribedTopics: [] },
@@ -349,9 +336,7 @@ export class A2ARouter {
             if (protocol === 'nostr') {
                 return (adapter as NostrAdapter)['client'].getPublicKey();
             }
-            if (protocol === 'libp2p') {
-                return (adapter as Libp2pAdapter)['node'].getPeerId();
-            }
+
         }
         return 'unknown';
     }

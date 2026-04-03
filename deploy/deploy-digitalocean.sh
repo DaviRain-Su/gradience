@@ -144,7 +144,7 @@ ssh ${SSH_OPTS} "${SSH_TARGET}" "
   set -euo pipefail
 
   # Check if certs already exist for the primary domain
-  if [ -d /etc/letsencrypt/live/api.gradiences.xyz ]; then
+  if [ -d /etc/letsencrypt/live/gradiences.xyz ]; then
     echo 'Certificates already exist. Renewing if needed...'
     certbot renew --quiet
   else
@@ -153,8 +153,12 @@ ssh ${SSH_OPTS} "${SSH_TARGET}" "
       --non-interactive \
       --agree-tos \
       --email '${CERTBOT_EMAIL}' \
-      -d api.gradiences.xyz \
-      -d daemon.gradiences.xyz
+      -d gradiences.xyz \
+      -d www.gradiences.xyz \
+      -d app.gradiences.xyz \
+      -d pro.gradiences.xyz \
+      -d docs.gradiences.xyz \
+      -d api.gradiences.xyz
   fi
 
   # Enable auto-renewal
@@ -169,8 +173,11 @@ ssh ${SSH_OPTS} "${SSH_TARGET}" "
 log ""
 log "Deployment complete!"
 log ""
-log "  API (indexer-mock):   https://api.gradiences.xyz"
-log "  Daemon:               https://daemon.gradiences.xyz"
+log "  Website:      https://gradiences.xyz"
+log "  App:          https://app.gradiences.xyz"
+log "  Pro:          https://pro.gradiences.xyz"
+log "  Docs:         https://docs.gradiences.xyz"
+log "  API (daemon): https://api.gradiences.xyz"
 log ""
 log "Check service health:"
 log "  ssh ${SSH_TARGET} 'docker compose -f ${DEPLOY_DIR}/deploy/docker-compose.prod.yml ps'"

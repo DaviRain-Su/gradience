@@ -17,18 +17,16 @@ describe('A2A Integration', () => {
   let routerB: A2ARouter;
 
   beforeEach(async () => {
-    // Create two routers for testing
+    // Create two routers for testing with Nostr
     routerA = new A2ARouter({
-      enableNostr: false, // Disable for local testing
-      enableLibp2p: false,
-      enableMagicBlock: true,
+      enableNostr: true,
+      nostrOptions: { relays: [] },
       agentId: 'agent-a-solana-address',
     });
 
     routerB = new A2ARouter({
-      enableNostr: false,
-      enableLibp2p: false,
-      enableMagicBlock: true,
+      enableNostr: true,
+      nostrOptions: { relays: [] },
       agentId: 'agent-b-solana-address',
     });
 
@@ -43,17 +41,17 @@ describe('A2A Integration', () => {
   });
 
   describe('Message Flow', () => {
-    it('should send message from A to B via MagicBlock', async () => {
+    it('should send message from A to B via Nostr', async () => {
       // Send from A to B
       const result = await routerA.send({
         to: 'agent-b-solana-address',
         type: 'direct_message',
         payload: { content: 'Hello from A!' },
-        preferredProtocol: 'magicblock',
+        preferredProtocol: 'nostr',
       });
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.protocol, 'magicblock');
+      assert.strictEqual(result.protocol, 'nostr');
     });
 
     it('should support bidirectional messaging', async () => {
@@ -62,7 +60,7 @@ describe('A2A Integration', () => {
         to: 'agent-b-solana-address',
         type: 'direct_message',
         payload: { content: 'Hello B!' },
-        preferredProtocol: 'magicblock',
+        preferredProtocol: 'nostr',
       });
 
       // B sends to A
@@ -70,7 +68,7 @@ describe('A2A Integration', () => {
         to: 'agent-a-solana-address',
         type: 'direct_message',
         payload: { content: 'Hello A!' },
-        preferredProtocol: 'magicblock',
+        preferredProtocol: 'nostr',
       });
 
       assert.strictEqual(resultA.success, true);
@@ -86,8 +84,8 @@ describe('A2A Integration', () => {
       assert.strictEqual(healthA.initialized, true);
       assert.strictEqual(healthB.initialized, true);
 
-      assert.ok(healthA.availableProtocols.includes('magicblock'));
-      assert.ok(healthB.availableProtocols.includes('magicblock'));
+      assert.ok(healthA.availableProtocols.includes('nostr'));
+      assert.ok(healthB.availableProtocols.includes('nostr'));
     });
   });
 
@@ -97,23 +95,23 @@ describe('A2A Integration', () => {
         to: 'recipient',
         type: 'direct_message',
         payload: { content: 'test' },
-        preferredProtocol: 'magicblock',
+        preferredProtocol: 'nostr',
       });
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.protocol, 'magicblock');
+      assert.strictEqual(result.protocol, 'nostr');
     });
 
     it('should fail when preferred protocol not available', async () => {
-      // Try to use Nostr when not enabled
+      // Try to use xmtp when not enabled
       const result = await routerA.send({
         to: 'recipient',
         type: 'direct_message',
         payload: { content: 'test' },
-        preferredProtocol: 'nostr',
+        preferredProtocol: 'xmtp',
       });
 
-      // Should fail because Nostr is not available
+      // Should fail because XMTP is not available
       assert.strictEqual(result.success, false);
       assert.ok(result.error);
     });
