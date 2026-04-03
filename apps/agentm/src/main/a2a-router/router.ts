@@ -263,6 +263,8 @@ export class A2ARouter {
             nostr: { available: false, peerCount: 0, subscribedTopics: [] },
             libp2p: { available: false, peerCount: 0, subscribedTopics: [] },
             magicblock: { available: false, peerCount: 0, subscribedTopics: [] },
+            webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
+            'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
         };
 
         let totalPeers = 0;

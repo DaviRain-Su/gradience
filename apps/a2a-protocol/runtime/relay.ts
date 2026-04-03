@@ -4,11 +4,13 @@ import type {
   RelayStore,
   SignedEnvelope,
 } from "./types";
+import { TransportCrypto } from "./transport-crypto";
 
 export class A2ARelayApi {
   private readonly authToken: string | null;
   private readonly maxPayloadBytes: number;
   private readonly maxPaymentMicrolamports: bigint;
+  private readonly transportCrypto: TransportCrypto | null;
 
   constructor(
     private readonly store: RelayStore,
@@ -16,11 +18,15 @@ export class A2ARelayApi {
       authToken?: string;
       maxPayloadBytes?: number;
       maxPaymentMicrolamports?: bigint;
+      transportEncryptionKey?: string;
     } = {},
   ) {
     this.authToken = options.authToken?.trim() || null;
     this.maxPayloadBytes = options.maxPayloadBytes ?? 32 * 1024;
     this.maxPaymentMicrolamports = options.maxPaymentMicrolamports ?? 10_000_000n;
+    this.transportCrypto = options.transportEncryptionKey
+      ? new TransportCrypto(options.transportEncryptionKey)
+      : null;
   }
 
   async handle(request: RelayRequest): Promise<RelayResponse> {
@@ -90,7 +96,10 @@ export class A2ARelayApi {
         await this.store.markPayloadRejected();
         return { status: 400, body: { error: "payment_limit_exceeded" } };
       }
-      const record = await this.store.publishEnvelope(body.envelope, body.payload);
+      const payload = this.transportCrypto
+        ? this.transportCrypto.encrypt(body.payload)
+        : body.payload;
+      const record = await this.store.publishEnvelope(body.envelope, payload);
       return {
         status: 202,
         body: {
@@ -111,7 +120,10 @@ export class A2ARelayApi {
       return {
         status: 200,
         body: {
-          items: result.items,
+          items: result.items.map((item) => ({
+            ...item,
+            body: this.transportCrypto ? this.transportCrypto.decrypt(item.body) : item.body,
+          })),
           nextCursor: result.nextCursor,
         },
       };

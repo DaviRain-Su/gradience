@@ -49,6 +49,11 @@ describe("ChainHubRouter.invoke", () => {
 
     expect(result.route).toBe("rest-api");
     expect(capturedAuth).toBe("Bearer secret");
+    const records = router.getTransactionRecords();
+    expect(records.length).toBe(1);
+    expect(records[0]?.protocolId).toBe("sdp");
+    expect(records[0]?.success).toBe(true);
+    expect(records[0]?.route).toBe("rest-api");
   });
 
   it("routes CPI invoke through invoker", async () => {
@@ -74,5 +79,38 @@ describe("ChainHubRouter.invoke", () => {
 
     expect(result.route).toBe("solana-program");
     expect(capturedProgramId).toBe(cpiProtocol.programId);
+    const records = router.getTransactionRecords({ route: "solana-program" });
+    expect(records.length).toBe(1);
+    expect(records[0]?.success).toBe(true);
+  });
+
+  it("stores failed invokes and supports queries", async () => {
+    process.env.TEST_SDP_API_KEY = "secret";
+    const router = new ChainHubRouter(
+      {
+        invoke: async () => ({ ok: true }),
+      },
+      {
+        request: async () => {
+          throw new Error("remote 503");
+        },
+      }
+    );
+
+    await expect(
+      router.invoke({
+        protocol: restProtocol,
+        capability: "payments/on-ramp",
+        secretRef: "env:TEST_SDP_API_KEY",
+        policy: { allowedCapabilities: ["payments/on-ramp"], allowedMethods: ["POST"] },
+      })
+    ).rejects.toThrow("remote 503");
+
+    const failed = router.getTransactionRecords({ success: false });
+    expect(failed.length).toBe(1);
+    expect(failed[0]?.error).toBe("remote 503");
+
+    const record = router.getTransactionRecord(failed[0]!.id);
+    expect(record?.protocolId).toBe("sdp");
   });
 });

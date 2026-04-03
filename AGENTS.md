@@ -37,73 +37,133 @@ When starting any new sub-module, always check which phases are already document
 
 ---
 
-## Linear Task Management
+## Task Management (Obsidian CLI)
 
-Tasks are managed in Linear: https://linear.app/gradiences
+Tasks are managed in Obsidian vault at `docs/tasks/`
+
+> **Migration Notice**: We've migrated from Linear to Obsidian CLI for better local control and knowledge management.
 
 ### Prerequisites
 
-Ensure `LINEAR_API_KEY` is configured in your environment:
+Ensure you have:
+- Obsidian installed with CLI enabled
+- `scripts/task.sh` is executable
+
+### Quick Start
+
 ```bash
-# ~/.bashrc or ~/.zshrc
-export LINEAR_API_KEY="lin_api_..."
+# View statistics
+./scripts/task.sh stats
+
+# List tasks
+./scripts/task.sh list                    # All tasks
+./scripts/task.sh list todo               # Todo tasks
+./scripts/task.sh list todo P0            # P0 todo tasks
+./scripts/task.sh list all P0 "AgentM"    # Filter by project
+
+# Get next task to work on
+./scripts/task.sh list todo | head -5
 ```
 
-### Getting Assigned Tasks
+### Working on Tasks
 
-**1. Fetch pending tasks:**
 ```bash
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $LINEAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ issues(first: 10, filter: { state: { type: { in: [\"unstarted\", \"started\"] } } }) { nodes { identifier title description priority project { name } } } }"}' \
-  | python3 -m json.tool
+# View task details
+./scripts/task.sh show GRA-64
+
+# Start working on task
+./scripts/task.sh update GRA-64 in-progress --open
+
+# Mark as done
+./scripts/task.sh update GRA-64 done
 ```
 
-**2. View specific issue:**
+### Creating Tasks
+
 ```bash
-# Replace GRA-XX with the issue number
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $LINEAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ issues(filter: { identifier: { eq: \"GRA-9\" } }) { nodes { identifier title description state { name } } } }"}' \
-  | python3 -m json.tool
+# Create new task
+./scripts/task.sh create "Fix critical bug" P0 "AgentM Pro"
+
+# This will:
+# 1. Generate next ID (e.g., GRA-119)
+# 2. Create markdown file from template
+# 3. Open in Obsidian
 ```
 
-**3. Update issue status (when done):**
-```bash
-# First get the state IDs
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $LINEAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ workflowStates(first: 10) { nodes { id name type } } }"}'
+### Task File Format
 
-# Then update (replace $ISSUE_ID and $DONE_STATE_ID)
-# curl -s -X POST ... -d '{"query": "mutation { issueUpdate(id: \"$ISSUE_ID\", input: { stateId: \"$DONE_STATE_ID\" }) { success } }"}'
+Tasks are Markdown files with YAML frontmatter:
+
+```markdown
+---
+linear-id: GRA-64
+title: "[Indexer] Design Profile API specification"
+status: in-progress
+priority: P0
+project: "Chain Hub Indexer"
+created: 2026-04-03
+migrated-from: "Linear"
+assignee: "Code Agent"
+tags: [task, p0, chain-hub-indexer]
+---
+
+# GRA-64: [Indexer] Design Profile API specification
+
+## Description
+Design Indexer Profile API specification
+...
+
+## Acceptance Criteria
+- [ ] Research complete
+- [ ] API design documented
+- [ ] Review passed
+
+## Related
+- [[GRA-65]] Next task
+- [[docs/03-technical-spec]] Reference
+
+## Notes
+
+## Log
+- 2026-04-03: Migrated from Linear
+- 2026-04-03: Status changed to "in-progress"
 ```
 
 ### Task Execution Workflow
 
 ```
-1. Get task from Linear (highest priority first)
-2. Read corresponding 7-Phase docs in <project>/docs/
+1. Get task from Obsidian
+   ./scripts/task.sh list todo P0 | head -1
+
+2. Read corresponding 7-Phase docs
+   open docs/<project>/03-technical-spec.md
+
 3. Implement following Technical Spec exactly
+
 4. Write/run tests per Phase 5 Test Spec
-5. Update Linear issue status to "In Progress" → "Done"
-6. Commit with reference: "fixes GRA-XX"
+
+5. Update task status
+   ./scripts/task.sh update <id> done
+
+6. Commit with reference
+   git commit -m "feat: implement feature (GRA-XX)"
 ```
 
 ### Project Mapping
 
-| Project | Path | Docs |
-|---------|------|------|
-| AgentM (Electron) | `apps/agentm/` | `apps/agentm/docs/` |
-| AgentM Web | `apps/agentm-web/` | - |
-| AgentM Pro | `apps/agentm-pro/` | `apps/agentm-pro/docs/` |
-| Agent Arena | `apps/agent-arena/` | `apps/agent-arena/docs/` |
-| Agent Layer EVM | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` |
-| Chain Hub | `apps/chain-hub/` | `apps/chain-hub/docs/` |
-| A2A Protocol | `apps/a2a-protocol/` | `apps/a2a-protocol/docs/` |
+| Project | Path | Docs | Tasks |
+|---------|------|------|-------|
+| AgentM (Electron) | `apps/agentm/` | `apps/agentm/docs/` | docs/tasks/GRA-9*.md |
+| AgentM Web | `apps/agentm-web/` | - | docs/tasks/GRA-30*.md |
+| AgentM Pro | `apps/agentm-pro/` | `apps/agentm-pro/docs/` | docs/tasks/GRA-9*.md, GRA-10*.md |
+| Agent Arena | `apps/agent-arena/` | `apps/agent-arena/docs/` | docs/tasks/GRA-33*.md |
+| Agent Layer EVM | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` | docs/tasks/GRA-39*.md |
+| Chain Hub | `apps/chain-hub/` | `apps/chain-hub/docs/` | docs/tasks/GRA-4*.md, GRA-8*.md |
+| A2A Protocol | `apps/a2a-protocol/` | `apps/a2a-protocol/docs/` | docs/tasks/GRA-47*.md |
+| OWS Hackathon | - | `docs/hackathon/` | docs/tasks/GRA-56*.md |
+| Metaplex Track | - | - | docs/tasks/GRA-91*.md |
+| GoldRush Track | - | - | docs/tasks/GRA-99*.md |
+| Agent Social | - | - | docs/tasks/GRA-107*.md |
 
 ---
 
@@ -111,8 +171,16 @@ curl -s -X POST https://api.linear.app/graphql \
 
 ### Before Starting
 
-1. Check Linear for assigned tasks
+1. Check Obsidian for assigned tasks
+   ```bash
+   ./scripts/task.sh list todo P0
+   ```
+
 2. Read Phase 3 Technical Spec completely
+   ```bash
+   open docs/<project>/03-technical-spec.md
+   ```
+
 3. Verify environment setup per `06-implementation.md`
 
 ### During Development
@@ -120,7 +188,7 @@ curl -s -X POST https://api.linear.app/graphql \
 1. Follow spec exactly — if spec is wrong, fix spec first
 2. Write tests before implementation (TDD)
 3. Commit frequently with meaningful messages
-4. Reference Linear issue ID in commits: `GRA-XX: description`
+4. Reference task ID in commits: `GRA-XX: description`
 
 ### Before Submitting
 
@@ -128,7 +196,7 @@ curl -s -X POST https://api.linear.app/graphql \
 2. Build succeeds: `npm run build`
 3. Type checks pass: `npm run typecheck`
 4. Update Phase 6 Implementation Log
-5. Update Linear issue status
+5. Update task status: `./scripts/task.sh update GRA-XX done`
 
 ---
 
@@ -137,3 +205,15 @@ curl -s -X POST https://api.linear.app/graphql \
 - **P0 Blockers**: Fix immediately, notify team
 - **Spec Ambiguity**: Update spec, don't guess
 - **API Issues**: Check `docs/experience-reports/` first
+
+---
+
+## Migration Notes (From Linear)
+
+All 118 tasks have been migrated from Linear to Obsidian:
+- Original Linear IDs preserved (GRA-1 to GRA-118)
+- Status, priority, and project data migrated
+- Task files are now in `docs/tasks/`
+- Use `./scripts/task.sh` instead of Linear API
+
+For historical reference, old Linear data is preserved in task frontmatter under `migrated-from: "Linear"`.

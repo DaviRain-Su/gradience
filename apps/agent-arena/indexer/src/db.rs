@@ -80,6 +80,32 @@ pub struct ReputationRow {
 }
 
 #[derive(Debug, Clone)]
+pub struct AgentProfileRow {
+    pub agent: String,
+    pub display_name: String,
+    pub bio: String,
+    pub website: Option<String>,
+    pub github: Option<String>,
+    pub x: Option<String>,
+    pub onchain_ref: Option<String>,
+    pub publish_mode: String,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct AgentProfileSyncInput {
+    pub agent: String,
+    pub display_name: String,
+    pub bio: String,
+    pub website: Option<String>,
+    pub github: Option<String>,
+    pub x: Option<String>,
+    pub onchain_ref: Option<String>,
+    pub publish_mode: String,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone)]
 pub struct JudgePoolRow {
     pub judge: String,
     pub stake: i64,
@@ -218,6 +244,88 @@ impl Database {
             )
             .await?;
         Ok(row.map(reputation_from_row))
+    }
+
+    pub async fn get_agent_profile(&mut self, agent: &str) -> Result<Option<AgentProfileRow>> {
+        let profile_row = self
+            .client
+            .query_opt(
+                "SELECT
+                    agent, display_name, bio, website, github, x, onchain_ref, publish_mode, updated_at
+                 FROM agent_profiles
+                 WHERE agent = $1",
+                &[&agent],
+            )
+            .await?;
+        if let Some(row) = profile_row {
+            return Ok(Some(agent_profile_from_row(row)));
+        }
+
+        let fallback_row = self
+            .client
+            .query_opt(
+                "SELECT
+                    $1::text AS agent,
+                    $1::text AS display_name,
+                    ''::text AS bio,
+                    NULL::text AS website,
+                    NULL::text AS github,
+                    NULL::text AS x,
+                    NULL::text AS onchain_ref,
+                    'manual'::text AS publish_mode,
+                    COALESCE((
+                        SELECT MAX(activity_ts) FROM (
+                            SELECT created_at AS activity_ts FROM tasks WHERE poster = $1
+                            UNION ALL
+                            SELECT submitted_at AS activity_ts FROM submissions WHERE agent = $1
+                        ) activity
+                    ), EXTRACT(EPOCH FROM NOW())::bigint) AS updated_at
+                 WHERE
+                    EXISTS(SELECT 1 FROM reputations WHERE agent = $1)
+                    OR EXISTS(SELECT 1 FROM tasks WHERE poster = $1)
+                    OR EXISTS(SELECT 1 FROM submissions WHERE agent = $1)",
+                &[&agent],
+            )
+            .await?;
+        Ok(fallback_row.map(agent_profile_from_row))
+    }
+
+    pub async fn upsert_agent_profile(
+        &mut self,
+        input: AgentProfileSyncInput,
+    ) -> Result<AgentProfileRow> {
+        let row = self
+            .client
+            .query_one(
+                "INSERT INTO agent_profiles (
+                    agent, display_name, bio, website, github, x, onchain_ref, publish_mode, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ON CONFLICT (agent) DO UPDATE SET
+                    display_name = EXCLUDED.display_name,
+                    bio = EXCLUDED.bio,
+                    website = EXCLUDED.website,
+                    github = EXCLUDED.github,
+                    x = EXCLUDED.x,
+                    onchain_ref = EXCLUDED.onchain_ref,
+                    publish_mode = EXCLUDED.publish_mode,
+                    updated_at = GREATEST(agent_profiles.updated_at, EXCLUDED.updated_at)
+                RETURNING
+                    agent, display_name, bio, website, github, x, onchain_ref, publish_mode, updated_at",
+                &[
+                    &input.agent,
+                    &input.display_name,
+                    &input.bio,
+                    &input.website,
+                    &input.github,
+                    &input.x,
+                    &input.onchain_ref,
+                    &input.publish_mode,
+                    &input.updated_at,
+                ],
+            )
+            .await?;
+
+        Ok(agent_profile_from_row(row))
     }
 
     pub async fn list_judge_pool(&mut self, category: i16) -> Result<Vec<JudgePoolRow>> {
@@ -537,6 +645,20 @@ fn reputation_from_row(row: tokio_postgres::Row) -> ReputationRow {
         global_total_applied: row.get("global_total_applied"),
         total_earned: row.get("total_earned"),
         updated_slot: row.get("updated_slot"),
+    }
+}
+
+fn agent_profile_from_row(row: tokio_postgres::Row) -> AgentProfileRow {
+    AgentProfileRow {
+        agent: row.get("agent"),
+        display_name: row.get("display_name"),
+        bio: row.get("bio"),
+        website: row.get("website"),
+        github: row.get("github"),
+        x: row.get("x"),
+        onchain_ref: row.get("onchain_ref"),
+        publish_mode: row.get("publish_mode"),
+        updated_at: row.get("updated_at"),
     }
 }
 

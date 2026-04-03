@@ -28,25 +28,26 @@ describe('NostrAdapter', () => {
             assert.strictEqual(adapter.protocol, 'nostr');
         });
 
-        it('should initialize successfully', async () => {
+        it('should initialize successfully (no-op without relays)', async () => {
             await adapter.initialize();
-            assert.strictEqual(adapter.isAvailable(), true);
+            // Without relays, adapter is not available
+            assert.strictEqual(adapter.isAvailable(), false);
         });
 
-        it('should shutdown successfully', async () => {
+        it('should shutdown successfully (no-op without relays)', async () => {
             await adapter.initialize();
-            assert.strictEqual(adapter.isAvailable(), true);
+            assert.strictEqual(adapter.isAvailable(), false);
 
             await adapter.shutdown();
             assert.strictEqual(adapter.isAvailable(), false);
         });
 
-        it('should throw if initialized twice', async () => {
+        it('should allow multiple initialize calls without relays', async () => {
+            // Without relays, initialize is a no-op, so multiple calls are allowed
             await adapter.initialize();
-            await assert.rejects(
-                async () => await adapter.initialize(),
-                /Already initialized/
-            );
+            await assert.doesNotReject(async () => {
+                await adapter.initialize();
+            });
         });
     });
 
@@ -65,11 +66,10 @@ describe('NostrAdapter', () => {
             assert.ok(result.error);
         });
 
-        it('should fail to subscribe when not initialized', async () => {
-            await assert.rejects(
-                async () => await adapter.subscribe(() => {}),
-                /not initialized/
-            );
+        it('should return dummy subscription when not initialized', async () => {
+            const subscription = await adapter.subscribe(() => {});
+            assert.strictEqual(subscription.protocol, 'nostr');
+            assert.ok(typeof subscription.unsubscribe === 'function');
         });
     });
 

@@ -6,6 +6,8 @@ import type {
   InvokeInput,
   InvokeResult,
   RestInvokeInput,
+  TransactionQuery,
+  TransactionRecord,
 } from "./types";
 
 export class InvokeRouteError extends Error {}
@@ -40,6 +42,9 @@ export class DefaultHttpClient implements HttpClient {
 }
 
 export class ChainHubRouter {
+  private readonly transactions: TransactionRecord[] = [];
+  private sequence = 0;
+
   constructor(
     private readonly cpiInvoker: CpiInvoker,
     private readonly httpClient: HttpClient = new DefaultHttpClient(),
@@ -47,17 +52,56 @@ export class ChainHubRouter {
   ) {}
 
   async invoke(input: InvokeInput): Promise<InvokeResult> {
-    ensureProtocolActive(input.protocol.status);
-    this.keyVault.guard(input.policy, {
-      capability: input.capability,
-      method: input.method,
-      amount: input.amount,
+    const startedAt = Date.now();
+    try {
+      ensureProtocolActive(input.protocol.status);
+      this.keyVault.guard(input.policy, {
+        capability: input.capability,
+        method: input.method,
+        amount: input.amount,
+      });
+
+      const result =
+        input.protocol.protocolType === "rest-api"
+          ? await this.invokeRest(input as RestInvokeInput)
+          : await this.invokeCpi(input as CpiInvokeInput);
+
+      this.recordTransaction({
+        route: result.route,
+        protocolId: result.protocolId,
+        capability: result.capability,
+        startedAt,
+        success: true,
+      });
+      return result;
+    } catch (error) {
+      this.recordTransaction({
+        route: input.protocol.protocolType,
+        protocolId: input.protocol.id,
+        capability: input.capability,
+        startedAt,
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  getTransactionRecords(query?: TransactionQuery): TransactionRecord[] {
+    const filtered = this.transactions.filter((record) => {
+      if (query?.protocolId && record.protocolId !== query.protocolId) return false;
+      if (query?.capability && record.capability !== query.capability) return false;
+      if (query?.route && record.route !== query.route) return false;
+      if (query?.success !== undefined && record.success !== query.success) return false;
+      return true;
     });
 
-    if (input.protocol.protocolType === "rest-api") {
-      return this.invokeRest(input as RestInvokeInput);
-    }
-    return this.invokeCpi(input as CpiInvokeInput);
+    const ordered = [...filtered].sort((a, b) => parseSequence(b.id) - parseSequence(a.id));
+    return query?.limit ? ordered.slice(0, query.limit) : ordered;
+  }
+
+  getTransactionRecord(id: string): TransactionRecord | undefined {
+    return this.transactions.find((record) => record.id === id);
   }
 
   async invokeRest(input: RestInvokeInput): Promise<InvokeResult> {
@@ -114,10 +158,38 @@ export class ChainHubRouter {
       data,
     };
   }
+
+  private recordTransaction(input: {
+    route: "rest-api" | "solana-program";
+    protocolId: string;
+    capability: string;
+    startedAt: number;
+    success: boolean;
+    error?: string;
+  }): void {
+    const finishedAt = Date.now();
+    this.sequence += 1;
+    this.transactions.push({
+      id: `tx-${this.sequence}`,
+      route: input.route,
+      protocolId: input.protocolId,
+      capability: input.capability,
+      startedAt: new Date(input.startedAt).toISOString(),
+      finishedAt: new Date(finishedAt).toISOString(),
+      durationMs: Math.max(0, finishedAt - input.startedAt),
+      success: input.success,
+      error: input.error,
+    });
+  }
 }
 
 function ensureProtocolActive(status: "active" | "paused"): void {
   if (status !== "active") {
     throw new InvokeRouteError(`Protocol is not active: ${status}`);
   }
+}
+
+function parseSequence(id: string): number {
+  const maybeNumber = Number(id.replace("tx-", ""));
+  return Number.isFinite(maybeNumber) ? maybeNumber : 0;
 }

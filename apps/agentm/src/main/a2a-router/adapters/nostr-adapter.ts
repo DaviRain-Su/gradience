@@ -90,6 +90,18 @@ export class NostrAdapter implements ProtocolAdapter {
     // ============ Messaging ============
 
     async send(message: A2AMessage): Promise<A2AResult> {
+        // Return error if no relays configured
+        if (!this.options.relays || this.options.relays.length === 0) {
+            return {
+                success: false,
+                messageId: message.id,
+                protocol: 'nostr',
+                error: 'No relays configured',
+                errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
+                timestamp: Date.now(),
+            };
+        }
+
         try {
             // For Nostr, we need the recipient's Nostr pubkey
             // This should be looked up from the agent's profile
@@ -134,6 +146,14 @@ export class NostrAdapter implements ProtocolAdapter {
     async subscribe(
         handler: (message: A2AMessage) => void | Promise<void>
     ): Promise<ProtocolSubscription> {
+        // Return dummy subscription if no relays configured
+        if (!this.options.relays || this.options.relays.length === 0) {
+            return {
+                protocol: 'nostr',
+                unsubscribe: async () => {},
+            };
+        }
+
         this.messageHandler = handler;
 
         // Subscribe to DMs

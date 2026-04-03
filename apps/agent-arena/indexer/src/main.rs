@@ -200,6 +200,44 @@ struct ReputationApi {
     updated_slot: i64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AgentProfileLinksApi {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    website: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    github: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct AgentProfileApi {
+    agent: String,
+    display_name: String,
+    bio: String,
+    links: AgentProfileLinksApi,
+    onchain_ref: Option<String>,
+    publish_mode: String,
+    updated_at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct AgentProfileSyncRequest {
+    agent: String,
+    #[serde(default)]
+    display_name: Option<String>,
+    #[serde(default)]
+    bio: Option<String>,
+    #[serde(default)]
+    links: Option<AgentProfileLinksApi>,
+    #[serde(default)]
+    onchain_ref: Option<String>,
+    #[serde(default)]
+    publish_mode: Option<String>,
+    #[serde(default)]
+    updated_at: Option<i64>,
+}
+
 #[derive(Debug, Serialize)]
 struct JudgePoolEntryApi {
     judge: String,
@@ -429,6 +467,7 @@ async fn main() -> Result<()> {
         .route("/webhook/triton", post(handle_events_webhook_triton))
         .route("/webhook/helius", post(handle_events_webhook_helius))
         .route("/webhook/events", post(handle_events_webhook_generic))
+        .route("/webhook/profile-sync", post(handle_profile_sync))
         .route("/ws", get(handle_ws))
         .route("/ws/tasks", get(handle_ws))
         .route("/api/tasks", get(get_tasks))
@@ -437,6 +476,7 @@ async fn main() -> Result<()> {
             "/api/tasks/{task_id}/submissions",
             get(get_task_submissions),
         )
+        .route("/api/agents/{pubkey}/profile", get(get_agent_profile))
         .route("/api/agents/{pubkey}/reputation", get(get_agent_reputation))
         .route("/api/reputation/{agent}", get(get_agent_reputation_legacy))
         .route("/api/judge-pool/{category}", get(get_judge_pool))
@@ -516,6 +556,47 @@ async fn handle_events_webhook_for_source(
     state.metrics.record_envelopes(&envelopes, processed_events);
     publish_ws_events(&state, &envelopes);
     Ok(Json(IngestResponse { processed_events }))
+}
+
+async fn handle_profile_sync(
+    State(state): State<AppState>,
+    Json(payload): Json<AgentProfileSyncRequest>,
+) -> Result<Json<AgentProfileApi>, ApiError> {
+    let agent = payload.agent.trim();
+    if agent.is_empty() {
+        return Err(ApiError::bad_request("agent is required"));
+    }
+
+    let links = payload.links.unwrap_or(AgentProfileLinksApi {
+        website: None,
+        github: None,
+        x: None,
+    });
+    let display_name = payload
+        .display_name
+        .unwrap_or_else(|| agent.to_string())
+        .trim()
+        .to_string();
+    let publish_mode = normalize_publish_mode(payload.publish_mode.as_deref())?;
+    let updated_at = payload.updated_at.unwrap_or_else(now_unix_timestamp);
+
+    let mut db = state.db.lock().await;
+    let profile = db
+        .upsert_agent_profile(crate::db::AgentProfileSyncInput {
+            agent: agent.to_string(),
+            display_name,
+            bio: payload.bio.unwrap_or_default(),
+            website: links.website,
+            github: links.github,
+            x: links.x,
+            onchain_ref: payload.onchain_ref,
+            publish_mode,
+            updated_at,
+        })
+        .await
+        .map_err(internal_api_error)?;
+
+    Ok(Json(map_profile(profile)))
 }
 
 async fn handle_ws(
@@ -606,6 +687,13 @@ async fn get_agent_reputation(
     fetch_reputation(state, pubkey).await
 }
 
+async fn get_agent_profile(
+    State(state): State<AppState>,
+    AxumPath(pubkey): AxumPath<String>,
+) -> Result<Json<AgentProfileApi>, ApiError> {
+    fetch_profile(state, pubkey).await
+}
+
 async fn get_agent_reputation_legacy(
     State(state): State<AppState>,
     AxumPath(agent): AxumPath<String>,
@@ -634,6 +722,16 @@ async fn fetch_reputation(state: AppState, agent: String) -> Result<Json<Reputat
         .map_err(internal_api_error)?
         .ok_or_else(|| ApiError::not_found(format!("reputation for {agent} not found")))?;
     Ok(Json(map_reputation(rep)))
+}
+
+async fn fetch_profile(state: AppState, agent: String) -> Result<Json<AgentProfileApi>, ApiError> {
+    let mut db = state.db.lock().await;
+    let profile = db
+        .get_agent_profile(&agent)
+        .await
+        .map_err(internal_api_error)?
+        .ok_or_else(|| ApiError::not_found(format!("profile for {agent} not found")))?;
+    Ok(Json(map_profile(profile)))
 }
 
 async fn replay_mock_file(state: &AppState, file_path: &str) -> Result<()> {
@@ -951,6 +1049,43 @@ fn map_judge_pool(entry: crate::db::JudgePoolRow) -> JudgePoolEntryApi {
     }
 }
 
+fn map_profile(profile: crate::db::AgentProfileRow) -> AgentProfileApi {
+    AgentProfileApi {
+        agent: profile.agent,
+        display_name: profile.display_name,
+        bio: profile.bio,
+        links: AgentProfileLinksApi {
+            website: profile.website,
+            github: profile.github,
+            x: profile.x,
+        },
+        onchain_ref: profile.onchain_ref,
+        publish_mode: profile.publish_mode,
+        updated_at: profile.updated_at,
+    }
+}
+
+fn normalize_publish_mode(mode: Option<&str>) -> Result<String, ApiError> {
+    match mode.map(str::trim).filter(|value| !value.is_empty()) {
+        None => Ok("manual".to_string()),
+        Some("manual") => Ok("manual".to_string()),
+        Some("git-sync") => Ok("git-sync".to_string()),
+        Some(other) => Err(ApiError::bad_request(format!(
+            "invalid publish_mode: {other} (expected manual|git-sync)"
+        ))),
+    }
+}
+
+fn now_unix_timestamp() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    now as i64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1239,5 +1374,56 @@ mod tests {
             Err(broadcast::error::TryRecvError::Empty)
         ));
         assert_eq!(metrics.snapshot().ws_events_published_total, 3);
+    }
+
+    #[test]
+    fn map_profile_preserves_expected_fields() {
+        let mapped = map_profile(crate::db::AgentProfileRow {
+            agent: "agent-1".to_string(),
+            display_name: "Agent One".to_string(),
+            bio: "hello".to_string(),
+            website: Some("https://example.com".to_string()),
+            github: Some("https://github.com/example".to_string()),
+            x: None,
+            onchain_ref: Some("cid://profile".to_string()),
+            publish_mode: "manual".to_string(),
+            updated_at: 1_710_000_000,
+        });
+
+        assert_eq!(mapped.agent, "agent-1");
+        assert_eq!(mapped.display_name, "Agent One");
+        assert_eq!(mapped.links.website.as_deref(), Some("https://example.com"));
+        assert_eq!(mapped.links.github.as_deref(), Some("https://github.com/example"));
+        assert!(mapped.links.x.is_none());
+        assert_eq!(mapped.onchain_ref.as_deref(), Some("cid://profile"));
+        assert_eq!(mapped.publish_mode, "manual");
+        assert_eq!(mapped.updated_at, 1_710_000_000);
+    }
+
+    #[test]
+    fn normalize_publish_mode_accepts_supported_values() {
+        assert_eq!(
+            normalize_publish_mode(None).expect("default should be manual"),
+            "manual"
+        );
+        assert_eq!(
+            normalize_publish_mode(Some("manual")).expect("manual should be accepted"),
+            "manual"
+        );
+        assert_eq!(
+            normalize_publish_mode(Some("git-sync")).expect("git-sync should be accepted"),
+            "git-sync"
+        );
+    }
+
+    #[test]
+    fn normalize_publish_mode_rejects_invalid_values() {
+        let err = normalize_publish_mode(Some("auto"))
+            .expect_err("unsupported publish mode should fail");
+        assert_eq!(err.status, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            err.message,
+            "invalid publish_mode: auto (expected manual|git-sync)"
+        );
     }
 }

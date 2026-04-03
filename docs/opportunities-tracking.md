@@ -14,7 +14,7 @@
 | **金额** | 待定 (建议 $50k-$150k) |
 | **状态** | 已准备申请材料，待提交 |
 | **截止日期** | 滚动申请 |
-| **文档** | [beam-grant-application.md](/beam-grant-application.md) |
+| **文档** | [beam-grant-application.md](/docs/grants/beam-grant-application.md) |
 
 **核心定位**:  
 "为 Beam 游戏生态提供 AI Agent 经济基础设施"
@@ -143,7 +143,7 @@
 ### 项目文档
 - 白皮书: [protocol/WHITEPAPER.md](/protocol/WHITEPAPER.md)
 - 协议方 Agent 模型: [protocol/design/protocol-provider-agent-model.md](/protocol/design/protocol-provider-agent-model.md)
-- Beam Grant 申请: [beam-grant-application.md](/beam-grant-application.md)
+- Beam Grant 申请: [beam-grant-application.md](/docs/grants/beam-grant-application.md)
 
 ### 外部资源
 - Beam Grant: https://grants.onbeam.com/

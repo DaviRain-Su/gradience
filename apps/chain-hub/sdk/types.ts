@@ -45,6 +45,26 @@ export interface InvokeResult {
   data: unknown;
 }
 
+export interface TransactionRecord {
+  id: string;
+  route: ProtocolType;
+  protocolId: string;
+  capability: string;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface TransactionQuery {
+  protocolId?: string;
+  capability?: string;
+  route?: ProtocolType;
+  success?: boolean;
+  limit?: number;
+}
+
 export interface CpiInvoker {
   invoke(input: {
     programId: string;

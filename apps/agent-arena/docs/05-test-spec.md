@@ -75,20 +75,20 @@ just test
 | 场景                                                                                                | 对应测试  |
 | --------------------------------------------------------------------------------------------------- | --------- |
 | initialize：首次初始化成功                                                                          | test_t19a |
-| initialize：重复初始化应 Err                                                                        | ❌ 缺失   |
+| initialize：重复初始化应 Err                                                                        | ✅ test_t19a |
 | post_task：designated 模式                                                                          | test_t19a |
 | post_task：pool 模式                                                                                | test_t19a |
-| post_task：reward=0 应 Err                                                                          | ❌ 缺失   |
+| post_task：reward=0 应 Err                                                                          | ✅ test_t19_error_boundaries |
 | apply_for_task：首次申请成功                                                                        | test_t19b |
-| apply_for_task：重复申请应 Err                                                                      | ❌ 缺失   |
+| apply_for_task：重复申请应 Err                                                                      | ✅ test_t19_error_boundaries |
 | submit_result：正常提交                                                                             | test_t19b |
 | judge_and_pay：95/3/2 费用分拆精确验证                                                              | test_t19c |
-| judge_and_pay：score < MIN_SCORE → 走 Refund 路径（task.state = Refunded，奖励退回 poster），非 Err | ❌ 缺失   |
+| judge_and_pay：score < MIN_SCORE → 走 Refund 路径（task.state = Refunded，奖励退回 poster），非 Err | ✅ test_t19c + test_t56_boundary |
 | cancel_task：poster 主动取消，收取 2%                                                               | test_t19d |
 | refund_expired：deadline 后退款                                                                     | test_t19d |
 | force_refund：judge_deadline+7天后触发                                                              | test_t19d |
 | register_judge：质押成功                                                                            | test_t19a |
-| unstake_judge：7天冷却期内应 Err                                                                    | ❌ 缺失   |
+| unstake_judge：7天冷却期内应 Err                                                                    | ✅ test_t19_error_boundaries |
 
 ### 应覆盖（P1，待补充）
 
@@ -118,10 +118,10 @@ just test
 
 | 优先级 | 缺失测试                | 建议位置       |
 | ------ | ----------------------- | -------------- |
-| P0     | initialize 重复初始化   | test_t19a 追加 |
-| P0     | post_task reward=0 边界 | test_t19a 追加 |
-| P0     | score < MIN_SCORE 拒绝  | test_t19c 追加 |
-| P0     | apply 重复申请          | test_t19b 追加 |
-| P0     | unstake 冷却期校验      | 新建 test_t19e |
+| ~~P0~~ | ~~initialize 重复初始化~~ | ✅ test_t19a (t19a_s1b) |
+| ~~P0~~ | ~~post_task reward=0 边界~~ | ✅ test_t19_error_boundaries |
+| ~~P0~~ | ~~score < MIN_SCORE 拒绝~~ | ✅ test_t19c + test_t56_boundary |
+| ~~P0~~ | ~~apply 重复申请~~ | ✅ test_t19_error_boundaries |
+| ~~P0~~ | ~~unstake 冷却期校验~~ | ✅ test_t19_error_boundaries |
 | P1     | Token-2022 支付路径     | 新建 test_t19f |
 | P1     | 越权操作安全测试        | 新建 test_t19g |

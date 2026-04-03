@@ -49,6 +49,7 @@ test("relay runtime config resolves profile and env overrides", () => {
     A2A_RELAY_PORT: "4500",
     A2A_RELAY_STORE_MODE: "memory",
     A2A_RELAY_AUTH_TOKEN: "my-token",
+    A2A_RELAY_TRANSPORT_ENCRYPTION_KEY: "relay-secret",
     A2A_RELAY_ALERT_MAX_REJECTED_PAYLOADS: "11",
     A2A_RELAY_ALERT_WEBHOOK_URL: "https://example.com/webhook",
     A2A_RELAY_ALERT_SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/test",
@@ -81,6 +82,7 @@ test("relay runtime config resolves profile and env overrides", () => {
   assert.equal(resolved.port, 4500);
   assert.equal(resolved.storeMode, "memory");
   assert.equal(resolved.authToken, "my-token");
+  assert.equal(resolved.transportEncryptionKey, "relay-secret");
   assert.equal(resolved.alertThresholds.maxRejectedPayloads, 11);
   assert.equal(resolved.alertWebhookUrl, "https://example.com/webhook");
   assert.equal(

@@ -1,4 +1,5 @@
 use chain_hub::{
+    errors::ChainHubError,
     instructions::{RegisterProtocolData, SetSkillStatusData, UpdateProtocolStatusData},
     state::{
         ProtocolEntry, ProtocolRegistry, ProtocolStatus, SkillEntry, SkillRegistry, SkillStatus,
@@ -7,8 +8,10 @@ use chain_hub::{
     },
 };
 use solana_sdk::{
+    instruction::InstructionError,
     instruction::{AccountMeta, Instruction},
     signature::Signer,
+    transaction::TransactionError,
 };
 use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 
@@ -128,4 +131,80 @@ fn test_protocol_register_and_pause() {
         decode_padded(&protocol_registry_account.data, PROTOCOL_REGISTRY_DISCRIMINATOR);
     assert_eq!(registry.total_registered, 1);
     assert_eq!(registry.total_active, 0);
+}
+
+#[test]
+fn test_protocol_register_rejects_zero_capability_mask() {
+    let mut ctx = TestContext::new();
+    initialize(&mut ctx, solana_sdk::pubkey::Pubkey::new_unique());
+
+    let invalid_ix = Instruction {
+        program_id: chain_hub_program_id(),
+        accounts: vec![
+            AccountMeta::new(ctx.payer.pubkey(), true),
+            AccountMeta::new(derive_config_pda(), false),
+            AccountMeta::new(derive_protocol_registry_pda(), false),
+            AccountMeta::new(derive_protocol_pda("invalid-mask"), false),
+            AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
+        ],
+        data: encode_ix(
+            3,
+            &RegisterProtocolData {
+                protocol_id: "invalid-mask".to_string(),
+                protocol_type: 0,
+                trust_model: 0,
+                auth_mode: 0,
+                capabilities_mask: 0,
+                endpoint: "https://api.invalid.dev/v1".to_string(),
+                docs_uri: "https://docs.invalid.dev".to_string(),
+                program_id: [0u8; 32],
+                idl_ref: "".to_string(),
+            },
+        ),
+    };
+
+    let err = ctx.send_instruction(invalid_ix, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        TransactionError::InstructionError(_, InstructionError::Custom(code))
+            if code == ChainHubError::InvalidCapabilityMask as u32
+    ));
+}
+
+#[test]
+fn test_protocol_register_rest_requires_endpoint() {
+    let mut ctx = TestContext::new();
+    initialize(&mut ctx, solana_sdk::pubkey::Pubkey::new_unique());
+
+    let invalid_ix = Instruction {
+        program_id: chain_hub_program_id(),
+        accounts: vec![
+            AccountMeta::new(ctx.payer.pubkey(), true),
+            AccountMeta::new(derive_config_pda(), false),
+            AccountMeta::new(derive_protocol_registry_pda(), false),
+            AccountMeta::new(derive_protocol_pda("missing-endpoint"), false),
+            AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
+        ],
+        data: encode_ix(
+            3,
+            &RegisterProtocolData {
+                protocol_id: "missing-endpoint".to_string(),
+                protocol_type: 0,
+                trust_model: 0,
+                auth_mode: 0,
+                capabilities_mask: 0b1,
+                endpoint: "".to_string(),
+                docs_uri: "https://docs.invalid.dev".to_string(),
+                program_id: [0u8; 32],
+                idl_ref: "".to_string(),
+            },
+        ),
+    };
+
+    let err = ctx.send_instruction(invalid_ix, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        TransactionError::InstructionError(_, InstructionError::Custom(code))
+            if code == ChainHubError::InvalidProtocolEndpoint as u32
+    ));
 }

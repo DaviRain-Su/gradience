@@ -533,6 +533,16 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 return json(res, 200, attestations);
             }
 
+            // GET /health - Health check endpoint
+            if (method === 'GET' && path === '/health') {
+                return json(res, 200, {
+                    status: 'healthy',
+                    timestamp: Date.now(),
+                    uptime: process.uptime(),
+                    version: '0.1.0',
+                });
+            }
+
             // GET /status
             if (method === 'GET' && path === '/status') {
                 return json(res, 200, {

@@ -75,6 +75,8 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
             nostr: { available: false, peerCount: 0, subscribedTopics: [] },
             libp2p: { available: false, peerCount: 0, subscribedTopics: [] },
             magicblock: { available: false, peerCount: 0, subscribedTopics: [] },
+            webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
+            'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
         },
         totalPeers: 0,
         activeSubscriptions: 0,

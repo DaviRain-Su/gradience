@@ -25,6 +25,7 @@ export interface RelayServerOptions {
   host?: string;
   port?: number;
   authToken?: string;
+  transportEncryptionKey?: string;
   maxPayloadBytes?: number;
   maxPaymentMicrolamports?: bigint;
   httpMaxBodyBytes?: number;
@@ -81,6 +82,7 @@ export async function startRelayServer(
     }));
   const relay = new A2ARelayApi(store, {
     authToken: options.authToken,
+    transportEncryptionKey: options.transportEncryptionKey,
     maxPayloadBytes: options.maxPayloadBytes,
     maxPaymentMicrolamports: options.maxPaymentMicrolamports,
   });

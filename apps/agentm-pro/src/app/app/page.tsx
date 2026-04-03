@@ -19,6 +19,9 @@ const StatsView = dynamic(() => import('@/views/StatsView').then((module) => mod
 const SettingsView = dynamic(() => import('@/views/SettingsView').then((module) => module.SettingsView), {
     loading: () => <ViewLoading label="Loading Settings..." />,
 });
+const OWSView = dynamic(() => import('@/views/OWSView').then((module) => module.OWSView), {
+    loading: () => <ViewLoading label="Loading Wallet..." />,
+});
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '';
 
@@ -105,6 +108,8 @@ function renderView(activeView: ActiveView, owner: string): ReactNode {
             return <ProfilesView owner={owner} />;
         case 'stats':
             return <StatsView owner={owner} />;
+        case 'wallet':
+            return <OWSView />;
         case 'settings':
             return <SettingsView />;
         default:

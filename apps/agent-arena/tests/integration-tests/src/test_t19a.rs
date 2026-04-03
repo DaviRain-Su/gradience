@@ -3,7 +3,11 @@ use gradience::{
     events::EVENT_IX_TAG_LE,
     state::{JudgeMode, TaskState},
 };
-use gradience_client::{errors::GradienceError, instructions::PostTaskBuilder, GRADIENCE_ID};
+use gradience_client::{
+    errors::GradienceError,
+    instructions::{InitializeBuilder, PostTaskBuilder},
+    GRADIENCE_ID,
+};
 use litesvm::types::TransactionMetadata;
 use solana_sdk::{instruction::InstructionError, signature::Signer};
 
@@ -36,6 +40,25 @@ fn t19a_s1_initialize_bootstraps_core_state() {
         ctx.get_account(&core.event_authority).is_none(),
         "event_authority is PDA signer and should not require backing account",
     );
+}
+
+#[test]
+fn t19a_s1b_reinitialize_should_fail() {
+    let mut ctx = TestContext::new();
+    let payer = ctx.payer.pubkey();
+    let core = initialize_program(&mut ctx, &payer, 1_000_000_000);
+
+    // Attempt to initialize again with different params — should fail with AccountAlreadyInitialized
+    let ix = InitializeBuilder::new()
+        .payer(payer)
+        .config(core.config)
+        .treasury(core.treasury)
+        .upgrade_authority(*payer.as_array())
+        .min_judge_stake(2_000_000_000)
+        .instruction();
+
+    let err = ctx.send_transaction_expect_error(ix, &[]);
+    assert_instruction_error(err, InstructionError::AccountAlreadyInitialized);
 }
 
 #[test]
