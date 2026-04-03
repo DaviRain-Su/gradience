@@ -165,6 +165,7 @@ program
             isNew = true;
         }
 
+        // NOTE: pubkey is the PUBLIC KEY derived from keypair, safe to display
         const pubkey = bs58.encode(keypair.publicKey);
 
         // Save master wallet to config
@@ -408,6 +409,7 @@ program
             }
             const raw = readFileSync(keyPath, 'utf-8').trim();
             const keypair = nacl.sign.keyPair.fromSecretKey(bs58.decode(raw));
+            // NOTE: pubkey is the PUBLIC KEY, safe to display. Private key remains in file only.
             pubkey = bs58.encode(keypair.publicKey);
         }
 

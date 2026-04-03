@@ -1,3 +1,11 @@
+/**
+ * Solana Transaction Manager
+ * 
+ * NOTE: All publicKey references in this file are Solana PUBLIC KEYS (addresses),
+ * not private keys. Private keys are managed securely by KeyManager and never
+ * exposed in this file.
+ */
+
 import {
     Connection,
     PublicKey,
