@@ -1,8 +1,24 @@
 # Gradience 系统集成架构
 
-> **文档状态**: v0.1 Draft
+> **文档状态**: v0.2 Draft
 > **创建日期**: 2026-03-30
+> **更新日期**: 2026-04-04
 > **目的**: 定义内核与所有模块之间的集成关系、数据流、依赖方向
+
+---
+
+## 0. 四层协议架构
+
+```
+Layer 4: 互操作层   Google A2A + MCP
+Layer 3: 发现层     Nostr NIP-89/90 (去中心化 Agent/Skill 发现)
+Layer 2: 通信层     XMTP MLS E2E (Agent 间加密消息)
+Layer 1: 结算层     Solana (Home) + EVM Guest Chains
+         ├── MagicBlock ER/PER/VRF (Solana 可选增强)
+         ├── x402/OWS 微支付
+         └── Wormhole / LayerZero (跨链)
+Layer 0: 协议内核   Escrow + Judge + Reputation (链无关)
+```
 
 ---
 
@@ -57,8 +73,8 @@
 | **Agent Layer** | 结算 + 信誉 + Stake | 链上任务状态、信誉分数 | Solana Runtime |
 | **Chain Hub** | 工具接入 + Skill 市场 | Skill 注册表、协议注册表 | Agent Layer（信誉验证） |
 | **AgentM** | 用户入口 + 个人 Agent | AgentSoul（本地） | Agent Layer（参与任务） |
-| **AgentM** | 发现 + 匹配 | 社交图谱、兼容性评分 | Agent Layer（信誉数据） |
-| **A2A Protocol** | Agent 间通信 + 微支付 | 消息、通道状态 | Agent Layer（结算层） |
+| **Nostr Discovery** | 发现 + 匹配 (NIP-89/90) | 社交图谱、兼容性评分 | Agent Layer（信誉数据） |
+| **A2A Protocol** | Agent 间通信 (XMTP) + 微支付 | XMTP 消息、通道状态 | Agent Layer（结算层） |
 
 ---
 
@@ -81,7 +97,11 @@ flowchart TB
     
     subgraph Modules["模块层"]
         ChainHub["Chain Hub<br/>Skill 市场 + 工具"]
-        Social["AgentM<br/>发现 + 匹配"]
+        NostrDiscovery["Nostr Discovery<br/>NIP-89/90 发现 + 匹配"]
+    end
+    
+    subgraph Communication["通信层"]
+        XMTP["XMTP<br/>MLS E2E 加密消息"]
     end
     
     subgraph Kernel["内核层"]
@@ -90,7 +110,7 @@ flowchart TB
     
     subgraph Infra["基础设施"]
         Solana["Solana"]
-        Indexer["Indexer<br/>(CF Workers + D1)"]
+        Nostr["Nostr Relays<br/>(去中心化发现)"]
         Storage["存储<br/>(Arweave / Avail)"]
     end
     
@@ -101,14 +121,15 @@ flowchart TB
     
     SDK --> AgentLayer
     SDK --> ChainHub
-    SDK --> Social
+    SDK --> NostrDiscovery
+    SDK --> XMTP
     CLI --> SDK
     
     ChainHub -->|"查询信誉"| AgentLayer
-    Social -->|"读取信誉"| AgentLayer
+    NostrDiscovery -->|"读取信誉"| AgentLayer
     
     AgentLayer --> Solana
-    AgentLayer -->|"events"| Indexer
+    NostrDiscovery --> Nostr
     AgentLayer -->|"evaluationCID"| Storage
 ```
 
@@ -120,12 +141,12 @@ flowchart TB
 1. 任务创建
    Human → AgentM → SDK → postTask() → Solana
                                   │
-                                  ├─→ Indexer 记录事件
+                                  ├─→ Nostr 发布任务事件 (NIP-90 DVM)
                                   └─→ evaluationCID → Arweave
 
 2. Agent 发现任务
-   Indexer → SDK → AgentM (展示可用任务)
-                 → AgentM (推荐匹配的 Agent)
+   Nostr Relay (NIP-89/90) → SDK → AgentM (展示可用任务)
+                                    → Nostr Discovery (推荐匹配的 Agent)
 
 3. Agent 竞争
    Agent → SDK → submitResult() → Solana
@@ -140,12 +161,12 @@ flowchart TB
                         ├─→ 2% → Protocol Treasury
                         │
                         ├─→ 信誉更新（链上）
-                        ├─→ Indexer 记录
+                        ├─→ Nostr 事件广播
                         └─→ ERC-8004 反馈（可选）
 
 5. 信誉消费
    Chain Hub → 读取信誉 → Skill 定价/验证
-   AgentM → 读取信誉 → Agent 匹配
+   Nostr Discovery → 读取信誉 → Agent 匹配
    其他协议 → 读取 ERC-8004 → 跨协议信誉
 ```
 
@@ -217,32 +238,32 @@ flowchart TB
   acquireSkill(skillId) → tx
 ```
 
-### 3.3 Agent Layer ↔ AgentM
+### 3.3 Agent Layer ↔ Nostr Discovery (NIP-89/90)
 
 ```
 集成点:
 
-1. 信誉匹配（AgentM → Agent Layer）
-   AgentM 基于信誉数据匹配 Agent
+1. 信誉匹配（Nostr Discovery → Agent Layer）
+   Nostr Discovery 通过 NIP-89/90 DVM 基于信誉数据匹配 Agent
    → 读取所有 Agent 的信誉
    → 计算兼容性分数
 
-2. Judge 发现（AgentM → Agent Layer）
+2. Judge 发现（Nostr Discovery → Agent Layer）
    帮助 Poster 找到合适的 Judge
    → 读取 Judge 历史评判数据
    → 推荐信誉最高/最相关的 Judge
 
-3. 师徒关系（AgentM → Chain Hub）
+3. 师徒关系（Nostr Discovery → Chain Hub）
    师徒关系通过 Skill Protocol 实现
-   → AgentM 提供社交发现
+   → Nostr Discovery 提供去中心化社交发现
    → Chain Hub 处理 Skill 传承的链上逻辑
 
 数据接口:
-  // AgentM 查询匹配
+  // Nostr Discovery 查询匹配
   findAgentsForTask(taskRequirements) → Agent[]
   findJudge(skillCategory, minReputation) → Judge[]
   
-  // AgentM 社交图谱
+  // Nostr Discovery 社交图谱
   getCollaborationHistory(agentA, agentB) → History
   getSocialGraph(agent, depth) → Graph
 ```
@@ -308,14 +329,14 @@ await grad.skill.acquire(skillId);
 await grad.skill.execute(skillId, params);
 await grad.protocol.call('jupiter', 'swap', { ... });
 
-// === AgentM (发现) ===
-await grad.social.findAgents({ skill: 'defi', minScore: 80 });
-await grad.social.findJudge({ category: 'audit', minRep: 90 });
+// === Nostr Discovery (NIP-89/90) ===
+await grad.discovery.findAgents({ skill: 'defi', minScore: 80 });
+await grad.discovery.findJudge({ category: 'audit', minRep: 90 });
 
-// === A2A (未来) ===
+// === XMTP 通信 + A2A ===
+await grad.xmtp.message(partner, content);     // XMTP MLS E2E
 await grad.a2a.broadcast(subTask);
 await grad.a2a.openChannel(partner, deposit);
-await grad.a2a.message(partner, content);
 ```
 
 ### 4.2 SDK 内部架构
@@ -332,15 +353,19 @@ await grad.a2a.message(partner, content);
 │   ├── skill-registry.ts  — Skill NFT Program 交互
 │   └── payment-channel.ts — A2A 支付通道交互
 │
-├── indexer/
-│   ├── client.ts          — Indexer API 客户端
-│   └── realtime.ts        — WebSocket 实时订阅
+├── discovery/
+│   ├── nostr-client.ts    — Nostr Relay 连接 (NIP-89/90)
+│   └── dvm.ts             — DVM 任务发现与匹配
+│
+├── messaging/
+│   ├── xmtp-client.ts     — XMTP MLS E2E 消息
+│   └── conversations.ts   — Agent 间会话管理
 │
 ├── modules/
 │   ├── task.ts            — 任务管理高级接口
 │   ├── reputation.ts      — 信誉查询高级接口
 │   ├── skill.ts           — Skill 管理高级接口
-│   ├── social.ts          — 社交发现高级接口
+│   ├── discovery.ts       — Nostr 发现高级接口
 │   └── a2a.ts             — A2A 协议高级接口
 │
 └── index.ts               — 统一导出
@@ -348,100 +373,67 @@ await grad.a2a.message(partner, content);
 
 ---
 
-## 5. Indexer 数据架构
+## 5. Nostr Discovery 架构 (Layer 3: 发现层)
 
-### 5.1 Indexer 角色
+### 5.1 Nostr Discovery 角色
 
 ```
-Indexer 是协议的「只读镜像」:
-  → 监听 Solana 上 Agent Layer Program 的事件
-  → 解析并存储到结构化数据库（Cloudflare D1）
-  → 提供 REST API + WebSocket 给前端和 SDK
+Nostr Discovery 是协议的「去中心化发现层」:
+  → 基于 Nostr NIP-89 (Handler Discovery) 发现 Agent/Skill
+  → 基于 Nostr NIP-90 (DVM) 发布和发现任务
+  → 无服务器、无运维、审查抵抗
 
-Indexer 不是共识的一部分:
-  → Indexer 宕机不影响协议运行
-  → 任何人可以运行自己的 Indexer
+Nostr Relay 不是共识的一部分:
+  → Relay 宕机不影响协议运行（多 Relay 冗余）
+  → 任何人可以运行自己的 Relay
   → 链上数据是 Source of Truth
+
+相比自建 Indexer 的优势:
+  → 无需 Cloudflare Workers / D1 运维
+  → 去中心化，无单点故障
+  → 复用 Nostr 生态的现有 Relay 基础设施
+  → 天然支持实时订阅（Nostr subscription）
 ```
 
-### 5.2 数据模型
-
-```sql
--- Indexer D1 Schema
-
--- 任务
-CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,            -- Solana PDA
-  poster TEXT NOT NULL,            -- poster pubkey
-  judge TEXT NOT NULL,             -- judge pubkey
-  status TEXT NOT NULL,            -- Open | Completed | Refunded
-  reward INTEGER NOT NULL,         -- lamports
-  description TEXT,
-  evaluation_cid TEXT,
-  deadline INTEGER NOT NULL,       -- Unix timestamp
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
--- 提交
-CREATE TABLE submissions (
-  id TEXT PRIMARY KEY,
-  task_id TEXT NOT NULL REFERENCES tasks(id),
-  agent TEXT NOT NULL,
-  result_ref TEXT NOT NULL,
-  score INTEGER,                   -- NULL until judged
-  submitted_at INTEGER NOT NULL
-);
-
--- 信誉
-CREATE TABLE reputations (
-  agent TEXT PRIMARY KEY,
-  avg_score REAL DEFAULT 0,
-  completed INTEGER DEFAULT 0,
-  submitted INTEGER DEFAULT 0,
-  win_rate REAL DEFAULT 0,
-  last_active INTEGER
-);
-
--- 事件日志
-CREATE TABLE events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  tx_signature TEXT NOT NULL,
-  event_type TEXT NOT NULL,        -- TaskCreated | ResultSubmitted | TaskJudged | ...
-  data TEXT NOT NULL,              -- JSON
-  block_time INTEGER NOT NULL,
-  slot INTEGER NOT NULL
-);
-
--- 索引
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_tasks_poster ON tasks(poster);
-CREATE INDEX idx_submissions_task ON submissions(task_id);
-CREATE INDEX idx_submissions_agent ON submissions(agent);
-CREATE INDEX idx_reputations_score ON reputations(avg_score DESC);
-CREATE INDEX idx_events_type ON events(event_type);
-```
-
-### 5.3 API 端点
+### 5.2 Nostr 事件映射
 
 ```
-REST API:
+Gradience 协议事件 → Nostr 事件映射:
 
-GET  /api/tasks                    — 列出任务（分页、筛选）
-GET  /api/tasks/:id                — 任务详情
-GET  /api/tasks/:id/submissions    — 该任务的所有提交
-GET  /api/agents/:pubkey           — Agent 信息 + 信誉
-GET  /api/agents/:pubkey/history   — Agent 任务历史
-GET  /api/judges/:pubkey           — Judge 信息 + 评判历史
-GET  /api/leaderboard              — 信誉排行榜
-GET  /api/stats                    — 协议统计（总任务数、TVL 等）
+NIP-89 (Handler Discovery):
+  → Agent 注册为 Handler（kind 31990）
+  → Agent 的 Skill、信誉、能力声明
+  → 客户端通过 kind 31989 推荐 Handler
 
-WebSocket:
+NIP-90 (DVM — Data Vending Machine):
+  → 任务发布 = DVM Job Request（kind 5xxx）
+  → 任务结果 = DVM Job Result（kind 6xxx）
+  → 任务状态 = DVM Job Feedback（kind 7000）
 
-ws://indexer/ws
-  → subscribe: { type: "tasks", filter: { status: "Open" } }
-  → subscribe: { type: "agent", pubkey: "xxx" }
-  → 实时推送新任务、状态变更、信誉更新
+信誉数据:
+  → 链上信誉是 Source of Truth（Solana PDA）
+  → Nostr 上发布信誉摘要（只读镜像）
+  → 客户端可选择直接查链或读 Nostr 缓存
+```
+
+### 5.3 订阅模式
+
+```
+Nostr Subscription （替代原 WebSocket / REST API）:
+
+任务发现:
+  → 订阅 kind 5xxx (DVM Job Requests)
+  → 按 skill tag 筛选
+  → 实时接收新任务通知
+
+Agent 发现:
+  → 查询 kind 31990 (Handler 注册)
+  → 按 capability / skill 筛选
+  → 结合链上信誉排序
+
+状态更新:
+  → 订阅 kind 7000 (Job Feedback)
+  → 实时追踪任务进度
 ```
 
 ---
@@ -465,10 +457,10 @@ ws://indexer/ws
                ┌──────────┴──────────┐
                │                     │
     ┌──────────┴──────────┐  ┌──────┴────────────┐
-    │  Cloudflare         │  │  Arweave / Avail  │
+    │  Nostr + XMTP       │  │  Arweave / Avail  │
     │                     │  │                    │
-    │  Workers (Indexer)  │  │  evaluationCID     │
-    │  D1 (Database)      │  │  resultRef         │
+    │  Relays (Discovery) │  │  evaluationCID     │
+    │  XMTP (Messaging)   │  │  resultRef         │
     │  Pages (Frontend)   │  │  judgeReasonRef    │
     └─────────────────────┘  └────────────────────┘
                │
@@ -486,7 +478,7 @@ ws://indexer/ws
 ```
 Phase 1 (2026 Q2): 最小可用
   ✅ Agent Layer Program (Solana devnet)
-  ✅ Indexer (Cloudflare Workers)
+  ✅ Nostr Discovery (NIP-89/90 DVM)
   ✅ Frontend (Cloudflare Pages)
   ✅ TypeScript SDK
   ✅ CLI
@@ -502,10 +494,10 @@ Phase 3 (2026 Q4): 代币与经济
   📐 Liquidity Pool
   📐 AgentM MVP
 
-Phase 4 (2027): A2A
-  🔭 A2A 消息层
-  🔭 微支付通道
-  🔭 MagicBlock ER 集成
+Phase 4 (2027): A2A + 结算增强
+  🔭 XMTP MLS E2E 消息层
+  🔭 微支付通道 (x402/OWS)
+  🔭 MagicBlock ER/PER/VRF 结算层可选增强
   🔭 Agent 自主经济
 ```
 
@@ -529,4 +521,4 @@ Phase 4 (2027): A2A
 *系统架构的目标不是画漂亮的图，是确保每个组件知道自己该做什么、不该做什么。*
 *内核做结算。模块做一切其他。内核不变。模块可长可消。*
 
-_Gradience System Architecture v0.1 · 2026-03-30_
+_Gradience System Architecture v0.2 · 2026-04-04_

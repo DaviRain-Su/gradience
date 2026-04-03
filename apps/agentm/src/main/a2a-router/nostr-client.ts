@@ -10,7 +10,6 @@ import {
     SimplePool,
     type Event as NostrEvent,
     type Filter,
-    nip04,
 } from 'nostr-tools';
 import type { SubCloser } from 'nostr-tools/abstract-pool';
 import { generateSecretKey, getPublicKey, finalizeEvent } from 'nostr-tools/pure';
@@ -18,8 +17,6 @@ import { NOSTR_CONFIG, A2A_ERROR_CODES } from './constants.js';
 import type {
     AgentPresenceEvent,
     AgentPresenceContent,
-    EncryptedDMEvent,
-    EncryptedDMContent,
     PresenceFilter,
     NostrHealthStatus,
     RelayStatus,
@@ -152,68 +149,8 @@ export class NostrClient {
         return signedEvent.id!;
     }
 
-    /**
-     * Send encrypted DM to recipient
-     */
-    async sendDM(to: string, content: string): Promise<string> {
-        this.ensureConnected();
-
-        const encrypted = await nip04.encrypt(this.privateKey, to, content);
-
-        const event: Partial<EncryptedDMEvent> = {
-            kind: NOSTR_CONFIG.KINDS.ENCRYPTED_DM,
-            pubkey: this.pubkey,
-            created_at: Math.floor(Date.now() / 1000),
-            content: encrypted,
-            tags: [['p', to]],
-        };
-
-        const signedEvent = await this.signEvent(event);
-        await this.publishWithRetry(signedEvent);
-
-        return signedEvent.id!;
-    }
-
-    /**
-     * Subscribe to encrypted DMs
-     */
-    async subscribeDMs(callback: (event: EncryptedDMEvent) => void): Promise<NostrSubscription> {
-        this.ensureConnected();
-
-        const subId = `dm-${Date.now()}`;
-        this.activeSubscriptions.add(subId);
-
-        const filter: Filter = {
-            kinds: [NOSTR_CONFIG.KINDS.ENCRYPTED_DM],
-            '#p': [this.pubkey],
-        };
-
-        const sub = this.pool!.subscribeMany(
-            this.getConnectedRelays(),
-            filter,
-            {
-                onevent: async (event: NostrEvent) => {
-                    this.lastEventAt = Date.now();
-                    try {
-                        const dmEvent = event as EncryptedDMEvent;
-                        callback(dmEvent);
-                    } catch (error) {
-                        console.error('[NostrClient] Failed to process DM:', error);
-                    }
-                },
-                onclose: () => {
-                    this.activeSubscriptions.delete(subId);
-                },
-            }
-        );
-
-        return {
-            unsub: () => {
-                sub.close();
-                this.activeSubscriptions.delete(subId);
-            },
-        };
-    }
+    // NOTE: sendDM() and subscribeDMs() have been removed.
+    // NIP-04 DM functionality has been migrated to XMTP.
 
     /**
      * Subscribe to agent presence updates

@@ -96,14 +96,7 @@ describe('NostrClient', () => {
         });
     });
 
-    describe('sendDM', () => {
-        it('should throw if not connected', async () => {
-            await assert.rejects(
-                client.sendDM('recipient-pubkey', 'hello'),
-                /Not connected/
-            );
-        });
-    });
+    // sendDM tests removed — DM functionality migrated to XMTP
 
     describe('health', () => {
         it('should return disconnected status before connect', () => {

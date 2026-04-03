@@ -51,8 +51,8 @@ describe('NostrAdapter', () => {
         });
     });
 
-    describe('Messaging', () => {
-        it('should fail to send when not initialized', async () => {
+    describe('Messaging (discovery-only)', () => {
+        it('should reject send with discovery-only error', async () => {
             const result = await adapter.send({
                 id: 'test-1',
                 from: 'sender',
@@ -63,10 +63,10 @@ describe('NostrAdapter', () => {
             });
 
             assert.strictEqual(result.success, false);
-            assert.ok(result.error);
+            assert.ok(result.error?.includes('discovery-only'));
         });
 
-        it('should return dummy subscription when not initialized', async () => {
+        it('should return no-op subscription', async () => {
             const subscription = await adapter.subscribe(() => {});
             assert.strictEqual(subscription.protocol, 'nostr');
             assert.ok(typeof subscription.unsubscribe === 'function');

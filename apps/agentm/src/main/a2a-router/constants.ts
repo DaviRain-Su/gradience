@@ -21,8 +21,7 @@ export const NOSTR_CONFIG = {
         AGENT_PRESENCE: 10002,
         /** Agent capability declaration */
         AGENT_CAPABILITY: 10003,
-        /** Encrypted direct message (NIP-04) */
-        ENCRYPTED_DM: 4,
+        // ENCRYPTED_DM (kind 4) removed — DM functionality migrated to XMTP
         /** Reputation proof */
         REPUTATION_PROOF: 10004,
     },

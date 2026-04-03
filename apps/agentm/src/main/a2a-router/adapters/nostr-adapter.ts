@@ -1,7 +1,8 @@
 /**
- * Nostr Protocol Adapter
+ * Nostr Protocol Adapter — Discovery Layer Only
  *
- * Adapter for Nostr protocol in A2A Router
+ * Nostr is used exclusively for agent discovery (presence, capabilities, reputation).
+ * Direct messaging (DM) functionality has been migrated to XMTP.
  *
  * @module a2a-router/adapters/nostr-adapter
  */
@@ -31,9 +32,7 @@ export class NostrAdapter implements ProtocolAdapter {
     private options: NostrAdapterOptions;
     private subscriptions: ProtocolSubscription[] = [];
     private discoveredAgents: Map<string, AgentInfo> = new Map();
-    private messageHandler?: (message: A2AMessage) => void | Promise<void>;
     private presenceSubscription?: { unsub: () => void };
-    private dmSubscription?: { unsub: () => void };
 
     constructor(options: NostrAdapterOptions = {}) {
         this.options = {
@@ -58,7 +57,7 @@ export class NostrAdapter implements ProtocolAdapter {
             await this.startDiscovery();
         }
 
-        console.log('[NostrAdapter] Initialized');
+        console.log('[NostrAdapter] Initialized (discovery-only mode)');
     }
 
     async shutdown(): Promise<void> {
@@ -66,11 +65,6 @@ export class NostrAdapter implements ProtocolAdapter {
         if (this.presenceSubscription) {
             this.presenceSubscription.unsub();
             this.presenceSubscription = undefined;
-        }
-
-        if (this.dmSubscription) {
-            this.dmSubscription.unsub();
-            this.dmSubscription = undefined;
         }
 
         await this.client.disconnect();
@@ -88,99 +82,28 @@ export class NostrAdapter implements ProtocolAdapter {
     }
 
     // ============ Messaging ============
+    // NOTE: Nostr adapter is discovery-only. DM functionality has been migrated to XMTP.
+    // send() and subscribe() return errors/no-ops as Nostr is no longer used for messaging.
 
     async send(message: A2AMessage): Promise<A2AResult> {
-        // Return error if no relays configured
-        if (!this.options.relays || this.options.relays.length === 0) {
-            return {
-                success: false,
-                messageId: message.id,
-                protocol: 'nostr',
-                error: 'No relays configured',
-                errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
-                timestamp: Date.now(),
-            };
-        }
-
-        try {
-            // For Nostr, we need the recipient's Nostr pubkey
-            // This should be looked up from the agent's profile
-            const recipientPubkey = await this.lookupNostrPubkey(message.to);
-
-            if (!recipientPubkey) {
-                return {
-                    success: false,
-                    messageId: message.id,
-                    protocol: 'nostr',
-                    error: `Recipient ${message.to} does not have a Nostr pubkey`,
-                    errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
-                    timestamp: Date.now(),
-                };
-            }
-
-            // Send encrypted DM
-            const eventId = await this.client.sendDM(
-                recipientPubkey,
-                JSON.stringify(message)
-            );
-
-            return {
-                success: true,
-                messageId: message.id,
-                protocol: 'nostr',
-                timestamp: Date.now(),
-            };
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            return {
-                success: false,
-                messageId: message.id,
-                protocol: 'nostr',
-                error: err.message,
-                errorCode: A2A_ERROR_CODES.PROTOCOL_SEND_FAILED,
-                timestamp: Date.now(),
-            };
-        }
+        return {
+            success: false,
+            messageId: message.id,
+            protocol: 'nostr',
+            error: 'Nostr adapter is discovery-only. Use XMTP for direct messaging.',
+            errorCode: A2A_ERROR_CODES.PROTOCOL_NOT_AVAILABLE,
+            timestamp: Date.now(),
+        };
     }
 
     async subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
+        _handler: (message: A2AMessage) => void | Promise<void>
     ): Promise<ProtocolSubscription> {
-        // Return dummy subscription if no relays configured
-        if (!this.options.relays || this.options.relays.length === 0) {
-            return {
-                protocol: 'nostr',
-                unsubscribe: async () => {},
-            };
-        }
-
-        this.messageHandler = handler;
-
-        // Subscribe to DMs
-        this.dmSubscription = await this.client.subscribeDMs((event) => {
-            try {
-                const message = JSON.parse(event.content) as A2AMessage;
-                // Verify the message is intended for us
-                if (message.to === this.getOwnAddress()) {
-                    handler(message);
-                }
-            } catch (error) {
-                console.error('[NostrAdapter] Failed to parse DM:', error);
-            }
-        });
-
-        const subscription: ProtocolSubscription = {
+        // Nostr adapter is discovery-only; return a no-op subscription
+        return {
             protocol: 'nostr',
-            unsubscribe: async () => {
-                if (this.dmSubscription) {
-                    this.dmSubscription.unsub();
-                    this.dmSubscription = undefined;
-                }
-            },
+            unsubscribe: async () => {},
         };
-
-        this.subscriptions.push(subscription);
-        return subscription;
     }
 
     // ============ Discovery ============
@@ -262,7 +185,7 @@ export class NostrAdapter implements ProtocolAdapter {
         return {
             available: nostrHealth.connected,
             peerCount: nostrHealth.relayCount,
-            subscribedTopics: nostrHealth.activeSubscriptions > 0 ? ['agent-discovery', 'dm'] : [],
+            subscribedTopics: nostrHealth.activeSubscriptions > 0 ? ['agent-discovery'] : [],
             lastActivityAt: nostrHealth.lastEventAt,
         };
     }
@@ -294,24 +217,5 @@ export class NostrAdapter implements ProtocolAdapter {
                 }
             }
         );
-    }
-
-    private async lookupNostrPubkey(solanaAddress: string): Promise<string | null> {
-        // First check our discovered agents
-        const agent = this.discoveredAgents.get(solanaAddress);
-        if (agent?.nostrPubkey) {
-            return agent.nostrPubkey;
-        }
-
-        // Otherwise query from relays
-        const agents = await this.discoverAgents({ limit: 100 });
-        const found = agents.find(a => a.address === solanaAddress);
-        return found?.nostrPubkey ?? null;
-    }
-
-    private getOwnAddress(): string {
-        // This should return the agent's Solana address
-        // For now, return a placeholder
-        return this.client.getPublicKey();
     }
 }

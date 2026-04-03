@@ -35,28 +35,8 @@ export interface AgentPresenceContent {
     endpoint?: string;       // Optional: libp2p multiaddr
 }
 
-/**
- * Encrypted DM event (kind 4)
- * nip-04 encrypted direct message
- */
-export interface EncryptedDMEvent {
-    kind: 4;
-    pubkey: string;  // Sender
-    created_at: number;
-    content: string;  // nip-04 encrypted
-    tags: [['p', string]];  // Recipient pubkey
-    id?: string;
-    sig?: string;
-}
-
-/**
- * Decrypted content of DM
- */
-export interface EncryptedDMContent {
-    type: 'NEGOTIATION' | 'CHAT' | 'SYSTEM';
-    payload: unknown;
-    timestamp: number;
-}
+// NOTE: EncryptedDMEvent and EncryptedDMContent have been removed.
+// NIP-04 DM functionality has been migrated to XMTP.
 
 /**
  * Agent capability event (kind 10003)

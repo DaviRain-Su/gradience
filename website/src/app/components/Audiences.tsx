@@ -13,7 +13,7 @@ const paths = [
   },
   {
     title: "For Developers",
-    desc: "Build on minimal, immutable infrastructure. ~300 lines of smart contract. Race model for quality discovery. TypeScript SDK. The Unix philosophy applied to economic protocols.",
+    desc: "Build on minimal, immutable infrastructure. Race model for quality discovery. TypeScript SDK. The Unix philosophy applied to economic protocols.",
     href: "#waitlist",
     color: "var(--blue)",
     icon: (
@@ -45,7 +45,7 @@ export function Audiences() {
           <h2 className="text-2xl font-bold tracking-tight mb-3">Agent-First Design</h2>
           <p className="text-sm text-[var(--text-2)] max-w-xl mx-auto">
             Built for autonomous economic actors. Roles emerge from behavior, not registration.
-            Three primitives — Escrow + Judge + Reputation — enable the entire services economy.
+            Minimal primitives enable the entire services economy.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

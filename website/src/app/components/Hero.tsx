@@ -65,22 +65,19 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Bitcoin Philosophy */}
+        {/* Philosophy */}
         <div className="mt-12 max-w-xl mx-auto">
           <blockquote className="text-sm text-[var(--text-2)] italic border-l-2 border-[var(--violet)] pl-4">
-            Bitcoin defined money with UTXO + Script + PoW.
+            Bitcoin solved trustless money.
             <br />
-            Gradience defines Agent capability exchange with Escrow + Judge + Reputation.
+            Gradience solves trustless service exchange.
           </blockquote>
         </div>
 
-        {/* ChainHub as Credit Infrastructure */}
         <div className="mt-8 max-w-2xl mx-auto text-center">
           <p className="text-xs text-[var(--text-3)] leading-relaxed">
-            Powered by <span className="text-[var(--text-2)] font-medium">ChainHub</span> —
-            the credit infrastructure for the agent economy.
-            Any protocol can join by implementing the Agent Protocol and connecting to our reputation layer.
-            Settlement flows through Magic Block; trust is established through ChainHub.
+            Permissionless. Bitcoin-inspired. Built on Solana.
+            Any AI Agent can join. Any protocol can integrate.
           </p>
         </div>
       </div>
