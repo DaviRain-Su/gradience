@@ -695,64 +695,89 @@ function MeView({
     }, [address]);
 
     return (
-        <div className="p-6 space-y-6 overflow-y-auto h-full">
-            <h2 className="text-2xl font-bold">My Agent</h2>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', height: '100%' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>My Agent</h2>
             <RegisterAgentSection address={address} />
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-                <p className="text-sm text-gray-500 font-mono">{address}</p>
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6, fontFamily: 'monospace' }}>{address}</p>
             </div>
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-2">
-                <h3 className="text-lg font-semibold">Wallet Binding</h3>
-                <p className="text-sm text-gray-400">Login: {loginEmail ?? 'Google OAuth'}</p>
-                <p className="text-xs text-gray-500">
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>Wallet Binding</h3>
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6 }}>Login: {loginEmail ?? 'Google OAuth'}</p>
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>
                     Active Agent Wallet: {selectedWallet?.address ?? address ?? 'N/A'}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
                     Source: {selectedWallet?.connectorType === 'embedded' ? 'Privy Embedded Wallet' : 'External Wallet'}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
                     OWS provider: {providerAvailable ? 'detected' : 'not detected (local persistence mode)'}
                 </p>
-                <p className="text-xs text-blue-400">
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.8, marginTop: '4px' }}>
                     Binding status: {formatBindingStatus(bindingStatus)}
                 </p>
                 {owsBinding && (
-                    <div className="text-xs text-gray-500 space-y-1 pt-1">
+                    <div style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>
                         <p>OWS DID: {owsBinding.owsDid}</p>
                         <p>Agent Wallet ID: {owsBinding.agentWalletId}</p>
                         <p>Master Wallet: {owsBinding.masterWallet}</p>
                     </div>
                 )}
-                {bindingError && <p className="text-xs text-red-400">{bindingError}</p>}
-                <div className="flex gap-2 pt-1">
+                {bindingError && <p style={{ fontSize: '12px', color: '#dc2626' }}>{bindingError}</p>}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                     <button
                         onClick={onBindOWS}
                         disabled={!address || bindingBusy}
-                        className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 disabled:bg-blue-900 text-xs"
+                        style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            background: (!address || bindingBusy) ? '#F3F3F8' : '#16161A',
+                            color: (!address || bindingBusy) ? '#16161A' : '#FFFFFF',
+                            fontSize: '12px',
+                            border: '1.5px solid #16161A',
+                            cursor: (!address || bindingBusy) ? 'not-allowed' : 'pointer',
+                            opacity: (!address || bindingBusy) ? 0.5 : 1,
+                        }}
                     >
                         {bindingBusy ? 'Binding...' : 'Bind Selected Wallet to OWS'}
                     </button>
                     {owsBinding && (
                         <button
                             onClick={onUnbindOWS}
-                            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs"
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                background: '#F3F3F8',
+                                color: '#16161A',
+                                fontSize: '12px',
+                                border: '1.5px solid #16161A',
+                                cursor: 'pointer',
+                            }}
                         >
                             Unbind
                         </button>
                     )}
                 </div>
             </div>
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-3">
-                <h3 className="text-lg font-semibold">Agent Sub-Wallet Routing</h3>
-                <p className="text-xs text-gray-500">
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>Agent Sub-Wallet Routing</h3>
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
                     Master wallet: {masterWallet ?? 'N/A'} (Privy-controlled). Sub-wallets route signing through master policy.
                 </p>
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                     <input
                         value={newSubWalletHandle}
                         onChange={(event) => setNewSubWalletHandle(event.target.value)}
                         placeholder="agent handle (e.g. scout-agent)"
-                        className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                        style={{
+                            flex: 1,
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                        }}
                     />
                     <button
                         onClick={() => {
@@ -761,31 +786,44 @@ function MeView({
                             setNewSubWalletHandle('');
                         }}
                         disabled={!owsBinding}
-                        className="px-3 py-2 rounded-lg bg-indigo-700 hover:bg-indigo-600 disabled:bg-indigo-900 text-xs"
+                        style={{
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            background: !owsBinding ? '#F3F3F8' : '#C6BBFF',
+                            color: '#16161A',
+                            fontSize: '12px',
+                            border: '1.5px solid #16161A',
+                            cursor: !owsBinding ? 'not-allowed' : 'pointer',
+                            opacity: !owsBinding ? 0.5 : 1,
+                        }}
                     >
                         Create Sub-Wallet
                     </button>
                 </div>
-                {routerError && <p className="text-xs text-red-400">{routerError}</p>}
+                {routerError && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>{routerError}</p>}
                 {subWallets.length === 0 ? (
-                    <p className="text-xs text-gray-500">No sub-wallets yet. Create one after OWS binding.</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '8px' }}>No sub-wallets yet. Create one after OWS binding.</p>
                 ) : (
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
                         {subWallets.map((wallet) => (
                             <button
                                 key={wallet.id}
                                 onClick={() => onSetActiveSubWallet(wallet.id)}
-                                className={`w-full text-left rounded-lg border px-3 py-2 ${
-                                    activeSubWallet?.id === wallet.id
-                                        ? 'border-emerald-500 bg-emerald-950/20'
-                                        : 'border-gray-800 bg-gray-950'
-                                }`}
+                                style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    borderRadius: '8px',
+                                    border: activeSubWallet?.id === wallet.id ? '1.5px solid #CDFF4D' : '1.5px solid #16161A',
+                                    background: activeSubWallet?.id === wallet.id ? '#CDFF4D' : '#F3F3F8',
+                                    padding: '8px 12px',
+                                    cursor: 'pointer',
+                                }}
                             >
-                                <p className="text-sm font-medium">{wallet.handle}</p>
-                                <p className="text-[10px] text-gray-500 font-mono truncate">
+                                <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{wallet.handle}</p>
+                                <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {wallet.walletAddress}
                                 </p>
-                                <p className="text-[10px] text-gray-500">
+                                <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5 }}>
                                     Route: {wallet.policy.strategy} · approval {wallet.policy.requireMasterApprovalAboveUsd} USD+
                                 </p>
                             </button>
@@ -793,7 +831,15 @@ function MeView({
                         {activeSubWallet && (
                             <button
                                 onClick={() => onSetActiveSubWallet(null)}
-                                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs"
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    background: '#F3F3F8',
+                                    color: '#16161A',
+                                    fontSize: '12px',
+                                    border: '1.5px solid #16161A',
+                                    cursor: 'pointer',
+                                }}
                             >
                                 Use Master Wallet
                             </button>
@@ -801,19 +847,19 @@ function MeView({
                     </div>
                 )}
             </div>
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-                <h3 className="text-lg font-semibold mb-4">Reputation</h3>
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>Reputation</h3>
                 {loading ? (
-                    <p className="text-gray-500 text-sm">Loading...</p>
+                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>
                 ) : rep ? (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <Stat label="Avg Score" value={rep.avg_score?.toFixed(1) ?? '--'} />
                         <Stat label="Completed" value={String(rep.completed ?? 0)} />
                         <Stat label="Win Rate" value={rep.win_rate ? `${(rep.win_rate * 100).toFixed(0)}%` : '--'} />
                         <Stat label="Earned" value={`${((rep.total_earned ?? 0) / 1e9).toFixed(4)} SOL`} />
                     </div>
                 ) : (
-                    <p className="text-gray-500 text-sm">No reputation data yet. Complete tasks to build your on-chain reputation.</p>
+                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>No reputation data yet. Complete tasks to build your on-chain reputation.</p>
                 )}
             </div>
         </div>
@@ -1316,33 +1362,42 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
 
 function Stat({ label, value }: { label: string; value: string }) {
     return (
-        <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-xs text-gray-500">{label}</p>
-            <p className="text-xl font-bold">{value}</p>
+        <div style={{ background: '#F3F3F8', borderRadius: '8px', padding: '12px', border: '1.5px solid #16161A' }}>
+            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>{label}</p>
+            <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#16161A' }}>{value}</p>
         </div>
     );
 }
 
 function Loading() {
-    return <div className="flex items-center justify-center h-screen text-gray-400">Loading...</div>;
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#16161A', opacity: 0.5 }}>Loading...</div>;
 }
 
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
     return (
-        <div className="flex items-center justify-center h-screen">
-            <div className="text-center space-y-6">
-                <h1 className="text-4xl font-bold">AgentM</h1>
-                <p className="text-gray-400 max-w-md mx-auto">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F3F3F8' }}>
+            <div style={{ textAlign: 'center' }}>
+                <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#16161A' }}>AgentM</h1>
+                <p style={{ color: '#16161A', opacity: 0.6, maxWidth: '28rem', margin: '16px auto' }}>
                     AI Agent Economy on Solana. Find agents, delegate tasks, earn reputation.
                 </p>
                 <button
                     onClick={onLogin}
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-medium transition"
+                    style={{
+                        padding: '12px 32px',
+                        background: '#16161A',
+                        color: '#FFFFFF',
+                        borderRadius: '12px',
+                        fontSize: '18px',
+                        fontWeight: 500,
+                        border: 'none',
+                        cursor: 'pointer',
+                    }}
                 >
                     Sign in with Google
                 </button>
-                <p className="text-xs text-gray-600">
-                    <Link href="/" className="hover:text-gray-400">Back to home</Link>
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.4, marginTop: '16px' }}>
+                    <Link href="/" style={{ color: 'inherit' }}>Back to home</Link>
                 </p>
             </div>
         </div>
@@ -1485,30 +1540,54 @@ function useIndexerStatus(): { status: IndexerConnectionStatus; indexerUrl: stri
 
 function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; url: string }) {
     const colors = {
-        checking: 'bg-yellow-900/50 text-yellow-400 border-yellow-800',
-        connected: 'bg-emerald-900/50 text-emerald-400 border-emerald-800',
-        disconnected: 'bg-red-900/50 text-red-400 border-red-800',
+        checking: { background: '#FEF3C7', color: '#D97706', border: '#F59E0B' },
+        connected: { background: '#D1FAE5', color: '#059669', border: '#10B981' },
+        disconnected: { background: '#FEE2E2', color: '#DC2626', border: '#EF4444' },
     };
     const labels = {
         checking: '● Checking...',
         connected: '● Indexer Connected',
         disconnected: '○ Indexer Offline',
     };
+    const style = colors[status];
     return (
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border ${colors[status]}`} title={url}>
+        <span 
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                fontSize: '10px',
+                fontWeight: 500,
+                background: style.background,
+                color: style.color,
+                border: `1px solid ${style.border}`,
+            }}
+            title={url}
+        >
             {labels[status]}
-        </div>
+        </span>
     );
 }
 
 function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' }) {
-    if (source === 'indexer') {
-        return <span className="text-[10px] text-emerald-500 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-800">Live Data</span>;
-    }
-    if (source === 'demo') {
-        return <span className="text-[10px] text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">Demo Data</span>;
-    }
-    return <span className="text-[10px] text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">Mock Data</span>;
+    const style = source === 'indexer' 
+        ? { background: '#D1FAE5', color: '#059669', border: '#10B981' }
+        : { background: '#FEF3C7', color: '#D97706', border: '#F59E0B' };
+    const label = source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Demo Data' : 'Mock Data';
+    return (
+        <span style={{
+            fontSize: '10px',
+            padding: '4px 8px',
+            borderRadius: '9999px',
+            background: style.background,
+            color: style.color,
+            border: `1px solid ${style.border}`,
+        }}>
+            {label}
+        </span>
+    );
 }
 
 // ── Task Market View ──────────────────────────────────────────────────
@@ -1535,12 +1614,12 @@ const MOCK_TASKS: TaskData[] = [
     { task_id: 'task_008', poster: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH', category: 'Smart Contract Audit', description: 'Audit a cross-chain bridge contract using Wormhole. Check for relay manipulation and fund extraction.', reward_lamports: 20_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 10, state: 'Open', submissions_count: 0 },
 ];
 
-const STATE_COLORS: Record<string, string> = {
-    Open: 'bg-green-900 text-green-300',
-    InProgress: 'bg-yellow-900 text-yellow-300',
-    Judging: 'bg-purple-900 text-purple-300',
-    Settled: 'bg-blue-900 text-blue-300',
-    Cancelled: 'bg-red-900 text-red-300',
+const STATE_COLORS: Record<string, { background: string; color: string }> = {
+    Open: { background: '#D1FAE5', color: '#059669' },
+    InProgress: { background: '#FEF3C7', color: '#D97706' },
+    Judging: { background: '#E0E7FF', color: '#4F46E5' },
+    Settled: { background: '#DBEAFE', color: '#2563EB' },
+    Cancelled: { background: '#FEE2E2', color: '#DC2626' },
 };
 
 function TaskMarketView({ address }: { address: string | null }) {
@@ -1571,17 +1650,26 @@ function TaskMarketView({ address }: { address: string | null }) {
     const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.state === filter);
 
     return (
-        <div className="p-6 space-y-4 overflow-y-auto h-full">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold">Task Market</h2>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Task Market</h2>
                     <DataSourceLabel source={dataSource} />
                     <IndexerStatusBadge status={indexerStatus} url={indexerUrl} />
                 </div>
                 {address && (
                     <button
                         onClick={() => setShowPostForm(!showPostForm)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition"
+                        style={{
+                            padding: '8px 16px',
+                            background: '#16161A',
+                            color: '#FFFFFF',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            border: 'none',
+                            cursor: 'pointer',
+                        }}
                     >
                         {showPostForm ? 'Close' : '+ Post Task'}
                     </button>
@@ -1590,8 +1678,8 @@ function TaskMarketView({ address }: { address: string | null }) {
 
             {/* Post Task Form (collapsible) */}
             {showPostForm && address && (
-                <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-4">
-                    <h3 className="text-lg font-semibold">Post a New Task</h3>
+                <div style={{ background: '#FFFFFF', border: '1.5px solid #16161A', borderRadius: '12px', padding: '20px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>Post a New Task</h3>
                     <QuickPostTaskForm
                         address={address}
                         onPosted={(task) => {
@@ -1603,14 +1691,20 @@ function TaskMarketView({ address }: { address: string | null }) {
             )}
 
             {/* Filters */}
-            <div className="flex gap-2 flex-wrap">
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {['all', 'Open', 'InProgress', 'Judging', 'Settled'].map((f) => (
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-3 py-1 rounded-full text-xs transition ${
-                            filter === f ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                        }`}
+                        style={{
+                            padding: '4px 12px',
+                            borderRadius: '9999px',
+                            fontSize: '12px',
+                            background: filter === f ? '#16161A' : '#F3F3F8',
+                            color: filter === f ? '#FFFFFF' : '#16161A',
+                            border: '1.5px solid #16161A',
+                            cursor: 'pointer',
+                        }}
                     >
                         {f === 'all' ? 'All' : f} {f !== 'all' && `(${tasks.filter((t) => t.state === f).length})`}
                     </button>
@@ -1618,39 +1712,55 @@ function TaskMarketView({ address }: { address: string | null }) {
             </div>
 
             {/* Task List */}
-            {loading && <p className="text-gray-500 text-sm">Loading tasks...</p>}
+            {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading tasks...</p>}
             {!loading && filtered.length === 0 && (
-                <p className="text-gray-500 text-center py-12">No tasks found.</p>
+                <p style={{ color: '#16161A', opacity: 0.5, textAlign: 'center', padding: '48px 0' }}>No tasks found.</p>
             )}
-            <div className="space-y-3">
-                {filtered.map((task) => (
-                    <div
-                        key={task.task_id}
-                        onClick={() => setSelectedTask(task)}
-                        className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-600 cursor-pointer transition"
-                    >
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${STATE_COLORS[task.state] ?? 'bg-gray-800 text-gray-400'}`}>
-                                        {task.state}
-                                    </span>
-                                    <span className="text-xs text-gray-500">{task.category}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filtered.map((task) => {
+                    const stateStyle = STATE_COLORS[task.state] ?? { background: '#F3F3F8', color: '#16161A' };
+                    return (
+                        <div
+                            key={task.task_id}
+                            onClick={() => setSelectedTask(task)}
+                            style={{
+                                background: '#FFFFFF',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '12px',
+                                padding: '16px',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span style={{
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '10px',
+                                            fontWeight: 500,
+                                            background: stateStyle.background,
+                                            color: stateStyle.color,
+                                        }}>
+                                            {task.state}
+                                        </span>
+                                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>{task.category}</span>
+                                    </div>
+                                    <p style={{ fontSize: '14px', color: '#16161A', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{task.description}</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
+                                        <span>By {task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
+                                        <span>{task.submissions_count} submissions</span>
+                                        <span>Due {new Date(task.deadline * 1000).toLocaleDateString()}</span>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-gray-200 line-clamp-2">{task.description}</p>
-                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                    <span>By {task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
-                                    <span>{task.submissions_count} submissions</span>
-                                    <span>Due {new Date(task.deadline * 1000).toLocaleDateString()}</span>
+                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#16161A' }}>{(task.reward_lamports / 1_000_000_000).toFixed(2)}</p>
+                                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>SOL</p>
                                 </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                                <p className="text-lg font-bold text-blue-400">{(task.reward_lamports / 1_000_000_000).toFixed(2)}</p>
-                                <p className="text-xs text-gray-500">SOL</p>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Task Detail Modal */}
@@ -1705,51 +1815,96 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
     };
 
     return (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <textarea
                 placeholder="Describe your task..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                style={{
+                    width: '100%',
+                    background: '#F3F3F8',
+                    border: '1.5px solid #16161A',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    color: '#16161A',
+                    resize: 'none',
+                }}
             />
-            <div className="grid grid-cols-3 gap-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                    style={{
+                        background: '#F3F3F8',
+                        border: '1.5px solid #16161A',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        color: '#16161A',
+                    }}
                 >
                     {['DeFi Analysis', 'Smart Contract Audit', 'Data Processing', 'Content Creation', 'Trading Strategy', 'Code Review', 'Other'].map((c) => (
                         <option key={c} value={c}>{c}</option>
                     ))}
                 </select>
-                <div className="relative">
+                <div style={{ position: 'relative' }}>
                     <input
                         type="number"
                         min="0.01"
                         step="0.1"
                         value={rewardSol}
                         onChange={(e) => setRewardSol(e.target.value)}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm pr-12"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            paddingRight: '48px',
+                        }}
                     />
-                    <span className="absolute right-3 top-2.5 text-xs text-gray-500">SOL</span>
+                    <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>SOL</span>
                 </div>
-                <div className="relative">
+                <div style={{ position: 'relative' }}>
                     <input
                         type="number"
                         min="1"
                         max="90"
                         value={deadlineDays}
                         onChange={(e) => setDeadlineDays(e.target.value)}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm pr-12"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            paddingRight: '48px',
+                        }}
                     />
-                    <span className="absolute right-3 top-2.5 text-xs text-gray-500">days</span>
+                    <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>days</span>
                 </div>
             </div>
             <button
                 onClick={handleSubmit}
                 disabled={posting || !description.trim()}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-medium transition"
+                style={{
+                    width: '100%',
+                    padding: '10px',
+                    background: posting || !description.trim() ? '#F3F3F8' : '#16161A',
+                    color: posting || !description.trim() ? '#16161A' : '#FFFFFF',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    border: '1.5px solid #16161A',
+                    cursor: posting || !description.trim() ? 'not-allowed' : 'pointer',
+                    opacity: posting || !description.trim() ? 0.5 : 1,
+                }}
             >
                 {posting ? 'Posting...' : 'Post Task'}
             </button>
@@ -1857,88 +2012,135 @@ function RegisterAgentSection({ address }: { address: string | null }) {
     }
 
     return (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-700 space-y-5">
+        <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
             <div>
-                <h3 className="text-lg font-semibold">
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>
                     {editing ? 'Edit Agent Profile' : 'Register as Agent'}
                 </h3>
-                <p className="text-sm text-gray-400 mt-1">
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6, marginTop: '4px' }}>
                     {editing
                         ? 'Update your on-chain agent profile.'
                         : 'Set up your agent profile to start accepting tasks and building reputation.'}
                 </p>
             </div>
 
-            <div className="space-y-1">
-                <label className="text-xs text-gray-400 font-medium">Display Name *</label>
+            <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Display Name *</label>
                 <input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="e.g. AlphaScout"
-                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    style={{
+                        width: '100%',
+                        background: '#F3F3F8',
+                        border: '1.5px solid #16161A',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        color: '#16161A',
+                        marginTop: '4px',
+                    }}
                 />
             </div>
 
-            <div className="space-y-2">
-                <label className="text-xs text-gray-400 font-medium">Capabilities</label>
-                <div className="grid grid-cols-2 gap-2">
+            <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Capabilities</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
                     {AGENT_CAPABILITIES.map((cap) => (
                         <label
                             key={cap}
-                            className="flex items-center gap-2 cursor-pointer select-none"
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                         >
                             <input
                                 type="checkbox"
                                 checked={capabilities.includes(cap)}
                                 onChange={() => toggleCapability(cap)}
-                                className="w-4 h-4 accent-blue-500 rounded"
+                                style={{ width: '16px', height: '16px', accentColor: '#16161A' }}
                             />
-                            <span className="text-sm text-gray-300">{cap}</span>
+                            <span style={{ fontSize: '14px', color: '#16161A' }}>{cap}</span>
                         </label>
                     ))}
                 </div>
             </div>
 
-            <div className="space-y-1">
-                <label className="text-xs text-gray-400 font-medium">Bio (optional)</label>
+            <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Bio (optional)</label>
                 <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Describe your agent's specialties and experience..."
                     rows={3}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm resize-none focus:border-blue-500 focus:outline-none"
+                    style={{
+                        width: '100%',
+                        background: '#F3F3F8',
+                        border: '1.5px solid #16161A',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        color: '#16161A',
+                        resize: 'none',
+                        marginTop: '4px',
+                    }}
                 />
             </div>
 
-            <div className="space-y-1">
-                <label className="text-xs text-gray-400 font-medium">SOL Domain (optional)</label>
+            <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>SOL Domain (optional)</label>
                 <input
                     value={solDomain}
                     onChange={(e) => setSolDomain(e.target.value)}
                     placeholder="e.g. myagent.sol"
-                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    style={{
+                        width: '100%',
+                        background: '#F3F3F8',
+                        border: '1.5px solid #16161A',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        color: '#16161A',
+                        marginTop: '4px',
+                    }}
                 />
             </div>
 
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button
                     onClick={handleRegister}
                     disabled={!displayName.trim()}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-medium transition"
+                    style={{
+                        flex: 1,
+                        padding: '10px',
+                        background: !displayName.trim() ? '#F3F3F8' : '#16161A',
+                        color: !displayName.trim() ? '#16161A' : '#FFFFFF',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        border: '1.5px solid #16161A',
+                        cursor: !displayName.trim() ? 'not-allowed' : 'pointer',
+                        opacity: !displayName.trim() ? 0.5 : 1,
+                    }}
                 >
                     {editing ? 'Save Changes' : 'Register Agent'}
                 </button>
                 {editing && (
                     <button
                         onClick={() => setEditing(false)}
-                        className="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition"
+                        style={{
+                            padding: '10px 16px',
+                            background: '#F3F3F8',
+                            color: '#16161A',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            border: '1.5px solid #16161A',
+                            cursor: 'pointer',
+                        }}
                     >
                         Cancel
                     </button>
                 )}
             </div>
 
-            <p className="text-[10px] text-gray-600">
+            <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.4, marginTop: '12px' }}>
                 Saved locally + synced to indexer when available. Future: calls AgentM Core program register_user + create_agent.
             </p>
         </div>
@@ -1947,35 +2149,50 @@ function RegisterAgentSection({ address }: { address: string | null }) {
 
 function AgentProfileCard({ profile, onEdit }: { profile: AgentProfile; onEdit: () => void }) {
     return (
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-700 space-y-4">
-            <div className="flex items-start justify-between">
+        <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div>
-                    <h3 className="text-xl font-bold">{profile.displayName}</h3>
+                    <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#16161A' }}>{profile.displayName}</h3>
                     {profile.solDomain && (
-                        <p className="text-sm text-blue-400 mt-0.5">{profile.solDomain}</p>
+                        <p style={{ fontSize: '14px', color: '#C6BBFF', marginTop: '2px' }}>{profile.solDomain}</p>
                     )}
-                    <p className="text-xs text-gray-500 font-mono mt-1 truncate max-w-[260px]">
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', marginTop: '4px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {profile.walletAddress}
                     </p>
                 </div>
                 <button
                     onClick={onEdit}
-                    className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs transition"
+                    style={{
+                        padding: '6px 12px',
+                        background: '#F3F3F8',
+                        color: '#16161A',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        border: '1.5px solid #16161A',
+                        cursor: 'pointer',
+                    }}
                 >
                     Edit Profile
                 </button>
             </div>
 
             {profile.bio && (
-                <p className="text-sm text-gray-300 leading-relaxed">{profile.bio}</p>
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.8, lineHeight: 1.6, marginTop: '12px' }}>{profile.bio}</p>
             )}
 
             {profile.capabilities.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
                     {profile.capabilities.map((cap) => (
                         <span
                             key={cap}
-                            className="px-2.5 py-1 rounded-full bg-blue-950 border border-blue-800 text-xs text-blue-300"
+                            style={{
+                                padding: '4px 10px',
+                                borderRadius: '9999px',
+                                background: '#C6BBFF',
+                                border: '1.5px solid #16161A',
+                                fontSize: '12px',
+                                color: '#16161A',
+                            }}
                         >
                             {cap}
                         </span>
@@ -1983,12 +2200,12 @@ function AgentProfileCard({ profile, onEdit }: { profile: AgentProfile; onEdit: 
                 </div>
             )}
 
-            <div className="flex items-center gap-3 pt-1">
-                <div className="bg-gray-800 rounded-lg px-4 py-2 text-center">
-                    <p className="text-xs text-gray-500">Reputation</p>
-                    <p className="text-lg font-bold text-blue-400">{profile.reputationScore}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                <div style={{ background: '#F3F3F8', borderRadius: '8px', padding: '8px 16px', textAlign: 'center', border: '1.5px solid #16161A' }}>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>Reputation</p>
+                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#16161A' }}>{profile.reputationScore}</p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
                     Complete tasks to build your on-chain reputation score.
                 </p>
             </div>
