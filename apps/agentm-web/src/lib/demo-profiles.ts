@@ -4,7 +4,7 @@
  * Pre-defined Soul Profiles for demonstration
  */
 
-import type { SoulProfile } from '@gradiences/soul-engine';
+import type { SoulProfile } from '../types/soul';
 
 export const demoProfiles: SoulProfile[] = [
   {

@@ -1,6 +1,6 @@
 'use client';
 
-import type { SoulProfile } from '@gradiences/soul-engine';
+import type { SoulProfile } from '../../types/soul';
 
 interface SoulProfileCardProps {
     profile: SoulProfile;
@@ -14,10 +14,10 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
     
     return (
         <div style={{
-            background: '#1a1a1a',
-            borderRadius: '12px',
+            background: '#FFFFFF',
+            borderRadius: '24px',
             padding: '24px',
-            border: '1px solid #222',
+            border: '1.5px solid #16161A',
             transition: 'all 0.3s ease',
         }}>
             {/* Header */}
@@ -31,8 +31,8 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '20px',
-                    background: isAgent ? 'rgba(139, 92, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                    color: isAgent ? '#a78bfa' : '#60a5fa',
+                    background: isAgent ? '#C6BBFF' : '#CDFF4D',
+                    border: '1.5px solid #16161A',
                 }}>
                     {isAgent ? '🤖' : '👤'}
                 </div>
@@ -42,12 +42,13 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <h3 style={{
                             fontSize: '18px',
-                            fontWeight: 600,
-                            color: '#ffffff',
+                            fontWeight: 700,
+                            color: '#16161A',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             margin: 0,
+                            fontFamily: "'Oswald', sans-serif",
                         }}>
                             {profile.identity.displayName}
                         </h3>
@@ -55,25 +56,22 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                             fontSize: '10px',
                             padding: '2px 8px',
                             borderRadius: '9999px',
-                            fontWeight: 500,
+                            fontWeight: 600,
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
-                            background: isAgent ? 'rgba(139, 92, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                            color: isAgent ? '#a78bfa' : '#60a5fa',
-                            border: `1px solid ${isAgent ? 'rgba(139, 92, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)'}`,
+                            background: isAgent ? '#C6BBFF' : '#CDFF4D',
+                            color: '#16161A',
+                            border: '1.5px solid #16161A',
                         }}>
                             {profile.soulType}
                         </span>
                     </div>
                     <p style={{
                         fontSize: '14px',
-                        color: '#9ca3af',
+                        color: '#16161A',
+                        opacity: 0.7,
                         lineHeight: 1.6,
                         margin: 0,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
                     }}>
                         {profile.identity.bio}
                     </p>
@@ -88,16 +86,17 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                         <span key={i} style={{
                             fontSize: '12px',
                             padding: '4px 10px',
-                            background: '#222',
-                            color: '#d1d5db',
+                            background: '#F3F3F8',
+                            color: '#16161A',
                             borderRadius: '8px',
-                            border: '1px solid #333',
+                            border: '1.5px solid #16161A',
+                            fontWeight: 500,
                         }}>
                             {value}
                         </span>
                     ))}
                     {profile.values.core.length > 3 && (
-                        <span style={{ fontSize: '12px', padding: '4px 10px', color: '#6b7280' }}>
+                        <span style={{ fontSize: '12px', padding: '4px 10px', color: '#16161A', opacity: 0.5 }}>
                             +{profile.values.core.length - 3}
                         </span>
                     )}
@@ -109,7 +108,8 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                         <span key={i} style={{
                             fontSize: '12px',
                             padding: '2px 8px',
-                            color: '#9ca3af',
+                            color: '#16161A',
+                            opacity: 0.6,
                         }}>
                             #{topic}
                         </span>
@@ -121,15 +121,15 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
             <div style={{
                 marginTop: '16px',
                 paddingTop: '16px',
-                borderTop: '1px solid #222',
+                borderTop: '1px dashed #16161A',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#6b7280' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#16161A', opacity: 0.6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            background: 'rgba(59, 130, 246, 0.5)',
+                            background: '#C6BBFF',
                         }} />
                         <span style={{ textTransform: 'capitalize' }}>{profile.communication.tone}</span>
                     </div>
@@ -138,7 +138,7 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            background: 'rgba(139, 92, 246, 0.5)',
+                            background: '#CDFF4D',
                         }} />
                         <span style={{ textTransform: 'capitalize' }}>{profile.communication.pace}</span>
                     </div>
@@ -147,7 +147,7 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                             width: '6px',
                             height: '6px',
                             borderRadius: '50%',
-                            background: 'rgba(34, 197, 94, 0.5)',
+                            background: '#16161A',
                         }} />
                         <span style={{ textTransform: 'capitalize' }}>{profile.communication.depth}</span>
                     </div>
@@ -161,30 +161,28 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                     gap: '8px',
                     marginTop: '16px',
                     paddingTop: '16px',
-                    borderTop: '1px solid #222',
+                    borderTop: '1px dashed #16161A',
                 }}>
                     {onViewDetails && (
                         <button
                             onClick={onViewDetails}
                             style={{
                                 flex: 1,
-                                padding: '8px 16px',
-                                background: '#222',
-                                color: '#d1d5db',
-                                border: '1px solid #333',
-                                borderRadius: '8px',
+                                padding: '10px 16px',
+                                background: '#F3F3F8',
+                                color: '#16161A',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '12px',
                                 fontSize: '14px',
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#333';
-                                e.currentTarget.style.color = '#ffffff';
+                                e.currentTarget.style.background = '#E8E8ED';
                             }}
                             onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#222';
-                                e.currentTarget.style.color = '#d1d5db';
+                                e.currentTarget.style.background = '#F3F3F8';
                             }}
                         >
                             View Profile
@@ -195,21 +193,23 @@ export function SoulProfileCard({ profile, onViewDetails, onStartProbe, showActi
                             onClick={onStartProbe}
                             style={{
                                 flex: 1,
-                                padding: '8px 16px',
-                                background: '#2563eb',
-                                color: '#ffffff',
+                                padding: '10px 16px',
+                                background: '#16161A',
+                                color: '#FFFFFF',
                                 border: 'none',
-                                borderRadius: '8px',
+                                borderRadius: '12px',
                                 fontSize: '14px',
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#1d4ed8';
+                                e.currentTarget.style.background = '#000000';
+                                e.currentTarget.style.transform = 'scale(0.98)';
                             }}
                             onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#2563eb';
+                                e.currentTarget.style.background = '#16161A';
+                                e.currentTarget.style.transform = 'scale(1)';
                             }}
                         >
                             Start Probe

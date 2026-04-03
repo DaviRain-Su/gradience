@@ -19,6 +19,7 @@ import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
 import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
+import { ChatView } from './views/ChatView';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -326,60 +327,169 @@ function Shell({
     ];
 
     return (
-        <div className="flex h-screen">
-            <aside className="w-52 bg-gray-900 border-r border-gray-800 flex flex-col">
-                <div className="p-4">
-                    <Link href="/" className="text-lg font-bold hover:text-blue-400 transition">AgentM</Link>
-                    <p className="text-xs text-gray-500 mt-1 truncate">
-                        Login: {loginEmail ?? 'Google OAuth'}
-                    </p>
-                    {activeSubWallet && (
-                        <p className="text-[10px] text-emerald-400 mt-1 truncate">
-                            Active Agent: {activeSubWallet.handle}
-                        </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1 font-mono truncate">{address?.slice(0, 16)}...</p>
-                    {address && <WalletBalance address={address} />}
-                </div>
-                {wallets.length > 1 && (
-                    <div className="px-4 pb-3">
-                        <label className="text-[10px] text-gray-500 uppercase tracking-wide">Agent Wallet</label>
-                        <select
-                            value={address ?? ''}
-                            onChange={(event) => onWalletChange(event.target.value)}
-                            className="mt-1 w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-xs"
-                        >
-                            {wallets.map((wallet) => (
-                                <option key={wallet.address} value={wallet.address}>
-                                    {wallet.connectorType === 'embedded' ? 'Privy' : 'External'} · {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
-                                </option>
-                            ))}
-                        </select>
+        <div style={{
+            display: 'flex',
+            height: '100vh',
+            background: '#F3F3F8',
+        }}>
+            <aside style={{
+                width: '280px',
+                background: '#FFFFFF',
+                borderRight: '1.5px solid #16161A',
+                display: 'flex',
+                flexDirection: 'column',
+            }}>
+                {/* Header */}
+                <div style={{ padding: '24px' }}>
+                    <Link href="/" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        textDecoration: 'none',
+                    }}>
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            background: '#C6BBFF',
+                            border: '1.5px solid #16161A',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '20px',
+                        }}>🤖</div>
+                        <span style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '24px',
+                            fontWeight: 700,
+                            color: '#16161A',
+                            textTransform: 'uppercase',
+                        }}>AgentM</span>
+                    </Link>
+                    
+                    {/* User Info Card */}
+                    <div style={{
+                        marginTop: '20px',
+                        padding: '16px',
+                        background: '#F3F3F8',
+                        borderRadius: '16px',
+                        border: '1.5px solid #16161A',
+                    }}>
+                        <p style={{
+                            fontSize: '12px',
+                            color: '#16161A',
+                            opacity: 0.6,
+                            margin: '0 0 4px 0',
+                        }}>Logged in as</p>
+                        <p style={{
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: '#16161A',
+                            margin: 0,
+                        }}>{loginEmail ?? 'Demo User'}</p>
+                        {activeSubWallet && (
+                            <div style={{
+                                marginTop: '8px',
+                                padding: '6px 10px',
+                                background: '#CDFF4D',
+                                borderRadius: '8px',
+                                border: '1.5px solid #16161A',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: '#16161A',
+                            }}>
+                                Active: {activeSubWallet.handle}
+                            </div>
+                        )}
+                        {address && (
+                            <p style={{
+                                fontSize: '11px',
+                                fontFamily: 'monospace',
+                                color: '#16161A',
+                                opacity: 0.5,
+                                margin: '8px 0 0 0',
+                            }}>{address.slice(0, 16)}...</p>
+                        )}
                     </div>
-                )}
-                <nav className="flex-1 px-2 space-y-1">
+                </div>
+
+                {/* Navigation */}
+                <nav style={{
+                    flex: 1,
+                    padding: '0 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                }}>
                     {tabs.map((t) => (
                         <button
                             key={t.key}
                             onClick={() => setView(t.key)}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                                view === t.key ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800'
-                            }`}
+                            style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                transition: 'all 0.2s ease',
+                                background: view === t.key ? '#16161A' : 'transparent',
+                                color: view === t.key ? '#FFFFFF' : '#16161A',
+                                border: view === t.key ? '1.5px solid #16161A' : '1.5px solid transparent',
+                                cursor: 'pointer',
+                            }}
                         >
                             {t.label}
                         </button>
                     ))}
                 </nav>
-                <div className="p-4">
-                    <p className="text-[10px] mb-2 text-gray-600">
-                        OWS: {formatBindingStatus(bindingStatus)}
-                    </p>
-                    <button onClick={onLogout} className="text-sm text-gray-500 hover:text-white transition">
+
+                {/* Footer */}
+                <div style={{ padding: '24px' }}>
+                    <div style={{
+                        padding: '12px 16px',
+                        background: '#F3F3F8',
+                        borderRadius: '12px',
+                        border: '1.5px solid #16161A',
+                        marginBottom: '12px',
+                    }}>
+                        <p style={{
+                            fontSize: '11px',
+                            color: '#16161A',
+                            opacity: 0.6,
+                            margin: 0,
+                        }}>OWS Status</p>
+                        <p style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: '#16161A',
+                            margin: '4px 0 0 0',
+                        }}>{formatBindingStatus(bindingStatus)}</p>
+                    </div>
+                    <button 
+                        onClick={onLogout}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: 'transparent',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '12px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: '#16161A',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
                         Logout
                     </button>
                 </div>
             </aside>
-            <main className="flex-1 overflow-hidden">{children}</main>
+            <main style={{
+                flex: 1,
+                overflow: 'hidden',
+                background: '#F3F3F8',
+            }}>{children}</main>
         </div>
     );
 }
