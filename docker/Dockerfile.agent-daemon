@@ -35,6 +35,7 @@ RUN apk add --no-cache python3 make g++
 COPY --from=deps /app/ .
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @gradiences/agent-daemon build
+RUN pnpm --filter @gradiences/agent-daemon deploy /app/deployed --prod
 
 # ── Stage 4: Runtime ──────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-alpine AS runner
@@ -50,10 +51,9 @@ ENV AGENTD_LOG_LEVEL=info
 # Persist the SQLite database via a mounted volume
 ENV AGENTD_DB_PATH=/data/agentd.db
 
-COPY --from=builder /app/apps/agent-daemon/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/deployed ./
 
 # Mount a volume at /data for persistent SQLite storage
 VOLUME ["/data"]
 EXPOSE 4001
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/index.js", "start"]
