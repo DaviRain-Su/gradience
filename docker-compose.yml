@@ -77,6 +77,7 @@ services:
       AGENTD_PORT: "4001"
       AGENTD_LOG_LEVEL: info
       AGENTD_DB_PATH: /data/agentd.db
+      AGENTD_ALLOW_ALL_INTERFACES: "true"
       # Optional: point the daemon at a remote Chain Hub WebSocket
       # AGENTD_CHAIN_HUB_URL: ws://chain-hub:8080
     volumes:
@@ -209,6 +210,7 @@ services:
       AGENTD_PORT: "4001"
       AGENTD_LOG_LEVEL: debug
       AGENTD_DB_PATH: /data/agentd.db
+      AGENTD_ALLOW_ALL_INTERFACES: "true"
     volumes:
       - ./apps/agent-daemon/src:/app/apps/agent-daemon/src
       - agent-daemon-data:/data

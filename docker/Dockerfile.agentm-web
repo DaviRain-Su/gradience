@@ -35,19 +35,22 @@ ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID
 ENV NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT=$NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT
 
 RUN pnpm --filter @gradiences/agentm-web build
-RUN find /app/apps/agentm-web/.next/standalone -type l ! -exec test -e {} \; -delete && \
-    cp -rL /app/apps/agentm-web/.next/standalone /app/deployed-standalone
 
-# -- Stage 4: Runtime
+# -- Stage 4: Runtime with production next install
 FROM node:${NODE_VERSION}-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/agentm-web
 ENV NODE_ENV=production
 ENV PORT=5200
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/deployed-standalone ./
-COPY --from=builder /app/apps/agentm-web/.next/static ./apps/agentm-web/.next/static
-COPY --from=builder /app/apps/agentm-web/public* ./apps/agentm-web/public/
+# Copy built Next.js output
+COPY --from=builder /app/apps/agentm-web/.next ./.next
+COPY --from=builder /app/apps/agentm-web/next.config.ts ./next.config.ts
+COPY --from=builder /app/apps/agentm-web/package.json ./package.json
+COPY --from=builder /app/apps/agentm-web/public* ./public/
+
+# Install only production next runtime
+RUN npm install --ignore-scripts next@15 react react-dom
 
 EXPOSE 5200
-CMD ["node", "apps/agentm-web/server.js"]
+CMD ["npx", "next", "start", "-p", "5200"]

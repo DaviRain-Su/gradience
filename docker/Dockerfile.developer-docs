@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 # apps/developer-docs -- Next.js 14 docs site (port 3000)
-# Uses output: 'standalone' for minimal runtime image.
 
 ARG NODE_VERSION=22
 
@@ -26,20 +25,20 @@ RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
 COPY --from=deps /app/ .
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @gradiences/developer-docs build
-# Dereference pnpm symlinks in standalone output
-RUN find /app/apps/developer-docs/.next/standalone -type l ! -exec test -e {} \; -delete && \
-    cp -rL /app/apps/developer-docs/.next/standalone /app/deployed-standalone
 
-# -- Stage 4: Standalone runtime
+# -- Stage 4: Runtime
 FROM node:${NODE_VERSION}-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/developer-docs
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/deployed-standalone ./
-COPY --from=builder /app/apps/developer-docs/.next/static ./apps/developer-docs/.next/static
-COPY --from=builder /app/apps/developer-docs/public* ./apps/developer-docs/public/
+COPY --from=builder /app/apps/developer-docs/.next ./.next
+COPY --from=builder /app/apps/developer-docs/next.config.js ./next.config.js
+COPY --from=builder /app/apps/developer-docs/package.json ./package.json
+COPY --from=builder /app/apps/developer-docs/public* ./public/
+
+RUN npm install --ignore-scripts next@14 react@18 react-dom@18
 
 EXPOSE 3000
-CMD ["node", "apps/developer-docs/server.js"]
+CMD ["npx", "next", "start", "-p", "3000"]

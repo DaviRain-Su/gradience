@@ -29,19 +29,20 @@ ARG RESEND_API_KEY
 ENV RESEND_API_KEY=$RESEND_API_KEY
 
 RUN pnpm --filter website build
-RUN find /app/website/.next/standalone -type l ! -exec test -e {} \; -delete && \
-    cp -rL /app/website/.next/standalone /app/deployed-standalone
 
 # -- Stage 4: Runtime
 FROM node:${NODE_VERSION}-alpine AS runner
-WORKDIR /app
+WORKDIR /app/website
 ENV NODE_ENV=production
 ENV PORT=3003
 ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/deployed-standalone ./
-COPY --from=builder /app/website/.next/static ./website/.next/static
-COPY --from=builder /app/website/public* ./website/public/
+COPY --from=builder /app/website/.next ./.next
+COPY --from=builder /app/website/next.config.ts ./next.config.ts
+COPY --from=builder /app/website/package.json ./package.json
+COPY --from=builder /app/website/public* ./public/
+
+RUN npm install --ignore-scripts next@16 react react-dom
 
 EXPOSE 3003
-CMD ["node", "website/server.js"]
+CMD ["npx", "next", "start", "-p", "3003"]

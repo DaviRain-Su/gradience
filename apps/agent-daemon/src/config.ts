@@ -8,7 +8,9 @@ const DaemonConfigSchema = z.object({
     host: z
         .string()
         .default('127.0.0.1')
-        .refine((h) => h !== '0.0.0.0', { message: 'Binding to 0.0.0.0 is forbidden for security' }),
+        .refine((h) => h !== '0.0.0.0' || process.env.AGENTD_ALLOW_ALL_INTERFACES === 'true', {
+            message: 'Binding to 0.0.0.0 is forbidden for security. Set AGENTD_ALLOW_ALL_INTERFACES=true in Docker.',
+        }),
     chainHubUrl: z.string().url().default('wss://indexer.gradiences.xyz/ws'),
     chainHubRestUrl: z.string().url().default('https://indexer.gradiences.xyz'),
     solanaRpcUrl: z.string().url().default('https://api.devnet.solana.com'),
