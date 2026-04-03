@@ -316,7 +316,7 @@ stateDiagram-v2
 - **Demo**: [Run demo-script.sh](../demo-script.sh)
 - **Repo**: https://github.com/gradiences/protocol
 - **Docs**: https://docs.gradience.xyz
-- **Website**: https://gradience.xyz
+- **Website**: https://gradiences.xyz
 - **OWS**: https://openwallet.sh
 
 ---

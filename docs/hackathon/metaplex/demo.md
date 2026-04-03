@@ -206,7 +206,7 @@ echo "Demo complete! 🎉"
 
 - **Demo Video**: [YouTube link TBD]
 - **Code**: https://github.com/gradiences/protocol
-- **Live Demo**: https://gradience.xyz/demo
+- **Live Demo**: https://gradiences.xyz/demo
 - **Docs**: https://docs.gradience.xyz/metaplex
 
 ---

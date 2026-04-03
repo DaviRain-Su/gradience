@@ -268,7 +268,7 @@ Save: 2-5% on slippage
 
 ## Links
 
-- **Website**: https://gradience.xyz
+- **Website**: https://gradiences.xyz
 - **Docs**: https://docs.gradience.xyz/goldrush
 - **GitHub**: https://github.com/gradiences/protocol
 - **GoldRush**: https://goldrush.dev

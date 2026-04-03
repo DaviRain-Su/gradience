@@ -1,1 +1,13 @@
-{"version":2,"builds":[{"src":"package.json","use":"@vercel/next"}],"routes":[{"src":"/(.*)","dest":"/$1"}]}
+{
+    "version": 2,
+    "framework": "nextjs",
+    "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=600" },
+                { "key": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+        }
+    ]
+}

@@ -1,7 +1,18 @@
+import {
+    OWSSdkClient,
+    type OWSCreateWalletReceipt,
+    type OWSSignRouteReceipt,
+} from './sdk-client';
+
 export interface AgentSigningPolicy {
     dailyLimitUsd: number;
     requireMasterApprovalAboveUsd: number;
     strategy: 'master_controlled_route';
+}
+
+export interface OWSRouteSignatureRequest {
+    routeType: 'task_settlement' | 'agent_payment' | 'custom';
+    payload: unknown;
 }
 
 export interface OWSAgentSubWallet {
@@ -9,6 +20,8 @@ export interface OWSAgentSubWallet {
     handle: string;
     walletAddress: string;
     policy: AgentSigningPolicy;
+    createReceipt: OWSCreateWalletReceipt;
+    lastSignReceipt: OWSSignRouteReceipt | null;
     createdAt: number;
     updatedAt: number;
 }
@@ -24,6 +37,8 @@ export interface OWSAgentRoutingState {
 const STORAGE_KEY = 'agentm:ows:agent-router:v1';
 
 export class OWSAgentRouter {
+    private sdkClient = new OWSSdkClient();
+
     getState(accountKey: string): OWSAgentRoutingState | null {
         const map = this.readMap();
         return map[accountKey] ?? null;
@@ -57,12 +72,12 @@ export class OWSAgentRouter {
         return created;
     }
 
-    createSubWallet(input: {
+    async createSubWallet(input: {
         accountKey: string;
         masterWallet: string;
         handle: string;
         policy?: Partial<AgentSigningPolicy>;
-    }): OWSAgentRoutingState {
+    }): Promise<OWSAgentRoutingState> {
         const state = this.ensureState(input.accountKey, input.masterWallet);
         const normalizedHandle = normalizeHandle(input.handle);
         if (!normalizedHandle) {
@@ -75,15 +90,26 @@ export class OWSAgentRouter {
         }
 
         const now = Date.now();
-        const subWallet: OWSAgentSubWallet = {
-            id: `sub-${now}-${Math.random().toString(36).slice(2, 6)}`,
+        const createResult = await this.sdkClient.createAgentWallet({
+            masterWallet: input.masterWallet,
             handle: normalizedHandle,
-            walletAddress: deriveAgentWalletAddress(input.masterWallet, normalizedHandle),
             policy: {
                 dailyLimitUsd: input.policy?.dailyLimitUsd ?? 250,
                 requireMasterApprovalAboveUsd: input.policy?.requireMasterApprovalAboveUsd ?? 100,
                 strategy: 'master_controlled_route',
             },
+        });
+        const subWallet: OWSAgentSubWallet = {
+            id: `sub-${now}-${Math.random().toString(36).slice(2, 6)}`,
+            handle: normalizedHandle,
+            walletAddress: createResult.walletAddress,
+            policy: {
+                dailyLimitUsd: input.policy?.dailyLimitUsd ?? 250,
+                requireMasterApprovalAboveUsd: input.policy?.requireMasterApprovalAboveUsd ?? 100,
+                strategy: 'master_controlled_route',
+            },
+            createReceipt: createResult.receipt,
+            lastSignReceipt: null,
             createdAt: now,
             updatedAt: now,
         };
@@ -96,6 +122,46 @@ export class OWSAgentRouter {
         };
         this.persistState(next);
         return next;
+    }
+
+    async signWithActiveSubWallet(input: {
+        accountKey: string;
+        request: OWSRouteSignatureRequest;
+    }): Promise<{ state: OWSAgentRoutingState; receipt: OWSSignRouteReceipt }> {
+        const state = this.getState(input.accountKey);
+        if (!state || !state.activeSubWalletId) {
+            throw new Error('No active sub-wallet selected');
+        }
+
+        const index = state.subWallets.findIndex(
+            (wallet) => wallet.id === state.activeSubWalletId
+        );
+        if (index < 0) {
+            throw new Error('Active sub-wallet not found');
+        }
+
+        const target = state.subWallets[index];
+        const receipt = await this.sdkClient.signRoute({
+            walletAddress: target.walletAddress,
+            routeType: input.request.routeType,
+            payload: input.request.payload,
+        });
+
+        const now = Date.now();
+        const updatedWallet: OWSAgentSubWallet = {
+            ...target,
+            lastSignReceipt: receipt,
+            updatedAt: now,
+        };
+        const nextWallets = [...state.subWallets];
+        nextWallets[index] = updatedWallet;
+        const next: OWSAgentRoutingState = {
+            ...state,
+            subWallets: nextWallets,
+            updatedAt: now,
+        };
+        this.persistState(next);
+        return { state: next, receipt };
     }
 
     setActiveSubWallet(accountKey: string, subWalletId: string | null): OWSAgentRoutingState {
@@ -155,24 +221,4 @@ export class OWSAgentRouter {
 
 function normalizeHandle(value: string): string {
     return value.trim().toLowerCase().replace(/\s+/g, '-');
-}
-
-function deriveAgentWalletAddress(masterWallet: string, handle: string): string {
-    const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    let hash = fnv1a(`${masterWallet}:${handle}`);
-    let out = '';
-    for (let i = 0; i < 44; i += 1) {
-        hash = Math.imul(hash ^ i, 16777619) >>> 0;
-        out += alphabet[hash % alphabet.length];
-    }
-    return out;
-}
-
-function fnv1a(value: string): number {
-    let hash = 2166136261;
-    for (let i = 0; i < value.length; i += 1) {
-        hash ^= value.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-    }
-    return hash >>> 0;
 }
