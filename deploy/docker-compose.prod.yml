@@ -59,8 +59,8 @@ services:
       retries: 3
       start_period: 15s
     # Not exposed directly — nginx proxies api.gradiences.xyz → this service
-    expose:
-      - "3001"
+    ports:
+      - "127.0.0.1:3001:3001"
 
   # ── agent-daemon ──────────────────────────────────────────────────────────────
   # Fastify + SQLite daemon; SQLite file persisted in named volume.
@@ -76,6 +76,7 @@ services:
       AGENTD_PORT: "4001"
       AGENTD_LOG_LEVEL: ${AGENTD_LOG_LEVEL:-info}
       AGENTD_DB_PATH: /data/agentd.db
+      AGENTD_ALLOW_ALL_INTERFACES: "true"
       AGENTD_CHAIN_HUB_URL: ${AGENTD_CHAIN_HUB_URL:-}
     volumes:
       - agent-daemon-data:/data
@@ -90,10 +91,81 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-    expose:
-      - "4001"
+    ports:
+      - "127.0.0.1:4001:4001"
 
 # ── Volumes ───────────────────────────────────────────────────────────────────
+  agentm-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agentm-web
+      args:
+        NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
+        NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
+    image: gradience/agentm-web:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "5200"
+    networks:
+      - backend
+    depends_on:
+      indexer-mock:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5200:5200"
+
+  agentm-pro:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.agentm-pro
+      args:
+        NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
+        NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
+    image: gradience/agentm-pro:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "5300"
+    networks:
+      - backend
+    depends_on:
+      indexer-mock:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5300:5300"
+
+  developer-docs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.developer-docs
+    image: gradience/developer-docs:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  website:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.website
+      args:
+        RESEND_API_KEY: ${RESEND_API_KEY:-}
+    image: gradience/website:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3003"
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:3003:3003"
+
 volumes:
   postgres-data:
     driver: local
