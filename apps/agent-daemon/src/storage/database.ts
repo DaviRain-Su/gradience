@@ -1,0 +1,84 @@
+import Database from 'better-sqlite3';
+import { mkdirSync, existsSync, chmodSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { logger } from '../utils/logger.js';
+
+const SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS tasks (
+    id            TEXT PRIMARY KEY,
+    type          TEXT NOT NULL,
+    payload       TEXT NOT NULL,
+    priority      INTEGER NOT NULL DEFAULT 0,
+    state         TEXT NOT NULL DEFAULT 'queued',
+    retries       INTEGER NOT NULL DEFAULT 0,
+    max_retries   INTEGER NOT NULL DEFAULT 3,
+    result        TEXT,
+    error         TEXT,
+    assigned_agent TEXT,
+    created_at    INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL,
+    completed_at  INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_state ON tasks(state);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority DESC, created_at ASC);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id            TEXT PRIMARY KEY,
+    direction     TEXT NOT NULL,
+    from_addr     TEXT NOT NULL,
+    to_addr       TEXT NOT NULL,
+    type          TEXT NOT NULL,
+    payload       TEXT NOT NULL,
+    protocol      TEXT,
+    created_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS agents (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL,
+    command       TEXT NOT NULL,
+    args          TEXT NOT NULL DEFAULT '[]',
+    cwd           TEXT,
+    env           TEXT NOT NULL DEFAULT '{}',
+    auto_start    INTEGER NOT NULL DEFAULT 0,
+    max_restarts  INTEGER NOT NULL DEFAULT 3,
+    cpu_limit     REAL,
+    memory_limit  INTEGER,
+    created_at    INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cache (
+    key           TEXT PRIMARY KEY,
+    value         TEXT NOT NULL,
+    expires_at    INTEGER
+);
+`;
+
+export function initDatabase(dbPath: string): Database.Database {
+    const dir = dirname(dbPath);
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+    }
+
+    const db = new Database(dbPath);
+
+    db.pragma('journal_mode = WAL');
+    db.pragma('busy_timeout = 5000');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('foreign_keys = ON');
+
+    db.exec(SCHEMA_SQL);
+
+    try {
+        chmodSync(dbPath, 0o600);
+    } catch {
+        // may fail on Windows
+    }
+
+    logger.info({ dbPath }, 'Database initialized');
+    return db;
+}

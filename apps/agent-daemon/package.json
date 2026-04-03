@@ -1,0 +1,38 @@
+{
+    "name": "@gradience/agent-daemon",
+    "version": "0.1.0",
+    "description": "Local daemon bridging Agent UIs to the Gradience network",
+    "type": "module",
+    "main": "dist/index.js",
+    "bin": {
+        "agentd": "dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx src/index.ts",
+        "start": "node dist/index.js",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "lint": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "better-sqlite3": "^11.7.0",
+        "fastify": "^5.2.0",
+        "@fastify/websocket": "^11.0.0",
+        "ws": "^8.18.0",
+        "pino": "^9.6.0",
+        "zod": "^3.24.0",
+        "tweetnacl": "^1.0.3",
+        "bs58": "^6.0.0"
+    },
+    "devDependencies": {
+        "@types/better-sqlite3": "^7.6.12",
+        "@types/ws": "^8.5.13",
+        "@types/node": "^22.0.0",
+        "typescript": "^5.7.0",
+        "tsx": "^4.19.0",
+        "vitest": "^3.0.0"
+    }
+}
