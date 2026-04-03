@@ -238,7 +238,7 @@ Layer 4: 信誉衰减
 ### 4.2 A2A 层安全（Phase 3）
 
 ```
-MagicBlock Ephemeral Rollup 安全模型:
+MagicBlock 结算层增强安全模型 (可选组件):
 
 1. 委托模型
    Agent Layer Account → delegate → ER

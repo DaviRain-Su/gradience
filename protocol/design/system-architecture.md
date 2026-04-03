@@ -517,10 +517,11 @@ Phase 4 (2027): A2A
 |------|------|------|
 | 内核 vs 模块 | 严格分层，单向依赖 | 内核不可变性是协议可信度的基石 |
 | Solana vs 自建链 | Solana | 10,000 任务 ≈ 100 TPS，Solana 绰绰有余 |
-| Indexer | Cloudflare Workers + D1 | 全球边缘部署、零运维、低成本 |
+| 发现层 | Nostr NIP-89/90 DVM | 去中心化、无运维、拗制抵抗 |
 | 存储 | Arweave (永久) + IPFS (临时) | evaluationCID 需永久可用 |
 | 跨链 | 信誉携带（零桥） | 桥是最大安全隐患，能不用就不用 |
-| A2A 执行 | MagicBlock ER | 零自建基础设施，原生 Solana |
+| 结算增强 | MagicBlock ER/PER/VRF | 可选结算层加速，非执行层 |
+| 通信层 | XMTP (MLS E2E) | Agent 间加密消息，钱包地址即身份 |
 | SDK 语言 | TypeScript | Agent 开发者首选语言 |
 
 ---

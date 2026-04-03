@@ -1,186 +1,131 @@
-# Agent Daemon (客户端守护进程)
+# Agent Daemon (u5ba2u6237u7aefu5b88u62a4u8fdbu7a0b)
 
-## ⚠️ 关键发现：核心组件缺失！
-
-你提出了一个极其重要的问题。经过分析，我们发现：
-
-> **Agent Daemon 是当前架构中缺失的核心组件！**
+> u6bcfu4e2au7528u6237 Agent u7684u672cu5730u5b88u62a4u8fdbu7a0buff0cu4f5cu4e3a Agent u4e0e Gradience u7f51u7edcu4e4bu95f4u7684u6865u6881u3002
 
 ---
 
-## 🔍 现状分析
+## u5b9eu73b0u72b6u6001
 
-### 当前架构 (不完整)
-```
-┌─────────────┐      ❌ 缺少连接层      ┌─────────────────┐
-│ 用户 Agent   │  ←──────────────────→  │ Gradience 网络   │
-│ (Electron)  │      (直接连接?)         │ (Chain Hub)      │
-└─────────────┘                          └─────────────────┘
-```
+**u72b6u6001: u2705 MVP u5b8cu6210 (16/18 u4efbu52a1)**
 
-**问题**:
-- AgentM Pro 如何与 Chain Hub 通信？
-- 任务如何分配给本地 Agent？
-- 私钥如何安全存储？
-- 网络中断如何恢复？
+u4ee3u7801u4f4du7f6e: `apps/agent-daemon/`
 
-### 理想架构 (完整)
-```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────┐
-│ 用户 Agent   │ ←→  │ Agent Daemon │ ←→   │ Gradience 网络   │
-│ (UI/控制)   │      │ (本地守护进程) │      │ (Chain Hub)      │
-└─────────────┘      └──────────────┘      └─────────────────┘
-                            ↓
-                     ┌──────────────┐
-                     │ A2A Protocol │
-                     └──────────────┘
-```
+### u6838u5fc3u6a21u5757u5b8cu6210u5ea6
 
-**Agent Daemon 职责**:
-1. ✅ 保持与 Chain Hub 的 WebSocket 连接
-2. ✅ 接收和分发任务
-3. ✅ 管理本地 Agent 进程
-4. ✅ 安全存储私钥
-5. ✅ 自动重连和故障恢复
+| u6a21u5757 | u6587u4ef6 | u72b6u6001 | u5bf9u5e94u4efbu52a1 |
+|------|------|------|----------|
+| u9879u76eeu521du59cbu5316 | `package.json`, `tsconfig.json` | u2705 | AGENTD-1 |
+| Connection Manager | `src/connection/connection-manager.ts` | u2705 | AGENTD-2 |
+| Message Router | `src/messages/message-router.ts` | u2705 | AGENTD-3 |
+| Task Queue | `src/tasks/task-queue.ts` | u2705 | AGENTD-4 |
+| Task Executor | `src/tasks/task-executor.ts` | u2705 | AGENTD-5 |
+| Process Manager | `src/agents/process-manager.ts` | u2705 | AGENTD-6 |
+| Agent Lifecycle API | `src/api/routes/agents.ts` | u2705 | AGENTD-7 |
+| Agent Sandbox | - | u26a0ufe0f u5ef6u540e | AGENTD-8 |
+| Key Manager | `src/keys/key-manager.ts` | u2705 | AGENTD-9 |
+| Wallet Integration | `src/wallet/authorization.ts` | u2705 | AGENTD-10 |
+| Authentication | `src/api/auth-middleware.ts` | u2705 | AGENTD-11 |
+| Local Cache (SQLite) | `src/storage/database.ts` | u2705 | AGENTD-12 |
+| Sync Engine | - | u26a0ufe0f u5ef6u540e | AGENTD-13 |
+| REST API (Fastify) | `src/api/server.ts` + 7 u4e2au8defu7531u6587u4ef6 | u2705 | AGENTD-14 |
+| AgentM Pro u96c6u6210 | `src/daemon.ts` + `src/index.ts` | u2705 | AGENTD-15 |
+| u5355u5143u6d4bu8bd5 | `tests/unit/key-manager.test.ts` (6 tests) | u2705 | AGENTD-16 |
+| u96c6u6210u6d4bu8bd5 | `tests/integration/api.test.ts` (11 tests) | u2705 | AGENTD-17 |
+| u6784u5efau6253u5305 | `npm run build` (tsup) | u2705 | AGENTD-18 |
 
----
+### u6280u672fu6808
 
-## 📋 已规划的组件
+- **u8fd0u884cu65f6**: Node.js + TypeScript
+- **HTTP**: Fastify
+- **WebSocket**: ws
+- **u5b58u50a8**: better-sqlite3
+- **u52a0u5bc6**: tweetnacl + bs58
+- **u65e5u5fd7**: pino
+- **u6d4bu8bd5**: vitest
 
-| 组件 | 当前状态 | 是否缺失 |
-|------|----------|----------|
-| Chain Hub SDK | ❌ 未实现 | 🔴 缺失 |
-| SQL 接口 | ❌ 未实现 | 🔴 缺失 |
-| **Agent Daemon** | ❌ **不存在** | 🔴 **关键缺失** |
-| AgentM Pro | ⚠️ 框架中 | 🟡 待完善 |
-| A2A Protocol SDK | ❌ 未实现 | 🔴 缺失 |
+### API u8defu7531
 
----
+| u7aefu70b9 | u65b9u6cd5 | u8bf4u660e |
+|------|------|------|
+| `/api/v1/status` | GET | Daemon u72b6u6001u3001u8fdeu63a5u3001u4efbu52a1u8ba1u6570 |
+| `/api/v1/tasks` | GET | u4efbu52a1u5217u8868 |
+| `/api/v1/tasks/:id` | GET | u4efbu52a1u8be6u60c5 |
+| `/api/v1/agents` | GET/POST | Agent u6ce8u518cu4e0eu5217u8868 |
+| `/api/v1/keys/public` | GET | u516cu94a5 |
+| `/api/v1/keys/sign` | POST | u6d88u606fu7b7eu540d |
+| `/api/v1/messages` | GET | u6d88u606fu5217u8868 |
+| `/api/v1/wallet/*` | GET/POST | u94b1u5305u64cdu4f5c |
+| `/api/v1/solana/*` | GET/POST | Solana u4ea4u6613 |
 
-## 🎯 Agent Daemon 功能规格
-
-### 核心模块
-
-#### 1. Connection Manager
-- WebSocket 长连接
-- 自动重连（指数退避）
-- 心跳检测
-- 连接状态监控
-
-#### 2. Task Manager
-- 任务队列
-- 任务分发
-- 进度上报
-- 结果回传
-
-#### 3. Process Manager
-- 启动/停止 Agent
-- 健康检查
-- 崩溃恢复
-- 资源限制
-
-#### 4. Key Manager
-- 本地私钥管理
-- OS 密钥链集成
-- 交易签名
-- 安全存储
-
-#### 5. Message Router (A2A)
-- A2A 协议实现
-- 消息路由
-- P2P 通信
-
----
-
-## 📁 文档规划
-
-已创建以下文档：
+### u67b6u6784
 
 ```
-docs/agent-daemon/
-├── 01-prd.md              # 产品需求文档
-├── 04-task-breakdown.md   # 任务分解 (18个任务)
-└── README.md              # 本文件
+u250cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2510      u250cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2510      u250cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2510
+u2502 AgentM Pro  u2502 u2190u2192  u2502 Agent Daemon u2502 u2190u2192  u2502 Gradience u7f51u7edc  u2502
+u2502 (UI/u63a7u5236)   u2502 REST u2502 (u672cu5730u5b88u62a4)   u2502  WS  u2502 (Chain Hub)     u2502
+u2514u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2518      u2514u2500u2500u2500u2500u2500u2500u252cu2500u2500u2500u2500u2500u2500u2500u2518      u2514u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2518
+                       u2502
+                 u250cu2500u2500u2500u2500u2500u2500u2534u2500u2500u2500u2500u2500u2500u2500u2510
+                 u2502 u6838u5fc3u670du52a1       u2502
+                 u251cu2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2524
+                 u2502 ConnectionMgr u2502 WebSocket u957fu8fdeu63a5 + u81eau52a8u91cdu8fde + REST u56deu9000
+                 u2502 TaskQueue     u2502 SQLite u6301u4e45u5316u4efbu52a1u961fu5217
+                 u2502 TaskExecutor  u2502 u4efbu52a1u751fu547du5468u671fu7ba1u7406
+                 u2502 ProcessMgr    u2502 Agent u8fdbu7a0bu542fu505c/u76d1u63a7/u5d29u6e83u6062u590d
+                 u2502 MessageRouter u2502 A2A u6d88u606fu8defu7531
+                 u2502 KeyManager    u2502 Ed25519 u5bc6u94a5u5bf9u7ba1u7406
+                 u2502 WalletAuth    u2502 u94b1u5305u6388u6743u4e0eu7b7eu540d
+                 u2502 SQLite        u2502 u672cu5730u7f13u5b58u4e0eu72b6u6001
+                 u2514u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2518
+```
+
+### u5173u952eu5b9eu73b0u7279u6027
+
+1. **u8fdeu63a5u7ba1u7406**: u6307u6570u9000u907fu91cdu8fde + u5fc3u8df3u68c0u6d4b + REST API u56deu9000u6a21u5f0f
+2. **u4efbu52a1u961fu5217**: SQLite u6301u4e45u5316 + u4f18u5148u7ea7u961fu5217 + u72b6u6001u673a (queuedu2192assignedu2192runningu2192completed/failed)
+3. **u8fdbu7a0bu7ba1u7406**: u5b50u8fdbu7a0b spawn + u5065u5eb7u68c0u67e5 + u5d29u6e83u81eau52a8u91cdu542f
+4. **u5b89u5168**: Ed25519 u5bc6u94a5u5bf9 + u6587u4ef6u6743u9650 0o600 + Bearer Token u8ba4u8bc1
+5. **u591au8fdeu63a5**: u652fu6301u591au4e2a peer u8fdeu63a5 + topic u8ba2u9605
+
+### u5ef6u540eu529fu80fd
+
+| u529fu80fd | u539fu56e0 |
+|------|------|
+| Agent Sandbox (u8fdbu7a0bu9694u79bb/u8d44u6e90u9650u5236) | MVP u4e0du9700u8981uff0cu751fu4ea7u73afu5883u518du52a0 |
+| Sync Engine (u94feu4e0au6570u636eu540cu6b65) | u5f53u524du901au8fc7 Indexer REST API u5df2u5145u5206 |
+
+### u8fd0u884c
+
+```bash
+cd apps/agent-daemon
+npm run build
+npm start
+# u6216u5f00u53d1u6a21u5f0f
+npm run dev
+```
+
+### u6d4bu8bd5
+
+```bash
+cd apps/agent-daemon
+npx vitest run
+# 17 tests (6 unit + 11 integration)
 ```
 
 ---
 
-## 🚀 建议执行计划
+## u6587u6863u7d22u5f15
 
-### 立即开始 (本周)
-1. **Initialize Agent Daemon project**
-   - Node.js/TypeScript 项目
-   - 构建系统配置
-
-2. **Connection Manager**
-   - WebSocket 客户端
-   - 自动重连逻辑
-
-3. **Task Queue System**
-   - 内存队列
-   - SQLite 持久化
-
-### 第二周
-4. **Task Executor**
-5. **Agent Process Manager**
-6. **REST API**
-
-### 第三周
-7. **Key Manager**
-8. **AgentM Pro Integration**
-9. **测试和优化**
+| u6587u6863 | u5185u5bb9 | u72b6u6001 |
+|------|------|------|
+| [01-prd.md](01-prd.md) | u4ea7u54c1u9700u6c42 | u2705 u5b8cu6210 |
+| [02-architecture.md](02-architecture.md) | u7cfbu7edfu67b6u6784 | u2705 u5b8cu6210 |
+| [03-technical-spec.md](03-technical-spec.md) | u6280u672fu89c4u683c | u2705 u5b8cu6210 |
+| [04-task-breakdown.md](04-task-breakdown.md) | u4efbu52a1u62c6u89e3 | u2705 u5b8cu6210 |
+| [05-test-spec.md](05-test-spec.md) | u6d4bu8bd5u89c4u683c | u2705 u5b8cu6210 |
+| README.md | u672cu6587u6863 (u5b9eu73b0u72b6u6001) | u2705 u5df2u66f4u65b0 |
 
 ---
 
-## ❓ 关键决策
-
-1. **Agent Daemon 是独立进程还是 AgentM Pro 内置？**
-   - 推荐：独立进程（稳定性、可独立运行）
-   - 备选：内置（简化部署）
-
-2. **技术栈选择**
-   - 推荐：Node.js + TypeScript
-   - 备选：Rust（更高性能）
-
-3. **是否需要支持无 GUI 部署？**
-   - 服务器/云环境
-   - Docker 容器
-   - IoT 设备
-
----
-
-## 🔥 重要性评估
-
-**Agent Daemon 是阻塞性的！**
-
-没有它：
-- ❌ AgentM Pro 无法与网络通信
-- ❌ 无法接收任务分配
-- ❌ 无法安全管理密钥
-- ❌ 无法实现离线功能
-
-**建议优先级**: 🔴 **P0 - 立即开始**
-
----
-
-## 📊 需要创建的任务 (建议添加到 Linear)
-
-### MVP 核心任务 (10个)
-
-| # | 任务 | 优先级 | 类型 |
-|---|------|--------|------|
-| 1 | Initialize Agent Daemon project | P1 | 🤖 Agent |
-| 2 | Implement Connection Manager | P1 | 🤖 Agent |
-| 3 | Implement Message Protocol Handler | P1 | 🤖 Agent |
-| 4 | Implement Task Queue System | P1 | 🤖 Agent |
-| 5 | Implement Task Executor | P1 | 🤖 Agent |
-| 6 | Implement Agent Process Manager | P1 | 🤖 Agent |
-| 7 | Implement Key Manager | P1 | 🤖 Agent |
-| 8 | Implement REST API for UI | P1 | 🤖 Agent |
-| 9 | Create AgentM Pro Integration | P1 | 🤖 Agent |
-| 10 | Security audit for key management | P1 | 👤 人工 |
-
----
-
-*分析完成: 2026-04-03*  
-*状态: 需要立即开始开发*
+*u6700u540eu66f4u65b0: 2026-04-03*
+*u72b6u6001: MVP u5b8cu6210uff0c16/18 u4efbu52a1 Done*

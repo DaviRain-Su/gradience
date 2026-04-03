@@ -1,11 +1,11 @@
 # A2A 协议规范：Agent-to-Agent 经济协议
 
-> **文档状态**: v0.2 Draft
+> **文档状态**: v0.3 Draft
 > **创建日期**: 2026-03-30
-> **更新日期**: 2026-04-02
+> **更新日期**: 2026-04-04
 > **定位**: Gradience 的最终愿景——Agent 自主经济网络
 > **时间线**: 2027 路线图，当前为设计阶段
-> **重要更新**: 已整合 Google A2A Protocol (https://a2a-protocol.org)
+> **重要更新**: 已整合 Google A2A Protocol；通信层迁移至 XMTP，发现层迁移至 Nostr NIP-89/90
 
 ---
 
@@ -13,14 +13,14 @@
 
 ### 0.1 定位说明
 
-**Google A2A** (https://a2a-protocol.org) 是 Google 联合 Linux Foundation 推出的开放标准，定义了 Agent 之间的通信协议。
+**Google A2A** (https://a2a-protocol.org) 是 Google 联合 Linux Foundation 推出的开放标准，定义了 Agent 之间的互操作协议。
 
-**Gradience A2A** 在 Google A2A 基础上增加了**经济层**：信誉系统、任务结算、微支付通道。
+**Gradience A2A** 在 Google A2A 基础上增加了**经济层**（信誉 + 结算 + 质押），并采用 **XMTP** 作为 Agent 间通信传输层。
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                  Google A2A Protocol                    │
-│              (Agent 通信标准 - 开放标准)                  │
+│            (Agent 互操作标准 - 开放标准)                  │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │           Gradience A2A Extension               │   │
@@ -29,6 +29,9 @@
 │  │  │  信誉层  │  │  结算层  │  │  质押层  │         │   │
 │  │  └─────────┘  └─────────┘  └─────────┘         │   │
 │  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│           通信传输: XMTP (MLS E2E 加密)                  │
+│           发现层: Nostr NIP-89/90 (DVM 任务市场)          │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -36,9 +39,9 @@
 
 | Google A2A 提供 | Gradience 增强 |
 |----------------|---------------|
-| Agent 发现机制 | + 链上信誉验证 |
+| Agent 发现机制 | + 链上信誉验证 + Nostr NIP-89/90 去中心化发现 |
 | 任务通信协议 | + 经济激励结算 |
-| 安全消息传输 | + 质押 slash 保障 |
+| 安全消息传输 | + XMTP MLS E2E 加密 + 质押 slash 保障 |
 | 能力声明标准 | + 可验证战绩历史 |
 
 ### 0.3 与 MCP 的关系
@@ -104,8 +107,8 @@ Bitcoin L1                     Solana + Agent Layer
   = 慢但安全                     = 400ms + 不可变
 
 Lightning Network              A2A Protocol
-  = 实时支付                     = Agent 通信 + 微支付
-  = 快但需要通道                 = 快但需要 Ephemeral Rollup
+  = 实时支付                     = Agent 通信 (XMTP) + 微支付
+  = 快但需要通道                 = 快但需要支付通道
   = 定期回到 L1 结算             = 定期回到 Solana 结算
 ```
 
@@ -118,27 +121,28 @@ flowchart TB
         Reputation["信誉更新<br/>avgScore · winRate"]
         Stake["Stake 管理<br/>Agent/Judge 质押"]
         Channel["通道管理<br/>open / close / dispute"]
+        MBEnhance["MagicBlock ER<br/>结算层增强（高频加速 + TEE）"]
     end
     
     subgraph L2["L2: A2A Protocol"]
-        Messaging["Agent 消息<br/>libp2p / WebSocket"]
+        Messaging["Agent 消息<br/>XMTP (MLS E2E 加密)"]
         Micro["微支付通道<br/>链下即时结算"]
         State["状态通道<br/>多步协作"]
         TaskDecomp["任务分解<br/>大任务 → 子任务"]
         Negotiate["协商引擎<br/>价格/条件/评判"]
     end
     
-    subgraph ER["MagicBlock Ephemeral Rollup"]
-        ERExec["零费执行<br/>1ms 延迟"]
-        ERPriv["TEE 隐私<br/>敏感协商"]
+    subgraph L3["L3: Nostr Discovery"]
+        NIP89["NIP-89 Agent 公告<br/>kind:31990 能力声明"]
+        NIP90["NIP-90 DVM 任务市场<br/>kind 5xxx/6xxx/7000"]
     end
     
-    L2 <-->|"delegate / commit"| ER
-    ER <-->|"periodic settlement"| L1
+    L3 -->|"发现 Agent → 建立通信"| L2
+    L2 <-->|"periodic settlement"| L1
     
     style L1 fill:#0f7b8a15,stroke:#0f7b8a
     style L2 fill:#8b5cf615,stroke:#8b5cf6
-    style ER fill:#f59e0b15,stroke:#f59e0b
+    style L3 fill:#22c55e15,stroke:#22c55e
 ```
 
 ---
@@ -147,14 +151,20 @@ flowchart TB
 
 ### 3.1 Agent 消息协议
 
-Agent 之间的通信是 A2A 的基础。不走链，走 P2P。
+Agent 之间的通信是 A2A 的基础。不走链，走端到端加密通信。
 
 ```
 消息层设计:
 
 传输层:
-  主: libp2p（去中心化，NAT 穿透，pubsub）
+  主: XMTP（MLS E2E 加密 (IETF RFC 9420)，钱包地址即身份，@xmtp/agent-sdk 原生 Agent 支持）
   备: WebSocket（Web 环境兼容）
+  
+  为什么选 XMTP 而非 libp2p/WebRTC/Nostr DM:
+  ✅ MLS 群组加密，比 NIP-04 更安全
+  ✅ 钱包地址 = 身份，无需额外身份系统
+  ✅ @xmtp/agent-sdk 专为 Agent 设计
+  ✅ 去中心化消息存储，无单点故障
   
 消息格式:
   所有消息使用签名信封（Signed Envelope）
@@ -335,43 +345,62 @@ pub enum ChannelInstruction {
   → 只有最终结果上链
 
 实现:
-  使用 MagicBlock Ephemeral Rollup
-  → Agent Layer 账户委托给 ER
-  → 在 ER 中执行多步状态转换
-  → 最终 commit 回 Solana L1
+  多步协作状态在链下维护（XMTP 消息交换）
+  → Agent 间通过 XMTP 交换签名状态更新
+  → 每步双方签名确认
+  → 最终状态提交到 Solana L1 结算
+  → 可选: 使用 MagicBlock ER 加速高频状态转换（结算层增强）
 ```
 
 ---
 
 ## 4. Agent 发现与匹配
 
-### 4.1 去中心化 Agent 发现
+### 4.1 去中心化 Agent 发现（Nostr NIP-89/90 DVM）
+
+Agent 发现不再依赖自建 Indexer，而是使用 Nostr 协议的去中心化发现机制。
 
 ```
-Agent 发现机制:
+Agent 发现机制（Nostr NIP-89/90）:
 
-1. 信誉广播（Reputation Gossip）
-   Agent 定期在 libp2p pubsub 上广播自己的能力:
+1. Agent 能力公告（NIP-89 kind:31990）
+   Agent 发布 NIP-89 Application Handler 事件:
    {
-     "agentId": "7xKL...9mPz",
-     "skills": ["solidity-audit", "defi-strategy"],
-     "avgScore": 87,
-     "winRate": 0.73,
-     "availability": true,
-     "minBid": "10 USDC",
-     "reputationProof": "<signed proof from Solana>"
+     "kind": 31990,
+     "tags": [
+       ["d", "7xKL...9mPz"],
+       ["k", "5600"],                    // 支持的 DVM 任务类型
+       ["t", "solidity-audit"],
+       ["t", "defi-strategy"]
+     ],
+     "content": {
+       "name": "AuditAgent",
+       "about": "DeFi security auditor",
+       "walletAddress": "7xKL...9mPz",
+       "avgScore": 87,
+       "winRate": 0.73,
+       "minBid": "10 USDC",
+       "reputationProof": "<signed proof from Solana>"
+     }
    }
 
-2. 技能匹配（Skill Matching）
-   Task 广播时带 requiredSkills
-   → Agent 本地匹配
-   → 自动竞标符合条件的任务
+2. DVM 任务市场（NIP-90 kind 5xxx/6xxx/7000）
+   任务发布者发布 kind:5xxx 任务请求
+   → Agent 监听相关 kind 的任务事件
+   → 自动竞标符合条件的任务（kind:6xxx 结果）
+   → 任务反馈通过 kind:7000 事件
 
 3. 信任传播（Trust Propagation）
    Agent A 成功合作过的 Agent B，推荐给 Agent C
    → 二阶信任：A 信任 B，B 信任 C → A 对 C 有一定信任
    → 权重随传播距离衰减
    → 类似 PageRank 但用于 Agent 网络
+
+4. 与 XMTP 的协作
+   Nostr 负责发现，XMTP 负责通信:
+   → Agent 通过 Nostr NIP-89 发现对方
+   → 通过 XMTP 建立 E2E 加密通信通道
+   → 任务协商、结果传递、微支付均通过 XMTP
 ```
 
 ### 4.2 匹配算法
@@ -502,7 +531,7 @@ function shouldBidOnTask(
 │     SubTask 3: 经济攻击 (300 USDC)                            │
 │                                                                │
 │  4. A2A 广播子任务                                             │
-│     TaskBroadcast → libp2p pubsub                             │
+│     TaskBroadcast → Nostr NIP-90 DVM + XMTP                  │
 │                                                                │
 └────────────────────────────┬───────────────────────────────────┘
                              │
@@ -593,17 +622,18 @@ Agent Layer（内核）:
 
 A2A Protocol（L2）:
   全部新增:
-  - 消息层（libp2p）
+  - 消息层（XMTP，MLS E2E 加密）
+  - 发现层（Nostr NIP-89/90 DVM）
   - 任务分解引擎
   - 微支付通道逻辑（链下）
   - 状态通道逻辑（链下）
-  - Agent 发现与匹配
   - 信誉传播算法
 
-MagicBlock ER:
-  作为 A2A 的执行环境
-  - 零费高频交互
-  - TEE 隐私保护
+MagicBlock ER（结算层增强组件）:
+  作为 Solana 结算层的可选增强
+  - 高频状态转换加速（非通信层）
+  - TEE 隐私保护（sealed 模式执行）
+  - VRF 随机数（Judge 选择）
   - 自动回写 L1
 
 关键原则:
@@ -621,9 +651,11 @@ MagicBlock ER:
 |------|------|--------|------|
 | **A2A-0: Google A2A 兼容** | 2026 Q2 | 实现 A2A Server/Client 标准接口 | Agent Layer v2 |
 | **A2A-1: Agent Card 扩展** | 2026 Q2 | 扩展 Agent Card 加入 Gradience 信誉字段 | A2A-0 |
+| **A2A-1.5: XMTP 通信层** | 2026 Q2 | @xmtp/agent-sdk 集成，Agent 间 MLS E2E 加密通信 | @xmtp/agent-sdk |
+| **A2A-1.6: Nostr 发现层** | 2026 Q2 | NIP-89 Agent 公告 + NIP-90 DVM 任务市场 | Nostr relay |
 | **A2A-2: 微支付通道** | 2026 Q3 | 支付通道 open/close/dispute | Solana Program |
-| **A2A-3: 任务分解** | 2026 Q4 | Agent 可分解任务并广播子任务 | A2A-0 |
-| **A2A-4: ER 集成** | 2027 Q1 | MagicBlock ER 作为 A2A 执行环境 | MagicBlock SDK |
+| **A2A-3: 任务分解** | 2026 Q4 | Agent 可分解任务并广播子任务 | A2A-1.5 + A2A-1.6 |
+| **A2A-4: 结算层增强** | 2027 Q1 | MagicBlock ER/PER/VRF 作为结算层可选增强 | MagicBlock SDK |
 | **A2A-5: 信誉传播** | 2027 Q2 | A2A 协作信誉 + 批量回写 L1 | A2A-1 + A2A-2 |
 | **A2A-6: 自主 Agent** | 2027 H2 | Agent 自主发起任务和经济决策 | 全部上述 |
 
@@ -636,6 +668,9 @@ MagicBlock ER:
 - [ ] 扩展 Task 对象加入 `gradienceExtension` 字段
 - [ ] 实现 `gradience/*` 方法族
 - [ ] 与 Google A2A 参考实现互操作测试
+- [ ] XMTP @xmtp/agent-sdk 集成与测试
+- [ ] Nostr NIP-89 Agent 公告发布与解析
+- [ ] Nostr NIP-90 DVM 任务发布/匹配/反馈流程
 
 ---
 
@@ -646,7 +681,7 @@ MagicBlock ER:
 | A2A 子任务的 Judge 谁来定？ | 协调 Agent 选择（继承原任务 Judge 或自选） | 是否需要链上约束？ |
 | 微支付通道是否需要抵押？ | 类闪电网络需要双方抵押 | 单方 vs 双方？ |
 | A2A 信誉回写频率？ | 每 N 次协作或每天一次 | 具体参数需要实验 |
-| libp2p 还是自建消息层？ | 优先 libp2p（成熟、去中心化） | 是否需要 fallback？ |
+| XMTP 性能是否满足高频场景？ | XMTP MLS 已验证，WebSocket 作为 fallback | 是否需要测试大规模场景？ |
 | 子任务失败怎么处理？ | 协调 Agent 承担风险（可重新分配） | 是否需要链上机制？ |
 
 ---
@@ -744,6 +779,11 @@ interface GradienceMethods {
 - **Google A2A**: https://a2a-protocol.org
 - **GitHub**: https://github.com/a2aproject/A2A
 - **MCP**: https://modelcontextprotocol.io/
+- **XMTP**: https://xmtp.org / https://github.com/xmtp/xmtp-agent-examples
+- **XMTP Agent SDK**: https://www.npmjs.com/package/@xmtp/agent-sdk
+- **Nostr NIP-89**: https://github.com/nostr-protocol/nips/blob/master/89.md
+- **Nostr NIP-90 (DVM)**: https://github.com/nostr-protocol/nips/blob/master/90.md
+- **MLS (IETF RFC 9420)**: https://www.rfc-editor.org/rfc/rfc9420
 
 ---
 
@@ -751,6 +791,6 @@ interface GradienceMethods {
 *当 Agent 有了信誉、有了结算、有了 Stake——它们自然会开始互相合作。*
 *我们要做的不是设计合作，而是让合作可能。*
 
-*Gradience A2A 与 Google A2A 标准整合，构建完整的 Agent 经济基础设施。*
+*Gradience A2A 与 Google A2A 标准整合，通过 XMTP 通信 + Nostr 发现 + Solana 结算，构建完整的 Agent 经济基础设施。*
 
-_Gradience A2A Protocol Spec v0.2 · 2026-04-02_
+_Gradience A2A Protocol Spec v0.3 · 2026-04-04_

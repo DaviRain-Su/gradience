@@ -156,57 +156,77 @@ Gradience does not need its own blockchain. A task lifecycle is ~10–25 transac
 When millions of Agents communicate in real time — exchanging messages, negotiating sub-tasks, streaming micropayments — no single chain can handle the throughput. The solution mirrors Bitcoin's own evolution:
 
 ```mermaid
-flowchart LR
-    subgraph L1["L1: Solana + Agent Layer"]
-        S["Task settlement<br/>Reputation updates<br/>Channel open/close"]
+flowchart TB
+    subgraph L4["Layer 4: Interoperability"]
+        A2A_P["Google A2A (capability declaration)"]
+        MCP["MCP (Tool invocation)"]
     end
-    subgraph L2["L2: A2A Protocol (off-chain)"]
-        M["Agent messaging (libp2p)"]
-        P["Micropayment channels"]
-        C["State channels"]
-        B["Batched reputation"]
+    subgraph L3["Layer 3: Discovery"]
+        NIP89["Nostr NIP-89 (Agent announcements)"]
+        NIP90["Nostr NIP-90 (DVM task matching)"]
     end
-    
-    L2 -->|"periodic settlement"| L1
-    
+    subgraph L2["Layer 2: Communication"]
+        XMTP["XMTP (Agent E2E encrypted messaging, MLS)"]
+        Micro["Micropayment channels"]
+    end
+    subgraph L1["Layer 1: Settlement"]
+        Sol["Solana (Home Chain)<br/>Agent Layer · Reputation · ChainHub"]
+        EVM["EVM Guest Chains<br/>Arb · OP · Base"]
+        MB["MagicBlock ER/PER/VRF<br/>(Solana optional enhancement)"]
+        Pay["x402/OWS micropayments"]
+        Bridge["Wormhole / LayerZero (cross-chain bridge)"]
+    end
+    subgraph L0["Layer 0: Protocol Kernel"]
+        Kernel["Escrow + Judge + Reputation<br/>(chain-agnostic state machine)"]
+    end
+
+    L4 --> L3
+    L3 --> L2
+    L2 --> L1
+    L1 --> L0
+    Sol <-->|"cross-chain bridge"| EVM
+    MB -.->|"optional acceleration"| Sol
+
     style L1 fill:#0f7b8a15,stroke:#0f7b8a
-    style L2 fill:#8b5cf615,stroke:#8b5cf6
+    style L0 fill:#8b5cf615,stroke:#8b5cf6
 ```
 
-- **Messaging**: Agent-to-Agent via libp2p/WebSocket — no chain needed
+- **Interoperability**: Google A2A for capability declaration, MCP for tool invocation — Agents speak standard protocols
+- **Discovery**: Nostr NIP-89 for Agent announcements, NIP-90 DVM for decentralized task matching — no centralized indexer
+- **Communication**: XMTP for Agent-to-Agent E2E encrypted messaging (MLS protocol) — no chain needed
 - **Micropayment channels**: Open on Solana, exchange thousands of payments off-chain, settle net balance periodically
-- **State channels**: Multi-step collaborations execute off-chain, only final outcome goes on-chain
 - **Batched reputation**: A2A reputation updates aggregated and written in batches
 
 Solana remains the settlement layer at any scale. The protocol scales by **layering**, not by replacing infrastructure.
 
-### Execution: MagicBlock Ephemeral Rollups
+### Solana Enhancement: MagicBlock ER/PER/VRF
 
-Rather than building custom off-chain infrastructure, the A2A layer leverages [MagicBlock Ephemeral Rollups](https://www.magicblock.xyz) — elastic, zero-fee, sub-50ms execution environments native to Solana:
+Agent execution is **off-chain** — Agents run tasks locally or in cloud environments, not on-chain. The settlement layer only records scores and payments. However, for high-frequency on-chain scenarios (e.g., rapid micropayment settlement, real-time reputation updates), [MagicBlock](https://www.magicblock.xyz) provides optional acceleration as a Solana-native enhancement:
 
 ```mermaid
 flowchart TB
-    subgraph Solana["Solana L1"]
+    subgraph Solana["Solana Settlement Layer"]
         Agent["Agent Layer Program<br/>Task lifecycle · Reputation · Settlement<br/>~400ms · ~$0.001/tx"]
     end
-    subgraph ER["MagicBlock Ephemeral Rollup"]
-        A2A["A2A Interactions<br/>Messaging · Micropayments · Negotiation<br/>~1ms · $0/tx"]
-        PER["Private ER (TEE)<br/>Sensitive operations"]
+    subgraph Enhancement["MagicBlock (Optional Solana Enhancement)"]
+        ER["Ephemeral Rollups<br/>High-frequency settlement acceleration<br/>~1ms · $0/tx"]
+        PER["Private ER (TEE)<br/>Sealed-mode judge evaluation<br/>Intel TDX"]
+        VRF["Verifiable Random Function<br/>Fair agent selection"]
     end
 
-    Agent <-->|"delegate / commit"| ER
+    Agent <-->|"delegate / commit"| Enhancement
     
     style Solana fill:#0f7b8a15,stroke:#0f7b8a
-    style ER fill:#8b5cf615,stroke:#8b5cf6
+    style Enhancement fill:#8b5cf615,stroke:#8b5cf6
 ```
 
-- **1ms block time, <50ms end-to-end** — fast enough for real-time Agent interaction
-- **Zero fees** within Ephemeral Rollup
-- **Private ER** via Intel TDX TEE for sensitive Agent negotiations
-- **No bridge** — still Solana, state auto-commits back to L1
-- **Zero custom infrastructure** — MagicBlock operates global validators (Asia, EU, US)
+- **Ephemeral Rollups (ER)**: Accelerate high-frequency settlement — 1ms block time, zero fees, state auto-commits back to Solana L1
+- **Private ER (PER)**: Intel TDX TEE for sealed-mode judge evaluation — prevents score manipulation before reveal
+- **VRF**: Fair, verifiable random selection for agent matching and task assignment
+- **Not an execution layer**: Agents execute tasks off-chain; MagicBlock only accelerates on-chain settlement when needed
+- **No bridge needed** — still Solana, MagicBlock operates global validators (Asia, EU, US)
 
-The protocol stays minimal. The execution scales elastically.
+MagicBlock is an optimization, not a dependency. The protocol works without it.
 
 ### Cross-Chain Reputation: One Agent, One Identity, All Chains
 
@@ -254,11 +274,11 @@ Gradience is integrating with [Open Wallet Standard](https://openwallet.sh) — 
 
 **Integration highlights:**
 - **Identity**: OWS Wallet as Agent's persistent multi-chain identity
-- **Messaging**: XMTP for agent-to-agent coordination via OWS Agent Kit
+- **Messaging**: XMTP is the primary Agent-to-Agent communication protocol — E2E encrypted via MLS, supporting group conversations, content types, and consent. Integrated via OWS Agent Kit, XMTP replaces libp2p as the communication layer across the entire protocol stack
 - **Credentials**: Verifiable credentials stored in OWS
-- **Payments**: MoonPay skills for fiat on/off ramps
+- **Payments**: MoonPay skills for fiat on/off ramps; x402 for HTTP-native micropayments
 
-This positions Gradience Agents to interoperate natively with other OWS-powered agents and access traditional finance rails.
+This positions Gradience Agents to interoperate natively with other OWS-powered agents and access traditional finance rails. XMTP provides the encrypted messaging substrate while Nostr handles decentralized discovery — together they form the off-chain communication backbone.
 
 **Status**: 🔧 Integration in progress
 
@@ -372,7 +392,7 @@ The reference implementation of the **Agent Layer** protocol — decentralized A
 - ✅ On-chain escrow + automatic settlement
 - ✅ Immutable reputation system
 - ✅ Per-task independent judge (EOA, smart contract, or multi-sig)
-- ✅ Real-time indexer (Cloudflare Workers + D1)
+- ✅ Nostr-based discovery (NIP-89/90 DVM)
 - ✅ TypeScript SDK + CLI + Agent Loop
 
 **Tech stack:** Solana Program (Rust) · Next.js 14 · TypeScript SDK · CLI · Judge Daemon

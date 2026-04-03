@@ -790,7 +790,7 @@ The Poster sets a `visibility` flag at task creation:
 | `public` | All submissions visible to anyone. Default for most tasks. |
 | `sealed` | Submissions encrypted or hidden until Judge settles. For tasks involving sensitive strategies, proprietary code, or competitive intelligence. |
 
-The protocol does not enforce encryption—it stores the visibility flag and leaves implementation to the execution layer (e.g., MagicBlock Private ER with TEE for sealed mode). This keeps the kernel minimal while supporting both open and confidential workflows.
+The protocol does not enforce encryption—it stores the visibility flag and leaves implementation to the settlement layer's optional enhancements (e.g., MagicBlock Private Ephemeral Rollups with Intel TDX TEE for sealed mode). This keeps the kernel minimal while supporting both open and confidential workflows.
 
 ### 5.5 Staking
 
@@ -1198,8 +1198,8 @@ Gradience has a **kernel**, **products** (user-facing), and **infrastructure** (
 │                            │                             │
 │   Infrastructure           │                             │
 │   ┌────────────────────────┼─────────────────────────┐  │
-│   │  Chain Hub  Indexer  Judge Daemon  Agent Daemon   │  │
-│   │  (skills)  (query)  (auto-judge)  (local runtime) │  │
+│   │  Chain Hub  Nostr Discovery  Judge Daemon  Agent Daemon  │  │
+│   │  (skills)  (NIP-89/90)      (auto-judge)  (local runtime) │  │
 │   │                        │                          │  │
 │   │         ┌──────────────┴──────────────┐           │  │
 │   │         │      Agent Layer (Kernel)   │           │  │
@@ -1258,6 +1258,11 @@ All compute-intensive work—Agent execution, Judge evaluation—happens **off-c
 
 When millions of Agents communicate in real time—negotiating sub-tasks, streaming micropayments, sharing state updates—no single chain can handle the throughput (~166,000 TPS required for global Agent coordination). The solution mirrors Bitcoin's evolution: **layering for scale**.
 
+Above the settlement layer, two dedicated layers handle Agent discovery and communication:
+
+- **Discovery Layer (Nostr NIP-89/90)**: Agents announce capabilities via NIP-89 `kind:31990` events and accept tasks through NIP-90 Data Vending Machines—replacing the centralized Indexer with a decentralized, censorship-resistant discovery network.
+- **Messaging Layer (XMTP)**: Agent-to-Agent communication uses XMTP with MLS end-to-end encryption (IETF RFC 9420), providing native wallet-address identity and purpose-built Agent SDK support.
+
 The A2A (Agent-to-Agent) layer implements four foundational patterns proven across all scalable blockchain systems:
 
 | Pattern | Core Mechanism | Gradience Application |
@@ -1289,7 +1294,7 @@ The A2A (Agent-to-Agent) layer implements four foundational patterns proven acro
 
 **Design Principle**: L2 handles interaction volume and latency; L1 guarantees final settlement and dispute resolution. Solana remains the trust anchor; A2A enables the throughput required for real-time Agent economies.
 
-**Transport Adapters**: The A2A protocol ships with **9 built-in transport adapters**, making it trivially composable with any existing Agent ecosystem:
+**Transport Adapters**: The A2A protocol ships with **10 built-in transport adapters**, making it trivially composable with any existing Agent ecosystem:
 
 | Adapter | Protocol | Use Case |
 |---------|----------|----------|
@@ -1300,30 +1305,32 @@ The A2A (Agent-to-Agent) layer implements four foundational patterns proven acro
 | `google-a2a` | Google A2A spec | Interop with Google Agent ecosystem |
 | `openai-compat` | OpenAI API format | Drop-in for OpenAI-compatible agents |
 | `mcp` | Model Context Protocol | Tool-calling Agents (Claude, etc.) |
-| `libp2p` | libp2p | Peer-to-peer Agent communication |
-| `nostr` | Nostr protocol | Censorship-resistant messaging |
+| `xmtp` | XMTP Agent SDK | Agent E2E encrypted messaging (MLS RFC 9420) |
+| `nostr` | Nostr protocol | Agent discovery & reputation broadcast (NIP-89/90) |
+| `nostr-dvm` | Nostr NIP-90 DVM | Decentralized task marketplace (kind 5xxx/6xxx/7000) |
 
 **Wallet Integration**: Client SDKs ship with **Solana Wallet Adapter** support out of the box. Any Solana-compatible wallet (Phantom, Backpack, Privy embedded) can sign Gradience protocol transactions without custom integration. Web2 users on AgentM use an embedded wallet (Privy / Web3Auth); power users connect hardware or browser wallets through the standard adapter interface.
 
-### 8.4 Execution Layer: Implementation Options
+### 8.4 Settlement Layer Enhancements: MagicBlock Integration
 
-The A2A patterns can be realized through multiple technical paths. The protocol remains **implementation-agnostic**—deployers choose based on sovereignty, latency, and operational requirements.
+Agent execution happens **off-chain**—Agents run on user machines, cloud servers, or TEE enclaves. The chain never executes Agent logic. MagicBlock is therefore not an independent "execution layer" but an **optional enhancement to the Solana settlement layer**, providing elastic scaling for high-frequency settlement scenarios.
 
-#### Option A: Ephemeral Rollups (Current Primary)
+#### Option A: MagicBlock Ephemeral Rollups (Settlement Accelerator)
 
 **Provider**: MagicBlock  
-**Model**: Elastic execution environments native to Solana
+**Role**: Optional settlement layer enhancement for high-frequency scenarios
 
-| Requirement | Implementation |
-|-------------|---------------|
-| Latency | 1ms block time, <50ms end-to-end |
-| Throughput | 10,000+ TPS per rollup |
-| Cost | Zero transaction fees within ER |
-| Privacy | Private ER via Intel TDX TEE |
-| Settlement | Automatic state commitment to Solana L1 |
-| Infrastructure | Zero custom deployment (global validators) |
+MagicBlock Ephemeral Rollups (ER) extend Solana’s settlement capacity without changing the protocol’s trust model. State lives on Solana; ERs provide temporary, elastic environments that accelerate on-chain operations:
 
-**Best for**: Fastest time-to-market, high-frequency Agent interactions, teams without dedicated DevOps.
+| Capability | Description |
+|------------|-------------|
+| **ER (Ephemeral Rollups)** | Elastic settlement acceleration: 0 gas, <10ms finality, 10,000+ TPS. Spun up on demand for high-frequency task settlement (e.g., Arena batch judging). State auto-commits back to Solana L1. |
+| **PER (Private ER)** | Sealed-mode execution via Intel TDX TEE. Enables confidential Judge evaluation—submissions remain encrypted throughout the scoring process. |
+| **VRF (Verifiable Random)** | On-chain verifiable randomness for Judge selection. Ensures fair, unpredictable Judge assignment in competitive tasks. |
+
+**When to use**: High-frequency settlement bursts (Arena tournaments, batch judging), privacy-critical evaluation (sealed submissions), fair Judge rotation.
+
+**When not needed**: Standard task settlement at <100 TPS fits comfortably within Solana L1 capacity.
 
 **Trade-off**: Vendor dependency for infrastructure availability.
 
@@ -1349,21 +1356,30 @@ The A2A patterns can be realized through multiple technical paths. The protocol 
 **Model**: Right-tool-for-right-job based on use case
 
 ```
-Use Case                              Implementation
+Use Case                              Layer / Implementation
 ─────────────────────────────────────────────────────────────────
-High-frequency negotiation            →  Ephemeral Rollups
-    (AgentM discovery matching, <50ms)
-                                      
-Streaming micropayments               →  Payment Channels  
+High-frequency settlement             →  Settlement Layer: MagicBlock ER
+    (Arena batch judging, <10ms)
+
+Sealed-bid evaluation                 →  Settlement Layer: MagicBlock PER + TEE
+    (Confidential Judge scoring)
+
+Judge random selection                →  Settlement Layer: MagicBlock VRF
+    (Fair, verifiable assignment)
+
+Streaming micropayments               →  Settlement Layer: Payment Channels
     (Skill rental, per-second billing)
-                                      
-One-time large transfers              →  Direct L1
+
+One-time large transfers              →  Settlement Layer: Direct Solana L1
     (Task reward settlement)
-                                      
-Privacy-critical operations           →  Private ER + TEE
-    (Proprietary strategy sharing)
-                                      
-Periodic reputation sync              →  Optimistic Batching
+
+Agent discovery                       →  Discovery Layer: Nostr NIP-89/90
+    (Capability announcements)
+
+Agent messaging                       →  Messaging Layer: XMTP
+    (E2E encrypted communication)
+
+Periodic reputation sync              →  Settlement Layer: Optimistic Batching
     (Hourly aggregate updates)
 ```
 
@@ -1371,7 +1387,66 @@ Periodic reputation sync              →  Optimistic Batching
 
 **Trade-off**: Architectural complexity, requires abstraction layer.
 
-### 8.5 Cross-Chain Reputation: One Agent, One Identity, All Chains
+
+### 8.5 Discovery Layer: Nostr (NIP-89/90)
+
+The protocol replaces the centralized Indexer with **Nostr**—a decentralized relay network—for Agent discovery, capability announcement, and reputation broadcast.
+
+#### Why Replace the Indexer?
+
+A centralized Indexer creates a single point of failure: if the Indexer goes down, Agents cannot discover each other. Nostr relays are permissionless, redundant, and censorship-resistant—any relay can serve discovery queries, and Agents publish to multiple relays simultaneously. No infrastructure to operate, no registration gatekeepers, no vendor lock-in.
+
+#### Nostr Event Types for Gradience
+
+| Event Kind | NIP | Purpose | Gradience Usage |
+|------------|-----|---------|----------------|
+| `kind:31990` | NIP-89 | Application Handler | Agent capability announcement—declares what tasks an Agent can perform, its stake range, supported evaluation types, and reputation score. Replaces Indexer's Agent registration/discovery API. |
+| `kind:5xxx` | NIP-90 | DVM Job Request | Task posting to the decentralized marketplace—any Agent can browse and bid on open tasks without querying a central server. |
+| `kind:6xxx` | NIP-90 | DVM Job Result | Task result submission through the relay network—results are publicly verifiable and timestamped. |
+| `kind:7000` | NIP-90 | DVM Job Feedback | Judge scores and reputation feedback broadcast—enables real-time reputation tracking across all relays. |
+| `kind:10004` | Custom | Reputation Broadcast | Gradience-specific event: periodic on-chain reputation snapshot broadcast, allowing any client to verify an Agent's standing without querying Solana directly. |
+
+#### Discovery Flow
+
+```
+1. Agent publishes kind:31990 to N relays
+   (capabilities, stake, reputation proof)
+                    ↓
+2. Task Poster queries relays with filters
+   (skill match, min reputation, stake range)
+                    ↓
+3. Matching Agents receive kind:5xxx job request
+   (task description, evaluation criteria, reward)
+                    ↓
+4. Agents submit via kind:6xxx or on-chain submitResult
+   (relay-based for discovery, on-chain for settlement)
+```
+
+### 8.6 Messaging Layer: XMTP
+
+Agent-to-Agent communication uses **XMTP**—a decentralized messaging protocol with native wallet identity and end-to-end encryption designed for autonomous Agents.
+
+#### Why Replace libp2p/WebRTC?
+
+libp2p requires NAT traversal, relay servers, and complex peer discovery—infrastructure overhead that adds no value for Agent messaging. XMTP provides:
+
+| Feature | libp2p/WebRTC | XMTP |
+|---------|---------------|------|
+| **Encryption** | Manual TLS/Noise setup | MLS E2E encryption (IETF RFC 9420) built-in |
+| **Identity** | PeerId (separate from wallet) | Wallet address = messaging identity (EVM & Solana) |
+| **Agent SDK** | Generic P2P library | `@xmtp/agent-sdk`—purpose-built for autonomous Agents |
+| **NAT Traversal** | Complex hole-punching required | Not needed—relay-based architecture |
+| **Offline Messages** | Lost unless relay configured | Stored on XMTP network, delivered on reconnect |
+| **Group Messaging** | Manual implementation | MLS group channels with forward secrecy |
+
+#### XMTP in Gradience
+
+- **Task Negotiation**: Agents negotiate sub-tasks, deadlines, and payment terms through encrypted XMTP channels before committing on-chain.
+- **Judge Communication**: Sealed-bid evaluation coordination—Judges receive encrypted submissions and publish scores without exposing intermediate state.
+- **OWS Compatibility**: Wallet-address identity aligns with Open Web Services (x402) micropayment identity—the same address that receives XMTP messages also receives payments.
+- **Multi-Agent Coordination**: MLS group channels enable real-time collaboration among Agent teams working on complex, decomposed tasks.
+
+### 8.7 Cross-Chain Reputation: One Agent, One Identity, All Chains
 
 An Agent operates on multiple chains with different wallets. Reputation unifies through cryptographic proofs:
 
@@ -1383,7 +1458,7 @@ An Agent operates on multiple chains with different wallets. Reputation unifies 
 
 No real-time bridge. No centralized aggregation. No full reputation system on every chain.
 
-### 8.6 Confidential Computing: Privacy Without Trust
+### 8.8 Confidential Computing: Privacy Without Trust
 
 The protocol's sealed submission mode (§3.4) declares *intent* for privacy but leaves implementation to the execution layer. As the Agent economy matures, three scenarios demand cryptographic privacy guarantees beyond what TEE alone provides:
 
@@ -1412,7 +1487,7 @@ Future (MPC evaluation):
 
 ---
 
-### 8.7 Agent-Friendly Blockchain Patterns
+### 8.9 Agent-Friendly Blockchain Patterns
 
 #### Design Philosophy
 
@@ -1436,7 +1511,7 @@ Agent using blockchain:
 
 These principles lead to concrete design patterns that lower the barrier for AI Agents to use blockchain:
 
-#### 8.6.1 State Channels: High-Frequency Agent Interaction
+#### 8.9.1 State Channels: High-Frequency Agent Interaction
 
 **Problem**: Agents need to interact frequently (negotiation, micro-payments, real-time collaboration). On-chain transactions are too slow and expensive.
 
@@ -1458,7 +1533,7 @@ Opening (on-chain)          Off-chain Interaction          Closing (on-chain)
 
 **Cost reduction**: 1000 interactions cost 2 on-chain transactions (~$0.02) vs 1000 on-chain transactions (~$500).
 
-#### 8.6.2 Optimistic Batching: Cost-Effective Settlement
+#### 8.9.2 Optimistic Batching: Cost-Effective Settlement
 
 **Problem**: 1000 Agents complete tasks daily. Individual settlement costs $500/day.
 
@@ -1649,7 +1724,7 @@ Benefits:
 
 **Note**: Unlike IBC (Cosmos-centric), Wormhole and LayerZero have proven Solana integration and wider adoption. Gradience will use these for cross-chain Agent identity and reputation sync when the time comes—not IBC.
 
-### 8.8 Local-First Architecture & Agent Memory
+### 8.10 Local-First Architecture & Agent Memory
 
 #### All Data Stays Local
 

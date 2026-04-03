@@ -143,52 +143,44 @@ flowchart LR
         S["任务结算<br/>信誉更新<br/>通道开关"]
     end
     subgraph L2["L2：A2A 协议（链下）"]
-        M["Agent 消息（libp2p）"]
+        XMTP["XMTP (Agent E2E 加密通信, MLS)"]
+        Nostr["发现层 (Nostr NIP-89/90 DVM)"]
         P["微支付通道"]
         C["状态通道"]
-        B["批量信誉"]
+    end
+
+    subgraph Enhancement["MagicBlock (可选 Solana 结算层增强)"]
+        MB["ER/PER/VRF"]
     end
     
     L2 -->|"定期结算"| L1
+    Enhancement -->|"高频加速"| L1
     
     style L1 fill:#0f7b8a15,stroke:#0f7b8a
     style L2 fill:#8b5cf615,stroke:#8b5cf6
+    style Enhancement fill:#f59e0b15,stroke:#f59e0b
 ```
 
-- **消息传递**：Agent 间通过 libp2p/WebSocket——无需上链
+- **通信**：Agent 间通过 XMTP E2E 加密消息 (MLS 协议, IETF RFC 9420)——无需上链
+- **发现**：Agent 通过 Nostr NIP-89/90 DVM 去中心化发现与任务匹配——无需自建 Indexer
 - **微支付通道**：在 Solana 上开通，链下交换数千次支付，定期结算净额
 - **状态通道**：多步协作在链下执行，只有最终结果上链
-- **批量信誉**：A2A 信誉更新聚合后批量写入
 
 Solana 在任何规模下都保持结算层角色。协议通过**分层**扩展，而非替换基础设施。
 
-### 执行层：MagicBlock Ephemeral Rollups
+### 结算层增强：MagicBlock ER/PER/VRF
 
-A2A 层不自建基础设施，而是利用 [MagicBlock Ephemeral Rollups](https://www.magicblock.xyz)——弹性、零费用、亚 50ms 执行环境，原生于 Solana：
+Agent 执行任务是**链下**的——Agent 在用户机器、云服务器或 TEE 环境运行。链上只记录评分和支付。[MagicBlock](https://www.magicblock.xyz) 是 Solana 结算层的**可选增强组件**，用于高频场景弹性扩展：
 
-```mermaid
-flowchart TB
-    subgraph Solana["Solana L1"]
-        Agent["Agent Layer Program<br/>任务生命周期 · 信誉 · 结算<br/>~400ms · ~$0.001/tx"]
-    end
-    subgraph ER["MagicBlock Ephemeral Rollup"]
-        A2A["A2A 交互<br/>消息 · 微支付 · 协商<br/>~1ms · $0/tx"]
-        PER["Private ER（TEE）<br/>敏感操作"]
-    end
+| 组件 | 用途 |
+|------|------|
+| **ER (弹性 Rollup)** | 高频结算加速: 0 gas, <10ms 终局, 10,000+ TPS |
+| **PER (私有 ER)** | Intel TDX TEE 密封模式执行 |
+| **VRF (可验证随机)** | Judge 公平随机选择 |
 
-    Agent <-->|"委托 / 提交"| ER
-    
-    style Solana fill:#0f7b8a15,stroke:#0f7b8a
-    style ER fill:#8b5cf615,stroke:#8b5cf6
-```
-
-- **1ms 出块，<50ms 端到端** — 足够支撑 Agent 实时交互
-- **零手续费** — Ephemeral Rollup 内零交易费
-- **Private ER** — 通过 Intel TDX TEE 保护 Agent 敏感协商
-- **无需桥接** — 仍然是 Solana，状态自动回提到 L1
-- **零自建基础设施** — MagicBlock 运营全球验证器（亚洲、欧洲、美国）
-
-协议保持极简。执行弹性扩展。
+- **不是执行层** — Agent 在链下执行任务，MagicBlock 只加速链上结算
+- **无需桥接** — 仍然是 Solana，MagicBlock 运营全球验证器
+- **可选组件** — 协议无它也能工作，标准任务 <100 TPS 在 Solana L1 内充分满足
 
 ### 跨链信誉：一个 Agent，一个身份，全链通用
 
