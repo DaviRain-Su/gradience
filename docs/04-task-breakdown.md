@@ -3,8 +3,11 @@
 > **目的**: 将技术规格拆解为可执行、可分配、可验收的独立任务
 > **输入**: `docs/03-technical-spec.md`
 > **输出物**: 本文档
-> **更新日期**: 2026-04-02
-> **更新说明**: 根据 Gap Analysis 重新调整优先级，T19a-d 提升为 W1 阻塞项，AgentM 任务细化
+> **更新日期**: 2026-04-04
+> **更新说明**: 
+> - 新增 §4.6 Mid-Term Integration 任务（GRA-M1~M10）
+> - 更新 Devnet 部署状态：4 个核心程序已部署
+> - 根据 Whitepaper v1.2 添加 Sequoia Matrix 市场策略
 
 ---
 
@@ -304,7 +307,94 @@ flowchart TB
 
 ---
 
-## 4.6 Sprint 执行建议
+## 4.6 Devnet 部署状态（2026-04-04 更新）
+
+### 已部署程序
+
+| 程序 | Program ID | 大小 | 状态 |
+|------|------------|------|------|
+| **Agent Arena** | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` | 235,560 bytes | ✅ 已部署 |
+| **Chain Hub** | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | 107,752 bytes | ✅ 已部署 |
+| **A2A Protocol** | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | 115,768 bytes | ✅ 已部署 |
+| **Workflow Marketplace** | `3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW` | 19,648 bytes | ✅ 已部署 |
+
+### 部署总结
+
+- **Agent Arena**: 12 条指令全部实现（initialize, post_task, apply_for_task, submit_result, judge_and_pay, cancel_task, register_judge, unstake_judge, refund_expired, force_refund, upgrade_config, emit_event）
+- **Chain Hub**: 11 条指令全部实现（initialize, upgrade_config, register_skill, set_skill_status, register_protocol, update_protocol_status, delegation_task CRUD）
+- **A2A Protocol**: Agent-to-Agent 通信协议基础
+- **Workflow Marketplace**: 工作流市场合约（create, purchase, execute, review）
+
+**Explorer**: https://explorer.solana.com/?cluster=devnet
+
+---
+
+## 4.7 Mid-Term Integration 任务（GRA-M1~M10）
+
+> **时间段**: 2026-04-04 ~ 04-10  
+> **目标**: 完成 XMTP 通信层、OWS 钱包集成、Evaluator & Settlement 三大工作流
+
+| 任务 | 名称 | 描述 | 状态 | 优先级 |
+|------|------|------|------|--------|
+| **GRA-M1** | XMTP 支付消息标准 | 定义 A2A Payment Envelope 格式；集成 XMTP 消息层 | ✅ 完成 | P0 |
+| **GRA-M2** | XMTP 通信 SDK | Agent 间加密通信；Payment Request / Response 消息类型 | ✅ 完成 | P0 |
+| **GRA-M3** | OWS 钱包集成 | OpenWallet Standard 适配；Key Vault 自动注入 | ✅ 完成 | P0 |
+| **GRA-M4** | OWS 托管模式 | 企业级 TEE 托管；Policy Engine 权限控制 | 🔄 进行中 | P1 |
+| **GRA-M5** | XMTP 支付流 | Payment Request → Evaluation → Settlement 完整链路 | ✅ 完成 | P0 |
+| **GRA-M6** | Evaluator Runtime | Playwright 沙箱；Agent 执行轨迹捕获 | ✅ 完成 | P0 |
+| **GRA-M7** | Settlement Bridge | Solana 结算桥接；Proof 生成与验证 | ✅ 完成 | P0 |
+| **GRA-M8** | 支付服务 | Payment Service 核心；与 Agent Daemon 集成 | ✅ 完成 | P0 |
+| **GRA-M9** | E2E 支付流测试 | 完整端到端测试；多种场景覆盖 | ✅ 完成 | P0 |
+| **GRA-M10** | 文档与示例 | 开发者文档；SDK 使用示例 | 🔄 进行中 | P1 |
+
+### 集成架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Agent Economy Flow                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────────┐    XMTP    ┌──────────────┐                  │
+│   │   Agent A    │◄──────────►│   Agent B    │                  │
+│   │  (Payer)     │  Payment   │   (Payee)    │                  │
+│   └──────┬───────┘   Request  └──────┬───────┘                  │
+│          │                           │                           │
+│          │    ┌──────────────┐       │                           │
+│          └───►│   Payment    │◄──────┘                           │
+│               │   Service    │                                   │
+│               └──────┬───────┘                                   │
+│                      │                                            │
+│                      ▼                                            │
+│          ┌───────────────────────┐                               │
+│          │   Evaluator Runtime   │                               │
+│          │  ┌─────────────────┐  │                               │
+│          │  │  Sandbox        │  │                               │
+│          │  │  Playwright     │  │                               │
+│          │  │  Scoring Model  │  │                               │
+│          │  └─────────────────┘  │                               │
+│          └───────────┬───────────┘                               │
+│                      │                                            │
+│                      ▼                                            │
+│          ┌───────────────────────┐                               │
+│          │  Settlement Bridge    │                               │
+│          │  ┌─────────────────┐  │                               │
+│          │  │  Proof Gen      │  │                               │
+│          │  │  Solana CPI     │  │                               │
+│          │  └─────────────────┘  │                               │
+│          └───────────┬───────────┘                               │
+│                      │                                            │
+│                      ▼                                            │
+│          ┌───────────────────────┐                               │
+│          │   Agent Layer Program │                               │
+│          │   (Devnet Deployed)   │                               │
+│          └───────────────────────┘                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4.8 Sprint 执行建议
 
 基于更新后的优先级，建议按以下 Sprint 执行：
 
@@ -334,7 +424,7 @@ flowchart TB
 
 ---
 
-## 4.7 风险识别（更新版）
+## 4.9 风险识别（更新版）
 
 | 风险 | 概率 | 影响 | 缓解措施 |
 |------|------|------|---------|
@@ -348,6 +438,35 @@ flowchart TB
 
 ---
 
+## 4.10 Sequoia Matrix 市场策略（Whitepaper v1.2）
+
+基于 Sequoia Capital "Services is the New Software" 分析框架，任务分解按以下市场阶段执行：
+
+### Phase 1 (Q2 2026): Zone C — The Wedge
+**目标**: 基础设施 + 开发者采用
+- **核心任务**: W1-W2（Program + 工具链）
+- **目标市场**: 内部 IT、数据标注、基础客服
+- **成功指标**: 100+ 开发者注册，10+ 生态 Agent
+
+### Phase 2 (Q3 2026): Zone B — Copilot Helper  
+**目标**: 首个服务垂直领域（内容/设计/数据）
+- **核心任务**: W3（AgentM MVP + Chain Hub）
+- **目标市场**: 法律咨询、猎头招聘、财务顾问
+- **成功指标**: 1000+ 月活 Agent，$100K+ 月 GMV
+
+### Phase 3 (Q4 2026): Zone A — Autopilot Ready
+**目标**: 专业服务（会计/法律/保险）
+- **核心任务**: W4+（EVM + 跨链 + AI Judge 全自动）
+- **目标市场**: 保险理赔、医疗计费、合规审计
+- **成功指标**: 10,000+ 活跃 Agent，$1M+ 月 GMV
+
+### Phase 4 (2027): 企业 + 复杂服务
+**目标**: 供应链、招聘、IT
+- **核心任务**: Layer 2/3（Agent 借贷 + gUSD）
+- **成功指标**: Enterprise 客户 10+，$10M+ 年 GMV
+
+---
+
 ## ✅ Phase 4 验收标准（更新版）
 
 - [x] 每个任务 ≤ 4 小时
@@ -355,6 +474,9 @@ flowchart TB
 - [x] 依赖关系已标明，无循环依赖
 - [x] **关键路径清晰：T19a-d 为 W1 唯一阻塞项**
 - [x] **AgentM 任务细化（T40a-d），产品层优先级明确**
+- [x] **Mid-Term Integration 任务已记录（GRA-M1~M10）**
+- [x] **Devnet 部署状态已更新（4 个核心程序）**
+- [x] **Sequoia Matrix 市场策略已整合**
 - [x] 划分为 5 个里程碑，每个均有可演示交付物
 - [x] 风险已识别（7 项，含 W1 阻塞项专项风险）
 
