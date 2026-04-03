@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import type { User } from '@privy-io/react-auth';
 import Link from 'next/link';
+import { useOWSBinding } from '@/hooks/useOWSBinding';
+import { useOWSAgentRouter } from '@/hooks/useOWSAgentRouter';
+import type { OWSAgentWalletBinding } from '@/lib/ows/agent-wallet';
+import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
 type ActiveView = 'discover' | 'me' | 'chat';
 
@@ -24,6 +28,13 @@ interface AgentRow {
     reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
 }
 
+interface SolanaWalletCandidate {
+    address: string;
+    connectorType: string | null;
+    walletClientType: string | null;
+    walletIndex: number | null;
+}
+
 export default function AppPage() {
     if (!PRIVY_APP_ID) {
         return <DemoApp />;
@@ -35,7 +46,55 @@ export default function AppPage() {
 function PrivyApp() {
     const { ready, authenticated, login, logout, user } = usePrivy();
     const [view, setView] = useState<ActiveView>('discover');
-    const address = authenticated && user ? extractSolanaAddress(user) : null;
+    const [selectedWalletAddress, setSelectedWalletAddress] = useState<string | null>(null);
+    const wallets = authenticated && user ? extractSolanaWallets(user) : [];
+    const preferredWallet = selectPreferredSolanaWallet(wallets);
+    const loginEmail = authenticated && user ? extractGoogleLoginEmail(user) : null;
+    const address = selectedWalletAddress
+        ? wallets.find((wallet) => wallet.address === selectedWalletAddress)?.address ?? preferredWallet?.address ?? null
+        : preferredWallet?.address ?? null;
+    const selectedWallet = wallets.find((wallet) => wallet.address === address) ?? preferredWallet ?? null;
+    const accountKey = authenticated && user ? buildAccountKey(user, loginEmail) : null;
+    const {
+        binding,
+        bindingError,
+        bindingBusy,
+        providerAvailable,
+        status: bindingStatus,
+        bindSelectedWallet,
+        unbind,
+    } = useOWSBinding({
+        accountKey,
+        loginEmail,
+        selectedWallet: address,
+    });
+    const masterWallet = binding?.masterWallet ?? address ?? null;
+    const {
+        state: routerState,
+        activeSubWallet,
+        error: routerError,
+        createSubWallet,
+        setActiveSubWallet,
+    } = useOWSAgentRouter({
+        accountKey,
+        masterWallet,
+    });
+    const runtimeAddress = activeSubWallet?.walletAddress ?? address;
+
+    useEffect(() => {
+        if (!authenticated) {
+            setSelectedWalletAddress(null);
+            return;
+        }
+        const stored = typeof window !== 'undefined' ? window.localStorage.getItem('agentm:selected-wallet') : null;
+        const target = wallets.find((wallet) => wallet.address === stored)?.address ?? preferredWallet?.address ?? null;
+        setSelectedWalletAddress(target);
+    }, [authenticated, wallets, preferredWallet]);
+
+    useEffect(() => {
+        if (!selectedWalletAddress || typeof window === 'undefined') return;
+        window.localStorage.setItem('agentm:selected-wallet', selectedWalletAddress);
+    }, [selectedWalletAddress]);
 
     if (!ready) {
         return <Loading />;
@@ -46,9 +105,38 @@ function PrivyApp() {
     }
 
     return (
-        <Shell view={view} setView={setView} address={address} onLogout={logout}>
+        <Shell
+            view={view}
+            setView={setView}
+            address={runtimeAddress}
+            loginEmail={loginEmail}
+            wallets={wallets}
+            onWalletChange={setSelectedWalletAddress}
+            bindingStatus={bindingStatus}
+            activeSubWallet={activeSubWallet}
+            onLogout={logout}
+        >
             {view === 'discover' && <DiscoverView />}
-            {view === 'me' && <MeView address={address} />}
+            {view === 'me' && (
+                <MeView
+                    address={runtimeAddress}
+                    masterWallet={masterWallet}
+                    loginEmail={loginEmail}
+                    selectedWallet={selectedWallet}
+                    owsBinding={binding}
+                    bindingStatus={bindingStatus}
+                    bindingBusy={bindingBusy}
+                    bindingError={bindingError}
+                    providerAvailable={providerAvailable}
+                    onBindOWS={bindSelectedWallet}
+                    onUnbindOWS={unbind}
+                    activeSubWallet={activeSubWallet}
+                    subWallets={routerState?.subWallets ?? []}
+                    routerError={routerError}
+                    onCreateSubWallet={createSubWallet}
+                    onSetActiveSubWallet={setActiveSubWallet}
+                />
+            )}
             {view === 'chat' && <ChatPlaceholder />}
         </Shell>
     );
@@ -59,9 +147,38 @@ function DemoApp() {
     const [demoAddr] = useState(() => 'DEMO_' + Math.random().toString(36).slice(2, 8));
 
     return (
-        <Shell view={view} setView={setView} address={demoAddr} onLogout={() => {}}>
+        <Shell
+            view={view}
+            setView={setView}
+            address={demoAddr}
+            activeSubWallet={null}
+            loginEmail="demo@agentm.local"
+            wallets={[]}
+            onWalletChange={() => {}}
+            bindingStatus="unbound"
+            onLogout={() => {}}
+        >
             {view === 'discover' && <DiscoverView />}
-            {view === 'me' && <MeView address={demoAddr} />}
+            {view === 'me' && (
+                <MeView
+                    address={demoAddr}
+                    masterWallet={demoAddr}
+                    loginEmail="demo@agentm.local"
+                    selectedWallet={null}
+                    owsBinding={null}
+                    bindingStatus="unbound"
+                    bindingBusy={false}
+                    bindingError={null}
+                    providerAvailable={false}
+                    onBindOWS={() => null}
+                    onUnbindOWS={() => {}}
+                    activeSubWallet={null}
+                    subWallets={[]}
+                    routerError={null}
+                    onCreateSubWallet={() => null}
+                    onSetActiveSubWallet={() => null}
+                />
+            )}
             {view === 'chat' && <ChatPlaceholder />}
         </Shell>
     );
@@ -74,12 +191,22 @@ function Shell({
     view,
     setView,
     address,
+    activeSubWallet,
+    loginEmail,
+    wallets,
+    onWalletChange,
+    bindingStatus,
     onLogout,
 }: {
     children: React.ReactNode;
     view: ActiveView;
     setView: (v: ActiveView) => void;
     address: string | null;
+    activeSubWallet: OWSAgentSubWallet | null;
+    loginEmail: string | null;
+    wallets: SolanaWalletCandidate[];
+    onWalletChange: (address: string) => void;
+    bindingStatus: 'bound' | 'wallet_changed' | 'unbound';
     onLogout: () => void;
 }) {
     const tabs: { key: ActiveView; label: string }[] = [
@@ -93,8 +220,32 @@ function Shell({
             <aside className="w-52 bg-gray-900 border-r border-gray-800 flex flex-col">
                 <div className="p-4">
                     <Link href="/" className="text-lg font-bold hover:text-blue-400 transition">AgentM</Link>
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                        Login: {loginEmail ?? 'Google OAuth'}
+                    </p>
+                    {activeSubWallet && (
+                        <p className="text-[10px] text-emerald-400 mt-1 truncate">
+                            Active Agent: {activeSubWallet.handle}
+                        </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1 font-mono truncate">{address?.slice(0, 16)}...</p>
                 </div>
+                {wallets.length > 1 && (
+                    <div className="px-4 pb-3">
+                        <label className="text-[10px] text-gray-500 uppercase tracking-wide">Agent Wallet</label>
+                        <select
+                            value={address ?? ''}
+                            onChange={(event) => onWalletChange(event.target.value)}
+                            className="mt-1 w-full bg-gray-950 border border-gray-700 rounded-lg px-2 py-1.5 text-xs"
+                        >
+                            {wallets.map((wallet) => (
+                                <option key={wallet.address} value={wallet.address}>
+                                    {wallet.connectorType === 'embedded' ? 'Privy' : 'External'} · {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 <nav className="flex-1 px-2 space-y-1">
                     {tabs.map((t) => (
                         <button
@@ -109,6 +260,9 @@ function Shell({
                     ))}
                 </nav>
                 <div className="p-4">
+                    <p className="text-[10px] mb-2 text-gray-600">
+                        OWS: {formatBindingStatus(bindingStatus)}
+                    </p>
                     <button onClick={onLogout} className="text-sm text-gray-500 hover:text-white transition">
                         Logout
                     </button>
@@ -185,9 +339,44 @@ function DiscoverView() {
 
 // ── Me ───────────────────────────────────────────────────────────────
 
-function MeView({ address }: { address: string | null }) {
+function MeView({
+    address,
+    masterWallet,
+    loginEmail,
+    selectedWallet,
+    owsBinding,
+    bindingStatus,
+    bindingBusy,
+    bindingError,
+    providerAvailable,
+    onBindOWS,
+    onUnbindOWS,
+    activeSubWallet,
+    subWallets,
+    routerError,
+    onCreateSubWallet,
+    onSetActiveSubWallet,
+}: {
+    address: string | null;
+    masterWallet: string | null;
+    loginEmail: string | null;
+    selectedWallet: SolanaWalletCandidate | null;
+    owsBinding: OWSAgentWalletBinding | null;
+    bindingStatus: 'bound' | 'wallet_changed' | 'unbound';
+    bindingBusy: boolean;
+    bindingError: string | null;
+    providerAvailable: boolean;
+    onBindOWS: () => OWSAgentWalletBinding | null;
+    onUnbindOWS: () => void;
+    activeSubWallet: OWSAgentSubWallet | null;
+    subWallets: OWSAgentSubWallet[];
+    routerError: string | null;
+    onCreateSubWallet: (handle: string) => unknown;
+    onSetActiveSubWallet: (subWalletId: string | null) => unknown;
+}) {
     const [rep, setRep] = useState<ReputationData | null>(null);
     const [loading, setLoading] = useState(false);
+    const [newSubWalletHandle, setNewSubWalletHandle] = useState('');
 
     useEffect(() => {
         if (!address) return;
@@ -206,6 +395,106 @@ function MeView({ address }: { address: string | null }) {
             <h2 className="text-2xl font-bold">My Agent</h2>
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                 <p className="text-sm text-gray-500 font-mono">{address}</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-2">
+                <h3 className="text-lg font-semibold">Wallet Binding</h3>
+                <p className="text-sm text-gray-400">Login: {loginEmail ?? 'Google OAuth'}</p>
+                <p className="text-xs text-gray-500">
+                    Active Agent Wallet: {selectedWallet?.address ?? address ?? 'N/A'}
+                </p>
+                <p className="text-xs text-gray-500">
+                    Source: {selectedWallet?.connectorType === 'embedded' ? 'Privy Embedded Wallet' : 'External Wallet'}
+                </p>
+                <p className="text-xs text-gray-500">
+                    OWS provider: {providerAvailable ? 'detected' : 'not detected (local persistence mode)'}
+                </p>
+                <p className="text-xs text-blue-400">
+                    Binding status: {formatBindingStatus(bindingStatus)}
+                </p>
+                {owsBinding && (
+                    <div className="text-xs text-gray-500 space-y-1 pt-1">
+                        <p>OWS DID: {owsBinding.owsDid}</p>
+                        <p>Agent Wallet ID: {owsBinding.agentWalletId}</p>
+                        <p>Master Wallet: {owsBinding.masterWallet}</p>
+                    </div>
+                )}
+                {bindingError && <p className="text-xs text-red-400">{bindingError}</p>}
+                <div className="flex gap-2 pt-1">
+                    <button
+                        onClick={onBindOWS}
+                        disabled={!address || bindingBusy}
+                        className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 disabled:bg-blue-900 text-xs"
+                    >
+                        {bindingBusy ? 'Binding...' : 'Bind Selected Wallet to OWS'}
+                    </button>
+                    {owsBinding && (
+                        <button
+                            onClick={onUnbindOWS}
+                            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs"
+                        >
+                            Unbind
+                        </button>
+                    )}
+                </div>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-3">
+                <h3 className="text-lg font-semibold">Agent Sub-Wallet Routing</h3>
+                <p className="text-xs text-gray-500">
+                    Master wallet: {masterWallet ?? 'N/A'} (Privy-controlled). Sub-wallets route signing through master policy.
+                </p>
+                <div className="flex gap-2">
+                    <input
+                        value={newSubWalletHandle}
+                        onChange={(event) => setNewSubWalletHandle(event.target.value)}
+                        placeholder="agent handle (e.g. scout-agent)"
+                        className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                    />
+                    <button
+                        onClick={() => {
+                            if (!newSubWalletHandle.trim()) return;
+                            onCreateSubWallet(newSubWalletHandle);
+                            setNewSubWalletHandle('');
+                        }}
+                        disabled={!owsBinding}
+                        className="px-3 py-2 rounded-lg bg-indigo-700 hover:bg-indigo-600 disabled:bg-indigo-900 text-xs"
+                    >
+                        Create Sub-Wallet
+                    </button>
+                </div>
+                {routerError && <p className="text-xs text-red-400">{routerError}</p>}
+                {subWallets.length === 0 ? (
+                    <p className="text-xs text-gray-500">No sub-wallets yet. Create one after OWS binding.</p>
+                ) : (
+                    <div className="space-y-2">
+                        {subWallets.map((wallet) => (
+                            <button
+                                key={wallet.id}
+                                onClick={() => onSetActiveSubWallet(wallet.id)}
+                                className={`w-full text-left rounded-lg border px-3 py-2 ${
+                                    activeSubWallet?.id === wallet.id
+                                        ? 'border-emerald-500 bg-emerald-950/20'
+                                        : 'border-gray-800 bg-gray-950'
+                                }`}
+                            >
+                                <p className="text-sm font-medium">{wallet.handle}</p>
+                                <p className="text-[10px] text-gray-500 font-mono truncate">
+                                    {wallet.walletAddress}
+                                </p>
+                                <p className="text-[10px] text-gray-500">
+                                    Route: {wallet.policy.strategy} · approval {wallet.policy.requireMasterApprovalAboveUsd} USD+
+                                </p>
+                            </button>
+                        ))}
+                        {activeSubWallet && (
+                            <button
+                                onClick={() => onSetActiveSubWallet(null)}
+                                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs"
+                            >
+                                Use Master Wallet
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                 <h3 className="text-lg font-semibold mb-4">Reputation</h3>
@@ -276,10 +565,79 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
     );
 }
 
-function extractSolanaAddress(user: User): string {
-    const w = user.linkedAccounts?.find((a) => a.type === 'wallet' && a.chainType === 'solana');
-    if (w && 'address' in w) return w.address as string;
-    return user.id;
+function extractGoogleLoginEmail(user: User): string | null {
+    const google = user.linkedAccounts?.find((account) => account.type === 'google_oauth');
+    if (google && 'email' in google && typeof google.email === 'string') {
+        return google.email;
+    }
+    const emailAccount = user.linkedAccounts?.find((account) => account.type === 'email');
+    if (emailAccount && 'address' in emailAccount && typeof emailAccount.address === 'string') {
+        return emailAccount.address;
+    }
+    return null;
+}
+
+function extractSolanaWallets(user: User): SolanaWalletCandidate[] {
+    const linked = user.linkedAccounts ?? [];
+    const wallets: SolanaWalletCandidate[] = [];
+
+    for (const account of linked) {
+        if (account.type !== 'wallet') continue;
+        const chainType = readStringField(account, 'chain_type') ?? readStringField(account, 'chainType');
+        if (chainType !== 'solana') continue;
+
+        const address = readStringField(account, 'address');
+        if (!address) continue;
+
+        wallets.push({
+            address,
+            connectorType: readStringField(account, 'connector_type') ?? readStringField(account, 'connectorType'),
+            walletClientType: readStringField(account, 'wallet_client_type') ?? readStringField(account, 'walletClientType'),
+            walletIndex: readNumberField(account, 'wallet_index') ?? readNumberField(account, 'walletIndex'),
+        });
+    }
+
+    return wallets;
+}
+
+function selectPreferredSolanaWallet(wallets: SolanaWalletCandidate[]): SolanaWalletCandidate | null {
+    if (wallets.length === 0) return null;
+    const sorted = [...wallets].sort((left, right) => scoreWallet(right) - scoreWallet(left));
+    return sorted[0] ?? null;
+}
+
+function scoreWallet(wallet: SolanaWalletCandidate): number {
+    let score = 0;
+    if (wallet.connectorType === 'embedded') score += 100;
+    if (wallet.walletClientType === 'privy') score += 50;
+    if (wallet.walletIndex === 0) score += 10;
+    return score;
+}
+
+function buildAccountKey(user: User, loginEmail: string | null): string {
+    if (typeof user.id === 'string' && user.id) {
+        return `privy:${user.id}`;
+    }
+    if (loginEmail) {
+        return `email:${loginEmail.toLowerCase()}`;
+    }
+    return 'anonymous';
+}
+
+function formatBindingStatus(status: 'bound' | 'wallet_changed' | 'unbound'): string {
+    if (status === 'bound') return 'bound';
+    if (status === 'wallet_changed') return 'wallet changed (rebind required)';
+    return 'unbound';
+}
+
+function readStringField<T extends object>(obj: T, key: string): string | null {
+    const value = (obj as Record<string, unknown>)[key];
+    return typeof value === 'string' ? value : null;
+}
+
+function readNumberField<T extends object>(obj: T, key: string): number | null {
+    const value = (obj as Record<string, unknown>)[key];
+    return typeof value === 'number' ? value : null;
 }
 
 function resolveIndexerBase(): string {
