@@ -2,7 +2,8 @@ import type { NextConfig } from 'next';
 import { resolve } from 'node:path';
 
 const nextConfig: NextConfig = {
-    output: 'standalone',
+    output: 'export',
+    distDir: 'dist',
     reactStrictMode: true,
     typescript: {
         ignoreBuildErrors: true,
@@ -10,10 +11,11 @@ const nextConfig: NextConfig = {
     eslint: {
         ignoreDuringBuilds: true,
     },
+    images: {
+        unoptimized: true,
+    },
     webpack: (config) => {
         // Force all @solana/kit imports to resolve to v5.5.1
-        // Fixes: @solana-program/token@0.9.0 (via Privy) resolving to @solana/kit@2.3.0
-        // which is missing 'sequentialInstructionPlan' export
         config.resolve.alias = {
             ...config.resolve.alias,
             '@solana/kit': resolve(

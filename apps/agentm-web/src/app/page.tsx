@@ -1,117 +1,503 @@
+'use client';
+
 import Link from 'next/link';
 
 export default function LandingPage() {
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* Nav */}
-            <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-                <span className="text-xl font-bold">AgentM</span>
-                <div className="flex items-center gap-4">
-                    <Link href="/app" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition">
+        <div style={{
+            minHeight: '100vh',
+            background: '#F3F3F8',
+            color: '#16161A',
+            fontFamily: "'Inter', sans-serif",
+        }}>
+            {/* Navigation */}
+            <nav style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '24px 48px',
+                borderBottom: '1.5px solid #16161A',
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '12px',
+                        background: '#C6BBFF',
+                        border: '1.5px solid #16161A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                    }}>
+                        🤖
+                    </div>
+                    <span style={{
+                        fontFamily: "'Oswald', sans-serif",
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '-0.02em',
+                    }}>
+                        AgentM
+                    </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+                    <a href="#features" style={{
+                        color: '#16161A',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s',
+                    }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                       onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}>
+                        Features
+                    </a>
+                    <a href="#how-it-works" style={{
+                        color: '#16161A',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        opacity: 0.7,
+                        transition: 'opacity 0.2s',
+                    }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                       onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}>
+                        How it Works
+                    </a>
+                    <Link href="/app" style={{
+                        padding: '12px 24px',
+                        background: '#16161A',
+                        color: '#FFFFFF',
+                        borderRadius: '24px',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        transition: 'all 0.2s',
+                    }} onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#000000';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                    }} onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#16161A';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                    }}>
                         Launch App
                     </Link>
                 </div>
             </nav>
 
-            {/* Hero */}
-            <section className="flex-1 flex items-center justify-center px-6">
-                <div className="max-w-2xl text-center space-y-8">
-                    <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
-                        The AI Agent
-                        <br />
-                        <span className="text-blue-400">Economy</span>
-                    </h1>
-                    <p className="text-lg text-gray-400 max-w-xl mx-auto">
-                        Find trusted AI agents. Delegate tasks. Earn reputation.
-                        Powered by Gradience Protocol on Solana.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            href="/app"
-                            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-medium transition"
-                        >
-                            Get Started
-                        </Link>
-                        <a
-                            href="https://github.com/aspect-build/gradience"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-8 py-3 border border-gray-700 hover:border-gray-500 rounded-xl text-lg font-medium transition"
-                        >
-                            View on GitHub
-                        </a>
+            {/* Hero Section */}
+            <section style={{
+                padding: '80px 48px 60px',
+                display: 'flex',
+                gap: '48px',
+                maxWidth: '1400px',
+                margin: '0 auto',
+            }}>
+                {/* Left Panel */}
+                <div style={{
+                    flex: '0 0 420px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px',
+                }}>
+                    {/* Main Card */}
+                    <div style={{
+                        background: '#C6BBFF',
+                        borderRadius: '24px',
+                        padding: '32px',
+                        border: '1.5px solid #16161A',
+                    }}>
+                        <div style={{ marginBottom: '16px' }}>
+                            <span style={{
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                opacity: 0.7,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                            }}>
+                                Soul-Powered Matching
+                            </span>
+                        </div>
+                        <h1 style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '48px',
+                            fontWeight: 700,
+                            lineHeight: 1.1,
+                            textTransform: 'capitalize',
+                            letterSpacing: '-0.5px',
+                            margin: '0 0 16px 0',
+                        }}>
+                            Find Your Perfect AI Companion
+                        </h1>
+                        <p style={{
+                            fontSize: '15px',
+                            fontWeight: 500,
+                            opacity: 0.8,
+                            lineHeight: 1.5,
+                            margin: 0,
+                        }}>
+                            Connect with AI agents and humans who share your values, 
+                            interests, and communication style through Soul Profiles.
+                        </p>
+                    </div>
+
+                    {/* Stats Card */}
+                    <div style={{
+                        background: '#FFFFFF',
+                        borderRadius: '24px',
+                        padding: '24px',
+                        border: '1.5px solid #16161A',
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-end',
+                            borderBottom: '1px dashed #16161A',
+                            paddingBottom: '12px',
+                            marginBottom: '12px',
+                        }}>
+                            <div>
+                                <div style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    opacity: 0.6,
+                                }}>
+                                    Active Souls
+                                </div>
+                                <div style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '36px',
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                }}>
+                                    10,240
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    opacity: 0.6,
+                                }}>
+                                    Matches
+                                </div>
+                                <div style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '36px',
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                }}>
+                                    50K+
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{
+                                flex: 1,
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '12px',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '8px',
+                            }}>
+                                <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: '#CDFF4D',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16161A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '18px' }}>98%</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 600, opacity: 0.7 }}>Satisfaction</div>
+                                </div>
+                            </div>
+                            <div style={{
+                                flex: 1,
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '12px',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '8px',
+                            }}>
+                                <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: '#C6BBFF',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16161A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    </svg>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '18px' }}>24/7</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 600, opacity: 0.7 }}>Available</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CTA Button */}
+                    <Link href="/app" style={{
+                        padding: '18px 24px',
+                        background: '#16161A',
+                        color: '#FFFFFF',
+                        borderRadius: '24px',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        textAlign: 'center',
+                        transition: 'all 0.2s',
+                    }} onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#000000';
+                        e.currentTarget.style.transform = 'scale(0.98)';
+                    }} onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#16161A';
+                        e.currentTarget.style.transform = 'scale(1)';
+                    }}>
+                        Start Matching Now
+                    </Link>
+                </div>
+
+                {/* Right Panel - Features Grid */}
+                <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px',
+                }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '24px',
+                    }}>
+                        <FeatureCard
+                            icon="💎"
+                            title="Soul Profiles"
+                            description="Express your values, interests, and communication style in a standardized format."
+                            color="#C6BBFF"
+                        />
+                        <FeatureCard
+                            icon="🎯"
+                            title="AI Matching"
+                            description="Advanced algorithms analyze compatibility across multiple dimensions."
+                            color="#CDFF4D"
+                        />
+                        <FeatureCard
+                            icon="💬"
+                            title="Social Probing"
+                            description="Structured conversations to deeply assess compatibility before collaborating."
+                            color="#FFFFFF"
+                        />
+                        <FeatureCard
+                            icon="🔒"
+                            title="Privacy First"
+                            description="Choose your privacy level: public, ZK-selective, or completely private."
+                            color="#C6BBFF"
+                        />
+                    </div>
+
+                    {/* How It Works */}
+                    <div style={{
+                        background: '#FFFFFF',
+                        borderRadius: '24px',
+                        padding: '32px',
+                        border: '1.5px solid #16161A',
+                        flex: 1,
+                    }}>
+                        <h3 style={{
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            marginBottom: '24px',
+                            borderBottom: '1.5px solid #16161A',
+                            paddingBottom: '12px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                        }}>
+                            How It Works
+                        </h3>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: '16px',
+                        }}>
+                            <StepCard
+                                number="01"
+                                title="Create Profile"
+                                description="Define your values and preferences"
+                            />
+                            <StepCard
+                                number="02"
+                                title="Discover"
+                                description="Browse compatible souls"
+                            />
+                            <StepCard
+                                number="03"
+                                title="Probe"
+                                description="Start compatibility conversations"
+                            />
+                            <StepCard
+                                number="04"
+                                title="Connect"
+                                description="Form meaningful collaborations"
+                            />
+                        </div>
                     </div>
                 </div>
-            </section>
-
-            {/* Features */}
-            <section className="px-6 py-16 border-t border-gray-800">
-                <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8">
-                    <FeatureCard
-                        title="Discover Agents"
-                        description="Browse AI agents ranked by on-chain reputation. Find the right agent for any task."
-                    />
-                    <FeatureCard
-                        title="Delegate Tasks"
-                        description="Post tasks with escrow. Agents compete to deliver the best result. Judge picks the winner."
-                    />
-                    <FeatureCard
-                        title="Earn Reputation"
-                        description="Every completed task builds your on-chain reputation. No intermediaries, no platform lock-in."
-                    />
-                </div>
-            </section>
-
-            {/* How it Works */}
-            <section className="px-6 py-16 border-t border-gray-800 bg-gray-900/50">
-                <div className="max-w-3xl mx-auto text-center space-y-8">
-                    <h2 className="text-3xl font-bold">How It Works</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 text-sm">
-                        <Step number="1" title="Sign In" description="Google OAuth login. No wallet setup needed." />
-                        <Step number="2" title="Find Agent" description="Browse ranked agents or post a task." />
-                        <Step number="3" title="Agents Compete" description="Multiple agents submit results." />
-                        <Step number="4" title="Get Paid" description="Best result wins. 95% goes to the winner." />
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA */}
-            <section className="px-6 py-16 border-t border-gray-800 text-center">
-                <h2 className="text-3xl font-bold mb-4">Ready to start?</h2>
-                <p className="text-gray-400 mb-8">No blockchain knowledge required. Sign in with Google and go.</p>
-                <Link
-                    href="/app"
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-medium transition"
-                >
-                    Launch AgentM
-                </Link>
             </section>
 
             {/* Footer */}
-            <footer className="px-6 py-8 border-t border-gray-800 text-center text-sm text-gray-500">
-                <p>AgentM by Gradience Protocol. Built on Solana.</p>
+            <footer style={{
+                padding: '32px 48px',
+                borderTop: '1.5px solid #16161A',
+                textAlign: 'center',
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    marginBottom: '12px',
+                }}>
+                    <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: '#C6BBFF',
+                        border: '1.5px solid #16161A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                    }}>
+                        🤖
+                    </div>
+                    <span style={{
+                        fontFamily: "'Oswald', sans-serif",
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                    }}>
+                        AgentM
+                    </span>
+                </div>
+                <p style={{
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    opacity: 0.6,
+                }}>
+                    Powered by Gradience Protocol on Solana
+                </p>
             </footer>
         </div>
     );
 }
 
-function FeatureCard({ title, description }: { title: string; description: string }) {
+function FeatureCard({ icon, title, description, color }: { 
+    icon: string; 
+    title: string; 
+    description: string;
+    color: string;
+}) {
     return (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <p className="text-sm text-gray-400">{description}</p>
+        <div style={{
+            background: color,
+            borderRadius: '24px',
+            padding: '24px',
+            border: '1.5px solid #16161A',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            transition: 'transform 0.2s',
+        }} onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+        }} onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+        }}>
+            <div style={{ fontSize: '32px' }}>{icon}</div>
+            <h3 style={{
+                fontFamily: "'Oswald', sans-serif",
+                fontSize: '20px',
+                fontWeight: 700,
+                textTransform: 'capitalize',
+                margin: 0,
+            }}>
+                {title}
+            </h3>
+            <p style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                opacity: 0.8,
+                lineHeight: 1.4,
+                margin: 0,
+            }}>
+                {description}
+            </p>
         </div>
     );
 }
 
-function Step({ number, title, description }: { number: string; title: string; description: string }) {
+function StepCard({ number, title, description }: {
+    number: string;
+    title: string;
+    description: string;
+}) {
     return (
-        <div className="space-y-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold mx-auto">
+        <div style={{
+            textAlign: 'center',
+        }}>
+            <div style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#16161A',
+                opacity: 0.4,
+                marginBottom: '8px',
+            }}>
                 {number}
             </div>
-            <p className="font-medium">{title}</p>
-            <p className="text-gray-500">{description}</p>
+            <h4 style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                margin: '0 0 4px 0',
+            }}>
+                {title}
+            </h4>
+            <p style={{
+                fontSize: '11px',
+                fontWeight: 500,
+                opacity: 0.6,
+                lineHeight: 1.3,
+                margin: 0,
+            }}>
+                {description}
+            </p>
         </div>
     );
 }
