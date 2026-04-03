@@ -3,6 +3,7 @@ import ora from 'ora';
 import { GradienceSDK, KeypairAdapter } from '@gradiences/sdk';
 import { ConfigManager } from '../config.js';
 import { loadKeypairSigner, parseU64, parseAddress, outputResult, outputError, isMockMode } from '../utils.js';
+import { SECONDS_PER_DAY } from '../constants.js';
 
 export const postCommand = new Command('post');
 postCommand
@@ -63,8 +64,8 @@ postCommand
                 : options.judge ? parseAddress(options.judge, 'judge') : undefined;
 
             const now = BigInt(Math.floor(Date.now() / 1000));
-            const deadline = options.deadline ? parseU64(options.deadline, 'deadline') : now + 86_400n;
-            const judgeDeadline = options.judgeDeadline ? parseU64(options.judgeDeadline, 'judge-deadline') : deadline + 86_400n;
+            const deadline = options.deadline ? parseU64(options.deadline, 'deadline') : now + SECONDS_PER_DAY;
+            const judgeDeadline = options.judgeDeadline ? parseU64(options.judgeDeadline, 'judge-deadline') : deadline + SECONDS_PER_DAY;
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting transaction...';

@@ -3,6 +3,16 @@ import { createKeyPairSignerFromBytes } from '@solana/kit';
 import type { Address } from '@solana/kit';
 import chalk from 'chalk';
 
+// Solana base58 address regex (32-44 chars)
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+/**
+ * Check if a string is a valid Solana address format
+ */
+export function isValidSolanaAddress(value: string): boolean {
+    return SOLANA_ADDRESS_REGEX.test(value);
+}
+
 export function isNoJsonMode(): boolean {
     const value = process.env.NO_DNA;
     if (!value) {
@@ -66,11 +76,10 @@ export function parseAddress(value: string | undefined, name: string): Address {
     if (!value) {
         throw new Error(`Missing address value for ${name}`);
     }
-    try {
-        return value as Address;
-    } catch {
-        throw new Error(`Invalid address for ${name}: ${value}`);
+    if (!isValidSolanaAddress(value)) {
+        throw new Error(`Invalid Solana address format for ${name}: ${value}`);
     }
+    return value as Address;
 }
 
 export function outputResult(result: unknown): void {

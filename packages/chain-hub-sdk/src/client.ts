@@ -98,7 +98,8 @@ export class ChainHubClient {
                 totalEarned: raw.total_earned,
                 updatedSlot: raw.updated_slot,
             };
-        } catch {
+        } catch (error) {
+            console.warn(`[ChainHub] Failed to get reputation for ${agent}:`, error);
             return null;
         }
     }
@@ -135,7 +136,8 @@ export class ChainHubClient {
                 publishMode: raw.publish_mode,
                 updatedAt: raw.updated_at,
             };
-        } catch {
+        } catch (error) {
+            console.warn(`[ChainHub] Failed to get agent info for ${pubkey}:`, error);
             return null;
         }
     }
@@ -206,7 +208,8 @@ export class ChainHubClient {
         try {
             await this.get<{ status: string }>("/healthz");
             return true;
-        } catch {
+        } catch (error) {
+            console.warn('[ChainHub] Health check failed:', error);
             return false;
         }
     }
