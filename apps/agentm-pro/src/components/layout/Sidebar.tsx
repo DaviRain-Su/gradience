@@ -4,6 +4,7 @@ import type { ActiveView } from '@/types';
 const NAV_ITEMS: { key: ActiveView; label: string }[] = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'profiles', label: 'Profiles' },
+    { key: 'discover', label: 'Discover' },
     { key: 'stats', label: 'Stats' },
     { key: 'wallet', label: 'Wallet' },
     { key: 'settings', label: 'Settings' },

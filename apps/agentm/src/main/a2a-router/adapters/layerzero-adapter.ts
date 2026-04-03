@@ -22,20 +22,20 @@ import { A2A_ERROR_CODES } from '../constants.js';
 // import { Options } from '@layerzerolabs/lz-v2-utilities';
 
 export interface LayerZeroAdapterOptions {
-  /** Agent ID (Solana address on Soul chain) */
-  agentId: string;
-  /** Source chain name */
+  /** Agent ID on Solana chain */
+  solanaAgentId: string;
+  /** Source chain name (ethereum, polygon, sui, near, etc.) */
   sourceChain: string;
-  /** Source chain endpoint ID */
+  /** Source chain endpoint ID (LayerZero EID) */
   sourceEid: number;
-  /** Soul chain endpoint ID */
-  soulEid: number;
-  /** LayerZero Endpoint contract address */
+  /** Solana chain endpoint ID */
+  solanaEid: number;
+  /** Agent address on source chain (may differ from Solana address) */
+  sourceAgentAddress: string;
+  /** LayerZero Endpoint contract address on source chain */
   endpointAddress: string;
   /** RPC URL for source chain */
   rpcUrl: string;
-  /** Private key for signing (in production, use wallet adapter) */
-  privateKey?: string;
 }
 
 export interface CrossChainReputationMessage {
@@ -100,13 +100,13 @@ export class LayerZeroAdapter implements ProtocolAdapter {
 
   constructor(options: LayerZeroAdapterOptions) {
     this.options = {
-      agentId: options.agentId,
+      solanaAgentId: options.solanaAgentId,
       sourceChain: options.sourceChain,
       sourceEid: options.sourceEid,
-      soulEid: options.soulEid,
+      solanaEid: options.solanaEid,
+      sourceAgentAddress: options.sourceAgentAddress,
       endpointAddress: options.endpointAddress,
       rpcUrl: options.rpcUrl,
-      privateKey: options.privateKey ?? '',
     };
   }
 
@@ -350,18 +350,20 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       version: '1.0',
       messageType: 'task_completion',
       sourceChain: this.options.sourceChain,
-      targetChain: 'soul',
+      targetChain: 'solana',
       timestamp: message.timestamp,
       nonce: this.generateNonce(),
-      agentAddress: message.from,
-      soulAddress: message.from, // Assuming same address format
+      // Source chain address (Ethereum, Sui, Near, etc.)
+      sourceAgentAddress: this.options.sourceAgentAddress,
+      // Solana chain address (target)
+      solanaAgentAddress: this.options.solanaAgentId,
       reputationData: {
         taskCompletions: [
           {
             taskId: message.id,
             taskType: 'coding',
             completedAt: message.timestamp,
-            score: 80, // Default score
+            score: 80,
             reward: '0',
             evaluator: message.to,
             metadata: JSON.stringify(message.payload),

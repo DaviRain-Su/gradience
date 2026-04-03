@@ -1,4 +1,4 @@
-export type ActiveView = 'dashboard' | 'profiles' | 'stats' | 'wallet' | 'settings';
+export type ActiveView = 'dashboard' | 'profiles' | 'discover' | 'stats' | 'wallet' | 'settings';
 
 export interface AuthState {
     authenticated: boolean;

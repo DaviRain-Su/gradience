@@ -5,9 +5,11 @@
 set -e
 
 # Configuration
-VAULT_PATH="${VAULT_PATH:-$(cd "$(dirname "$0")/.." && pwd)/docs/tasks}"
-TEMPLATE_PATH="$(cd "$(dirname "$0")/.." && pwd)/docs/templates/task-template.md"
+# Obsidian vault: aebe5321267ec8da
+VAULT_PATH="${VAULT_PATH:-$HOME/Desktop/gradience/docs/tasks}"
+TEMPLATE_PATH="${TEMPLATE_PATH:-$HOME/Desktop/gradience/docs/templates/task-template.md}"
 OBSIDIAN_BIN="${OBSIDIAN_BIN:-/Applications/Obsidian.app/Contents/MacOS/obsidian}"
+OBSIDIAN_VAULT_ID="aebe5321267ec8da"
 
 # Colors for output
 RED='\033[0;31m'
@@ -211,8 +213,9 @@ function open_task() {
 # Open vault in Obsidian
 function open_vault() {
     if [ -f "$OBSIDIAN_BIN" ]; then
-        echo -e "${BLUE}📝 Opening Obsidian vault...${NC}"
-        "$OBSIDIAN_BIN" "$(dirname "$VAULT_PATH")" &
+        echo -e "${BLUE}📝 Opening Obsidian vault ($OBSIDIAN_VAULT_ID)...${NC}"
+        # Use Obsidian URI to open specific vault
+        open "obsidian://open?vault=$OBSIDIAN_VAULT_ID"
     else
         echo -e "${RED}❌ Obsidian not found at $OBSIDIAN_BIN${NC}"
         echo "Set OBSIDIAN_BIN environment variable or install Obsidian."
