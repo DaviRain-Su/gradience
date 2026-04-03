@@ -24,6 +24,12 @@ pub const MAX_AGENT_NAME_LEN: usize = 64;
 /// Maximum agent description length
 pub const MAX_AGENT_DESCRIPTION_LEN: usize = 512;
 
+/// Maximum serialized agent config size
+pub const MAX_AGENT_CONFIG_LEN: usize = 1024;
+
+/// Maximum reputation score in basis points (100.00%)
+pub const MAX_REPUTATION_SCORE_BPS: u16 = 10_000;
+
 /// Seed for user PDA
 pub const USER_SEED: &[u8] = b"user";
 

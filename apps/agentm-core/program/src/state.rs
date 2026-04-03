@@ -25,7 +25,7 @@ pub struct User {
 
 impl User {
     pub const DISCRIMINATOR: [u8; 8] = *b"USER____";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
@@ -34,7 +34,7 @@ impl User {
         8 +     // created_at
         8 +     // updated_at
         1 +     // is_active
-        1       // agent_count
+        1 // agent_count
     }
 }
 
@@ -59,7 +59,7 @@ pub struct Profile {
 
 impl Profile {
     pub const DISCRIMINATOR: [u8; 8] = *b"PROFILE_";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
@@ -67,7 +67,7 @@ impl Profile {
         4 + 64 + // display_name
         4 + 256 + // bio
         4 + 128 + // avatar_url
-        8       // updated_at
+        8 // updated_at
     }
 }
 
@@ -90,7 +90,7 @@ pub struct SocialGraph {
 
 impl SocialGraph {
     pub const DISCRIMINATOR: [u8; 8] = *b"SOCIAL__";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
@@ -122,7 +122,7 @@ pub struct Message {
 
 impl Message {
     pub const DISCRIMINATOR: [u8; 8] = *b"MESSAGE_";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
@@ -130,7 +130,7 @@ impl Message {
         32 +    // recipient
         4 + 1024 + // content
         8 +     // timestamp
-        8       // nonce
+        8 // nonce
     }
 }
 
@@ -162,6 +162,7 @@ pub struct Agent {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Copy, PartialEq)]
+#[borsh(use_discriminant = true)]
 pub enum AgentType {
     TaskExecutor = 0,
     SocialAgent = 1,
@@ -171,7 +172,7 @@ pub enum AgentType {
 
 impl Agent {
     pub const DISCRIMINATOR: [u8; 8] = *b"AGENT___";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
@@ -183,7 +184,7 @@ impl Agent {
         4 + 1024 + // config
         1 +     // is_active
         8 +     // created_at
-        8       // updated_at
+        8 // updated_at
     }
 }
 
@@ -206,13 +207,106 @@ pub struct ProgramConfig {
 
 impl ProgramConfig {
     pub const DISCRIMINATOR: [u8; 8] = *b"CONFIG__";
-    
+
     pub fn size() -> usize {
         8 +     // discriminator
         1 +     // version
         32 +    // admin
         8 +     // total_users
         8 +     // total_agents
-        1       // registration_enabled
+        1 // registration_enabled
+    }
+}
+
+/// Reputation account - stores agent-level reputation aggregates
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
+pub struct Reputation {
+    /// Account discriminator
+    pub discriminator: [u8; 8],
+    /// Reputation version
+    pub version: u8,
+    /// Agent public key
+    pub agent: [u8; 32],
+    /// Number of scored reviews
+    pub total_reviews: u32,
+    /// Sum of score basis points
+    pub total_score_bps: u64,
+    /// Average score basis points (0 - 10000)
+    pub avg_score_bps: u16,
+    /// Completed tasks
+    pub completed: u32,
+    /// Wins
+    pub wins: u32,
+    /// Win rate basis points (0 - 10000)
+    pub win_rate_bps: u16,
+    /// Last updated timestamp
+    pub updated_at: i64,
+}
+
+impl Reputation {
+    pub const DISCRIMINATOR: [u8; 8] = *b"REPUT___";
+
+    pub fn size() -> usize {
+        8 + // discriminator
+        1 + // version
+        32 + // agent
+        4 + // total_reviews
+        8 + // total_score_bps
+        2 + // avg_score_bps
+        4 + // completed
+        4 + // wins
+        2 + // win_rate_bps
+        8 // updated_at
+    }
+
+    pub fn new(agent: [u8; 32], updated_at: i64) -> Self {
+        Self {
+            discriminator: Self::DISCRIMINATOR,
+            version: 1,
+            agent,
+            total_reviews: 0,
+            total_score_bps: 0,
+            avg_score_bps: 0,
+            completed: 0,
+            wins: 0,
+            win_rate_bps: 0,
+            updated_at,
+        }
+    }
+
+    pub fn apply_review(&mut self, score_bps: u16, won: bool, updated_at: i64) {
+        self.total_reviews = self.total_reviews.saturating_add(1);
+        self.total_score_bps = self.total_score_bps.saturating_add(score_bps as u64);
+        self.completed = self.completed.saturating_add(1);
+        if won {
+            self.wins = self.wins.saturating_add(1);
+        }
+        self.avg_score_bps = (self.total_score_bps / self.total_reviews as u64) as u16;
+        self.win_rate_bps = ((self.wins as u64 * 10_000) / self.completed as u64) as u16;
+        self.updated_at = updated_at;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Reputation;
+
+    #[test]
+    fn reputation_apply_review_updates_aggregates() {
+        let mut rep = Reputation::new([1u8; 32], 0);
+
+        rep.apply_review(7_000, false, 1);
+        assert_eq!(rep.total_reviews, 1);
+        assert_eq!(rep.avg_score_bps, 7_000);
+        assert_eq!(rep.completed, 1);
+        assert_eq!(rep.wins, 0);
+        assert_eq!(rep.win_rate_bps, 0);
+
+        rep.apply_review(9_000, true, 2);
+        assert_eq!(rep.total_reviews, 2);
+        assert_eq!(rep.avg_score_bps, 8_000);
+        assert_eq!(rep.completed, 2);
+        assert_eq!(rep.wins, 1);
+        assert_eq!(rep.win_rate_bps, 5_000);
     }
 }

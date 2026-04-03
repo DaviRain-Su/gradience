@@ -1,13 +1,8 @@
 //! AgentM Core Program
-//! 
+//!
 //! On-chain program for AgentM user management, social graph, and messaging.
 
-use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-};
+use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address};
 
 pub mod constants;
 pub mod errors;
@@ -16,15 +11,20 @@ pub mod state;
 
 use instructions::*;
 
-// Program ID (placeholder - replace with actual)
+/// Convert an Address reference to a [u8; 32] for state storage
+pub fn addr_to_bytes(address: &Address) -> [u8; 32] {
+    let mut bytes = [0u8; 32];
+    bytes.copy_from_slice(address.as_ref());
+    bytes
+}
+
 entrypoint!(process_instruction);
 
 pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
+    program_id: &Address,
+    accounts: &[AccountView],
     instruction_data: &[u8],
 ) -> Result<(), ProgramError> {
-    // Parse instruction discriminator
     let (discriminator, data) = instruction_data
         .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
@@ -38,6 +38,7 @@ pub fn process_instruction(
         5 => send_message(program_id, accounts, data),
         6 => create_agent(program_id, accounts, data),
         7 => update_agent_config(program_id, accounts, data),
+        8 => update_reputation(program_id, accounts, data),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
