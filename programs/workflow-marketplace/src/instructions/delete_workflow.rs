@@ -1,37 +1,55 @@
-use pinocchio::account_info::AccountInfo;
-use pinocchio::program_error::ProgramError;
-use pinocchio::pubkey::Pubkey;
-use pinocchio::program::invoke_signed;
-use pinocchio::system_instruction::close_account;
+use borsh::BorshDeserialize;
+use pinocchio::{account::AccountView, address::Address, error::ProgramError, ProgramResult};
 
-use crate::state::{WorkflowMetadata, WorkflowError};
+use crate::{
+    constants::{WORKFLOW_SEED},
+    errors::WorkflowError,
+    state::{WorkflowMetadata, WORKFLOW_METADATA_DISCRIMINATOR},
+    utils::address_to_bytes,
+};
 
-/// Delete a workflow (hard delete)
-/// Only author can delete
-/// Only allowed if no purchases (total_purchases == 0)
-/// 
+/// Delete a workflow
+///
 /// Accounts:
-/// 0. [signer] Author
-/// 1. [writable] Workflow PDA
-/// 2. [writable] Destination account (for lamports refund)
-/// 3. [] System program
+/// 0. [signer, writable] Author (will receive rent refund)
+/// 1. [writable] Workflow PDA (will be closed)
+///
+/// Data: workflow_id [u8; 32]
+///
+/// Note: Can only delete if total_purchases == 0 (no one has purchased it)
 pub fn process(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    _data: &[u8],
-) -> Result<(), ProgramError> {
-    if accounts.len() < 4 {
+    program_id: &Address,
+    accounts: &[AccountView],
+    data: &[u8],
+) -> ProgramResult {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
     }
 
     let author = &accounts[0];
     let workflow_account = &accounts[1];
-    let destination = &accounts[2];
-    let system_program = &accounts[3];
 
-    // Check author is signer
+    // Check author is signer and writable
     if !author.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
+    }
+    if !author.is_writable() {
+        return Err(ProgramError::Immutable);
+    }
+
+    // Parse workflow_id
+    if data.len() < 32 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    let mut workflow_id = [0u8; 32];
+    workflow_id.copy_from_slice(&data[0..32]);
+
+    // Verify workflow PDA
+    let (workflow_pda, _) =
+        Address::find_program_address(&[WORKFLOW_SEED, &workflow_id], program_id);
+    if workflow_account.address() != &workflow_pda {
+        return Err(ProgramError::InvalidSeeds);
     }
 
     // Check workflow exists
@@ -39,36 +57,39 @@ pub fn process(
         return Err(WorkflowError::WorkflowNotFound.into());
     }
 
-    let workflow_data = workflow_account.try_borrow_data()?;
+    // Verify author and check purchases
+    {
+        let workflow_data = workflow_account.try_borrow()?;
+        if workflow_data[0] != WORKFLOW_METADATA_DISCRIMINATOR {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
-    // Verify author
-    if workflow_data[2..34] != author.key().as_ref()[..] {
-        return Err(WorkflowError::Unauthorized.into());
+        let metadata = WorkflowMetadata::deserialize(&mut &workflow_data[2..])
+            .map_err(|_| ProgramError::InvalidAccountData)?;
+
+        // Verify author
+        let author_bytes = address_to_bytes(author.address());
+        if metadata.author != author_bytes {
+            return Err(WorkflowError::Unauthorized.into());
+        }
+
+        // Cannot delete if has purchases
+        if metadata.total_purchases > 0 {
+            return Err(WorkflowError::HasPurchases.into());
+        }
     }
 
-    // Check no purchases (total_purchases at offset 148)
-    let total_purchases = u32::from_le_bytes([
-        workflow_data[148], workflow_data[149], 
-        workflow_data[150], workflow_data[151]
-    ]);
-    
-    if total_purchases > 0 {
-        return Err(WorkflowError::HasPurchases.into());
-    }
+    // Close account and transfer lamports to author
+    let workflow_lamports = workflow_account.lamports();
+    let author_lamports = author.lamports();
 
-    // Get workflow_id for seeds
-    let workflow_id = Pubkey::new_from_array(&workflow_data[2..34]);
-    let bump = workflow_data[171];
-
-    // Close account and refund lamports
-    invoke_signed(
-        &close_account(
-            workflow_account.key(),
-            destination.key(),
-        ),
-        &[workflow_account.clone(), destination.clone(), system_program.clone()],
-        &[&[b"workflow", workflow_id.as_ref(), &[bump]]],
-    )?;
+    author.set_lamports(
+        author_lamports
+            .checked_add(workflow_lamports)
+            .ok_or(ProgramError::ArithmeticOverflow)?,
+    );
+    workflow_account.set_lamports(0);
+    workflow_account.close()?;
 
     Ok(())
 }

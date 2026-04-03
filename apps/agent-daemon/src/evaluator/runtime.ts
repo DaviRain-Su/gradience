@@ -237,7 +237,7 @@ export interface DriftDetectionConfig {
   /** Context window threshold (0-1) */
   threshold: number;
   /** Reset strategy */
-  resetStrategy: 'sprint_boundary' | 'checkpoint' | 'gradual';
+  resetStrategy: 'sprint_boundary' | 'checkpoint' | 'none';
   /** Checkpoint interval (ms) */
   checkpointIntervalMs: number;
 }

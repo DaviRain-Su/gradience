@@ -22,8 +22,7 @@ export async function initializeA2ARouter(): Promise<A2ARouter> {
 
     a2aRouter = new A2ARouter({
         enableNostr: true,
-        enableLibp2p: true,
-        enableMagicBlock: false,
+        enableXMTP: true,
     });
 
     await a2aRouter.initialize();

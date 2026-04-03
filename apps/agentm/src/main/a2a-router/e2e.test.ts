@@ -52,8 +52,7 @@ describe('A2A E2E', () => {
 
     describe('Message Flow', () => {
         it('should handle message send with no protocol available', async () => {
-            // Since we disabled nostr and libp2p has no bootstrap,
-            // sending should fail gracefully
+            // Since we disabled nostr and XMTP, sending should fail gracefully
             const result = await router1.send({
                 to: 'test-recipient',
                 type: 'direct_message',

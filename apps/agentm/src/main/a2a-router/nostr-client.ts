@@ -21,6 +21,12 @@ import type {
     NostrHealthStatus,
     RelayStatus,
     NostrSubscription,
+    NIP89HandlerEvent,
+    NIP89HandlerContent,
+    NIP90JobRequest,
+    NIP90JobResult,
+    NIP90JobFeedback,
+    DVMFilter,
 } from '../../shared/nostr-types.js';
 
 export interface NostrClientOptions {
@@ -262,6 +268,288 @@ export class NostrClient {
             activeSubscriptions: this.activeSubscriptions.size,
             lastEventAt: this.lastEventAt,
             relays: Array.from(this.relayStatus.values()),
+        };
+    }
+
+    // ============ NIP-89: Application Handler Discovery ============
+
+    /**
+     * Publish NIP-89 handler announcement
+     */
+    async publishHandler(handlerId: string, content: NIP89HandlerContent): Promise<string> {
+        this.ensureConnected();
+
+        const tags: string[][] = [
+            ['d', handlerId], // Handler identifier
+            ['t', 'gradience-dvm'], // Gradience tag
+        ];
+
+        // Add supported kinds
+        if (content.kinds && content.kinds.length > 0) {
+            content.kinds.forEach(kind => {
+                tags.push(['k', kind.toString()]);
+            });
+        }
+
+        const event: Partial<NIP89HandlerEvent> = {
+            kind: NOSTR_CONFIG.KINDS.HANDLER_ANNOUNCEMENT,
+            pubkey: this.pubkey,
+            created_at: Math.floor(Date.now() / 1000),
+            content: JSON.stringify(content),
+            tags,
+        };
+
+        const signedEvent = await this.signEvent(event);
+        await this.publishWithRetry(signedEvent);
+
+        console.log(`[NostrClient] Published NIP-89 handler: ${handlerId}`);
+
+        return signedEvent.id!;
+    }
+
+    /**
+     * Query NIP-89 handlers
+     */
+    async queryHandlers(filter?: DVMFilter, limit: number = 50): Promise<NIP89HandlerEvent[]> {
+        this.ensureConnected();
+
+        const events: NIP89HandlerEvent[] = [];
+
+        return new Promise((resolve) => {
+            const queryFilter: Filter = {
+                kinds: [NOSTR_CONFIG.KINDS.HANDLER_ANNOUNCEMENT],
+                limit,
+            };
+
+            const sub = this.pool!.subscribeMany(
+                this.getConnectedRelays(),
+                queryFilter,
+                {
+                    onevent: (event: NostrEvent) => {
+                        try {
+                            const handlerEvent = event as NIP89HandlerEvent;
+                            const content: NIP89HandlerContent = JSON.parse(handlerEvent.content);
+
+                            // Apply filters
+                            if (filter?.kinds && content.kinds) {
+                                const hasMatchingKind = filter.kinds.some(k => content.kinds!.includes(k));
+                                if (!hasMatchingKind) return;
+                            }
+
+                            if (filter?.maxPrice && content.pricing?.amount && content.pricing.amount > filter.maxPrice) {
+                                return;
+                            }
+
+                            events.push(handlerEvent);
+                        } catch (error) {
+                            // Skip invalid events
+                        }
+                    },
+                    onclose: () => {
+                        resolve(events.slice(0, limit));
+                    },
+                }
+            );
+
+            setTimeout(() => {
+                sub.close();
+                resolve(events.slice(0, limit));
+            }, NOSTR_CONFIG.TIMEOUTS.SUBSCRIBE);
+        });
+    }
+
+    // ============ NIP-90: Data Vending Machines (DVM) ============
+
+    /**
+     * Publish NIP-90 job request
+     */
+    async publishJobRequest(
+        kind: number,
+        input: string,
+        tags: string[][] = []
+    ): Promise<string> {
+        this.ensureConnected();
+
+        if (kind < NOSTR_CONFIG.KINDS.DVM_JOB_REQUEST_BASE || kind >= NOSTR_CONFIG.KINDS.DVM_JOB_RESULT_BASE) {
+            throw new Error(`[NostrClient] Invalid job request kind: ${kind} (must be 5000-5999)`);
+        }
+
+        const event: Partial<NIP90JobRequest> = {
+            kind,
+            pubkey: this.pubkey,
+            created_at: Math.floor(Date.now() / 1000),
+            content: input,
+            tags: [
+                ['t', 'gradience-job'],
+                ...tags,
+            ],
+        };
+
+        const signedEvent = await this.signEvent(event);
+        await this.publishWithRetry(signedEvent);
+
+        console.log(`[NostrClient] Published NIP-90 job request: kind ${kind}`);
+
+        return signedEvent.id!;
+    }
+
+    /**
+     * Publish NIP-90 job result
+     */
+    async publishJobResult(
+        requestEvent: NIP90JobRequest,
+        result: string,
+        amount?: number
+    ): Promise<string> {
+        this.ensureConnected();
+
+        const resultKind = requestEvent.kind + 1000;
+
+        if (resultKind < NOSTR_CONFIG.KINDS.DVM_JOB_RESULT_BASE || resultKind >= NOSTR_CONFIG.KINDS.DVM_JOB_FEEDBACK) {
+            throw new Error(`[NostrClient] Invalid job result kind: ${resultKind}`);
+        }
+
+        const tags: string[][] = [
+            ['e', requestEvent.id!], // Reference to job request
+            ['p', requestEvent.pubkey], // Requester pubkey
+            ['t', 'gradience-job-result'],
+        ];
+
+        if (amount !== undefined) {
+            tags.push(['amount', amount.toString()]);
+        }
+
+        const event: Partial<NIP90JobResult> = {
+            kind: resultKind,
+            pubkey: this.pubkey,
+            created_at: Math.floor(Date.now() / 1000),
+            content: result,
+            tags,
+        };
+
+        const signedEvent = await this.signEvent(event);
+        await this.publishWithRetry(signedEvent);
+
+        console.log(`[NostrClient] Published NIP-90 job result: kind ${resultKind}`);
+
+        return signedEvent.id!;
+    }
+
+    /**
+     * Publish NIP-90 job feedback
+     */
+    async publishJobFeedback(
+        resultEvent: NIP90JobResult,
+        feedback: string,
+        status: 'success' | 'partial' | 'error'
+    ): Promise<string> {
+        this.ensureConnected();
+
+        const tags: string[][] = [
+            ['e', resultEvent.id!], // Reference to job result
+            ['p', resultEvent.pubkey], // DVM pubkey
+            ['status', status],
+            ['t', 'gradience-job-feedback'],
+        ];
+
+        const event: Partial<NIP90JobFeedback> = {
+            kind: NOSTR_CONFIG.KINDS.DVM_JOB_FEEDBACK,
+            pubkey: this.pubkey,
+            created_at: Math.floor(Date.now() / 1000),
+            content: feedback,
+            tags,
+        };
+
+        const signedEvent = await this.signEvent(event);
+        await this.publishWithRetry(signedEvent);
+
+        console.log(`[NostrClient] Published NIP-90 job feedback: ${status}`);
+
+        return signedEvent.id!;
+    }
+
+    /**
+     * Subscribe to NIP-90 job requests (for DVMs)
+     */
+    async subscribeJobRequests(
+        kinds: number[],
+        callback: (event: NIP90JobRequest) => void
+    ): Promise<NostrSubscription> {
+        this.ensureConnected();
+
+        const subId = `job-requests-${Date.now()}`;
+        this.activeSubscriptions.add(subId);
+
+        const nostrFilter: Filter = {
+            kinds,
+        };
+
+        const sub = this.pool!.subscribeMany(
+            this.getConnectedRelays(),
+            nostrFilter,
+            {
+                onevent: (event: NostrEvent) => {
+                    this.lastEventAt = Date.now();
+                    try {
+                        callback(event as NIP90JobRequest);
+                    } catch (error) {
+                        console.error('[NostrClient] Failed to process job request:', error);
+                    }
+                },
+                onclose: () => {
+                    this.activeSubscriptions.delete(subId);
+                },
+            }
+        );
+
+        return {
+            unsub: () => {
+                sub.close();
+                this.activeSubscriptions.delete(subId);
+            },
+        };
+    }
+
+    /**
+     * Subscribe to NIP-90 job results (for requesters)
+     */
+    async subscribeJobResults(
+        requestId: string,
+        callback: (event: NIP90JobResult) => void
+    ): Promise<NostrSubscription> {
+        this.ensureConnected();
+
+        const subId = `job-results-${Date.now()}`;
+        this.activeSubscriptions.add(subId);
+
+        const nostrFilter: Filter = {
+            kinds: Array.from({ length: 1000 }, (_, i) => NOSTR_CONFIG.KINDS.DVM_JOB_RESULT_BASE + i),
+            '#e': [requestId],
+        };
+
+        const sub = this.pool!.subscribeMany(
+            this.getConnectedRelays(),
+            nostrFilter,
+            {
+                onevent: (event: NostrEvent) => {
+                    this.lastEventAt = Date.now();
+                    try {
+                        callback(event as NIP90JobResult);
+                    } catch (error) {
+                        console.error('[NostrClient] Failed to process job result:', error);
+                    }
+                },
+                onclose: () => {
+                    this.activeSubscriptions.delete(subId);
+                },
+            }
+        );
+
+        return {
+            unsub: () => {
+                sub.close();
+                this.activeSubscriptions.delete(subId);
+            },
         };
     }
 

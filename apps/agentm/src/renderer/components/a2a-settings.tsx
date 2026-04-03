@@ -30,7 +30,7 @@ export function A2ASettings({ agentAddress, displayName, capabilities }: A2ASett
     } = useA2A({
         autoInit: broadcastEnabled,
         enableNostr: true,
-        enableLibp2p: true,
+        enableXMTP: true,
     });
 
     // Auto-broadcast when enabled
@@ -63,7 +63,7 @@ export function A2ASettings({ agentAddress, displayName, capabilities }: A2ASett
                         Nostr: {health.protocolStatus.nostr.available ? '✓' : '✗'}
                     </span>
                     <span className="text-xs px-2 py-1 bg-gray-800 rounded">
-                        libp2p: {health.protocolStatus.libp2p.available ? '✓' : '✗'}
+                        XMTP: {health.protocolStatus.xmtp.available ? '✓' : '✗'}
                     </span>
                 </div>
             )}

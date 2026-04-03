@@ -295,4 +295,20 @@ echo "Demo complete! 🎉"
 
 ---
 
+## Submission Materials
+
+All submission materials are complete and ready:
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| [demo-video-script.md](./demo-video-script.md) | Scene-by-scene video breakdown with timing, narration, and visual cues | ✅ Complete |
+| [technical-architecture.md](./technical-architecture.md) | 5-layer architecture, data flows, Metaplex integration details | ✅ Complete |
+| [x-article.md](./x-article.md) | 12-tweet thread with publishing checklist and media suggestions | ✅ Complete |
+| [x-long-article.md](./x-long-article.md) | Extended article for website/blog | ✅ Complete |
+| [agent-token-launch.md](./agent-token-launch.md) | Genesis token launch specification | ✅ Complete |
+| [submission-checklist.md](./submission-checklist.md) | Pre-submission verification checklist | ✅ Complete |
+| [demo-script.sh](./demo-script.sh) | Executable demo script for CLI showcase | ✅ Complete |
+
+---
+
 *Demo prepared for Metaplex Agents Track — April 2026*

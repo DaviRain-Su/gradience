@@ -12,11 +12,12 @@ export * from './types.js';
 // Export parser
 export * from './parser.js';
 
-// Export storage (will be implemented in GRA-209)
+// Export probe types and implementation
+export * from './probe-types.js';
+export * from './probe.js';
+
+// Export matching engine (complete!)
+export * from './matching/index.js';
+
+// Export storage (will be implemented later)
 // export * from './storage.js';
-
-// Export probe (will be implemented in GRA-219)
-// export * from './probe.js';
-
-// Export matching (will be implemented in GRA-232)
-// export * from './matching/index.js';

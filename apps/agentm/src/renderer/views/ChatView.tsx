@@ -87,7 +87,7 @@ export function ChatView() {
     } = useA2A({
         autoInit: true,
         enableNostr: true,
-        enableLibp2p: true,
+        enableXMTP: true,
     });
 
     // Subscribe to A2A messages

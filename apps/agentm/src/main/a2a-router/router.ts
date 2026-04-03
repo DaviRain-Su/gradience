@@ -35,8 +35,8 @@ export class A2ARouter {
         const protocolPriority = options.protocolPriority ?? {
             broadcast: ['nostr'],
             discovery: ['nostr'],
-            direct_message: ['xmtp', 'nostr'],
-            task_negotiation: ['xmtp', 'nostr'],
+            direct_message: ['xmtp'],
+            task_negotiation: ['nostr', 'xmtp'],
             interop: ['google-a2a'],
         };
 

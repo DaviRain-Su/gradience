@@ -1,27 +1,35 @@
-use pinocchio::account_info::AccountInfo;
-use pinocchio::program_error::ProgramError;
-use pinocchio::pubkey::Pubkey;
-use pinocchio::sysvars::clock::Clock;
-use pinocchio::sysvars::Sysvar;
+use borsh::{BorshDeserialize, BorshSerialize};
+use pinocchio::{
+    account::AccountView,
+    address::Address,
+    error::ProgramError,
+    sysvars::{clock::Clock, Sysvar},
+    ProgramResult,
+};
 
-use crate::state::{WorkflowMetadata, WorkflowError};
+use crate::{
+    constants::{ACCOUNT_VERSION_V1, WORKFLOW_SEED},
+    errors::WorkflowError,
+    state::{WorkflowMetadata, WORKFLOW_METADATA_DISCRIMINATOR},
+    utils::address_to_bytes,
+};
 
 /// Update workflow metadata
-/// Only author can update
-/// 
+///
 /// Accounts:
-/// 0. [signer] Author
+/// 0. [signer] Author (must be original creator)
 /// 1. [writable] Workflow PDA
-/// 
-/// Data:
-/// - content_hash: [u8; 64] (optional)
-/// - version: [u8; 16] (optional)
-/// - is_public: bool (optional)
+///
+/// Data layout (64 bytes):
+/// - workflow_id: [u8; 32]
+/// - content_hash: [u8; 64] (new content hash)
+///
+/// Note: Only allows updating content_hash. Version should be incremented off-chain.
 pub fn process(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
+    program_id: &Address,
+    accounts: &[AccountView],
     data: &[u8],
-) -> Result<(), ProgramError> {
+) -> ProgramResult {
     if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
     }
@@ -34,35 +42,59 @@ pub fn process(
         return Err(ProgramError::MissingRequiredSignature);
     }
 
+    // Parse data
+    if data.len() < 96 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    let mut workflow_id = [0u8; 32];
+    workflow_id.copy_from_slice(&data[0..32]);
+
+    let mut new_content_hash = [0u8; 64];
+    new_content_hash.copy_from_slice(&data[32..96]);
+
+    // Verify workflow PDA
+    let (workflow_pda, _) =
+        Address::find_program_address(&[WORKFLOW_SEED, &workflow_id], program_id);
+    if workflow_account.address() != &workflow_pda {
+        return Err(ProgramError::InvalidSeeds);
+    }
+
     // Check workflow exists
     if workflow_account.data_len() == 0 {
         return Err(WorkflowError::WorkflowNotFound.into());
     }
 
-    let mut workflow_data = workflow_account.try_borrow_mut_data()?;
+    // Update workflow
+    {
+        let mut workflow_data = workflow_account.try_borrow_mut()?;
+        if workflow_data[0] != WORKFLOW_METADATA_DISCRIMINATOR {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
-    // Verify author (skip discriminator and version)
-    if workflow_data[2..34] != author.key().as_ref()[..] {
-        return Err(WorkflowError::Unauthorized.into());
+        let mut metadata = WorkflowMetadata::deserialize(&mut &workflow_data[2..])
+            .map_err(|_| ProgramError::InvalidAccountData)?;
+
+        // Verify author
+        let author_bytes = address_to_bytes(author.address());
+        if metadata.author != author_bytes {
+            return Err(WorkflowError::Unauthorized.into());
+        }
+
+        // Update content hash
+        metadata.content_hash = new_content_hash;
+
+        // Update timestamp
+        let clock = Clock::get()?;
+        metadata.updated_at = clock.unix_timestamp;
+
+        // Re-serialize
+        workflow_data[0] = WORKFLOW_METADATA_DISCRIMINATOR;
+        workflow_data[1] = ACCOUNT_VERSION_V1;
+        metadata
+            .serialize(&mut &mut workflow_data[2..])
+            .map_err(|_| ProgramError::InvalidAccountData)?;
     }
-
-    // Get current timestamp
-    let clock = Clock::get()?;
-    let now = clock.unix_timestamp;
-
-    // Parse update data (simplified - in real impl use flags for optional fields)
-    if data.len() >= 64 {
-        // Update content_hash
-        workflow_data[66..130].copy_from_slice(&data[0..64]);
-    }
-
-    if data.len() >= 80 {
-        // Update version
-        workflow_data[130..146].copy_from_slice(&data[64..80]);
-    }
-
-    // Update updated_at
-    workflow_data[158..166].copy_from_slice(&now.to_le_bytes());
 
     Ok(())
 }

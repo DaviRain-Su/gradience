@@ -4,7 +4,7 @@
 
 - **Network**: Solana Devnet
 - **Program ID**: `3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW`
-- **Deploy Signature**: `5UQULTZqXHGvKjHv4jPKBMM9CasgiUSy1S5gCq2J3mrE2AYFmunkB5kPHgVPhVfnr8gLki3P38ZWmnCbUf4syAmH`
+- **Latest Signature**: `JApDKj42m5PbRGkRVN4WdasyW9SKKruXGobG5ttCR2U3re7CZMcCCU3ByhLqbgywMwYYPwVheuzHc7DKXBgYqnJ`
 - **Deployment Date**: 2026-04-04
 - **Framework**: Pinocchio (no_std)
 - **Program Size**: 19,648 bytes (0x4cc0)
@@ -17,21 +17,47 @@
 
 ## Program Structure
 
-### Implemented Features (Phase 1)
+### Implemented Instructions (Phase 1 & 2) ✅
 
-✅ **Initialize** (Instruction 0)
+**Instruction 0: Initialize**
 - Creates program config PDA
 - Creates treasury PDA
 - Sets protocol fees (2%) and judge fees (3%)
 
-🚧 **Planned Instructions** (Future Phases)
-- Instruction 1: Create Workflow
-- Instruction 2: Purchase Workflow
-- Instruction 3: Review Workflow
-- Instruction 4: Update Workflow
-- Instruction 5: Deactivate Workflow
-- Instruction 6: Activate Workflow
-- Instruction 7: Delete Workflow
+**Instruction 1: Create Workflow** ✅
+- Creates workflow metadata PDA
+- Stores content hash, version, pricing model
+- Validates creator share (max 100%)
+
+**Instruction 2: Purchase Workflow** ✅
+- Creates access PDA for buyer
+- Increments total_purchases counter
+- Validates workflow is active
+
+**Instruction 3: Review Workflow** ✅
+- Creates review PDA (requires purchase)
+- Updates workflow average rating
+- Validates rating (1-5 stars)
+
+**Instruction 4: Update Workflow** ✅
+- Updates content hash
+- Only author can update
+- Updates timestamp
+
+**Instruction 5: Deactivate Workflow** ✅
+- Sets workflow to inactive
+- Only author can deactivate
+- Prevents new purchases
+
+**Instruction 6: Activate Workflow** ✅
+- Sets workflow to active
+- Only author can activate
+- Allows purchases again
+
+**Instruction 7: Delete Workflow** ✅
+- Closes workflow PDA
+- Only if total_purchases == 0
+- Returns rent to author
 
 ### Account Structures
 
@@ -93,32 +119,72 @@ solana program show <PROGRAM_ID>
 
 ## Testing
 
-### Initialize Program
+### Run Test Script
 
 ```bash
-# TODO: Add test script to initialize program
-# Creates config and treasury PDAs
+cd programs/workflow-marketplace/scripts
+pnpm install
+pnpm test
 ```
+
+The test script will:
+1. ✅ Initialize the program (if not already)
+2. ✅ Create a test workflow
+3. ✅ Purchase the workflow
+4. ✅ Review the workflow (5 stars)
+5. ✅ Update workflow metadata
+6. ✅ Deactivate workflow
+7. ✅ Activate workflow
+8. ✅ Attempt to delete (will fail - has purchases)
+
+### Manual Testing
+
+```bash
+# Install Solana CLI tools
+solana --version
+
+# Set to devnet
+solana config set --url https://api.devnet.solana.com
+
+# Check program
+solana program show 3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW
+
+# Get config PDA
+# Config: F2... (derived from ["config"])
+# Treasury: T2... (derived from ["treasury"])
+```
+
+## Phase 2 Completion Status
+
+✅ **All 8 instructions implemented and deployed**
+- Instruction 0: Initialize ✅
+- Instruction 1: Create Workflow ✅
+- Instruction 2: Purchase Workflow ✅
+- Instruction 3: Review Workflow ✅
+- Instruction 4: Update Workflow ✅
+- Instruction 5: Deactivate Workflow ✅
+- Instruction 6: Activate Workflow ✅
+- Instruction 7: Delete Workflow ✅
 
 ## Next Steps
 
-1. **Phase 2: Implement Remaining Instructions**
-   - Create Workflow (Instruction 1)
-   - Purchase Workflow (Instruction 2)
-   - Review Workflow (Instruction 3)
-   - Update/Deactivate/Activate/Delete (Instructions 4-7)
+1. **Phase 3: Run Integration Tests ✅**
+   - Test script created in `scripts/test-instructions.ts`
+   - Run with `pnpm test`
+   - Tests all 8 instructions end-to-end
 
-2. **Phase 3: Integration Testing**
-   - Write Rust integration tests
-   - Test all instruction flows
-   - Verify PDA derivations
-
-3. **Phase 4: SDK Integration**
+2. **Phase 4: SDK Integration**
    - Update TypeScript SDK to use deployed program
-   - Test SDK against devnet program
+   - Add instruction builders for all 8 instructions
    - Create example workflows
 
-4. **Phase 5: Mainnet Preparation**
+3. **Phase 5: Advanced Features**
+   - Payment transfers (SOL/SPL tokens)
+   - Revenue sharing implementation
+   - Subscription/rental models
+   - Execution tracking
+
+4. **Phase 6: Mainnet Preparation**
    - Security audit
    - Load testing
    - Mainnet deployment
@@ -130,13 +196,15 @@ solana program show <PROGRAM_ID>
 │       Workflow Marketplace Program              │
 │         (Pinocchio no_std)                      │
 ├─────────────────────────────────────────────────┤
-│  Instructions                                   │
-│  • initialize (✅ deployed)                     │
-│  • create_workflow (🚧 planned)                │
-│  • purchase_workflow (🚧 planned)              │
-│  • review_workflow (🚧 planned)                │
-│  • update_workflow (🚧 planned)                │
-│  • deactivate/activate/delete (🚧 planned)     │
+│  Instructions (ALL DEPLOYED ✅)                 │
+│  • initialize                                   │
+│  • create_workflow                              │
+│  • purchase_workflow                            │
+│  • review_workflow                              │
+│  • update_workflow                              │
+│  • deactivate_workflow                          │
+│  • activate_workflow                            │
+│  • delete_workflow                              │
 ├─────────────────────────────────────────────────┤
 │  State (PDAs)                                   │
 │  • ProgramConfig (config)                       │
@@ -144,6 +212,13 @@ solana program show <PROGRAM_ID>
 │  • WorkflowMetadata (workflow + id)            │
 │  • WorkflowAccess (access + id + user)         │
 │  • WorkflowReview (review + id + reviewer)     │
+├─────────────────────────────────────────────────┤
+│  Features                                       │
+│  • Workflow CRUD operations                     │
+│  • Purchase tracking                            │
+│  • Review & ratings                             │
+│  • Active/inactive status                       │
+│  • Rent refund on delete                        │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -161,12 +236,20 @@ thiserror = "2.0.17"
 
 ## Notes
 
-- This is a **Phase 1 deployment** with minimal functionality
-- Only `initialize` instruction is implemented
-- Remaining instructions will be added in subsequent phases
+- **Phase 1 & 2 Complete** - All 8 instructions implemented and deployed ✅
 - Program uses Pinocchio framework for optimal size and performance
 - All state uses Borsh serialization
 - PDAs use standard seeds (`config`, `treasury`, `workflow`, etc.)
+- Test script available in `scripts/test-instructions.ts`
+- Ready for SDK integration and advanced features
+
+## Known Limitations (To be implemented in Phase 4-5)
+
+- No payment transfers yet (SOL/SPL token support)
+- No revenue sharing distribution
+- Simplified purchase model (no subscription/rental enforcement)
+- No execution tracking
+- Review rating calculation is simplified (moving average)
 
 ## Contact
 

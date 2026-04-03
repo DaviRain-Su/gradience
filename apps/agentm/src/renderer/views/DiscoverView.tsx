@@ -39,7 +39,7 @@ export function DiscoverView() {
     } = useA2A({
         autoInit: true,
         enableNostr: true,
-        enableLibp2p: true,
+        enableXMTP: true,
     });
 
     // Refresh A2A agents periodically
@@ -121,7 +121,7 @@ export function DiscoverView() {
                                     Nostr: {a2aHealth.protocolStatus.nostr.available ? '✓' : '✗'}
                                 </span>
                                 <span className="text-xs px-2 py-1 bg-emerald-700/30 text-emerald-300 rounded">
-                                    libp2p: {a2aHealth.protocolStatus.libp2p.available ? '✓' : '✗'}
+                                    XMTP: {a2aHealth.protocolStatus.xmtp.available ? '✓' : '✗'}
                                 </span>
                             </>
                         )}
@@ -490,8 +490,8 @@ function combineAgents(
                 ...existing,
                 // Merge capabilities
                 capabilities: [...new Set([...(existing.capabilities || []), ...agent.capabilities])],
-                // Mark as discovered via both
-                discoveredVia: 'both' as const,
+                // Mark as discovered via indexer + A2A
+                discoveredVia: agent.discoveredVia,
             });
         } else {
             // Add new agent from A2A
@@ -508,7 +508,6 @@ function combineAgents(
                 discoveredVia: agent.discoveredVia,
                 displayName: agent.displayName,
                 nostrPubkey: agent.nostrPubkey,
-                libp2pPeerId: agent.libp2pPeerId,
                 multiaddrs: agent.multiaddrs,
             });
         }

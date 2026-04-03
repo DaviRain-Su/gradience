@@ -24,6 +24,14 @@ export const NOSTR_CONFIG = {
         // ENCRYPTED_DM (kind 4) removed — DM functionality migrated to XMTP
         /** Reputation proof */
         REPUTATION_PROOF: 10004,
+        /** NIP-89: Application handler announcement */
+        HANDLER_ANNOUNCEMENT: 31990,
+        /** NIP-90: DVM job request (5000-5999 range) */
+        DVM_JOB_REQUEST_BASE: 5000,
+        /** NIP-90: DVM job result (6000-6999 range) */
+        DVM_JOB_RESULT_BASE: 6000,
+        /** NIP-90: DVM job feedback */
+        DVM_JOB_FEEDBACK: 7000,
     },
 
     /** Timeouts in milliseconds */
@@ -82,10 +90,15 @@ export const GOOGLE_A2A_CONFIG = {
 export const ROUTER_CONFIG = {
     /** Protocol selection priority */
     PROTOCOL_PRIORITY: {
+        /** Agent presence broadcast (Nostr NIP-89 handlers) */
         BROADCAST: ['nostr'],
+        /** Agent discovery (Nostr NIP-89/90) */
         DISCOVERY: ['nostr'],
-        DIRECT_MESSAGE: ['xmtp', 'nostr'],
+        /** Direct messaging (XMTP only) */
+        DIRECT_MESSAGE: ['xmtp'],
+        /** Task negotiation (Nostr DVM NIP-90, fallback to XMTP) */
         TASK_NEGOTIATION: ['nostr', 'xmtp'],
+        /** Cross-protocol interop (Google A2A) */
         INTEROP: ['google-a2a'],
     },
 

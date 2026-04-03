@@ -103,13 +103,13 @@ describe('Logger', () => {
   describe('Child logger', () => {
     it('should create child with additional context', () => {
       const parent = createTestLogger();
-      const child = parent.child({ component: 'Child', protocol: 'libp2p' });
+      const child = parent.child({ component: 'Child', protocol: 'nostr' });
 
       child.info('test');
 
       const entry = logs[0] as any;
       assert.strictEqual(entry.context.component, 'Child');
-      assert.strictEqual(entry.context.protocol, 'libp2p');
+      assert.strictEqual(entry.context.protocol, 'nostr');
     });
   });
 

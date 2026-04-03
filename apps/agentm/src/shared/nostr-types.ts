@@ -48,7 +48,7 @@ export interface AgentPresenceContent {
     capabilities: string[];  // e.g., ['defi', 'coding', 'writing']
     reputation_score: number;
     available: boolean;
-    endpoint?: string;       // Optional: libp2p multiaddr
+    endpoint?: string;       // Optional: Agent endpoint URL
     
     /** Optional: Soul Profile for social matching */
     soul?: SoulProfileMetadata;
@@ -153,4 +153,117 @@ export interface NostrHealthStatus {
  */
 export interface NostrSubscription {
     unsub: () => void;
+}
+
+// ============ NIP-89: Application Handler Discovery ============
+
+/**
+ * NIP-89 Application Handler event (kind 31990)
+ * Declares application/service handlers
+ */
+export interface NIP89HandlerEvent {
+    kind: 31990;
+    pubkey: string;
+    created_at: number;
+    content: string;  // JSON stringified NIP89HandlerContent
+    tags: string[][];  // [[\"d\", \"<handler-id>\"], [\"k\", \"<supported-kind>\"], ...]
+    id?: string;
+    sig?: string;
+}
+
+/**
+ * Content of NIP-89 handler event
+ */
+export interface NIP89HandlerContent {
+    /** Handler name */
+    name: string;
+    /** Handler description */
+    about?: string;
+    /** Picture/logo URL */
+    picture?: string;
+    /** Supported NIP-90 DVM kinds */
+    kinds?: number[];
+    /** Pricing information */
+    pricing?: {
+        type: 'free' | 'fixed' | 'dynamic';
+        amount?: number;
+        currency?: string;
+    };
+}
+
+// ============ NIP-90: Data Vending Machines (DVM) ============
+
+/**
+ * NIP-90 Job Request event (kind 5000-5999)
+ * Client requests a service from DVMs
+ */
+export interface NIP90JobRequest {
+    kind: number;  // 5000-5999 based on job type
+    pubkey: string;
+    created_at: number;
+    content: string;  // Job input data
+    tags: string[][];  // [[\"i\", \"<input-url>\", \"<input-type>\"], [\"param\", \"<key>\", \"<value>\"], ...]
+    id?: string;
+    sig?: string;
+}
+
+/**
+ * NIP-90 Job Result event (kind 6000-6999)
+ * DVM returns job result
+ */
+export interface NIP90JobResult {
+    kind: number;  // 6000-6999 (kind + 1000 from request)
+    pubkey: string;
+    created_at: number;
+    content: string;  // Job result data
+    tags: string[][];  // [[\"e\", \"<job-request-id>\"], [\"p\", \"<requester-pubkey>\"], [\"amount\", \"<msat>\"], ...]
+    id?: string;
+    sig?: string;
+}
+
+/**
+ * NIP-90 Job Feedback event (kind 7000)
+ * Client provides feedback on job result
+ */
+export interface NIP90JobFeedback {
+    kind: 7000;
+    pubkey: string;
+    created_at: number;
+    content: string;  // Feedback message
+    tags: string[][];  // [[\"e\", \"<job-result-id>\"], [\"p\", \"<dvm-pubkey>\"], [\"status\", \"success|partial|error\"], ...]
+    id?: string;
+    sig?: string;
+}
+
+/**
+ * Common NIP-90 job kinds (examples)
+ */
+export enum NIP90JobKind {
+    // Text processing
+    TextExtraction = 5000,
+    Summarization = 5001,
+    Translation = 5002,
+    Classification = 5003,
+    
+    // Image/Video processing
+    ImageGeneration = 5100,
+    TextToSpeech = 5101,
+    SpeechToText = 5102,
+    
+    // Gradience-specific (task matching, agent selection)
+    AgentSelection = 5900,
+    TaskMatching = 5901,
+    ReputationQuery = 5902,
+}
+
+/**
+ * NIP-90 DVM filter
+ */
+export interface DVMFilter {
+    /** Job kinds to filter */
+    kinds?: number[];
+    /** Minimum reputation score */
+    minReputation?: number;
+    /** Pricing filter */
+    maxPrice?: number;
 }

@@ -81,10 +81,9 @@ export interface AgentDiscoveryRow {
     } | null;
     // A2A multi-protocol fields
     capabilities?: string[];
-    discoveredVia?: 'nostr' | 'libp2p' | 'magicblock' | 'webrtc' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge' | 'google-a2a' | 'indexer' | 'both';
+    discoveredVia?: 'nostr' | 'xmtp' | 'cross-chain' | 'layerzero' | 'wormhole' | 'debridge' | 'google-a2a' | 'indexer';
     displayName?: string;
     nostrPubkey?: string;
-    libp2pPeerId?: string;
     multiaddrs?: string[];
 }
 

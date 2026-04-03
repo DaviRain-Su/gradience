@@ -24,30 +24,49 @@ pnpm add @gradiences/workflow-engine
 
 ## Quick Start
 
-### 1. Create a Simple Workflow
+### 1. Off-Chain: Execute Workflows Locally
 
 ```typescript
-import { validate, type GradienceWorkflow } from '@gradiences/workflow-engine';
+import { WorkflowEngine, createAllHandlers } from '@gradiences/workflow-engine';
 
-const workflow: GradienceWorkflow = {
-  id: 'my-first-workflow',
-  name: 'Hello World',
-  description: 'A simple greeting workflow',
-  author: '5Y3dTfBzfV9CmqRWBGGHWNNZJTVPEEZJaYqKLwFKVmPP',
-  version: '1.0.0',
-  steps: [
-    {
-      id: 'step1',
-      name: 'Log Message',
-      chain: 'solana',
-      action: 'log',
-      params: { message: 'Hello from Gradience!' }
-    }
-  ],
-  pricing: { model: 'free' },
-  revenueShare: { creator: 0, user: 9500, agent: 0, protocol: 200, judge: 300 },
-  requirements: {},
-  isPublic: true,
+// Create engine with all default handlers
+const engine = new WorkflowEngine(createAllHandlers());
+
+// Register workflow
+engine.registerWorkflow(workflow);
+
+// Execute
+const execution = await engine.execute(workflow.id, {
+  executor: 'my-agent-address'
+});
+
+console.log('Status:', execution.status);
+console.log('Steps:', execution.stepResults);
+```
+
+### 2. On-Chain: Solana Marketplace
+
+```typescript
+import { Connection, Keypair } from '@solana/web3.js';
+import { createSolanaWorkflowSDK } from '@gradiences/workflow-engine';
+
+const connection = new Connection('https://api.devnet.solana.com');
+const payer = Keypair.fromSecretKey(/* your key */);
+
+const sdk = createSolanaWorkflowSDK({ connection, payer });
+
+// Create workflow on-chain
+const workflowId = Keypair.generate().publicKey;
+await sdk.createWorkflow(workflow, workflowId);
+
+// Purchase workflow
+await sdk.purchaseWorkflow(workflowId);
+
+// Review workflow
+await sdk.reviewWorkflow(workflowId, 5, 'Excellent!');
+```
+
+See [SDK.md](./SDK.md) for complete documentation.
   isTemplate: false,
   tags: ['example'],
   createdAt: Date.now(),
