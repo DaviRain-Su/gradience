@@ -1,8 +1,8 @@
-# Pitch Deck: Gradience + OWS
+# Gradience + OWS: Pitch Deck
 
 > **Open Wallet Standard Hackathon Miami 2026**
-> **Presented by**: Gradience Team
-> **Date**: April 3, 2026
+> **Presented by**: Gradience Labs
+> **Date**: April 4, 2026
 
 ---
 
@@ -12,250 +12,265 @@
 
 ### Reputation-Powered Agent Economy
 
-**The Future of AI Agent Commerce**
+**The Trust Layer for AI Agent Commerce**
+
+🌐 [gradiences.xyz](https://www.gradiences.xyz)
 
 ---
 
-## Slide 2: The Problem
+## Slide 2: The Problem — Agent Trust Crisis
 
 # 🤔 Why Now?
 
-### AI Agents are Exploding
-- Claude Code, OpenAI Codex, Cursor, etc.
-- But they face **three fundamental problems**:
+### AI Agents Are Exploding
+Claude Code, OpenAI Codex, Cursor, AutoGPT...
+
+### But They Face Three Fundamental Problems:
 
 | Problem | Reality |
 |---------|---------|
-| **Capability Unverifiable** | Self-claims are meaningless |
-| **Data Not Sovereign** | Agent memory trapped in platforms |
-| **No Autonomous Commerce** | Agents can't transact directly |
+| **Capability Unverifiable** | Self-claims are meaningless, platform ratings are manipulable |
+| **Data Not Sovereign** | Agent memory and skills are trapped inside platforms |
+| **No Autonomous Commerce** | Agents cannot directly transact with each other |
 
-> "We need a way for Agents to prove capability, own their data, and trade autonomously."
+> **"In a world where AI Agents transact billions, how do we know who to trust?"**
 
 ---
 
-## Slide 3: The Solution
+## Slide 3: The Solution — Gradience Protocol
 
-# 💡 Gradience Protocol
-
-### Bitcoin-Inspired Minimalism for the Agent Economy
+# 💡 Bitcoin-Inspired Minimalism for the Agent Economy
 
 ```
-Bitcoin: UTXO + Script + PoW
-          ↓
-Gradience: Escrow + Judge + Reputation
+Bitcoin:    UTXO + Script + PoW
+                    ↓
+Gradience:  Escrow + Judge + Reputation
 ```
 
-**Three Primitives. Four Transitions. ~300 Lines.**
+### Three Primitives. Four Transitions. ~300 Lines.
 
 | Feature | Description |
 |---------|-------------|
-| 🏁 **Race Model** | Multi-agent competition, market discovers best |
-| ⛓️ **On-Chain Reputation** | Immutable work history |
-| ⚡ **Auto Settlement** | 95/3/2 atomic fee split |
-| 🔒 **Immutable Fees** | 5% total (vs 20-30% industry) |
+| 🏁 **Race Model** | Multi-agent competition, market discovers the best |
+| ⛓️ **On-Chain Reputation** | Immutable work history = creditworthiness |
+| ⚡ **Auto Settlement** | 95/3/2 atomic fee split (95% winner, 3% judge, 2% protocol) |
+| 🔒 **Immutable Fees** | 5% total vs 20-30% industry standard |
 
 ---
 
-## Slide 4: OWS Integration
+## Slide 4: Why OWS — The Missing Identity Layer
 
-# 🔗 Why OWS?
+# 🔗 Open Wallet Standard Integration
 
-### Open Wallet Standard as Identity Layer
+### OWS Provides:
 
-**OWS Provides:**
-- ✅ **Multi-Chain Wallet** - Solana, Ethereum, Bitcoin
-- ✅ **Unified Identity** - One DID, all chains
-- ✅ **Verifiable Credentials** - Reputation as credentials
-- ✅ **XMTP Messaging** - Agent-to-agent communication
+- ✅ **Multi-Chain Wallet** — Solana, Ethereum, Bitcoin unified
+- ✅ **Persistent Identity** — One DID, all chains
+- ✅ **Verifiable Credentials** — Reputation as portable credentials
+- ✅ **XMTP Messaging** — E2E encrypted agent-to-agent communication
 
-**Integration:**
+### Backed By:
+**MoonPay** · **PayPal** · **Ethereum Foundation** · **XMTP**
+
+### The Integration:
 ```
 AgentM (User Entry)
     ↓
 OWS Wallet (Identity + Multi-Chain)
     ↓
-Gradience Protocol (Settlement)
+Gradience Protocol (Settlement + Reputation)
 ```
 
 ---
 
-## Slide 5: The Product
+## Slide 5: Technical Architecture
 
-# 🎮 AgentM
-
-### Super App for the Agent Economy
-
-**"Me" View** | **"Social" View** | **"Wallet" View**
----|---
-Reputation Panel | Agent Discovery | Multi-Chain Balance
-Task History | A2A Messaging | OWS Integration
-Agent Management | Collaboration | Credit Limit
-
-**Key Features:**
-- 🔐 OWS Wallet Login
-- 📊 Reputation Dashboard
-- 💬 XMTP Messaging
-- ⚡ One-Click Task Execution
-
----
-
-## Slide 6: How It Works
-
-# ⚙️ The Flow
+# ⚙️ How It Works
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Open : User posts task
-    Open --> Completed : Judge scores ≥60
-    Open --> Refunded : Timeout / Cancel
-    Completed --> [*] : Auto payment split
+    [*] --> Open : postTask() + lock value
+    Open --> Completed : judgeAndPay() — score ≥ 60
+    Open --> Refunded : refundExpired() — deadline passed
+    Open --> Refunded : forceRefund() — judge timeout 7d
+    Completed --> [*]
+    Refunded --> [*]
 ```
 
-**Step-by-Step:**
-1. **Post** - Lock reward in escrow
-2. **Race** - Multiple agents compete
-3. **Judge** - Score 0-100, earns 3%
-4. **Settle** - 95% winner, 3% judge, 2% protocol
+### Four Simple Steps:
 
-**Force Refund** - Anyone can trigger after 7 days if judge inactive
+| Step | Action | Result |
+|------|--------|--------|
+| **1. Post** | Lock reward in escrow | Task broadcast to agents |
+| **2. Race** | Multiple agents compete | Market discovers best |
+| **3. Judge** | Score 0-100, earns 3% | Quality verified |
+| **4. Settle** | Atomic payment split | Trustless completion |
+
+**Force Refund** — Anyone can trigger if judge is inactive for 7 days. No single point of failure.
 
 ---
 
-## Slide 7: Reputation System
+## Slide 6: Technical Implementation
+
+# 🛠️ What We Built
+
+### Core Components:
+
+| Component | Status | Tests |
+|-----------|--------|-------|
+| Agent Layer (Solana) | ✅ Live | 55 |
+| OWS Integration | ✅ Complete | 23 |
+| A2A Protocol | ✅ Working | 19 |
+| Chain Hub | ✅ MVP | 8 |
+| AgentM Desktop | ✅ Demo Ready | 56 |
+| AgentM Pro | ✅ Runtime | 110 |
+
+### **Total: 371+ tests passing**
+
+### Key Innovations:
+- **OWS Adapter** — Full OWS SDK integration with React hooks
+- **Reputation Oracle** — Real-time on-chain reputation queries
+- **Risk Scoring** — ML-based agent credibility algorithm
+- **Multi-Chain Ready** — Cross-chain reputation proofs
+
+---
+
+## Slide 7: The Product — AgentM
+
+# 🎮 Super App for the Agent Economy
+
+### Two Views, One Product:
+
+| "Me" View | "Social" View |
+|-----------|---------------|
+| Reputation Panel | Agent Discovery Square |
+| Task History | A2A Messaging |
+| Agent Management | Collaboration Hub |
+| Credit Limit | Reputation-Ranked Search |
+
+### Key Features:
+- 🔐 **OWS Wallet Login** — Zero blockchain knowledge required
+- 📊 **Reputation Dashboard** — Work history = creditworthiness
+- 💬 **XMTP Messaging** — E2E encrypted agent communication
+- ⚡ **One-Click Tasks** — Post, race, settle automatically
+
+---
+
+## Slide 8: Reputation System
 
 # 🏅 Reputation = Creditworthiness
 
-### Tier System
+### Tier-Based Access:
 
 | Tier | Score | Credit Limit | Access |
 |------|-------|--------------|--------|
-| 🥉 Bronze | 0-39 | 1,000 | Basic |
-| 🥈 Silver | 40-59 | 5,000 | Standard |
-| 🥇 Gold | 60-74 | 20,000 | Premium |
-| 💎 Platinum | 75-89 | 50,000 | VIP |
-| 👑 Diamond | 90-100 | 100,000 | Elite |
+| 🥉 Bronze | 0-39 | 1,000 | Basic tasks |
+| 🥈 Silver | 40-59 | 5,000 | Standard features |
+| 🥇 Gold | 60-74 | 20,000 | Premium access |
+| 💎 Platinum | 75-89 | 50,000 | VIP features |
+| 👑 Diamond | 90-100 | 100,000 | Elite status + Judge eligibility |
 
-**Your work history unlocks:**
-- Higher credit limits
-- Premium features
-- Judge eligibility
-- Cross-chain access
+### Your Work History Unlocks:
+- Higher credit limits for under-collateralized loans
+- Premium features and early access
+- Judge eligibility (earn 3% per evaluation)
+- Cross-chain reputation portability
 
 ---
 
-## Slide 8: Competitive Advantage
+## Slide 9: Business Model
 
-# 📊 vs Competition
+# 💰 Sustainable Economics
+
+### Revenue Streams:
+
+| Stream | Model |
+|--------|-------|
+| **Protocol Fees** | 2% on every task completion |
+| **Premium Features** | Advanced analytics, priority matching |
+| **Enterprise API** | B2B reputation-as-a-service |
+
+### Market Opportunity:
+
+| Market | Size by 2030 |
+|--------|--------------|
+| AI Agent Economy | $100B+ |
+| Freelance/Gig Economy | $450B globally |
+| DeFi Credit/Lending | $10B+ |
+
+### At Scale:
+**1M agents × $100/month average × 2% fee = $24M/year revenue**
+
+---
+
+## Slide 10: Competitive Advantage
+
+# 📊 Gradience vs Competition
 
 | Dimension | ERC-8183 (Virtuals) | **Gradience** |
 |-----------|---------------------|---------------|
 | States/Transitions | 6 / 8 | **4 / 5** ✅ |
 | Task Creation | 3 steps | **1 atomic op** ✅ |
-| Evaluation | Binary | **0-100 score** ✅ |
-| Reputation | External | **Built-in** ✅ |
-| Competition | Assigned | **Open race** ✅ |
-| Fees | 20-30% | **5%** ✅ |
+| Evaluation | Binary (pass/fail) | **0-100 score** ✅ |
+| Reputation | External dependency | **Built-in** ✅ |
+| Competition | Client-assigned | **Open race** ✅ |
+| Fee Rate | 20-30% | **5%** ✅ |
 | Judge Incentive | Unspecified | **3% unconditional** ✅ |
+| OWS Standard | ❌ | **✅ Native** ✅ |
 
-**Gradience leads on 9 of 11 dimensions**
+### **Gradience leads on 9 of 11 dimensions**
 
----
-
-## Slide 9: Traction
-
-# 📈 Progress
-
-### Technical Milestones
-
-| Component | Status | Tests |
-|-----------|--------|-------|
-| Agent Arena (Solana) | ✅ Live | 55 |
-| OWS Integration | ✅ Complete | - |
-| A2A Protocol | ✅ Working | 19 |
-| Chain Hub | ✅ MVP | 8 |
-| AgentM | ✅ Demo Ready | 56 |
-
-**Total: 371+ tests passing**
-
-### 7-Phase Methodology
-- ✅ Phase 1: PRD
-- ✅ Phase 2: Architecture
-- ✅ Phase 3: Technical Spec
-- ✅ Phase 4: Task Breakdown
-- ✅ Phase 5: Test Spec
-- ✅ Phase 6: Implementation
-- ✅ Phase 7: Review
-
----
-
-## Slide 10: Business Model
-
-# 💰 Economics
-
-### Revenue Model
-
-**Fee Structure:**
-- 2% Protocol fee on every task
-- At scale: 1M agents × $100/month = $24M/year
-
-**Tokenomics (Future):**
-- GRAD token for governance
-- Staking for Judge eligibility
-- Revenue sharing with stakers
-
-### Market Opportunity
-
-| Market | Size |
-|--------|------|
-| AI Agent Economy | $100B by 2030 |
-| Freelance/ Gig | $450B globally |
-| DeFi Credit | $10B+ |
+**Moat**: First-mover in OWS + Agent reputation + Bitcoin-style minimalism
 
 ---
 
 ## Slide 11: Team
 
-# 👥 Who We Are
+# 👥 Gradience Labs
 
-### Core Team
+### Core Team:
 
 | Role | Expertise |
 |------|-----------|
-| **Protocol Design** | Bitcoin philosophy, mechanism design |
-| **Solana Development** | Rust, Pinocchio, 15K+ lines |
-| **Full-Stack** | React, TypeScript, Vite |
-| **AI/ML** | Agent evaluation, DSPy |
+| **Protocol Architect** | Bitcoin philosophy, mechanism design, game theory |
+| **Solana Development** | Rust, Pinocchio, 15K+ lines of smart contract code |
+| **Full-Stack Engineering** | React, TypeScript, Vite, Electrobun |
+| **AI/ML Research** | Agent evaluation, DSPy, judge algorithms |
 
-### Advisors
-- OWS Ecosystem (MoonPay, PayPal, EF)
-- Solana Foundation
+### Advisors & Partners:
+- **OWS Ecosystem** — MoonPay, PayPal, Ethereum Foundation
+- **Solana Foundation** — Developer relations, grant support
+
+### Development Philosophy:
+> *"Bitcoin defined money with UTXO + Script + PoW.*
+> *Gradience defines Agent commerce with Escrow + Judge + Reputation.*
+> *~300 lines of code. That is the entire foundation."*
 
 ---
 
 ## Slide 12: Roadmap
 
-# 🗺️ What's Next
+# 🗺️ Path to 1M+ Agents
 
 ### Q2 2026 (Now)
-- ✅ OWS Hackathon
-- ✅ AgentM MVP
-- 🔄 Mainnet Audit
+- ✅ OWS Hackathon submission
+- ✅ AgentM MVP with OWS integration
+- 🔄 Security audit (OtterSec/Neodyme)
 
 ### Q3 2026
-- 🎯 Mainnet Launch
-- 🎯 GRAD Token
-- 🎯 1,000 Active Agents
+- 🎯 **Mainnet Launch** on Solana
+- 🎯 **GRAD Token** genesis event
+- 🎯 **1,000 Active Agents**
 
 ### Q4 2026
-- 🌟 10,000 Agents
-- 🌟 Lending Protocol (Layer 2)
-- 🌟 Multi-Chain Expansion
+- 🌟 **10,000 Agents** milestone
+- 🌟 **Agent Lending Protocol** (Layer 2)
+- 🌟 Multi-chain expansion (Ethereum, Base)
 
 ### 2027
-- 🚀 gUSD Stablecoin (Layer 3)
-- 🚀 100,000+ Agents
-- 🚀 DAO Governance
+- 🚀 **gUSD Stablecoin** — credit-backed, no over-collateralization
+- 🚀 **100,000+ Agents**
+- 🚀 Full DAO governance
 
 ---
 
@@ -263,38 +278,52 @@ stateDiagram-v2
 
 # 🤝 What We Need
 
-### For OWS Hackathon
+### For OWS Hackathon:
 
 **Technical Support:**
-- OWS SDK deep integration
+- Deep OWS SDK integration support
 - XMTP messaging optimization
-- Multi-chain testing
+- Multi-chain testing environment
 
-**Ecosystem:**
-- MoonPay partnership (fiat on/off)
-- PayPal integration
-- XMTP network access
+**Ecosystem Partnerships:**
+- MoonPay integration (fiat on/off ramps)
+- PayPal payment infrastructure
+- XMTP network access for agents
 
 **Investment:**
-- Seed round: $500K-$1M
+- Seed round: **$500K-$1M**
 - Runway: 18 months
-- Use: Team + Audit + Marketing
+- Use: Team expansion (40%), Security audits (30%), Marketing (20%), Operations (10%)
 
 ---
 
 ## Slide 14: Closing
 
-# 🎯 Remember
+# 🎯 Why Gradience + OWS?
 
-### Why Gradience + OWS?
+### Four Key Reasons:
 
-1. **Proven Demand** - AI Agents need payment rails
-2. **Technical Edge** - 9/11 dimensions better than competition
-3. **OWS Alignment** - Multi-chain, credentials, messaging
-4. **Ready Now** - 371+ tests, demo live
+1. **Proven Demand** — AI Agents need payment rails and trust mechanisms
+2. **Technical Edge** — 9/11 dimensions better than competition, 371+ tests passing
+3. **OWS Alignment** — Multi-chain identity, verifiable credentials, XMTP messaging
+4. **Ready Now** — Demo live, MVP complete, mainnet in 3 months
 
-> "Bitcoin defined money with UTXO + Script + PoW.
-> Gradience defines Agent commerce with Escrow + Judge + Reputation."
+> **"Bitcoin defined money with UTXO + Script + PoW.**
+> **Gradience defines Agent commerce with Escrow + Judge + Reputation.**
+> **In a world where AI Agents transact billions, reputation is the new currency."**
+
+---
+
+## 🙏 Thank You
+
+### Join us in building the trust layer for the Agent economy.
+
+🌐 **Website**: [gradiences.xyz](https://www.gradiences.xyz)
+🐦 **Twitter**: [@gradience_](https://x.com/gradience_)
+💬 **Discord**: discord.gg/gradience
+📧 **Email**: hello@gradiences.xyz
+
+**Questions?** 🎤
 
 ---
 
@@ -302,23 +331,15 @@ stateDiagram-v2
 
 | Metric | Value |
 |--------|-------|
-| Code Lines (Core) | ~300 |
-| Total Tests | 371+ |
-| Fee Rate | 5% |
-| States | 3 |
-| Transitions | 4 |
+| Core Protocol Code | ~300 lines |
+| Total Test Coverage | 371+ tests |
+| Fee Rate | 5% (vs 20-30% industry) |
+| States | 3 (vs 6 in ERC-8183) |
+| Transitions | 4 (vs 8 in ERC-8183) |
 | Time to Mainnet | 3 months |
+| OWS Integration | Complete |
 
 ---
 
-## Links
-
-- **Demo**: [Run demo-script.sh](../demo-script.sh)
-- **Repo**: https://github.com/gradiences/protocol
-- **Docs**: https://docs.gradience.xyz
-- **Website**: https://gradiences.xyz
-- **OWS**: https://openwallet.sh
-
----
-
-*Pitch deck prepared for OWS Hackathon Miami 2026*
+*Pitch deck prepared for Open Wallet Standard Hackathon Miami 2026*
+*14 slides | Markdown format | Present with Marp, Slidev, or convert to PDF*
