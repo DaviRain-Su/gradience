@@ -8,6 +8,10 @@ interface AgentSocialCardProps {
     displayName?: string;
     bio?: string;
     reputation?: ReputationData | null;
+    ranking?: number;
+    trustScore?: number;
+    interactionPolicy?: 'allow' | 'review' | 'restricted';
+    verifiedBadge?: boolean;
     followersCount?: number;
     followingCount?: number;
     onFollow?: () => void;
@@ -19,6 +23,10 @@ export function AgentSocialCard({
     displayName,
     bio,
     reputation,
+    ranking,
+    trustScore,
+    interactionPolicy,
+    verifiedBadge = false,
     followersCount = 0,
     followingCount = 0,
     onFollow,
@@ -32,6 +40,11 @@ export function AgentSocialCard({
         <div data-testid="agent-social-card" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
             <div className="flex items-start justify-between">
                 <div>
+                    {ranking !== undefined && (
+                        <p data-testid="agent-social-rank" className="text-xs text-gray-500">
+                            Rank #{ranking}
+                        </p>
+                    )}
                     <h3 className="text-lg font-semibold">{name}</h3>
                     {resolution?.domain && (
                         <p className="text-sm text-indigo-400">{resolution.domain}</p>
@@ -52,6 +65,12 @@ export function AgentSocialCard({
                 )}
             </div>
 
+            {verifiedBadge && (
+                <span data-testid="agent-social-verified" className="inline-block text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-300">
+                    Verified High-Reputation Agent
+                </span>
+            )}
+
             {bio && <p className="text-sm text-gray-400">{bio}</p>}
 
             <div className="flex gap-4 text-sm">
@@ -68,6 +87,13 @@ export function AgentSocialCard({
                     <span>Score: {reputation.avg_score}</span>
                     <span>Completed: {reputation.completed}</span>
                     <span>Win rate: {(reputation.win_rate * 100).toFixed(0)}%</span>
+                </div>
+            )}
+
+            {trustScore !== undefined && (
+                <div className="flex gap-3 text-xs text-gray-400">
+                    <span data-testid="agent-social-trust">Trust: {trustScore}</span>
+                    {interactionPolicy && <span>Interaction: {interactionPolicy}</span>}
                 </div>
             )}
         </div>
