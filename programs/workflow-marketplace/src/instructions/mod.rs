@@ -3,10 +3,12 @@ use pinocchio::{account::AccountView, address::Address, error::ProgramError, Pro
 pub mod initialize;
 pub mod create_workflow;
 pub mod purchase_workflow;
+pub mod purchase_workflow_v2;
 pub mod review_workflow;
 pub mod update_workflow;
 pub mod toggle_workflow;
 pub mod delete_workflow;
+pub mod record_execution;
 
 /// Process instruction
 pub fn process_instruction(
@@ -24,12 +26,14 @@ pub fn process_instruction(
     match instruction {
         0 => initialize::process(program_id, accounts, data),
         1 => create_workflow::process(program_id, accounts, data),
-        2 => purchase_workflow::process(program_id, accounts, data),
+        2 => purchase_workflow::process(program_id, accounts, data), // Free version (backward compat)
         3 => review_workflow::process(program_id, accounts, data),
         4 => update_workflow::process(program_id, accounts, data),
         5 => toggle_workflow::process_deactivate(program_id, accounts, data),
         6 => toggle_workflow::process_activate(program_id, accounts, data),
         7 => delete_workflow::process(program_id, accounts, data),
+        8 => purchase_workflow_v2::process(program_id, accounts, data), // With payment
+        9 => record_execution::process(program_id, accounts, data),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
