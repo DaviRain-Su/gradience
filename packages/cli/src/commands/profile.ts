@@ -17,7 +17,8 @@ export async function showProfile(options: { agent?: string }): Promise<void> {
 
         const config = new ConfigManager();
         const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-        const sdk = new GradienceSDK({ indexerEndpoint });
+        const showSdkOptions = indexerEndpoint !== undefined ? { indexerEndpoint } : {};
+        const sdk = new GradienceSDK(showSdkOptions);
 
         let agent: string;
         if (options.agent) {
@@ -64,7 +65,8 @@ export async function updateProfile(options: {
 
         const config = new ConfigManager();
         const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-        const sdk = new GradienceSDK({ indexerEndpoint });
+        const updateSdkOptions = indexerEndpoint !== undefined ? { indexerEndpoint } : {};
+        const sdk = new GradienceSDK(updateSdkOptions);
 
         let agent: string;
         if (options.agent) {
@@ -102,10 +104,13 @@ export async function updateProfile(options: {
         }
 
         const publishMode = parsePublishMode(options.publishMode ?? existing?.publish_mode);
+        const websiteVal = options.website ?? existing?.links?.website;
+        const githubVal = options.github ?? existing?.links?.github;
+        const xVal = options.x ?? existing?.links?.x;
         const links = {
-            website: options.website ?? existing?.links?.website,
-            github: options.github ?? existing?.links?.github,
-            x: options.x ?? existing?.links?.x,
+            ...(websiteVal !== undefined && { website: websiteVal }),
+            ...(githubVal !== undefined && { github: githubVal }),
+            ...(xVal !== undefined && { x: xVal }),
         };
 
         spinner.text = 'Updating profile...';
@@ -150,7 +155,8 @@ export async function publishProfile(options: {
 
         const config = new ConfigManager();
         const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-        const sdk = new GradienceSDK({ indexerEndpoint });
+        const publishSdkOptions = indexerEndpoint !== undefined ? { indexerEndpoint } : {};
+        const sdk = new GradienceSDK(publishSdkOptions);
 
         let agent: string;
         if (options.agent) {

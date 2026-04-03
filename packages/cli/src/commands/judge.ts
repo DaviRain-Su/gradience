@@ -59,14 +59,15 @@ judgeTaskCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting judgment transaction...';
-            const signature = await sdk.task.judge(wallet, {
+            const judgeRequest = {
                 taskId,
                 winner,
                 poster,
                 score: Number(scoreBig),
                 reasonRef: options.reasonRef,
-                mint,
-            });
+                ...(mint !== undefined && { mint }),
+            };
+            const signature = await sdk.task.judge(wallet, judgeRequest);
 
             spinner.succeed('Task judged successfully');
             outputResult({

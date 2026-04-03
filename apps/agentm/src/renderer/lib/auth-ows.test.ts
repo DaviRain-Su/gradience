@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { OWSAuthProvider, createOWSAuthProvider } from './auth-ows.ts';
+import type { SolanaTransaction } from '../../shared/ows-adapter.ts';
 
 describe('OWSAuthProvider', () => {
     it('should create provider with default config', () => {
@@ -56,8 +57,17 @@ describe('OWSAuthProvider', () => {
             /Not authenticated with OWS/
         );
         
+        // Create a mock Solana transaction
+        const mockTx = {
+            signatures: [],
+            feePayer: null,
+            instructions: [],
+            recentBlockhash: null,
+            serialize: () => Buffer.from([]),
+        } as unknown as SolanaTransaction;
+
         await assert.rejects(
-            provider.signTransaction({}),
+            provider.signTransaction(mockTx),
             /Not authenticated with OWS/
         );
     });

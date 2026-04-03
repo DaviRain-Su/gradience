@@ -5,7 +5,7 @@ import { PublicKey } from '@solana/web3.js';
  * Default: Devnet deployment
  */
 export const ARENA_PROGRAM_ID = new PublicKey(
-    process.env.AGENTD_ARENA_PROGRAM_ID ?? 'GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4',
+    process.env.AGENTD_ARENA_PROGRAM_ID ?? '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs',
 );
 
 /**

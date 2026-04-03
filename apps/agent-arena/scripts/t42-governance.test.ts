@@ -60,7 +60,7 @@ test('decodeProgramConfigUpgradeAuthority reads upgrade authority bytes', () => 
 });
 
 test('deriveConfigPda remains deterministic for a known program id', () => {
-    const programId = new PublicKey('GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4');
+    const programId = new PublicKey('5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs');
     const pdaA = deriveConfigPda(programId);
     const pdaB = deriveConfigPda(programId);
     assert.equal(pdaA.toBase58(), pdaB.toBase58());

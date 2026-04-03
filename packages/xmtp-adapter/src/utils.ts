@@ -112,7 +112,6 @@ import {
   JudgeVerdictPayload,
   PaymentConfirmationPayload,
   A2AMessage,
-  A2APayload,
 } from "./types";
 
 export function isTaskOffer(

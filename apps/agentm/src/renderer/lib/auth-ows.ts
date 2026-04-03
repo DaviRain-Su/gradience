@@ -20,7 +20,8 @@ import {
     isOWSSDKAvailable,
     createDefaultOWSConfig,
     type OWSAgentConfig, 
-    type AgentIdentity 
+    type AgentIdentity,
+    type SolanaTransaction
 } from '../../shared/ows-adapter.ts';
 
 /**
@@ -170,7 +171,7 @@ export class OWSAuthProvider implements AuthProvider {
      * 
      * @throws Error if not authenticated
      */
-    async signTransaction(tx: unknown): Promise<unknown> {
+    async signTransaction(tx: SolanaTransaction): Promise<unknown> {
         if (!this.owsAdapter) {
             throw new Error('Not authenticated with OWS');
         }

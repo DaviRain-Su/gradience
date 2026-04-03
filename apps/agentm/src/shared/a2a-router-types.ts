@@ -48,6 +48,7 @@ export type A2AMessageType =
     | 'direct_message'
     | 'reputation_query'
     | 'reputation_response'
+    | 'reputation_sync'
     | 'payment_request'
     | 'payment_confirm';
 

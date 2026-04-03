@@ -48,6 +48,7 @@ export default [
             '**/generated/**',
             '**/*.d.ts',
             'apps/agentm/**', // Electron app has its own config
+
         ],
     },
 ];

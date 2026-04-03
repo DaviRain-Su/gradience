@@ -26,6 +26,7 @@ import type {
     ProtocolAdapter,
     ProtocolSubscription,
     A2AMessage,
+    A2AMessageType,
     A2AResult,
     AgentInfo,
     AgentFilter,
@@ -167,7 +168,7 @@ function gradienceTypeToA2AMethod(type: string): string {
 }
 
 /** Map Google A2A task state to Gradience message type */
-function a2aStateToGradienceType(state: GoogleA2ATaskState): string {
+function a2aStateToGradienceType(state: GoogleA2ATaskState): A2AMessageType {
     switch (state) {
         case 'submitted':
             return 'task_proposal';

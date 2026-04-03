@@ -24,4 +24,4 @@ pub mod state;
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
 
-declare_id!("GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4");
+declare_id!("5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs");

@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

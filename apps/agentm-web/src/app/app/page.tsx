@@ -375,32 +375,71 @@ function Shell({
 
 // ── Discover ─────────────────────────────────────────────────────────
 
+const DEMO_DISCOVER_AGENTS: AgentRow[] = [
+    { agent: 'Alice_DeFi', weight: 1500, reputation: { global_avg_score: 92, global_completed: 47, win_rate: 0.94 } },
+    { agent: 'Bob_Auditor', weight: 800, reputation: { global_avg_score: 85, global_completed: 23, win_rate: 0.82 } },
+    { agent: 'Charlie_Data', weight: 600, reputation: { global_avg_score: 78, global_completed: 12, win_rate: 0.80 } },
+];
+
 function DiscoverView() {
     const [agents, setAgents] = useState<AgentRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
+    const [dataSource, setDataSource] = useState<'indexer' | 'demo'>('demo');
+    const { status: indexerStatus, indexerUrl } = useIndexerStatus();
 
     useEffect(() => {
-        fetch(`${resolveIndexerBase()}/api/judge-pool/0`, { signal: getTimeoutSignal(5000) })
+        const base = resolveIndexerBase();
+        fetch(`${base}/api/judge-pool/0`, { signal: getTimeoutSignal(5000) })
             .then((r) => r.ok ? r.json() : [])
-            .then((data) => setAgents(data as AgentRow[]))
-            .catch(() => {})
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setAgents(data as AgentRow[]);
+                    setDataSource('indexer');
+                } else {
+                    // Try alternative endpoint: registered agents
+                    return fetch(`${base}/api/agents`, { signal: getTimeoutSignal(3000) })
+                        .then((r2) => r2.ok ? r2.json() : null)
+                        .then((agents2) => {
+                            if (Array.isArray(agents2) && agents2.length > 0) {
+                                // Map to AgentRow format
+                                const mapped: AgentRow[] = agents2.map((a: Record<string, unknown>) => ({
+                                    agent: (a.name as string) || (a.pubkey as string) || 'Unknown',
+                                    weight: (a.weight as number) || 0,
+                                    reputation: a.reputation ? a.reputation as AgentRow['reputation'] : null,
+                                }));
+                                setAgents(mapped);
+                                setDataSource('indexer');
+                            } else {
+                                setAgents(DEMO_DISCOVER_AGENTS);
+                                setDataSource('demo');
+                            }
+                        });
+                }
+            })
+            .catch(() => {
+                setAgents(DEMO_DISCOVER_AGENTS);
+                setDataSource('demo');
+            })
             .finally(() => setLoading(false));
     }, []);
 
     const filtered = agents.filter((a) => !query || a.agent.toLowerCase().includes(query.toLowerCase()));
 
     const loadDemo = () => {
-        setAgents([
-            { agent: 'Alice_DeFi', weight: 1500, reputation: { global_avg_score: 92, global_completed: 47, win_rate: 0.94 } },
-            { agent: 'Bob_Auditor', weight: 800, reputation: { global_avg_score: 85, global_completed: 23, win_rate: 0.82 } },
-            { agent: 'Charlie_Data', weight: 600, reputation: { global_avg_score: 78, global_completed: 12, win_rate: 0.80 } },
-        ]);
+        setAgents(DEMO_DISCOVER_AGENTS);
+        setDataSource('demo');
     };
 
     return (
         <div className="p-6 space-y-4 overflow-y-auto h-full">
-            <h2 className="text-2xl font-bold">Discover Agents</h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Discover Agents</h2>
+                <div className="flex items-center gap-2">
+                    <DataSourceLabel source={dataSource} />
+                    <IndexerStatusBadge status={indexerStatus} url={indexerUrl} />
+                </div>
+            </div>
             <input
                 placeholder="Search agents..."
                 value={query}
@@ -762,7 +801,10 @@ function ChatView() {
                             {selectedAgent.online ? 'Online · A2A/1.0' : 'Offline'} · {selectedAgent.role}
                         </p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-2">
+                        <span className="text-[10px] text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">
+                            Demo Mode
+                        </span>
                         <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-800">
                             A2A Protocol
                         </span>
@@ -817,7 +859,7 @@ function ChatView() {
                         </button>
                     </div>
                     <p className="text-[10px] text-gray-600 mt-2">
-                        Messages routed via A2A Protocol · End-to-end agent authentication
+                        <span className="text-yellow-500 font-medium">⚠ Demo Mode</span> · Messages are simulated locally · Real A2A messaging coming soon
                     </p>
                 </div>
             </div>
@@ -1450,10 +1492,24 @@ function readNumberField<T extends object>(obj: T, key: string): number | null {
 }
 
 function resolveIndexerBase(): string {
+    // 1. Check localStorage settings (user-configured indexer URL)
+    if (typeof window !== 'undefined') {
+        try {
+            const stored = window.localStorage.getItem('agentm:settings');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed.indexerUrl && typeof parsed.indexerUrl === 'string') {
+                    return trimTrailingSlash(parsed.indexerUrl);
+                }
+            }
+        } catch {}
+    }
+    // 2. Check env var
     if (INDEXER_BASE) {
         return trimTrailingSlash(INDEXER_BASE);
     }
-    const host = window.location.hostname;
+    // 3. Localhost default
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     if (host === 'localhost' || host === '127.0.0.1') {
         return 'http://127.0.0.1:3001';
     }
@@ -1468,6 +1524,58 @@ function getTimeoutSignal(timeoutMs: number): AbortSignal | undefined {
         return undefined;
     }
     return timeoutFactory(timeoutMs);
+}
+
+// ── Indexer Status Hook & Indicator ───────────────────────────────────
+
+type IndexerConnectionStatus = 'checking' | 'connected' | 'disconnected';
+
+function useIndexerStatus(): { status: IndexerConnectionStatus; indexerUrl: string } {
+    const [status, setStatus] = useState<IndexerConnectionStatus>('checking');
+    const indexerUrl = typeof window !== 'undefined' ? resolveIndexerBase() : '';
+
+    useEffect(() => {
+        if (!indexerUrl) { setStatus('disconnected'); return; }
+        let cancelled = false;
+        const check = () => {
+            fetch(`${indexerUrl}/api/tasks`, { signal: getTimeoutSignal(3000) })
+                .then((r) => { if (!cancelled) setStatus(r.ok ? 'connected' : 'disconnected'); })
+                .catch(() => { if (!cancelled) setStatus('disconnected'); });
+        };
+        check();
+        const interval = setInterval(check, 30000); // re-check every 30s
+        return () => { cancelled = true; clearInterval(interval); };
+    }, [indexerUrl]);
+
+    return { status, indexerUrl };
+}
+
+function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; url: string }) {
+    const colors = {
+        checking: 'bg-yellow-900/50 text-yellow-400 border-yellow-800',
+        connected: 'bg-emerald-900/50 text-emerald-400 border-emerald-800',
+        disconnected: 'bg-red-900/50 text-red-400 border-red-800',
+    };
+    const labels = {
+        checking: '● Checking...',
+        connected: '● Indexer Connected',
+        disconnected: '○ Indexer Offline',
+    };
+    return (
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border ${colors[status]}`} title={url}>
+            {labels[status]}
+        </div>
+    );
+}
+
+function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' }) {
+    if (source === 'indexer') {
+        return <span className="text-[10px] text-emerald-500 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-800">Live Data</span>;
+    }
+    if (source === 'demo') {
+        return <span className="text-[10px] text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">Demo Data</span>;
+    }
+    return <span className="text-[10px] text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">Mock Data</span>;
 }
 
 // ── Task Market View ──────────────────────────────────────────────────
@@ -1508,6 +1616,8 @@ function TaskMarketView({ address }: { address: string | null }) {
     const [filter, setFilter] = useState<string>('all');
     const [showPostForm, setShowPostForm] = useState(false);
     const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
+    const [dataSource, setDataSource] = useState<'indexer' | 'mock'>('mock');
+    const { status: indexerStatus, indexerUrl } = useIndexerStatus();
 
     useEffect(() => {
         fetch(`${resolveIndexerBase()}/api/tasks`, { signal: getTimeoutSignal(3000) })
@@ -1515,11 +1625,13 @@ function TaskMarketView({ address }: { address: string | null }) {
             .then((data) => {
                 if (Array.isArray(data) && data.length > 0) {
                     setTasks(data as TaskData[]);
+                    setDataSource('indexer');
                 } else {
                     setTasks(MOCK_TASKS);
+                    setDataSource('mock');
                 }
             })
-            .catch(() => setTasks(MOCK_TASKS))
+            .catch(() => { setTasks(MOCK_TASKS); setDataSource('mock'); })
             .finally(() => setLoading(false));
     }, []);
 
@@ -1528,7 +1640,11 @@ function TaskMarketView({ address }: { address: string | null }) {
     return (
         <div className="p-6 space-y-4 overflow-y-auto h-full">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Task Market</h2>
+                <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold">Task Market</h2>
+                    <DataSourceLabel source={dataSource} />
+                    <IndexerStatusBadge status={indexerStatus} url={indexerUrl} />
+                </div>
                 {address && (
                     <button
                         onClick={() => setShowPostForm(!showPostForm)}
@@ -1757,7 +1873,7 @@ function RegisterAgentSection({ address }: { address: string | null }) {
         );
     }
 
-    function handleRegister() {
+    async function handleRegister() {
         if (!displayName.trim()) return;
         const newProfile: AgentProfile = {
             displayName: displayName.trim(),
@@ -1767,10 +1883,28 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             walletAddress: address!,
             reputationScore: 0,
         };
+        // Save to localStorage
         if (storageKey) {
             try {
                 window.localStorage.setItem(storageKey, JSON.stringify(newProfile));
             } catch {}
+        }
+        // Also try posting to the indexer
+        try {
+            await fetch(`${resolveIndexerBase()}/api/agents/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pubkey: address,
+                    name: newProfile.displayName,
+                    capabilities: newProfile.capabilities,
+                    bio: newProfile.bio,
+                    domain: newProfile.solDomain,
+                }),
+                signal: getTimeoutSignal(5000),
+            });
+        } catch {
+            // Indexer offline — profile saved locally only
         }
         setProfile(newProfile);
         setEditing(false);
@@ -1872,7 +2006,7 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <p className="text-[10px] text-gray-600">
-                Saved locally for now. Future: calls AgentM Core program register_user + create_agent.
+                Saved locally + synced to indexer when available. Future: calls AgentM Core program register_user + create_agent.
             </p>
         </div>
     );

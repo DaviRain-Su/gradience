@@ -80,6 +80,7 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
             layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
             wormhole: { available: false, peerCount: 0, subscribedTopics: [] },
             debridge: { available: false, peerCount: 0, subscribedTopics: [] },
+            'google-a2a': { available: false, peerCount: 0, subscribedTopics: [] },
         },
         totalPeers: 0,
         activeSubscriptions: 0,

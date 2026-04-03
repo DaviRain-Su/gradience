@@ -29,10 +29,11 @@ listCommand
             const rpcUrl = await config.get('rpc');
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
             
-            const sdk = new GradienceSDK({ 
-                rpcEndpoint: rpcUrl,
-                indexerEndpoint,
-            });
+            const sdkOptions = {
+                ...(rpcUrl !== undefined && { rpcEndpoint: rpcUrl }),
+                ...(indexerEndpoint !== undefined && { indexerEndpoint }),
+            };
+            const sdk = new GradienceSDK(sdkOptions);
 
             const params: any = {};
             
@@ -113,10 +114,11 @@ listCommand
             const rpcUrl = await config.get('rpc');
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
             
-            const sdk = new GradienceSDK({ 
-                rpcEndpoint: rpcUrl,
-                indexerEndpoint,
-            });
+            const sdkOptions2 = {
+                ...(rpcUrl !== undefined && { rpcEndpoint: rpcUrl }),
+                ...(indexerEndpoint !== undefined && { indexerEndpoint }),
+            };
+            const sdk = new GradienceSDK(sdkOptions2);
 
             const sortField = options.sort === 'score' ? 'score' : 'slot';
 

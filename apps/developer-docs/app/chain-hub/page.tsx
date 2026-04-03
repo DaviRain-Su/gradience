@@ -87,7 +87,7 @@ const result = await router.invoke({
             </table>
 
             <h2>Program Address</h2>
-            <p><code>9s8JWYiPDe8egV5n5UzAJxFcRZfNfD1uaunEPMuqqyVZ</code></p>
+            <p><code>6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec</code></p>
         </div>
     );
 }

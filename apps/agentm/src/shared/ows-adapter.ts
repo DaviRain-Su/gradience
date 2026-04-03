@@ -13,10 +13,15 @@
  *   to stub implementations that return placeholder values but don't crash the app.
  */
 
+import type { Transaction, VersionedTransaction } from '@solana/web3.js';
+
 // =============================================================================
 // TYPE DEFINITIONS (local mirrors of @gradiences/ows-adapter types)
 // These are kept local to avoid import errors when the package is unavailable
 // =============================================================================
+
+/** Solana transaction types */
+export type SolanaTransaction = Transaction | VersionedTransaction;
 
 export interface OWSAgentConfig {
     /** Network to connect to */
@@ -147,7 +152,7 @@ class RealOWSAdapterWrapper {
         return this.adapter.signMessage(message);
     }
 
-    async signTransaction(tx: unknown): Promise<unknown> {
+    async signTransaction(tx: SolanaTransaction): Promise<unknown> {
         if (!this.adapter) {
             throw new Error('OWS SDK not available');
         }
@@ -205,7 +210,7 @@ class StubOWSAdapter {
         return `sig:stub:${Buffer.from(message.slice(0, 16)).toString('base64')}`;
     }
 
-    async signTransaction(tx: unknown): Promise<unknown> {
+    async signTransaction(tx: SolanaTransaction): Promise<unknown> {
         // Return the transaction with a stub signature marker
         if (tx && typeof tx === 'object') {
             return {
@@ -292,7 +297,7 @@ export class OWSWalletAdapter {
     }
 
     /** Sign a transaction */
-    async signTransaction(tx: unknown): Promise<unknown> {
+    async signTransaction(tx: SolanaTransaction): Promise<unknown> {
         return this.impl.signTransaction(tx);
     }
 }

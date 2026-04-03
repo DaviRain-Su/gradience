@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+require("@nomicfoundation/hardhat-chai-matchers");
 const { ethers } = require("hardhat");
 const nacl = require("tweetnacl");
 

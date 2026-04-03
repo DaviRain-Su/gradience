@@ -75,6 +75,10 @@ export class Daemon {
 
         await this.processManager.initialize();
 
+        this.connectionManager.on('error', (err: Error) => {
+            logger.warn({ err }, 'ConnectionManager error (handled)');
+        });
+
         this.connectionManager.on('state-changed', (peerId: string, state: string) => {
             logger.info({ peerId, connectionState: state }, 'Connection state changed');
         });

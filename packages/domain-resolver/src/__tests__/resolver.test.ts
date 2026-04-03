@@ -1,7 +1,7 @@
 import { DomainResolver } from '../resolver';
 import { SNSProvider } from '../providers/sns';
 import { ENSProvider } from '../providers/ens';
-import { DomainResolverError, ValidationError, ProviderError } from '../types';
+import { ValidationError, ProviderError } from '../types';
 
 // Mock the @bonfida/spl-name-service module
 jest.mock('@bonfida/spl-name-service', () => ({

@@ -127,66 +127,79 @@ export class ProcessManager extends EventEmitter {
         proc.state = 'starting';
         proc.lastError = null;
 
-        try {
-            const child = spawn(proc.config.command, proc.config.args, {
-                cwd: proc.config.cwd ?? process.cwd(),
-                env: { ...process.env, ...proc.config.env },
-                stdio: ['pipe', 'pipe', 'pipe'],
-            });
+        const child = spawn(proc.config.command, proc.config.args, {
+            cwd: proc.config.cwd ?? process.cwd(),
+            env: { ...process.env, ...proc.config.env },
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
 
-            if (!child.pid) {
-                throw new Error('Failed to spawn process');
-            }
-
-            this.childProcesses.set(id, child);
-            proc.pid = child.pid;
-            proc.state = 'running';
-            proc.lastStartedAt = Date.now();
-
-            child.stdout?.on('data', (data: Buffer) => {
-                let buf = (this.lineBuffers.get(id) ?? '') + data.toString();
-                const lines = buf.split('\n');
-                buf = lines.pop() ?? '';
-                this.lineBuffers.set(id, buf);
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed) continue;
-                    try {
-                        const message = JSON.parse(trimmed);
-                        this.emit('agent.output', { agentId: id, message });
-                    } catch {
-                        logger.debug({ agentId: id, line: trimmed }, 'Agent stdout (non-JSON)');
-                    }
-                }
-            });
-
-            child.stderr?.on('data', (data: Buffer) => {
-                logger.warn({ agentId: id, stderr: data.toString().trim() }, 'Agent stderr');
-            });
-
-            child.on('exit', (code, signal) => {
-                this.handleExit(id, code, signal);
-            });
-
-            child.on('error', (err) => {
+        // Wait for the process to confirm it started (pid assigned) or fail
+        await new Promise<void>((resolve, reject) => {
+            const onError = (err: Error) => {
+                child.removeListener('spawn', onSpawn);
                 proc.state = 'failed';
                 proc.lastError = err.message;
                 proc.pid = null;
                 this.childProcesses.delete(id);
                 logger.error({ err, agentId: id }, 'Agent process error');
                 this.emit('agent.failed', { agentId: id, error: err.message });
-            });
+                reject(err);
+            };
+            const onSpawn = () => {
+                child.removeListener('error', onError);
+                resolve();
+            };
+            child.once('error', onError);
+            child.once('spawn', onSpawn);
+        });
 
-            logger.info({ agentId: id, pid: child.pid }, 'Agent started');
-            this.emit('agent.started', { agentId: id, pid: child.pid });
-            return child.pid;
-
-        } catch (err) {
+        if (!child.pid) {
             proc.state = 'failed';
-            proc.lastError = err instanceof Error ? err.message : String(err);
-            logger.error({ err, agentId: id }, 'Failed to start agent');
-            throw err;
+            throw new Error('Failed to spawn process');
         }
+
+        this.childProcesses.set(id, child);
+        proc.pid = child.pid;
+        proc.state = 'running';
+        proc.lastStartedAt = Date.now();
+
+        child.stdout?.on('data', (data: Buffer) => {
+            let buf = (this.lineBuffers.get(id) ?? '') + data.toString();
+            const lines = buf.split('\n');
+            buf = lines.pop() ?? '';
+            this.lineBuffers.set(id, buf);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                try {
+                    const message = JSON.parse(trimmed);
+                    this.emit('agent.output', { agentId: id, message });
+                } catch {
+                    logger.debug({ agentId: id, line: trimmed }, 'Agent stdout (non-JSON)');
+                }
+            }
+        });
+
+        child.stderr?.on('data', (data: Buffer) => {
+            logger.warn({ agentId: id, stderr: data.toString().trim() }, 'Agent stderr');
+        });
+
+        child.on('exit', (code, signal) => {
+            this.handleExit(id, code, signal);
+        });
+
+        child.on('error', (err) => {
+            proc.state = 'failed';
+            proc.lastError = err.message;
+            proc.pid = null;
+            this.childProcesses.delete(id);
+            logger.error({ err, agentId: id }, 'Agent process error');
+            this.emit('agent.failed', { agentId: id, error: err.message });
+        });
+
+        logger.info({ agentId: id, pid: child.pid }, 'Agent started');
+        this.emit('agent.started', { agentId: id, pid: child.pid });
+        return child.pid;
     }
 
     async stop(id: string): Promise<void> {

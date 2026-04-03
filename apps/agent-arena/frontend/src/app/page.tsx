@@ -9,7 +9,15 @@ import { useFrontendWallet } from '../lib/use-frontend-wallet';
 
 export default function HomePage() {
     const [refreshToken, setRefreshToken] = useState(0);
-    const { publicKey, connect, disconnect } = useFrontendWallet();
+    const { signerAddress, connectLocal, disconnectLocal } = useFrontendWallet();
+
+    const handleConnect = async () => {
+        await connectLocal();
+    };
+
+    const handleDisconnect = () => {
+        disconnectLocal();
+    };
 
     return (
         <main className="mx-auto min-h-screen max-w-5xl p-6">
@@ -21,16 +29,16 @@ export default function HomePage() {
                     </p>
                 </div>
                 <button
-                    onClick={publicKey ? disconnect : connect}
+                    onClick={signerAddress ? handleDisconnect : handleConnect}
                     className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 transition"
                 >
-                    {publicKey ? `${publicKey.slice(0, 8)}... (Disconnect)` : 'Connect Wallet'}
+                    {signerAddress ? `${signerAddress.slice(0, 8)}... (Disconnect)` : 'Connect Wallet'}
                 </button>
             </div>
 
             {/* Agent Overview */}
             <div className="mt-6">
-                <AgentOverview publicKey={publicKey} />
+                <AgentOverview publicKey={signerAddress} />
             </div>
 
             {/* Task Management */}

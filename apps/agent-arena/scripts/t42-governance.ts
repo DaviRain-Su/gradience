@@ -18,7 +18,7 @@ const execFile = promisify(execFileCallback);
 
 const CONFIG_DISCRIMINATOR = 0x09;
 const ACCOUNT_VERSION_V1 = 0x01;
-const DEFAULT_PROGRAM_ID = 'GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4';
+const DEFAULT_PROGRAM_ID = '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
 const BASE58_ADDRESS_PATTERN = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
 
 export interface T42RunConfig {

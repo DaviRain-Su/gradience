@@ -29,10 +29,11 @@ statusCommand
             
             // For status checks, we can use the indexer without requiring a keypair
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-            const sdk = new GradienceSDK({ 
-                rpcEndpoint: rpcUrl,
-                indexerEndpoint,
-            });
+            const statusSdkOptions = {
+                ...(rpcUrl !== undefined && { rpcEndpoint: rpcUrl }),
+                ...(indexerEndpoint !== undefined && { indexerEndpoint }),
+            };
+            const sdk = new GradienceSDK(statusSdkOptions);
 
             spinner.text = 'Querying task data...';
             const task = await sdk.getTask(Number(taskId));

@@ -14,7 +14,7 @@ use solana_sdk::{
 };
 use std::{path::PathBuf, str::FromStr};
 
-const A2A_PROGRAM_ID_STR: &str = "GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4";
+const A2A_PROGRAM_ID_STR: &str = "FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H";
 const MIN_LAMPORTS: u64 = 10_000_000_000;
 
 fn load_program_binary() -> Vec<u8> {

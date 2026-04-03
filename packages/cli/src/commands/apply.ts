@@ -44,10 +44,10 @@ applyCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting application...';
-            const signature = await sdk.task.apply(wallet, {
-                taskId,
-                mint,
-            });
+            const applyRequest = mint !== undefined
+                ? { taskId, mint }
+                : { taskId };
+            const signature = await sdk.task.apply(wallet, applyRequest);
 
             spinner.succeed('Successfully applied for task');
             outputResult({

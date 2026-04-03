@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import ora from 'ora';
 import { GradienceSDK, KeypairAdapter } from '@gradiences/sdk';
+import type { Address } from '@solana/kit';
 import { ConfigManager } from '../config.js';
 import { loadKeypairSigner, parseU64, parseAddress, outputResult, outputError, isMockMode } from '../utils.js';
 
@@ -41,13 +42,14 @@ refundCommand
             const signer = await loadKeypairSigner(keypairPath);
             const wallet = new KeypairAdapter({ signer, rpcEndpoint: rpcUrl });
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-            const sdk = new GradienceSDK({ 
-                rpcEndpoint: rpcUrl, 
-                indexerEndpoint,
-            });
+            const refundSdkOptions = {
+                rpcEndpoint: rpcUrl,
+                ...(indexerEndpoint !== undefined && { indexerEndpoint }),
+            };
+            const sdk = new GradienceSDK(refundSdkOptions);
 
             // Resolve poster address if not provided
-            let poster: string;
+            let poster: Address;
             if (options.poster) {
                 poster = parseAddress(options.poster, 'poster');
             } else {
@@ -62,11 +64,10 @@ refundCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting refund transaction...';
-            const signature = await sdk.task.refund(wallet, {
-                taskId,
-                poster,
-                mint,
-            });
+            const refundRequest = mint !== undefined
+                ? { taskId, poster, mint }
+                : { taskId, poster };
+            const signature = await sdk.task.refund(wallet, refundRequest);
 
             spinner.succeed('Refund processed successfully');
             outputResult({
@@ -123,10 +124,10 @@ refundCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting cancel transaction...';
-            const signature = await sdk.task.cancel(wallet, {
-                taskId,
-                mint,
-            });
+            const cancelRequest = mint !== undefined
+                ? { taskId, mint }
+                : { taskId };
+            const signature = await sdk.task.cancel(wallet, cancelRequest);
 
             spinner.succeed('Task canceled successfully');
             outputResult({

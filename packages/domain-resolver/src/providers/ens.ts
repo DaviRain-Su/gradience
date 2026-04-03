@@ -38,7 +38,7 @@ export class ENSProvider implements Provider {
     );
   }
 
-  async reverse(address: string): Promise<string | null> {
+  async reverse(_address: string): Promise<string | null> {
     // TODO: Implement ENS reverse lookup when cross-chain support is needed
     throw new ProviderError(
       'ENS reverse lookup not implemented yet - this is a placeholder for future cross-chain support',

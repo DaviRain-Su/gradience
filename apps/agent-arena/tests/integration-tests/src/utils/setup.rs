@@ -14,7 +14,7 @@ use gradience_client::GRADIENCE_ID;
 
 const MIN_LAMPORTS: u64 = 10_000_000_000;
 const CU_TRACKING_ENV_VAR: &str = "CU_TRACKING";
-const FALLBACK_GRADIENCE_ID: &str = "GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4";
+const FALLBACK_GRADIENCE_ID: &str = "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs";
 
 fn load_program_binary() -> Vec<u8> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

@@ -164,7 +164,7 @@ function printHelp(noDna: boolean): void {
                 },
                 {
                     command:
-                        'task judge --task-id <id> --winner <agent> --poster <poster> --score <0-10000> --reason-ref <cid>',
+                        'task judge --task-id <id> --winner <agent> --poster <poster> --score <0-100> --reason-ref <cid>',
                     description: 'Judge task and settle payouts',
                 },
                 {
@@ -212,7 +212,7 @@ function printHelp(noDna: boolean): void {
             '  gradience task apply --task-id <id>',
             '  gradience task submit --task-id <id> --result-ref <cid> --trace-ref <cid>',
             '  gradience task status <task_id>',
-            '  gradience task judge --task-id <id> --winner <agent> --poster <poster> --score <0-10000> --reason-ref <cid>',
+            '  gradience task judge --task-id <id> --winner <agent> --poster <poster> --score <0-100> --reason-ref <cid>',
             '  gradience task cancel --task-id <id>',
             '  gradience task refund --task-id <id> [--poster <address>]',
             '  gradience judge register --category <name|id[,name|id...]> [--stake-amount <lamports>]',
@@ -361,8 +361,8 @@ async function handleTaskCommand(taskArgs: string[], env: NodeJS.ProcessEnv, noD
         const winner = parseAddress(requiredFlag(flags, 'winner'), 'winner');
         const poster = parseAddress(requiredFlag(flags, 'poster'), 'poster');
         const scoreBig = parseU64(flags.get('score'), 'score');
-        if (scoreBig > 10_000n) {
-            throw new CliError('INVALID_ARGUMENT', 'score must be <= 10000');
+        if (scoreBig > 100n) {
+            throw new CliError('INVALID_ARGUMENT', 'score must be <= 100 (u8 on-chain, MIN_SCORE=60 for valid completion)');
         }
         const reasonRef = requiredFlag(flags, 'reason-ref');
         const signature = await sdk.task.judge(wallet, {

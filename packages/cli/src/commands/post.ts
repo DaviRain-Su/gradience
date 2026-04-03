@@ -68,18 +68,19 @@ postCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting transaction...';
-            const signature = await sdk.task.post(wallet, {
+            const postRequest = {
                 taskId,
                 evalRef: options.evalRef,
                 reward,
                 category,
                 minStake,
                 judgeMode,
-                judge,
                 deadline,
                 judgeDeadline,
-                mint,
-            });
+                ...(judge !== undefined && { judge }),
+                ...(mint !== undefined && { mint }),
+            };
+            const signature = await sdk.task.post(wallet, postRequest);
 
             spinner.succeed('Task created successfully');
             outputResult({

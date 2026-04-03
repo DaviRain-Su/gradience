@@ -47,6 +47,7 @@ export class A2ARouter {
             nostrOptions: options.nostrOptions ?? {},
             libp2pOptions: options.libp2pOptions ?? {},
             magicblockOptions: options.magicblockOptions ?? {},
+            googleA2AOptions: options.googleA2AOptions ?? {},
             agentId: options.agentId ?? 'unknown',
             protocolPriority,
             healthCheckInterval: options.healthCheckInterval ?? ROUTER_CONFIG.HEALTH_CHECK_INTERVAL_MS,
@@ -268,6 +269,7 @@ export class A2ARouter {
             layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
             wormhole: { available: false, peerCount: 0, subscribedTopics: [] },
             debridge: { available: false, peerCount: 0, subscribedTopics: [] },
+            'google-a2a': { available: false, peerCount: 0, subscribedTopics: [] },
         };
 
         let totalPeers = 0;

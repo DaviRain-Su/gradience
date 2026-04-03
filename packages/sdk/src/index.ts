@@ -22,7 +22,7 @@
  */
 
 import { GradienceSDK } from '@gradiences/arena-sdk';
-import { ChainHubClient } from '../../apps/chain-hub/sdk/client';
+import { ChainHubClient } from '@gradiences/chain-hub-sdk';
 import type { Address } from '@solana/kit';
 import type {
     WalletAdapter,
@@ -32,7 +32,7 @@ import type {
     SubmissionApi,
     ReputationOnChain,
 } from '@gradiences/arena-sdk';
-import type { ReputationData } from '../../apps/chain-hub/sdk/client';
+import type { ReputationData } from '@gradiences/chain-hub-sdk';
 import type {
     GradienceClientOptions,
     PostTaskOptions,
@@ -51,8 +51,8 @@ export {
 } from '@gradiences/arena-sdk';
 
 // Chain Hub — re-export from the sub-path to keep this entry-point slim
-export { ChainHubClient, ChainHubError } from '../../apps/chain-hub/sdk/client';
-export type { ChainHubClientConfig, ReputationData, AgentInfo, SqlQueryResult } from '../../apps/chain-hub/sdk/client';
+export { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
+export type { ChainHubClientConfig, ReputationData, AgentInfo, SqlQueryResult } from '@gradiences/chain-hub-sdk';
 
 // ── Gradience unified client ──────────────────────────────────────────────────
 

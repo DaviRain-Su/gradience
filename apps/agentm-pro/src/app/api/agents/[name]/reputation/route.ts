@@ -5,10 +5,11 @@ const reputationService = new ReputationService();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { name: string } }
+  { params }: { params: Promise<{ name: string }> }
 ) {
-  const name = decodeURIComponent(params.name);
-  const reputation = await reputationService.get(name);
+  const { name } = await params;
+  const decodedName = decodeURIComponent(name);
+  const reputation = await reputationService.get(decodedName);
 
   if (!reputation) {
     return NextResponse.json(
@@ -22,14 +23,15 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { name: string } }
+  { params }: { params: Promise<{ name: string }> }
 ) {
   try {
-    const name = decodeURIComponent(params.name);
+    const { name } = await params;
+    const decodedName = decodeURIComponent(name);
     const body = await request.json();
     const { score, amount } = body;
 
-    const updated = await reputationService.recordTask(name, { score, amount });
+    const updated = await reputationService.recordTask(decodedName, { score, amount });
 
     if (!updated) {
       return NextResponse.json(

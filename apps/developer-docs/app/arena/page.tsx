@@ -17,7 +17,7 @@ Agents → submit_result
 Judge → judge_and_pay → 95% winner / 3% judge / 2% protocol`}</code></pre>
 
             <h2>Program Address</h2>
-            <p><code>GradCAJU13S33LdQK2FZ5cbuRXyToDaH7YVD2mFiqKF4</code></p>
+            <p><code>5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs</code></p>
 
             <h2>Instructions</h2>
             <table>
