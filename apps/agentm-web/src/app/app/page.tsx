@@ -66,15 +66,15 @@ function PrivyOrWalletApp() {
     // Not connected → show connect prompt
     if (!wallet.connected) {
         return (
-            <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-6">
-                <div className="text-center space-y-3">
-                    <h1 className="text-3xl font-bold">AgentM</h1>
-                    <p className="text-gray-400 max-w-md">
+            <div style={{ minHeight: '100vh', background: '#F3F3F8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#16161A' }}>AgentM</h1>
+                    <p style={{ color: '#16161A', opacity: 0.6, maxWidth: '28rem', marginTop: '12px' }}>
                         AI Agent Economy on Solana. Find agents, delegate tasks, earn reputation.
                     </p>
                 </div>
                 <WalletMultiButton />
-                <Link href="/" className="text-sm text-gray-500 hover:text-gray-300 transition">
+                <Link href="/" style={{ fontSize: '14px', color: '#16161A', opacity: 0.5, textDecoration: 'none' }}>
                     Back to home
                 </Link>
             </div>
@@ -553,10 +553,10 @@ function DiscoverView() {
     };
 
     return (
-        <div className="p-6 space-y-4 overflow-y-auto h-full">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Discover Agents</h2>
-                <div className="flex items-center gap-2">
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Discover Agents</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <DataSourceLabel source={dataSource} />
                     <IndexerStatusBadge status={indexerStatus} url={indexerUrl} />
                 </div>
@@ -565,25 +565,69 @@ function DiscoverView() {
                 placeholder="Search agents..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                style={{
+                    width: '100%',
+                    background: '#FFFFFF',
+                    border: '1.5px solid #16161A',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    color: '#16161A',
+                    outline: 'none',
+                }}
             />
-            {loading && <p className="text-gray-500 text-sm">Loading...</p>}
+            {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>}
             {!loading && agents.length === 0 && (
-                <div className="text-center py-12">
-                    <p className="text-gray-500">No agents found. Indexer may be offline.</p>
-                    <button onClick={loadDemo} className="mt-3 px-4 py-2 bg-blue-800 rounded hover:bg-blue-700 text-sm transition">
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                    <p style={{ color: '#16161A', opacity: 0.5 }}>No agents found. Indexer may be offline.</p>
+                    <button 
+                        onClick={loadDemo} 
+                        style={{
+                            marginTop: '12px',
+                            padding: '8px 16px',
+                            background: '#16161A',
+                            color: '#FFFFFF',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            border: 'none',
+                            cursor: 'pointer',
+                        }}
+                    >
                         Load Demo Agents
                     </button>
                 </div>
             )}
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {filtered.map((row, i) => (
-                    <div key={row.agent} className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm font-bold">{i + 1}</div>
+                    <div 
+                        key={row.agent} 
+                        style={{
+                            background: '#FFFFFF',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            border: '1.5px solid #16161A',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: '#F3F3F8',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                color: '#16161A',
+                                border: '1.5px solid #16161A',
+                            }}>{i + 1}</div>
                             <div>
-                                <p className="font-medium">{row.agent}</p>
-                                <div className="flex gap-3 text-xs text-gray-500">
+                                <p style={{ fontWeight: 500, color: '#16161A' }}>{row.agent}</p>
+                                <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#16161A', opacity: 0.6 }}>
                                     <span>Score: {row.reputation?.global_avg_score?.toFixed(1) ?? 'N/A'}</span>
                                     <span>Tasks: {row.reputation?.global_completed ?? 0}</span>
                                     <span>Win: {row.reputation?.win_rate ? `${(row.reputation.win_rate * 100).toFixed(0)}%` : 'N/A'}</span>
@@ -774,238 +818,6 @@ function MeView({
             </div>
         </div>
     );
-}
-
-// ── Chat ─────────────────────────────────────────────────────────────
-
-interface ChatAgent {
-    id: string;
-    name: string;
-    role: string;
-    online: boolean;
-    avatar: string;
-}
-
-interface ChatMessage {
-    id: string;
-    agentId: string | 'user';
-    text: string;
-    timestamp: string;
-}
-
-const DEMO_AGENTS: ChatAgent[] = [
-    { id: 'alice', name: 'Alice_DeFi', role: 'DeFi Strategy Agent', online: true, avatar: 'A' },
-    { id: 'bob', name: 'Bob_Auditor', role: 'Smart Contract Auditor', online: true, avatar: 'B' },
-    { id: 'charlie', name: 'Charlie_Data', role: 'Data Analysis Agent', online: false, avatar: 'C' },
-    { id: 'delta', name: 'Delta_Ops', role: 'DevOps Automation', online: false, avatar: 'D' },
-];
-
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-    alice: [
-        { id: '1', agentId: 'alice', text: 'Hello! I\'m Alice_DeFi. I specialize in yield optimization strategies across Solana DeFi protocols.', timestamp: '09:41' },
-        { id: '2', agentId: 'user', text: 'Hi Alice! I need help analyzing yield opportunities in the current market.', timestamp: '09:42' },
-        { id: '3', agentId: 'alice', text: 'Sure. Based on current on-chain data, Raydium CLMM pools on SOL/USDC are showing ~18% APR with low IL risk. Marinade\'s mSOL strategy averages 7.2% with zero IL.', timestamp: '09:42' },
-        { id: '4', agentId: 'user', text: 'Can you delegate a monitoring task to watch these positions 24/7?', timestamp: '09:43' },
-        { id: '5', agentId: 'alice', text: 'Absolutely. I\'ll register a delegation task on-chain via A2A. You\'ll receive alerts if APR drops below your threshold or if rebalancing is needed. Shall I proceed?', timestamp: '09:43' },
-        { id: '6', agentId: 'user', text: 'Yes, set alert threshold at 12% APR.', timestamp: '09:44' },
-        { id: '7', agentId: 'alice', text: '✓ Task registered. Agent ID: alice_monitor_0x4f2a. Monitoring 3 positions. Alert threshold: 12% APR. I\'ll ping you via A2A message when action is needed.', timestamp: '09:44' },
-    ],
-    bob: [
-        { id: '1', agentId: 'bob', text: 'Hey, I\'m Bob_Auditor. I can review smart contracts, check for common vulnerabilities, and generate audit reports.', timestamp: '10:15' },
-        { id: '2', agentId: 'user', text: 'I have a new escrow contract I need audited before deployment.', timestamp: '10:16' },
-        { id: '3', agentId: 'bob', text: 'Send me the program ID or source code. I\'ll run static analysis, check for reentrancy, integer overflow, and authority validation issues.', timestamp: '10:16' },
-        { id: '4', agentId: 'user', text: 'Program ID: Esc7...xK9p', timestamp: '10:17' },
-        { id: '5', agentId: 'bob', text: '⚠️ Found 1 medium-severity issue: the authority check on `withdraw` uses `signer_key` comparison without verifying the account is a signer. This could allow unauthorized withdrawals. Recommend adding `require_signer` constraint.', timestamp: '10:18' },
-    ],
-    charlie: [
-        { id: '1', agentId: 'charlie', text: 'Hi, I\'m Charlie_Data. I process on-chain datasets and generate analytics reports.', timestamp: 'Yesterday' },
-        { id: '2', agentId: 'user', text: 'Can you pull trading volume data for the last 30 days across major Solana DEXs?', timestamp: 'Yesterday' },
-        { id: '3', agentId: 'charlie', text: 'On it. I\'ll aggregate from Raydium, Orca, and Jupiter. ETA: ~4 minutes. Results will be streamed as an A2A task response.', timestamp: 'Yesterday' },
-    ],
-    delta: [
-        { id: '1', agentId: 'delta', text: 'Delta_Ops here. I handle CI/CD pipelines, server provisioning, and automated deployments.', timestamp: 'Monday' },
-    ],
-};
-
-function ChatView() {
-    const [selectedAgentId, setSelectedAgentId] = useState<string>('alice');
-    const [messagesByAgent, setMessagesByAgent] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
-    const [input, setInput] = useState('');
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    const selectedAgent = DEMO_AGENTS.find((a) => a.id === selectedAgentId)!;
-    const messages = messagesByAgent[selectedAgentId] ?? [];
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, selectedAgentId]);
-
-    function sendMessage() {
-        const text = input.trim();
-        if (!text) return;
-        const now = new Date();
-        const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        const userMsg: ChatMessage = { id: crypto.randomUUID(), agentId: 'user', text, timestamp };
-        setMessagesByAgent((prev) => ({
-            ...prev,
-            [selectedAgentId]: [...(prev[selectedAgentId] ?? []), userMsg],
-        }));
-        setInput('');
-
-        // Simulate agent reply
-        setTimeout(() => {
-            const reply: ChatMessage = {
-                id: crypto.randomUUID(),
-                agentId: selectedAgentId,
-                text: generateReply(selectedAgentId, text),
-                timestamp,
-            };
-            setMessagesByAgent((prev) => ({
-                ...prev,
-                [selectedAgentId]: [...(prev[selectedAgentId] ?? []), reply],
-            }));
-        }, 800);
-    }
-
-    return (
-        <div className="flex h-full">
-            {/* Agent sidebar */}
-            <div className="w-60 bg-gray-900 border-r border-gray-800 flex flex-col">
-                <div className="px-4 py-3 border-b border-gray-800">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">A2A Contacts</p>
-                </div>
-                <div className="flex-1 overflow-y-auto py-2">
-                    {DEMO_AGENTS.map((agent) => (
-                        <button
-                            key={agent.id}
-                            onClick={() => setSelectedAgentId(agent.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                                selectedAgentId === agent.id ? 'bg-gray-800' : 'hover:bg-gray-800/50'
-                            }`}
-                        >
-                            <div className="relative flex-shrink-0">
-                                <div className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center text-sm font-bold">
-                                    {agent.avatar}
-                                </div>
-                                <span
-                                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${
-                                        agent.online ? 'bg-emerald-400' : 'bg-gray-600'
-                                    }`}
-                                />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{agent.name}</p>
-                                <p className="text-[10px] text-gray-500 truncate">{agent.role}</p>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Chat window */}
-            <div className="flex-1 flex flex-col bg-gray-950">
-                {/* Header */}
-                <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-800 bg-gray-900">
-                    <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-sm font-bold">
-                            {selectedAgent.avatar}
-                        </div>
-                        <span
-                            className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-gray-900 ${
-                                selectedAgent.online ? 'bg-emerald-400' : 'bg-gray-600'
-                            }`}
-                        />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold">{selectedAgent.name}</p>
-                        <p className="text-[10px] text-gray-500">
-                            {selectedAgent.online ? 'Online · A2A/1.0' : 'Offline'} · {selectedAgent.role}
-                        </p>
-                    </div>
-                    <div className="ml-auto flex items-center gap-2">
-                        <span className="text-[10px] text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full border border-yellow-800">
-                            Demo Mode
-                        </span>
-                        <span className="text-[10px] text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-800">
-                            A2A Protocol
-                        </span>
-                    </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-                    {messages.map((msg) => {
-                        const isUser = msg.agentId === 'user';
-                        return (
-                            <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                                {!isUser && (
-                                    <div className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">
-                                        {selectedAgent.avatar}
-                                    </div>
-                                )}
-                                <div className={`max-w-[72%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                                    <div
-                                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                                            isUser
-                                                ? 'bg-blue-600 text-white rounded-br-sm'
-                                                : 'bg-gray-800 text-gray-100 rounded-bl-sm'
-                                        }`}
-                                    >
-                                        {msg.text}
-                                    </div>
-                                    <p className="text-[10px] text-gray-600 px-1">{msg.timestamp}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input */}
-                <div className="px-5 py-4 border-t border-gray-800 bg-gray-900">
-                    <div className="flex gap-2 items-end">
-                        <input
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                            placeholder={`Message ${selectedAgent.name}...`}
-                            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 placeholder-gray-600"
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!input.trim()}
-                            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-xl text-sm font-medium transition"
-                        >
-                            Send
-                        </button>
-                    </div>
-                    <p className="text-[10px] text-gray-600 mt-2">
-                        <span className="text-yellow-500 font-medium">⚠ Demo Mode</span> · Messages are simulated locally · Real A2A messaging coming soon
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function generateReply(agentId: string, userText: string): string {
-    const lower = userText.toLowerCase();
-    if (agentId === 'alice') {
-        if (lower.includes('yield') || lower.includes('apr')) return 'Current best yield: SOL/mSOL on Orca at 14.3% APR. Want me to allocate?';
-        if (lower.includes('monitor') || lower.includes('watch')) return 'Monitoring task registered. I\'ll alert you on significant changes.';
-        return 'Acknowledged. Processing your request via A2A task delegation...';
-    }
-    if (agentId === 'bob') {
-        if (lower.includes('audit') || lower.includes('contract')) return 'Send the program ID and I\'ll run a full vulnerability scan.';
-        if (lower.includes('vulnerability') || lower.includes('bug')) return 'Found no critical issues in the latest scan. 2 low-severity warnings logged.';
-        return 'Audit request queued. Estimated completion: 3-5 minutes.';
-    }
-    if (agentId === 'charlie') {
-        if (lower.includes('data') || lower.includes('analytics')) return 'Pulling on-chain data now. I\'ll stream results as they arrive.';
-        if (lower.includes('report')) return 'Report generation started. Format: JSON + CSV. ETA: 2 minutes.';
-        return 'Data request received. Aggregating from on-chain sources...';
-    }
-    return 'Task received. I\'ll process this and respond via A2A when complete.';
 }
 
 // ── Wallet Balance ──────────────────────────────────────────────────────────
