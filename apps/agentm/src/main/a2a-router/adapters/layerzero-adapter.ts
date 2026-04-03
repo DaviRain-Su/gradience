@@ -42,11 +42,11 @@ export interface CrossChainReputationMessage {
   version: '1.0';
   messageType: 'reputation_sync' | 'task_completion' | 'attestation';
   sourceChain: string;
-  targetChain: 'soul';
+  targetChain: 'solana';
   timestamp: number;
   nonce: number;
-  agentAddress: string;
-  soulAddress: string;
+  sourceAgentAddress: string;     // Address on source chain (Ethereum, Sui, etc.)
+  solanaAgentAddress: string;     // Address on Solana (target)
   reputationData: {
     taskCompletions: TaskCompletion[];
     attestations: Attestation[];
@@ -202,11 +202,11 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       version: '1.0',
       messageType: 'attestation',
       sourceChain: this.options.sourceChain,
-      targetChain: 'soul',
+      targetChain: 'solana',
       timestamp: Date.now(),
       nonce: this.generateNonce(),
-      agentAddress: this.options.agentId,
-      soulAddress: this.options.agentId, // Same for Soul chain
+      sourceAgentAddress: this.options.sourceAgentAddress,
+      solanaAgentAddress: this.options.solanaAgentId,
       reputationData: {
         taskCompletions: [],
         attestations: [
@@ -247,7 +247,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
   // ============ LayerZero Specific Methods ============
 
   /**
-   * Sync reputation data to Soul chain
+   * Sync reputation data to Solana chain
    */
   async syncReputation(
     reputationData: CrossChainReputationMessage['reputationData']
@@ -256,11 +256,11 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       version: '1.0',
       messageType: 'reputation_sync',
       sourceChain: this.options.sourceChain,
-      targetChain: 'soul',
+      targetChain: 'solana',
       timestamp: Date.now(),
       nonce: this.generateNonce(),
-      agentAddress: this.options.agentId,
-      soulAddress: this.options.agentId,
+      sourceAgentAddress: this.options.sourceAgentAddress,
+      solanaAgentAddress: this.options.solanaAgentId,
       reputationData,
       signature: '',
     };

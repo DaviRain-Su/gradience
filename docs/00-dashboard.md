@@ -5,6 +5,27 @@
 
 ---
 
+## 🚀 Quick Start for Code Agents
+
+**New:** Tasks migrated from Linear to Obsidian!
+
+```bash
+# Get your P0 tasks
+./scripts/task.sh list todo P0
+
+# Start working
+./scripts/task.sh update GRA-64 in-progress
+
+# Mark done
+./scripts/task.sh update GRA-64 done
+```
+
+**📖 Full Guide:** [[OBSIDIAN-GUIDE-FOR-AGENTS]]
+
+---
+
+---
+
 ## 📊 Project Statistics
 
 ```dataview

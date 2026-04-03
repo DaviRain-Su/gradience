@@ -2,6 +2,23 @@
 
 > Read by: OpenAI Codex, OpenCode, Amp (Sourcegraph), and other AGENTS.md-compatible tools.
 
+---
+
+## ⚠️ IMPORTANT: Task System Migration
+
+**Tasks are now managed in Obsidian, NOT Linear.**
+
+**Quick Start:**
+```bash
+./scripts/task.sh list todo P0     # Get your tasks
+./scripts/task.sh show GRA-64      # View task details
+./scripts/task.sh update GRA-64 done  # Mark complete
+```
+
+**Full Guide:** [docs/OBSIDIAN-GUIDE-FOR-AGENTS.md](OBSIDIAN-GUIDE-FOR-AGENTS.md)
+
+---
+
 ## Mandatory Development Lifecycle
 
 This project enforces a strict **7-phase development lifecycle**.
