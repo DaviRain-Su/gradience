@@ -1,17 +1,26 @@
 /**
- * Auth module — Privy embedded wallet integration.
+ * Auth module — Privy embedded wallet + OWS integration.
  *
  * MVP: mock auth (demo login without Privy SDK).
- * Production: replace mock with real Privy SDK calls.
+ * Production: choose between Privy or OWS based on user preference.
  *
- * To enable real Privy:
- * 1. Create app at https://dashboard.privy.io
- * 2. Set VITE_PRIVY_APP_ID in .env
- * 3. Uncomment the Privy provider in App.tsx
+ * Auth Providers:
+ * - MockAuthProvider: Demo login with mock wallet
+ * - OWSAuthProvider: Open Wallet Standard integration
+ * - PrivyAuthProvider: Real Privy SDK (to be implemented)
+ *
+ * To enable real auth:
+ * 1. For OWS: Use createOWSAuthProvider()
+ * 2. For Privy: Create app at https://dashboard.privy.io
+ *    Set VITE_PRIVY_APP_ID in .env
  */
 
 import type { AuthState } from '../../shared/types.ts';
 import { EMPTY_AUTH } from '../../shared/types.ts';
+import { OWSAuthProvider } from './auth-ows.ts';
+import type { OWSAgentConfig } from '@gradience/ows-adapter';
+
+export type AuthProviderType = 'mock' | 'ows' | 'privy';
 
 export interface AuthProvider {
     login(): Promise<AuthState>;
@@ -48,9 +57,24 @@ export class MockAuthProvider implements AuthProvider {
 }
 
 /**
- * Create auth provider for non-React contexts (API server, tests).
- * Real Privy auth is handled directly via usePrivy() hooks in App.tsx.
+ * Create auth provider based on type.
+ * 
+ * @param type - 'mock' | 'ows' | 'privy'
+ * @param config - Provider-specific config
  */
-export function createAuthProvider(): AuthProvider {
-    return new MockAuthProvider();
+export function createAuthProvider(
+    type: AuthProviderType = 'mock',
+    config?: OWSAgentConfig
+): AuthProvider {
+    switch (type) {
+        case 'ows':
+            return new OWSAuthProvider(config || { network: 'devnet', defaultChain: 'solana' });
+        case 'mock':
+        default:
+            return new MockAuthProvider();
+    }
 }
+
+// Re-export OWS auth
+export { OWSAuthProvider, createOWSAuthProvider } from './auth-ows.ts';
+export type { OWSAuthState } from './auth-ows.ts';
