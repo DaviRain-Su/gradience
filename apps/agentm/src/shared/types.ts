@@ -142,7 +142,7 @@ export interface TaskFlowRecord {
 
 // ── App Views ────────────────────────────────────────────────────────
 
-export type ActiveView = 'me' | 'discover' | 'chat';
+export type ActiveView = 'me' | 'discover' | 'chat' | 'social';
 
 // ── Interoperability Status ─────────────────────────────────────────
 

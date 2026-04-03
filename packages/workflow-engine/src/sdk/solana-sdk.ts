@@ -22,11 +22,13 @@ import {
   createInitializeInstruction,
   createCreateWorkflowInstruction,
   createPurchaseWorkflowInstruction,
+  createPurchaseWorkflowV2Instruction,
   createReviewWorkflowInstruction,
   createUpdateWorkflowInstruction,
   createDeactivateWorkflowInstruction,
   createActivateWorkflowInstruction,
   createDeleteWorkflowInstruction,
+  createRecordExecutionInstruction,
   type CreateWorkflowParams,
 } from './solana-instructions.js';
 
@@ -166,6 +168,52 @@ export class SolanaWorkflowSDK {
       this.payer.publicKey,
       workflowId,
       accessType
+    );
+
+    const transaction = new Transaction().add(instruction);
+    const signature = await sendAndConfirmTransaction(
+      this.connection,
+      transaction,
+      [this.payer]
+    );
+
+    return signature;
+  }
+
+  /**
+   * Purchase a workflow with payment (V2)
+   * Includes SOL payment and revenue distribution
+   */
+  async purchaseWorkflowWithPayment(
+    workflowId: PublicKey,
+    author: PublicKey,
+    accessType: number = 0
+  ): Promise<string> {
+    const instruction = createPurchaseWorkflowV2Instruction(
+      this.payer.publicKey,
+      workflowId,
+      author,
+      accessType
+    );
+
+    const transaction = new Transaction().add(instruction);
+    const signature = await sendAndConfirmTransaction(
+      this.connection,
+      transaction,
+      [this.payer]
+    );
+
+    return signature;
+  }
+
+  /**
+   * Record workflow execution
+   * Should be called after successful off-chain execution
+   */
+  async recordExecution(workflowId: PublicKey): Promise<string> {
+    const instruction = createRecordExecutionInstruction(
+      this.payer.publicKey,
+      workflowId
     );
 
     const transaction = new Transaction().add(instruction);

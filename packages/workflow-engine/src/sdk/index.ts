@@ -28,10 +28,12 @@ export {
   createInitializeInstruction,
   createCreateWorkflowInstruction,
   createPurchaseWorkflowInstruction,
+  createPurchaseWorkflowV2Instruction,
   createReviewWorkflowInstruction,
   createUpdateWorkflowInstruction,
   createDeactivateWorkflowInstruction,
   createActivateWorkflowInstruction,
   createDeleteWorkflowInstruction,
+  createRecordExecutionInstruction,
   type CreateWorkflowParams,
 } from './solana-instructions.js';

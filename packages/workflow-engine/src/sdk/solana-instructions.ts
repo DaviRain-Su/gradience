@@ -311,3 +311,64 @@ export function createDeleteWorkflowInstruction(
     data,
   });
 }
+
+/**
+ * Instruction 8: Purchase Workflow V2 (with payment)
+ */
+export function createPurchaseWorkflowV2Instruction(
+  buyer: PublicKey,
+  workflowId: PublicKey,
+  author: PublicKey,
+  accessType: number = 0 // 0=purchased, 1=subscribed, 2=rented
+): TransactionInstruction {
+  const [workflowPDA] = getWorkflowPDA(workflowId);
+  const [accessPDA] = getAccessPDA(workflowId, buyer);
+  const [configPDA] = getConfigPDA();
+  const [treasuryPDA] = getTreasuryPDA();
+
+  const data = Buffer.concat([
+    Buffer.from([8]), // instruction 8
+    workflowId.toBuffer(),
+    Buffer.from([accessType]),
+  ]);
+
+  return new TransactionInstruction({
+    keys: [
+      { pubkey: buyer, isSigner: true, isWritable: true },
+      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+      { pubkey: accessPDA, isSigner: false, isWritable: true },
+      { pubkey: author, isSigner: false, isWritable: true },
+      { pubkey: treasuryPDA, isSigner: false, isWritable: true },
+      { pubkey: configPDA, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: PROGRAM_ID,
+    data,
+  });
+}
+
+/**
+ * Instruction 9: Record Execution
+ */
+export function createRecordExecutionInstruction(
+  executor: PublicKey,
+  workflowId: PublicKey
+): TransactionInstruction {
+  const [workflowPDA] = getWorkflowPDA(workflowId);
+  const [accessPDA] = getAccessPDA(workflowId, executor);
+
+  const data = Buffer.concat([
+    Buffer.from([9]), // instruction 9
+    workflowId.toBuffer(),
+  ]);
+
+  return new TransactionInstruction({
+    keys: [
+      { pubkey: executor, isSigner: true, isWritable: false },
+      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+      { pubkey: accessPDA, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data,
+  });
+}
