@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-M6
 title: "[Evaluator] Design Off-Chain Evaluator Runtime"
-status: todo
+status: done
 priority: P0
 project: "Mid-Term Integration"
 created: 2026-04-04

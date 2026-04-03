@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-M8
 title: "[Bridge] Evaluator → Chain Hub Settlement Bridge"
-status: todo
+status: done
 priority: P0
 project: "Mid-Term Integration"
 created: 2026-04-04

@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-M3
 title: "[OWS] Implement Wallet-per-Agent with Reputation Policies"
-status: todo
+status: done
 priority: P0
 project: "Mid-Term Integration"
 created: 2026-04-04

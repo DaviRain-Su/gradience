@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-M4
 title: "[OWS] Build Reputation-Policy Binding Engine"
-status: todo
+status: done
 priority: P1
 project: "Mid-Term Integration"
 created: 2026-04-04

@@ -1,7 +1,7 @@
 ---
 linear-id: GRA-M7
 title: "[Evaluator] Implement Playwright Verification Harness"
-status: todo
+status: done
 priority: P1
 project: "Mid-Term Integration"
 created: 2026-04-04
