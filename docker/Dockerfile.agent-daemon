@@ -32,12 +32,7 @@ FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
 RUN apk add --no-cache python3 make g++
-COPY --from=deps /app/ /tmp/deps/
-RUN cp -r /tmp/deps/node_modules ./node_modules && \
-    if [ -d /tmp/deps/apps/agent-daemon/node_modules ]; then \
-      mkdir -p ./apps/agent-daemon && \
-      cp -r /tmp/deps/apps/agent-daemon/node_modules ./apps/agent-daemon/node_modules; \
-    fi && rm -rf /tmp/deps
+COPY --from=deps /app/ .
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @gradiences/agent-daemon build
 

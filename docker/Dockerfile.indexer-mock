@@ -30,14 +30,9 @@ RUN pnpm install --frozen-lockfile
 FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
-# Re-use installed deps from the previous stage
-COPY --from=deps /app/ /tmp/deps/
-RUN cp -r /tmp/deps/node_modules ./node_modules && \
-    if [ -d /tmp/deps/packages/indexer-mock/node_modules ]; then \
-      mkdir -p ./packages/indexer-mock && \
-      cp -r /tmp/deps/packages/indexer-mock/node_modules ./packages/indexer-mock/node_modules; \
-    fi && rm -rf /tmp/deps
-# Copy full pruned source, then compile
+# Copy deps (includes hoisted + workspace node_modules)
+COPY --from=deps /app/ .
+# Overlay source files
 COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @gradiences/indexer-mock build
 

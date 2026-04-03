@@ -96,6 +96,18 @@ function Sidebar() {
                         </ul>
                     </div>
                 ))}
+                
+                {/* Language Switcher */}
+                <div className="pt-4 border-t border-gray-800">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        Language
+                    </p>
+                    <div className="flex gap-2 text-sm">
+                        <a href="/" className="text-white hover:text-gray-300 transition">EN</a>
+                        <span className="text-gray-600">|</span>
+                        <a href="/zh" className="text-gray-400 hover:text-white transition">中文</a>
+                    </div>
+                </div>
             </nav>
         </aside>
     );

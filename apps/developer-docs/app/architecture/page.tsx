@@ -488,6 +488,13 @@ export default function ArchitecturePage() {
           </table>
         </div>
       </section>
+
+      {/* Language Switcher */}
+      <section className="mt-12 pt-6 border-t border-gray-700">
+        <p className="text-gray-400">
+          🌐 Language: <span className="text-white">English</span> | <a href="/zh/architecture" className="text-indigo-400 hover:text-indigo-300">中文</a>
+        </p>
+      </section>
     </div>
   );
 }
