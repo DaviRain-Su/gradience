@@ -63,7 +63,7 @@ describe('Libp2pAdapter', () => {
         it('should fail to subscribe when not initialized', async () => {
             await assert.rejects(
                 async () => await adapter.subscribe(() => {}),
-                /not initialized/
+                /Not started/
             );
         });
     });

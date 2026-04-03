@@ -523,7 +523,7 @@ cd frontend && npm install && npm run dev
 ## 社区
 
 - 🌐 **网站**：[gradiences.xyz](https://www.gradiences.xyz)
-- 🐦 **X (Twitter)**：[@aspect_build_](https://x.com/aspect_build_)
+- 🐦 **X (Twitter)**：[@gradience_](https://x.com/gradience_)
 
 ---
 

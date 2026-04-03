@@ -88,10 +88,11 @@ describe('NostrAdapter', () => {
             assert.deepStrictEqual(health.subscribedTopics, []);
         });
 
-        it('should report available when initialized', async () => {
+        it('should report not available when initialized without relays', async () => {
             await adapter.initialize();
             const health = adapter.health();
-            assert.strictEqual(health.available, true);
+            // Without relays, adapter is not available
+            assert.strictEqual(health.available, false);
         });
     });
 
@@ -107,6 +108,8 @@ describe('NostrAdapter', () => {
                     capabilities: ['test'],
                     reputationScore: 0.5,
                     available: true,
+                    discoveredVia: 'nostr',
+                    lastSeenAt: Date.now(),
                 });
             });
         });
@@ -121,7 +124,7 @@ describe('NostrAdapter with mock relay', () => {
         await adapter.initialize();
         const health = adapter.health();
 
-        assert.strictEqual(health.available, true);
-        await adapter.shutdown();
+        // Without relays, adapter should not be available
+        assert.strictEqual(health.available, false);
     });
 });

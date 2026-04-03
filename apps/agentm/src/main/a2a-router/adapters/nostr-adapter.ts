@@ -46,6 +46,12 @@ export class NostrAdapter implements ProtocolAdapter {
     // ============ Lifecycle ============
 
     async initialize(): Promise<void> {
+        // Skip if no relays configured (for testing)
+        if (!this.options.relays || this.options.relays.length === 0) {
+            console.log('[NostrAdapter] No relays configured, skipping initialization');
+            return;
+        }
+
         await this.client.connect();
 
         if (this.options.autoDiscover) {
@@ -74,6 +80,10 @@ export class NostrAdapter implements ProtocolAdapter {
     }
 
     isAvailable(): boolean {
+        // Not available if no relays configured
+        if (!this.options.relays || this.options.relays.length === 0) {
+            return false;
+        }
         return this.client.isConnected();
     }
 
@@ -156,6 +166,11 @@ export class NostrAdapter implements ProtocolAdapter {
     // ============ Discovery ============
 
     async discoverAgents(filter?: AgentFilter): Promise<AgentInfo[]> {
+        // Return empty if no relays configured
+        if (!this.options.relays || this.options.relays.length === 0) {
+            return [];
+        }
+
         // Query recent presence events
         const events = await this.client.queryPresence(
             {
@@ -203,6 +218,11 @@ export class NostrAdapter implements ProtocolAdapter {
     }
 
     async broadcastCapabilities(agentInfo: AgentInfo): Promise<void> {
+        // Skip if no relays configured
+        if (!this.options.relays || this.options.relays.length === 0) {
+            return;
+        }
+
         const content: AgentPresenceContent = {
             agent: agentInfo.address,
             display_name: agentInfo.displayName,

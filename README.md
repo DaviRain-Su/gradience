@@ -260,8 +260,7 @@ Gradience is integrating with [Open Wallet Standard](https://openwallet.sh) — 
 
 This positions Gradience Agents to interoperate natively with other OWS-powered agents and access traditional finance rails.
 
-**Status**: 🔧 Integration in progress  
-**Docs**: [docs/integrations/ows/](docs/integrations/ows/)
+**Status**: 🔧 Integration in progress
 
 ---
 
@@ -582,8 +581,8 @@ We welcome all contributions — bug reports, feature suggestions, pull requests
 
 ## Community
 
-- **Website**: [gradience.xyz](https://gradience.xyz)
-- **X (Twitter)**: [@aspect_build_](https://x.com/aspect_build_)
+- **Website**: [gradiences.xyz](https://www.gradiences.xyz)
+- **X (Twitter)**: [@gradience_](https://x.com/gradience_)
 
 ---
 

@@ -1,0 +1,65 @@
+# OWS Integration Quick Start
+
+## Prerequisites
+
+- Node.js 18+
+- OWS API Key (get from [openwallet.sh](https://openwallet.sh))
+
+## Installation
+
+```bash
+npm install @gradience/ows-adapter
+```
+
+## Basic Usage
+
+### 1. Initialize OWS Adapter
+
+```typescript
+import { OWSWalletAdapter } from '@gradience/ows-adapter';
+
+const adapter = new OWSWalletAdapter({
+  network: 'devnet', // or 'mainnet'
+  defaultChain: 'solana'
+});
+
+const wallet = await adapter.connect();
+console.log('Connected:', wallet.address);
+```
+
+### 2. Get Agent Identity
+
+```typescript
+const identity = await adapter.getIdentity();
+console.log('DID:', identity.did);
+console.log('Credentials:', identity.credentials);
+```
+
+### 3. Sign Task Agreement
+
+```typescript
+const taskHash = '...'; // Task hash from Gradience
+const signature = await adapter.signTaskAgreement(taskHash);
+```
+
+## Integration with Gradience Agent
+
+```typescript
+import { AgentOWSIdentity } from '@gradience/agent';
+
+const agent = new AgentOWSIdentity();
+await agent.initialize();
+
+// Use in task negotiation
+const task = await agent.createTask({
+  title: 'Data Analysis',
+  budget: 100,
+  deadline: Date.now() + 86400000
+});
+```
+
+## Next Steps
+
+- Read the [Architecture Guide](./architecture.md)
+- Explore [API Reference](./api.md)
+- Check out [Examples](./examples/)

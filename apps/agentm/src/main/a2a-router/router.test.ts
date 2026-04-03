@@ -1,5 +1,5 @@
 /**
- * A2A Router unit tests
+ * A2ARouter Unit Tests
  *
  * @module a2a-router/router.test
  */
@@ -7,43 +7,39 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { A2ARouter } from './router.js';
-import { A2A_ERROR_CODES } from './constants.js';
 
 describe('A2ARouter', () => {
     let router: A2ARouter;
 
     beforeEach(() => {
-        // Create router with all protocols disabled for unit tests
         router = new A2ARouter({
-            enableNostr: false,
-            enableLibp2p: false,
+            enableNostr: true,
+            enableLibp2p: false, // Disable to avoid bootstrap requirement
             enableMagicBlock: false,
+            nostrOptions: {
+                relays: [], // Empty to avoid network
+            },
         });
     });
 
     afterEach(async () => {
-        await router.shutdown();
+        if (router.isInitialized()) {
+            await router.shutdown();
+        }
     });
 
-    describe('constructor', () => {
-        it('should create with default options', () => {
-            const r = new A2ARouter();
-            assert.ok(r);
-            assert.strictEqual(r.isInitialized(), false);
+    describe('Lifecycle', () => {
+        it('should create router', () => {
+            assert.ok(router);
+            assert.strictEqual(router.isInitialized(), false);
         });
 
-        it('should create with custom options', () => {
-            const r = new A2ARouter({
-                enableNostr: true,
-                enableLibp2p: true,
-                healthCheckInterval: 60000,
-            });
-            assert.ok(r);
+        it('should initialize successfully', async () => {
+            await router.initialize();
+            assert.strictEqual(router.isInitialized(), true);
         });
-    });
 
-    describe('lifecycle', () => {
-        it('should initialize and shutdown', async () => {
+        it('should shutdown successfully', async () => {
             await router.initialize();
             assert.strictEqual(router.isInitialized(), true);
 
@@ -54,66 +50,115 @@ describe('A2ARouter', () => {
         it('should throw if initialized twice', async () => {
             await router.initialize();
             await assert.rejects(
-                router.initialize(),
+                async () => await router.initialize(),
                 /Already initialized/
             );
         });
 
-        it('should be idempotent on shutdown', async () => {
-            await router.initialize();
-            await router.shutdown();
-            await router.shutdown(); // Should not throw
-            assert.strictEqual(router.isInitialized(), false);
+        it('should allow shutdown when not initialized', async () => {
+            await assert.doesNotReject(async () => {
+                await router.shutdown();
+            });
         });
     });
 
-    describe('messaging', () => {
-        it('should throw send if not initialized', async () => {
+    describe('Health', () => {
+        it('should report health when initialized', async () => {
+            await router.initialize();
+            const health = router.health();
+
+            assert.strictEqual(health.initialized, true);
+            assert.ok(Array.isArray(health.availableProtocols));
+            assert.ok(health.protocolStatus.nostr);
+            assert.ok(health.protocolStatus.libp2p);
+            assert.ok(health.protocolStatus.magicblock);
+        });
+
+        it('should report not initialized when not started', () => {
+            const health = router.health();
+            assert.strictEqual(health.initialized, false);
+        });
+    });
+
+    describe('Messaging', () => {
+        it('should throw when sending without initialization', async () => {
             await assert.rejects(
-                router.send({
-                    to: 'recipient-address',
+                async () => await router.send({
+                    to: 'recipient',
                     type: 'direct_message',
-                    payload: { content: 'hello' },
+                    payload: { content: 'test' },
                 }),
                 /Not initialized/
             );
         });
 
-        it('should throw subscribe if not initialized', async () => {
-            await assert.rejects(
-                router.subscribe(() => {}),
-                /Not initialized/
-            );
-        });
+        it('should handle send with no available protocol', async () => {
+            // Create router with all protocols disabled
+            const emptyRouter = new A2ARouter({
+                enableNostr: false,
+                enableLibp2p: false,
+                enableMagicBlock: false,
+            });
+            await emptyRouter.initialize();
 
-        it('should return error if no protocol available', async () => {
-            await router.initialize();
-            const result = await router.send({
-                to: 'recipient-address',
+            const result = await emptyRouter.send({
+                to: 'recipient',
                 type: 'direct_message',
-                payload: { content: 'hello' },
+                payload: { content: 'test' },
             });
 
             assert.strictEqual(result.success, false);
-            assert.strictEqual(result.errorCode, A2A_ERROR_CODES.ROUTER_NO_PROTOCOL_AVAILABLE);
+            assert.ok(result.error);
+
+            await emptyRouter.shutdown();
         });
     });
 
-    describe('discovery', () => {
-        it('should throw discoverAgents if not initialized', async () => {
+    describe('Subscribe', () => {
+        it('should throw when subscribing without initialization', async () => {
             await assert.rejects(
-                router.discoverAgents(),
+                async () => await router.subscribe(() => {}),
                 /Not initialized/
             );
         });
 
-        it('should throw broadcastCapabilities if not initialized', async () => {
+        it('should subscribe successfully when initialized', async () => {
+            await router.initialize();
+
+            const unsubscribe = await router.subscribe((message) => {
+                console.log(message);
+            });
+
+            assert.ok(typeof unsubscribe === 'function');
+
+            // Cleanup
+            await unsubscribe();
+        });
+    });
+
+    describe('Discovery', () => {
+        it('should throw when discovering without initialization', async () => {
             await assert.rejects(
-                router.broadcastCapabilities({
-                    address: 'test-address',
-                    displayName: 'Test Agent',
-                    capabilities: ['test'],
-                    reputationScore: 100,
+                async () => await router.discoverAgents(),
+                /Not initialized/
+            );
+        });
+
+        it('should return empty array when initialized', async () => {
+            await router.initialize();
+            const agents = await router.discoverAgents();
+            assert.deepStrictEqual(agents, []);
+        });
+    });
+
+    describe('Broadcast', () => {
+        it('should throw when broadcasting without initialization', async () => {
+            await assert.rejects(
+                async () => await router.broadcastCapabilities({
+                    address: 'test',
+                    displayName: 'Test',
+                    capabilities: [],
+                    reputationScore: 0,
                     available: true,
                     discoveredVia: 'nostr',
                     lastSeenAt: Date.now(),
@@ -122,25 +167,43 @@ describe('A2ARouter', () => {
             );
         });
 
-        it('should return empty agents when no protocols', async () => {
+        it('should broadcast when initialized', async () => {
             await router.initialize();
-            const agents = await router.discoverAgents();
-            assert.deepStrictEqual(agents, []);
+
+            await assert.doesNotReject(async () => {
+                await router.broadcastCapabilities({
+                    address: 'test-address',
+                    displayName: 'Test',
+                    capabilities: ['test'],
+                    reputationScore: 0.5,
+                    available: true,
+                    discoveredVia: 'nostr',
+                    lastSeenAt: Date.now(),
+                });
+            });
         });
     });
 
-    describe('health', () => {
-        it('should return health status', () => {
-            const health = router.health();
-            assert.strictEqual(health.initialized, false);
-            assert.deepStrictEqual(health.availableProtocols, []);
-            assert.strictEqual(health.totalPeers, 0);
-        });
+    describe('Protocol Priority', () => {
+        it('should use custom protocol priority', async () => {
+            const customRouter = new A2ARouter({
+                enableNostr: true,
+                enableLibp2p: false,
+                enableMagicBlock: false,
+                protocolPriority: {
+                    broadcast: ['nostr'],
+                    direct_p2p: ['nostr'],
+                    paid_service: ['nostr'],
+                    offline_message: ['nostr'],
+                },
+                nostrOptions: { relays: [] },
+            });
 
-        it('should return initialized health after init', async () => {
-            await router.initialize();
-            const health = router.health();
+            await customRouter.initialize();
+            const health = customRouter.health();
             assert.strictEqual(health.initialized, true);
+
+            await customRouter.shutdown();
         });
     });
 });

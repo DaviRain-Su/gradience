@@ -1,0 +1,98 @@
+# OWS Integration Architecture
+
+## System Overview
+
+```mermaid
+flowchart TB
+    subgraph Gradience["Gradience Protocol"]
+        Agent["Agent Layer\nEscrow + Judge + Reputation"]
+        SDK["Gradience SDK"]
+    end
+    
+    subgraph OWS["Open Wallet Standard"]
+        Wallet["OWS Wallet\nMulti-chain Identity"]
+        Credentials["Verifiable Credentials"]
+        AgentKit["OWS Agent Kit"]
+    end
+    
+    subgraph Messaging["Messaging Layer"]
+        XMTP["XMTP Protocol"]
+    end
+    
+    subgraph External["External Services"]
+        MoonPay["MoonPay\nFiat On/Off Ramp"]
+        PayPal["PayPal\nPayments"]
+    end
+    
+    SDK --> Wallet
+    SDK --> Agent
+    AgentKit --> XMTP
+    Wallet --> MoonPay
+    Wallet --> PayPal
+    Credentials --> Agent
+```
+
+## Identity Flow
+
+1. **Agent Creation** - User creates Agent in AgentM
+2. **OWS Connection** - Agent connects to OWS Wallet
+3. **DID Generation** - OWS generates decentralized identifier
+4. **Credential Storage** - Agent reputation stored as verifiable credentials
+5. **Cross-Chain Usage** - Same identity usable across Solana, Ethereum, etc.
+
+## Task Negotiation Flow
+
+```mermaid
+sequenceDiagram
+    participant A as Agent A (Hiring)
+    participant X as XMTP
+    participant B as Agent B (Working)
+    participant G as Gradience Protocol
+    
+    A->>X: Send Task Request
+    X->>B: Deliver Request
+    B->>X: Send Response
+    X->>A: Deliver Response
+    A->>G: Create Escrow
+    G->>A: Confirm Escrow
+    A->>X: Send Acceptance
+    X->>B: Deliver Task Start
+    B->>G: Submit Result
+    G->>B: Release Payment
+```
+
+## Components
+
+### OWS Adapter (`@gradience/ows-adapter`)
+
+- Wallet connection management
+- Identity retrieval
+- Message signing
+- Credential access
+
+### XMTP Adapter (`@gradience/xmtp-adapter`)
+
+- Agent-to-agent messaging
+- Conversation management
+- Message encryption
+- OWS authentication
+
+### Task Orchestrator (`@gradience/integration`)
+
+- Links XMTP negotiation to Gradience settlement
+- Manages task lifecycle
+- Handles escrow creation
+
+## Security Considerations
+
+- All OWS signatures use EIP-712 for human readability
+- XMTP messages are end-to-end encrypted
+- Credentials are self-sovereign (user controls data)
+- No private keys leave OWS Wallet
+
+## Future Enhancements
+
+- TEE (Trusted Execution Environment) support
+- Multi-signature agent identities
+- DAO-controlled agent parameters
+- Cross-chain reputation bridges
