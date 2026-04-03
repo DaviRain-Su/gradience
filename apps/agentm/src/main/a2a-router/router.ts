@@ -265,6 +265,7 @@ export class A2ARouter {
             magicblock: { available: false, peerCount: 0, subscribedTopics: [] },
             webrtc: { available: false, peerCount: 0, subscribedTopics: [] },
             'cross-chain': { available: false, peerCount: 0, subscribedTopics: [] },
+            layerzero: { available: false, peerCount: 0, subscribedTopics: [] },
         };
 
         let totalPeers = 0;

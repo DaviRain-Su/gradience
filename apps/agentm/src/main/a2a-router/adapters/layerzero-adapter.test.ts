@@ -13,10 +13,11 @@ describe('LayerZeroAdapter', () => {
 
   beforeEach(() => {
     adapter = new LayerZeroAdapter({
-      agentId: 'test-agent-solana-address',
+      solanaAgentId: 'test-agent-solana-address',
       sourceChain: 'ethereum',
       sourceEid: 30101, // Ethereum mainnet
-      soulEid: 30168,   // Solana mainnet (Soul chain)
+      solanaEid: 30168, // Solana mainnet
+      sourceAgentAddress: '0x1234567890abcdef1234567890abcdef12345678',
       endpointAddress: '0x1a44076050125825900e736c501f859c50fE728c',
       rpcUrl: 'https://ethereum.publicnode.com',
     });
@@ -129,9 +130,11 @@ describe('LayerZeroAdapter', () => {
         scores: [],
       });
 
+      // Should return pending status immediately
       const status = await adapter.checkMessageStatus(result.messageId);
       assert.ok(status);
       assert.strictEqual(status?.messageId, result.messageId);
+      assert.strictEqual(status?.status, 'pending');
     });
   });
 

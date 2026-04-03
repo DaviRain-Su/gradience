@@ -5,6 +5,8 @@ const NAV_ITEMS: { key: ActiveView; label: string }[] = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'profiles', label: 'Profiles' },
     { key: 'discover', label: 'Discover' },
+    { key: 'feed', label: 'Feed' },
+    { key: 'messages', label: 'Messages' },
     { key: 'stats', label: 'Stats' },
     { key: 'wallet', label: 'Wallet' },
     { key: 'settings', label: 'Settings' },

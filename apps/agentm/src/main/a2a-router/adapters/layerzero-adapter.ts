@@ -294,7 +294,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
     const payload = this.encodeMessage(signedMessage);
 
     // In production, this would call LayerZero Endpoint contract
-    console.log(`[LayerZeroAdapter] Sending message to Soul chain (EID: ${this.options.soulEid})`);
+    console.log(`[LayerZeroAdapter] Sending message to Solana chain (EID: ${this.options.solanaEid})`);
     console.log(`[LayerZeroAdapter] Payload size: ${payload.length} bytes`);
 
     // Simulate transaction
@@ -304,21 +304,27 @@ export class LayerZeroAdapter implements ProtocolAdapter {
 
     const messageId = `lz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Simulate async delivery
-    setTimeout(() => {
-      const result = this.pendingMessages.get(messageId);
-      if (result) {
-        result.status = 'completed';
-        console.log(`[LayerZeroAdapter] Message ${messageId} delivered to Soul chain`);
-      }
-    }, 5000);
-
-    return {
+    // Create result object
+    const result: BridgeResult = {
       txHash,
       messageId,
       status: 'pending',
       estimatedTime: 120, // 2 minutes for LayerZero
     };
+
+    // Store in pending messages
+    this.pendingMessages.set(messageId, result);
+
+    // Simulate async delivery
+    setTimeout(() => {
+      const stored = this.pendingMessages.get(messageId);
+      if (stored) {
+        stored.status = 'completed';
+        console.log(`[LayerZeroAdapter] Message ${messageId} delivered to Solana chain`);
+      }
+    }, 5000);
+
+    return result;
   }
 
   private async signMessage(

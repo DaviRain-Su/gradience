@@ -1,13 +1,13 @@
 /**
- * Soul Chain Contract Interface
+ * Solana Chain Contract Interface
  *
- * Interface for interacting with SoulReputationAggregator contract
+ * Interface for interacting with Solana ReputationAggregator contract
  *
- * @module a2a-router/soul-contract
+ * @module a2a-router/solana-contract
  */
 
-export interface SoulContractConfig {
-  /** Soul chain RPC URL */
+export interface SolanaContractConfig {
+  /** Solana chain RPC URL */
   rpcUrl: string;
   /** ReputationAggregator contract address */
   contractAddress: string;
@@ -41,13 +41,13 @@ export interface SyncEvent {
 }
 
 /**
- * Soul Reputation Aggregator Interface
+ * Solana Reputation Aggregator Interface
  */
-export class SoulReputationContract {
-  private config: SoulContractConfig;
+export class SolanaReputationContract {
+  private config: SolanaContractConfig;
   private connected = false;
 
-  constructor(config: SoulContractConfig) {
+  constructor(config: SolanaContractConfig) {
     this.config = {
       rpcUrl: config.rpcUrl,
       contractAddress: config.contractAddress,
@@ -56,34 +56,34 @@ export class SoulReputationContract {
   }
 
   /**
-   * Connect to Soul chain
+   * Connect to Solana chain
    */
   async connect(): Promise<void> {
-    // In production, use ethers.js or @solana/web3.js
-    console.log(`[SoulContract] Connecting to ${this.config.rpcUrl}`);
-    console.log(`[SoulContract] Contract: ${this.config.contractAddress}`);
+    // In production, use @solana/web3.js
+    console.log(`[SolanaContract] Connecting to ${this.config.rpcUrl}`);
+    console.log(`[SolanaContract] Contract: ${this.config.contractAddress}`);
 
     // Simulate connection
     await new Promise((resolve) => setTimeout(resolve, 100));
     this.connected = true;
 
-    console.log('[SoulContract] Connected');
+    console.log('[SolanaContract] Connected');
   }
 
   /**
-   * Disconnect from Soul chain
+   * Disconnect from Solana chain
    */
   disconnect(): void {
     this.connected = false;
-    console.log('[SoulContract] Disconnected');
+    console.log('[SolanaContract] Disconnected');
   }
 
   /**
-   * Get agent reputation from Soul chain
+   * Get agent reputation from Solana chain
    */
   async getReputation(agentAddress: string): Promise<ReputationData | null> {
     if (!this.connected) {
-      throw new Error('Not connected to Soul chain');
+      throw new Error('Not connected to Solana chain');
     }
 
     // In production, call contract method
@@ -130,7 +130,7 @@ export class SoulReputationContract {
     chain: string
   ): Promise<ChainScoreData | null> {
     if (!this.connected) {
-      throw new Error('Not connected to Soul chain');
+      throw new Error('Not connected to Solana chain');
     }
 
     // In production, call contract method
@@ -151,7 +151,7 @@ export class SoulReputationContract {
    */
   async isMessageProcessed(messageHash: string): Promise<boolean> {
     if (!this.connected) {
-      throw new Error('Not connected to Soul chain');
+      throw new Error('Not connected to Solana chain');
     }
 
     // In production, call contract method
@@ -165,14 +165,11 @@ export class SoulReputationContract {
    */
   onReputationSync(callback: (event: SyncEvent) => void): () => void {
     // In production, subscribe to contract events
-    // const filter = contract.filters.ReputationSynced();
-    // contract.on(filter, callback);
-
-    console.log('[SoulContract] Subscribed to ReputationSynced events');
+    console.log('[SolanaContract] Subscribed to ReputationSynced events');
 
     // Return unsubscribe function
     return () => {
-      console.log('[SoulContract] Unsubscribed from events');
+      console.log('[SolanaContract] Unsubscribed from events');
     };
   }
 
@@ -181,7 +178,7 @@ export class SoulReputationContract {
    */
   async getSupportedChains(): Promise<string[]> {
     if (!this.connected) {
-      throw new Error('Not connected to Soul chain');
+      throw new Error('Not connected to Solana chain');
     }
 
     // In production, call contract method
@@ -229,4 +226,4 @@ export class SoulReputationContract {
   }
 }
 
-export default SoulReputationContract;
+export default SolanaReputationContract;
