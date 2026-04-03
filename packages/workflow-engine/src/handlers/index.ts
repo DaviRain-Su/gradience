@@ -2,7 +2,7 @@
  * Handlers module exports
  */
 
-// Trading/DeFi handlers
+// Trading/DeFi handlers (mock)
 export {
   createSwapHandler,
   createBridgeHandler,
@@ -18,6 +18,15 @@ export {
   type TransferParams,
   type StakeParams,
 } from './trading.js';
+
+// Trading/DeFi handlers (real Solana implementation)
+export {
+  createRealSwapHandler,
+  createRealBridgeHandler,
+  createRealTransferHandler,
+  createRealStakeHandler,
+  createRealTradingHandlers,
+} from './trading-real.js';
 
 // Payment handlers
 export {
