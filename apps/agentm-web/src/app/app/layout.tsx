@@ -6,6 +6,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { ConnectionProvider as DaemonConnectionProvider } from '../../lib/connection/ConnectionContext';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -22,7 +23,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     const wallets = useMemo(() => [
         new PhantomWalletAdapter(),
         new SolflareWalletAdapter(),
-        // OKX, Backpack, etc. are auto-detected via Wallet Standard
     ], []);
 
     if (!mounted) {
@@ -40,14 +40,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
 
     return (
-        <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
-            <WalletProvider wallets={wallets} autoConnect>
-                <WalletModalProvider>
-                    <DaemonConnectionProvider>
-                        {children}
-                    </DaemonConnectionProvider>
-                </WalletModalProvider>
-            </WalletProvider>
-        </SolanaConnectionProvider>
+        <ErrorBoundary>
+            <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
+                <WalletProvider wallets={wallets} autoConnect>
+                    <WalletModalProvider>
+                        <DaemonConnectionProvider>
+                            {children}
+                        </DaemonConnectionProvider>
+                    </WalletModalProvider>
+                </WalletProvider>
+            </SolanaConnectionProvider>
+        </ErrorBoundary>
     );
 }
