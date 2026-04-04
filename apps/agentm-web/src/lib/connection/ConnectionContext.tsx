@@ -15,9 +15,11 @@ interface ConnectionState {
 interface ConnectionContextType extends ConnectionState {
     authenticate: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<Uint8Array>) => Promise<void>;
     connectLocal: (pairCode: string, daemonUrl?: string) => Promise<void>;
+    connectToDaemon: (url: string) => Promise<boolean>;
     disconnect: () => void;
     switchMode: (mode: 'remote' | 'local') => void;
     fetchApi: <T>(endpoint: string, options?: RequestInit) => Promise<T | null>;
+    daemonDetected: boolean;
 }
 
 const ConnectionContext = createContext<ConnectionContextType | null>(null);
@@ -25,6 +27,20 @@ const ConnectionContext = createContext<ConnectionContextType | null>(null);
 const REMOTE_API_URL = process.env.NEXT_PUBLIC_DAEMON_URL || 'https://api.gradiences.xyz';
 const LOCAL_API_URL = 'http://localhost:7420';
 const SESSION_KEY = 'gradience_session';
+const DAEMON_URL_KEY = 'gradience_daemon_url';
+
+function loadDaemonUrl(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(DAEMON_URL_KEY);
+}
+
+function saveDaemonUrl(url: string): void {
+    localStorage.setItem(DAEMON_URL_KEY, url);
+}
+
+function clearDaemonUrl(): void {
+    localStorage.removeItem(DAEMON_URL_KEY);
+}
 
 function loadSession(): { token: string; walletAddress: string } | null {
     if (typeof window === 'undefined') return null;
@@ -51,13 +67,14 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         return {
             isConnected: !!saved,
             isConnecting: false,
-            daemonUrl: REMOTE_API_URL,
+            daemonUrl: saved ? (saved as any).daemonUrl || LOCAL_API_URL : LOCAL_API_URL,
             sessionToken: saved?.token ?? null,
             walletAddress: saved?.walletAddress ?? null,
             error: null,
-            mode: 'remote',
+            mode: 'local',
         };
     });
+    const [daemonDetected, setDaemonDetected] = useState(false);
 
     const wsRef = useRef<WebSocket | null>(null);
 
@@ -65,20 +82,135 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         return () => { wsRef.current?.close(); };
     }, []);
 
-    // Validate saved session on mount
+    // Auto-detect local daemon on mount
     useEffect(() => {
-        const saved = loadSession();
-        if (!saved) return;
-        fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
-            headers: { Authorization: `Bearer ${saved.token}` },
-        }).then(res => {
-            if (!res.ok) {
-                clearSession();
-                setState(prev => ({ ...prev, isConnected: false, sessionToken: null, walletAddress: null }));
+        let cancelled = false;
+
+        async function tryDaemon(url: string): Promise<boolean> {
+            try {
+                const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(2000) });
+                if (!res.ok || cancelled) return false;
+                setDaemonDetected(true);
+                const saved = loadSession();
+                if (saved) {
+                    try {
+                        const meRes = await fetch(`${url}/api/v1/auth/me`, {
+                            headers: { Authorization: `Bearer ${saved.token}` },
+                            signal: AbortSignal.timeout(2000),
+                        });
+                        if (meRes.ok && !cancelled) {
+                            setState(prev => ({
+                                ...prev,
+                                isConnected: true,
+                                daemonUrl: url,
+                                mode: 'local',
+                                sessionToken: saved.token,
+                                walletAddress: saved.walletAddress,
+                            }));
+                            return true;
+                        }
+                    } catch {}
+                    clearSession();
+                    if (!cancelled) {
+                        setState(prev => ({
+                            ...prev, isConnected: false, sessionToken: null,
+                            walletAddress: null, daemonUrl: url, mode: 'local',
+                        }));
+                    }
+                } else if (!cancelled) {
+                    setState(prev => ({ ...prev, daemonUrl: url, mode: 'local' }));
+                }
+                return true;
+            } catch {
+                return false;
             }
-        }).catch(() => {
-            // Network error - keep session, will retry
-        });
+        }
+
+        async function probe() {
+            // 1. Try saved custom daemon URL
+            const savedUrl = loadDaemonUrl();
+            if (savedUrl && savedUrl !== LOCAL_API_URL) {
+                if (await tryDaemon(savedUrl)) return;
+            }
+
+            // 2. Try local daemon
+            if (await tryDaemon(LOCAL_API_URL)) return;
+
+            // 2. Daemon not found -- try remote API as fallback
+            if (!cancelled) {
+                setDaemonDetected(false);
+                const saved = loadSession();
+                if (saved) {
+                    try {
+                        const res = await fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
+                            headers: { Authorization: `Bearer ${saved.token}` },
+                            signal: AbortSignal.timeout(3000),
+                        });
+                        if (res.ok && !cancelled) {
+                            setState(prev => ({
+                                ...prev,
+                                isConnected: true,
+                                daemonUrl: REMOTE_API_URL,
+                                mode: 'remote',
+                            }));
+                            return;
+                        }
+                    } catch {}
+                    clearSession();
+                }
+                if (!cancelled) {
+                    setState(prev => ({
+                        ...prev,
+                        isConnected: false,
+                        sessionToken: null,
+                        walletAddress: null,
+                        mode: 'local',
+                    }));
+                }
+            }
+        }
+        probe();
+        return () => { cancelled = true; };
+    }, []);
+
+    const authenticateWithDaemon = useCallback(async (
+        baseUrl: string,
+        walletAddress: string,
+        signMessage: (message: Uint8Array) => Promise<Uint8Array>,
+    ): Promise<{ token: string } | null> => {
+        try {
+            const challengeRes = await fetch(`${baseUrl}/api/v1/auth/challenge`, {
+                method: 'POST',
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!challengeRes.ok) return null;
+            const { challenge, message } = await challengeRes.json();
+
+            const messageBytes = new TextEncoder().encode(message);
+            const rawSignature = await signMessage(messageBytes);
+            let sigBytes: Uint8Array;
+            if (rawSignature instanceof Uint8Array) {
+                sigBytes = rawSignature;
+            } else if ((rawSignature as any)?.signature instanceof Uint8Array) {
+                sigBytes = (rawSignature as any).signature;
+            } else if (ArrayBuffer.isView(rawSignature)) {
+                sigBytes = new Uint8Array((rawSignature as any).buffer);
+            } else {
+                sigBytes = new Uint8Array(rawSignature as any);
+            }
+            const signature = btoa(String.fromCharCode(...sigBytes));
+
+            const verifyRes = await fetch(`${baseUrl}/api/v1/auth/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress, challenge, signature }),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!verifyRes.ok) return null;
+            return await verifyRes.json();
+        } catch {
+            return null;
+        }
     }, []);
 
     const authenticate = useCallback(async (
@@ -86,47 +218,52 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         signMessage: (message: Uint8Array) => Promise<Uint8Array>,
     ) => {
         setState(prev => ({ ...prev, isConnecting: true, error: null }));
-        try {
-            // Step 1: Request challenge
-            const challengeRes = await fetch(`${REMOTE_API_URL}/api/v1/auth/challenge`, { method: 'POST' });
-            if (!challengeRes.ok) throw new Error('Failed to get challenge');
-            const { challenge, message } = await challengeRes.json();
 
-            // Step 2: Sign with wallet
-            const messageBytes = new TextEncoder().encode(message);
-            const signatureBytes = await signMessage(messageBytes);
-            const signature = btoa(String.fromCharCode(...signatureBytes));
-
-            // Step 3: Verify and get session token
-            const verifyRes = await fetch(`${REMOTE_API_URL}/api/v1/auth/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ walletAddress, challenge, signature }),
-            });
-            if (!verifyRes.ok) {
-                const err = await verifyRes.json().catch(() => ({}));
-                throw new Error(err.message || 'Authentication failed');
+        // Try detected daemon (could be custom URL, localhost, or remote)
+        if (daemonDetected) {
+            // Try the current daemon URL (may be custom or localhost)
+            const currentUrl = state.daemonUrl || LOCAL_API_URL;
+            const result = await authenticateWithDaemon(currentUrl, walletAddress, signMessage);
+            if (result?.token) {
+                saveSession(result.token, walletAddress);
+                saveDaemonUrl(currentUrl);
+                setState(prev => ({
+                    ...prev,
+                    isConnected: true,
+                    isConnecting: false,
+                    sessionToken: result.token,
+                    walletAddress,
+                    daemonUrl: currentUrl,
+                    mode: 'local',
+                }));
+                return;
             }
-            const { token } = await verifyRes.json();
+        }
 
-            saveSession(token, walletAddress);
+        // Fallback: try remote API
+        const result = await authenticateWithDaemon(REMOTE_API_URL, walletAddress, signMessage);
+        if (result?.token) {
+            saveSession(result.token, walletAddress);
             setState(prev => ({
                 ...prev,
                 isConnected: true,
                 isConnecting: false,
-                sessionToken: token,
+                sessionToken: result.token,
                 walletAddress,
                 daemonUrl: REMOTE_API_URL,
                 mode: 'remote',
             }));
-        } catch (err) {
-            setState(prev => ({
-                ...prev,
-                isConnecting: false,
-                error: err instanceof Error ? err.message : 'Authentication failed',
-            }));
+            return;
         }
-    }, []);
+
+        setState(prev => ({
+            ...prev,
+            isConnecting: false,
+            error: daemonDetected
+                ? 'Wallet signature rejected by daemon'
+                : 'No daemon detected. Start agentd or enter a remote daemon URL.',
+        }));
+    }, [daemonDetected, authenticateWithDaemon]);
 
     const connectLocal = useCallback(async (pairCode: string, daemonUrl: string = LOCAL_API_URL) => {
         setState(prev => ({ ...prev, isConnecting: true, error: null, mode: 'local', daemonUrl }));
@@ -157,24 +294,45 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         }
     }, []);
 
+    // Connect to any daemon URL (local or remote)
+    const connectToDaemon = useCallback(async (url: string): Promise<boolean> => {
+        const cleanUrl = url.replace(/\/+$/, '');
+        try {
+            const res = await fetch(`${cleanUrl}/health`, { signal: AbortSignal.timeout(3000) });
+            if (!res.ok) return false;
+            saveDaemonUrl(cleanUrl);
+            setDaemonDetected(true);
+            setState(prev => ({
+                ...prev,
+                daemonUrl: cleanUrl,
+                mode: 'local',
+                error: null,
+            }));
+            return true;
+        } catch {
+            return false;
+        }
+    }, []);
+
     const disconnect = useCallback(() => {
         wsRef.current?.close();
         wsRef.current = null;
         if (state.sessionToken) {
-            fetch(`${REMOTE_API_URL}/api/v1/auth/logout`, {
+            fetch(`${state.daemonUrl}/api/v1/auth/logout`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${state.sessionToken}` },
             }).catch(() => {});
         }
         clearSession();
+        clearDaemonUrl();
         setState({
             isConnected: false,
             isConnecting: false,
-            daemonUrl: REMOTE_API_URL,
+            daemonUrl: LOCAL_API_URL,
             sessionToken: null,
             walletAddress: null,
             error: null,
-            mode: 'remote',
+            mode: 'local',
         });
     }, [state.sessionToken]);
 
@@ -211,9 +369,11 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
                 ...state,
                 authenticate,
                 connectLocal,
+                connectToDaemon,
                 disconnect,
                 switchMode,
                 fetchApi,
+                daemonDetected,
             }}
         >
             {children}
@@ -232,4 +392,76 @@ export function useConnection() {
 export function useDaemonApi() {
     const { fetchApi, isConnected } = useConnection();
     return { apiCall: fetchApi, isConnected };
+}
+
+export function useA2A() {
+    const { fetchApi, isConnected } = useConnection();
+
+    const discoverAgents = async (opts?: {
+        capabilities?: string[];
+        minReputation?: number;
+        limit?: number;
+    }) => {
+        if (!isConnected) return [];
+        const params = new URLSearchParams();
+        if (opts?.capabilities?.length) params.set('capabilities', opts.capabilities.join(','));
+        if (opts?.minReputation) params.set('minReputation', String(opts.minReputation));
+        if (opts?.limit) params.set('limit', String(opts.limit));
+        const qs = params.toString();
+        const result = await fetchApi<{ agents: any[]; count: number }>(
+            `/api/v1/a2a/agents${qs ? '?' + qs : ''}`
+        );
+        return result?.agents ?? [];
+    };
+
+    const sendMessage = async (to: string, type: string, payload: unknown) => {
+        if (!isConnected) return null;
+        return fetchApi<{ success: boolean; messageId: string; protocol: string }>(
+            '/api/v1/a2a/send',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to, type, payload }),
+            }
+        );
+    };
+
+    const broadcastCapabilities = async (info: {
+        address: string;
+        displayName: string;
+        capabilities: string[];
+        reputationScore?: number;
+    }) => {
+        if (!isConnected) return;
+        await fetchApi('/api/v1/a2a/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...info, available: true }),
+        });
+    };
+
+    const getMessages = async (direction?: 'inbound' | 'outbound', limit = 50) => {
+        if (!isConnected) return [];
+        const params = new URLSearchParams();
+        if (direction) params.set('direction', direction);
+        params.set('limit', String(limit));
+        const result = await fetchApi<{ messages: any[]; total: number }>(
+            `/api/v1/a2a/messages?${params.toString()}`
+        );
+        return result?.messages ?? [];
+    };
+
+    const getHealth = async () => {
+        if (!isConnected) return null;
+        return fetchApi<any>('/api/v1/a2a/health');
+    };
+
+    return {
+        isConnected,
+        discoverAgents,
+        sendMessage,
+        broadcastCapabilities,
+        getMessages,
+        getHealth,
+    };
 }

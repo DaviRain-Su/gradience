@@ -13,6 +13,7 @@ import { FileKeyManager } from './keys/key-manager.js';
 import { AuthorizationManager } from './wallet/authorization.js';
 import { TransactionManager } from './solana/transaction-manager.js';
 import { createAPIServer } from './api/server.js';
+import { A2ARouter } from './a2a-router/router.js';
 import { logger } from './utils/logger.js';
 
 const VERSION = '0.1.0';
@@ -30,6 +31,7 @@ export class Daemon {
     private keyManager: FileKeyManager | null = null;
     private authorizationManager: AuthorizationManager | null = null;
     private transactionManager: TransactionManager | null = null;
+    private a2aRouter: A2ARouter | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -67,6 +69,17 @@ export class Daemon {
         this.messageRouter = new MessageRouter(db, this.connectionManager, this.taskQueue);
         this.taskExecutor = new TaskExecutor(this.taskQueue, this.processManager);
         this.transactionManager = new TransactionManager(this.config.solanaRpcUrl, this.keyManager);
+
+        // A2A Router (Nostr + XMTP)
+        if (this.config.a2aEnabled) {
+            this.a2aRouter = new A2ARouter({
+                enableNostr: true,
+                nostrRelays: this.config.nostrRelays,
+                nostrPrivateKey: this.config.nostrPrivateKey,
+                enableXMTP: this.config.xmtpEnabled,
+                agentId: this.keyManager.getPublicKey(),
+            });
+        }
 
         const recovered = this.taskQueue.recoverOnStartup();
         if (recovered > 0) {
@@ -119,12 +132,33 @@ export class Daemon {
             keyManager: this.keyManager,
             authorizationManager: this.authorizationManager,
             transactionManager: this.transactionManager,
+            a2aRouter: this.a2aRouter,
             database: db,
             startedAt: this.startedAt,
             version: VERSION,
         });
 
         await this.connectionManager.connect();
+
+        // Initialize A2A Router (connects to Nostr relays)
+        if (this.a2aRouter) {
+            try {
+                await this.a2aRouter.initialize();
+                // Wire inbound A2A messages to MessageRouter
+                await this.a2aRouter.subscribe((message) => {
+                    this.messageRouter!.send({
+                        from: message.from,
+                        to: message.to,
+                        type: message.type,
+                        payload: message.payload,
+                    });
+                });
+                logger.info('A2ARouter initialized and wired to MessageRouter');
+            } catch (err) {
+                logger.warn({ err }, 'A2ARouter initialization failed, continuing without A2A');
+            }
+        }
+
         this.taskExecutor.start();
 
         logger.info(
@@ -132,6 +166,7 @@ export class Daemon {
                 port: this.config.port,
                 chainHub: this.config.chainHubUrl,
                 publicKey: this.keyManager.getPublicKey(),
+                a2a: this.a2aRouter?.isInitialized() ? 'enabled' : 'disabled',
             },
             'Agent Daemon started',
         );
@@ -141,6 +176,7 @@ export class Daemon {
         logger.info('Stopping Agent Daemon');
 
         this.taskExecutor?.stop();
+        await this.a2aRouter?.shutdown();
         await this.connectionManager?.disconnect();
         await this.processManager?.shutdown();
         await this.server?.close();

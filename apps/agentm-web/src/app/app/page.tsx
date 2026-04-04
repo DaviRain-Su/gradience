@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -10,9 +10,10 @@ const SocialView = lazy(() => import('./views/SocialView').then(m => ({ default:
 const ChatView = lazy(() => import('./views/ChatView').then(m => ({ default: m.ChatView })));
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
-import { useDaemonApi } from '../../lib/connection/ConnectionContext';
+import { useDaemonApi, useConnection } from '../../lib/connection/ConnectionContext';
 import { cachedFetch, invalidateCache } from '../../lib/cache';
 import { useSessionAuth } from '../../hooks/useSessionAuth';
+import { useNetworkRegistration } from '../../hooks/useNetworkRegistration';
 import { useOWSBinding } from '../../hooks/useOWSBinding';
 import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
 import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
@@ -154,7 +155,13 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
     const [view, setView] = useState<ActiveView>('discover');
     const address = walletAddress;
     const { handleLogOut } = useDynamicContext();
+    const { disconnect } = useConnection();
     useSessionAuth();
+
+    const handleFullLogout = useCallback(async () => {
+        disconnect();
+        await handleLogOut();
+    }, [disconnect, handleLogOut]);
 
     // OWS Wallet Binding
     const accountKey = user?.userId ?? address;
@@ -179,12 +186,21 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
         error: routerError,
         createSubWallet,
         setActiveSubWallet,
+        isPasskeyProtected,
     } = useOWSAgentRouter({
         accountKey,
         masterWallet: address,
     });
 
     const subWallets = routerState?.subWallets ?? [];
+
+    // Register on the network: uses agent sub-wallet identity when available
+    const { registeredAs, registeredName } = useNetworkRegistration({
+        masterWallet: address,
+        displayName: email,
+        activeSubWallet,
+        subWallets,
+    });
 
     const selectedWallet: SolanaWalletCandidate = {
         address,
@@ -201,7 +217,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
             wallets={[selectedWallet]}
             onWalletChange={() => {}}
             bindingStatus={bindingStatus}
-            onLogout={handleLogOut}
+            onLogout={handleFullLogout}
         >
             {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} />}
             {view === 'tasks' && <TaskMarketView address={address} />}
@@ -225,6 +241,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
                     routerError={routerError}
                     onCreateSubWallet={createSubWallet}
                     onSetActiveSubWallet={setActiveSubWallet}
+                    isPasskeyProtected={isPasskeyProtected}
                 />
             )}
             {view === 'chat' && <Suspense fallback={<Loading />}><ChatView /></Suspense>}
@@ -478,23 +495,56 @@ function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
 
     useEffect(() => {
         async function fetchAgents() {
-            if (isDaemonConnected) {
-                const result = await apiCall<{ agents: Array<{ id: string; name: string; status: string }> }>('/api/v1/agents');
+            // Try network registry first (real agents on the network)
+            try {
+                const result = await apiCall<{ agents: Array<{
+                    publicKey: string; displayName: string; capabilities: string[];
+                    online: boolean; lastSeen: number; metadata: any;
+                }> }>('/api/v1/network/agents?online=true');
                 if (result?.agents && result.agents.length > 0) {
                     const mapped: AgentDetailData[] = result.agents.map((a) => ({
-                        agent: a.name || a.id,
-                        bio: '',
-                        capabilities: [],
-                        walletAddress: a.id,
+                        agent: a.displayName || `Agent ${a.publicKey.slice(0, 8)}`,
+                        bio: a.metadata?.bio || '',
+                        capabilities: a.capabilities || [],
+                        walletAddress: a.publicKey,
                         weight: 0,
-                        reputation: null,
+                        reputation: a.metadata?.reputation || null,
                     }));
                     setAgents(mapped);
                     setDataSource('daemon');
                     setLoading(false);
                     return;
                 }
-            }
+            } catch { /* fall through */ }
+
+            // Try A2A discovery (Nostr relays)
+            try {
+                const a2aResult = await apiCall<{ agents: Array<{
+                    address: string; displayName: string; capabilities: string[];
+                    reputationScore: number; available: boolean; discoveredVia: string;
+                }> }>('/api/v1/a2a/agents?limit=50');
+                if (a2aResult?.agents && a2aResult.agents.length > 0) {
+                    const mapped: AgentDetailData[] = a2aResult.agents.map((a) => ({
+                        agent: a.displayName || `Agent ${a.address.slice(0, 8)}`,
+                        bio: `Discovered via ${a.discoveredVia}`,
+                        capabilities: a.capabilities || [],
+                        walletAddress: a.address,
+                        weight: 0,
+                        reputation: {
+                            global_avg_score: a.reputationScore / 1000,
+                            global_completed: 0,
+                            global_total_applied: 0,
+                            win_rate: 0,
+                        },
+                    }));
+                    setAgents(mapped);
+                    setDataSource('daemon');
+                    setLoading(false);
+                    return;
+                }
+            } catch { /* fall through */ }
+
+            // Fallback to demo data
             const sorted = [...DEMO_DISCOVER_AGENTS].sort((a, b) => (b.reputation?.global_avg_score ?? 0) - (a.reputation?.global_avg_score ?? 0));
             setAgents(sorted);
             setDataSource('demo');
@@ -797,6 +847,7 @@ function MeView({
     routerError,
     onCreateSubWallet,
     onSetActiveSubWallet,
+    isPasskeyProtected,
 }: {
     address: string | null;
     masterWallet: string | null;
@@ -814,6 +865,7 @@ function MeView({
     routerError: string | null;
     onCreateSubWallet: (handle: string) => unknown;
     onSetActiveSubWallet: (subWalletId: string | null) => unknown;
+    isPasskeyProtected: (address: string) => boolean;
 }) {
     const [rep, setRep] = useState<ReputationData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -956,7 +1008,12 @@ function MeView({
                                     cursor: 'pointer',
                                 }}
                             >
-                                <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{wallet.handle}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{wallet.handle}</p>
+                                    {isPasskeyProtected(wallet.walletAddress) && (
+                                        <span style={{ fontSize: '10px', background: '#CDFF4D', color: '#16161A', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>Passkey</span>
+                                    )}
+                                </div>
                                 <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {wallet.walletAddress}
                                 </p>

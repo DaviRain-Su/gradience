@@ -25,6 +25,16 @@ const DaemonConfigSchema = z.object({
     restPollingInterval: z.number().int().min(1000).default(5_000),
     connectionHealthMetrics: z.boolean().default(true),
     keyStorage: z.enum(['keychain', 'file']).default('file'),
+    // A2A communication
+    a2aEnabled: z.boolean().default(true),
+    nostrRelays: z.array(z.string().url()).default([
+        'wss://relay.damus.io',
+        'wss://relay.nostr.band',
+        'wss://nos.lol',
+        'wss://relay.snort.social',
+    ]),
+    nostrPrivateKey: z.string().optional(),
+    xmtpEnabled: z.boolean().default(false),
 });
 
 export type DaemonConfig = z.infer<typeof DaemonConfigSchema>;
@@ -60,6 +70,10 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_SOLANA_RPC_URL) envConfig.solanaRpcUrl = process.env.AGENTD_SOLANA_RPC_URL;
     if (process.env.AGENTD_DB_PATH) envConfig.dbPath = process.env.AGENTD_DB_PATH;
     if (process.env.AGENTD_LOG_LEVEL) envConfig.logLevel = process.env.AGENTD_LOG_LEVEL;
+    if (process.env.AGENTD_A2A_ENABLED) envConfig.a2aEnabled = process.env.AGENTD_A2A_ENABLED === 'true';
+    if (process.env.AGENTD_NOSTR_RELAYS) envConfig.nostrRelays = process.env.AGENTD_NOSTR_RELAYS.split(',');
+    if (process.env.AGENTD_NOSTR_PRIVATE_KEY) envConfig.nostrPrivateKey = process.env.AGENTD_NOSTR_PRIVATE_KEY;
+    if (process.env.AGENTD_XMTP_ENABLED) envConfig.xmtpEnabled = process.env.AGENTD_XMTP_ENABLED === 'true';
 
     const merged = { ...fileConfig, ...envConfig, ...overrides };
     return DaemonConfigSchema.parse(merged);

@@ -12,13 +12,17 @@ const colors = {
 };
 
 export function ConnectionPanel() {
-    const { isConnected, isConnecting, error, mode, sessionToken, walletAddress, connectLocal, switchMode } = useConnection();
+    const { isConnected, isConnecting, error, mode, sessionToken, walletAddress, daemonUrl, connectLocal, connectToDaemon, switchMode, daemonDetected } = useConnection();
     const [pairCode, setPairCode] = useState('');
     const [localUrl, setLocalUrl] = useState('http://localhost:7420');
     const [showLocal, setShowLocal] = useState(false);
+    const [showSetup, setShowSetup] = useState(false);
+    const [customUrl, setCustomUrl] = useState('');
+    const [connecting, setConnecting] = useState(false);
+    const [showRemote, setShowRemote] = useState(false);
 
-    // Connected to remote API with session
-    if (isConnected && mode === 'remote' && sessionToken) {
+    // Connected state (local daemon or remote)
+    if (isConnected && sessionToken) {
         return (
             <div style={{
                 background: colors.lime,
@@ -30,12 +34,13 @@ export function ConnectionPanel() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '14px' }}>\u2705</span>
                         <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600 }}>Connected to Gradience</div>
-                            {walletAddress && (
-                                <div style={{ fontSize: '10px', fontFamily: 'monospace', opacity: 0.6 }}>
-                                    {walletAddress.slice(0, 8)}...{walletAddress.slice(-4)}
-                                </div>
-                            )}
+                            <div style={{ fontSize: '12px', fontWeight: 600 }}>
+                                {mode === 'local' ? 'Daemon Connected' : 'Connected to Gradience'}
+                            </div>
+                            <div style={{ fontSize: '10px', fontFamily: 'monospace', opacity: 0.6 }}>
+                                {daemonUrl.replace(/^https?:\/\//, '')}
+                                {walletAddress ? ` | ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : ''}
+                            </div>
                         </div>
                     </div>
                     <button
@@ -167,18 +172,100 @@ export function ConnectionPanel() {
         );
     }
 
-    // Not authenticated yet - waiting for wallet
+    // Not authenticated -- show daemon status + setup instructions
     return (
         <div style={{
-            background: colors.bg,
+            background: colors.surface,
             borderRadius: '16px',
-            padding: '12px 16px',
+            padding: '16px',
             border: `1.5px solid ${colors.ink}`,
-            fontSize: '12px',
-            opacity: 0.6,
-            textAlign: 'center',
         }}>
-            Connect wallet to authenticate
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: daemonDetected ? '#10B981' : '#EF4444',
+                    flexShrink: 0,
+                }} />
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>
+                    {daemonDetected ? 'Daemon running on localhost:7420' : 'Daemon not detected'}
+                </span>
+            </div>
+            {daemonDetected ? (
+                <p style={{ fontSize: '11px', opacity: 0.6, margin: 0 }}>
+                    Connect your wallet to authenticate with the daemon.
+                </p>
+            ) : (
+                <>
+                    <p style={{ fontSize: '11px', opacity: 0.6, margin: '0 0 10px 0' }}>
+                        Start a local daemon or connect to a remote one:
+                    </p>
+
+                    {/* Remote daemon URL input */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                        <input
+                            type="text"
+                            value={customUrl}
+                            onChange={(e) => setCustomUrl(e.target.value)}
+                            placeholder="https://my-server.com:7420"
+                            style={{
+                                flex: 1, padding: '8px 10px',
+                                background: colors.bg, border: `1.5px solid ${colors.ink}`,
+                                borderRadius: '8px', fontSize: '11px',
+                                fontFamily: 'monospace', outline: 'none',
+                            }}
+                        />
+                        <button
+                            onClick={async () => {
+                                if (!customUrl.trim()) return;
+                                setConnecting(true);
+                                const ok = await connectToDaemon(customUrl.trim());
+                                setConnecting(false);
+                                if (!ok) {
+                                    setCustomUrl('');
+                                }
+                            }}
+                            disabled={!customUrl.trim() || connecting}
+                            style={{
+                                padding: '8px 14px',
+                                background: !customUrl.trim() || connecting ? '#E5E5E5' : colors.ink,
+                                color: !customUrl.trim() || connecting ? '#999' : colors.surface,
+                                border: 'none', borderRadius: '8px',
+                                fontSize: '11px', fontWeight: 600,
+                                cursor: !customUrl.trim() || connecting ? 'not-allowed' : 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {connecting ? '...' : 'Connect'}
+                        </button>
+                    </div>
+
+                    {/* Local setup instructions */}
+                    {!showSetup ? (
+                        <button
+                            onClick={() => setShowSetup(true)}
+                            style={{
+                                width: '100%', padding: '8px',
+                                background: 'transparent', color: colors.ink,
+                                border: `1px solid ${colors.ink}`, borderRadius: '8px',
+                                fontSize: '11px', cursor: 'pointer', opacity: 0.7,
+                            }}
+                        >
+                            Run Local Daemon Instead
+                        </button>
+                    ) : (
+                        <div style={{
+                            background: colors.bg, borderRadius: '8px', padding: '12px',
+                            fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.8,
+                        }}>
+                            <div style={{ opacity: 0.5, marginBottom: '4px' }}># Install and start</div>
+                            <div>npm install -g @gradiences/agent-daemon</div>
+                            <div>agentd start</div>
+                            <div style={{ opacity: 0.5, marginTop: '8px' }}># Or from source</div>
+                            <div>cd apps/agent-daemon && npm run dev</div>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }

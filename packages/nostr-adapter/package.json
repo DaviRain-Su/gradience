@@ -1,0 +1,27 @@
+{
+    "name": "@gradiences/nostr-adapter",
+    "version": "0.1.0",
+    "description": "Nostr-based agent discovery and relay adapter for Gradience A2A",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": ["dist"],
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@gradiences/a2a-types": "workspace:*",
+        "nostr-tools": "^2.23.3"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.0"
+    }
+}

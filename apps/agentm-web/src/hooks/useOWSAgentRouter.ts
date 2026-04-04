@@ -151,6 +151,18 @@ export function useOWSAgentRouter(params: {
     const activeSubWallet: OWSAgentSubWallet | null =
         state?.subWallets.find((wallet) => wallet.id === state.activeSubWalletId) ?? null;
 
+    const isPasskeyProtected = useCallback(
+        (address: string): boolean => {
+            try {
+                const sdk = new OWSSdkClient(params.encryptionProvider ?? null);
+                return sdk.hasPasskeyProtection(address);
+            } catch {
+                return false;
+            }
+        },
+        [params.encryptionProvider],
+    );
+
     return {
         state,
         activeSubWallet,
@@ -159,5 +171,6 @@ export function useOWSAgentRouter(params: {
         createSubWallet,
         setActiveSubWallet,
         signActiveRoute,
+        isPasskeyProtected,
     } as const;
 }

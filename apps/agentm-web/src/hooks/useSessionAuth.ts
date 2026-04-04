@@ -4,7 +4,7 @@ import { useConnection } from '@/lib/connection/ConnectionContext';
 
 export function useSessionAuth() {
     const { primaryWallet } = useDynamicContext();
-    const { isConnected, sessionToken, authenticate, walletAddress } = useConnection();
+    const { sessionToken, authenticate, walletAddress } = useConnection();
     const attemptedRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -18,7 +18,16 @@ export function useSessionAuth() {
             try {
                 const signer = await (primaryWallet as any).getSigner?.();
                 if (!signer || typeof signer.signMessage !== 'function') {
-                    console.warn('Wallet does not support signMessage');
+                    console.warn('Wallet does not support signMessage, trying connector.signMessage');
+                    const connector = (primaryWallet as any).connector;
+                    if (connector && typeof connector.signMessage === 'function') {
+                        await authenticate(
+                            primaryWallet.address,
+                            (msg: Uint8Array) => connector.signMessage(msg),
+                        );
+                        return;
+                    }
+                    console.error('No signMessage method available on wallet');
                     return;
                 }
                 await authenticate(

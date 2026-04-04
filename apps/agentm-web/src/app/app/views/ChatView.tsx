@@ -60,31 +60,100 @@ function formatTimestamp(): string {
 }
 
 export function ChatView() {
+    const [agents, setAgents] = useState<ChatAgent[]>(DEMO_AGENTS);
     const [selectedAgentId, setSelectedAgentId] = useState<string>('alice');
     const [messagesByAgent, setMessagesByAgent] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
     const [input, setInput] = useState('');
+    const [liveMode, setLiveMode] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { fetchApi, isConnected: daemonConnected } = useConnection();
+    const lastPollRef = useRef<number>(0);
+    const { fetchApi, isConnected: daemonConnected, walletAddress } = useConnection();
 
-    const selectedAgent = DEMO_AGENTS.find((a) => a.id === selectedAgentId)!;
+    const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0];
     const messages = messagesByAgent[selectedAgentId] ?? [];
+
+    // Fetch real agents from network registry
+    useEffect(() => {
+        if (!daemonConnected) return;
+        fetchApi<{ agents: Array<{ publicKey: string; displayName: string; online: boolean; capabilities: string[] }> }>('/api/v1/network/agents?online=true').then(result => {
+            if (result?.agents && result.agents.length > 0) {
+                const networkAgents: ChatAgent[] = result.agents
+                    .filter(a => a.publicKey !== walletAddress)
+                    .map(a => ({
+                        id: a.publicKey,
+                        name: a.displayName,
+                        role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
+                        online: a.online,
+                        avatar: a.displayName[0] || '?',
+                    }));
+                if (networkAgents.length > 0) {
+                    setAgents([...networkAgents, ...DEMO_AGENTS]);
+                    setLiveMode(true);
+                    return;
+                }
+            }
+        }).catch(() => {});
+        // Also try A2A discovery
+        fetchApi<{ agents: Array<{ address: string; displayName: string; capabilities: string[]; available: boolean }> }>('/api/v1/a2a/agents?limit=20').then(result => {
+            if (result?.agents && result.agents.length > 0) {
+                const a2aAgents: ChatAgent[] = result.agents
+                    .filter(a => a.address !== walletAddress)
+                    .map(a => ({
+                        id: a.address,
+                        name: a.displayName,
+                        role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
+                        online: a.available,
+                        avatar: a.displayName[0] || '?',
+                    }));
+                if (a2aAgents.length > 0) {
+                    setAgents(prev => {
+                        const existingIds = new Set(prev.map(a => a.id));
+                        const newAgents = a2aAgents.filter(a => !existingIds.has(a.id));
+                        return newAgents.length > 0 ? [...newAgents, ...prev] : prev;
+                    });
+                    setLiveMode(true);
+                }
+            }
+        }).catch(() => {});
+    }, [daemonConnected, fetchApi, walletAddress]);
+
+    // Poll inbox for new messages (every 3s when live)
+    useEffect(() => {
+        if (!daemonConnected || !walletAddress) return;
+        const poll = async () => {
+            try {
+                const since = lastPollRef.current;
+                const result = await fetchApi<{ messages: Array<{ id: string; from: string; type: string; payload: { text?: string }; createdAt: number }> }>(
+                    `/api/v1/network/messages/inbox${since ? `?since=${since}` : ''}`
+                );
+                if (result?.messages && result.messages.length > 0) {
+                    for (const msg of result.messages) {
+                        if (msg.type !== 'chat') continue;
+                        const fromId = msg.from;
+                        const chatMsg: ChatMessage = {
+                            id: msg.id,
+                            agentId: fromId,
+                            text: msg.payload.text || '',
+                            timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            status: 'delivered',
+                        };
+                        setMessagesByAgent(prev => ({
+                            ...prev,
+                            [fromId]: [...(prev[fromId] ?? []), chatMsg],
+                        }));
+                        lastPollRef.current = Math.max(lastPollRef.current, msg.createdAt);
+                    }
+                }
+            } catch { /* ignore */ }
+        };
+        poll();
+        const timer = setInterval(poll, 3000);
+        return () => clearInterval(timer);
+    }, [daemonConnected, walletAddress, fetchApi]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, selectedAgentId]);
-
-    const sendViaDaemon = useCallback(async (text: string): Promise<string | null> => {
-        if (!daemonConnected) return null;
-        try {
-            const result = await fetchApi<{ messageId: string; reply?: string }>('/api/v1/messages', {
-                method: 'POST',
-                body: JSON.stringify({ to: selectedAgentId, text }),
-            });
-            return result?.reply ?? null;
-        } catch {
-            return null;
-        }
-    }, [daemonConnected, fetchApi, selectedAgentId]);
 
     async function sendMessage() {
         const text = input.trim();
@@ -109,39 +178,58 @@ export function ChatView() {
         }));
         setInput('');
 
-        // Try daemon first
-        const daemonReply = await sendViaDaemon(text);
+        // Try sending via network relay, then A2A
+        let sent = false;
+        if (daemonConnected && liveMode) {
+            try {
+                const result = await fetchApi<{ messageId: string }>('/api/v1/network/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({ to: selectedAgentId, type: 'chat', payload: { text } }),
+                });
+                sent = !!result?.messageId;
+            } catch {}
+            // Fallback: try A2A protocol (Nostr/XMTP)
+            if (!sent) {
+                try {
+                    const a2aResult = await fetchApi<{ success: boolean }>('/api/v1/a2a/send', {
+                        method: 'POST',
+                        body: JSON.stringify({ to: selectedAgentId, type: 'direct_message', payload: { text } }),
+                    });
+                    sent = !!a2aResult?.success;
+                } catch {}
+            }
+        }
 
-        // Update user message status
+        // Update status
         setMessagesByAgent((prev) => ({
             ...prev,
             [selectedAgentId]: (prev[selectedAgentId] ?? []).map((m) =>
-                m.id === msgId ? { ...m, status: daemonReply !== null ? 'delivered' as const : 'sent' as const } : m
+                m.id === msgId ? { ...m, status: sent ? 'delivered' as const : 'sent' as const } : m
             ),
         }));
 
-        // Generate reply (daemon or demo)
-        const replyText = daemonReply ?? generateReply(selectedAgentId, text);
-        const replyDelay = daemonReply ? 0 : 600 + Math.random() * 600;
-
-        setTimeout(() => {
-            const reply: ChatMessage = {
-                id: crypto.randomUUID(),
-                agentId: selectedAgentId,
-                text: replyText,
-                timestamp: formatTimestamp(),
-                status: 'delivered',
-                micropayment: estimateMicropayment(replyText),
-            };
-            setMessagesByAgent((prev) => ({
-                ...prev,
-                [selectedAgentId]: [...(prev[selectedAgentId] ?? []), reply],
-            }));
-        }, replyDelay);
+        // If not live mode, generate demo reply
+        if (!sent || !liveMode) {
+            const replyText = generateReply(selectedAgentId, text);
+            setTimeout(() => {
+                const reply: ChatMessage = {
+                    id: crypto.randomUUID(),
+                    agentId: selectedAgentId,
+                    text: replyText,
+                    timestamp: formatTimestamp(),
+                    status: 'delivered',
+                    micropayment: estimateMicropayment(replyText),
+                };
+                setMessagesByAgent((prev) => ({
+                    ...prev,
+                    [selectedAgentId]: [...(prev[selectedAgentId] ?? []), reply],
+                }));
+            }, 600 + Math.random() * 600);
+        }
     }
 
     const unreadCounts: Record<string, number> = {};
-    for (const agent of DEMO_AGENTS) {
+    for (const agent of agents) {
         const msgs = messagesByAgent[agent.id] ?? [];
         unreadCounts[agent.id] = agent.id === selectedAgentId ? 0 : msgs.filter((m) => m.agentId !== 'user' && m.status !== 'delivered').length;
     }
@@ -169,7 +257,7 @@ export function ChatView() {
                     </div>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-                    {DEMO_AGENTS.map((agent) => (
+                    {agents.map((agent) => (
                         <button
                             key={agent.id}
                             onClick={() => setSelectedAgentId(agent.id)}
@@ -242,6 +330,14 @@ export function ChatView() {
                         border: `1px solid ${selectedAgent.online ? '#10B981' : '#D1D5DB'}`,
                     }}>
                         {selectedAgent.online ? 'Online' : 'Offline'}
+                    </span>
+                    <span style={{
+                        fontSize: '10px', padding: '4px 8px', borderRadius: '9999px',
+                        background: liveMode ? '#D1FAE5' : '#FEF3C7',
+                        color: liveMode ? '#059669' : '#D97706',
+                        border: `1px solid ${liveMode ? '#10B981' : '#F59E0B'}`,
+                    }}>
+                        {liveMode ? 'Live' : 'Demo'}
                     </span>
                 </div>
 
@@ -327,7 +423,7 @@ export function ChatView() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                         <span style={{ fontSize: '10px', opacity: 0.4 }}>
-                            {daemonConnected ? 'Messages routed via Daemon API' : 'Demo mode \u2022 local simulation'}
+                            {liveMode ? 'Messages routed via Network Relay' : daemonConnected ? 'Daemon connected \u2022 demo agents' : 'Demo mode \u2022 local simulation'}
                         </span>
                         {input.trim() && (
                             <span style={{ fontSize: '10px', opacity: 0.4 }}>
