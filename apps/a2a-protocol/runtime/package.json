@@ -23,7 +23,7 @@
     "alert:drill:db-fault": "./scripts/drill-postgres-db-alert-lifecycle.sh",
     "alert:replay-failed": "./scripts/replay-failed-alerts.sh",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test ./config.test.ts ./alert-sink.test.ts ./alert-integration.test.ts ./relay.test.ts ./persistent-store.test.ts ./postgres-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./adapters/arena-chainhub.test.ts"
+    "test": "tsx --test ./config.test.ts ./alert-sink.test.ts ./alert-integration.test.ts ./relay.test.ts ./persistent-store.test.ts ./postgres-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./coordinator.test.ts ./adapters/arena-chainhub.test.ts"
   },
   "dependencies": {
     "pg": "^8.16.3"

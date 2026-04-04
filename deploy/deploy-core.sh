@@ -19,7 +19,7 @@ source "${ENV_FILE}"
 set +a
 
 : "${DROPLET_IP:?DROPLET_IP must be set in .env.prod}"
-: "${DEPLOY_USER:=root}"
+: "${DEPLOY_USER:=gradience}"
 : "${DEPLOY_DIR:=/opt/gradience}"
 
 SSH_TARGET="${DEPLOY_USER}@${DROPLET_IP}"

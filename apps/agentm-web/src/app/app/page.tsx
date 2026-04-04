@@ -8,6 +8,7 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 const FeedView = lazy(() => import('./views/FeedView').then(m => ({ default: m.FeedView })));
 const SocialView = lazy(() => import('./views/SocialView').then(m => ({ default: m.SocialView })));
 const ChatView = lazy(() => import('./views/ChatView').then(m => ({ default: m.ChatView })));
+const MultiAgentTaskView = lazy(() => import('./views/MultiAgentTaskView').then(m => ({ default: m.MultiAgentTaskView })));
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 import { useDaemonApi, useConnection } from '../../lib/connection/ConnectionContext';
@@ -19,7 +20,7 @@ import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
 import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
 import type { OWSAgentSubWallet } from '../../lib/ows/agent-router';
 
-type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
+type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'multi-agent' | 'settings';
 
 const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL ?? '';
 
@@ -245,6 +246,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
                 />
             )}
             {view === 'chat' && <Suspense fallback={<Loading />}><ChatView /></Suspense>}
+            {view === 'multi-agent' && <Suspense fallback={<Loading />}><MultiAgentTaskView address={address} /></Suspense>}
             {view === 'settings' && <SettingsView />}
         </Shell>
     );
@@ -278,6 +280,7 @@ function Shell({
     const tabs: { key: ActiveView; label: string }[] = [
         { key: 'discover', label: 'Discover' },
         { key: 'tasks', label: 'Tasks' },
+        { key: 'multi-agent', label: 'Multi-Agent' },
         { key: 'feed', label: 'Feed' },
         { key: 'social', label: 'Social' },
         { key: 'me', label: 'My Agent' },

@@ -8,5 +8,6 @@ export * from "./monitor";
 export * from "./alert-sink";
 export * from "./server";
 export * from "./orchestrator";
+export * from "./coordinator";
 export * from "./adapters/agent-arena";
 export * from "./adapters/chain-hub";

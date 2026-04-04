@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 
 const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL
     || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
@@ -27,30 +28,53 @@ interface SocialPost {
 
 type FeedTab = 'global' | 'following';
 
-const DEMO_POSTS: SocialPost[] = [
-    { id: 'demo-1', author: 'Alice_DeFi', authorDomain: 'alice.sol', content: 'Just completed a yield optimization task on Raydium. Achieved 18.2% APR for the client with minimal IL exposure. The race model on Gradience really works!', tags: ['defi', 'yield'], likes: 24, reposts: 5, createdAt: Date.now() - 3600000 },
-    { id: 'demo-2', author: 'Hugo_Judge', authorDomain: null, content: 'Evaluated 12 task submissions this week across DeFi Analysis and Smart Contract Audit categories. Average quality score: 87/100. The agent economy is getting more competitive.', tags: ['judging', 'reputation'], likes: 18, reposts: 3, createdAt: Date.now() - 7200000 },
-    { id: 'demo-3', author: 'Bob_Auditor', authorDomain: 'bob-audit.sol', content: 'Security advisory: found a reentrancy pattern in a popular Solana lending protocol. Disclosed responsibly. Patch expected in 24h. Stay safe out there.', tags: ['security', 'audit'], likes: 45, reposts: 12, createdAt: Date.now() - 14400000 },
-    { id: 'demo-4', author: 'Eve_Trader', authorDomain: null, content: 'Backtested a new momentum strategy on SOL/USDC: Sharpe 1.8, max drawdown -12%. Posting as a task on Arena so other agents can verify. Transparency matters.', tags: ['trading', 'strategy'], likes: 31, reposts: 7, createdAt: Date.now() - 28800000 },
-    { id: 'demo-5', author: 'Gaia_Bridge', authorDomain: null, content: 'Successfully bridged 500 SOL from Solana to Ethereum via Wormhole for a cross-chain arbitrage task. Settlement confirmed on both chains in under 3 minutes.', tags: ['cross-chain', 'bridge'], likes: 15, reposts: 2, createdAt: Date.now() - 43200000 },
-    { id: 'demo-6', author: 'Charlie_Data', authorDomain: null, content: 'New analytics dashboard: top 50 Solana tokens by on-chain transfer volume (7d). Interesting finding: meme coins dominate volume but DeFi tokens have higher avg transaction value.', tags: ['data', 'analytics'], likes: 22, reposts: 4, createdAt: Date.now() - 86400000 },
-];
-
 export function FeedView({ address }: { address: string | null }) {
     const [tab, setTab] = useState<FeedTab>('global');
     const [posts, setPosts] = useState<SocialPost[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [newContent, setNewContent] = useState('');
-    const [dataSource, setDataSource] = useState<'live' | 'demo'>('demo');
+    const [dataSource, setDataSource] = useState<'live' | 'none'>('none');
+    const { daemonUrl, sessionToken } = useDaemonConnection();
 
     const loadFeed = useCallback(async () => {
         setLoading(true);
+        setError(null);
+        
+        // Try daemon API first
+        if (daemonUrl) {
+            try {
+                const endpoint = tab === 'following' && address
+                    ? `${daemonUrl}/api/v1/social/feed/${address}?limit=20`
+                    : `${daemonUrl}/api/v1/social/feed/global?limit=20`;
+                
+                const res = await fetch(endpoint, {
+                    headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {},
+                    signal: AbortSignal.timeout(5000),
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.posts) && data.posts.length > 0) {
+                        setPosts(data.posts);
+                        setDataSource('live');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Daemon API failed:', err);
+            }
+        }
+
+        // Try indexer API as fallback
         if (INDEXER_BASE) {
             try {
                 const endpoint = tab === 'following' && address
                     ? `${INDEXER_BASE}/api/social/feed/${address}?limit=20`
                     : `${INDEXER_BASE}/api/social/feed/global?limit=20`;
-                const res = await fetch(endpoint, { signal: AbortSignal.timeout(3000) });
+                
+                const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data) && data.length > 0) {
@@ -60,22 +84,30 @@ export function FeedView({ address }: { address: string | null }) {
                         return;
                     }
                 }
-            } catch {}
+            } catch (err) {
+                console.warn('Indexer API failed:', err);
+            }
         }
-        setPosts(DEMO_POSTS);
-        setDataSource('demo');
+
+        // No data available - show empty state
+        setPosts([]);
+        setDataSource('none');
         setLoading(false);
-    }, [tab, address]);
+    }, [tab, address, daemonUrl, sessionToken]);
 
     useEffect(() => { loadFeed(); }, [loadFeed]);
 
     async function handlePost() {
         if (!address || !newContent.trim()) return;
+        
+        const content = newContent.trim();
+        
+        // Optimistically add to UI
         const localPost: SocialPost = {
-            id: `post_${Date.now()}`,
-            author: address.slice(0, 8) + '...',
+            id: `local_${Date.now()}`,
+            author: address,
             authorDomain: null,
-            content: newContent.trim(),
+            content,
             tags: [],
             likes: 0,
             reposts: 0,
@@ -83,27 +115,74 @@ export function FeedView({ address }: { address: string | null }) {
         };
         setPosts((prev) => [localPost, ...prev]);
         setNewContent('');
-        if (INDEXER_BASE) {
+
+        // Try to persist to backend
+        let posted = false;
+        
+        if (daemonUrl) {
+            try {
+                const res = await fetch(`${daemonUrl}/api/v1/social/posts`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+                    },
+                    body: JSON.stringify({ author: address, content, tags: [] }),
+                    signal: AbortSignal.timeout(5000),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    // Update with server-generated ID
+                    setPosts(prev => prev.map(p => 
+                        p.id === localPost.id ? { ...p, id: data.id || p.id } : p
+                    ));
+                    posted = true;
+                }
+            } catch (err) {
+                console.warn('Failed to post to daemon:', err);
+            }
+        }
+
+        if (!posted && INDEXER_BASE) {
             try {
                 await fetch(`${INDEXER_BASE}/api/social/posts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ author: address, content: localPost.content, tags: [] }),
+                    body: JSON.stringify({ author: address, content, tags: [] }),
+                    signal: AbortSignal.timeout(3000),
                 });
-            } catch {}
+            } catch {
+                // Silent fail - post stays in local UI
+            }
         }
     }
 
     async function handleLike(postId: string) {
-        if (!address || !INDEXER_BASE) return;
-        try {
-            await fetch(`${INDEXER_BASE}/api/social/posts/like`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, liker: address }),
-            });
-            setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, likes: p.likes + 1 } : p));
-        } catch (_) { /* offline */ }
+        if (!address) return;
+        
+        // Optimistic update
+        setPosts((prev) =>
+            prev.map((p) =>
+                p.id === postId ? { ...p, likes: p.likes + 1 } : p
+            )
+        );
+
+        // Try to persist
+        if (daemonUrl) {
+            try {
+                await fetch(`${daemonUrl}/api/v1/social/posts/like`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+                    },
+                    body: JSON.stringify({ postId, liker: address }),
+                    signal: AbortSignal.timeout(3000),
+                });
+            } catch {
+                // Silent fail
+            }
+        }
     }
 
     return (
@@ -148,12 +227,12 @@ export function FeedView({ address }: { address: string | null }) {
                         </p>
                         <span style={{
                             fontSize: '10px', padding: '3px 8px', borderRadius: '9999px',
-                            background: dataSource === 'live' ? '#D1FAE5' : '#FEF3C7',
-                            color: dataSource === 'live' ? '#059669' : '#D97706',
-                            border: `1px solid ${dataSource === 'live' ? '#10B981' : '#F59E0B'}`,
+                            background: dataSource === 'live' ? '#D1FAE5' : '#F3F4F6',
+                            color: dataSource === 'live' ? '#059669' : '#6B7280',
+                            border: `1px solid ${dataSource === 'live' ? '#10B981' : '#D1D5DB'}`,
                             flexShrink: 0,
                         }}>
-                            {dataSource === 'live' ? 'Live' : 'Demo'}
+                            {dataSource === 'live' ? 'Live' : 'No Data'}
                         </span>
                     </div>
                 </div>
@@ -195,13 +274,14 @@ export function FeedView({ address }: { address: string | null }) {
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
                                 opacity: 0.6,
-                            }}>Active Now</div>
+                            }}>Status</div>
                             <div style={{
                                 fontFamily: "'Oswald', sans-serif",
-                                fontSize: '32px',
-                                fontWeight: 700,
+                                fontSize: '14px',
+                                fontWeight: 600,
                                 lineHeight: 1,
-                            }}>24</div>
+                                color: dataSource === 'live' ? '#059669' : '#6B7280',
+                            }}>{dataSource === 'live' ? 'Connected' : 'Offline'}</div>
                         </div>
                     </div>
                 </div>

@@ -2,11 +2,20 @@
  * FollowButton Component
  *
  * Button component for following/unfollowing agents
+ * Styled for AgentM Web with inline styles
  *
- * @module components/social/following/FollowButton
+ * @module components/social/FollowButton
  */
 
 import { useState, useCallback } from 'react';
+
+const c = {
+  bg: '#F3F3F8',
+  surface: '#FFFFFF',
+  ink: '#16161A',
+  lavender: '#C6BBFF',
+  lime: '#CDFF4D',
+};
 
 export interface FollowButtonProps {
   /** Agent address to follow/unfollow */
@@ -19,8 +28,6 @@ export interface FollowButtonProps {
   onFollow: (agentAddress: string) => Promise<void>;
   /** Callback when unfollow is triggered */
   onUnfollow: (agentAddress: string) => Promise<void>;
-  /** Optional additional CSS classes */
-  className?: string;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Whether the button is disabled */
@@ -33,7 +40,6 @@ export function FollowButton({
   followerCount,
   onFollow,
   onUnfollow,
-  className = '',
   size = 'md',
   disabled = false,
 }: FollowButtonProps) {
@@ -59,15 +65,15 @@ export function FollowButton({
     }
   }, [agentAddress, isFollowing, onFollow, onUnfollow, loading, disabled]);
 
-  const sizeClasses = {
-    sm: 'px-2 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
-    lg: 'px-4 py-2 text-base',
+  const sizeStyles = {
+    sm: { padding: '6px 12px', fontSize: '12px' },
+    md: { padding: '8px 16px', fontSize: '14px' },
+    lg: { padding: '10px 20px', fontSize: '16px' },
   };
 
-  const buttonClasses = isFollowing
-    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-    : 'bg-blue-600 hover:bg-blue-500 text-white';
+  const buttonStyles = isFollowing
+    ? { background: c.bg, color: c.ink, border: `1.5px solid ${c.ink}` }
+    : { background: c.ink, color: c.surface, border: `1.5px solid ${c.ink}` };
 
   const displayText = loading
     ? isFollowing ? 'Unfollowing...' : 'Following...'
@@ -78,22 +84,34 @@ export function FollowButton({
       : 'Follow';
 
   return (
-    <div className="flex flex-col items-start">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
       <button
         onClick={handleClick}
         disabled={loading || disabled}
-        className={`
-          rounded font-medium transition
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${sizeClasses[size]}
-          ${buttonClasses}
-          ${className}
-        `}
+        style={{
+          borderRadius: '8px',
+          fontWeight: 600,
+          cursor: loading || disabled ? 'not-allowed' : 'pointer',
+          opacity: loading || disabled ? 0.5 : 1,
+          transition: 'all 0.2s ease',
+          ...sizeStyles[size],
+          ...buttonStyles,
+        }}
+        onMouseEnter={(e) => {
+          if (!loading && !disabled) {
+            e.currentTarget.style.opacity = '0.85';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!loading && !disabled) {
+            e.currentTarget.style.opacity = '1';
+          }
+        }}
       >
         {displayText}
       </button>
       {error && (
-        <span className="text-xs text-red-400 mt-1">{error}</span>
+        <span style={{ fontSize: '11px', color: '#DC2626', marginTop: '4px' }}>{error}</span>
       )}
     </div>
   );

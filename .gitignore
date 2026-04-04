@@ -13,8 +13,26 @@ node_modules
 .DS_Store
 
 # Environment secrets
+.env
 .env.prod
 .env.local
 .env*.local
+*.key
+*.keypair
+*.pem
+
+# Solana program keypairs (private keys)
+program-keypair.json
+**/program-keypair.json
+
 docs-archive-2026-04-04/
 docs-archive*/
+
+# Package manager (use pnpm only)
+package-lock.json
+yarn.lock
+
+# Build artifacts
+tsconfig.tsbuildinfo
+.vercel/
+test-results/

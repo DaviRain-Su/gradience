@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useFollowers, useFollowingList } from '@/hooks/useFollowing';
+import { useFollowers, useFollowingList, useFollowing } from '@/hooks/useFollowing';
+import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import { FollowButton } from '@/components/social/FollowButton';
 import { DomainBadge } from '@/components/social/DomainBadge';
 import Link from 'next/link';
@@ -11,15 +12,15 @@ const c = {
   lavender: '#C6BBFF', lime: '#CDFF4D',
 };
 
-// TODO: Get from auth context
-const CURRENT_USER = '0x1234...5678';
-
 export default function FollowingPage() {
+  const { walletAddress } = useDaemonConnection();
   const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
-  const { following, loading: followingLoading } = useFollowingList(CURRENT_USER);
-  const { followers, loading: followersLoading } = useFollowers(CURRENT_USER);
+  const { following, loading: followingLoading, error: followingError } = useFollowingList(walletAddress || '');
+  const { followers, loading: followersLoading, error: followersError } = useFollowers(walletAddress || '');
+  const { follow, unfollow } = useFollowing();
 
   const loading = activeTab === 'following' ? followingLoading : followersLoading;
+  const error = activeTab === 'following' ? followingError : followersError;
   const list = activeTab === 'following' ? following : followers;
 
   return (
@@ -48,8 +49,16 @@ export default function FollowingPage() {
 
       {/* Content */}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px' }}>
-        {loading ? (
+        {!walletAddress ? (
+          <div style={{ textAlign: 'center', padding: '48px', color: c.ink, opacity: 0.5 }}>
+            Please connect your wallet to view connections
+          </div>
+        ) : loading ? (
           <div style={{ textAlign: 'center', padding: '48px', color: c.ink, opacity: 0.5 }}>Loading...</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '48px', color: '#DC2626' }}>
+            Error: {error}
+          </div>
         ) : list.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px', color: c.ink, opacity: 0.4 }}>
             {activeTab === 'following' ? 'You are not following anyone yet' : 'No followers yet'}
@@ -68,13 +77,13 @@ export default function FollowingPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: c.ink,
                   }}>
-                    {agent.displayName?.[0] || '?'}
+                    {agent.displayName?.[0] || agent.address?.[0] || '?'}
                   </div>
                 </Link>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Link href={`/profile/${agent.address}`} style={{ textDecoration: 'none', color: c.ink, fontWeight: 700, fontSize: '15px' }}>
-                    {agent.displayName}
+                    {agent.displayName || `${agent.address.slice(0, 8)}...${agent.address.slice(-4)}`}
                   </Link>
                   {agent.domain && <div style={{ marginTop: '4px' }}><DomainBadge domain={agent.domain} size="sm" /></div>}
                   {agent.bio && <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agent.bio}</p>}
@@ -82,10 +91,16 @@ export default function FollowingPage() {
 
                 <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '16px', color: c.ink }}>{agent.reputation}</div>
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: c.ink }}>{agent.reputation ?? '-'}</div>
                     <div style={{ fontSize: '10px', color: c.ink, opacity: 0.5, textTransform: 'uppercase' }}>Rep</div>
                   </div>
-                  <FollowButton agentAddress={agent.address} isFollowing={agent.isFollowing ?? false} onFollow={async () => {}} onUnfollow={async () => {}} />
+                  <FollowButton
+                    agentAddress={agent.address}
+                    isFollowing={activeTab === 'following' ? true : (agent.isFollowing ?? false)}
+                    onFollow={follow}
+                    onUnfollow={unfollow}
+                    size="md"
+                  />
                 </div>
               </div>
             ))}

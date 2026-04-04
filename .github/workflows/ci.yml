@@ -1,68 +1,66 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+    push:
+        branches: [main]
+    pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  # TypeScript: install + typecheck + build
-  build:
-    name: Build & Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # TypeScript: install + typecheck + build
+    build:
+        name: Build & Typecheck
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
       - name: Build workspace packages
         run: pnpm --filter '@gradiences/a2a-types' --filter '@gradiences/nostr-adapter' --filter '@gradiences/sdk' --filter '@gradiences/chain-hub-sdk' run build
-        continue-on-error: true
 
-      - name: Typecheck agentm-web
-        run: pnpm --filter @gradiences/agentm-web exec tsc --noEmit
+            - name: Typecheck agentm-web
+              run: pnpm --filter @gradiences/agentm-web exec tsc --noEmit
 
       - name: Typecheck agent-daemon
         run: pnpm --filter @gradiences/agent-daemon exec tsc --noEmit
-        continue-on-error: true
 
-      - name: Build agentm-web
-        run: pnpm --filter @gradiences/agentm-web run build
-        env:
-          NEXT_TELEMETRY_DISABLED: 1
+            - name: Build agentm-web
+              run: pnpm --filter @gradiences/agentm-web run build
+              env:
+                  NEXT_TELEMETRY_DISABLED: 1
 
-  # Rust: cargo check for Solana programs + indexer
-  rust-check:
-    name: Rust Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # Rust: cargo check for Solana programs + indexer
+    rust-check:
+        name: Rust Check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+            - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-
+            - name: Cache cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                  key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+                  restore-keys: cargo-${{ runner.os }}-
 
-      - name: Check indexer
-        run: cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
+            - name: Check indexer
+              run: cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
 
-      - name: Test indexer
-        run: cargo test --manifest-path apps/agent-arena/indexer/Cargo.toml
+            - name: Test indexer
+              run: cargo test --manifest-path apps/agent-arena/indexer/Cargo.toml

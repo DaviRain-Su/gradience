@@ -28,26 +28,6 @@ interface ChatMessage {
     micropayment?: number;
 }
 
-const DEMO_AGENTS: ChatAgent[] = [
-    { id: 'alice', name: 'Alice_DeFi', role: 'DeFi Strategy Agent', online: true, avatar: 'A' },
-    { id: 'bob', name: 'Bob_Auditor', role: 'Smart Contract Auditor', online: true, avatar: 'B' },
-    { id: 'charlie', name: 'Charlie_Data', role: 'Data Analysis Agent', online: false, avatar: 'C' },
-    { id: 'delta', name: 'Delta_Ops', role: 'DevOps Automation', online: false, avatar: 'D' },
-];
-
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-    alice: [
-        { id: '1', agentId: 'alice', text: 'Hello! I\'m Alice_DeFi. I specialize in yield optimization strategies across Solana DeFi protocols.', timestamp: '09:41', status: 'delivered' },
-        { id: '2', agentId: 'user', text: 'Hi Alice! I need help analyzing yield opportunities in the current market.', timestamp: '09:42', status: 'delivered' },
-        { id: '3', agentId: 'alice', text: 'Sure. Based on current on-chain data, Raydium CLMM pools on SOL/USDC are showing ~18% APR with low IL risk. Want me to run a deeper analysis?', timestamp: '09:42', status: 'delivered', micropayment: 100 },
-    ],
-    bob: [
-        { id: '1', agentId: 'bob', text: 'Hey, I\'m Bob_Auditor. Send me a program ID and I\'ll run a full vulnerability scan.', timestamp: '10:15', status: 'delivered' },
-    ],
-    charlie: [],
-    delta: [],
-};
-
 function estimateMicropayment(text: string): number {
     const baseMicrolamports = 100;
     const perByteMicrolamports = 2;
@@ -60,61 +40,75 @@ function formatTimestamp(): string {
 }
 
 export function ChatView() {
-    const [agents, setAgents] = useState<ChatAgent[]>(DEMO_AGENTS);
-    const [selectedAgentId, setSelectedAgentId] = useState<string>('alice');
-    const [messagesByAgent, setMessagesByAgent] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
+    const [agents, setAgents] = useState<ChatAgent[]>([]);
+    const [selectedAgentId, setSelectedAgentId] = useState<string>('');
+    const [messagesByAgent, setMessagesByAgent] = useState<Record<string, ChatMessage[]>>({});
     const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(true);
     const [liveMode, setLiveMode] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastPollRef = useRef<number>(0);
     const { fetchApi, isConnected: daemonConnected, walletAddress } = useConnection();
 
-    const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0];
-    const messages = messagesByAgent[selectedAgentId] ?? [];
+    const selectedAgent = agents.find((a) => a.id === selectedAgentId);
+    const messages = selectedAgentId ? (messagesByAgent[selectedAgentId] ?? []) : [];
 
     // Fetch real agents from network registry
     useEffect(() => {
-        if (!daemonConnected) return;
-        fetchApi<{ agents: Array<{ publicKey: string; displayName: string; online: boolean; capabilities: string[] }> }>('/api/v1/network/agents?online=true').then(result => {
-            if (result?.agents && result.agents.length > 0) {
-                const networkAgents: ChatAgent[] = result.agents
-                    .filter(a => a.publicKey !== walletAddress)
-                    .map(a => ({
-                        id: a.publicKey,
-                        name: a.displayName,
-                        role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
-                        online: a.online,
-                        avatar: a.displayName[0] || '?',
-                    }));
-                if (networkAgents.length > 0) {
-                    setAgents([...networkAgents, ...DEMO_AGENTS]);
-                    setLiveMode(true);
+        if (!daemonConnected) {
+            setLoading(false);
+            return;
+        }
+        
+        setLoading(true);
+        
+        // Try network registry first
+        fetchApi<{ agents: Array<{ publicKey: string; displayName: string; online: boolean; capabilities: string[] }> }>('/api/v1/network/agents?online=true')
+            .then(result => {
+                if (result?.agents && result.agents.length > 0) {
+                    const networkAgents: ChatAgent[] = result.agents
+                        .filter(a => a.publicKey !== walletAddress)
+                        .map(a => ({
+                            id: a.publicKey,
+                            name: a.displayName,
+                            role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
+                            online: a.online,
+                            avatar: a.displayName[0] || '?',
+                        }));
+                    setAgents(networkAgents);
+                    if (networkAgents.length > 0 && !selectedAgentId) {
+                        setSelectedAgentId(networkAgents[0].id);
+                    }
+                    setLoading(false);
                     return;
                 }
-            }
-        }).catch(() => {});
-        // Also try A2A discovery
-        fetchApi<{ agents: Array<{ address: string; displayName: string; capabilities: string[]; available: boolean }> }>('/api/v1/a2a/agents?limit=20').then(result => {
-            if (result?.agents && result.agents.length > 0) {
-                const a2aAgents: ChatAgent[] = result.agents
-                    .filter(a => a.address !== walletAddress)
-                    .map(a => ({
-                        id: a.address,
-                        name: a.displayName,
-                        role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
-                        online: a.available,
-                        avatar: a.displayName[0] || '?',
-                    }));
-                if (a2aAgents.length > 0) {
+                
+                // Fallback: Try A2A discovery
+                return fetchApi<{ agents: Array<{ address: string; displayName: string; capabilities: string[]; available: boolean }> }>('/api/v1/a2a/agents?limit=20');
+            })
+            .then(a2aResult => {
+                if (a2aResult?.agents && a2aResult.agents.length > 0) {
+                    const a2aAgents: ChatAgent[] = a2aResult.agents
+                        .filter(a => a.address !== walletAddress)
+                        .map(a => ({
+                            id: a.address,
+                            name: a.displayName,
+                            role: a.capabilities.slice(0, 2).join(', ') || 'Agent',
+                            online: a.available,
+                            avatar: a.displayName[0] || '?',
+                        }));
                     setAgents(prev => {
                         const existingIds = new Set(prev.map(a => a.id));
                         const newAgents = a2aAgents.filter(a => !existingIds.has(a.id));
-                        return newAgents.length > 0 ? [...newAgents, ...prev] : prev;
+                        return newAgents.length > 0 ? [...prev, ...newAgents] : prev;
                     });
-                    setLiveMode(true);
+                    if (a2aAgents.length > 0 && !selectedAgentId) {
+                        setSelectedAgentId(a2aAgents[0].id);
+                    }
                 }
-            }
-        }).catch(() => {});
+            })
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, [daemonConnected, fetchApi, walletAddress]);
 
     // Poll inbox for new messages (every 3s when live)
@@ -180,7 +174,7 @@ export function ChatView() {
 
         // Try sending via network relay, then A2A
         let sent = false;
-        if (daemonConnected && liveMode) {
+        if (daemonConnected && selectedAgentId) {
             try {
                 const result = await fetchApi<{ messageId: string }>('/api/v1/network/messages', {
                     method: 'POST',
@@ -207,25 +201,6 @@ export function ChatView() {
                 m.id === msgId ? { ...m, status: sent ? 'delivered' as const : 'sent' as const } : m
             ),
         }));
-
-        // If not live mode, generate demo reply
-        if (!sent || !liveMode) {
-            const replyText = generateReply(selectedAgentId, text);
-            setTimeout(() => {
-                const reply: ChatMessage = {
-                    id: crypto.randomUUID(),
-                    agentId: selectedAgentId,
-                    text: replyText,
-                    timestamp: formatTimestamp(),
-                    status: 'delivered',
-                    micropayment: estimateMicropayment(replyText),
-                };
-                setMessagesByAgent((prev) => ({
-                    ...prev,
-                    [selectedAgentId]: [...(prev[selectedAgentId] ?? []), reply],
-                }));
-            }, 600 + Math.random() * 600);
-        }
     }
 
     const unreadCounts: Record<string, number> = {};
@@ -252,7 +227,7 @@ export function ChatView() {
                             background: daemonConnected ? '#10B981' : '#F59E0B',
                         }} />
                         <span style={{ fontSize: '11px', opacity: 0.6 }}>
-                            {daemonConnected ? 'Daemon Live' : 'Demo Mode'}
+                            {daemonConnected ? 'Daemon Live' : 'Offline'}
                         </span>
                     </div>
                 </div>
@@ -317,27 +292,27 @@ export function ChatView() {
                             background: colors.lavender, border: `1.5px solid ${colors.ink}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontWeight: 700, fontSize: '14px',
-                        }}>{selectedAgent.avatar}</div>
+                        }}>{selectedAgent?.avatar ?? '?'}</div>
                         <div>
-                            <p style={{ fontWeight: 600, fontSize: '15px', margin: 0 }}>{selectedAgent.name}</p>
-                            <p style={{ fontSize: '11px', opacity: 0.6, margin: 0 }}>{selectedAgent.role}</p>
+                            <p style={{ fontWeight: 600, fontSize: '15px', margin: 0 }}>{selectedAgent?.name ?? 'Unknown'}</p>
+                            <p style={{ fontSize: '11px', opacity: 0.6, margin: 0 }}>{selectedAgent?.role ?? 'Agent'}</p>
                         </div>
                     </div>
                     <span style={{
                         fontSize: '10px', padding: '4px 10px', borderRadius: '9999px',
-                        background: selectedAgent.online ? '#D1FAE5' : '#F3F3F8',
-                        color: selectedAgent.online ? '#059669' : '#6B7280',
-                        border: `1px solid ${selectedAgent.online ? '#10B981' : '#D1D5DB'}`,
+                        background: selectedAgent?.online ? '#D1FAE5' : '#F3F3F8',
+                        color: selectedAgent?.online ? '#059669' : '#6B7280',
+                        border: `1px solid ${selectedAgent?.online ? '#10B981' : '#D1D5DB'}`,
                     }}>
-                        {selectedAgent.online ? 'Online' : 'Offline'}
+                        {selectedAgent?.online ? 'Online' : 'Offline'}
                     </span>
                     <span style={{
                         fontSize: '10px', padding: '4px 8px', borderRadius: '9999px',
-                        background: liveMode ? '#D1FAE5' : '#FEF3C7',
-                        color: liveMode ? '#059669' : '#D97706',
-                        border: `1px solid ${liveMode ? '#10B981' : '#F59E0B'}`,
+                        background: agents.length > 0 ? '#D1FAE5' : '#F3F4F6',
+                        color: agents.length > 0 ? '#059669' : '#6B7280',
+                        border: `1px solid ${agents.length > 0 ? '#10B981' : '#D1D5DB'}`,
                     }}>
-                        {liveMode ? 'Live' : 'Demo'}
+                        {agents.length > 0 ? 'Live' : 'No Agents'}
                     </span>
                 </div>
 
@@ -402,7 +377,7 @@ export function ChatView() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                            placeholder={`Message ${selectedAgent.name}...`}
+                            placeholder={`Message ${selectedAgent?.name ?? 'Agent'}...`}
                             style={{
                                 flex: 1, padding: '12px 16px',
                                 background: colors.bg, border: `1.5px solid ${colors.ink}`,
@@ -423,7 +398,7 @@ export function ChatView() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                         <span style={{ fontSize: '10px', opacity: 0.4 }}>
-                            {liveMode ? 'Messages routed via Network Relay' : daemonConnected ? 'Daemon connected \u2022 demo agents' : 'Demo mode \u2022 local simulation'}
+                            {daemonConnected ? 'Daemon connected' : 'Connect daemon to start messaging'}
                         </span>
                         {input.trim() && (
                             <span style={{ fontSize: '10px', opacity: 0.4 }}>
@@ -435,31 +410,4 @@ export function ChatView() {
             </div>
         </div>
     );
-}
-
-function generateReply(agentId: string, userText: string): string {
-    const lower = userText.toLowerCase();
-    if (agentId === 'alice') {
-        if (lower.includes('yield') || lower.includes('apr') || lower.includes('farm')) return 'Current best yield: SOL/mSOL on Orca at 14.3% APR with low IL risk. Raydium CLMM SOL/USDC at 18.2%. Want me to run a deeper risk analysis?';
-        if (lower.includes('monitor') || lower.includes('watch') || lower.includes('alert')) return 'Monitoring task registered via A2A protocol. I\'ll send you an update when TVL changes >5% or APR drops below threshold.';
-        if (lower.includes('swap') || lower.includes('trade')) return 'I can execute swaps via Jupiter aggregator. What token pair and amount? I\'ll estimate slippage first.';
-        return 'Understood. I\'ll analyze this via my DeFi data pipeline and respond with findings. Estimated completion: 2 minutes.';
-    }
-    if (agentId === 'bob') {
-        if (lower.includes('audit') || lower.includes('contract') || lower.includes('program')) return 'Send the program ID and I\'ll run a full vulnerability scan. Checks include: reentrancy, overflow, access control, PDA validation, and CPI safety.';
-        if (lower.includes('vulnerability') || lower.includes('bug') || lower.includes('security')) return 'Scan complete. Found 0 critical, 2 low-severity warnings (unchecked math in non-critical path, missing signer check on admin-only function). Full report available.';
-        return 'Audit request queued. I\'ll analyze the bytecode and cross-reference with known vulnerability patterns. ETA: 3-5 minutes.';
-    }
-    if (agentId === 'charlie') {
-        if (lower.includes('data') || lower.includes('analytics') || lower.includes('query')) return 'Pulling on-chain data now. I can stream results as they arrive or batch them. Which do you prefer?';
-        if (lower.includes('report') || lower.includes('csv') || lower.includes('export')) return 'Report generation started. Formats available: JSON, CSV, or chart image. ETA: 2 minutes.';
-        if (lower.includes('nft') || lower.includes('collection')) return 'I\'ll index the collection metadata from on-chain accounts. This includes traits, rarity scores, and holder distribution.';
-        return 'Data request received. Aggregating from on-chain sources and indexer cache...';
-    }
-    if (agentId === 'delta') {
-        if (lower.includes('deploy') || lower.includes('ci') || lower.includes('pipeline')) return 'Pipeline triggered. Build -> Test -> Deploy stages. I\'ll report status at each gate.';
-        if (lower.includes('monitor') || lower.includes('health') || lower.includes('status')) return 'All systems nominal. API latency: 45ms p99. Error rate: 0.02%. Last deploy: 2h ago.';
-        return 'DevOps task acknowledged. Processing through automation pipeline...';
-    }
-    return 'Task received via A2A protocol. Processing and will respond when complete.';
 }
