@@ -11,6 +11,7 @@
  */
 
 import { EventEmitter } from 'node:events';
+import type { APIEndpoint } from './playwright-harness.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -547,45 +548,133 @@ export class EvaluatorRuntime extends EventEmitter {
     };
   }
 
+  // -------------------------------------------------------------------------
+  // Evaluation Types
+  // -------------------------------------------------------------------------
+
   private async evaluateUI(
     task: EvaluationTask,
     sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    // TODO: Implement Playwright-based UI evaluation
-    // This would launch a browser, run interactions, take screenshots
+    const { PlaywrightHarness } = await import('./playwright-harness.js');
+    const harness = new PlaywrightHarness({
+      maxBrowsers: 2,
+      browserType: 'chromium',
+      headless: true,
+    });
 
-    logger.info({ evaluationId: task.id }, 'UI evaluation not yet implemented');
+    try {
+      // Extract submission to sandbox
+      await sandbox.execute('checkout', 'Extracting submission...');
 
-    return {
-      categoryScores: [],
-      checkResults: [],
-      executionLog: {
-        sandboxType: this.config.sandbox.type,
-        steps: [],
-        stdout: '',
-        stderr: '',
-      },
-    };
+      // Start the application
+      const startStep = await sandbox.execute('start', 'npm run dev &');
+      
+      // Wait for server to be ready
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Run UI verification
+      const uiResult = await harness.verifyUI({
+        url: 'http://localhost:3000',
+        viewport: { width: 1280, height: 720 },
+        interactions: [
+          { type: 'wait', duration: 1000 },
+          { type: 'click', target: 'body' },
+        ],
+        accessibilityCheck: true,
+        responsiveBreakpoints: [375, 768, 1024, 1440],
+      });
+
+      // Convert to EvaluationResult format
+      const categoryScores: CategoryScore[] = uiResult.details.map(detail => ({
+        name: detail.name,
+        score: detail.score,
+        maxScore: 100,
+        weight: 1 / uiResult.details.length,
+        feedback: [detail.message],
+      }));
+
+      const checkResults: CheckResult[] = uiResult.details.map(detail => ({
+        type: detail.name.includes('accessibility') ? 'accessibility_ok' : 
+              detail.name.includes('responsive') ? 'responsive' : 'compiles',
+        passed: detail.passed,
+        score: detail.score,
+        details: detail.message,
+        durationMs: uiResult.durationMs / uiResult.details.length,
+      }));
+
+      return {
+        categoryScores,
+        checkResults,
+        executionLog: {
+          sandboxType: this.config.sandbox.type,
+          steps: [{
+            name: 'ui-verification',
+            command: 'playwright-harness',
+            exitCode: uiResult.passed ? 0 : 1,
+            durationMs: uiResult.durationMs,
+            timestamp: Date.now(),
+          }],
+          stdout: JSON.stringify(uiResult.details, null, 2),
+          stderr: '',
+        },
+      };
+    } finally {
+      await harness.shutdown();
+    }
   }
 
   private async evaluateAPI(
     task: EvaluationTask,
     sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    // TODO: Implement API contract testing
+    const { PlaywrightHarness } = await import('./playwright-harness.js');
+    const harness = new PlaywrightHarness();
 
-    logger.info({ evaluationId: task.id }, 'API evaluation not yet implemented');
+    try {
+      // Extract API definition from task
+      const apiEndpoints = task.submission.metadata?.endpoints as APIEndpoint[] || [];
 
-    return {
-      categoryScores: [],
-      checkResults: [],
-      executionLog: {
-        sandboxType: this.config.sandbox.type,
-        steps: [],
-        stdout: '',
-        stderr: '',
-      },
-    };
+      const apiResult = await harness.verifyAPI({
+        baseUrl: task.submission.source,
+        endpoints: apiEndpoints,
+      });
+
+      const categoryScores: CategoryScore[] = apiResult.details.map(detail => ({
+        name: detail.name,
+        score: detail.score,
+        maxScore: 100,
+        weight: 1 / apiResult.details.length,
+        feedback: [detail.message],
+      }));
+
+      const checkResults: CheckResult[] = apiResult.details.map(detail => ({
+        type: 'api_contract',
+        passed: detail.passed,
+        score: detail.score,
+        details: detail.message,
+        durationMs: apiResult.durationMs / apiResult.details.length,
+      }));
+
+      return {
+        categoryScores,
+        checkResults,
+        executionLog: {
+          sandboxType: this.config.sandbox.type,
+          steps: [{
+            name: 'api-verification',
+            command: 'playwright-harness-api',
+            exitCode: apiResult.passed ? 0 : 1,
+            durationMs: apiResult.durationMs,
+            timestamp: Date.now(),
+          }],
+          stdout: JSON.stringify(apiResult.details, null, 2),
+          stderr: '',
+        },
+      };
+    } finally {
+      await harness.shutdown();
+    }
   }
 
   private async evaluateContent(

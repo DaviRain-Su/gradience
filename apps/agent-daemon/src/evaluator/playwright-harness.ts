@@ -7,49 +7,43 @@
  * @module evaluator/playwright-harness
  */
 
+import { chromium, firefox, webkit, type Browser, type BrowserContext, type Page } from 'playwright';
+import pixelmatch from 'pixelmatch';
+import { PNG } from 'pngjs';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
+
+const execAsync = promisify(exec);
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface UIInteraction {
-  /** Interaction type */
-  type: 'click' | 'fill' | 'select' | 'hover' | 'scroll' | 'wait';
-  /** Target selector */
+  type: 'click' | 'fill' | 'select' | 'hover' | 'scroll' | 'wait' | 'press' | 'focus';
   target?: string;
-  /** Value (for fill/select) */
   value?: string;
-  /** Wait duration ms (for wait) */
+  key?: string;
   duration?: number;
+  options?: { force?: boolean; timeout?: number };
 }
 
 export interface ScreenshotComparison {
-  /** Baseline image path or buffer */
   baseline: string | Buffer;
-  /** Current screenshot path or buffer */
   current: string | Buffer;
-  /** Threshold for pixel difference (0-1) */
   threshold: number;
-  /** Mask regions to ignore */
   maskRegions?: Array<{ x: number; y: number; width: number; height: number }>;
 }
 
 export interface APIEndpoint {
-  /** HTTP method */
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  /** Endpoint path */
   path: string;
-  /** Expected status code */
   expectedStatus: number;
-  /** Request headers */
   headers?: Record<string, string>;
-  /** Request body */
   body?: unknown;
-  /** Expected response schema */
   responseSchema?: JSONSchema;
-  /** Performance threshold (ms) */
   maxResponseTimeMs?: number;
 }
 
@@ -61,43 +55,42 @@ export interface JSONSchema {
 }
 
 export interface CodeVerification {
-  /** Repository path */
   repoPath: string;
-  /** Test command to run */
   testCommand: string;
-  /** Coverage threshold (0-100) */
   coverageThreshold: number;
-  /** Lint command */
   lintCommand?: string;
-  /** Security scan command */
   securityCommand?: string;
 }
 
 export interface VerificationResult {
-  /** Verification passed */
   passed: boolean;
-  /** Score (0-100) */
   score: number;
-  /** Detailed results */
   details: VerificationDetail[];
-  /** Execution duration ms */
   durationMs: number;
-  /** Artifacts (screenshots, logs) */
   artifacts?: string[];
 }
 
 export interface VerificationDetail {
-  /** Check name */
   name: string;
-  /** Check passed */
   passed: boolean;
-  /** Score for this check */
   score: number;
-  /** Feedback/message */
   message: string;
-  /** Additional data */
   metadata?: Record<string, unknown>;
 }
+
+export interface PlaywrightConfig {
+  maxBrowsers: number;
+  browserType: 'chromium' | 'firefox' | 'webkit';
+  headless: boolean;
+  screenshotDir?: string;
+}
+
+const DEFAULT_CONFIG: PlaywrightConfig = {
+  maxBrowsers: 3,
+  browserType: 'chromium',
+  headless: true,
+  screenshotDir: '/tmp/evaluator-screenshots',
+};
 
 // ============================================================================
 // Playwright Harness
@@ -114,9 +107,6 @@ export class PlaywrightHarness {
   // UI Verification
   // -------------------------------------------------------------------------
 
-  /**
-   * Verify UI by running interactions and comparing screenshots
-   */
   async verifyUI(params: {
     url: string;
     viewport: { width: number; height: number };
@@ -130,42 +120,40 @@ export class PlaywrightHarness {
     const artifacts: string[] = [];
 
     try {
-      // Get browser from pool
-      const browser = await this.browserPool.acquire();
+      const { browser, context, page } = await this.browserPool.acquireWithContext(params.viewport);
 
       try {
-        const context = await browser.newContext({
-          viewport: params.viewport,
-        });
-        const page = await context.newPage();
-
-        // Navigate to URL
+        // Navigate
+        const navStart = Date.now();
         await page.goto(params.url, { waitUntil: 'networkidle' });
         details.push({
           name: 'navigation',
           passed: true,
           score: 100,
-          message: `Successfully navigated to ${params.url}`,
+          message: `Navigated to ${params.url} in ${Date.now() - navStart}ms`,
         });
 
         // Execute interactions
-        for (const interaction of params.interactions) {
-          const interactionResult = await this.executeInteraction(page, interaction);
+        for (let i = 0; i < params.interactions.length; i++) {
+          const interaction = params.interactions[i];
+          const interactionResult = await this.executeInteraction(page, interaction, i);
           details.push(interactionResult);
         }
 
-        // Take screenshot for comparison
+        // Screenshot comparison
         if (params.expectedScreenshots && params.expectedScreenshots.length > 0) {
           const screenshot = await page.screenshot({ fullPage: true });
-          artifacts.push(`screenshot-${Date.now()}.png`);
+          const screenshotPath = `${this.config.screenshotDir}/current-${Date.now()}.png`;
+          artifacts.push(screenshotPath);
 
-          for (const comparison of params.expectedScreenshots) {
-            const comparisonResult = await this.compareScreenshots(screenshot, comparison);
+          for (let i = 0; i < params.expectedScreenshots.length; i++) {
+            const comparison = params.expectedScreenshots[i];
+            const comparisonResult = await this.compareScreenshots(screenshot, comparison, i);
             details.push(comparisonResult);
           }
         }
 
-        // Accessibility check
+        // Accessibility check using axe-core
         if (params.accessibilityCheck) {
           const a11yResult = await this.runAccessibilityCheck(page);
           details.push(a11yResult);
@@ -180,8 +168,6 @@ export class PlaywrightHarness {
             details.push(responsiveResult);
           }
         }
-
-        await context.close();
       } finally {
         await this.browserPool.release(browser);
       }
@@ -218,9 +204,6 @@ export class PlaywrightHarness {
   // API Verification
   // -------------------------------------------------------------------------
 
-  /**
-   * Verify API endpoints
-   */
   async verifyAPI(params: {
     baseUrl: string;
     endpoints: APIEndpoint[];
@@ -236,13 +219,9 @@ export class PlaywrightHarness {
         const response = await this.makeRequest(params.baseUrl, endpoint, params.globalHeaders);
         const duration = Date.now() - checkStart;
 
-        // Check status
         const statusMatch = response.status === endpoint.expectedStatus;
-
-        // Check response time
         const timeOk = !endpoint.maxResponseTimeMs || duration <= endpoint.maxResponseTimeMs;
 
-        // Validate schema if provided
         let schemaValid = true;
         let schemaError = '';
         if (endpoint.responseSchema) {
@@ -260,11 +239,7 @@ export class PlaywrightHarness {
           message: passed
             ? `Status: ${response.status}, Time: ${duration}ms`
             : `Failed: ${!statusMatch ? 'wrong status' : ''} ${!timeOk ? 'slow' : ''} ${!schemaValid ? schemaError : ''}`,
-          metadata: {
-            status: response.status,
-            duration,
-            schemaValid,
-          },
+          metadata: { status: response.status, duration, schemaValid },
         });
       } catch (error) {
         details.push({
@@ -290,9 +265,6 @@ export class PlaywrightHarness {
   // Code Verification
   // -------------------------------------------------------------------------
 
-  /**
-   * Verify code by running tests and checks
-   */
   async verifyCode(params: CodeVerification): Promise<VerificationResult> {
     const startTime = Date.now();
     const details: VerificationDetail[] = [];
@@ -304,7 +276,7 @@ export class PlaywrightHarness {
       passed: testResult.exitCode === 0,
       score: testResult.exitCode === 0 ? 100 : 0,
       message: testResult.exitCode === 0 ? 'All tests pass' : 'Tests failed',
-      metadata: { stdout: testResult.stdout, stderr: testResult.stderr },
+      metadata: { stdout: testResult.stdout.slice(0, 1000), stderr: testResult.stderr.slice(0, 1000) },
     });
 
     // Check coverage
@@ -365,13 +337,16 @@ export class PlaywrightHarness {
   // -------------------------------------------------------------------------
 
   private async executeInteraction(
-    page: PlaywrightPage,
-    interaction: UIInteraction
+    page: Page,
+    interaction: UIInteraction,
+    index: number
   ): Promise<VerificationDetail> {
+    const startTime = Date.now();
+
     try {
       switch (interaction.type) {
         case 'click':
-          await page.click(interaction.target!);
+          await page.click(interaction.target!, interaction.options);
           break;
         case 'fill':
           await page.fill(interaction.target!, interaction.value!);
@@ -388,17 +363,23 @@ export class PlaywrightHarness {
         case 'wait':
           await page.waitForTimeout(interaction.duration || 1000);
           break;
+        case 'press':
+          await page.press(interaction.target!, interaction.key!);
+          break;
+        case 'focus':
+          await page.focus(interaction.target!);
+          break;
       }
 
       return {
-        name: `interaction:${interaction.type}`,
+        name: `interaction:${index}:${interaction.type}`,
         passed: true,
         score: 100,
-        message: `Executed ${interaction.type}`,
+        message: `Executed ${interaction.type} in ${Date.now() - startTime}ms`,
       };
     } catch (error) {
       return {
-        name: `interaction:${interaction.type}`,
+        name: `interaction:${index}:${interaction.type}`,
         passed: false,
         score: 0,
         message: error instanceof Error ? error.message : 'Interaction failed',
@@ -408,41 +389,122 @@ export class PlaywrightHarness {
 
   private async compareScreenshots(
     current: Buffer,
-    comparison: ScreenshotComparison
+    comparison: ScreenshotComparison,
+    index: number
   ): Promise<VerificationDetail> {
-    // TODO: Implement actual image comparison using pixelmatch or similar
-    // For now, mock implementation
+    try {
+      const currentPng = PNG.sync.read(current);
+      const baselinePng = PNG.sync.read(
+        typeof comparison.baseline === 'string'
+          ? await import('node:fs').then(fs => fs.readFileSync(comparison.baseline as string))
+          : comparison.baseline
+      );
 
-    return {
-      name: 'screenshot-comparison',
-      passed: true,
-      score: 95,
-      message: 'Screenshots match within threshold',
-    };
+      const { width, height } = currentPng;
+      const diff = new PNG({ width, height });
+
+      const numDiffPixels = pixelmatch(
+        currentPng.data,
+        baselinePng.data,
+        diff.data,
+        width,
+        height,
+        { threshold: comparison.threshold }
+      );
+
+      const totalPixels = width * height;
+      const diffPercentage = (numDiffPixels / totalPixels) * 100;
+      const passed = diffPercentage <= comparison.threshold * 100;
+
+      return {
+        name: `screenshot-comparison:${index}`,
+        passed,
+        score: passed ? 100 : Math.max(0, 100 - diffPercentage),
+        message: `Pixel diff: ${diffPercentage.toFixed(2)}% (threshold: ${(comparison.threshold * 100).toFixed(2)}%)`,
+        metadata: { diffPixels: numDiffPixels, totalPixels },
+      };
+    } catch (error) {
+      return {
+        name: `screenshot-comparison:${index}`,
+        passed: false,
+        score: 0,
+        message: error instanceof Error ? error.message : 'Screenshot comparison failed',
+      };
+    }
   }
 
-  private async runAccessibilityCheck(page: PlaywrightPage): Promise<VerificationDetail> {
-    // TODO: Implement using @axe-core/playwright
-    // For now, mock implementation
+  private async runAccessibilityCheck(page: Page): Promise<VerificationDetail> {
+    try {
+      // Inject axe-core
+      await page.addScriptTag({
+        url: 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.8.0/axe.min.js',
+      });
 
-    return {
-      name: 'accessibility',
-      passed: true,
-      score: 90,
-      message: 'No critical accessibility issues',
-    };
+      const results = await page.evaluate(async () => {
+        // @ts-ignore
+        return await axe.run();
+      });
+
+      const violations = results.violations || [];
+      const criticalCount = violations.filter((v: any) => v.impact === 'critical').length;
+      const seriousCount = violations.filter((v: any) => v.impact === 'serious').length;
+
+      const passed = criticalCount === 0 && seriousCount === 0;
+      const score = passed ? 100 : Math.max(0, 100 - (criticalCount * 20 + seriousCount * 10));
+
+      return {
+        name: 'accessibility',
+        passed,
+        score,
+        message: `${violations.length} violations (${criticalCount} critical, ${seriousCount} serious)`,
+        metadata: { violations: violations.map((v: any) => ({ id: v.id, impact: v.impact })) },
+      };
+    } catch (error) {
+      return {
+        name: 'accessibility',
+        passed: false,
+        score: 0,
+        message: error instanceof Error ? error.message : 'Accessibility check failed',
+      };
+    }
   }
 
-  private async checkResponsive(page: PlaywrightPage, width: number): Promise<VerificationDetail> {
-    // TODO: Implement responsive layout checks
-    // For now, mock implementation
+  private async checkResponsive(page: Page, width: number): Promise<VerificationDetail> {
+    try {
+      // Check for horizontal scroll
+      const hasHorizontalScroll = await page.evaluate(() => {
+        return document.documentElement.scrollWidth > window.innerWidth;
+      });
 
-    return {
-      name: `responsive:${width}px`,
-      passed: true,
-      score: 100,
-      message: `Layout works at ${width}px`,
-    };
+      // Check for overflow issues
+      const overflowElements = await page.evaluate(() => {
+        const elements = document.querySelectorAll('*');
+        return Array.from(elements).filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.overflow === 'hidden' && el.scrollWidth > el.clientWidth;
+        }).length;
+      });
+
+      const passed = !hasHorizontalScroll && overflowElements === 0;
+
+      return {
+        name: `responsive:${width}px`,
+        passed,
+        score: passed ? 100 : 50,
+        message: hasHorizontalScroll
+          ? `Horizontal scroll detected at ${width}px`
+          : overflowElements > 0
+          ? `${overflowElements} overflow elements at ${width}px`
+          : `Layout responsive at ${width}px`,
+      };
+    } catch (error) {
+      return {
+        name: `responsive:${width}px`,
+        passed: false,
+        score: 0,
+        message: error instanceof Error ? error.message : 'Responsive check failed',
+      };
+    }
   }
 
   private async makeRequest(
@@ -453,7 +515,6 @@ export class PlaywrightHarness {
     const url = `${baseUrl}${endpoint.path}`;
     const headers = { ...globalHeaders, ...endpoint.headers };
 
-    // Use native fetch (Node 18+)
     const response = await fetch(url, {
       method: endpoint.method,
       headers,
@@ -461,12 +522,10 @@ export class PlaywrightHarness {
     });
 
     const data = await response.json().catch(() => null);
-
     return { status: response.status, data };
   }
 
   private validateSchema(data: unknown, schema: JSONSchema): { valid: boolean; error?: string } {
-    // Simple schema validation - in production use ajv or zod
     if (schema.type === 'object' && typeof data !== 'object') {
       return { valid: false, error: 'Expected object' };
     }
@@ -474,7 +533,6 @@ export class PlaywrightHarness {
       return { valid: false, error: 'Expected array' };
     }
 
-    // Check required properties
     if (schema.required && typeof data === 'object' && data !== null) {
       for (const key of schema.required) {
         if (!(key in data)) {
@@ -490,26 +548,42 @@ export class PlaywrightHarness {
     cwd: string,
     command: string
   ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-    // TODO: Implement actual command execution using child_process
-    // For now, mock implementation
-
-    logger.info({ cwd, command }, 'Running command');
-
-    return {
-      exitCode: 0,
-      stdout: 'Mock stdout',
-      stderr: '',
-    };
+    try {
+      const { stdout, stderr } = await execAsync(command, { cwd, timeout: 120000 });
+      return { exitCode: 0, stdout, stderr };
+    } catch (error: any) {
+      return {
+        exitCode: error.code || 1,
+        stdout: error.stdout || '',
+        stderr: error.stderr || error.message,
+      };
+    }
   }
 
   private async extractCoverage(repoPath: string): Promise<{ percentage: number; files: string[] }> {
-    // TODO: Parse coverage report (nyc, jest, etc.)
-    // For now, mock implementation
+    try {
+      // Try to read coverage summary from common locations
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      
+      const coveragePaths = [
+        path.join(repoPath, 'coverage/coverage-summary.json'),
+        path.join(repoPath, 'coverage/lcov-report/coverage-summary.json'),
+      ];
 
-    return {
-      percentage: 85,
-      files: ['src/index.ts', 'src/utils.ts'],
-    };
+      for (const coveragePath of coveragePaths) {
+        if (fs.existsSync(coveragePath)) {
+          const summary = JSON.parse(fs.readFileSync(coveragePath, 'utf-8'));
+          const total = summary.total || summary;
+          const percentage = total.lines?.pct || total.branches?.pct || 0;
+          return { percentage, files: Object.keys(summary).filter(k => k !== 'total') };
+        }
+      }
+
+      return { percentage: 0, files: [] };
+    } catch {
+      return { percentage: 0, files: [] };
+    }
   }
 
   private calculateScore(details: VerificationDetail[]): number {
@@ -523,74 +597,46 @@ export class PlaywrightHarness {
 // Browser Pool
 // ============================================================================
 
-interface PlaywrightConfig {
-  maxBrowsers: number;
-  browserType: 'chromium' | 'firefox' | 'webkit';
-  headless: boolean;
-}
-
-const DEFAULT_CONFIG: PlaywrightConfig = {
-  maxBrowsers: 3,
-  browserType: 'chromium',
-  headless: true,
-};
-
-interface PlaywrightPage {
-  goto(url: string, options?: { waitUntil?: string }): Promise<void>;
-  click(selector: string): Promise<void>;
-  fill(selector: string, value: string): Promise<void>;
-  selectOption(selector: string, value: string): Promise<void>;
-  hover(selector: string): Promise<void>;
-  evaluate(fn: () => void): Promise<void>;
-  waitForTimeout(duration: number): Promise<void>;
-  screenshot(options?: { fullPage?: boolean }): Promise<Buffer>;
-  setViewportSize(size: { width: number; height: number }): Promise<void>;
-  reload(options?: { waitUntil?: string }): Promise<void>;
-}
-
-interface PlaywrightBrowser {
-  newContext(options?: { viewport?: { width: number; height: number } }): Promise<{
-    newPage(): Promise<PlaywrightPage>;
-    close(): Promise<void>;
-  }>;
-  close(): Promise<void>;
-}
-
 class BrowserPool {
-  private browsers: PlaywrightBrowser[] = [];
-  private available: PlaywrightBrowser[] = [];
-  private waiting: Array<(browser: PlaywrightBrowser) => void> = [];
+  private browsers: Browser[] = [];
+  private available: Browser[] = [];
+  private waiting: Array<(browser: Browser) => void> = [];
 
   constructor(private config: PlaywrightConfig) {}
 
-  async acquire(): Promise<PlaywrightBrowser> {
-    // Return available browser
+  async acquireWithContext(viewport: { width: number; height: number }): Promise<{
+    browser: Browser;
+    context: BrowserContext;
+    page: Page;
+  }> {
+    const browser = await this.acquire();
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    return { browser, context, page };
+  }
+
+  async acquire(): Promise<Browser> {
     if (this.available.length > 0) {
       return this.available.pop()!;
     }
 
-    // Create new browser if under limit
     if (this.browsers.length < this.config.maxBrowsers) {
       const browser = await this.createBrowser();
       this.browsers.push(browser);
       return browser;
     }
 
-    // Wait for available browser
     return new Promise((resolve) => {
       this.waiting.push(resolve);
     });
   }
 
-  async release(browser: PlaywrightBrowser): Promise<void> {
-    // Check if someone is waiting
+  async release(browser: Browser): Promise<void> {
     if (this.waiting.length > 0) {
       const waiter = this.waiting.shift()!;
       waiter(browser);
       return;
     }
-
-    // Add back to available pool
     this.available.push(browser);
   }
 
@@ -602,29 +648,19 @@ class BrowserPool {
     this.available = [];
   }
 
-  private async createBrowser(): Promise<PlaywrightBrowser> {
-    // TODO: Import playwright and create actual browser
-    // For now, return mock browser
+  private async createBrowser(): Promise<Browser> {
+    logger.info({ browserType: this.config.browserType }, 'Creating browser');
 
-    logger.info('Creating mock browser');
+    const launchOptions = { headless: this.config.headless };
 
-    return {
-      newContext: async () => ({
-        newPage: async () => ({
-          goto: async () => {},
-          click: async () => {},
-          fill: async () => {},
-          selectOption: async () => {},
-          hover: async () => {},
-          evaluate: async () => {},
-          waitForTimeout: async () => {},
-          screenshot: async () => Buffer.from('mock'),
-          setViewportSize: async () => {},
-          reload: async () => {},
-        }),
-        close: async () => {},
-      }),
-      close: async () => {},
-    };
+    switch (this.config.browserType) {
+      case 'firefox':
+        return firefox.launch(launchOptions);
+      case 'webkit':
+        return webkit.launch(launchOptions);
+      case 'chromium':
+      default:
+        return chromium.launch(launchOptions);
+    }
   }
 }
