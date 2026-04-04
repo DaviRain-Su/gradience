@@ -12,7 +12,7 @@ const loadSNS = () => import('@bonfida/spl-name-service' as string) as Promise<{
 }>;
 
 const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-const ETH_RPC_URL = process.env.ETH_RPC_URL || 'https://cloudflare-eth.com';
+const ETH_RPC_URL = process.env.ETH_RPC_URL || 'https://eth.llamarpc.com';
 const CACHE_TTL = 5 * 60 * 1000; // 5 min
 
 interface CacheEntry {
@@ -220,35 +220,34 @@ export function registerDomainRoutes(app: FastifyInstance) {
 
 // ---- ENS resolution via Ethereum JSON-RPC (no extra deps) ----
 
-import { createHash } from 'crypto';
 
-// keccak256 via Node.js crypto (sha3-256 is keccak256 in Node 18+)
-function keccak256(data: Uint8Array): Uint8Array {
-    // Node's 'sha3-256' is NOT keccak256. Use the raw keccak from the
-    // already-installed @noble/hashes if available, otherwise fall back.
-    try {
-        // @noble/hashes is a transitive dep of @solana/web3.js
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { keccak_256 } = require('@noble/hashes/sha3') as { keccak_256: (d: Uint8Array) => Uint8Array };
-        return keccak_256(data);
-    } catch {
-        // Fallback: sha3-256 (technically different from keccak256, but close enough for dev)
-        const h = createHash('sha3-256');
-        h.update(data);
-        return new Uint8Array(h.digest());
-    }
+
+// Lazy-loaded keccak256 from @noble/hashes (transitive dep of @solana/web3.js)
+let _keccakFn: ((d: Uint8Array) => Uint8Array) | null = null;
+
+async function initKeccak(): Promise<(d: Uint8Array) => Uint8Array> {
+    if (_keccakFn) return _keccakFn;
+    const mod = await import('@noble/hashes/sha3' as string) as { keccak_256: (d: Uint8Array) => Uint8Array };
+    _keccakFn = mod.keccak_256;
+    return _keccakFn;
 }
 
-function ensNamehash(name: string): string {
+function keccak256Sync(data: Uint8Array): Uint8Array {
+    if (!_keccakFn) throw new Error('keccak not initialized, call initKeccak() first');
+    return _keccakFn(data);
+}
+
+async function ensNamehash(name: string): Promise<string> {
+    const keccak = await initKeccak();
     let node = new Uint8Array(32);
     if (name) {
         const labels = name.split('.');
         for (let i = labels.length - 1; i >= 0; i--) {
-            const labelHash = new Uint8Array(keccak256(new TextEncoder().encode(labels[i])));
+            const labelHash = new Uint8Array(keccak(new TextEncoder().encode(labels[i])));
             const combined = new Uint8Array(64);
             combined.set(node, 0);
             combined.set(labelHash, 32);
-            node = new Uint8Array(keccak256(combined));
+            node = new Uint8Array(keccak(combined));
         }
     }
     return '0x' + Buffer.from(node).toString('hex');
@@ -276,7 +275,7 @@ const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
 
 async function resolveENS(domain: string): Promise<string | null> {
     try {
-        const node = ensNamehash(domain);
+        const node = await ensNamehash(domain);
         // Call resolver(bytes32 node) on ENS registry
         const resolverSig = '0x0178b8bf'; // resolver(bytes32)
         const resolverData = resolverSig + node.slice(2);
@@ -304,7 +303,7 @@ async function reverseENS(address: string): Promise<string | null> {
     try {
         const addr = address.toLowerCase().replace('0x', '');
         const reverseName = `${addr}.addr.reverse`;
-        const node = ensNamehash(reverseName);
+        const node = await ensNamehash(reverseName);
 
         // Get resolver for reverse node
         const resolverSig = '0x0178b8bf';
