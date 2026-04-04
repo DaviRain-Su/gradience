@@ -37,3 +37,14 @@ export {
   createRecordExecutionInstruction,
   type CreateWorkflowParams,
 } from './solana-instructions.js';
+
+// Enhanced SDK with caching, batching, and retry logic
+export {
+  EnhancedWorkflowSDK,
+  createEnhancedSDK,
+  type EnhancedSDKConfig,
+  type BatchOperationResult,
+  type CachedWorkflow,
+  type WorkflowEvent,
+  type ExecutionOptions,
+} from './enhanced.js';
