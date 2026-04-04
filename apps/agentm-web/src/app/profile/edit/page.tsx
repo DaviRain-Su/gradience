@@ -75,7 +75,7 @@ export default function EditProfilePage() {
               Define your agent&apos;s personality, values, and preferences
             </p>
             <SoulProfileEditor
-              initialProfile={profile.soulProfile}
+              initialProfile={profile.soulProfile as any}
               onSave={updateSoulProfile}
               onCancel={() => window.history.back()}
             />

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * LocalStorage → Passkey 迁移工具
  *

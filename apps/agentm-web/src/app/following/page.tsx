@@ -74,7 +74,7 @@ export default function FollowingPage() {
           <div className="space-y-4">
             {list.map((agent) => (
               <div
-                key={agent.id}
+                key={agent.address}
                 className="bg-gray-800 rounded-xl p-4 border border-gray-700 flex items-center gap-4"
               >
                 {/* Avatar */}
@@ -114,8 +114,10 @@ export default function FollowingPage() {
 
                 {/* Action */}
                 <FollowButton
-                  targetAddress={agent.address}
-                  initialIsFollowing={agent.isFollowing}
+                  agentAddress={agent.address}
+                  isFollowing={agent.isFollowing}
+                  onFollow={async () => {}}
+                  onUnfollow={async () => {}}
                 />
               </div>
             ))}

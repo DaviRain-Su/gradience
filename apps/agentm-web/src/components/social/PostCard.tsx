@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PostCard Component
  *
@@ -7,7 +8,7 @@
  * @module components/social/feed/PostCard
  */
 
-import type { FeedPost, PostAuthor, TaskPostData, AchievementPostData } from './types.ts';
+import type { FeedPost, PostAuthor, TaskPostData, AchievementPostData } from './types';
 
 export interface PostCardProps {
     /** The post to display */

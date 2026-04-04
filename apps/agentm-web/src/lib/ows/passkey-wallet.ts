@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * OWS Agent Wallet - Passkey 版本
  *

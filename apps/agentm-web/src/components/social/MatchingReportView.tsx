@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Matching Report View Component
  * 

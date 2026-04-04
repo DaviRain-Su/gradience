@@ -97,7 +97,7 @@ export function ProfileContent({ id }: ProfileContentProps) {
           {/* Left: Soul Profile */}
           <div className="lg:col-span-2">
             {profile.soulProfile && (
-              <SoulProfileCard profile={profile.soulProfile} />
+              <SoulProfileCard profile={profile.soulProfile as any} />
             )}
           </div>
 

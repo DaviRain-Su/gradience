@@ -6,12 +6,12 @@
  * @module components/social/following
  */
 
-export { FollowButton, type FollowButtonProps } from './FollowButton.tsx';
-export { FollowersList, type FollowersListProps, type Follower } from './FollowersList.tsx';
-export { FollowingList, type FollowingListProps, type Following } from './FollowingList.tsx';
+export { FollowButton, type FollowButtonProps } from './FollowButton';
+export { FollowersList, type FollowersListProps, type Follower } from './FollowersList';
+export { FollowingList, type FollowingListProps, type Following } from './FollowingList';
 export {
   FollowerCount,
   CompactFollowerCount,
   type FollowerCountProps,
   type CompactFollowerCountProps,
-} from './FollowerCount.tsx';
+} from './FollowerCount';

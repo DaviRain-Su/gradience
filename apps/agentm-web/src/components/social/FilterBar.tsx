@@ -8,7 +8,7 @@
  */
 
 import { useCallback } from 'react';
-import type { FeedFilter } from './types.ts';
+import type { FeedFilter } from './types';
 
 export interface FilterBarProps {
     /** Currently active filter */

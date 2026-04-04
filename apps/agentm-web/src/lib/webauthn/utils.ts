@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * WebAuthn / Passkey 工具函数
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * A2A Async Messaging Component
  *

@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { FollowButton } from './FollowButton.tsx';
+import { FollowButton } from './FollowButton';
 
 export interface Follower {
   /** Agent address */

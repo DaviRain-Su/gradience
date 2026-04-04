@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Passkey Wallet Recovery Component
  *

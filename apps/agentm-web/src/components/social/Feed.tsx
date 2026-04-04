@@ -8,10 +8,10 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { FeedPost, FeedFilter, PostAuthor, FeedCallbacks } from './types.ts';
-import { PostCard } from './PostCard.tsx';
-import { InfiniteScroll } from './InfiniteScroll.tsx';
-import { FilterBar } from './FilterBar.tsx';
+import type { FeedPost, FeedFilter, PostAuthor, FeedCallbacks } from './types';
+import { PostCard } from './PostCard';
+import { InfiniteScroll } from './InfiniteScroll';
+import { FilterBar } from './FilterBar';
 
 export interface FeedProps extends FeedCallbacks {
     /** Array of posts to display */

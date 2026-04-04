@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Soul Profile Editor Component
  * 

@@ -154,7 +154,7 @@ export default function CreateAgentPage() {
                     <Label>Agent 类型</Label>
                     <Select
                       value={formData.type}
-                      onValueChange={(value) => setFormData({ ...formData, type: value })}
+                      onValueChange={(value) => value && setFormData({ ...formData, type: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -172,7 +172,7 @@ export default function CreateAgentPage() {
                     <Label>区块链</Label>
                     <Select
                       value={formData.chain}
-                      onValueChange={(value) => setFormData({ ...formData, chain: value })}
+                      onValueChange={(value) => value && setFormData({ ...formData, chain: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
