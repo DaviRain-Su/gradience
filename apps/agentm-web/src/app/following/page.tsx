@@ -56,7 +56,7 @@ export default function FollowingPage() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {list.map(agent => (
+            {list.map((agent: { address: string; displayName?: string; domain?: string; bio?: string; reputation?: number; isFollowing?: boolean }) => (
               <div key={agent.address} style={{
                 background: c.surface, borderRadius: '16px', padding: '16px 20px',
                 border: `1.5px solid ${c.ink}`, display: 'flex', alignItems: 'center', gap: '16px',
@@ -68,7 +68,7 @@ export default function FollowingPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: c.ink,
                   }}>
-                    {agent.displayName[0]}
+                    {agent.displayName?.[0] || '?'}
                   </div>
                 </Link>
 
@@ -85,7 +85,7 @@ export default function FollowingPage() {
                     <div style={{ fontWeight: 700, fontSize: '16px', color: c.ink }}>{agent.reputation}</div>
                     <div style={{ fontSize: '10px', color: c.ink, opacity: 0.5, textTransform: 'uppercase' }}>Rep</div>
                   </div>
-                  <FollowButton agentAddress={agent.address} isFollowing={agent.isFollowing} onFollow={async () => {}} onUnfollow={async () => {}} />
+                  <FollowButton agentAddress={agent.address} isFollowing={agent.isFollowing ?? false} onFollow={async () => {}} onUnfollow={async () => {}} />
                 </div>
               </div>
             ))}

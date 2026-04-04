@@ -170,10 +170,10 @@ export function createRealSwapHandler(
         }
         
         if (!quoteResponse || !quoteResponse.ok) {
-          throw new Error(`Jupiter quote failed after 3 retries: ${lastError?.message || quoteResponse?.statusText}`);
+          throw new Error(`Jupiter quote failed after 3 retries: ${(lastError as Error)?.message || quoteResponse?.statusText}`);
         }
         
-        const quote: JupiterQuote = await quoteResponse.json();
+        const quote = await quoteResponse.json() as JupiterQuote;
 
         // Step 2: Get swap transaction
         const swapUrl = `${jupiterApiUrl}/swap`;
@@ -194,7 +194,7 @@ export function createRealSwapHandler(
           throw new Error(`Jupiter swap failed: ${swapResponse.statusText}`);
         }
 
-        const swapData: JupiterSwapResponse = await swapResponse.json();
+        const swapData = await swapResponse.json() as JupiterSwapResponse;
 
         // Step 3: Deserialize and sign transaction
         const swapTransactionBuf = Buffer.from(swapData.swapTransaction, 'base64');

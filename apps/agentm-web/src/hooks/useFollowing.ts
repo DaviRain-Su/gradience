@@ -1,14 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 
-export interface AgentPreview {
+export interface Following {
   address: string;
-  domain?: string;
-  displayName: string;
+  displayName?: string;
+  avatarUrl?: string;
   bio?: string;
-  avatar?: string;
-  reputation: number;
+  followedAt: number;
+  domain?: string;
+  reputation?: number;
+}
+
+export interface Follower {
+  address: string;
+  displayName?: string;
+  avatarUrl?: string;
   isFollowing: boolean;
+  followedAt: number;
+  domain?: string;
+  bio?: string;
+  reputation?: number;
 }
 
 function authHeaders(token: string | null): Record<string, string> {
@@ -17,101 +28,171 @@ function authHeaders(token: string | null): Record<string, string> {
   return h;
 }
 
-export function useFollowing(targetAddress?: string) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { daemonUrl, sessionToken } = useDaemonConnection();
-
-  const follow = useCallback(async () => {
-    if (!targetAddress || !sessionToken) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${daemonUrl}/api/follow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
-        body: JSON.stringify({ targetAddress }),
-      });
-      if (!res.ok) throw new Error('Failed to follow');
-      setIsFollowing(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
-      setIsFollowing(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [targetAddress, daemonUrl, sessionToken]);
-
-  const unfollow = useCallback(async () => {
-    if (!targetAddress || !sessionToken) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${daemonUrl}/api/unfollow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
-        body: JSON.stringify({ targetAddress }),
-      });
-      if (!res.ok) throw new Error('Failed to unfollow');
-      setIsFollowing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
-      setIsFollowing(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [targetAddress, daemonUrl, sessionToken]);
-
-  return { isFollowing, loading, error, follow, unfollow };
-}
-
-export function useFollowers(address?: string) {
-  const [followers, setFollowers] = useState<AgentPreview[]>([]);
+// Hook for a specific user's following list
+export function useFollowingList(userAddress: string) {
+  const [following, setFollowing] = useState<Following[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { daemonUrl, sessionToken } = useDaemonConnection();
 
   useEffect(() => {
-    if (!address) { setFollowers([]); return; }
+    if (!userAddress) return;
     setLoading(true);
-    fetch(`${daemonUrl}/api/followers/${address}`, { headers: authHeaders(sessionToken) })
+    setError(null);
+    fetch(`${daemonUrl}/api/social/following/${userAddress}`, {
+      headers: authHeaders(sessionToken),
+    })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Failed');
-        return res.json();
+        if (!res.ok) throw new Error('Failed to load following');
+        const data = await res.json();
+        setFollowing(data.following || []);
       })
-      .then((data) => setFollowers(data.followers || []))
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Unknown');
-        setFollowers([]);
-      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
       .finally(() => setLoading(false));
-  }, [address, daemonUrl, sessionToken]);
+  }, [userAddress, daemonUrl, sessionToken]);
+
+  return { following, loading, error };
+}
+
+// Hook for a specific user's followers
+export function useFollowers(userAddress: string) {
+  const [followers, setFollowers] = useState<Follower[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { daemonUrl, sessionToken } = useDaemonConnection();
+
+  useEffect(() => {
+    if (!userAddress) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${daemonUrl}/api/social/followers/${userAddress}`, {
+      headers: authHeaders(sessionToken),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load followers');
+        const data = await res.json();
+        setFollowers(data.followers || []);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .finally(() => setLoading(false));
+  }, [userAddress, daemonUrl, sessionToken]);
 
   return { followers, loading, error };
 }
 
-export function useFollowingList(address?: string) {
-  const [following, setFollowing] = useState<AgentPreview[]>([]);
+// Main hook that combines both and provides follow/unfollow actions
+export function useFollowing() {
+  const [following, setFollowing] = useState<Following[]>([]);
+  const [followers, setFollowers] = useState<Follower[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { daemonUrl, sessionToken } = useDaemonConnection();
+  const { daemonUrl, sessionToken, walletAddress } = useDaemonConnection();
 
-  useEffect(() => {
-    if (!address) { setFollowing([]); return; }
+  // Load following list
+  const loadFollowing = useCallback(async () => {
+    if (!walletAddress) return;
     setLoading(true);
-    fetch(`${daemonUrl}/api/following/${address}`, { headers: authHeaders(sessionToken) })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Failed');
-        return res.json();
-      })
-      .then((data) => setFollowing(data.following || []))
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Unknown');
-        setFollowing([]);
-      })
-      .finally(() => setLoading(false));
-  }, [address, daemonUrl, sessionToken]);
+    setError(null);
+    try {
+      const res = await fetch(`${daemonUrl}/api/social/following/${walletAddress}`, {
+        headers: authHeaders(sessionToken),
+      });
+      if (!res.ok) throw new Error('Failed to load following');
+      const data = await res.json();
+      setFollowing(data.following || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [daemonUrl, sessionToken, walletAddress]);
 
-  return { following, loading, error };
+  // Load followers list
+  const loadFollowers = useCallback(async () => {
+    if (!walletAddress) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${daemonUrl}/api/social/followers/${walletAddress}`, {
+        headers: authHeaders(sessionToken),
+      });
+      if (!res.ok) throw new Error('Failed to load followers');
+      const data = await res.json();
+      setFollowers(data.followers || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [daemonUrl, sessionToken, walletAddress]);
+
+  // Follow an agent
+  const follow = useCallback(async (address: string) => {
+    if (!walletAddress) throw new Error('Wallet not connected');
+    setLoading(true);
+    try {
+      const res = await fetch(`${daemonUrl}/api/social/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
+        body: JSON.stringify({ follower: walletAddress, following: address }),
+      });
+      if (!res.ok) throw new Error('Failed to follow');
+      // Optimistic update
+      setFollowing(prev => [...prev, { address, followedAt: Date.now() }]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [daemonUrl, sessionToken, walletAddress]);
+
+  // Unfollow an agent
+  const unfollow = useCallback(async (address: string) => {
+    if (!walletAddress) throw new Error('Wallet not connected');
+    setLoading(true);
+    try {
+      const res = await fetch(`${daemonUrl}/api/social/unfollow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
+        body: JSON.stringify({ follower: walletAddress, following: address }),
+      });
+      if (!res.ok) throw new Error('Failed to unfollow');
+      // Optimistic update
+      setFollowing(prev => prev.filter(f => f.address !== address));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [daemonUrl, sessionToken, walletAddress]);
+
+  // Check if following a specific address
+  const isFollowing = useCallback((address: string) => {
+    return following.some(f => f.address === address);
+  }, [following]);
+
+  // Load data on mount
+  useEffect(() => {
+    if (walletAddress) {
+      loadFollowing();
+      loadFollowers();
+    }
+  }, [walletAddress, loadFollowing, loadFollowers]);
+
+  return {
+    following,
+    followers,
+    loading,
+    error,
+    follow,
+    unfollow,
+    isFollowing,
+    refresh: () => { loadFollowing(); loadFollowers(); },
+    loadFollowing,
+    loadFollowers,
+  };
 }
 
 export default useFollowing;

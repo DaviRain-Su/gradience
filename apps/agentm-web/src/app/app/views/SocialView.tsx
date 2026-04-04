@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { useMatches, useDiscover, type MatchProfile } from '../../../hooks/useMatches';
 import { useMyProfile } from '../../../hooks/useProfile';
+import { useFollowing } from '../../../hooks/useFollowing';
+import { FollowingList } from '../../../components/social/FollowingList';
+import { FollowersList } from '../../../components/social/FollowersList';
+import { FollowButton } from '../../../components/social/FollowButton';
 
-type SocialTab = 'discover' | 'matches' | 'probes';
+type SocialTab = 'discover' | 'matches' | 'probes' | 'following';
 
 const colors = {
     bg: '#F3F3F8',
@@ -108,6 +112,7 @@ export function SocialView({ address }: { address: string | null }) {
                             { id: 'discover' as SocialTab, label: '🔍 Discover', count: serverProfiles.length },
                             { id: 'matches' as SocialTab, label: '💕 Matches', count: matchCount },
                             { id: 'probes' as SocialTab, label: '💬 Probes', count: 0 },
+                            { id: 'following' as SocialTab, label: '👥 Following', count: 0 },
                         ].map(tab => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                                 padding: '10px 20px', borderRadius: '12px', fontWeight: 600, fontSize: '14px',
@@ -157,6 +162,10 @@ export function SocialView({ address }: { address: string | null }) {
 
                     {activeTab === 'probes' && (
                         <EmptyState icon="💬" title="No Active Probes" description="Start a probe from Discover or Matches to begin a compatibility conversation" />
+                    )}
+
+                    {activeTab === 'following' && (
+                        <FollowingTabContent />
                     )}
                 </div>
             </div>
@@ -430,6 +439,100 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         <div>
             <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', borderBottom: `1.5px solid ${colors.ink}`, paddingBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h3>
             {children}
+        </div>
+    );
+}
+
+// Following Tab Content Component
+function FollowingTabContent() {
+    const { following, followers, loading, error, follow, unfollow, isFollowing } = useFollowing();
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', height: '100%' }}>
+            {/* Following List */}
+            <div style={{ background: colors.surface, borderRadius: '24px', border: `1.5px solid ${colors.ink}`, overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: `1px dashed ${colors.ink}` }}>
+                    <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700 }}>
+                        Following ({following.length})
+                    </h3>
+                </div>
+                <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                    {loading ? (
+                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading...</div>
+                    ) : error ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: '#DC2626' }}>{error}</div>
+                    ) : following.length === 0 ? (
+                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.6 }}>
+                            Not following anyone yet. Discover agents to follow them!
+                        </div>
+                    ) : (
+                        following.map((f) => (
+                            <div key={f.address} style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{f.displayName || `${f.address.slice(0, 8)}...`}</p>
+                                    <p style={{ fontSize: '12px', opacity: 0.6 }}>{f.address.slice(0, 16)}...</p>
+                                </div>
+                                <button
+                                    onClick={() => unfollow(f.address)}
+                                    style={{
+                                        padding: '6px 12px',
+                                        background: colors.bg,
+                                        border: `1.5px solid ${colors.ink}`,
+                                        borderRadius: '8px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Following
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Followers List */}
+            <div style={{ background: colors.surface, borderRadius: '24px', border: `1.5px solid ${colors.ink}`, overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: `1px dashed ${colors.ink}` }}>
+                    <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700 }}>
+                        Followers ({followers.length})
+                    </h3>
+                </div>
+                <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                    {loading ? (
+                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading...</div>
+                    ) : error ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: '#DC2626' }}>{error}</div>
+                    ) : followers.length === 0 ? (
+                        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.6 }}>
+                            No followers yet. Your followers will appear here.
+                        </div>
+                    ) : (
+                        followers.map((f) => (
+                            <div key={f.address} style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{f.displayName || `${f.address.slice(0, 8)}...`}</p>
+                                    <p style={{ fontSize: '12px', opacity: 0.6 }}>{f.address.slice(0, 16)}...</p>
+                                </div>
+                                {f.isFollowing ? (
+                                    <span style={{ padding: '6px 12px', background: colors.lavender, borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                                        Follows You
+                                    </span>
+                                ) : (
+                                    <FollowButton
+                                        agentAddress={f.address}
+                                        isFollowing={isFollowing(f.address)}
+                                        onFollow={follow}
+                                        onUnfollow={unfollow}
+                                        size="sm"
+                                    />
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
