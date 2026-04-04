@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState, useEffect, type ReactNode } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { ConnectionProvider as SolanaConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
+import { ConnectionProvider as DaemonConnectionProvider } from '../../lib/connection/ConnectionContext';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -26,19 +27,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     if (!mounted) {
         return (
-            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-                <div className="text-gray-500 text-sm">Loading AgentM...</div>
+            <div style={{
+                minHeight: '100vh',
+                background: '#F3F3F8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}>
+                <div style={{ color: '#16161A', opacity: 0.6 }}>Loading AgentM...</div>
             </div>
         );
     }
 
     return (
-        <ConnectionProvider endpoint={RPC_ENDPOINT}>
+        <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider>
-                    {children}
+                    <DaemonConnectionProvider>
+                        {children}
+                    </DaemonConnectionProvider>
                 </WalletModalProvider>
             </WalletProvider>
-        </ConnectionProvider>
+        </SolanaConnectionProvider>
     );
 }

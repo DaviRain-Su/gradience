@@ -20,6 +20,7 @@ import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
 import { ChatView } from './views/ChatView';
+import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -411,6 +412,11 @@ function Shell({
                             }}>{address.slice(0, 16)}...</p>
                         )}
                     </div>
+                </div>
+
+                {/* Connection Panel */}
+                <div style={{ padding: '0 24px', marginBottom: '16px' }}>
+                    <ConnectionPanel />
                 </div>
 
                 {/* Navigation */}
