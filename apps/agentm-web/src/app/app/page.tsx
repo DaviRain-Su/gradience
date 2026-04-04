@@ -1323,79 +1323,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
     );
 }
 
-function extractGoogleLoginEmail(user: User): string | null {
-    const google = user.linkedAccounts?.find((account) => account.type === 'google_oauth');
-    if (google && 'email' in google && typeof google.email === 'string') {
-        return google.email;
-    }
-    const emailAccount = user.linkedAccounts?.find((account) => account.type === 'email');
-    if (emailAccount && 'address' in emailAccount && typeof emailAccount.address === 'string') {
-        return emailAccount.address;
-    }
-    return null;
-}
-
-function extractSolanaWallets(user: User): SolanaWalletCandidate[] {
-    const linked = user.linkedAccounts ?? [];
-    const wallets: SolanaWalletCandidate[] = [];
-
-    for (const account of linked) {
-        if (account.type !== 'wallet') continue;
-        const chainType = readStringField(account, 'chain_type') ?? readStringField(account, 'chainType');
-        if (chainType !== 'solana') continue;
-
-        const address = readStringField(account, 'address');
-        if (!address) continue;
-
-        wallets.push({
-            address,
-            connectorType: readStringField(account, 'connector_type') ?? readStringField(account, 'connectorType'),
-            walletClientType: readStringField(account, 'wallet_client_type') ?? readStringField(account, 'walletClientType'),
-            walletIndex: readNumberField(account, 'wallet_index') ?? readNumberField(account, 'walletIndex'),
-        });
-    }
-
-    return wallets;
-}
-
-function selectPreferredSolanaWallet(wallets: SolanaWalletCandidate[]): SolanaWalletCandidate | null {
-    if (wallets.length === 0) return null;
-    const sorted = [...wallets].sort((left, right) => scoreWallet(right) - scoreWallet(left));
-    return sorted[0] ?? null;
-}
-
-function scoreWallet(wallet: SolanaWalletCandidate): number {
-    let score = 0;
-    if (wallet.connectorType === 'embedded') score += 100;
-    if (wallet.walletClientType === 'privy') score += 50;
-    if (wallet.walletIndex === 0) score += 10;
-    return score;
-}
-
-function buildAccountKey(user: User, loginEmail: string | null): string {
-    if (typeof user.id === 'string' && user.id) {
-        return `privy:${user.id}`;
-    }
-    if (loginEmail) {
-        return `email:${loginEmail.toLowerCase()}`;
-    }
-    return 'anonymous';
-}
-
 function formatBindingStatus(status: 'bound' | 'wallet_changed' | 'unbound'): string {
     if (status === 'bound') return 'bound';
     if (status === 'wallet_changed') return 'wallet changed (rebind required)';
     return 'unbound';
-}
-
-function readStringField<T extends object>(obj: T, key: string): string | null {
-    const value = (obj as Record<string, unknown>)[key];
-    return typeof value === 'string' ? value : null;
-}
-
-function readNumberField<T extends object>(obj: T, key: string): number | null {
-    const value = (obj as Record<string, unknown>)[key];
-    return typeof value === 'number' ? value : null;
 }
 
 function resolveIndexerBase(): string {
