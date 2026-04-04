@@ -6,6 +6,7 @@ interface DaemonConnection {
     daemonUrl: string;
     isConnected: boolean;
     sessionToken: string | null;
+    walletAddress: string | null;
 }
 
 export function useDaemonConnection(): DaemonConnection {
@@ -15,9 +16,10 @@ export function useDaemonConnection(): DaemonConnection {
             daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
             isConnected: conn.isConnected || false,
             sessionToken: conn.sessionToken || null,
+            walletAddress: conn.walletAddress || null,
         };
     } catch {
-        return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false, sessionToken: null };
+        return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false, sessionToken: null, walletAddress: null };
     }
 }
 

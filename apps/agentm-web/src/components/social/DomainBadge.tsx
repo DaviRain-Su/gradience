@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { resolve, reverse } from '@gradiences/domain-resolver';
+import { resolve, reverse } from '../../lib/mocks/domain-resolver';
 
 interface DomainBadgeProps {
     /** Domain to display (e.g., "alice.sol") */

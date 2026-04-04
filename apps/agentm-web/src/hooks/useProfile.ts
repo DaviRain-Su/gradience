@@ -69,7 +69,9 @@ export function useProfile(addressOrDomain?: string) {
 }
 
 export function useMyProfile() {
-  return useProfile(undefined);
+  const { walletAddress } = useDaemonConnection();
+  const result = useProfile(walletAddress || undefined);
+  return result;
 }
 
 export function useUpdateSoulProfile() {

@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { resolve, isValidDomain } from '@gradiences/domain-resolver';
+import { resolve, isValidDomain } from '../../lib/mocks/domain-resolver';
 
 interface DomainInputProps {
     /** Current domain value */

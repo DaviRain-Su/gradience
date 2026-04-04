@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '@/lib/connection/ConnectionContext';
-import { reverse } from '@gradiences/domain-resolver';
+import { reverse } from '../lib/mocks/domain-resolver';
 import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
 /**
