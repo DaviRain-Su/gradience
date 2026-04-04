@@ -1,252 +1,303 @@
-/**
- * Social API Routes
- * 
- * Profile, Following, and Feed management
- */
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { randomBytes } from 'node:crypto';
 
-import type { FastifyInstance } from 'fastify';
-
-/**
- * Database interface for SQLite operations
- */
 interface Database {
-  prepare(sql: string): Statement;
-  exec(sql: string): void;
+    prepare(sql: string): Statement;
+    exec(sql: string): void;
 }
 
 interface Statement {
-  run(...params: unknown[]): { lastInsertRowid: number; changes: number };
-  get(...params: unknown[]): Record<string, unknown> | undefined;
-  all(...params: unknown[]): Record<string, unknown>[];
+    run(...params: unknown[]): { lastInsertRowid: number; changes: number };
+    get(...params: unknown[]): Record<string, unknown> | undefined;
+    all(...params: unknown[]): Record<string, unknown>[];
 }
 
-interface Profile {
-  address: string;
-  domain?: string;
-  displayName: string;
-  bio?: string;
-  avatar?: string;
-  reputation: number;
-  followers: number;
-  following: number;
-  soulProfile?: object;
-  createdAt: string;
+function getWallet(request: FastifyRequest): string | null {
+    return (request as any).walletAddress ?? null;
 }
 
-interface Post {
-  id: string;
-  authorAddress: string;
-  content: string;
-  media?: Array<{ type: 'image' | 'video'; url: string }>;
-  createdAt: string;
-  likes: number;
-  comments: number;
-  shares: number;
+function ensureSocialTables(db: Database): void {
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS profiles (
+            address       TEXT PRIMARY KEY,
+            display_name  TEXT NOT NULL DEFAULT '',
+            bio           TEXT NOT NULL DEFAULT '',
+            avatar        TEXT,
+            domain        TEXT,
+            metadata      TEXT NOT NULL DEFAULT '{}',
+            created_at    INTEGER NOT NULL,
+            updated_at    INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS posts (
+            id              TEXT PRIMARY KEY,
+            author_address  TEXT NOT NULL,
+            content         TEXT NOT NULL,
+            media           TEXT NOT NULL DEFAULT '[]',
+            likes           INTEGER NOT NULL DEFAULT 0,
+            comments        INTEGER NOT NULL DEFAULT 0,
+            shares          INTEGER NOT NULL DEFAULT 0,
+            created_at      INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author_address);
+        CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS post_likes (
+            post_id   TEXT NOT NULL,
+            address   TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY (post_id, address)
+        );
+        CREATE TABLE IF NOT EXISTS follows (
+            follower    TEXT NOT NULL,
+            following   TEXT NOT NULL,
+            created_at  INTEGER NOT NULL,
+            PRIMARY KEY (follower, following)
+        );
+        CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower);
+        CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following);
+    `);
 }
 
 export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
-    // ========== Profile Routes ==========
-    
-    // GET /api/profile/:address
-    app.get<{ Params: { address: string } }>('/api/profile/:address', async (request, reply) => {
+    ensureSocialTables(db);
+
+    const stmts = {
+        getProfile: db.prepare('SELECT * FROM profiles WHERE address = ? LIMIT 1'),
+        upsertProfile: db.prepare(`
+            INSERT INTO profiles (address, display_name, bio, avatar, domain, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(address) DO UPDATE SET
+                display_name = excluded.display_name,
+                bio = excluded.bio,
+                avatar = excluded.avatar,
+                domain = excluded.domain,
+                metadata = excluded.metadata,
+                updated_at = excluded.updated_at
+        `),
+        countFollowers: db.prepare('SELECT COUNT(*) as count FROM follows WHERE following = ?'),
+        countFollowing: db.prepare('SELECT COUNT(*) as count FROM follows WHERE follower = ?'),
+
+        getFeed: db.prepare(`
+            SELECT p.*, pr.display_name as author_name, pr.avatar as author_avatar, pr.domain as author_domain
+            FROM posts p
+            LEFT JOIN profiles pr ON p.author_address = pr.address
+            ORDER BY p.created_at DESC
+            LIMIT ? OFFSET ?
+        `),
+        getPost: db.prepare(`
+            SELECT p.*, pr.display_name as author_name, pr.avatar as author_avatar, pr.domain as author_domain
+            FROM posts p
+            LEFT JOIN profiles pr ON p.author_address = pr.address
+            WHERE p.id = ?
+        `),
+        insertPost: db.prepare(
+            'INSERT INTO posts (id, author_address, content, media, likes, comments, shares, created_at) VALUES (?, ?, ?, ?, 0, 0, 0, ?)'
+        ),
+        hasLiked: db.prepare('SELECT 1 FROM post_likes WHERE post_id = ? AND address = ?'),
+        insertLike: db.prepare('INSERT OR IGNORE INTO post_likes (post_id, address, created_at) VALUES (?, ?, ?)'),
+        removeLike: db.prepare('DELETE FROM post_likes WHERE post_id = ? AND address = ?'),
+        incLikes: db.prepare('UPDATE posts SET likes = likes + 1 WHERE id = ?'),
+        decLikes: db.prepare('UPDATE posts SET likes = MAX(likes - 1, 0) WHERE id = ?'),
+
+        getFollowers: db.prepare(`
+            SELECT f.follower as address, p.display_name, p.bio, p.avatar, p.domain
+            FROM follows f LEFT JOIN profiles p ON f.follower = p.address
+            WHERE f.following = ? ORDER BY f.created_at DESC LIMIT ? OFFSET ?
+        `),
+        getFollowing: db.prepare(`
+            SELECT f.following as address, p.display_name, p.bio, p.avatar, p.domain
+            FROM follows f LEFT JOIN profiles p ON f.following = p.address
+            WHERE f.follower = ? ORDER BY f.created_at DESC LIMIT ? OFFSET ?
+        `),
+        isFollowing: db.prepare('SELECT 1 FROM follows WHERE follower = ? AND following = ?'),
+        insertFollow: db.prepare('INSERT OR IGNORE INTO follows (follower, following, created_at) VALUES (?, ?, ?)'),
+        removeFollow: db.prepare('DELETE FROM follows WHERE follower = ? AND following = ?'),
+    };
+
+    // ── Profile ──
+
+    app.get<{ Params: { address: string } }>('/api/profile/:address', async (request) => {
         const { address } = request.params;
-        
-        try {
-            // TODO: Replace with actual database query
-            // For now, return mock data
-            const profile: Profile = {
+        const row = stmts.getProfile.get(address);
+        if (!row) {
+            return {
                 address,
-                domain: address === 'demo' ? 'demo.sol' : undefined,
-                displayName: address === 'demo' ? 'Demo Agent' : `Agent ${address.slice(0, 6)}`,
-                bio: 'This is a demo agent profile.',
-                reputation: 85,
-                followers: 234,
-                following: 56,
+                displayName: `Agent ${address.slice(0, 6)}`,
+                bio: '',
+                avatar: null,
+                domain: null,
+                followers: 0,
+                following: 0,
                 createdAt: new Date().toISOString(),
-                soulProfile: {
-                    soulType: 'human',
-                    identity: {
-                        displayName: 'Demo Agent',
-                        bio: 'AI Agent on Gradience',
-                    },
-                    values: {
-                        core: ['Innovation', 'Transparency'],
-                        priorities: ['Growth'],
-                        dealBreakers: [],
-                    },
-                },
             };
-            
-            return profile;
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to fetch profile' });
         }
+        const followers = (stmts.countFollowers.get(address) as any)?.count ?? 0;
+        const following = (stmts.countFollowing.get(address) as any)?.count ?? 0;
+        return {
+            address: row.address,
+            displayName: row.display_name || `Agent ${String(row.address).slice(0, 6)}`,
+            bio: row.bio,
+            avatar: row.avatar,
+            domain: row.domain,
+            metadata: JSON.parse(String(row.metadata || '{}')),
+            followers,
+            following,
+            createdAt: new Date(Number(row.created_at)).toISOString(),
+        };
     });
 
-    // POST /api/profile
-    app.post<{ Body: Partial<Profile> }>('/api/profile', async (request, reply) => {
-        const profile = request.body;
-        
-        try {
-            // TODO: Save to database
-            console.log('Saving profile:', profile);
-            reply.code(201);
-            return { success: true, profile };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to save profile' });
-        }
-    });
+    app.post<{ Body: { displayName?: string; bio?: string; avatar?: string; domain?: string; metadata?: object } }>(
+        '/api/profile',
+        async (request, reply) => {
+            const wallet = getWallet(request);
+            if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
 
-    // ========== Following Routes ==========
-    
-    // GET /api/followers/:address
-    app.get<{ Params: { address: string } }>('/api/followers/:address', async (request, reply) => {
-        const { address } = request.params;
-        
-        try {
-            // TODO: Query database
-            const followers = [
-                {
-                    address: '0xabc...123',
-                    domain: 'alice.sol',
-                    displayName: 'Alice',
-                    bio: 'AI researcher',
-                    reputation: 92,
-                    isFollowing: true,
-                },
-                {
-                    address: '0xdef...456',
-                    domain: 'bob.sol',
-                    displayName: 'Bob',
-                    bio: 'Developer',
-                    reputation: 78,
-                    isFollowing: false,
-                },
-            ];
-            
-            return { followers };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to fetch followers' });
-        }
-    });
-
-    // GET /api/following/:address
-    app.get<{ Params: { address: string } }>('/api/following/:address', async (request, reply) => {
-        const { address } = request.params;
-        
-        try {
-            // TODO: Query database
-            const following = [
-                {
-                    address: '0xghi...789',
-                    domain: 'charlie.sol',
-                    displayName: 'Charlie',
-                    bio: 'Designer',
-                    reputation: 85,
-                    isFollowing: true,
-                },
-            ];
-            
-            return { following };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to fetch following' });
-        }
-    });
-
-    // POST /api/follow
-    app.post<{ Body: { targetAddress: string } }>('/api/follow', async (request, reply) => {
-        const { targetAddress } = request.body;
-        
-        try {
-            // TODO: Save to database
-            console.log('Follow:', targetAddress);
+            const { displayName, bio, avatar, domain, metadata } = request.body;
+            const now = Date.now();
+            stmts.upsertProfile.run(
+                wallet,
+                displayName || '',
+                bio || '',
+                avatar || null,
+                domain || null,
+                JSON.stringify(metadata || {}),
+                now,
+                now,
+            );
             return { success: true };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to follow' });
         }
-    });
+    );
 
-    // POST /api/unfollow
-    app.post<{ Body: { targetAddress: string } }>('/api/unfollow', async (request, reply) => {
-        const { targetAddress } = request.body;
-        
-        try {
-            // TODO: Remove from database
-            console.log('Unfollow:', targetAddress);
-            return { success: true };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to unfollow' });
+    // ── Feed ──
+
+    app.get<{ Querystring: { page?: string; limit?: string; type?: string; sortBy?: string } }>(
+        '/api/feed',
+        async (request) => {
+            const page = Math.max(1, parseInt(request.query.page || '1'));
+            const limit = Math.min(50, Math.max(1, parseInt(request.query.limit || '20')));
+            const offset = (page - 1) * limit;
+
+            const posts = stmts.getFeed.all(limit + 1, offset);
+            const hasMore = posts.length > limit;
+            if (hasMore) posts.pop();
+
+            return {
+                posts: posts.map(formatPost),
+                page,
+                limit,
+                hasMore,
+            };
         }
-    });
+    );
 
-    // ========== Feed Routes ==========
-    
-    // GET /api/feed
-    app.get<{ Querystring: { page?: string; limit?: string } }>('/api/feed', async (request, reply) => {
-        const page = parseInt(request.query.page || '1');
-        const limit = parseInt(request.query.limit || '20');
-        
-        try {
-            // TODO: Query database
-            const posts: Post[] = [
-                {
-                    id: '1',
-                    authorAddress: '0xabc...123',
-                    content: 'Just deployed my first AI agent! Excited to see how it performs. 🤖',
-                    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-                    likes: 24,
-                    comments: 5,
-                    shares: 2,
-                },
-                {
-                    id: '2',
-                    authorAddress: '0xdef...456',
-                    content: 'New workflow available: Auto-responder for customer support.',
-                    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-                    likes: 56,
-                    comments: 12,
-                    shares: 8,
-                },
-            ];
-            
-            return { posts, page, limit, hasMore: page < 3 };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to fetch feed' });
-        }
-    });
-
-    // GET /api/posts/:id
     app.get<{ Params: { id: string } }>('/api/posts/:id', async (request, reply) => {
-        const { id } = request.params;
-        
-        try {
-            // TODO: Query database
-            const post: Post = {
-                id,
-                authorAddress: '0xabc...123',
-                content: 'This is a detailed post view.',
-                createdAt: new Date().toISOString(),
-                likes: 42,
-                comments: 8,
-                shares: 3,
-            };
-            
-            return post;
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to fetch post' });
-        }
+        const row = stmts.getPost.get(request.params.id);
+        if (!row) { reply.code(404).send({ error: 'Post not found' }); return; }
+        return formatPost(row);
     });
 
-    // POST /api/posts/:id/like
-    app.post<{ Params: { id: string } }>('/api/posts/:id/like', async (request, reply) => {
-        const { id } = request.params;
-        
-        try {
-            // TODO: Update database
-            console.log('Like post:', id);
-            return { success: true };
-        } catch (err) {
-            reply.code(500).send({ error: 'Failed to like post' });
+    app.post<{ Body: { content: string; media?: Array<{ type: string; url: string }> } }>(
+        '/api/posts',
+        async (request, reply) => {
+            const wallet = getWallet(request);
+            if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+
+            const { content, media } = request.body;
+            if (!content?.trim()) { reply.code(400).send({ error: 'Content required' }); return; }
+
+            const id = randomBytes(16).toString('hex');
+            stmts.insertPost.run(id, wallet, content.trim(), JSON.stringify(media || []), Date.now());
+
+            return { id, success: true };
         }
+    );
+
+    app.post<{ Params: { id: string } }>('/api/posts/:id/like', async (request, reply) => {
+        const wallet = getWallet(request);
+        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+
+        const { id } = request.params;
+        const already = stmts.hasLiked.get(id, wallet);
+        if (already) {
+            stmts.removeLike.run(id, wallet);
+            stmts.decLikes.run(id);
+            return { success: true, liked: false };
+        }
+        stmts.insertLike.run(id, wallet, Date.now());
+        stmts.incLikes.run(id);
+        return { success: true, liked: true };
     });
+
+    // ── Follows ──
+
+    app.get<{ Params: { address: string }; Querystring: { page?: string; limit?: string } }>(
+        '/api/followers/:address',
+        async (request) => {
+            const page = Math.max(1, parseInt(request.query.page || '1'));
+            const limit = Math.min(50, parseInt(request.query.limit || '20'));
+            const followers = stmts.getFollowers.all(request.params.address, limit, (page - 1) * limit);
+            return {
+                followers: followers.map(r => ({
+                    address: r.address,
+                    displayName: r.display_name || `Agent ${String(r.address).slice(0, 6)}`,
+                    bio: r.bio || '',
+                    avatar: r.avatar,
+                    domain: r.domain,
+                })),
+            };
+        }
+    );
+
+    app.get<{ Params: { address: string }; Querystring: { page?: string; limit?: string } }>(
+        '/api/following/:address',
+        async (request) => {
+            const page = Math.max(1, parseInt(request.query.page || '1'));
+            const limit = Math.min(50, parseInt(request.query.limit || '20'));
+            const following = stmts.getFollowing.all(request.params.address, limit, (page - 1) * limit);
+            return {
+                following: following.map(r => ({
+                    address: r.address,
+                    displayName: r.display_name || `Agent ${String(r.address).slice(0, 6)}`,
+                    bio: r.bio || '',
+                    avatar: r.avatar,
+                    domain: r.domain,
+                })),
+            };
+        }
+    );
+
+    app.post<{ Body: { targetAddress: string } }>('/api/follow', async (request, reply) => {
+        const wallet = getWallet(request);
+        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        const { targetAddress } = request.body;
+        if (!targetAddress) { reply.code(400).send({ error: 'targetAddress required' }); return; }
+        if (wallet === targetAddress) { reply.code(400).send({ error: 'Cannot follow yourself' }); return; }
+        stmts.insertFollow.run(wallet, targetAddress, Date.now());
+        return { success: true };
+    });
+
+    app.post<{ Body: { targetAddress: string } }>('/api/unfollow', async (request, reply) => {
+        const wallet = getWallet(request);
+        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        const { targetAddress } = request.body;
+        if (!targetAddress) { reply.code(400).send({ error: 'targetAddress required' }); return; }
+        stmts.removeFollow.run(wallet, targetAddress);
+        return { success: true };
+    });
+}
+
+function formatPost(row: Record<string, unknown>) {
+    return {
+        id: row.id,
+        authorAddress: row.author_address,
+        authorName: row.author_name || `Agent ${String(row.author_address).slice(0, 6)}`,
+        authorAvatar: row.author_avatar || null,
+        authorDomain: row.author_domain || null,
+        content: row.content,
+        media: JSON.parse(String(row.media || '[]')),
+        likes: Number(row.likes || 0),
+        comments: Number(row.comments || 0),
+        shares: Number(row.shares || 0),
+        createdAt: new Date(Number(row.created_at)).toISOString(),
+    };
 }

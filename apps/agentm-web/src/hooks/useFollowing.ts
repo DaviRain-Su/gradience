@@ -1,13 +1,5 @@
-/**
- * Following Hooks
- * 
- * Hooks for managing follow relationships via Daemon
- */
-
 import { useState, useEffect, useCallback } from 'react';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
-
-const DEFAULT_DAEMON_URL = 'http://localhost:7420';
 
 export interface AgentPreview {
   address: string;
@@ -19,183 +11,105 @@ export interface AgentPreview {
   isFollowing: boolean;
 }
 
-/**
- * Hook to manage following state via Daemon
- */
+function authHeaders(token: string | null): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
 export function useFollowing(targetAddress?: string) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { daemonUrl, isConnected } = useDaemonConnection();
-
-  useEffect(() => {
-    if (!targetAddress) return;
-    
-    // TODO: Check if following from API
-    setIsFollowing(false);
-  }, [targetAddress]);
+  const { daemonUrl, sessionToken } = useDaemonConnection();
 
   const follow = useCallback(async () => {
-    if (!targetAddress) return;
-    
-    const url = daemonUrl || DEFAULT_DAEMON_URL;
+    if (!targetAddress || !sessionToken) return;
     setLoading(true);
-    setError(null);
-    
     try {
-      const res = await fetch(`${url}/api/follow`, {
+      const res = await fetch(`${daemonUrl}/api/follow`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
         body: JSON.stringify({ targetAddress }),
       });
-      
       if (!res.ok) throw new Error('Failed to follow');
-      
       setIsFollowing(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to follow');
-      // Optimistic update for demo
+      setError(err instanceof Error ? err.message : 'Failed');
       setIsFollowing(true);
     } finally {
       setLoading(false);
     }
-  }, [targetAddress, daemonUrl, isConnected]);
+  }, [targetAddress, daemonUrl, sessionToken]);
 
   const unfollow = useCallback(async () => {
-    if (!targetAddress) return;
-    
-    const url = daemonUrl || DEFAULT_DAEMON_URL;
+    if (!targetAddress || !sessionToken) return;
     setLoading(true);
-    setError(null);
-    
     try {
-      const res = await fetch(`${url}/api/unfollow`, {
+      const res = await fetch(`${daemonUrl}/api/unfollow`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
         body: JSON.stringify({ targetAddress }),
       });
-      
       if (!res.ok) throw new Error('Failed to unfollow');
-      
       setIsFollowing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to unfollow');
-      // Optimistic update for demo
+      setError(err instanceof Error ? err.message : 'Failed');
       setIsFollowing(false);
     } finally {
       setLoading(false);
     }
-  }, [targetAddress, daemonUrl, isConnected]);
+  }, [targetAddress, daemonUrl, sessionToken]);
 
-  return {
-    isFollowing,
-    loading,
-    error,
-    follow,
-    unfollow,
-  };
+  return { isFollowing, loading, error, follow, unfollow };
 }
 
-/**
- * Hook to fetch followers list from Daemon
- */
 export function useFollowers(address?: string) {
   const [followers, setFollowers] = useState<AgentPreview[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { daemonUrl, isConnected } = useDaemonConnection();
+  const { daemonUrl, sessionToken } = useDaemonConnection();
 
   useEffect(() => {
-    if (!address) {
-      setFollowers([]);
-      return;
-    }
-
-    const url = daemonUrl || DEFAULT_DAEMON_URL;
+    if (!address) { setFollowers([]); return; }
     setLoading(true);
-    
-    fetch(`${url}/api/followers/${address}`)
+    fetch(`${daemonUrl}/api/followers/${address}`, { headers: authHeaders(sessionToken) })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to fetch followers');
+        if (!res.ok) throw new Error('Failed');
         return res.json();
       })
-      .then((data) => {
-        setFollowers(data.followers || []);
-      })
+      .then((data) => setFollowers(data.followers || []))
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        // Fallback to mock data
-        setFollowers([
-          {
-            address: '0xabc...123',
-            domain: 'alice.sol',
-            displayName: 'Alice',
-            bio: 'AI researcher',
-            reputation: 92,
-            isFollowing: true,
-          },
-          {
-            address: '0xdef...456',
-            domain: 'bob.sol',
-            displayName: 'Bob',
-            bio: 'Developer',
-            reputation: 78,
-            isFollowing: false,
-          },
-        ]);
+        setError(err instanceof Error ? err.message : 'Unknown');
+        setFollowers([]);
       })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [address, daemonUrl, isConnected]);
+      .finally(() => setLoading(false));
+  }, [address, daemonUrl, sessionToken]);
 
   return { followers, loading, error };
 }
 
-/**
- * Hook to fetch following list from Daemon
- */
 export function useFollowingList(address?: string) {
   const [following, setFollowing] = useState<AgentPreview[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { daemonUrl, isConnected } = useDaemonConnection();
+  const { daemonUrl, sessionToken } = useDaemonConnection();
 
   useEffect(() => {
-    if (!address) {
-      setFollowing([]);
-      return;
-    }
-
-    const url = daemonUrl || DEFAULT_DAEMON_URL;
+    if (!address) { setFollowing([]); return; }
     setLoading(true);
-    
-    fetch(`${url}/api/following/${address}`)
+    fetch(`${daemonUrl}/api/following/${address}`, { headers: authHeaders(sessionToken) })
       .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to fetch following');
+        if (!res.ok) throw new Error('Failed');
         return res.json();
       })
-      .then((data) => {
-        setFollowing(data.following || []);
-      })
+      .then((data) => setFollowing(data.following || []))
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        // Fallback to mock data
-        setFollowing([
-          {
-            address: '0xghi...789',
-            domain: 'charlie.sol',
-            displayName: 'Charlie',
-            bio: 'Designer',
-            reputation: 85,
-            isFollowing: true,
-          },
-        ]);
+        setError(err instanceof Error ? err.message : 'Unknown');
+        setFollowing([]);
       })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [address, daemonUrl, isConnected]);
+      .finally(() => setLoading(false));
+  }, [address, daemonUrl, sessionToken]);
 
   return { following, loading, error };
 }

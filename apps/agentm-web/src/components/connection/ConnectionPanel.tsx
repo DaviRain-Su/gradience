@@ -12,79 +12,85 @@ const colors = {
 };
 
 export function ConnectionPanel() {
-    const { isConnected, isConnecting, error, mode, daemonUrl, connectLocal, switchMode } = useConnection();
+    const { isConnected, isConnecting, error, mode, sessionToken, walletAddress, connectLocal, switchMode } = useConnection();
     const [pairCode, setPairCode] = useState('');
     const [localUrl, setLocalUrl] = useState('http://localhost:7420');
     const [showLocal, setShowLocal] = useState(false);
 
-    if (isConnected && mode === 'remote') {
+    // Connected to remote API with session
+    if (isConnected && mode === 'remote' && sessionToken) {
         return (
             <div style={{
                 background: colors.lime,
                 borderRadius: '16px',
                 padding: '12px 16px',
                 border: `1.5px solid ${colors.ink}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14px' }}>u2705</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Connected to Gradience API</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '14px' }}>\u2705</span>
+                        <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600 }}>Connected to Gradience</div>
+                            {walletAddress && (
+                                <div style={{ fontSize: '10px', fontFamily: 'monospace', opacity: 0.6 }}>
+                                    {walletAddress.slice(0, 8)}...{walletAddress.slice(-4)}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowLocal(!showLocal)}
+                        style={{
+                            padding: '4px 10px',
+                            background: 'transparent',
+                            border: `1px solid ${colors.ink}`,
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            opacity: 0.6,
+                        }}
+                    >
+                        {showLocal ? 'Hide' : 'Dev'}
+                    </button>
                 </div>
-                <button
-                    onClick={() => setShowLocal(!showLocal)}
-                    style={{
-                        padding: '4px 10px',
-                        background: 'transparent',
-                        border: `1px solid ${colors.ink}`,
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        cursor: 'pointer',
-                        opacity: 0.6,
-                    }}
-                >
-                    {showLocal ? 'Hide' : 'Dev'}
-                </button>
             </div>
         );
     }
 
-    if (isConnected && mode === 'local') {
+    // Connecting
+    if (isConnecting) {
         return (
             <div style={{
                 background: colors.lavender,
                 borderRadius: '16px',
                 padding: '12px 16px',
                 border: `1.5px solid ${colors.ink}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                fontSize: '13px',
+                fontWeight: 600,
+                textAlign: 'center',
             }}>
-                <div>
-                    <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7 }}>Local Daemon</span>
-                    <div style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.6, marginTop: '2px' }}>{daemonUrl}</div>
-                </div>
-                <button
-                    onClick={() => switchMode('remote')}
-                    style={{
-                        padding: '6px 12px',
-                        background: colors.ink,
-                        color: colors.surface,
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                    }}
-                >
-                    Switch to Remote
-                </button>
+                Authenticating...
             </div>
         );
     }
 
-    // Not connected or local mode UI
+    // Error state
+    if (error) {
+        return (
+            <div style={{
+                background: '#FEE2E2',
+                borderRadius: '16px',
+                padding: '12px 16px',
+                border: `1.5px solid ${colors.ink}`,
+                fontSize: '12px',
+                color: '#DC2626',
+            }}>
+                {error}
+            </div>
+        );
+    }
+
+    // Local daemon mode
     if (showLocal || mode === 'local') {
         return (
             <div style={{
@@ -94,21 +100,14 @@ export function ConnectionPanel() {
                 border: `1.5px solid ${colors.ink}`,
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Connect to Local Daemon</h4>
+                    <h4 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Local Daemon</h4>
                     <button
                         onClick={() => { setShowLocal(false); switchMode('remote'); }}
                         style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${colors.ink}`, borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}
                     >
-                        Use Remote
+                        Back
                     </button>
                 </div>
-
-                {error && (
-                    <div style={{ padding: '8px 12px', background: '#FEE2E2', borderRadius: '8px', marginBottom: '12px', fontSize: '12px', color: '#DC2626' }}>
-                        {error}
-                    </div>
-                )}
-
                 <input
                     type="text"
                     value={pairCode}
@@ -117,7 +116,7 @@ export function ConnectionPanel() {
                     maxLength={8}
                     style={{
                         width: '100%',
-                        padding: '10px 14px',
+                        padding: '10px',
                         background: colors.bg,
                         border: `1.5px solid ${colors.ink}`,
                         borderRadius: '8px',
@@ -130,45 +129,56 @@ export function ConnectionPanel() {
                         marginBottom: '8px',
                     }}
                 />
-
                 <input
                     type="text"
                     value={localUrl}
                     onChange={(e) => setLocalUrl(e.target.value)}
                     style={{
                         width: '100%',
-                        padding: '8px 12px',
+                        padding: '8px',
                         background: colors.bg,
                         border: `1px solid ${colors.ink}`,
                         borderRadius: '6px',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontFamily: 'monospace',
                         outline: 'none',
                         marginBottom: '10px',
                         opacity: 0.7,
                     }}
                 />
-
                 <button
                     onClick={() => connectLocal(pairCode, localUrl)}
-                    disabled={pairCode.length !== 8 || isConnecting}
+                    disabled={pairCode.length !== 8}
                     style={{
                         width: '100%',
                         padding: '10px',
-                        background: pairCode.length === 8 && !isConnecting ? colors.ink : '#E5E5E5',
-                        color: pairCode.length === 8 && !isConnecting ? colors.surface : '#999',
+                        background: pairCode.length === 8 ? colors.ink : '#E5E5E5',
+                        color: pairCode.length === 8 ? colors.surface : '#999',
                         border: 'none',
                         borderRadius: '8px',
                         fontSize: '13px',
                         fontWeight: 600,
-                        cursor: pairCode.length === 8 && !isConnecting ? 'pointer' : 'not-allowed',
+                        cursor: pairCode.length === 8 ? 'pointer' : 'not-allowed',
                     }}
                 >
-                    {isConnecting ? 'Connecting...' : 'Connect'}
+                    Connect
                 </button>
             </div>
         );
     }
 
-    return null;
+    // Not authenticated yet - waiting for wallet
+    return (
+        <div style={{
+            background: colors.bg,
+            borderRadius: '16px',
+            padding: '12px 16px',
+            border: `1.5px solid ${colors.ink}`,
+            fontSize: '12px',
+            opacity: 0.6,
+            textAlign: 'center',
+        }}>
+            Connect wallet to authenticate
+        </div>
+    );
 }

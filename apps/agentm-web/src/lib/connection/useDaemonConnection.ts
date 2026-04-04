@@ -1,32 +1,24 @@
-/**
- * Daemon Connection Hook
- *
- * Shared hook for connecting to Agent Daemon
- */
+import { useConnection } from './ConnectionContext';
 
-// Default daemon URL - always try localhost:7420
-const DEFAULT_DAEMON_URL = 'http://localhost:7420';
+const DEFAULT_DAEMON_URL = 'https://api.gradiences.xyz';
 
 interface DaemonConnection {
-  daemonUrl: string;
-  isConnected: boolean;
+    daemonUrl: string;
+    isConnected: boolean;
+    sessionToken: string | null;
 }
 
-/**
- * Hook to safely use daemon connection with fallback to default URL
- */
 export function useDaemonConnection(): DaemonConnection {
-  try {
-    // Dynamic import to avoid SSR issues
-    const { useConnection } = require('./ConnectionContext');
-    const conn = useConnection();
-    return {
-      daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
-      isConnected: conn.isConnected || false,
-    };
-  } catch {
-    return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false };
-  }
+    try {
+        const conn = useConnection();
+        return {
+            daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
+            isConnected: conn.isConnected || false,
+            sessionToken: conn.sessionToken || null,
+        };
+    } catch {
+        return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false, sessionToken: null };
+    }
 }
 
 export default useDaemonConnection;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
@@ -10,6 +11,11 @@ import { ChatView } from './views/ChatView';
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 import { useDaemonApi } from '../../lib/connection/ConnectionContext';
+import { useSessionAuth } from '../../hooks/useSessionAuth';
+import { useOWSBinding } from '../../hooks/useOWSBinding';
+import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
+import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
+import type { OWSAgentSubWallet } from '../../lib/ows/agent-router';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -29,12 +35,17 @@ interface AgentRow {
     reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
 }
 
+interface SolanaWalletCandidate {
+    address: string;
+    connectorType: string;
+}
+
 export default function AppPage() {
-    const { primaryWallet, user, isLoading } = useDynamicContext();
+    const { primaryWallet, user, sdkHasLoaded } = useDynamicContext();
     const isConnected = !!primaryWallet;
 
     // Show loading while checking auth status
-    if (isLoading) {
+    if (!sdkHasLoaded) {
         return (
             <div style={{
                 minHeight: '100vh',
@@ -141,18 +152,55 @@ function LoginScreen() {
 function MainApp({ user, walletAddress, email }: { user: any; walletAddress: string; email: string }) {
     const [view, setView] = useState<ActiveView>('discover');
     const address = walletAddress;
+    const { handleLogOut } = useDynamicContext();
+    useSessionAuth();
+
+    // OWS Wallet Binding
+    const accountKey = user?.userId ?? address;
+    const {
+        binding: owsBinding,
+        bindingError,
+        bindingBusy,
+        providerAvailable,
+        status: bindingStatus,
+        bindSelectedWallet,
+        unbind: unbindOWS,
+    } = useOWSBinding({
+        accountKey,
+        loginEmail: email,
+        selectedWallet: address,
+    });
+
+    // OWS Agent Sub-Wallet Router
+    const {
+        activeSubWallet,
+        state: routerState,
+        error: routerError,
+        createSubWallet,
+        setActiveSubWallet,
+    } = useOWSAgentRouter({
+        accountKey,
+        masterWallet: address,
+    });
+
+    const subWallets = routerState?.subWallets ?? [];
+
+    const selectedWallet: SolanaWalletCandidate = {
+        address,
+        connectorType: 'embedded',
+    };
 
     return (
         <Shell
             view={view}
             setView={setView}
             address={address}
-            activeSubWallet={null}
+            activeSubWallet={activeSubWallet}
             loginEmail={email}
-            wallets={[]}
+            wallets={[selectedWallet]}
             onWalletChange={() => {}}
-            bindingStatus="unbound"
-            onLogout={() => {}}
+            bindingStatus={bindingStatus}
+            onLogout={handleLogOut}
         >
             {view === 'discover' && <DiscoverView />}
             {view === 'tasks' && <TaskMarketView address={address} />}
@@ -163,19 +211,19 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
                     address={address}
                     masterWallet={address}
                     loginEmail={email}
-                    selectedWallet={null}
-                    owsBinding={null}
-                    bindingStatus="unbound"
-                    bindingBusy={false}
-                    bindingError={null}
-                    providerAvailable={false}
-                    onBindOWS={() => null}
-                    onUnbindOWS={() => {}}
-                    activeSubWallet={null}
-                    subWallets={[]}
-                    routerError={null}
-                    onCreateSubWallet={() => null}
-                    onSetActiveSubWallet={() => null}
+                    selectedWallet={selectedWallet}
+                    owsBinding={owsBinding}
+                    bindingStatus={bindingStatus}
+                    bindingBusy={bindingBusy}
+                    bindingError={bindingError}
+                    providerAvailable={providerAvailable}
+                    onBindOWS={bindSelectedWallet}
+                    onUnbindOWS={unbindOWS}
+                    activeSubWallet={activeSubWallet}
+                    subWallets={subWallets}
+                    routerError={routerError}
+                    onCreateSubWallet={createSubWallet}
+                    onSetActiveSubWallet={setActiveSubWallet}
                 />
             )}
             {view === 'chat' && <ChatView />}
@@ -776,7 +824,7 @@ function WalletBalance({ address }: { address: string }) {
         try {
             const rpcEndpoint = getRpcEndpoint();
             const connection = new Connection(rpcEndpoint, 'confirmed');
-            const publicKey = new (await import('@solana/web3.js')).PublicKey(address);
+            const publicKey = new PublicKey(address);
             const balanceInLamports = await connection.getBalance(publicKey);
             setBalance(balanceInLamports / LAMPORTS_PER_SOL);
         } catch (err) {
@@ -1156,8 +1204,8 @@ interface PostedTask {
 }
 
 function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => void }) {
-    const { publicKey } = useWallet();
-    const poster = publicKey?.toBase58() ?? null;
+    const { primaryWallet } = useDynamicContext();
+    const poster = primaryWallet?.address ?? null;
 
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<TaskCategory>('DeFi Analysis');
@@ -1555,6 +1603,7 @@ function TaskMarketView({ address }: { address: string | null }) {
     const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
     const [dataSource, setDataSource] = useState<'daemon' | 'mock'>('mock');
     const { apiCall, isConnected: isDaemonConnected } = useDaemonApi();
+    const { status: indexerStatus, indexerUrl } = useIndexerStatus();
 
     useEffect(() => {
         async function fetchTasks() {

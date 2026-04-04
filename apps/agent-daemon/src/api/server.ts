@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import { logger } from '../utils/logger.js';
 import { createAuthHook } from './auth-middleware.js';
 import { registerStatusRoutes } from './routes/status.js';
@@ -9,6 +10,8 @@ import { registerKeyRoutes } from './routes/keys.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { registerSolanaRoutes } from './routes/solana.js';
 import { registerSocialRoutes } from './routes/social.js';
+import { registerSessionRoutes } from './routes/session.js';
+import { SessionManager } from '../auth/session-manager.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
@@ -37,7 +40,23 @@ export interface APIServerDeps {
 export async function createAPIServer(deps: APIServerDeps) {
     const app = Fastify({ logger: false });
 
-    app.addHook('onRequest', createAuthHook(deps.authToken));
+    await app.register(cors, {
+        origin: [
+            'https://agentm.gradiences.xyz',
+            'https://www.gradiences.xyz',
+            'http://localhost:3000',
+            'http://localhost:3001',
+        ],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+    });
+
+    const sessionManager = new SessionManager(deps.database);
+
+    app.addHook('onRequest', createAuthHook(deps.authToken, sessionManager));
+
+    registerSessionRoutes(app, sessionManager);
 
     registerStatusRoutes(app, {
         connectionManager: deps.connectionManager,
