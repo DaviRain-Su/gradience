@@ -25,8 +25,11 @@ node_modules
 program-keypair.json
 **/program-keypair.json
 
+# Old docs archives in root (migrated to archive/)
 docs-archive-2026-04-04/
-docs-archive*/
+
+# Allow archives in archive/ directory
+!archive/docs-archive-*/
 
 # Package manager (use pnpm only)
 package-lock.json
