@@ -34,8 +34,17 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                         enabled: true,
                     },
                 },
-                // No redirect - handle login in-place
                 redirectUrl: undefined,
+                events: {
+                    onAuthFlowClose: () => {
+                        console.log('Dynamic auth flow closed');
+                    },
+                    onAuthSuccess: (args) => {
+                        console.log('Dynamic auth success:', args.user?.email);
+                    },
+                },
+                // Skip embedded wallet creation if WaaS is not configured
+                walletConnectorsOrder: ['walletConnect', 'extension'],
             }}
         >
             {children}

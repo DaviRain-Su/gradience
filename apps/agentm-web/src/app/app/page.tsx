@@ -9,6 +9,7 @@ import { SocialView } from './views/SocialView';
 import { ChatView } from './views/ChatView';
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
+import { useDaemonApi } from '../../lib/connection/ConnectionContext';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -29,14 +30,8 @@ interface AgentRow {
 }
 
 export default function AppPage() {
-    const { isAuthenticated, user, isLoading, walletConnector } = useDynamicContext();
-    const [forceUpdate, setForceUpdate] = useState(0);
-
-    // Force re-render when auth state changes
-    useEffect(() => {
-        console.log('Auth state changed:', { isAuthenticated, isLoading, user: user?.email });
-        setForceUpdate(prev => prev + 1);
-    }, [isAuthenticated, isLoading, user]);
+    const { primaryWallet, user, isLoading } = useDynamicContext();
+    const isConnected = !!primaryWallet;
 
     // Show loading while checking auth status
     if (isLoading) {
@@ -69,13 +64,15 @@ export default function AppPage() {
         );
     }
 
-    // Show login screen if not authenticated
-    if (!isAuthenticated) {
+    // Show login screen if not connected
+    if (!isConnected) {
         return <LoginScreen />;
     }
 
-    // Show main app when authenticated
-    return <MainApp user={user} key={forceUpdate} />;
+    // Show main app when connected
+    const address = primaryWallet.address;
+    const email = user?.email || user?.username || address.slice(0, 8) + '...';
+    return <MainApp user={user} walletAddress={address} email={email} />;
 }
 
 function LoginScreen() {
@@ -141,10 +138,9 @@ function LoginScreen() {
     );
 }
 
-function MainApp({ user }: { user: any }) {
+function MainApp({ user, walletAddress, email }: { user: any; walletAddress: string; email: string }) {
     const [view, setView] = useState<ActiveView>('discover');
-    const address = user?.verifiedCredentials?.[0]?.address || 'DEMO_addr';
-    const email = user?.email || user?.username || 'User';
+    const address = walletAddress;
 
     return (
         <Shell
@@ -413,44 +409,33 @@ function DiscoverView() {
     const [agents, setAgents] = useState<AgentRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
-    const [dataSource, setDataSource] = useState<'indexer' | 'demo'>('demo');
-    const { status: indexerStatus, indexerUrl } = useIndexerStatus();
+    const [dataSource, setDataSource] = useState<'daemon' | 'demo'>('demo');
+    const { apiCall, isConnected: isDaemonConnected } = useDaemonApi();
 
     useEffect(() => {
-        const base = resolveIndexerBase();
-        fetch(`${base}/api/judge-pool/0`, { signal: getTimeoutSignal(5000) })
-            .then((r) => r.ok ? r.json() : [])
-            .then((data) => {
-                if (Array.isArray(data) && data.length > 0) {
-                    setAgents(data as AgentRow[]);
-                    setDataSource('indexer');
-                } else {
-                    // Try alternative endpoint: registered agents
-                    return fetch(`${base}/api/agents`, { signal: getTimeoutSignal(3000) })
-                        .then((r2) => r2.ok ? r2.json() : null)
-                        .then((agents2) => {
-                            if (Array.isArray(agents2) && agents2.length > 0) {
-                                // Map to AgentRow format
-                                const mapped: AgentRow[] = agents2.map((a: Record<string, unknown>) => ({
-                                    agent: (a.name as string) || (a.pubkey as string) || 'Unknown',
-                                    weight: (a.weight as number) || 0,
-                                    reputation: a.reputation ? a.reputation as AgentRow['reputation'] : null,
-                                }));
-                                setAgents(mapped);
-                                setDataSource('indexer');
-                            } else {
-                                setAgents(DEMO_DISCOVER_AGENTS);
-                                setDataSource('demo');
-                            }
-                        });
+        async function fetchAgents() {
+            // Try Daemon API first
+            if (isDaemonConnected) {
+                const result = await apiCall<{ agents: Array<{ id: string; name: string; status: string }> }>('/api/v1/agents');
+                if (result?.agents && result.agents.length > 0) {
+                    const mapped: AgentRow[] = result.agents.map((a) => ({
+                        agent: a.name || a.id,
+                        weight: 0,
+                        reputation: null,
+                    }));
+                    setAgents(mapped);
+                    setDataSource('daemon');
+                    setLoading(false);
+                    return;
                 }
-            })
-            .catch(() => {
-                setAgents(DEMO_DISCOVER_AGENTS);
-                setDataSource('demo');
-            })
-            .finally(() => setLoading(false));
-    }, []);
+            }
+            // Fall back to demo data
+            setAgents(DEMO_DISCOVER_AGENTS);
+            setDataSource('demo');
+            setLoading(false);
+        }
+        fetchAgents();
+    }, [isDaemonConnected, apiCall]);
 
     const filtered = agents.filter((a) => !query || a.agent.toLowerCase().includes(query.toLowerCase()));
 
@@ -465,7 +450,11 @@ function DiscoverView() {
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Discover Agents</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <DataSourceLabel source={dataSource} />
-                    <IndexerStatusBadge status={indexerStatus} url={indexerUrl} />
+                    {isDaemonConnected && (
+                        <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '9999px', background: '#D1FAE5', color: '#059669', border: '1px solid #10B981' }}>
+                            Daemon Connected
+                        </span>
+                    )}
                 </div>
             </div>
             <input
@@ -1507,11 +1496,11 @@ function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; 
     );
 }
 
-function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' }) {
-    const style = source === 'indexer' 
+function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' | 'daemon' }) {
+    const style = (source === 'indexer' || source === 'daemon')
         ? { background: '#D1FAE5', color: '#059669', border: '#10B981' }
         : { background: '#FEF3C7', color: '#D97706', border: '#F59E0B' };
-    const label = source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Demo Data' : 'Mock Data';
+    const label = source === 'daemon' ? 'Daemon Live' : source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Demo Data' : 'Mock Data';
     return (
         <span style={{
             fontSize: '10px',
@@ -1564,24 +1553,28 @@ function TaskMarketView({ address }: { address: string | null }) {
     const [filter, setFilter] = useState<string>('all');
     const [showPostForm, setShowPostForm] = useState(false);
     const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
-    const [dataSource, setDataSource] = useState<'indexer' | 'mock'>('mock');
-    const { status: indexerStatus, indexerUrl } = useIndexerStatus();
+    const [dataSource, setDataSource] = useState<'daemon' | 'mock'>('mock');
+    const { apiCall, isConnected: isDaemonConnected } = useDaemonApi();
 
     useEffect(() => {
-        fetch(`${resolveIndexerBase()}/api/tasks`, { signal: getTimeoutSignal(3000) })
-            .then((r) => r.ok ? r.json() : [])
-            .then((data) => {
-                if (Array.isArray(data) && data.length > 0) {
-                    setTasks(data as TaskData[]);
-                    setDataSource('indexer');
-                } else {
-                    setTasks(MOCK_TASKS);
-                    setDataSource('mock');
+        async function fetchTasks() {
+            // Try Daemon API first
+            if (isDaemonConnected) {
+                const result = await apiCall<{ tasks: TaskData[]; total: number }>('/api/v1/tasks');
+                if (result?.tasks && result.tasks.length > 0) {
+                    setTasks(result.tasks);
+                    setDataSource('daemon');
+                    setLoading(false);
+                    return;
                 }
-            })
-            .catch(() => { setTasks(MOCK_TASKS); setDataSource('mock'); })
-            .finally(() => setLoading(false));
-    }, []);
+            }
+            // Fall back to mock data
+            setTasks(MOCK_TASKS);
+            setDataSource('mock');
+            setLoading(false);
+        }
+        fetchTasks();
+    }, [isDaemonConnected, apiCall]);
 
     const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.state === filter);
 

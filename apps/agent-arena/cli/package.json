@@ -5,16 +5,20 @@
     "license": "MIT",
     "type": "module",
     "bin": {
-        "gradience": "./gradience.ts"
+        "gradience": "./dist/gradience.js"
     },
     "files": [
-        "gradience.ts"
+        "dist"
     ],
     "publishConfig": {
         "access": "public"
     },
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "npm run build"
+    },
     "dependencies": {
-        "@gradiences/sdk": "workspace:*"
+        "@gradiences/arena-sdk": "^0.1.0"
     },
     "peerDependencies": {
         "@solana/kit": "^5.0.0"
