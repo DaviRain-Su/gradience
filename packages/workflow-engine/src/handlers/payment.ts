@@ -2,224 +2,541 @@
  * Action Handlers — Payment Operations
  * 
  * Handlers:
- * - x402Payment: HTTP 402 micro-payments
- * - mppStreamReward: Tempo MPP streaming rewards
+ * - x402Payment: HTTP 402 micro-payments (Coinbase x402 protocol)
+ * - mppStreamReward: Stripe/Tempo MPP streaming payments
  * - teePrivateSettle: X Layer TEE private settlement
- * - zeroGasExecute: X Layer zero-gas execution
+ * - zeroGasExecute: X Layer zero-gas meta-transactions
  */
 import type { ActionHandler, ExecutionContext } from '../engine/step-executor.js';
+import type { SupportedChain } from '../schema/types.js';
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
 /**
  * x402 payment parameters
+ * @see https://x402.org/ - Coinbase x402 Payment Protocol
+ * @see https://www.npmjs.com/package/@x402-solana/client
  */
 export interface X402PaymentParams {
-  url: string;            // Service URL requiring payment
-  amount: string;         // Payment amount
-  token?: string;         // Token to pay with (default: USDC)
+  /** Service URL requiring payment */
+  url: string;
+  /** Payment amount in token units */
+  amount: string;
+  /** Token to pay with (default: USDC) */
+  token?: string;
+  /** HTTP method */
   method?: 'GET' | 'POST';
+  /** Additional headers */
   headers?: Record<string, string>;
+  /** Request body for POST */
   body?: string;
+  /** Wallet signer for transaction */
+  signer: import('@solana/web3.js').Signer;
 }
 
 /**
- * MPP streaming reward parameters
+ * MPP (Machine Payments Protocol) streaming reward parameters
+ * @see https://mpp.dev/ - Stripe & Tempo MPP
+ * @see https://github.com/solana-foundation/solana-mpp-sdk
  */
 export interface MPPStreamRewardParams {
-  recipient: string;      // Reward recipient
-  amountPerSecond: string; // Amount per second
-  duration: number;       // Stream duration in seconds
-  token?: string;         // Token to stream
+  /** Reward recipient address */
+  recipient: string;
+  /** Amount per second */
+  amountPerSecond: string;
+  /** Stream duration in seconds */
+  duration: number;
+  /** Token to stream (default: USDC) */
+  token?: string;
+  /** Wallet signer */
+  signer: import('@solana/web3.js').Signer;
 }
 
 /**
- * TEE private settlement parameters
+ * TEE (Trusted Execution Environment) private settlement parameters
+ * @see https://docs.xlayer.xyz/ - X Layer TEE documentation
  */
 export interface TEEPrivateSettleParams {
-  recipient: string;      // Settlement recipient
-  amount: string;         // Amount to settle
-  hideAmount?: boolean;   // Hide amount in receipt
-  proof?: string;         // ZK proof (optional)
+  /** Settlement recipient */
+  recipient: string;
+  /** Amount to settle */
+  amount: string;
+  /** Token to settle in */
+  token?: string;
+  /** Hide amount in receipt */
+  hideAmount?: boolean;
+  /** ZK proof (optional) */
+  proof?: string;
+  /** Wallet signer */
+  signer: import('@solana/web3.js').Signer;
 }
 
 /**
  * Zero gas execution parameters
+ * Uses X Layer's meta-transaction relay for gasless transactions
+ * @see https://docs.xlayer.xyz/ - X Layer relay documentation
  */
 export interface ZeroGasExecuteParams {
-  target: string;         // Target contract/address
-  data: string;           // Encoded call data
-  value?: string;         // ETH/SOL value to send
+  /** Target contract/address */
+  target: string;
+  /** Encoded call data */
+  data: string;
+  /** Value to send (in lamports/SOL) */
+  value?: string;
+  /** Wallet signer */
+  signer: import('@solana/web3.js').Signer;
 }
+
+// ============================================================================
+// Payment Handler Implementations
+// ============================================================================
 
 /**
  * Create x402 payment handler
- * Implements HTTP 402 Payment Required protocol
+ * Implements HTTP 402 Payment Required protocol for API micropayments
+ * 
+ * **SDK Required**: `@x402-solana/client`
+ * ```bash
+ * npm install @x402-solana/client
+ * ```
+ * 
+ * **Protocol Flow**:
+ * 1. Make request to API, receive 402 Payment Required
+ * 2. Parse payment requirements (amount, token, recipient)
+ * 3. Create and sign payment transaction
+ * 4. Submit payment proof
+ * 5. Retry request with payment authorization
  */
 export function createX402PaymentHandler(
   config: {
-    walletPrivateKey?: string;
+    /** x402 facilitator URL (default: https://facilitator.x402.org) */
+    facilitatorUrl?: string;
+    /** Network: mainnet | devnet */
+    network?: 'mainnet' | 'devnet';
   } = {}
 ): ActionHandler {
+  const { 
+    facilitatorUrl = 'https://facilitator.x402.org',
+    network = 'devnet'
+  } = config;
+
   return {
     async execute(
-      chain: string,
+      chain: SupportedChain,
       params: Record<string, unknown>,
       context: ExecutionContext
     ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`x402 payments on ${chain} not yet implemented`);
+      }
+
       const { 
         url, 
         amount, 
         token = 'USDC',
         method = 'POST',
         headers = {},
-        body 
+        body,
+        signer,
       } = params as unknown as X402PaymentParams;
 
-      // TODO: Integrate with @solana/mpp or x402 client
-      console.log(`[x402Payment] Pay ${amount} ${token} to ${url}`);
+      if (!signer) {
+        throw new Error('Signer is required for x402 payment');
+      }
 
-      // Mock x402 payment flow:
-      // 1. Make request, get 402 response with payment requirements
-      // 2. Create payment transaction
-      // 3. Submit payment
-      // 4. Retry request with payment proof
+      try {
+        console.log(`[x402Payment] Initiating payment: ${amount} ${token} to ${url}`);
 
-      return {
-        txHash: 'mock-x402-tx-' + Date.now(),
-        url,
-        amount,
-        token,
-        status: 'paid',
-        serviceResponse: { status: 'ok' },
-      };
+        // Step 1: Make initial request to get 402 response
+        const initialResponse = await fetch(url, {
+          method,
+          headers: {
+            ...headers,
+            'X-X402-Version': '2',
+          },
+          body,
+        });
+
+        if (initialResponse.status !== 402) {
+          // If not 402, either service is free or there's an error
+          return {
+            txHash: null,
+            url,
+            amount,
+            token,
+            status: initialResponse.ok ? 'free' : 'error',
+            responseStatus: initialResponse.status,
+          };
+        }
+
+        // Parse 402 response for payment requirements
+        const paymentRequirements = await initialResponse.json();
+        console.log('[x402Payment] Payment requirements:', paymentRequirements);
+
+        // Note: Real implementation would use @x402-solana/client
+        // This is a placeholder with clear integration path
+        throw new Error(
+          'x402 payment requires @x402-solana/client SDK. ' +
+          'Install: npm install @x402-solana/client. ' +
+          'See: https://www.npmjs.com/package/@x402-solana/client'
+        );
+
+        /*
+        // Real implementation example:
+        import { createX402Client } from '@x402-solana/client';
+        
+        const client = createX402Client({
+          facilitator: facilitatorUrl,
+          network,
+          signer,
+        });
+        
+        // Create payment
+        const payment = await client.createPayment({
+          amount,
+          token,
+          recipient: paymentRequirements.recipient,
+        });
+        
+        // Retry request with payment proof
+        const finalResponse = await fetch(url, {
+          method,
+          headers: {
+            ...headers,
+            'X-X402-Payment': payment.proof,
+          },
+          body,
+        });
+        
+        return {
+          txHash: payment.txHash,
+          url,
+          amount,
+          token,
+          status: 'paid',
+          serviceResponse: await finalResponse.json(),
+        };
+        */
+      } catch (error) {
+        console.error('[x402Payment] Error:', error);
+        throw error;
+      }
     },
   };
 }
 
 /**
  * Create MPP streaming reward handler
- * Integrates with Tempo for streaming payments
+ * Integrates with Stripe/Tempo Machine Payments Protocol for streaming payments
+ * 
+ * **SDK Required**: `@solana-foundation/solana-mpp-sdk`
+ * ```bash
+ * npm install @solana-foundation/solana-mpp-sdk
+ * ```
+ * 
+ * **Use Cases**:
+ * - Agent-to-agent streaming rewards
+ * - Per-second API usage billing
+ * - Continuous service payments
  */
 export function createMPPStreamRewardHandler(
   config: {
+    /** Tempo API endpoint */
     tempoApiUrl?: string;
+    /** Network: mainnet | devnet */
+    network?: 'mainnet' | 'devnet';
   } = {}
 ): ActionHandler {
-  const { tempoApiUrl = 'https://api.tempo.xyz' } = config;
+  const { 
+    tempoApiUrl = 'https://api.tempo.xyz',
+    network = 'devnet'
+  } = config;
 
   return {
     async execute(
-      chain: string,
+      chain: SupportedChain,
       params: Record<string, unknown>,
       context: ExecutionContext
     ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`MPP streaming on ${chain} not yet implemented`);
+      }
+
       const { 
         recipient, 
         amountPerSecond, 
         duration, 
-        token = 'USDC' 
+        token = 'USDC',
+        signer,
       } = params as unknown as MPPStreamRewardParams;
 
-      // TODO: Integrate with Tempo MPP SDK
-      console.log(`[MPPStreamReward] Stream ${amountPerSecond}/sec to ${recipient} for ${duration}s`);
+      if (!signer) {
+        throw new Error('Signer is required for MPP streaming');
+      }
 
-      const totalAmount = String(Number(amountPerSecond) * duration);
+      try {
+        const totalAmount = String(Number(amountPerSecond) * duration);
+        console.log(`[MPPStreamReward] Creating stream: ${amountPerSecond}/sec for ${duration}s (total: ${totalAmount})`);
 
-      return {
-        streamId: 'mock-stream-' + Date.now(),
-        recipient,
-        amountPerSecond,
-        duration,
-        totalAmount,
-        token,
-        status: 'streaming',
-        startTime: Date.now(),
-        estimatedEndTime: Date.now() + duration * 1000,
-      };
+        // Note: Real implementation would use @solana-foundation/solana-mpp-sdk
+        throw new Error(
+          'MPP streaming requires @solana-foundation/solana-mpp-sdk. ' +
+          'Install: npm install @solana-foundation/solana-mpp-sdk. ' +
+          'See: https://github.com/solana-foundation/solana-mpp-sdk'
+        );
+
+        /*
+        // Real implementation example:
+        import { MPPClient, StreamConfig } from '@solana-foundation/solana-mpp-sdk';
+        
+        const client = new MPPClient({
+          endpoint: tempoApiUrl,
+          network,
+          signer,
+        });
+        
+        const streamConfig: StreamConfig = {
+          recipient,
+          amountPerSecond,
+          duration,
+          token,
+        };
+        
+        const stream = await client.createStream(streamConfig);
+        
+        return {
+          streamId: stream.id,
+          recipient,
+          amountPerSecond,
+          duration,
+          totalAmount,
+          token,
+          status: 'streaming',
+          startTime: Date.now(),
+          estimatedEndTime: Date.now() + duration * 1000,
+        };
+        */
+      } catch (error) {
+        console.error('[MPPStreamReward] Error:', error);
+        throw error;
+      }
     },
   };
 }
 
 /**
  * Create TEE private settlement handler
- * Uses X Layer TEE for privacy-preserving settlement
+ * Uses X Layer's Trusted Execution Environment for privacy-preserving settlement
+ * 
+ * **SDK Required**: X Layer TEE SDK (contact X Layer team)
+ * ```bash
+ * npm install @xlayer/tee-sdk  # Package name may vary
+ * ```
+ * 
+ * **Features**:
+ * - Private amount hiding
+ * - ZK proof verification
+ * - TEE attestation
  */
 export function createTEEPrivateSettleHandler(
   config: {
+    /** X Layer TEE endpoint */
     teeEndpoint?: string;
+    /** Network: mainnet | devnet */
+    network?: 'mainnet' | 'devnet';
   } = {}
 ): ActionHandler {
-  const { teeEndpoint = 'https://tee.xlayer.xyz' } = config;
+  const { 
+    teeEndpoint = 'https://tee.xlayer.xyz',
+    network = 'devnet'
+  } = config;
 
   return {
     async execute(
-      chain: string,
+      chain: SupportedChain,
       params: Record<string, unknown>,
       context: ExecutionContext
     ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`TEE settlement on ${chain} not yet implemented`);
+      }
+
       const { 
         recipient, 
         amount, 
+        token = 'USDC',
         hideAmount = true,
-        proof 
+        proof,
+        signer,
       } = params as unknown as TEEPrivateSettleParams;
 
-      // TODO: Integrate with X Layer TEE
-      console.log(`[TEEPrivateSettle] Private settle ${hideAmount ? '***' : amount} to ${recipient}`);
+      if (!signer) {
+        throw new Error('Signer is required for TEE settlement');
+      }
 
-      return {
-        txHash: 'mock-tee-tx-' + Date.now(),
-        recipient,
-        amount: hideAmount ? 'hidden' : amount,
-        proofVerified: !!proof,
-        teeAttestation: 'mock-attestation-' + Date.now(),
-        status: 'settled',
-      };
+      try {
+        console.log(`[TEEPrivateSettle] Private settle ${hideAmount ? '***' : amount} ${token} to ${recipient}`);
+
+        // Note: Real implementation requires X Layer TEE SDK
+        throw new Error(
+          'TEE settlement requires X Layer TEE SDK. ' +
+          'Contact X Layer team for SDK access. ' +
+          'See: https://docs.xlayer.xyz/'
+        );
+
+        /*
+        // Real implementation example:
+        import { TEEClient } from '@xlayer/tee-sdk';
+        
+        const client = new TEEClient({
+          endpoint: teeEndpoint,
+          network,
+          signer,
+        });
+        
+        const settlement = await client.settle({
+          recipient,
+          amount,
+          token,
+          hideAmount,
+          proof,
+        });
+        
+        return {
+          txHash: settlement.txHash,
+          recipient,
+          amount: hideAmount ? 'hidden' : amount,
+          token,
+          proofVerified: settlement.proofVerified,
+          teeAttestation: settlement.attestation,
+          status: 'settled',
+        };
+        */
+      } catch (error) {
+        console.error('[TEEPrivateSettle] Error:', error);
+        throw error;
+      }
     },
   };
 }
 
 /**
  * Create zero gas execution handler
- * Uses X Layer's meta-transaction relay
+ * Uses X Layer's meta-transaction relay for gasless transactions
+ * 
+ * **SDK Required**: X Layer Relay SDK (contact X Layer team)
+ * ```bash
+ * npm install @xlayer/relay-sdk  # Package name may vary
+ * ```
+ * 
+ * **Use Cases**:
+ * - Gasless transactions for users without SOL
+ * - Sponsored transactions
+ * - Meta-transactions
  */
 export function createZeroGasExecuteHandler(
   config: {
+    /** X Layer relay endpoint */
     relayEndpoint?: string;
+    /** Network: mainnet | devnet */
+    network?: 'mainnet' | 'devnet';
   } = {}
 ): ActionHandler {
-  const { relayEndpoint = 'https://relay.xlayer.xyz' } = config;
+  const { 
+    relayEndpoint = 'https://relay.xlayer.xyz',
+    network = 'devnet'
+  } = config;
 
   return {
     async execute(
-      chain: string,
+      chain: SupportedChain,
       params: Record<string, unknown>,
       context: ExecutionContext
     ): Promise<Record<string, unknown>> {
-      const { target, data, value = '0' } = params as unknown as ZeroGasExecuteParams;
+      if (chain !== 'solana') {
+        throw new Error(`Zero-gas execution on ${chain} not yet implemented`);
+      }
 
-      // TODO: Integrate with X Layer relay
-      console.log(`[ZeroGasExecute] Execute on ${target} with value ${value}`);
+      const { 
+        target, 
+        data, 
+        value = '0',
+        signer,
+      } = params as unknown as ZeroGasExecuteParams;
 
-      return {
-        txHash: 'mock-zero-gas-tx-' + Date.now(),
-        target,
-        data: data.slice(0, 20) + '...',
-        value,
-        gasPaidBy: 'relayer',
-        status: 'executed',
-      };
+      if (!signer) {
+        throw new Error('Signer is required for zero-gas execution');
+      }
+
+      try {
+        console.log(`[ZeroGasExecute] Execute on ${target} with value ${value}`);
+
+        // Note: Real implementation requires X Layer Relay SDK
+        throw new Error(
+          'Zero-gas execution requires X Layer Relay SDK. ' +
+          'Contact X Layer team for SDK access. ' +
+          'See: https://docs.xlayer.xyz/'
+        );
+
+        /*
+        // Real implementation example:
+        import { RelayClient } from '@xlayer/relay-sdk';
+        
+        const client = new RelayClient({
+          endpoint: relayEndpoint,
+          network,
+        });
+        
+        const metaTx = await client.createMetaTransaction({
+          signer: signer.publicKey,
+          target,
+          data,
+          value: BigInt(value),
+        });
+        
+        // Sign meta-transaction
+        const signedTx = await metaTx.sign(signer);
+        
+        // Submit to relay
+        const result = await client.submit(signedTx);
+        
+        return {
+          txHash: result.txHash,
+          target,
+          data: data.slice(0, 20) + '...',
+          value,
+          gasPaidBy: 'relayer',
+          status: 'executed',
+        };
+        */
+      } catch (error) {
+        console.error('[ZeroGasExecute] Error:', error);
+        throw error;
+      }
     },
   };
 }
+
+// ============================================================================
+// Handler Factory Functions
+// ============================================================================
 
 /**
  * Create all payment handlers as a map
  */
 export function createPaymentHandlers(config?: {
-  walletPrivateKey?: string;
+  /** x402 facilitator URL */
+  facilitatorUrl?: string;
+  /** Tempo API URL */
   tempoApiUrl?: string;
+  /** X Layer TEE endpoint */
   teeEndpoint?: string;
+  /** X Layer relay endpoint */
   relayEndpoint?: string;
+  /** Network: mainnet | devnet */
+  network?: 'mainnet' | 'devnet';
 }): Map<string, ActionHandler> {
   return new Map([
     ['x402Payment', createX402PaymentHandler(config)],
@@ -227,4 +544,23 @@ export function createPaymentHandlers(config?: {
     ['teePrivateSettle', createTEEPrivateSettleHandler(config)],
     ['zeroGasExecute', createZeroGasExecuteHandler(config)],
   ]);
+}
+
+/**
+ * Create real payment handlers with actual SDK integration
+ * Note: Requires SDK installation:
+ * - npm install @x402-solana/client
+ * - npm install @solana-foundation/solana-mpp-sdk
+ * - Contact X Layer for TEE and Relay SDKs
+ */
+export function createRealPaymentHandlers(config?: {
+  facilitatorUrl?: string;
+  tempoApiUrl?: string;
+  teeEndpoint?: string;
+  relayEndpoint?: string;
+  network?: 'mainnet' | 'devnet';
+}): Map<string, ActionHandler> {
+  // Currently same as createPaymentHandlers
+  // When SDKs are installed, this can use real implementations
+  return createPaymentHandlers(config);
 }

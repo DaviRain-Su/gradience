@@ -2,6 +2,7 @@
  * Workflow Marketplace SDK
  * 
  * Client-side SDK for interacting with the Workflow Marketplace program
+ * Integrates with Solana SDK for on-chain operations
  */
 import type { 
   GradienceWorkflow, 
@@ -11,6 +12,17 @@ import type {
 import { validate } from '../schema/validate.js';
 import { WorkflowEngine } from '../engine/workflow-engine.js';
 import { createAllHandlers } from '../handlers/index.js';
+import { 
+  Connection, 
+  PublicKey, 
+  Keypair,
+  type Transaction,
+} from '@solana/web3.js';
+import {
+  SolanaWorkflowSDK,
+  createSolanaWorkflowSDK,
+  type OnChainWorkflowMetadata,
+} from './solana-sdk.js';
 
 /**
  * SDK Configuration
@@ -24,6 +36,8 @@ export interface WorkflowSDKConfig {
   indexerEndpoint?: string;
   /** Wallet adapter (for signing transactions) */
   wallet?: WalletAdapter;
+  /** Solana connection (optional - will create from rpcEndpoint if not provided) */
+  connection?: Connection;
 }
 
 /**
@@ -70,6 +84,48 @@ export interface WorkflowListing {
 }
 
 /**
+ * Purchase result
+ */
+export interface PurchaseResult {
+  /** Transaction signature */
+  signature: string;
+  /** Access PDA address */
+  accessPDA: string;
+  /** Workflow ID */
+  workflowId: string;
+  /** Purchase timestamp */
+  timestamp: number;
+}
+
+/**
+ * Review result
+ */
+export interface ReviewResult {
+  /** Transaction signature */
+  signature: string;
+  /** Workflow ID */
+  workflowId: string;
+  /** Rating (1-5) */
+  rating: number;
+  /** Comment hash (IPFS) */
+  commentHash: string;
+  /** Review timestamp */
+  timestamp: number;
+}
+
+/**
+ * Update result
+ */
+export interface UpdateResult {
+  /** Transaction signature */
+  signature: string;
+  /** Workflow ID */
+  workflowId: string;
+  /** Update timestamp */
+  timestamp: number;
+}
+
+/**
  * Workflow SDK
  * 
  * High-level SDK for workflow operations
@@ -77,15 +133,60 @@ export interface WorkflowListing {
 export class WorkflowSDK {
   private config: WorkflowSDKConfig;
   private engine: WorkflowEngine;
+  private solanaSDK: SolanaWorkflowSDK | null = null;
 
   constructor(config: WorkflowSDKConfig) {
     this.config = {
-      programId: 'WF1oWsPHQQVKTgL7t1Q4X9YK9gH6T8X7yZ3pQ4rS5tU',
+      programId: '3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW',
       ...config,
     };
     
     // Initialize workflow engine with default handlers
     this.engine = new WorkflowEngine(createAllHandlers());
+    
+    // Initialize Solana SDK if connection is available
+    this.initializeSolanaSDK();
+  }
+
+  /**
+   * Initialize Solana SDK if wallet and connection are available
+   */
+  private initializeSolanaSDK(): void {
+    if (!this.config.connection && !this.config.rpcEndpoint) {
+      return;
+    }
+
+    try {
+      const connection = this.config.connection || 
+        new Connection(this.config.rpcEndpoint, 'confirmed');
+      
+      // Create a keypair wrapper for the wallet adapter
+      // Note: This requires the wallet to support signing
+      if (this.config.wallet?.publicKey) {
+        const payer = this.createKeypairFromWallet();
+        if (payer) {
+          this.solanaSDK = createSolanaWorkflowSDK({
+            connection,
+            payer,
+            programId: this.config.programId ? new PublicKey(this.config.programId) : undefined,
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('[WorkflowSDK] Failed to initialize Solana SDK:', error);
+    }
+  }
+
+  /**
+   * Create a Keypair from wallet adapter
+   * Note: This is a simplified approach. Real implementation would use
+   * a proper wallet adapter that can sign transactions.
+   */
+  private createKeypairFromWallet(): Keypair | null {
+    // In a real implementation, this would use the wallet adapter
+    // to create a signing proxy. For now, we return null and require
+    // the Solana SDK to be initialized separately.
+    return null;
   }
 
   /**
@@ -106,11 +207,19 @@ export class WorkflowSDK {
     // TODO: Upload to IPFS/Arweave
     // const contentHash = await uploadToIPFS(workflow);
     
-    // TODO: Create on-chain transaction
-    // const tx = await createWorkflowTx({ ...workflow, contentHash });
-    // const signature = await this.config.wallet?.signTransaction(tx);
+    // If Solana SDK is available, create on-chain
+    if (this.solanaSDK) {
+      try {
+        const workflowId = Keypair.generate().publicKey;
+        const signature = await this.solanaSDK.createWorkflow(workflow, workflowId);
+        console.log(`[SDK] Workflow created on-chain: ${signature}`);
+        return workflowId.toBase58();
+      } catch (error) {
+        console.warn('[SDK] On-chain creation failed, using local:', error);
+      }
+    }
     
-    // Register locally for now
+    // Register locally
     this.engine.registerWorkflow(workflow);
     
     return workflow.id;
@@ -124,28 +233,128 @@ export class WorkflowSDK {
     const local = this.engine.getWorkflow(workflowId);
     if (local) return local;
 
-    // TODO: Fetch from chain or indexer
-    // return fetchFromIndexer(workflowId);
+    // If Solana SDK is available, try on-chain
+    if (this.solanaSDK) {
+      try {
+        const metadata = await this.solanaSDK.getWorkflow(new PublicKey(workflowId));
+        if (metadata) {
+          // Convert on-chain metadata to GradienceWorkflow format
+          return this.convertOnChainToWorkflow(metadata, workflowId);
+        }
+      } catch (error) {
+        console.warn('[SDK] Failed to fetch from chain:', error);
+      }
+    }
     
     return null;
   }
 
   /**
-   * Purchase a workflow
+   * Convert on-chain metadata to GradienceWorkflow
    */
-  async purchase(workflowId: string): Promise<string> {
+  private convertOnChainToWorkflow(
+    metadata: OnChainWorkflowMetadata, 
+    workflowId: string
+  ): GradienceWorkflow {
+    const pricingModelMap: Record<number, 'free' | 'oneTime' | 'subscription' | 'perUse' | 'revenueShare'> = {
+      0: 'free',
+      1: 'oneTime',
+      2: 'subscription',
+      3: 'perUse',
+      4: 'revenueShare',
+    };
+
+    return {
+      id: workflowId,
+      name: `Workflow ${workflowId.slice(0, 8)}`,
+      description: `On-chain workflow by ${metadata.author.toBase58().slice(0, 8)}...`,
+      version: metadata.version,
+      contentHash: `ipfs://${metadata.contentHash}`,
+      steps: [], // Would fetch full content from IPFS
+      pricing: {
+        model: pricingModelMap[metadata.pricingModel] || 'free',
+        oneTimePrice: metadata.priceAmount > 0n ? {
+          mint: metadata.priceMint.toBase58(),
+          amount: metadata.priceAmount.toString(),
+        } : undefined,
+      },
+      revenueShare: {
+        creator: metadata.creatorShare,
+        user: 6000,
+        agent: 500,
+        protocol: 200,
+        judge: 300,
+      },
+      isPublic: metadata.isPublic,
+      isTemplate: false,
+      author: metadata.author.toBase58(),
+      createdAt: metadata.createdAt.getTime(),
+      updatedAt: metadata.updatedAt.getTime(),
+      requirements: {
+        minReputation: 0,
+        tokens: [],
+        zkProofs: [],
+        whitelist: [],
+      },
+      signature: '',
+      tags: [],
+    };
+  }
+
+  /**
+   * Purchase a workflow
+   * 
+   * If Solana SDK is available, performs on-chain purchase with payment.
+   * Otherwise, returns a mock access PDA.
+   */
+  async purchase(workflowId: string, author?: string): Promise<PurchaseResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
 
-    // TODO: Create purchase transaction
-    // const tx = await createPurchaseTx(workflowId, this.config.wallet.publicKey);
-    // const signature = await this.config.wallet.signTransaction(tx);
+    // If Solana SDK is available, use it
+    if (this.solanaSDK) {
+      try {
+        const workflowPubkey = new PublicKey(workflowId);
+        const authorPubkey = author ? new PublicKey(author) : 
+          // Fetch author from on-chain metadata
+          (await this.solanaSDK.getWorkflow(workflowPubkey))?.author || 
+          this.solanaSDK.getTreasuryAddress(); // Fallback to treasury
+
+        const signature = await this.solanaSDK.purchaseWorkflowWithPayment(
+          workflowPubkey,
+          authorPubkey,
+          0 // purchased
+        );
+
+        const accessPDA = this.solanaSDK.getAccessAddress(
+          workflowPubkey,
+          new PublicKey(this.config.wallet.publicKey)
+        );
+
+        console.log(`[SDK] Workflow purchased: ${signature}`);
+
+        return {
+          signature,
+          accessPDA: accessPDA.toBase58(),
+          workflowId,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain purchase failed:', error);
+        throw new Error(`Purchase failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Fallback: return mock result
+    console.log(`[SDK] Purchase workflow ${workflowId} (mock)`);
     
-    console.log(`[SDK] Purchase workflow ${workflowId}`);
-    
-    // Return access PDA address (mock)
-    return `access-${workflowId}-${this.config.wallet.publicKey}`;
+    return {
+      signature: 'mock-purchase-tx',
+      accessPDA: `access-${workflowId}-${this.config.wallet.publicKey}`,
+      workflowId,
+      timestamp: Date.now(),
+    };
   }
 
   /**
@@ -155,11 +364,21 @@ export class WorkflowSDK {
     const userKey = user || this.config.wallet?.publicKey;
     if (!userKey) return false;
 
-    // TODO: Check on-chain access PDA
-    // return checkAccessPDA(workflowId, userKey);
+    // If Solana SDK is available, check on-chain
+    if (this.solanaSDK) {
+      try {
+        const hasAccess = await this.solanaSDK.hasAccess(
+          new PublicKey(workflowId),
+          new PublicKey(userKey)
+        );
+        return hasAccess;
+      } catch (error) {
+        console.warn('[SDK] Failed to check access on-chain:', error);
+      }
+    }
     
-    // Mock: always true for now
-    return true;
+    // Mock: check local engine
+    return this.engine.getWorkflow(workflowId) !== null;
   }
 
   /**
@@ -176,7 +395,17 @@ export class WorkflowSDK {
     // Check access
     const hasAccess = await this.hasAccess(workflowId);
     if (!hasAccess) {
-      throw new Error('No access to workflow');
+      throw new Error('No access to workflow. Please purchase first.');
+    }
+
+    // Record execution on-chain if SDK available
+    if (this.solanaSDK) {
+      try {
+        const signature = await this.solanaSDK.recordExecution(new PublicKey(workflowId));
+        console.log(`[SDK] Execution recorded on-chain: ${signature}`);
+      } catch (error) {
+        console.warn('[SDK] Failed to record execution on-chain:', error);
+      }
     }
 
     // Execute via engine
@@ -200,12 +429,14 @@ export class WorkflowSDK {
 
   /**
    * Review a workflow
+   * 
+   * If Solana SDK is available, submits review on-chain.
    */
   async review(
     workflowId: string,
     rating: number,
     comment: string
-  ): Promise<void> {
+  ): Promise<ReviewResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
@@ -214,14 +445,53 @@ export class WorkflowSDK {
       throw new Error('Rating must be between 1 and 5');
     }
 
-    // TODO: Upload comment to IPFS
-    // const commentHash = await uploadToIPFS(comment);
+    // TODO: Upload comment to IPFS/Arweave
+    const commentHash = await this.uploadComment(comment);
+
+    // If Solana SDK is available, submit on-chain
+    if (this.solanaSDK) {
+      try {
+        const signature = await this.solanaSDK.reviewWorkflow(
+          new PublicKey(workflowId),
+          rating,
+          comment
+        );
+
+        console.log(`[SDK] Review submitted on-chain: ${signature}`);
+
+        return {
+          signature,
+          workflowId,
+          rating,
+          commentHash,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain review failed:', error);
+        throw new Error(`Review failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Fallback: mock result
+    console.log(`[SDK] Review workflow ${workflowId}: ${rating} stars (mock)`);
     
-    // TODO: Create review transaction
-    // const tx = await createReviewTx(workflowId, rating, commentHash);
-    // await this.config.wallet.signTransaction(tx);
-    
-    console.log(`[SDK] Review workflow ${workflowId}: ${rating} stars`);
+    return {
+      signature: 'mock-review-tx',
+      workflowId,
+      rating,
+      commentHash,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Upload comment to IPFS/Arweave
+   * Placeholder for actual upload
+   */
+  private async uploadComment(comment: string): Promise<string> {
+    // TODO: Implement IPFS/Arweave upload
+    // For now, return a mock hash
+    return `ipfs:${Buffer.from(comment).toString('base64').slice(0, 32)}`;
   }
 
   /**
@@ -229,9 +499,9 @@ export class WorkflowSDK {
    */
   async browse(filters: BrowseFilters = {}): Promise<WorkflowListing[]> {
     // TODO: Query indexer
-    // return queryIndexer(filters);
+    // This would call the indexer API with filters
     
-    // Mock data for now
+    // Mock data for demonstration
     return [
       {
         id: 'wf-1',
@@ -275,53 +545,164 @@ export class WorkflowSDK {
 
   /**
    * Update workflow metadata
+   * 
+   * If Solana SDK is available, submits update on-chain.
    */
   async update(
     workflowId: string,
     updates: Partial<Pick<GradienceWorkflow, 'description' | 'isPublic'>>
-  ): Promise<void> {
+  ): Promise<UpdateResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
 
-    // TODO: Create update transaction
+    // If Solana SDK is available and contentHash is provided
+    if (this.solanaSDK && updates.description) {
+      try {
+        // Note: On-chain update only supports contentHash changes
+        // This is a simplified implementation
+        const newContentHash = await this.uploadComment(updates.description);
+        const signature = await this.solanaSDK.updateWorkflow(
+          new PublicKey(workflowId),
+          newContentHash
+        );
+
+        console.log(`[SDK] Workflow updated on-chain: ${signature}`);
+
+        return {
+          signature,
+          workflowId,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain update failed:', error);
+        throw new Error(`Update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Fallback: local update
     console.log(`[SDK] Update workflow ${workflowId}`, updates);
+    
+    return {
+      signature: 'mock-update-tx',
+      workflowId,
+      timestamp: Date.now(),
+    };
   }
 
   /**
    * Deactivate a workflow
+   * 
+   * If Solana SDK is available, submits deactivate on-chain.
    */
-  async deactivate(workflowId: string): Promise<void> {
+  async deactivate(workflowId: string): Promise<UpdateResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
 
-    // TODO: Create deactivate transaction
-    console.log(`[SDK] Deactivate workflow ${workflowId}`);
+    if (this.solanaSDK) {
+      try {
+        const signature = await this.solanaSDK.deactivateWorkflow(
+          new PublicKey(workflowId)
+        );
+
+        console.log(`[SDK] Workflow deactivated on-chain: ${signature}`);
+
+        return {
+          signature,
+          workflowId,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain deactivate failed:', error);
+        throw new Error(`Deactivate failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    console.log(`[SDK] Deactivate workflow ${workflowId} (mock)`);
+    
+    return {
+      signature: 'mock-deactivate-tx',
+      workflowId,
+      timestamp: Date.now(),
+    };
   }
 
   /**
    * Activate a workflow
+   * 
+   * If Solana SDK is available, submits activate on-chain.
    */
-  async activate(workflowId: string): Promise<void> {
+  async activate(workflowId: string): Promise<UpdateResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
 
-    // TODO: Create activate transaction
-    console.log(`[SDK] Activate workflow ${workflowId}`);
+    if (this.solanaSDK) {
+      try {
+        const signature = await this.solanaSDK.activateWorkflow(
+          new PublicKey(workflowId)
+        );
+
+        console.log(`[SDK] Workflow activated on-chain: ${signature}`);
+
+        return {
+          signature,
+          workflowId,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain activate failed:', error);
+        throw new Error(`Activate failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    console.log(`[SDK] Activate workflow ${workflowId} (mock)`);
+    
+    return {
+      signature: 'mock-activate-tx',
+      workflowId,
+      timestamp: Date.now(),
+    };
   }
 
   /**
    * Delete a workflow
+   * 
+   * If Solana SDK is available, submits delete on-chain.
+   * Note: Can only delete if no purchases.
    */
-  async delete(workflowId: string): Promise<void> {
+  async delete(workflowId: string): Promise<UpdateResult> {
     if (!this.config.wallet?.publicKey) {
       throw new Error('Wallet not connected');
     }
 
-    // TODO: Create delete transaction
-    console.log(`[SDK] Delete workflow ${workflowId}`);
+    if (this.solanaSDK) {
+      try {
+        const signature = await this.solanaSDK.deleteWorkflow(
+          new PublicKey(workflowId)
+        );
+
+        console.log(`[SDK] Workflow deleted on-chain: ${signature}`);
+
+        return {
+          signature,
+          workflowId,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        console.warn('[SDK] On-chain delete failed:', error);
+        throw new Error(`Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    console.log(`[SDK] Delete workflow ${workflowId} (mock)`);
+    
+    return {
+      signature: 'mock-delete-tx',
+      workflowId,
+      timestamp: Date.now(),
+    };
   }
 
   /**
@@ -329,6 +710,13 @@ export class WorkflowSDK {
    */
   async getExecutions(workflowId: string): Promise<WorkflowExecutionResult[]> {
     return this.engine.getExecutions(workflowId);
+  }
+
+  /**
+   * Get Solana SDK instance (for advanced operations)
+   */
+  getSolanaSDK(): SolanaWorkflowSDK | null {
+    return this.solanaSDK;
   }
 }
 

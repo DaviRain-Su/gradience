@@ -10,6 +10,23 @@
 
 import type { TokenAmount, RevenueShare, GradienceWorkflow } from './schema/types.js';
 
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+  sendAndConfirmTransaction,
+  Keypair,
+} from '@solana/web3.js';
+import {
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+} from '@solana/spl-token';
+
 // ============ Constants ============
 
 /** Fixed protocol share in basis points (2%) */
@@ -278,39 +295,211 @@ export class MockRevenueDistributor implements RevenueDistributor {
 
 /**
  * Solana revenue distributor
- * Would integrate with Solana programs for actual token transfers
+ * Executes revenue distribution via on-chain token transfers
  */
+export interface SolanaDistributorConfig {
+  /** Solana connection */
+  connection: Connection;
+  /** Authority keypair (must have funds to distribute) */
+  authority: Keypair;
+  /** Program ID for reference (not used in direct transfers) */
+  programId?: string;
+  /** Whether to create ATA accounts if they don't exist */
+  autoCreateATA?: boolean;
+}
+
 export class SolanaRevenueDistributor implements RevenueDistributor {
   readonly name = 'SolanaDistributor';
-  private connection: unknown; // Would be Connection from @solana/web3.js
-  private programId: string;
+  private connection: Connection;
+  private authority: Keypair;
+  private autoCreateATA: boolean;
 
-  constructor(config: { connection: unknown; programId: string }) {
+  constructor(config: SolanaDistributorConfig) {
     this.connection = config.connection;
-    this.programId = config.programId;
+    this.authority = config.authority;
+    this.autoCreateATA = config.autoCreateATA ?? true;
   }
 
   async distribute(distribution: RevenueDistribution): Promise<DistributionResult> {
+    const startTime = Date.now();
+    
     try {
       console.log('[SolanaRevenueDistributor] Executing on-chain distribution:', {
-        programId: this.programId,
         total: distribution.totalRevenue.amount,
+        mint: distribution.totalRevenue.mint || 'SOL',
+        recipients: distribution.distributions.length,
       });
 
-      // TODO: Implement actual Solana program invocation
-      // This would:
-      // 1. Create a distribution instruction
-      // 2. Sign with the authority
-      // 3. Send and confirm transaction
-      // 4. Return transaction signature
+      const isSPLToken = distribution.totalRevenue.mint && 
+                         distribution.totalRevenue.mint !== 'SOL' &&
+                         distribution.totalRevenue.mint !== SystemProgram.programId.toBase58();
 
-      throw new Error('Solana distribution not yet implemented');
+      const transaction = new Transaction();
+      const tokenMint = isSPLToken ? new PublicKey(distribution.totalRevenue.mint!) : null;
+
+      // Build transfer instructions for each recipient
+      for (const recipient of distribution.distributions) {
+        const recipientPubkey = new PublicKey(recipient.address);
+        const amount = BigInt(recipient.amount);
+
+        if (amount <= 0) {
+          console.log(`[SolanaRevenueDistributor] Skipping ${recipient.type} with zero amount`);
+          continue;
+        }
+
+        if (isSPLToken && tokenMint) {
+          // SPL Token transfer
+          const senderATA = await getAssociatedTokenAddress(tokenMint, this.authority.publicKey);
+          const recipientATA = await getAssociatedTokenAddress(tokenMint, recipientPubkey);
+
+          // Check if recipient ATA exists, create if needed
+          try {
+            await getAccount(this.connection, recipientATA);
+          } catch {
+            if (this.autoCreateATA) {
+              console.log(`[SolanaRevenueDistributor] Creating ATA for ${recipient.type}: ${recipient.address}`);
+              transaction.add(
+                createAssociatedTokenAccountInstruction(
+                  this.authority.publicKey,
+                  recipientATA,
+                  recipientPubkey,
+                  tokenMint
+                )
+              );
+            } else {
+              throw new Error(`Recipient ATA does not exist: ${recipientATA.toBase58()}`);
+            }
+          }
+
+          transaction.add(
+            createTransferInstruction(
+              senderATA,
+              recipientATA,
+              this.authority.publicKey,
+              Number(amount)
+            )
+          );
+        } else {
+          // SOL transfer
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: this.authority.publicKey,
+              toPubkey: recipientPubkey,
+              lamports: Number(amount),
+            })
+          );
+        }
+      }
+
+      if (transaction.instructions.length === 0) {
+        throw new Error('No valid transfers to execute');
+      }
+
+      // Set recent blockhash and fee payer
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = this.authority.publicKey;
+
+      // Send and confirm transaction
+      console.log('[SolanaRevenueDistributor] Sending transaction...');
+      const signature = await sendAndConfirmTransaction(
+        this.connection,
+        transaction,
+        [this.authority],
+        {
+          commitment: 'confirmed',
+          maxRetries: 3,
+        }
+      );
+
+      const completedAt = Date.now();
+      console.log('[SolanaRevenueDistributor] Distribution confirmed:', {
+        signature,
+        duration: completedAt - startTime,
+      });
+
+      return {
+        success: true,
+        distribution,
+        txHash: signature,
+        completedAt,
+      };
+
     } catch (error) {
+      const completedAt = Date.now();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      console.error('[SolanaRevenueDistributor] Distribution failed:', {
+        error: errorMessage,
+        duration: completedAt - startTime,
+      });
+
       return {
         success: false,
         distribution,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        completedAt: Date.now(),
+        error: errorMessage,
+        completedAt,
+      };
+    }
+  }
+
+  /**
+   * Get authority public key
+   */
+  getAuthority(): PublicKey {
+    return this.authority.publicKey;
+  }
+
+  /**
+   * Check if authority has sufficient balance for distribution
+   */
+  async validateBalance(
+    distribution: RevenueDistribution
+  ): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const isSPLToken = distribution.totalRevenue.mint && 
+                         distribution.totalRevenue.mint !== 'SOL';
+      
+      if (isSPLToken) {
+        // Check SPL token balance
+        const tokenMint = new PublicKey(distribution.totalRevenue.mint!);
+        const ata = await getAssociatedTokenAddress(tokenMint, this.authority.publicKey);
+        
+        try {
+          const account = await getAccount(this.connection, ata);
+          const balance = BigInt(account.amount.toString());
+          const required = BigInt(distribution.totalRevenue.amount);
+          
+          if (balance < required) {
+            return {
+              valid: false,
+              error: `Insufficient token balance: ${balance} < ${required}`,
+            };
+          }
+        } catch {
+          return {
+            valid: false,
+            error: `Token account does not exist: ${ata.toBase58()}`,
+          };
+        }
+      } else {
+        // Check SOL balance
+        const balance = await this.connection.getBalance(this.authority.publicKey);
+        const required = Number(distribution.totalRevenue.amount) + 5000; // Add fee buffer
+        
+        if (balance < required) {
+          return {
+            valid: false,
+            error: `Insufficient SOL balance: ${balance} < ${required}`,
+          };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : 'Validation failed',
       };
     }
   }

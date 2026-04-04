@@ -13,6 +13,8 @@ import {
   Transaction,
   SystemProgram,
   LAMPORTS_PER_SOL,
+  StakeProgram,
+  Keypair,
   type Signer,
 } from '@solana/web3.js';
 import {
@@ -562,6 +564,375 @@ export function createRealBridgeHandler(
 }
 
 /**
+ * Create a real unstaking handler for Solana native staking
+ */
+export function createRealUnstakeHandler(
+  config: {
+    connection?: Connection;
+  } = {}
+): ActionHandler {
+  const { connection = getConnection() } = config;
+
+  return {
+    async execute(
+      chain: SupportedChain,
+      params: Record<string, unknown>,
+      context: ExecutionContext
+    ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`Unstaking on ${chain} not yet implemented`);
+      }
+
+      const {
+        stakeAccount,
+        amount,
+        signer,
+      } = params as {
+        stakeAccount: string;
+        amount?: string;
+        signer: Signer;
+      };
+
+      if (!signer) {
+        throw new Error('Signer is required for unstaking');
+      }
+
+      if (!stakeAccount) {
+        throw new Error('Stake account address is required for unstaking');
+      }
+
+      try {
+        const stakePubkey = new PublicKey(stakeAccount);
+        const authorizedPubkey = signer.publicKey;
+
+        // Check if this is a partial or full unstake
+        const isPartialUnstake = amount && BigInt(amount) > 0n;
+
+        if (isPartialUnstake) {
+          // For partial unstake, we use the split-stake mechanism
+          // Then deactivate the split stake account
+          const splitStake = Keypair.generate();
+          const lamports = Number(amount);
+
+          // Create split instruction
+          const splitInstruction = StakeProgram.split(
+            {
+              stakePubkey,
+              authorizedPubkey,
+              splitStakePubkey: splitStake.publicKey,
+              lamports,
+            },
+            lamports
+          );
+
+          // Deactivate the split stake
+          const deactivateInstruction = StakeProgram.deactivate({
+            stakePubkey: splitStake.publicKey,
+            authorizedPubkey,
+          });
+
+          const transaction = new Transaction()
+            .add(splitInstruction)
+            .add(deactivateInstruction);
+
+          // Get recent blockhash
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = authorizedPubkey;
+
+          // Sign and send
+          const signature = await connection.sendTransaction(
+            transaction,
+            [signer, splitStake],
+            { maxRetries: 3 }
+          );
+
+          return {
+            txHash: signature,
+            stakeAccount,
+            splitStakeAccount: splitStake.publicKey.toBase58(),
+            amount,
+            action: 'split_and_deactivate',
+            cooldownEpochs: 2,
+            explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+          };
+        } else {
+          // Full unstake - just deactivate
+          const transaction = StakeProgram.deactivate({
+            stakePubkey,
+            authorizedPubkey,
+          });
+
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = authorizedPubkey;
+
+          const signature = await connection.sendTransaction(
+            transaction,
+            [signer],
+            { maxRetries: 3 }
+          );
+
+          return {
+            txHash: signature,
+            stakeAccount,
+            amount,
+            action: 'deactivate',
+            cooldownEpochs: 2,
+            explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+          };
+        }
+      } catch (error) {
+        console.error('[Unstake] Error:', error);
+        throw error;
+      }
+    },
+  };
+}
+
+/**
+ * Create a real yield farming handler (liquidity provision)
+ * Uses Orca Whirlpools SDK for concentrated liquidity
+ */
+export function createRealYieldFarmHandler(
+  config: {
+    connection?: Connection;
+    useTritonCascade?: boolean;
+  } = {}
+): ActionHandler {
+  const { connection = getConnection(), useTritonCascade = true } = config;
+
+  return {
+    async execute(
+      chain: SupportedChain,
+      params: Record<string, unknown>,
+      context: ExecutionContext
+    ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`Yield farming on ${chain} not yet implemented`);
+      }
+
+      const {
+        pool,
+        tokenA,
+        tokenB,
+        amountA,
+        amountB,
+        signer,
+      } = params as {
+        pool: string;
+        tokenA: string;
+        tokenB: string;
+        amountA: string;
+        amountB: string;
+        signer: Signer;
+      };
+
+      if (!signer) {
+        throw new Error('Signer is required for yield farming');
+      }
+
+      try {
+        // Note: Real implementation would use Orca SDK
+        // npm install @orca-so/whirlpools-sdk
+        
+        // For now, provide instructions on how to integrate
+        console.log(`[YieldFarm] Pool: ${pool}`);
+        console.log(`[YieldFarm] Token A: ${tokenA} (${amountA})`);
+        console.log(`[YieldFarm] Token B: ${tokenB} (${amountB})`);
+        
+        // This is a placeholder for the actual implementation
+        // Real implementation would:
+        // 1. Initialize Orca Whirlpool client
+        // 2. Get or create token accounts for both tokens
+        // 3. Open a position in the whirlpool
+        // 4. Add liquidity to the position
+        
+        throw new Error(
+          'Yield farming requires @orca-so/whirlpools-sdk. ' +
+          'Install with: npm install @orca-so/whirlpools-sdk @orca-so/common-sdk. ' +
+          'See: https://orca.so/whirlpools-sdk'
+        );
+        
+        /*
+        // Example implementation:
+        import { WhirlpoolContext, buildWhirlpoolClient } from '@orca-so/whirlpools-sdk';
+        import { AddressUtil } from '@orca-so/common-sdk';
+        
+        const ctx = WhirlpoolContext.from(connection, signer, new PublicKey("whirLbMiicVdio4qvUfM5KAg6Dt8Ar1k8X8X5p6Q5M"));
+        const client = buildWhirlpoolClient(ctx);
+        
+        const whirlpoolPubkey = new PublicKey(pool);
+        const whirlpool = await client.getPool(whirlpoolPubkey);
+        
+        // Get token accounts
+        const tokenAccountA = await getOrCreateAssociatedTokenAccount(...);
+        const tokenAccountB = await getOrCreateAssociatedTokenAccount(...);
+        
+        // Open position and add liquidity
+        const tx = await whirlpool.openPositionWithLiquidity(...);
+        */
+      } catch (error) {
+        console.error('[YieldFarm] Error:', error);
+        throw error;
+      }
+    },
+  };
+}
+
+/**
+ * Create a real borrow handler for lending protocols
+ * Placeholder for Solend/Jet integration
+ */
+export function createRealBorrowHandler(
+  config: {
+    connection?: Connection;
+  } = {}
+): ActionHandler {
+  const { connection = getConnection() } = config;
+
+  return {
+    async execute(
+      chain: SupportedChain,
+      params: Record<string, unknown>,
+      context: ExecutionContext
+    ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`Borrowing on ${chain} not yet implemented`);
+      }
+
+      const {
+        token,
+        amount,
+        collateral,
+        signer,
+      } = params as {
+        token: string;
+        amount: string;
+        collateral?: string;
+        signer: Signer;
+      };
+
+      if (!signer) {
+        throw new Error('Signer is required for borrowing');
+      }
+
+      try {
+        // Note: Real implementation would use Solend SDK
+        // npm install @solendprotocol/solend-sdk
+        
+        console.log(`[Borrow] Token: ${token}, Amount: ${amount}`);
+        console.log(`[Borrow] Collateral: ${collateral || 'auto'}`);
+        
+        throw new Error(
+          'Borrowing requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
+          'Install with: npm install @solendprotocol/solend-sdk. ' +
+          'See: https://docs.solend.fi/ or https://docs.jetprotocol.io/'
+        );
+        
+        /*
+        // Example Solend implementation:
+        import { SolendMarket, SolendAction } from '@solendprotocol/solend-sdk';
+        
+        const market = await SolendMarket.initialize(connection, 'production');
+        
+        const borrowAction = await SolendAction.buildBorrowTxns(
+          market,
+          amount,
+          token,
+          signer.publicKey,
+          'production',
+          collateral
+        );
+        
+        const signature = await connection.sendTransaction(
+          borrowAction.transaction,
+          [signer, ...borrowAction.signers]
+        );
+        */
+      } catch (error) {
+        console.error('[Borrow] Error:', error);
+        throw error;
+      }
+    },
+  };
+}
+
+/**
+ * Create a real repay handler for lending protocols
+ * Placeholder for Solend/Jet integration
+ */
+export function createRealRepayHandler(
+  config: {
+    connection?: Connection;
+  } = {}
+): ActionHandler {
+  const { connection = getConnection() } = config;
+
+  return {
+    async execute(
+      chain: SupportedChain,
+      params: Record<string, unknown>,
+      context: ExecutionContext
+    ): Promise<Record<string, unknown>> {
+      if (chain !== 'solana') {
+        throw new Error(`Repaying on ${chain} not yet implemented`);
+      }
+
+      const {
+        token,
+        amount,
+        signer,
+      } = params as {
+        token: string;
+        amount: string;
+        signer: Signer;
+      };
+
+      if (!signer) {
+        throw new Error('Signer is required for repaying');
+      }
+
+      try {
+        // Note: Real implementation would use Solend SDK
+        // npm install @solendprotocol/solend-sdk
+        
+        console.log(`[Repay] Token: ${token}, Amount: ${amount}`);
+        
+        throw new Error(
+          'Repaying requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
+          'Install with: npm install @solendprotocol/solend-sdk. ' +
+          'See: https://docs.solend.fi/'
+        );
+        
+        /*
+        // Example Solend implementation:
+        import { SolendMarket, SolendAction } from '@solendprotocol/solend-sdk';
+        
+        const market = await SolendMarket.initialize(connection, 'production');
+        
+        const repayAction = await SolendAction.buildRepayTxns(
+          market,
+          amount,
+          token,
+          signer.publicKey,
+          'production'
+        );
+        
+        const signature = await connection.sendTransaction(
+          repayAction.transaction,
+          [signer, ...repayAction.signers]
+        );
+        */
+      } catch (error) {
+        console.error('[Repay] Error:', error);
+        throw error;
+      }
+    },
+  };
+}
+
+/**
  * Export all real handlers
  */
 export function createRealTradingHandlers(config?: {
@@ -574,9 +945,33 @@ export function createRealTradingHandlers(config?: {
     ['bridge', createRealBridgeHandler(config)],
     ['transfer', createRealTransferHandler(config)],
     ['stake', createRealStakeHandler(config)],
-    // Note: unstake, yieldFarm, borrow, repay need additional implementation
+    ['unstake', createRealUnstakeHandler(config)],
+    ['yieldFarm', createRealYieldFarmHandler(config)],
+    ['borrow', createRealBorrowHandler(config)],
+    ['repay', createRealRepayHandler(config)],
   ]);
 }
 
-// Re-export types
-export type { SwapParams, BridgeParams, TransferParams, StakeParams } from './trading.js';
+// Import types from trading.ts
+import type {
+  SwapParams,
+  BridgeParams,
+  TransferParams,
+  StakeParams,
+  UnstakeParams,
+  YieldFarmParams,
+  BorrowParams,
+  RepayParams,
+} from './trading.js';
+
+// Re-export types for consumers
+export type {
+  SwapParams,
+  BridgeParams,
+  TransferParams,
+  StakeParams,
+  UnstakeParams,
+  YieldFarmParams,
+  BorrowParams,
+  RepayParams,
+};

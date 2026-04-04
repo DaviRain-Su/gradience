@@ -25,6 +25,10 @@ export {
   createRealBridgeHandler,
   createRealTransferHandler,
   createRealStakeHandler,
+  createRealUnstakeHandler,
+  createRealYieldFarmHandler,
+  createRealBorrowHandler,
+  createRealRepayHandler,
   createRealTradingHandlers,
 } from './trading-real.js';
 
