@@ -19,6 +19,7 @@ import { useOWSBinding } from '../../hooks/useOWSBinding';
 import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
 import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
 import type { OWSAgentSubWallet } from '../../lib/ows/agent-router';
+import { PolicyManager } from '../../components/wallet/PolicyManager';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'multi-agent' | 'settings';
 
@@ -1097,6 +1098,7 @@ function MeView({
                     <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>No reputation data yet. Complete tasks to build your on-chain reputation.</p>
                 )}
             </div>
+            <PolicyManager />
         </div>
     );
 }

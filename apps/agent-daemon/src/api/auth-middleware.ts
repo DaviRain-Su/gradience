@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { SessionManager } from '../auth/session-manager.js';
+import { OWSSdkBridge } from '../wallet/ows-sdk-bridge.js';
 
 // Routes that don't require any authentication
 const PUBLIC_ROUTES = [
@@ -40,6 +41,24 @@ export function createAuthHook(daemonToken: string, sessionManager: SessionManag
         if (token === daemonToken) {
             (request as any).authType = 'daemon';
             return;
+        }
+
+        // Check OWS API key (agent mode with policy enforcement)
+        if (token.startsWith('ows_key_')) {
+            try {
+                const owsBridge = new OWSSdkBridge();
+                const keys = owsBridge.listAgentApiKeys();
+                const keyInfo = keys.find(k => k.id === token.replace('ows_key_', ''));
+                if (keyInfo) {
+                    (request as any).authType = 'ows_agent';
+                    (request as any).owsKeyId = keyInfo.id;
+                    (request as any).owsWalletIds = keyInfo.walletIds;
+                    (request as any).owsPolicyIds = keyInfo.policyIds;
+                    return;
+                }
+            } catch {
+                // Fall through to session check
+            }
         }
 
         // Check session token (web users)
