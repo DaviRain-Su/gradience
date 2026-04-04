@@ -957,20 +957,29 @@ function SettingsView() {
     };
 
     return (
-        <div className="p-6 space-y-6 overflow-y-auto h-full">
-            <h2 className="text-2xl font-bold">Settings</h2>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', height: '100%' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Settings</h2>
             
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-4">
-                <h3 className="text-lg font-semibold">Network Configuration</h3>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Network Configuration</h3>
                 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
                         RPC Endpoint
                     </label>
                     <select
                         value={settings.rpcEndpoint}
                         onChange={(e) => updateSetting('rpcEndpoint', e.target.value)}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            outline: 'none',
+                        }}
                     >
                         <option value="https://api.devnet.solana.com">Devnet (Default)</option>
                         <option value="https://api.mainnet-beta.solana.com">Mainnet Beta</option>
@@ -980,7 +989,7 @@ function SettingsView() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
                         Indexer URL
                     </label>
                     <input
@@ -988,43 +997,70 @@ function SettingsView() {
                         value={settings.indexerUrl}
                         onChange={(e) => updateSetting('indexerUrl', e.target.value)}
                         placeholder="http://localhost:3001"
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            outline: 'none',
+                        }}
                     />
                 </div>
             </div>
 
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-4">
-                <h3 className="text-lg font-semibold">Appearance</h3>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Appearance</h3>
                 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
                         Theme
                     </label>
                     <select
                         value={settings.theme}
                         onChange={(e) => updateSetting('theme', e.target.value as 'dark' | 'light')}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            outline: 'none',
+                        }}
                     >
                         <option value="dark">Dark (Current)</option>
                         <option value="light" disabled>Light (Coming Soon)</option>
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">Light theme will be available in a future update</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>Light theme will be available in a future update</p>
                 </div>
             </div>
 
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-                <h3 className="text-lg font-semibold mb-3">About</h3>
-                <div className="text-sm text-gray-400 space-y-1">
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '12px' }}>About</h3>
+                <div style={{ fontSize: '14px', color: '#16161A', opacity: 0.6, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <p>AgentM Web v1.0.0</p>
                     <p>AI Agent Economy on Solana</p>
-                    <p className="text-xs text-gray-600 mt-2">Settings are stored locally in your browser</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.4, marginTop: '8px' }}>Settings are stored locally in your browser</p>
                 </div>
             </div>
 
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                     onClick={saveSettings}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition"
+                    style={{
+                        padding: '8px 24px',
+                        background: '#16161A',
+                        color: '#FFFFFF',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        border: '1.5px solid #16161A',
+                        cursor: 'pointer',
+                    }}
                 >
                     {saved ? '✓ Saved' : 'Save Settings'}
                 </button>
@@ -1037,7 +1073,16 @@ function SettingsView() {
                         };
                         setSettings(defaults);
                     }}
-                    className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition"
+                    style={{
+                        padding: '8px 24px',
+                        background: '#F3F3F8',
+                        color: '#16161A',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        border: '1.5px solid #16161A',
+                        cursor: 'pointer',
+                    }}
                 >
                     Reset to Defaults
                 </button>
@@ -1094,63 +1139,93 @@ function TaskDetailModal({
     const deadlineText = deadlineDate.toLocaleString();
 
     const stateBadge = (() => {
-        const base = 'px-2 py-0.5 rounded-full text-xs font-medium border';
+        const baseStyle: React.CSSProperties = {
+            padding: '2px 8px',
+            borderRadius: '9999px',
+            fontSize: '12px',
+            fontWeight: 500,
+            border: '1.5px solid #16161A',
+        };
         switch (task.state) {
-            case 'Open': return <span className={`${base} bg-emerald-900/30 text-emerald-400 border-emerald-800`}>Open</span>;
-            case 'InProgress': return <span className={`${base} bg-blue-900/30 text-blue-400 border-blue-800`}>In Progress</span>;
-            case 'Judging': return <span className={`${base} bg-amber-900/30 text-amber-400 border-amber-800`}>Judging</span>;
-            case 'Settled': return <span className={`${base} bg-purple-900/30 text-purple-400 border-purple-800`}>Settled</span>;
-            case 'Cancelled': return <span className={`${base} bg-red-900/30 text-red-400 border-red-800`}>Cancelled</span>;
-            default: return <span className={`${base} bg-gray-800 text-gray-400 border-gray-700`}>{task.state}</span>;
+            case 'Open': return <span style={{ ...baseStyle, background: '#CDFF4D', color: '#16161A' }}>Open</span>;
+            case 'InProgress': return <span style={{ ...baseStyle, background: '#C6BBFF', color: '#16161A' }}>In Progress</span>;
+            case 'Judging': return <span style={{ ...baseStyle, background: '#FEF3C7', color: '#16161A' }}>Judging</span>;
+            case 'Settled': return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>Settled</span>;
+            case 'Cancelled': return <span style={{ ...baseStyle, background: '#FEE2E2', color: '#DC2626' }}>Cancelled</span>;
+            default: return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>{task.state}</span>;
         }
     })();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative z-10 w-full h-full md:h-auto md:max-w-2xl md:max-h-[85vh] md:rounded-2xl bg-gray-900 border-0 md:border md:border-gray-700 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-                    <h3 className="text-lg font-semibold">Task Details</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition" aria-label="Close">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(243, 243, 248, 0.85)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+            <div style={{
+                position: 'relative',
+                zIndex: 10,
+                width: '100%',
+                height: '100%',
+                maxWidth: '672px',
+                maxHeight: '85vh',
+                borderRadius: '16px',
+                background: '#FFFFFF',
+                border: '1.5px solid #16161A',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1.5px solid #16161A' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Task Details</h3>
+                    <button onClick={onClose} style={{ color: '#16161A', opacity: 0.6, cursor: 'pointer' }} aria-label="Close">
                         ✕
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                    <div className="flex items-center justify-between">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         {stateBadge}
-                        <span className="text-xs text-gray-500">{task.submissions_count} submission{task.submissions_count === 1 ? '' : 's'}</span>
+                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>{task.submissions_count} submission{task.submissions_count === 1 ? '' : 's'}</span>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Description</p>
-                        <p className="text-sm text-gray-200 whitespace-pre-wrap">{task.description}</p>
+                        <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Description</p>
+                        <p style={{ fontSize: '14px', color: '#16161A', whiteSpace: 'pre-wrap' }}>{task.description}</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
-                            <p className="text-xs text-gray-500 mb-1">Poster</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-mono text-gray-300 truncate">{task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
-                                <button onClick={copyPoster} className="text-[10px] px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-300 transition">Copy</button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Poster</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '14px', fontFamily: 'monospace', color: '#16161A' }}>{task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
+                                <button onClick={copyPoster} style={{ fontSize: '10px', padding: '2px 8px', background: '#FFFFFF', border: '1.5px solid #16161A', borderRadius: '4px', color: '#16161A', cursor: 'pointer' }}>Copy</button>
                             </div>
                         </div>
-                        <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
-                            <p className="text-xs text-gray-500 mb-1">Category</p>
-                            <p className="text-sm text-gray-300">{task.category}</p>
+                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Category</p>
+                            <p style={{ fontSize: '14px', color: '#16161A' }}>{task.category}</p>
                         </div>
-                        <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
-                            <p className="text-xs text-gray-500 mb-1">Reward</p>
-                            <p className="text-sm font-medium text-gray-200">{rewardSol} SOL</p>
+                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Reward</p>
+                            <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{rewardSol} SOL</p>
                         </div>
-                        <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
-                            <p className="text-xs text-gray-500 mb-1">Deadline</p>
-                            <p className="text-sm text-gray-300">{deadlineText}</p>
+                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Deadline</p>
+                            <p style={{ fontSize: '14px', color: '#16161A' }}>{deadlineText}</p>
                         </div>
                     </div>
-                    {applyError && <p className="text-xs text-red-400">{applyError}</p>}
+                    {applyError && <p style={{ fontSize: '12px', color: '#DC2626' }}>{applyError}</p>}
                     {isOpen && isConnected && (
                         <button
                             onClick={handleApply}
                             disabled={applying}
-                            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900 rounded-lg text-sm font-medium transition"
+                            style={{
+                                width: '100%',
+                                padding: '10px 16px',
+                                background: applying ? '#F3F3F8' : '#16161A',
+                                color: applying ? '#16161A' : '#FFFFFF',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                border: '1.5px solid #16161A',
+                                cursor: applying ? 'not-allowed' : 'pointer',
+                                opacity: applying ? 0.5 : 1,
+                            }}
                         >
                             {applying ? 'Applying...' : 'Apply for Task'}
                         </button>
@@ -1257,25 +1332,27 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
     }
 
     return (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 space-y-5">
-            <h3 className="text-lg font-semibold text-white">Post a Task</h3>
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #16161A', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Post a Task</h3>
 
             {toast && (
-                <div
-                    className={`rounded-lg px-4 py-2.5 text-sm font-medium ${
-                        toast.type === 'success'
-                            ? 'bg-emerald-900/50 border border-emerald-700 text-emerald-300'
-                            : 'bg-red-900/50 border border-red-700 text-red-300'
-                    }`}
-                >
+                <div style={{
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    background: toast.type === 'success' ? '#D1FAE5' : '#FEE2E2',
+                    border: `1.5px solid ${toast.type === 'success' ? '#10B981' : '#DC2626'}`,
+                    color: toast.type === 'success' ? '#059669' : '#DC2626',
+                }}>
                     {toast.message}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                        Task Description <span className="text-red-400">*</span>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>
+                        Task Description <span style={{ color: '#DC2626' }}>*</span>
                     </label>
                     <textarea
                         value={description}
@@ -1283,17 +1360,36 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                         placeholder="Describe the task in detail..."
                         rows={4}
                         required
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 resize-none"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            outline: 'none',
+                            resize: 'none',
+                        }}
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">Category</label>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>Category</label>
                         <select
                             value={category}
                             onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                            style={{
+                                width: '100%',
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                color: '#16161A',
+                                outline: 'none',
+                            }}
                         >
                             {TASK_CATEGORIES.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
@@ -1302,8 +1398,8 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                            Reward (SOL) <span className="text-gray-500 font-normal">min 0.01</span>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>
+                            Reward (SOL) <span style={{ color: '#16161A', opacity: 0.5, fontWeight: 400 }}>min 0.01</span>
                         </label>
                         <input
                             type="number"
@@ -1313,25 +1409,43 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                             min="0.01"
                             step="0.01"
                             required
-                            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                            style={{
+                                width: '100%',
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                color: '#16161A',
+                                outline: 'none',
+                            }}
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Deadline</label>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>Deadline</label>
                     <input
                         type="date"
                         value={deadline}
                         onChange={(e) => setDeadline(e.target.value)}
                         min={minDateStr}
                         required
-                        className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                        style={{
+                            width: '100%',
+                            background: '#F3F3F8',
+                            border: '1.5px solid #16161A',
+                            borderRadius: '8px',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            color: '#16161A',
+                            outline: 'none',
+                        }}
                     />
                 </div>
 
                 {poster && (
-                    <p className="text-xs text-gray-500 font-mono">
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace' }}>
                         Posting as: {poster.slice(0, 8)}...{poster.slice(-4)}
                     </p>
                 )}
@@ -1339,13 +1453,28 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                 <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900 disabled:text-blue-400 rounded-lg text-sm font-medium text-white transition"
+                    style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '10px 16px',
+                        background: submitting ? '#F3F3F8' : '#16161A',
+                        color: submitting ? '#16161A' : '#FFFFFF',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        border: '1.5px solid #16161A',
+                        cursor: submitting ? 'not-allowed' : 'pointer',
+                        opacity: submitting ? 0.5 : 1,
+                    }}
                 >
                     {submitting ? (
                         <>
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            <svg style={{ animation: 'spin 1s linear infinite', height: '16px', width: '16px' }} viewBox="0 0 24 24" fill="none">
+                                <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                             </svg>
                             Posting...
                         </>
