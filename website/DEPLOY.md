@@ -1,5 +1,32 @@
 # 网站部署指南
 
+> 📚 **完整部署配置**: 请参考 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取详细的 Vercel 自动部署配置。
+
+## 自动部署状态
+
+| 环境 | 分支 | 状态 |
+|-----|------|------|
+| Production | `main` | ![Deploy Status](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg?branch=main) |
+| Preview | PR | ![Deploy Status](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg) |
+
+## 快速开始
+
+```bash
+# 1. 安装依赖
+cd website
+pnpm install
+
+# 2. 配置环境变量
+cp .env.local.example .env.local
+# 编辑 .env.local 添加必需的 API keys
+
+# 3. 本地开发
+pnpm dev
+
+# 4. 生产构建
+pnpm build
+```
+
 ## 邮件订阅服务配置
 
 ### 方案 1: Vercel 托管（推荐，支持 API 路由）

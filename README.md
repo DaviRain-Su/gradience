@@ -179,6 +179,39 @@ cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
 
 ---
 
+## Deployment
+
+### Website (Marketing Site)
+
+自动部署到 Vercel:
+
+| 环境 | 分支 | URL | 状态 |
+|-----|------|-----|------|
+| Production | `main` | [gradiences.xyz](https://gradiences.xyz) | [![Deploy Website](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg?branch=main)](https://github.com/gradiences/gradience/actions/workflows/deploy-website.yml) |
+| Preview | PR | - | 自动创建 |
+
+```bash
+# 快速部署指南
+cd website
+
+# 本地开发
+pnpm dev
+
+# 配置说明
+# 详见: website/DEPLOY_QUICKSTART.md (5分钟配置)
+# 完整文档: website/DEPLOYMENT.md
+```
+
+### Required Secrets
+
+部署需要以下 GitHub Secrets:
+
+- `VERCEL_TOKEN` - Vercel API Token
+- `VERCEL_ORG_ID` - Vercel Organization ID
+- `VERCEL_PROJECT_ID_WEBSITE` - Vercel Project ID
+
+---
+
 ## Links
 
 - **Website**: [gradiences.xyz](https://www.gradiences.xyz)

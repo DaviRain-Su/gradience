@@ -1,4 +1,60 @@
 {
   "version": 2,
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "buildCommand": "cd .. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/website build",
+  "outputDirectory": ".next",
+  "rootDirectory": "website",
+  "installCommand": "cd .. && pnpm install --frozen-lockfile",
+  "github": {
+    "enabled": true,
+    "silent": false,
+    "autoJobCancelation": true
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "staging": true,
+      "development": false
+    }
+  },
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "headers": [
+    {
+      "source": "/api/subscribe",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/ingest/:path*",
+      "destination": "https://app.posthog.com/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/github",
+      "destination": "https://github.com/gradiences/gradience",
+      "permanent": true
+    },
+    {
+      "source": "/docs",
+      "destination": "https://docs.gradiences.xyz",
+      "permanent": true
+    }
+  ]
 }
