@@ -52,6 +52,8 @@ ENV AGENTD_LOG_LEVEL=info
 ENV AGENTD_DB_PATH=/data/agentd.db
 
 COPY --from=builder /app/deployed ./
+# Copy the built dist directory explicitly
+COPY --from=builder /app/apps/agent-daemon/dist ./dist
 
 # Mount a volume at /data for persistent SQLite storage
 VOLUME ["/data"]
