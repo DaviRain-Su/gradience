@@ -72,9 +72,9 @@ export interface ExecutionOptions {
   /** Dry run (don't execute handlers) */
   dryRun?: boolean;
   /** Callbacks */
-  onStepStart?: (stepId: string, index: number) => void;
-  onStepComplete?: (stepId: string, result: unknown, index: number) => void;
-  onStepError?: (stepId: string, error: Error, index: number) => void;
+  onStepStart?: (stepId: string) => void;
+  onStepComplete?: (result: { stepId: string; status: string }) => void;
+  onStepError?: (stepId: string, error: Error) => void;
 }
 
 // ============================================================================
@@ -101,7 +101,11 @@ export class EnhancedWorkflowSDK extends EventEmitter {
       rateLimitPerMinute: 60,
       enableEvents: false,
       wsEndpoint: '',
-      ...config,
+      rpcEndpoint: config.rpcEndpoint,
+      programId: config.programId || '3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW',
+      indexerEndpoint: config.indexerEndpoint || '',
+      wallet: config.wallet as import('./marketplace.js').WalletAdapter,
+      connection: config.connection as import('@solana/web3.js').Connection,
     };
 
     this.baseSDK = new WorkflowSDK(config);
@@ -208,9 +212,9 @@ export class EnhancedWorkflowSDK extends EventEmitter {
   /**
    * Batch purchase workflows
    */
-  async batchPurchase(workflowIds: string[]): Promise<BatchOperationResult<string>> {
+  async batchPurchase(workflowIds: string[]): Promise<BatchOperationResult<import('./marketplace.js').PurchaseResult>> {
     const startTime = Date.now();
-    const successful: { id: string; result: string }[] = [];
+    const successful: { id: string; result: import('./marketplace.js').PurchaseResult }[] = [];
     const failed: { id: string; error: Error }[] = [];
 
     for (const id of workflowIds) {
@@ -411,7 +415,7 @@ export class EnhancedWorkflowSDK extends EventEmitter {
           this.emit('workflow_event', workflowEvent);
           this.emit(workflowEvent.type, workflowEvent);
         } catch (error) {
-          logger.error({ error }, 'Failed to parse WebSocket message');
+          logger.error({ error: String(error) }, 'Failed to parse WebSocket message');
         }
       };
 
@@ -422,12 +426,12 @@ export class EnhancedWorkflowSDK extends EventEmitter {
       };
 
       this.wsConnection.onerror = (error) => {
-        logger.error({ error }, 'WebSocket error');
+        logger.error({ error: error.message || 'WebSocket error' }, 'WebSocket error');
       };
 
       this.emit('connected', {});
     } catch (error) {
-      logger.error({ error }, 'Failed to connect WebSocket');
+      logger.error({ error: String(error) }, 'Failed to connect WebSocket');
     }
   }
 
@@ -471,7 +475,7 @@ export class EnhancedWorkflowSDK extends EventEmitter {
     return this.withRetry(() => this.baseSDK.create(workflow));
   }
 
-  async purchase(workflowId: string): Promise<string> {
+  async purchase(workflowId: string): Promise<import('./marketplace.js').PurchaseResult> {
     await this.withRateLimit();
     return this.withRetry(() => this.baseSDK.purchase(workflowId));
   }
@@ -480,7 +484,7 @@ export class EnhancedWorkflowSDK extends EventEmitter {
     return this.baseSDK.simulate(workflow, config);
   }
 
-  async review(workflowId: string, rating: number, comment: string): Promise<void> {
+  async review(workflowId: string, rating: number, comment: string): Promise<import('./marketplace.js').ReviewResult> {
     await this.withRateLimit();
     return this.withRetry(() => this.baseSDK.review(workflowId, rating, comment));
   }
@@ -497,26 +501,26 @@ export class EnhancedWorkflowSDK extends EventEmitter {
     return this.withRetry(() => this.baseSDK.getMyPurchases());
   }
 
-  async update(workflowId: string, updates: Partial<Pick<GradienceWorkflow, 'description' | 'isPublic'>>): Promise<void> {
+  async update(workflowId: string, updates: Partial<Pick<GradienceWorkflow, 'description' | 'isPublic'>>): Promise<import('./marketplace.js').UpdateResult> {
     await this.withRateLimit();
     // Invalidate cache after update
     this.invalidateCache(workflowId);
     return this.withRetry(() => this.baseSDK.update(workflowId, updates));
   }
 
-  async deactivate(workflowId: string): Promise<void> {
+  async deactivate(workflowId: string): Promise<import('./marketplace.js').UpdateResult> {
     await this.withRateLimit();
     this.invalidateCache(workflowId);
     return this.withRetry(() => this.baseSDK.deactivate(workflowId));
   }
 
-  async activate(workflowId: string): Promise<void> {
+  async activate(workflowId: string): Promise<import('./marketplace.js').UpdateResult> {
     await this.withRateLimit();
     this.invalidateCache(workflowId);
     return this.withRetry(() => this.baseSDK.activate(workflowId));
   }
 
-  async delete(workflowId: string): Promise<void> {
+  async delete(workflowId: string): Promise<import('./marketplace.js').UpdateResult> {
     await this.withRateLimit();
     this.invalidateCache(workflowId);
     return this.withRetry(() => this.baseSDK.delete(workflowId));
