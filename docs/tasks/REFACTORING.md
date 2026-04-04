@@ -85,60 +85,43 @@ This document tracks the modularization of large monolithic files in the Gradien
 
 ### 5. TypeScript SDK (1559 lines)
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 **Location:** `apps/agent-arena/clients/typescript/src/sdk.ts`
 
-**Analysis:**
-- Large SDK file with multiple resource types
-- Likely contains: tasks, agents, judges, submissions, reputation
+**Refactoring:**
+- Created `types.ts` - All SDK type definitions
+- Created `resources/tasks.ts` - Task management methods
+- Created `resources/reputation.ts` - Reputation queries
+- Created `resources/judge-pool.ts` - Judge pool operations
+- Created `resources/profile.ts` - Agent profiles
+- Created `resources/attestations.ts` - Attestations
+- Created `resources/config.ts` - Program config
+- Created `resources/index.ts` - Unified exports
+- Updated `sdk.ts` as backward-compatible wrapper
 
-**Proposed Refactoring:**
-```
-clients/typescript/src/
-├── sdk.ts (re-export, backward compatible)
-├── types.ts (shared types)
-├── client.ts (base HTTP client)
-├── resources/
-│   ├── tasks.ts
-│   ├── agents.ts
-│   ├── judges.ts
-│   ├── submissions.ts
-│   └── reputation.ts
-└── index.ts (unified exports)
-```
-
-**Estimated Reduction:** 1559 → ~200 lines (main) + 5×200 lines (modules)
+**Result:** Reduced sdk.ts from 1559 lines to ~300 lines
 
 ---
 
 ### 6. CLI Tool (1329 lines)
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 **Location:** `apps/agent-arena/cli/gradience.ts`
 
-**Analysis:**
-- CLI tool with multiple commands
-- Likely contains: task commands, agent commands, config commands
+**Refactoring:**
+- Created `types.ts` - CLI type definitions
+- Created `commands/task.ts` - Task commands (post, apply, submit, etc.)
+- Created `commands/judge.ts` - Judge commands (register, unstake)
+- Created `commands/profile.ts` - Profile commands (show, update, publish)
+- Created `utils/config.ts` - Config management
+- Created `utils/sdk.ts` - SDK utilities
+- Created `utils/output.ts` - Output formatting
+- Created `commands/index.ts` and `utils/index.ts` - Unified exports
+- Simplified `gradience.ts` as entry point
 
-**Proposed Refactoring:**
-```
-cli/
-├── gradience.ts (main entry, backward compatible)
-├── commands/
-│   ├── task.ts
-│   ├── agent.ts
-│   ├── judge.ts
-│   ├── config.ts
-│   └── wallet.ts
-├── utils/
-│   ├── formatting.ts
-│   └── validation.ts
-└── index.ts
-```
-
-**Estimated Reduction:** 1329 → ~150 lines (main) + 5×200 lines (modules)
+**Result:** Reduced gradience.ts from 1329 lines to ~20 lines
 
 ---
 
