@@ -5,45 +5,58 @@ import Link from 'next/link';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
+// Lazy-loaded views
 const FeedView = lazy(() => import('./views/FeedView').then(m => ({ default: m.FeedView })));
 const SocialView = lazy(() => import('./views/SocialView').then(m => ({ default: m.SocialView })));
 const ChatView = lazy(() => import('./views/ChatView').then(m => ({ default: m.ChatView })));
 const MultiAgentTaskView = lazy(() => import('./views/MultiAgentTaskView').then(m => ({ default: m.MultiAgentTaskView })));
+
+// Components
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
+import { LoginScreen } from './components/LoginScreen';
+import { PolicyManager } from '../../components/wallet/PolicyManager';
+import { MasterReputationCard } from '../../components/wallet/MasterReputationCard';
+import { AgentWalletList } from '../../components/wallet/AgentWalletList';
+
+// Hooks
 import { useDaemonApi, useConnection } from '../../lib/connection/ConnectionContext';
-import { cachedFetch, invalidateCache } from '../../lib/cache';
 import { useSessionAuth } from '../../hooks/useSessionAuth';
 import { useNetworkRegistration } from '../../hooks/useNetworkRegistration';
 import { useOWSBinding } from '../../hooks/useOWSBinding';
 import { useOWSAgentRouter, type AgentSubWallet } from '../../hooks/useOWSAgentRouter';
+import { useIndexerStatus } from './hooks/useIndexerStatus';
+
+// Utils & Cache
+import { cachedFetch, invalidateCache } from '../../lib/cache';
+
+// Local types, constants, and utils
+import type {
+  ActiveView,
+  ReputationData,
+  AgentRow,
+  SolanaWalletCandidate,
+  AgentDetailData,
+  SettingsData,
+  PostedTask,
+  TaskData,
+  IndexerConnectionStatus,
+} from './types';
+import { INDEXER_BASE, TASK_CATEGORIES, STATE_COLORS } from './constants';
+import {
+  formatBindingStatus,
+  resolveIndexerBase,
+  getTimeoutSignal,
+  formatSol,
+  truncateAddress,
+  formatRelativeTime,
+  formatDate,
+} from './utils';
+
+// External types
 import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
 import type { OWSAgentSubWallet } from '../../lib/ows/agent-router';
 import type { DaemonWallet } from '../../lib/ows/daemon-client';
-import { PolicyManager } from '../../components/wallet/PolicyManager';
-
-type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'multi-agent' | 'settings';
-
-const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL ?? '';
-
-interface ReputationData {
-    avg_score: number;
-    completed: number;
-    total_applied: number;
-    win_rate: number;
-    total_earned: number;
-}
-
-interface AgentRow {
-    agent: string;
-    weight: number;
-    reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
-}
-
-interface SolanaWalletCandidate {
-    address: string;
-    connectorType: string;
-}
 
 export default function AppPage() {
     const { primaryWallet, user, sdkHasLoaded } = useDynamicContext();
@@ -1099,6 +1112,23 @@ function MeView({
                     <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>No reputation data yet. Complete tasks to build your on-chain reputation.</p>
                 )}
             </div>
+            
+            {/* GRA-225d: Master Reputation Card */}
+            <MasterReputationCard masterWallet={masterWallet} />
+            
+            {/* GRA-225d: Agent Wallet List with Reputation */}
+            <AgentWalletList
+                masterWallet={masterWallet}
+                activeWalletId={activeSubWallet?.id ?? null}
+                onSelectWallet={(id) => {
+                    if (id) {
+                        onSetActiveSubWallet(id);
+                    } else {
+                        onSetActiveSubWallet(null);
+                    }
+                }}
+            />
+            
             <PolicyManager />
         </div>
     );
