@@ -1,9 +1,3 @@
-/**
- * Profile Edit Page
- * 
- * Edit agent's profile and Soul Profile
- */
-
 'use client';
 
 import { useMyProfile, useUpdateSoulProfile } from '@/hooks/useProfile';
@@ -12,6 +6,11 @@ import { DomainInput } from '@/components/social/DomainInput';
 import Link from 'next/link';
 import { useState } from 'react';
 
+const c = {
+  bg: '#F3F3F8', surface: '#FFFFFF', ink: '#16161A',
+  lavender: '#C6BBFF', lime: '#CDFF4D',
+};
+
 export default function EditProfilePage() {
   const { profile, loading: profileLoading } = useMyProfile();
   const { updateSoulProfile, updating } = useUpdateSoulProfile();
@@ -19,75 +18,53 @@ export default function EditProfilePage() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div style={{ minHeight: '100vh', background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: c.ink, opacity: 0.5 }}>Loading...</span>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-400">Profile not found</div>
+      <div style={{ minHeight: '100vh', background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#DC2626' }}>Profile not found</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div style={{ minHeight: '100vh', background: c.bg }}>
       {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900/50">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-white">Edit Profile</h1>
-            <Link
-              href={`/profile/${profile.address}`}
-              className="text-gray-400 hover:text-white transition"
-            >
-              Cancel
-            </Link>
-          </div>
+      <div style={{ borderBottom: `1.5px solid ${c.ink}`, background: c.surface }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '24px', fontWeight: 700, margin: 0, color: c.ink }}>Edit Profile</h1>
+          <Link href={`/profile/${profile.address}`} style={{ color: c.ink, opacity: 0.6, textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Cancel</Link>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Domain Section */}
-          <section className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-4">Domain</h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Link your .sol or .eth domain to your profile
-            </p>
-            <DomainInput
-              value={domain}
-              onChange={setDomain}
-              placeholder="yourname.sol"
-              showValidation
-              autoResolve
-            />
-          </section>
-
-          {/* Soul Profile Section */}
-          <section className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-4">Soul Profile</h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Define your agent&apos;s personality, values, and preferences
-            </p>
-            <SoulProfileEditor
-              initialProfile={profile.soulProfile as any}
-              onSave={updateSoulProfile}
-              onCancel={() => window.history.back()}
-            />
-          </section>
-
-          {/* Save Status */}
-          {updating && (
-            <div className="text-center text-purple-400">
-              Saving changes...
-            </div>
-          )}
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Domain */}
+        <div style={{ background: c.surface, borderRadius: '24px', padding: '24px', border: `1.5px solid ${c.ink}` }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: c.ink, marginBottom: '8px' }}>Domain</h2>
+          <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginBottom: '16px' }}>Link your .sol or .eth domain to your profile</p>
+          <DomainInput value={domain} onChange={setDomain} placeholder="yourname.sol" showValidation autoResolve />
         </div>
+
+        {/* Soul Profile */}
+        <div style={{ background: c.surface, borderRadius: '24px', padding: '24px', border: `1.5px solid ${c.ink}` }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: c.ink, marginBottom: '8px' }}>Soul Profile</h2>
+          <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginBottom: '16px' }}>Define your personality, values, and preferences</p>
+          <SoulProfileEditor
+            initialProfile={profile.soulProfile as any}
+            onSave={updateSoulProfile}
+            onCancel={() => window.history.back()}
+          />
+        </div>
+
+        {updating && (
+          <div style={{ textAlign: 'center', color: c.lavender, fontWeight: 600, fontSize: '14px' }}>Saving changes...</div>
+        )}
       </div>
     </div>
   );

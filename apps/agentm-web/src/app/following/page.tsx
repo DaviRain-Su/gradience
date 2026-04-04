@@ -1,9 +1,3 @@
-/**
- * Following Page
- * 
- * Display following and followers lists
- */
-
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +6,12 @@ import { FollowButton } from '@/components/social/FollowButton';
 import { DomainBadge } from '@/components/social/DomainBadge';
 import Link from 'next/link';
 
-// Mock current user address - TODO: Get from auth context
+const c = {
+  bg: '#F3F3F8', surface: '#FFFFFF', ink: '#16161A',
+  lavender: '#C6BBFF', lime: '#CDFF4D',
+};
+
+// TODO: Get from auth context
 const CURRENT_USER = '0x1234...5678';
 
 export default function FollowingPage() {
@@ -24,101 +23,70 @@ export default function FollowingPage() {
   const list = activeTab === 'following' ? following : followers;
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div style={{ minHeight: '100vh', background: c.bg }}>
       {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900/50">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-white">Connections</h1>
+      <div style={{ borderBottom: `1.5px solid ${c.ink}`, background: c.surface }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '16px 24px' }}>
+          <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '24px', fontWeight: 700, margin: 0, color: c.ink }}>Connections</h1>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex gap-6">
-            <button
-              onClick={() => setActiveTab('following')}
-              className={`py-4 text-sm font-medium border-b-2 transition ${
-                activeTab === 'following'
-                  ? 'text-purple-400 border-purple-400'
-                  : 'text-gray-400 border-transparent hover:text-gray-300'
-              }`}
-            >
-              Following ({following.length})
+      <div style={{ borderBottom: `1.5px solid ${c.ink}`, background: c.surface }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px', display: 'flex', gap: '24px' }}>
+          {(['following', 'followers'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              padding: '14px 0', fontSize: '14px', fontWeight: 600, background: 'none', cursor: 'pointer',
+              border: 'none', borderBottom: activeTab === tab ? `2px solid ${c.ink}` : '2px solid transparent',
+              color: activeTab === tab ? c.ink : `${c.ink}80`,
+            }}>
+              {tab === 'following' ? `Following (${following.length})` : `Followers (${followers.length})`}
             </button>
-            <button
-              onClick={() => setActiveTab('followers')}
-              className={`py-4 text-sm font-medium border-b-2 transition ${
-                activeTab === 'followers'
-                  ? 'text-purple-400 border-purple-400'
-                  : 'text-gray-400 border-transparent hover:text-gray-300'
-              }`}
-            >
-              Followers ({followers.length})
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px' }}>
         {loading ? (
-          <div className="text-center text-gray-400 py-12">Loading...</div>
+          <div style={{ textAlign: 'center', padding: '48px', color: c.ink, opacity: 0.5 }}>Loading...</div>
         ) : list.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">
-            {activeTab === 'following' 
-              ? 'You are not following anyone yet' 
-              : 'No followers yet'}
+          <div style={{ textAlign: 'center', padding: '48px', color: c.ink, opacity: 0.4 }}>
+            {activeTab === 'following' ? 'You are not following anyone yet' : 'No followers yet'}
           </div>
         ) : (
-          <div className="space-y-4">
-            {list.map((agent) => (
-              <div
-                key={agent.address}
-                className="bg-gray-800 rounded-xl p-4 border border-gray-700 flex items-center gap-4"
-              >
-                {/* Avatar */}
-                <Link href={`/profile/${agent.address}`}>
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold text-white">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {list.map(agent => (
+              <div key={agent.address} style={{
+                background: c.surface, borderRadius: '16px', padding: '16px 20px',
+                border: `1.5px solid ${c.ink}`, display: 'flex', alignItems: 'center', gap: '16px',
+              }}>
+                <Link href={`/profile/${agent.address}`} style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '16px',
+                    background: c.lavender, border: `1.5px solid ${c.ink}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: c.ink,
+                  }}>
                     {agent.displayName[0]}
                   </div>
                 </Link>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <Link
-                    href={`/profile/${agent.address}`}
-                    className="text-white font-semibold hover:text-purple-400 transition"
-                  >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Link href={`/profile/${agent.address}`} style={{ textDecoration: 'none', color: c.ink, fontWeight: 700, fontSize: '15px' }}>
                     {agent.displayName}
                   </Link>
-                  
-                  {agent.domain && (
-                    <div className="mt-1">
-                      <DomainBadge domain={agent.domain} size="sm" />
-                    </div>
-                  )}
-                  
-                  {agent.bio && (
-                    <p className="text-gray-400 text-sm mt-1 truncate">{agent.bio}</p>
-                  )}
+                  {agent.domain && <div style={{ marginTop: '4px' }}><DomainBadge domain={agent.domain} size="sm" /></div>}
+                  {agent.bio && <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agent.bio}</p>}
                 </div>
 
-                {/* Stats */}
-                <div className="hidden sm:flex items-center gap-4 text-sm text-gray-400">
-                  <div className="text-center">
-                    <div className="text-white font-semibold">{agent.reputation}</div>
-                    <div className="text-xs">Rep</div>
+                <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: c.ink }}>{agent.reputation}</div>
+                    <div style={{ fontSize: '10px', color: c.ink, opacity: 0.5, textTransform: 'uppercase' }}>Rep</div>
                   </div>
+                  <FollowButton agentAddress={agent.address} isFollowing={agent.isFollowing} onFollow={async () => {}} onUnfollow={async () => {}} />
                 </div>
-
-                {/* Action */}
-                <FollowButton
-                  agentAddress={agent.address}
-                  isFollowing={agent.isFollowing}
-                  onFollow={async () => {}}
-                  onUnfollow={async () => {}}
-                />
               </div>
             ))}
           </div>

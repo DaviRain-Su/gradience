@@ -8,15 +8,15 @@ import { TrendingUp, BarChart3, PieChart, Activity } from "lucide-react";
 export default function DashboardPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
-      {/* 头部 */}
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">动态数据仪表盘</h1>
+        <h1 className="text-3xl font-bold mb-2">Dynamic Dashboard</h1>
         <p className="text-muted-foreground">
-          使用自然语言查询你的数据，AI 会自动生成最佳的可视化图表
+          Query your data with natural language. AI generates the best visualization automatically.
         </p>
       </div>
 
-      {/* 功能卡片 */}
+      {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="pt-6">
@@ -25,7 +25,7 @@ export default function DashboardPage() {
                 <TrendingUp className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">收益分析</p>
+                <p className="text-sm text-muted-foreground">Returns</p>
                 <p className="text-2xl font-bold">+12.5%</p>
               </div>
             </div>
@@ -39,7 +39,7 @@ export default function DashboardPage() {
                 <BarChart3 className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">交易量</p>
+                <p className="text-sm text-muted-foreground">Volume</p>
                 <p className="text-2xl font-bold">$1.2M</p>
               </div>
             </div>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
                 <PieChart className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">持仓价值</p>
+                <p className="text-sm text-muted-foreground">Portfolio Value</p>
                 <p className="text-2xl font-bold">$45.2K</p>
               </div>
             </div>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
                 <Activity className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">胜率</p>
+                <p className="text-sm text-muted-foreground">Win Rate</p>
                 <p className="text-2xl font-bold">68%</p>
               </div>
             </div>
@@ -75,12 +75,12 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* 动态仪表盘 */}
+      {/* Dynamic Dashboard */}
       <Card>
         <CardHeader>
-          <CardTitle>数据查询</CardTitle>
+          <CardTitle>Data Query</CardTitle>
           <CardDescription>
-            输入查询语句获取自定义数据视图
+            Enter a query to get a custom data view
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -88,34 +88,34 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* 使用说明 */}
+      {/* Usage Guide */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">支持的查询类型</CardTitle>
+            <CardTitle className="text-lg">Supported Queries</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• 收益分析 - "显示我过去 7 天的收益"</li>
-              <li>• 交易量分析 - "查看 SOL 的交易量趋势"</li>
-              <li>• 价格追踪 - "ETH 价格走势"</li>
-              <li>• 持仓概览 - "我的持仓分布"</li>
-              <li>• 交易历史 - "显示最近的交易记录"</li>
-              <li>• 风险指标 - "分析我的投资风险"</li>
+              <li>&#8226; Returns analysis -- &quot;Show my returns for the past 7 days&quot;</li>
+              <li>&#8226; Volume analysis -- &quot;View SOL trading volume trend&quot;</li>
+              <li>&#8226; Price tracking -- &quot;ETH price movement&quot;</li>
+              <li>&#8226; Portfolio overview -- &quot;My portfolio distribution&quot;</li>
+              <li>&#8226; Trade history -- &quot;Show recent transactions&quot;</li>
+              <li>&#8226; Risk metrics -- &quot;Analyze my investment risk&quot;</li>
             </ul>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">时间范围</CardTitle>
+            <CardTitle className="text-lg">Time Ranges</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• 1小时 - "过去 1 小时的数据"</li>
-              <li>• 24小时 - "今天的收益"</li>
-              <li>• 7天 - "过去一周的交易量"</li>
-              <li>• 30天 - "最近一个月的价格走势"</li>
+              <li>&#8226; 1 hour -- &quot;Data from the past hour&quot;</li>
+              <li>&#8226; 24 hours -- &quot;Today&apos;s returns&quot;</li>
+              <li>&#8226; 7 days -- &quot;Trading volume this week&quot;</li>
+              <li>&#8226; 30 days -- &quot;Price trend this month&quot;</li>
             </ul>
           </CardContent>
         </Card>
