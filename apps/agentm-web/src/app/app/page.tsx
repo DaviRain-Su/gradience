@@ -1,9 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { FeedView } from './views/FeedView';
@@ -29,204 +26,8 @@ interface AgentRow {
     reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
 }
 
-interface SolanaWalletCandidate {
-    address: string;
-    connectorType: string | null;
-    walletClientType: string | null;
-    walletIndex: number | null;
-}
-
 export default function AppPage() {
     return <DemoApp />;
-}
-
-/** Try Privy first; fall back to direct wallet adapter */
-function PrivyOrWalletApp() {
-    const wallet = useWallet();
-    const [view, setView] = useState<ActiveView>('discover');
-    const address = wallet.publicKey?.toBase58() ?? null;
-
-    // Not connected → show connect prompt
-    if (!wallet.connected) {
-        return (
-            <div style={{ minHeight: '100vh', background: '#F3F3F8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
-                <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#16161A' }}>AgentM</h1>
-                    <p style={{ color: '#16161A', opacity: 0.6, maxWidth: '28rem', marginTop: '12px' }}>
-                        AI Agent Economy on Solana. Find agents, delegate tasks, earn reputation.
-                    </p>
-                </div>
-                <WalletMultiButton />
-                <Link href="/" style={{ fontSize: '14px', color: '#16161A', opacity: 0.5, textDecoration: 'none' }}>
-                    Back to home
-                </Link>
-            </div>
-        );
-    }
-
-    return (
-        <Shell
-            view={view}
-            setView={setView}
-            address={address}
-            activeSubWallet={null}
-            loginEmail={null}
-            wallets={[]}
-            onWalletChange={() => {}}
-            bindingStatus="unbound"
-            onLogout={() => wallet.disconnect()}
-        >
-            {view === 'discover' && <DiscoverView />}
-            {view === 'tasks' && <TaskMarketView address={address} />}
-            {view === 'feed' && <FeedView address={address} />}
-            {view === 'social' && <SocialView address={address} />}
-            {view === 'me' && (
-                <MeView
-                    address={address}
-                    masterWallet={address}
-                    loginEmail={null}
-                    selectedWallet={null}
-                    owsBinding={null}
-                    bindingStatus="unbound"
-                    bindingBusy={false}
-                    bindingError={null}
-                    providerAvailable={false}
-                    onBindOWS={() => null}
-                    onUnbindOWS={() => {}}
-                    activeSubWallet={null}
-                    subWallets={[]}
-                    routerError={null}
-                    onCreateSubWallet={() => null}
-                    onSetActiveSubWallet={() => null}
-                />
-            )}
-            {view === 'chat' && <ChatView />}
-            {view === 'settings' && <SettingsView />}
-        </Shell>
-    );
-}
-
-function PrivyApp() {
-    const { ready, authenticated, login, logout, user } = usePrivy();
-    const [view, setView] = useState<ActiveView>('discover');
-    const [selectedWalletAddress, setSelectedWalletAddress] = useState<string | null>(null);
-    const wallets = authenticated && user ? extractSolanaWallets(user) : [];
-    const preferredWallet = selectPreferredSolanaWallet(wallets);
-    const loginEmail = authenticated && user ? extractGoogleLoginEmail(user) : null;
-    const address = selectedWalletAddress
-        ? wallets.find((wallet) => wallet.address === selectedWalletAddress)?.address ?? preferredWallet?.address ?? null
-        : preferredWallet?.address ?? null;
-    const selectedWallet = wallets.find((wallet) => wallet.address === address) ?? preferredWallet ?? null;
-    const accountKey = authenticated && user ? buildAccountKey(user, loginEmail) : null;
-    const {
-        binding,
-        bindingError,
-        bindingBusy,
-        providerAvailable,
-        status: bindingStatus,
-        bindSelectedWallet,
-        unbind,
-    } = useOWSBinding({
-        accountKey,
-        loginEmail,
-        selectedWallet: address,
-    });
-    const masterWallet = binding?.masterWallet ?? address ?? null;
-
-    const { cosign, deriveEncryptionSeed, ready: cosignReady } = useMasterCosign();
-    const [encProvider, setEncProvider] = useState<EncryptionProvider | null>(null);
-    const [encDerived, setEncDerived] = useState(false);
-
-    useEffect(() => {
-        if (!cosignReady || !binding || encDerived) return;
-        let cancelled = false;
-        deriveEncryptionSeed().then(async (seed) => {
-            if (cancelled || !seed) return;
-            const provider = await AesGcmEncryption.fromSeed(seed);
-            setEncProvider(provider);
-            setEncDerived(true);
-        }).catch(() => {});
-        return () => { cancelled = true; };
-    }, [cosignReady, binding, encDerived, deriveEncryptionSeed]);
-
-    const {
-        state: routerState,
-        activeSubWallet,
-        error: routerError,
-        createSubWallet,
-        setActiveSubWallet,
-        signActiveRoute,
-    } = useOWSAgentRouter({
-        accountKey,
-        masterWallet,
-        cosign: cosignReady ? cosign : null,
-        encryptionProvider: encProvider,
-        indexerBase: INDEXER_BASE || null,
-    });
-    const runtimeAddress = activeSubWallet?.walletAddress ?? address;
-
-    useEffect(() => {
-        if (!authenticated) {
-            setSelectedWalletAddress(null);
-            return;
-        }
-        const stored = typeof window !== 'undefined' ? window.localStorage.getItem('agentm:selected-wallet') : null;
-        const target = wallets.find((wallet) => wallet.address === stored)?.address ?? preferredWallet?.address ?? null;
-        setSelectedWalletAddress(target);
-    }, [authenticated, wallets, preferredWallet]);
-
-    useEffect(() => {
-        if (!selectedWalletAddress || typeof window === 'undefined') return;
-        window.localStorage.setItem('agentm:selected-wallet', selectedWalletAddress);
-    }, [selectedWalletAddress]);
-
-    if (!ready) {
-        return <Loading />;
-    }
-
-    if (!authenticated) {
-        return <LoginScreen onLogin={login} />;
-    }
-
-    return (
-        <Shell
-            view={view}
-            setView={setView}
-            address={runtimeAddress}
-            loginEmail={loginEmail}
-            wallets={wallets}
-            onWalletChange={setSelectedWalletAddress}
-            bindingStatus={bindingStatus}
-            activeSubWallet={activeSubWallet}
-            onLogout={logout}
-        >
-            {view === 'discover' && <DiscoverView />}
-            {view === 'feed' && <FeedView address={runtimeAddress} />}
-            {view === 'social' && <SocialView address={runtimeAddress} />}
-            {view === 'me' && (
-                <MeView
-                    address={runtimeAddress}
-                    masterWallet={masterWallet}
-                    loginEmail={loginEmail}
-                    selectedWallet={selectedWallet}
-                    owsBinding={binding}
-                    bindingStatus={bindingStatus}
-                    bindingBusy={bindingBusy}
-                    bindingError={bindingError}
-                    providerAvailable={providerAvailable}
-                    onBindOWS={bindSelectedWallet}
-                    onUnbindOWS={unbind}
-                    activeSubWallet={activeSubWallet}
-                    subWallets={routerState?.subWallets ?? []}
-                    routerError={routerError}
-                    onCreateSubWallet={createSubWallet}
-                    onSetActiveSubWallet={setActiveSubWallet}
-                />
-            )}
-            {view === 'chat' && <ChatView />}
-            {view === 'settings' && <SettingsView />}
-        </Shell>
-    );
 }
 
 function DemoApp() {
@@ -246,6 +47,7 @@ function DemoApp() {
             onLogout={() => {}}
         >
             {view === 'discover' && <DiscoverView />}
+            {view === 'tasks' && <TaskMarketView address={demoAddr} />}
             {view === 'feed' && <FeedView address={demoAddr} />}
             {view === 'social' && <SocialView address={demoAddr} />}
             {view === 'me' && (
