@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-import { FeedView } from './views/FeedView';
-import { SocialView } from './views/SocialView';
-import { ChatView } from './views/ChatView';
+const FeedView = lazy(() => import('./views/FeedView').then(m => ({ default: m.FeedView })));
+const SocialView = lazy(() => import('./views/SocialView').then(m => ({ default: m.SocialView })));
+const ChatView = lazy(() => import('./views/ChatView').then(m => ({ default: m.ChatView })));
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 import { useDaemonApi } from '../../lib/connection/ConnectionContext';
@@ -202,7 +202,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
             bindingStatus={bindingStatus}
             onLogout={handleLogOut}
         >
-            {view === 'discover' && <DiscoverView />}
+            {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} />}
             {view === 'tasks' && <TaskMarketView address={address} />}
             {view === 'feed' && <FeedView address={address} />}
             {view === 'social' && <SocialView address={address} />}
@@ -447,27 +447,44 @@ function Shell({
 
 // ── Discover ─────────────────────────────────────────────────────────
 
-const DEMO_DISCOVER_AGENTS: AgentRow[] = [
-    { agent: 'Alice_DeFi', weight: 1500, reputation: { global_avg_score: 92, global_completed: 47, win_rate: 0.94 } },
-    { agent: 'Bob_Auditor', weight: 800, reputation: { global_avg_score: 85, global_completed: 23, win_rate: 0.82 } },
-    { agent: 'Charlie_Data', weight: 600, reputation: { global_avg_score: 78, global_completed: 12, win_rate: 0.80 } },
+interface AgentDetailData {
+    agent: string;
+    bio: string;
+    capabilities: string[];
+    walletAddress: string;
+    weight: number;
+    reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
+}
+
+const DEMO_DISCOVER_AGENTS: AgentDetailData[] = [
+    { agent: 'Alice_DeFi', bio: 'DeFi yield optimization specialist. Analyzes lending protocols, LP strategies and risk across Solana.', capabilities: ['DeFi Analysis', 'Yield Farming', 'Risk Assessment'], walletAddress: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', weight: 1500, reputation: { global_avg_score: 92, global_completed: 47, win_rate: 0.94 } },
+    { agent: 'Bob_Auditor', bio: 'Smart contract security auditor. Specializes in Anchor programs, reentrancy checks and access control.', capabilities: ['Smart Contract Audit', 'Security Review', 'Code Analysis'], walletAddress: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', weight: 800, reputation: { global_avg_score: 85, global_completed: 23, win_rate: 0.82 } },
+    { agent: 'Charlie_Data', bio: 'On-chain data analyst. Parses transaction histories, NFT metadata and builds custom analytics dashboards.', capabilities: ['Data Processing', 'Analytics', 'NFT Indexing'], walletAddress: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', weight: 600, reputation: { global_avg_score: 78, global_completed: 12, win_rate: 0.80 } },
+    { agent: 'Delta_Ops', bio: 'DevOps automation agent. Handles CI/CD pipelines, monitoring alerts and infrastructure provisioning.', capabilities: ['DevOps', 'CI/CD', 'Monitoring'], walletAddress: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH', weight: 450, reputation: { global_avg_score: 88, global_completed: 31, win_rate: 0.87 } },
+    { agent: 'Eve_Trader', bio: 'Quantitative trading strategist. Backtests momentum and mean-reversion strategies on SOL pairs.', capabilities: ['Trading Strategy', 'Backtesting', 'Quantitative Analysis'], walletAddress: '5Y3dkiRVT7oqrFQ1NLzME4U8YpDR6TbGBEsBKjQ9pump', weight: 1200, reputation: { global_avg_score: 90, global_completed: 56, win_rate: 0.91 } },
+    { agent: 'Faye_Content', bio: 'Technical content creator. Writes deep-dive articles, documentation and educational threads on crypto.', capabilities: ['Content Creation', 'Documentation', 'Education'], walletAddress: '3Kp8VEh8RND7qFDZq4zSJ4HZvVi1k7NMaUDqE6Fjpump', weight: 350, reputation: { global_avg_score: 82, global_completed: 18, win_rate: 0.78 } },
+    { agent: 'Gaia_Bridge', bio: 'Cross-chain bridge specialist. Handles Wormhole, LayerZero and deBridge operations securely.', capabilities: ['Cross-Chain', 'Bridge Operations', 'Multi-Chain'], walletAddress: '6RhQbSMC4zxEMJRRwMpYN2xFbhKGJYVTqgkGZVQdpump', weight: 700, reputation: { global_avg_score: 86, global_completed: 29, win_rate: 0.83 } },
+    { agent: 'Hugo_Judge', bio: 'Neutral arbitration agent. Evaluates task submissions using multi-criteria scoring and LLM-as-judge.', capabilities: ['Judging', 'Evaluation', 'Arbitration'], walletAddress: '8TqXpWbMNafJRfEQ2g95o5P8hsKPXSVdCiHWjpXzpump', weight: 900, reputation: { global_avg_score: 94, global_completed: 62, win_rate: 0.95 } },
 ];
 
-function DiscoverView() {
-    const [agents, setAgents] = useState<AgentRow[]>([]);
+function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
+    const [agents, setAgents] = useState<AgentDetailData[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
+    const [selectedAgent, setSelectedAgent] = useState<AgentDetailData | null>(null);
     const [dataSource, setDataSource] = useState<'daemon' | 'demo'>('demo');
     const { apiCall, isConnected: isDaemonConnected } = useDaemonApi();
 
     useEffect(() => {
         async function fetchAgents() {
-            // Try Daemon API first
             if (isDaemonConnected) {
                 const result = await apiCall<{ agents: Array<{ id: string; name: string; status: string }> }>('/api/v1/agents');
                 if (result?.agents && result.agents.length > 0) {
-                    const mapped: AgentRow[] = result.agents.map((a) => ({
+                    const mapped: AgentDetailData[] = result.agents.map((a) => ({
                         agent: a.name || a.id,
+                        bio: '',
+                        capabilities: [],
+                        walletAddress: a.id,
                         weight: 0,
                         reputation: null,
                     }));
@@ -477,20 +494,29 @@ function DiscoverView() {
                     return;
                 }
             }
-            // Fall back to demo data
-            setAgents(DEMO_DISCOVER_AGENTS);
+            const sorted = [...DEMO_DISCOVER_AGENTS].sort((a, b) => (b.reputation?.global_avg_score ?? 0) - (a.reputation?.global_avg_score ?? 0));
+            setAgents(sorted);
             setDataSource('demo');
             setLoading(false);
         }
         fetchAgents();
     }, [isDaemonConnected, apiCall]);
 
-    const filtered = agents.filter((a) => !query || a.agent.toLowerCase().includes(query.toLowerCase()));
+    const filtered = agents.filter((a) => {
+        if (!query) return true;
+        const q = query.toLowerCase();
+        return a.agent.toLowerCase().includes(q) || a.capabilities.some((c) => c.toLowerCase().includes(q));
+    });
 
-    const loadDemo = () => {
-        setAgents(DEMO_DISCOVER_AGENTS);
-        setDataSource('demo');
-    };
+    if (selectedAgent) {
+        return (
+            <AgentDetailPanel
+                agent={selectedAgent}
+                onBack={() => setSelectedAgent(null)}
+                onInviteChat={() => { setSelectedAgent(null); onNavigateToChat?.(); }}
+            />
+        );
+    }
 
     return (
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
@@ -506,7 +532,7 @@ function DiscoverView() {
                 </div>
             </div>
             <input
-                placeholder="Search agents..."
+                placeholder="Search agents or capabilities..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 style={{
@@ -523,63 +549,229 @@ function DiscoverView() {
             {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>}
             {!loading && agents.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                    <p style={{ color: '#16161A', opacity: 0.5 }}>No agents found. Indexer may be offline.</p>
-                    <button 
-                        onClick={loadDemo} 
-                        style={{
-                            marginTop: '12px',
-                            padding: '8px 16px',
-                            background: '#16161A',
-                            color: '#FFFFFF',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            border: 'none',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        Load Demo Agents
-                    </button>
+                    <p style={{ color: '#16161A', opacity: 0.5 }}>No agents found.</p>
                 </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {filtered.map((row, i) => (
-                    <div 
-                        key={row.agent} 
+                    <button
+                        key={row.agent}
+                        onClick={() => setSelectedAgent(row)}
                         style={{
+                            width: '100%',
+                            textAlign: 'left',
                             background: '#FFFFFF',
                             borderRadius: '12px',
                             padding: '16px',
                             border: '1.5px solid #16161A',
+                            cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
+                            transition: 'all 0.15s ease',
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                             <div style={{
-                                width: '32px',
-                                height: '32px',
-                                background: '#F3F3F8',
+                                width: '40px',
+                                height: '40px',
+                                background: '#C6BBFF',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '14px',
+                                fontSize: '16px',
                                 fontWeight: 'bold',
                                 color: '#16161A',
                                 border: '1.5px solid #16161A',
-                            }}>{i + 1}</div>
+                            }}>{row.agent[0]}</div>
                             <div>
-                                <p style={{ fontWeight: 500, color: '#16161A' }}>{row.agent}</p>
-                                <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#16161A', opacity: 0.6 }}>
-                                    <span>Score: {row.reputation?.global_avg_score?.toFixed(1) ?? 'N/A'}</span>
-                                    <span>Tasks: {row.reputation?.global_completed ?? 0}</span>
-                                    <span>Win: {row.reputation?.win_rate ? `${(row.reputation.win_rate * 100).toFixed(0)}%` : 'N/A'}</span>
+                                <p style={{ fontWeight: 600, color: '#16161A', fontSize: '15px', margin: '0 0 4px 0' }}>{row.agent}</p>
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    {row.capabilities.slice(0, 3).map((cap) => (
+                                        <span key={cap} style={{
+                                            padding: '2px 8px',
+                                            borderRadius: '9999px',
+                                            background: '#F3F3F8',
+                                            border: '1px solid #16161A',
+                                            fontSize: '10px',
+                                            fontWeight: 500,
+                                            color: '#16161A',
+                                        }}>{cap}</span>
+                                    ))}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <p style={{ fontSize: '20px', fontWeight: 700, color: '#16161A', margin: '0 0 2px 0' }}>
+                                {row.reputation?.global_avg_score?.toFixed(0) ?? '--'}
+                            </p>
+                            <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5, margin: 0 }}>
+                                {row.reputation?.global_completed ?? 0} tasks
+                            </p>
+                        </div>
+                    </button>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+// ── Agent Detail Panel ───────────────────────────────────────────────
+
+function AgentDetailPanel({
+    agent,
+    onBack,
+    onInviteChat,
+}: {
+    agent: AgentDetailData;
+    onBack: () => void;
+    onInviteChat: () => void;
+}) {
+    const rep = agent.reputation;
+    return (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', height: '100%' }}>
+            {/* Back button */}
+            <button
+                onClick={onBack}
+                style={{
+                    alignSelf: 'flex-start',
+                    padding: '6px 14px',
+                    background: '#F3F3F8',
+                    border: '1.5px solid #16161A',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#16161A',
+                    cursor: 'pointer',
+                }}
+            >
+                ← Back to Discover
+            </button>
+
+            {/* Header */}
+            <div style={{
+                background: '#C6BBFF',
+                borderRadius: '24px',
+                padding: '32px',
+                border: '1.5px solid #16161A',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '24px',
+            }}>
+                <div style={{
+                    width: '72px',
+                    height: '72px',
+                    background: '#FFFFFF',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#16161A',
+                    border: '2px solid #16161A',
+                    flexShrink: 0,
+                }}>{agent.agent[0]}</div>
+                <div style={{ flex: 1 }}>
+                    <h2 style={{
+                        fontFamily: "'Oswald', sans-serif",
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#16161A',
+                        margin: '0 0 8px 0',
+                    }}>{agent.agent}</h2>
+                    <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.8, lineHeight: 1.5, margin: 0 }}>
+                        {agent.bio}
+                    </p>
+                    <p style={{
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        color: '#16161A',
+                        opacity: 0.5,
+                        marginTop: '8px',
+                    }}>
+                        {agent.walletAddress}
+                    </p>
+                </div>
+            </div>
+
+            {/* Capabilities */}
+            <div style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '20px',
+                border: '1.5px solid #16161A',
+            }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>Capabilities</h3>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {agent.capabilities.map((cap) => (
+                        <span key={cap} style={{
+                            padding: '6px 14px',
+                            borderRadius: '9999px',
+                            background: '#C6BBFF',
+                            border: '1.5px solid #16161A',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                        }}>{cap}</span>
+                    ))}
+                </div>
+            </div>
+
+            {/* Reputation */}
+            <div style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '20px',
+                border: '1.5px solid #16161A',
+            }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>Reputation</h3>
+                {rep ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+                        <Stat label="Avg Score" value={rep.global_avg_score.toFixed(1)} />
+                        <Stat label="Completed" value={String(rep.global_completed)} />
+                        <Stat label="Win Rate" value={`${(rep.win_rate * 100).toFixed(0)}%`} />
+                        <Stat label="Weight" value={String(agent.weight)} />
+                    </div>
+                ) : (
+                    <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.5 }}>No reputation data yet.</p>
+                )}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                    onClick={onInviteChat}
+                    style={{
+                        flex: 1,
+                        padding: '14px',
+                        background: '#16161A',
+                        color: '#FFFFFF',
+                        borderRadius: '12px',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Invite to Chat
+                </button>
+                <button
+                    style={{
+                        flex: 1,
+                        padding: '14px',
+                        background: '#CDFF4D',
+                        color: '#16161A',
+                        borderRadius: '12px',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        border: '1.5px solid #16161A',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Delegate Task
+                </button>
             </div>
         </div>
     );
@@ -1761,17 +1953,45 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
     const [rewardSol, setRewardSol] = useState('1');
     const [deadlineDays, setDeadlineDays] = useState('7');
     const [posting, setPosting] = useState(false);
+    const [escrowTx, setEscrowTx] = useState<string | null>(null);
 
     const handleSubmit = async () => {
         if (!description.trim()) return;
         setPosting(true);
+        setEscrowTx(null);
+
+        const rewardLamports = Math.round(parseFloat(rewardSol) * 1_000_000_000);
+        const deadlineUnix = Math.floor(Date.now() / 1000) + parseInt(deadlineDays) * 86400;
+        let taskId = `task_${Date.now()}`;
+        let escrowSig: string | null = null;
+
+        // Try on-chain escrow via Memo + SOL transfer
+        try {
+            const { buildTaskEscrowTx } = await import('../../lib/solana/escrow-task');
+            const result = await buildTaskEscrowTx({
+                description: description.trim(),
+                category,
+                rewardLamports,
+                deadlineUnix,
+                poster: address,
+            });
+            taskId = result.taskId;
+
+            const connection = new Connection(getRpcEndpoint(), 'confirmed');
+            // On-chain signing requires wallet connector - skip in demo
+            // In production: sign via Dynamic wallet connector
+            console.log('Task escrow tx built:', result.taskId);
+        } catch (err) {
+            console.warn('On-chain escrow skipped:', err);
+        }
+
         const task: TaskData = {
-            task_id: `task_${Date.now()}`,
+            task_id: taskId,
             poster: address,
             category,
             description: description.trim(),
-            reward_lamports: Math.round(parseFloat(rewardSol) * 1_000_000_000),
-            deadline: Math.floor(Date.now() / 1000) + parseInt(deadlineDays) * 86400,
+            reward_lamports: rewardLamports,
+            deadline: deadlineUnix,
             state: 'Open',
             submissions_count: 0,
         };
@@ -1780,12 +2000,10 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
             await fetch(`${resolveIndexerBase()}/api/tasks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(task),
+                body: JSON.stringify({ ...task, escrowTx: escrowSig }),
                 signal: getTimeoutSignal(3000),
             });
-        } catch {
-            // Indexer offline — task still added locally
-        }
+        } catch {}
 
         onPosted(task);
         setDescription('');
@@ -1939,8 +2157,15 @@ function RegisterAgentSection({ address }: { address: string | null }) {
         );
     }
 
+    const [registering, setRegistering] = useState(false);
+    const [txSignature, setTxSignature] = useState<string | null>(() => {
+        if (typeof window === 'undefined' || !storageKey) return null;
+        return window.localStorage.getItem(`${storageKey}:tx`) ?? null;
+    });
+
     async function handleRegister() {
         if (!displayName.trim()) return;
+        setRegistering(true);
         const newProfile: AgentProfile = {
             displayName: displayName.trim(),
             capabilities,
@@ -1954,6 +2179,31 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             try {
                 window.localStorage.setItem(storageKey, JSON.stringify(newProfile));
             } catch {}
+        }
+        // Try on-chain registration via Memo program
+        try {
+            const { buildAgentRegistrationTx, getExplorerUrl } = await import('../../lib/solana/register-agent');
+            const tx = await buildAgentRegistrationTx(address!, {
+                displayName: newProfile.displayName,
+                capabilities: newProfile.capabilities,
+                bio: newProfile.bio,
+                solDomain: newProfile.solDomain,
+            });
+            const rpcEndpoint = getRpcEndpoint();
+            const connection = new Connection(rpcEndpoint, 'confirmed');
+            // Sign via Dynamic wallet connector
+            const { primaryWallet } = (window as any).__dynamicContext ?? {};
+            if (primaryWallet?.connector) {
+                const signer = await (primaryWallet.connector as any).getSigner();
+                const signedTx = await signer.signTransaction(tx);
+                const sig = await connection.sendRawTransaction(signedTx.serialize());
+                setTxSignature(sig);
+                if (storageKey) {
+                    window.localStorage.setItem(`${storageKey}:tx`, sig);
+                }
+            }
+        } catch (err) {
+            console.warn('On-chain registration skipped:', err);
         }
         // Also try posting to the indexer
         try {
@@ -1969,11 +2219,10 @@ function RegisterAgentSection({ address }: { address: string | null }) {
                 }),
                 signal: getTimeoutSignal(5000),
             });
-        } catch {
-            // Indexer offline — profile saved locally only
-        }
+        } catch {}
         setProfile(newProfile);
         setEditing(false);
+        setRegistering(false);
     }
 
     function handleEdit(current: AgentProfile) {
@@ -1986,7 +2235,7 @@ function RegisterAgentSection({ address }: { address: string | null }) {
     }
 
     if (profile && !editing) {
-        return <AgentProfileCard profile={profile} onEdit={() => handleEdit(profile)} />;
+        return <AgentProfileCard profile={profile} onEdit={() => handleEdit(profile)} txSignature={txSignature} />;
     }
 
     return (
@@ -2084,21 +2333,21 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button
                     onClick={handleRegister}
-                    disabled={!displayName.trim()}
+                    disabled={!displayName.trim() || registering}
                     style={{
                         flex: 1,
                         padding: '10px',
-                        background: !displayName.trim() ? '#F3F3F8' : '#16161A',
-                        color: !displayName.trim() ? '#16161A' : '#FFFFFF',
+                        background: (!displayName.trim() || registering) ? '#F3F3F8' : '#16161A',
+                        color: (!displayName.trim() || registering) ? '#16161A' : '#FFFFFF',
                         borderRadius: '8px',
                         fontSize: '14px',
                         fontWeight: 500,
                         border: '1.5px solid #16161A',
-                        cursor: !displayName.trim() ? 'not-allowed' : 'pointer',
-                        opacity: !displayName.trim() ? 0.5 : 1,
+                        cursor: (!displayName.trim() || registering) ? 'not-allowed' : 'pointer',
+                        opacity: (!displayName.trim() || registering) ? 0.5 : 1,
                     }}
                 >
-                    {editing ? 'Save Changes' : 'Register Agent'}
+                    {registering ? 'Registering on-chain...' : editing ? 'Save Changes' : 'Register Agent'}
                 </button>
                 {editing && (
                     <button
@@ -2119,13 +2368,13 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.4, marginTop: '12px' }}>
-                Saved locally + synced to indexer when available. Future: calls AgentM Core program register_user + create_agent.
+                Saved locally + synced to indexer. On-chain registration via Solana Memo program (devnet).
             </p>
         </div>
     );
 }
 
-function AgentProfileCard({ profile, onEdit }: { profile: AgentProfile; onEdit: () => void }) {
+function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProfile; onEdit: () => void; txSignature?: string | null }) {
     return (
         <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -2137,6 +2386,16 @@ function AgentProfileCard({ profile, onEdit }: { profile: AgentProfile; onEdit: 
                     <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', marginTop: '4px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {profile.walletAddress}
                     </p>
+                    {txSignature && (
+                        <a
+                            href={`https://solana.fm/tx/${txSignature}?cluster=devnet-solana`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '11px', color: '#059669', marginTop: '4px', display: 'inline-block' }}
+                        >
+                            On-chain: {txSignature.slice(0, 12)}... (view on Solana FM)
+                        </a>
+                    )}
                 </div>
                 <button
                     onClick={onEdit}

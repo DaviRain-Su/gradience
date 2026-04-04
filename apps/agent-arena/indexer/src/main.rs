@@ -192,8 +192,8 @@ struct SubmissionApi {
 #[derive(Debug, Serialize)]
 struct ReputationApi {
     agent: String,
-    global_avg_score: i32,
-    global_win_rate: i32,
+    global_avg_score: f64,
+    global_win_rate: f64,
     global_completed: i32,
     global_total_applied: i32,
     total_earned: i64,
@@ -987,22 +987,16 @@ fn map_task(task: crate::db::TaskRow) -> TaskApi {
         task_id: task.task_id,
         poster: task.poster,
         judge: task.judge,
-        judge_mode: match task.judge_mode {
-            JUDGE_MODE_DESIGNATED => "designated",
-            JUDGE_MODE_POOL => "pool",
-            _ => "unknown",
-        }
-        .to_string(),
+        judge_mode: task.judge_mode,
         reward: task.reward,
         mint: task.mint,
         min_stake: task.min_stake,
         state: match task.state {
-            TASK_STATE_OPEN => "open",
-            TASK_STATE_COMPLETED => "completed",
-            TASK_STATE_REFUNDED => "refunded",
-            _ => "unknown",
-        }
-        .to_string(),
+            0 => "open".to_string(),
+            1 => "completed".to_string(),
+            2 => "refunded".to_string(),
+            _ => "unknown".to_string(),
+        },
         category: task.category,
         eval_ref: task.eval_ref,
         deadline: task.deadline,

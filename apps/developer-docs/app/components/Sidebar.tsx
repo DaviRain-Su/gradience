@@ -49,8 +49,9 @@ const sections = [
     {
         title: 'API Reference',
         items: [
+            { label: 'Daemon API', href: '/api/daemon' },
             { label: 'Indexer REST API', href: '/api/indexer' },
-            { label: 'Agent API', href: '/api/agent' },
+            { label: 'Agent API (Machine)', href: '/api/agent' },
             { label: 'Playground', href: '/playground' },
         ],
     },

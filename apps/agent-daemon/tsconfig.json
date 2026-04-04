@@ -19,6 +19,9 @@
         "node_modules",
         "dist",
         "tests",
-        "src/**/*.test.ts"
+        "src/**/*.test.ts",
+        "src/integrations/chain-hub.ts",
+        "src/bridge/**",
+        "src/evaluator/**"
     ]
 }

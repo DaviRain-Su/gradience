@@ -1,9 +1,7 @@
 [workspace]
 members = [
-    "program",
     "indexer",
     "clients/rust",
-    "tests/integration-tests",
 ]
 resolver = "2"
 

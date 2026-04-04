@@ -89,11 +89,12 @@ function DynamicProviderInternal({
   const {
     user,
     primaryWallet,
-    isAuthenticated,
-    isLoading,
+    sdkHasLoaded,
     setShowAuthFlow,
     handleLogOut,
   } = useDynamicContext();
+  const isAuthenticated = !!user;
+  const isLoading = !sdkHasLoaded;
 
   const [error, setError] = useState<string | null>(null);
   const [connection] = useState(() => new Connection(config.rpcEndpoint));
@@ -138,7 +139,7 @@ function DynamicProviderInternal({
       }
 
       try {
-        const signer = await primaryWallet.getSigner();
+        const signer = await (primaryWallet as any).getSigner();
         const signature = await signer.signMessage(message);
         return signature;
       } catch (err) {
@@ -158,7 +159,7 @@ function DynamicProviderInternal({
       }
 
       try {
-        const signer = await primaryWallet.getSigner();
+        const signer = await (primaryWallet as any).getSigner();
         const signed = await signer.signTransaction(transaction);
         return signed;
       } catch (err) {
@@ -176,7 +177,7 @@ function DynamicProviderInternal({
       }
 
       try {
-        const signer = await primaryWallet.getSigner();
+        const signer = await (primaryWallet as any).getSigner();
         const signature = await signer.signAndSendTransaction(transaction);
         return signature;
       } catch (err) {

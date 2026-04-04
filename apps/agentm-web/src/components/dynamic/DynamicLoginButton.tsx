@@ -3,9 +3,10 @@
 import { DynamicWidget, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 export function DynamicLoginButton() {
-    const { user, isAuthenticated, isLoading } = useDynamicContext();
+    const { user, sdkHasLoaded } = useDynamicContext();
+    const isAuthenticated = !!user;
 
-    if (isLoading) {
+    if (!sdkHasLoaded) {
         return (
             <div style={{
                 padding: '12px 24px',

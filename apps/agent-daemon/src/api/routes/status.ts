@@ -12,6 +12,10 @@ interface StatusDeps {
 }
 
 export function registerStatusRoutes(app: FastifyInstance, deps: StatusDeps): void {
+    app.get('/health', async () => {
+        return { status: 'ok', uptime: Date.now() - deps.startedAt, version: deps.version };
+    });
+
     app.get('/api/v1/status', async () => {
         const agents = deps.processManager.list();
         const counts = deps.taskQueue.counts();

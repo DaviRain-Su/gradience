@@ -394,7 +394,7 @@ export class APIJudge extends BaseJudge {
     const feedback: string[] = [];
 
     // Get API endpoints from task metadata
-    const endpoints = task.submission.metadata?.endpoints || [];
+    const endpoints = (task.submission.metadata?.endpoints ?? []) as any[];
 
     if (endpoints.length === 0) {
       feedback.push('No API endpoints defined for evaluation');

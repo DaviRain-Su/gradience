@@ -23,17 +23,6 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                 appName: 'AgentM',
                 appLogoUrl: '',
                 walletConnectors: [SolanaWalletConnectors],
-                socialProviders: {
-                    google: {
-                        enabled: true,
-                    },
-                    twitter: {
-                        enabled: true,
-                    },
-                    discord: {
-                        enabled: true,
-                    },
-                },
                 redirectUrl: undefined,
                 events: {
                     onAuthFlowClose: () => {
@@ -43,8 +32,7 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                         console.log('Dynamic auth success:', args.user?.email);
                     },
                 },
-                // Skip embedded wallet creation if WaaS is not configured
-                walletConnectorsOrder: ['walletConnect', 'extension'],
+
             }}
         >
             {children}

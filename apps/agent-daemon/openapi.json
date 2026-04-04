@@ -1,0 +1,841 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Gradience Agent Daemon API",
+    "version": "0.1.0",
+    "description": "Agent Daemon runtime API for the Gradience Protocol. Manages agents, tasks, wallet authorization, social features, messaging, and Solana on-chain operations.",
+    "contact": {
+      "name": "Gradience",
+      "url": "https://gradiences.xyz"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.gradiences.xyz",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:7420",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Session-based authentication via wallet signature" },
+    { "name": "Status", "description": "Daemon status and health" },
+    { "name": "Tasks", "description": "Task queue management" },
+    { "name": "Agents", "description": "Agent process management" },
+    { "name": "Messages", "description": "Inter-agent messaging" },
+    { "name": "Keys", "description": "Agent keypair operations" },
+    { "name": "Wallet", "description": "Master wallet authorization and policy" },
+    { "name": "Solana", "description": "On-chain Solana operations" },
+    { "name": "Social", "description": "Profiles, posts, feed, and follows" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "daemonToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Daemon auth token (CLI / internal). Generated on daemon start, stored in ~/.agentd/auth-token."
+      },
+      "sessionToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Session token obtained via wallet signature challenge/verify flow. Valid for 7 days."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "required": ["error"]
+      },
+      "Challenge": {
+        "type": "object",
+        "properties": {
+          "challenge": { "type": "string", "description": "Base64-encoded 32-byte random challenge" },
+          "message": { "type": "string", "description": "UTF-8 message to sign with wallet" },
+          "expiresAt": { "type": "integer", "description": "Unix ms expiration timestamp" }
+        },
+        "required": ["challenge", "message", "expiresAt"]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "description": "Session bearer token" },
+          "walletAddress": { "type": "string", "description": "Base58-encoded Solana public key" },
+          "expiresAt": { "type": "integer", "description": "Unix ms expiration (7 days)" }
+        },
+        "required": ["token", "walletAddress", "expiresAt"]
+      },
+      "DaemonStatus": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["running"] },
+          "connection": { "type": "object" },
+          "uptime": { "type": "integer", "description": "Milliseconds since start" },
+          "version": { "type": "string" },
+          "agents": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "running": { "type": "integer" }
+            }
+          },
+          "tasks": { "type": "object" }
+        }
+      },
+      "AgentConfig": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "command": { "type": "string" },
+          "args": { "type": "array", "items": { "type": "string" } },
+          "autoStart": { "type": "boolean", "default": false },
+          "maxRestarts": { "type": "integer", "default": 3 }
+        },
+        "required": ["id", "name", "command", "args"]
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "state": { "type": "string", "enum": ["queued", "running", "completed", "failed", "cancelled"] },
+          "priority": { "type": "integer", "enum": [0, 1, 2] },
+          "payload": { "type": "object" },
+          "createdAt": { "type": "integer" }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "string" },
+          "displayName": { "type": "string" },
+          "bio": { "type": "string" },
+          "avatar": { "type": "string", "nullable": true },
+          "domain": { "type": "string", "nullable": true },
+          "metadata": { "type": "object" },
+          "followers": { "type": "integer" },
+          "following": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "authorAddress": { "type": "string" },
+          "authorName": { "type": "string" },
+          "authorAvatar": { "type": "string", "nullable": true },
+          "authorDomain": { "type": "string", "nullable": true },
+          "content": { "type": "string" },
+          "media": { "type": "array", "items": { "type": "object", "properties": { "type": { "type": "string" }, "url": { "type": "string" } } } },
+          "likes": { "type": "integer" },
+          "comments": { "type": "integer" },
+          "shares": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "WalletAuthChallenge": {
+        "type": "object",
+        "properties": {
+          "agentPubkey": { "type": "string" },
+          "challenge": { "type": "string" },
+          "message": { "type": "string" },
+          "expiresAt": { "type": "integer" }
+        }
+      },
+      "WalletStatus": {
+        "type": "object",
+        "properties": {
+          "agentWallet": { "type": "string" },
+          "masterWallet": { "type": "string", "nullable": true },
+          "authorized": { "type": "boolean" },
+          "policy": { "$ref": "#/components/schemas/SigningPolicy" },
+          "dailySpendLamports": { "type": "integer" }
+        }
+      },
+      "SigningPolicy": {
+        "type": "object",
+        "properties": {
+          "dailyLimitLamports": { "type": "integer" },
+          "requireMasterApprovalAbove": { "type": "integer" },
+          "allowedPrograms": { "type": "array", "items": { "type": "string" } },
+          "expiresAt": { "type": "integer", "nullable": true }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/challenge": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Request sign-in challenge",
+        "description": "Returns a one-time challenge message for wallet signing. No authentication required.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Challenge generated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Challenge" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Verify wallet signature and create session",
+        "description": "Verifies the Ed25519 signature of the challenge message. On success, returns a session token valid for 7 days.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "walletAddress": { "type": "string", "description": "Base58-encoded Solana public key" },
+                  "challenge": { "type": "string", "description": "Challenge string from /auth/challenge" },
+                  "signature": { "type": "string", "description": "Base64-encoded Ed25519 signature" }
+                },
+                "required": ["walletAddress", "challenge", "signature"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Session" } } }
+          },
+          "400": { "description": "Missing required fields" },
+          "401": { "description": "Signature verification failed or challenge expired" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get current session info",
+        "security": [{ "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Session valid",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "walletAddress": { "type": "string" } } } } }
+          },
+          "401": { "description": "No session or expired" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Revoke session",
+        "security": [{ "sessionToken": [] }],
+        "responses": {
+          "200": { "description": "Session revoked" }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": ["Status"],
+        "summary": "Get daemon status",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Daemon status",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DaemonStatus" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "List tasks",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [
+          { "name": "state", "in": "query", "schema": { "type": "string" }, "description": "Comma-separated states: queued,running,completed,failed,cancelled" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}": {
+      "get": {
+        "tags": ["Tasks"],
+        "summary": "Get task by ID",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Task details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Task" } } } },
+          "404": { "description": "Task not found" }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/cancel": {
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Cancel a task",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Task cancelled" },
+          "400": { "description": "Task cannot be cancelled" },
+          "404": { "description": "Task not found" }
+        }
+      }
+    },
+    "/api/v1/agents": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "List registered agents",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Agent list",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "agents": { "type": "array" } } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Register a new agent",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AgentConfig" } } }
+        },
+        "responses": {
+          "201": { "description": "Agent registered" },
+          "409": { "description": "Agent ID already exists" }
+        }
+      }
+    },
+    "/api/v1/agents/{id}/start": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Start an agent process",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Agent started", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "pid": { "type": "integer" } } } } } },
+          "404": { "description": "Agent not found" }
+        }
+      }
+    },
+    "/api/v1/agents/{id}/stop": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Stop an agent process",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Agent stopped" },
+          "404": { "description": "Agent not found" }
+        }
+      }
+    },
+    "/api/v1/agents/{id}": {
+      "delete": {
+        "tags": ["Agents"],
+        "summary": "Remove an agent",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Agent removed" },
+          "404": { "description": "Agent not found" }
+        }
+      }
+    },
+    "/api/v1/messages/send": {
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Send a message",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": { "type": "string", "description": "Recipient agent ID or address" },
+                  "type": { "type": "string", "description": "Message type" },
+                  "payload": { "type": "object" }
+                },
+                "required": ["to", "type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message sent" },
+          "400": { "description": "Missing to or type" },
+          "502": { "description": "No protocol available" }
+        }
+      }
+    },
+    "/api/v1/messages": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "List messages",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [
+          { "name": "direction", "in": "query", "schema": { "type": "string", "enum": ["inbound", "outbound"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": {
+          "200": { "description": "Message list" }
+        }
+      }
+    },
+    "/api/v1/keys/public": {
+      "get": {
+        "tags": ["Keys"],
+        "summary": "Get agent public key",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Public key",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "publicKey": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
+    "/api/v1/keys/sign": {
+      "post": {
+        "tags": ["Keys"],
+        "summary": "Sign a message with agent key",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string", "description": "Base64-encoded message" }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "signature": { "type": "string", "description": "Base64-encoded Ed25519 signature" },
+                    "publicKey": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/request-authorization": {
+      "post": {
+        "tags": ["Wallet"],
+        "summary": "Request wallet authorization challenge",
+        "description": "Generates a challenge for the master wallet to sign, establishing trust between the user wallet and this daemon's agent keypair.",
+        "security": [{ "daemonToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Challenge generated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WalletAuthChallenge" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/authorize": {
+      "post": {
+        "tags": ["Wallet"],
+        "summary": "Authorize agent with signed challenge",
+        "security": [{ "daemonToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "masterWallet": { "type": "string", "description": "Base58 master wallet public key" },
+                  "challenge": { "type": "string" },
+                  "signature": { "type": "string", "description": "Base64-encoded Ed25519 signature" },
+                  "policy": { "$ref": "#/components/schemas/SigningPolicy" }
+                },
+                "required": ["masterWallet", "challenge", "signature"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Authorization granted" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Signature verification failed" }
+        }
+      }
+    },
+    "/api/v1/wallet/status": {
+      "get": {
+        "tags": ["Wallet"],
+        "summary": "Get wallet authorization status",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Wallet status",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WalletStatus" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/wallet/revoke": {
+      "post": {
+        "tags": ["Wallet"],
+        "summary": "Revoke wallet authorization",
+        "security": [{ "daemonToken": [] }],
+        "responses": {
+          "200": { "description": "Authorization revoked" },
+          "400": { "description": "No active authorization" }
+        }
+      }
+    },
+    "/api/v1/wallet/policy": {
+      "get": {
+        "tags": ["Wallet"],
+        "summary": "Get current signing policy",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Policy and spend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": { "$ref": "#/components/schemas/SigningPolicy" },
+                    "dailySpendLamports": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Not authorized" }
+        }
+      }
+    },
+    "/api/v1/solana/balance": {
+      "get": {
+        "tags": ["Solana"],
+        "summary": "Get agent SOL balance",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "responses": {
+          "200": {
+            "description": "Balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balance": { "type": "number" },
+                    "publicKey": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/solana/post-task": {
+      "post": {
+        "tags": ["Solana"],
+        "summary": "Post a task on-chain",
+        "security": [{ "daemonToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "evalRef": { "type": "string", "description": "Evaluation reference (CID or URL)" },
+                  "deadline": { "type": "integer", "description": "Unix timestamp for task deadline" },
+                  "judgeDeadline": { "type": "integer", "description": "Unix timestamp for judge deadline" },
+                  "judgeMode": { "type": "integer", "description": "Judge mode (0=auto, 1=manual)" },
+                  "judge": { "type": "string", "description": "Optional designated judge pubkey" },
+                  "category": { "type": "integer", "minimum": 0, "maximum": 7 },
+                  "mint": { "type": "string", "description": "Optional SPL token mint" },
+                  "minStake": { "type": "integer", "minimum": 0 },
+                  "reward": { "type": "integer", "minimum": 1 }
+                },
+                "required": ["evalRef", "deadline", "judgeDeadline", "judgeMode", "category", "minStake", "reward"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Task posted", "content": { "application/json": { "schema": { "type": "object", "properties": { "signature": { "type": "string" }, "success": { "type": "boolean" } } } } } },
+          "400": { "description": "Invalid parameters" }
+        }
+      }
+    },
+    "/api/v1/solana/apply-task": {
+      "post": {
+        "tags": ["Solana"],
+        "summary": "Apply for a task",
+        "security": [{ "daemonToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "taskId": { "type": "string" } }, "required": ["taskId"] } } }
+        },
+        "responses": {
+          "201": { "description": "Applied" },
+          "400": { "description": "Invalid taskId" }
+        }
+      }
+    },
+    "/api/v1/solana/submit-result": {
+      "post": {
+        "tags": ["Solana"],
+        "summary": "Submit task result",
+        "security": [{ "daemonToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskId": { "type": "string" },
+                  "resultCid": { "type": "string", "description": "IPFS CID of result" },
+                  "traceCid": { "type": "string", "description": "Optional trace CID" },
+                  "runtimeEnv": { "type": "object" }
+                },
+                "required": ["taskId", "resultCid"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Result submitted" },
+          "400": { "description": "Invalid parameters" }
+        }
+      }
+    },
+    "/api/profile/{address}": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "Get user profile",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "address", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Profile" } } } }
+        }
+      }
+    },
+    "/api/profile": {
+      "post": {
+        "tags": ["Social"],
+        "summary": "Create or update profile",
+        "description": "Updates the profile for the authenticated wallet address.",
+        "security": [{ "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": { "type": "string" },
+                  "bio": { "type": "string" },
+                  "avatar": { "type": "string" },
+                  "domain": { "type": "string" },
+                  "metadata": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile updated" },
+          "401": { "description": "Not authenticated" }
+        }
+      }
+    },
+    "/api/feed": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "Get post feed",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "posts": { "type": "array", "items": { "$ref": "#/components/schemas/Post" } },
+                    "page": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "hasMore": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts": {
+      "post": {
+        "tags": ["Social"],
+        "summary": "Create a post",
+        "security": [{ "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "media": { "type": "array", "items": { "type": "object", "properties": { "type": { "type": "string" }, "url": { "type": "string" } } } }
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Post created", "content": { "application/json": { "schema": { "type": "object", "properties": { "id": { "type": "string" }, "success": { "type": "boolean" } } } } } },
+          "400": { "description": "Content required" },
+          "401": { "description": "Not authenticated" }
+        }
+      }
+    },
+    "/api/posts/{id}": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "Get post by ID",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Post", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
+          "404": { "description": "Post not found" }
+        }
+      }
+    },
+    "/api/posts/{id}/like": {
+      "post": {
+        "tags": ["Social"],
+        "summary": "Toggle like on a post",
+        "security": [{ "sessionToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Like toggled", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "liked": { "type": "boolean" } } } } } },
+          "401": { "description": "Not authenticated" }
+        }
+      }
+    },
+    "/api/follow": {
+      "post": {
+        "tags": ["Social"],
+        "summary": "Follow a user",
+        "security": [{ "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "targetAddress": { "type": "string" } }, "required": ["targetAddress"] } } }
+        },
+        "responses": {
+          "200": { "description": "Followed" },
+          "400": { "description": "Missing targetAddress or self-follow" },
+          "401": { "description": "Not authenticated" }
+        }
+      }
+    },
+    "/api/unfollow": {
+      "post": {
+        "tags": ["Social"],
+        "summary": "Unfollow a user",
+        "security": [{ "sessionToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "targetAddress": { "type": "string" } }, "required": ["targetAddress"] } } }
+        },
+        "responses": {
+          "200": { "description": "Unfollowed" },
+          "400": { "description": "Missing targetAddress" },
+          "401": { "description": "Not authenticated" }
+        }
+      }
+    },
+    "/api/followers/{address}": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "List followers",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Follower list" }
+        }
+      }
+    },
+    "/api/following/{address}": {
+      "get": {
+        "tags": ["Social"],
+        "summary": "List following",
+        "security": [{ "daemonToken": [] }, { "sessionToken": [] }],
+        "parameters": [
+          { "name": "address", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Following list" }
+        }
+      }
+    }
+  }
+}

@@ -39,11 +39,11 @@ pub struct TaskRow {
     pub task_id: i64,
     pub poster: String,
     pub judge: String,
-    pub judge_mode: i16,
+    pub judge_mode: String,
     pub reward: i64,
     pub mint: String,
     pub min_stake: i64,
-    pub state: i16,
+    pub state: i32,
     pub category: i16,
     pub eval_ref: String,
     pub deadline: i64,
@@ -71,8 +71,8 @@ pub struct SubmissionRow {
 #[derive(Debug, Clone)]
 pub struct ReputationRow {
     pub agent: String,
-    pub global_avg_score: i32,
-    pub global_win_rate: i32,
+    pub global_avg_score: f64,
+    pub global_win_rate: f64,
     pub global_completed: i32,
     pub global_total_applied: i32,
     pub total_earned: i64,
@@ -251,7 +251,7 @@ impl Database {
             .client
             .query_opt(
                 "SELECT
-                    agent, display_name, bio, website, github, x, onchain_ref, publish_mode, updated_at
+                    agent, display_name, bio, links_website AS website, links_github AS github, links_x AS x, onchain_ref, publish_mode, updated_at
                  FROM agent_profiles
                  WHERE agent = $1",
                 &[&agent],
