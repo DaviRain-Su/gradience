@@ -7,6 +7,7 @@ import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
 import { ChatView } from './views/ChatView';
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
+import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -201,6 +202,11 @@ function Shell({
                 {/* Connection Panel */}
                 <div style={{ padding: '0 24px', marginBottom: '16px' }}>
                     <ConnectionPanel />
+                </div>
+
+                {/* Dynamic Login */}
+                <div style={{ padding: '0 24px', marginBottom: '16px' }}>
+                    <DynamicLoginButton />
                 </div>
 
                 {/* Navigation */}
