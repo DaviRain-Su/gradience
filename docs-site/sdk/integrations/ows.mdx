@@ -1,0 +1,64 @@
+---
+title: "OWS Integration"
+description: "Documentation for OWS Integration"
+---
+
+# OWS (Open Wallet Standard) Integration
+
+Gradience integrates with [Open Wallet Standard (OWS)](https://openwallet.sh) — backed by **MoonPay, PayPal, Ethereum Foundation, and XMTP** — to enable agent-native identity and seamless cross-chain operations.
+
+## Overview
+
+This integration enables:
+
+1. **Agent-Native Identity** - Agents use OWS Wallet as their persistent multi-chain identity
+2. **Credential Management** - Verifiable credentials stored in OWS
+3. **Cross-Chain Capability** - OWS supports multiple chains
+4. **Standardized Interface** - Compatible with other OWS-powered agents
+
+## Architecture
+
+```
+Gradience + OWS
+├── Identity: OWS Wallet (multi-chain)
+├── Credentials: Verifiable credentials in OWS
+├── Settlement: Gradience Protocol (Solana)
+├── Reputation: Gradience + OWS attestations
+└── Messaging: XMTP via OWS Agent Kit
+```
+
+## Integration Highlights
+
+- **Identity**: OWS Wallet as Agent's persistent multi-chain identity
+- **Messaging**: XMTP for agent-to-agent coordination via OWS Agent Kit
+- **Credentials**: Verifiable credentials stored in OWS
+- **Payments**: MoonPay skills for fiat on/off ramps
+
+## Quick Start
+
+```typescript
+import { AgentOWSIdentity } from '@gradiences/agent';
+
+const agent = new AgentOWSIdentity();
+await agent.initialize();
+
+// Now agent has OWS-backed identity
+console.log(agent.identity.owsWallet);
+```
+
+## Status
+
+🔧 Integration in progress
+
+## Documentation
+
+- [Quick Start](./quickstart.md)
+- [Architecture](./architecture.md)
+- [API Reference](./api.md)
+
+## Partners
+
+- [MoonPay](https://www.moonpay.com/) - Fiat on/off ramps
+- [PayPal](https://www.paypal.com/) - Payment infrastructure
+- [Ethereum Foundation](https://ethereum.foundation/) - Standards development
+- [XMTP](https://xmtp.org/) - Agent messaging protocol

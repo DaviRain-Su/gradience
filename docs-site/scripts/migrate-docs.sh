@@ -8,21 +8,19 @@ echo "📚 Gradience Documentation Migration"
 echo "===================================="
 echo ""
 
-SOURCE_DIR="/Users/davirian/dev/active/gradience/docs"
+SOURCE_DIR="/Users/davirian/dev/active/gradience/docs-archive-2026-04-04"
 TARGET_DIR="/Users/davirian/dev/active/gradience/docs-site"
-BACKUP_DIR="/Users/davirian/dev/active/gradience/docs-archive-$(date +%Y%m%d)"
 
-echo "Source: $SOURCE_DIR"
+echo "Source (Archive): $SOURCE_DIR"
 echo "Target: $TARGET_DIR"
-echo "Backup: $BACKUP_DIR"
 echo ""
 
-# Create backup
-echo "🔒 Creating backup..."
-mkdir -p "$BACKUP_DIR"
-cp -r "$SOURCE_DIR"/* "$BACKUP_DIR/"
-echo "✅ Backup created at $BACKUP_DIR"
-echo ""
+# Check if source exists
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo "❌ Error: Source directory not found: $SOURCE_DIR"
+    echo "Make sure docs have been archived first."
+    exit 1
+fi
 
 # Migration mapping
 declare -A MIGRATION_MAP=(
@@ -84,8 +82,9 @@ echo ""
 echo "📊 Migration Summary"
 echo "===================="
 echo ""
-echo "Files migrated: $(find "$TARGET_DIR" -name '*.mdx' | wc -l)"
-echo "Backup location: $BACKUP_DIR"
+echo "Files migrated: $(find "$TARGET_DIR" -name '*.mdx' -newer "$0" 2>/dev/null | wc -l)"
+echo "Total MDX files: $(find "$TARGET_DIR" -name '*.mdx' | wc -l)"
+echo "Source archive: $SOURCE_DIR"
 echo ""
 
 echo "🎯 Next Steps"
@@ -99,17 +98,17 @@ echo "3. Add hero images:"
 echo "   - $TARGET_DIR/images/hero-dark.svg"
 echo "   - $TARGET_DIR/images/hero-light.svg"
 echo "4. Update mint.json navigation for new pages"
-echo "5. Test locally: cd $TARGET_DIR && npm run dev"
+echo "5. Test locally: cd $TARGET_DIR && npm install && npm run dev"
 echo "6. Deploy to Mintlify"
 echo ""
 
 echo "⚠️  Important Notes"
 echo "==================="
 echo ""
-echo "- Original docs preserved in: $BACKUP_DIR"
+echo "- Original docs archived in: $SOURCE_DIR"
 echo "- Review and clean up migrated content"
 echo "- Some files may need manual formatting"
-echo "- Archive old docs after verification: mv docs docs-old"
+echo "- After verification, you can remove: $SOURCE_DIR"
 echo ""
 
 echo "✅ Migration complete!"

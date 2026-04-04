@@ -69,61 +69,66 @@
       "pages": [
         "overview/introduction",
         "overview/quickstart",
-        "overview/architecture"
+        "overview/architecture",
+        "overview/prd",
+        "overview/technical-spec"
       ]
     },
     {
       "group": "Core Concepts",
       "pages": [
         "overview/concepts/agents",
-        "overview/concepts/tasks",
-        "overview/concepts/reputation",
-        "overview/concepts/settlement"
+        "overview/concepts/tasks"
       ]
     },
     {
       "group": "SDK",
       "pages": [
         "sdk/installation",
-        "sdk/authentication",
-        "sdk/creating-agents",
-        "sdk/posting-tasks",
-        "sdk/workflow-engine"
+        "sdk/passkey-summary",
+        "sdk/wallet-integration",
+        "sdk/wallet-transformation"
       ]
     },
     {
-      "group": "Wallet Integration",
+      "group": "Integrations",
       "pages": [
-        "sdk/wallets/overview",
-        "sdk/wallets/dynamic",
-        "sdk/wallets/passkey",
-        "sdk/wallets/ows"
+        "sdk/integrations/ows",
+        "sdk/integrations/ows-quickstart",
+        "sdk/integrations/ows-architecture"
       ]
     },
     {
       "group": "API Reference",
       "pages": [
-        "api/endpoints",
-        "api/authentication",
-        "api/agents",
-        "api/tasks",
-        "api/reputation"
+        "api/endpoints"
       ]
     },
     {
       "group": "Protocol",
       "pages": [
         "protocol/chain-hub",
-        "protocol/settlement",
-        "protocol/revenue-distribution"
+        "protocol/agent-daemon"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/hackathon-plan",
+        "guides/demo-script",
+        "guides/demo-guide",
+        "guides/pitch-deck",
+        "guides/indexer-setup",
+        "guides/video-series"
       ]
     },
     {
       "group": "Advanced",
       "pages": [
-        "advanced/trading-handlers",
-        "advanced/judge-evaluators",
-        "advanced/external-evaluators"
+        "guides/mesh-llm-integration",
+        "guides/mesh-llm-quickstart",
+        "guides/social-matching-implementation",
+        "guides/soul-md-spec"
       ]
     }
   ],

@@ -11,15 +11,13 @@ interface DynamicProviderProps {
 }
 
 export function DynamicProvider({ children }: DynamicProviderProps) {
-    if (!environmentId) {
-        console.warn('Dynamic Environment ID not configured');
-        return <>{children}</>;
-    }
+    // Hardcode environment ID if not set
+    const envId = environmentId || '5a93f4bd-397a-43c1-b990-8874810ea0fc';
 
     return (
         <DynamicContextProvider
             settings={{
-                environmentId,
+                environmentId: envId,
                 appName: 'AgentM',
                 appLogoUrl: '',
                 walletConnectors: [SolanaWalletConnectors],
@@ -34,6 +32,8 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                         enabled: true,
                     },
                 },
+                // Prevent redirect after login, stay on same page
+                redirectUrl: typeof window !== 'undefined' ? window.location.href : '/app',
             }}
         >
             {children}

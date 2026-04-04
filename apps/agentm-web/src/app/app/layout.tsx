@@ -1,17 +1,9 @@
 'use client';
 
-import { useMemo, useState, useEffect, type ReactNode } from 'react';
-import { ConnectionProvider as SolanaConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
+import { useState, useEffect, type ReactNode } from 'react';
 import { ConnectionProvider as DaemonConnectionProvider } from '../../lib/connection/ConnectionContext';
+import { DynamicProvider } from '../../lib/dynamic/DynamicProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
-
-// Import wallet adapter CSS
-import '@solana/wallet-adapter-react-ui/styles.css';
-
-const RPC_ENDPOINT = process.env.NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT || clusterApiUrl('devnet');
 
 export default function AppLayout({ children }: { children: ReactNode }) {
     const [mounted, setMounted] = useState(false);
@@ -19,11 +11,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    const wallets = useMemo(() => [
-        new PhantomWalletAdapter(),
-        new SolflareWalletAdapter(),
-    ], []);
 
     if (!mounted) {
         return (
@@ -41,15 +28,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     return (
         <ErrorBoundary>
-            <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
-                <WalletProvider wallets={wallets} autoConnect>
-                    <WalletModalProvider>
-                        <DaemonConnectionProvider>
-                            {children}
-                        </DaemonConnectionProvider>
-                    </WalletModalProvider>
-                </WalletProvider>
-            </SolanaConnectionProvider>
+            <DynamicProvider>
+                <DaemonConnectionProvider>
+                    {children}
+                </DaemonConnectionProvider>
+            </DynamicProvider>
         </ErrorBoundary>
     );
 }

@@ -16,3 +16,5 @@ node_modules
 .env.prod
 .env.local
 .env*.local
+docs-archive-2026-04-04/
+docs-archive*/

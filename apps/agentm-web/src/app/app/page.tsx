@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
 import { ChatView } from './views/ChatView';
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
+import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'settings';
 
@@ -27,34 +29,106 @@ interface AgentRow {
 }
 
 export default function AppPage() {
-    return <DemoApp />;
+    const { isAuthenticated, user } = useDynamicContext();
+
+    // Show login screen if not authenticated
+    if (!isAuthenticated) {
+        return <LoginScreen />;
+    }
+
+    // Show main app when authenticated
+    return <MainApp user={user} />;
 }
 
-function DemoApp() {
+function LoginScreen() {
+    return (
+        <div style={{
+            minHeight: '100vh',
+            background: '#F3F3F8',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '32px',
+            padding: '24px',
+        }}>
+            <div style={{ textAlign: 'center' }}>
+                <div style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '20px',
+                    background: '#C6BBFF',
+                    border: '2px solid #16161A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '40px',
+                    margin: '0 auto 24px',
+                }}>
+                    🤖
+                </div>
+                <h1 style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '36px',
+                    fontWeight: 700,
+                    color: '#16161A',
+                    textTransform: 'uppercase',
+                    margin: '0 0 12px 0',
+                }}>
+                    AgentM
+                </h1>
+                <p style={{
+                    fontSize: '16px',
+                    color: '#16161A',
+                    opacity: 0.6,
+                    maxWidth: '400px',
+                    margin: '0 auto 32px',
+                }}>
+                    AI Agent Economy on Solana. Connect with Google, Twitter, or Discord to get started.
+                </p>
+            </div>
+
+            <DynamicLoginButton />
+
+            <Link href="/" style={{
+                fontSize: '14px',
+                color: '#16161A',
+                opacity: 0.5,
+                textDecoration: 'none',
+                marginTop: '16px',
+            }}>
+                ← Back to home
+            </Link>
+        </div>
+    );
+}
+
+function MainApp({ user }: { user: any }) {
     const [view, setView] = useState<ActiveView>('discover');
-    const [demoAddr] = useState('DEMO_ha1w01');
+    const address = user?.verifiedCredentials?.[0]?.address || 'DEMO_addr';
+    const email = user?.email || user?.username || 'User';
 
     return (
         <Shell
             view={view}
             setView={setView}
-            address={demoAddr}
+            address={address}
             activeSubWallet={null}
-            loginEmail="demo@agentm.local"
+            loginEmail={email}
             wallets={[]}
             onWalletChange={() => {}}
             bindingStatus="unbound"
             onLogout={() => {}}
         >
             {view === 'discover' && <DiscoverView />}
-            {view === 'tasks' && <TaskMarketView address={demoAddr} />}
-            {view === 'feed' && <FeedView address={demoAddr} />}
-            {view === 'social' && <SocialView address={demoAddr} />}
+            {view === 'tasks' && <TaskMarketView address={address} />}
+            {view === 'feed' && <FeedView address={address} />}
+            {view === 'social' && <SocialView address={address} />}
             {view === 'me' && (
                 <MeView
-                    address={demoAddr}
-                    masterWallet={demoAddr}
-                    loginEmail="demo@agentm.local"
+                    address={address}
+                    masterWallet={address}
+                    loginEmail={email}
                     selectedWallet={null}
                     owsBinding={null}
                     bindingStatus="unbound"
@@ -201,6 +275,11 @@ function Shell({
                 {/* Connection Panel */}
                 <div style={{ padding: '0 24px', marginBottom: '16px' }}>
                     <ConnectionPanel />
+                </div>
+
+                {/* Dynamic Login */}
+                <div style={{ padding: '0 24px', marginBottom: '16px' }}>
+                    <DynamicLoginButton />
                 </div>
 
                 {/* Navigation */}
@@ -1290,37 +1369,6 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Loading() {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#16161A', opacity: 0.5 }}>Loading...</div>;
-}
-
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F3F3F8' }}>
-            <div style={{ textAlign: 'center' }}>
-                <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#16161A' }}>AgentM</h1>
-                <p style={{ color: '#16161A', opacity: 0.6, maxWidth: '28rem', margin: '16px auto' }}>
-                    AI Agent Economy on Solana. Find agents, delegate tasks, earn reputation.
-                </p>
-                <button
-                    onClick={onLogin}
-                    style={{
-                        padding: '12px 32px',
-                        background: '#16161A',
-                        color: '#FFFFFF',
-                        borderRadius: '12px',
-                        fontSize: '18px',
-                        fontWeight: 500,
-                        border: 'none',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Sign in with Google
-                </button>
-                <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.4, marginTop: '16px' }}>
-                    <Link href="/" style={{ color: 'inherit' }}>Back to home</Link>
-                </p>
-            </div>
-        </div>
-    );
 }
 
 function formatBindingStatus(status: 'bound' | 'wallet_changed' | 'unbound'): string {

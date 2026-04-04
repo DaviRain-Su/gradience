@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     images: {
         unoptimized: true,
     },
+    turbopack: {},
     webpack: (config) => {
         // Mock workspace packages
         config.resolve.alias = {
