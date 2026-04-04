@@ -297,4 +297,45 @@ export class OWSDaemonClient {
     );
     return res.address;
   }
+
+  // -- GRA-225: Reputation Wallet Integration --
+
+  async getWalletReputation(walletId: string): Promise<{
+    walletId: string;
+    agentAddress: string;
+    reputationScore: number;
+    tier: string;
+    completedTasks: number;
+    avgRating: number;
+    policy: {
+      dailyLimitUsd: number;
+      allowedChains: string[];
+      autoApprove: boolean;
+    };
+  }> {
+    return daemonFetch(
+      this.daemonUrl,
+      `/api/v1/ows/wallets/${encodeURIComponent(walletId)}/reputation`,
+      { token: this.sessionToken },
+    );
+  }
+
+  async getAggregateReputation(masterWallet: string): Promise<{
+    masterWallet: string;
+    aggregateScore: number;
+    tier: string;
+    agentCount: number;
+    agents: Array<{
+      walletId: string;
+      address: string;
+      reputationScore: number;
+      weight: number;
+    }>;
+  }> {
+    return daemonFetch(
+      this.daemonUrl,
+      `/api/v1/ows/wallets/master/${encodeURIComponent(masterWallet)}/aggregate-reputation`,
+      { token: this.sessionToken },
+    );
+  }
 }

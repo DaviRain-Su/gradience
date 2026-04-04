@@ -8,6 +8,7 @@ import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import type { EncryptionProvider } from '@/lib/ows/encrypted-store';
 import type { CosignParams, MasterCosignReceipt } from '@/lib/ows/cosign';
 import { submitSubWalletCreation, submitRouteSignature } from '@/lib/ows/indexer-submit';
+import { calculatePolicyFromReputation, type ReputationPolicy } from '@/lib/ows/reputation-policy';
 
 export interface SignRouteResult {
     receipt: OWSSignRouteReceipt;
@@ -24,6 +25,10 @@ export interface AgentSubWallet {
     lastSignReceipt?: OWSSignRouteReceipt | null;
     createdAt?: number;
     updatedAt?: number;
+    // GRA-225: Reputation data
+    reputationScore?: number;
+    reputationTier?: string;
+    reputationPolicy?: ReputationPolicy;
 }
 
 /**
