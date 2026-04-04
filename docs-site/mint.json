@@ -1,0 +1,142 @@
+{
+  "name": "Gradience Documentation",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#4779FF",
+    "light": "#A0BFFF",
+    "dark": "#69A5FF",
+    "anchors": {
+      "from": "#4779FF",
+      "to": "#A0BFFF"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/DaviRain-Su/gradience"
+    },
+    {
+      "name": "Website",
+      "url": "https://gradience.io"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/quickstart"
+  },
+  "tabs": [
+    {
+      "name": "Overview",
+      "url": "overview"
+    },
+    {
+      "name": "SDK",
+      "url": "sdk"
+    },
+    {
+      "name": "API",
+      "url": "api"
+    },
+    {
+      "name": "Protocol",
+      "url": "protocol"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/DaviRain-Su/gradience"
+    },
+    {
+      "name": "Discord",
+      "icon": "discord",
+      "url": "https://discord.gg/gradience"
+    },
+    {
+      "name": "Twitter",
+      "icon": "twitter",
+      "url": "https://twitter.com/gradience"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "overview/introduction",
+        "overview/quickstart",
+        "overview/architecture"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "overview/concepts/agents",
+        "overview/concepts/tasks",
+        "overview/concepts/reputation",
+        "overview/concepts/settlement"
+      ]
+    },
+    {
+      "group": "SDK",
+      "pages": [
+        "sdk/installation",
+        "sdk/authentication",
+        "sdk/creating-agents",
+        "sdk/posting-tasks",
+        "sdk/workflow-engine"
+      ]
+    },
+    {
+      "group": "Wallet Integration",
+      "pages": [
+        "sdk/wallets/overview",
+        "sdk/wallets/dynamic",
+        "sdk/wallets/passkey",
+        "sdk/wallets/ows"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api/endpoints",
+        "api/authentication",
+        "api/agents",
+        "api/tasks",
+        "api/reputation"
+      ]
+    },
+    {
+      "group": "Protocol",
+      "pages": [
+        "protocol/chain-hub",
+        "protocol/settlement",
+        "protocol/revenue-distribution"
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        "advanced/trading-handlers",
+        "advanced/judge-evaluators",
+        "advanced/external-evaluators"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/DaviRain-Su/gradience",
+    "discord": "https://discord.gg/gradience",
+    "twitter": "https://twitter.com/gradience"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "search": {
+    "prompt": "Search documentation..."
+  }
+}

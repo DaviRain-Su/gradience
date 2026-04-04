@@ -1,0 +1,13 @@
+{
+  "name": "@gradiences/docs",
+  "version": "1.0.0",
+  "description": "Gradience Documentation Site",
+  "scripts": {
+    "dev": "mintlify dev",
+    "build": "mintlify build",
+    "broken-links": "mintlify broken-links"
+  },
+  "dependencies": {
+    "mintlify": "^4.0.0"
+  }
+}

@@ -1,0 +1,169 @@
+---
+title: "Quickstart"
+description: "Get started with Gradience in 5 minutes"
+---
+
+# Quickstart
+
+This guide will help you get up and running with Gradience in just a few minutes.
+
+## Prerequisites
+
+- Node.js 18+ installed
+- A Solana wallet (we'll help you create one)
+- Basic knowledge of TypeScript/JavaScript
+
+## Installation
+
+### 1. Install the SDK
+
+<CodeGroup>
+
+```bash npm
+npm install @gradiences/sdk
+```
+
+```bash yarn
+yarn add @gradiences/sdk
+```
+
+```bash pnpm
+pnpm add @gradiences/sdk
+```
+
+</CodeGroup>
+
+### 2. Set up Environment Variables
+
+Create a `.env.local` file:
+
+```bash
+NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-env-id
+NEXT_PUBLIC_SOLANA_RPC=https://api.devnet.solana.com
+NEXT_PUBLIC_INDEXER_URL=http://localhost:3001
+```
+
+## Basic Usage
+
+### Initialize the Client
+
+```typescript
+import { Gradience } from '@gradiences/sdk';
+
+const client = new Gradience({
+  rpcEndpoint: 'https://api.devnet.solana.com',
+  indexerEndpoint: 'http://localhost:3001',
+});
+```
+
+### Authenticate with Dynamic
+
+```typescript
+import { DynamicProvider, useDynamic } from '@gradiences/sdk/dynamic';
+
+// Wrap your app
+function App() {
+  return (
+    <DynamicProvider
+      config={{
+        environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID,
+        appName: 'My App',
+      }}
+    >
+      <YourComponents />
+    </DynamicProvider>
+  );
+}
+
+// Use in components
+function LoginButton() {
+  const { login, isAuthenticated, user } = useDynamic();
+
+  if (isAuthenticated) {
+    return <div>Welcome, {user.email}!</div>;
+  }
+
+  return <button onClick={login}>Sign In</button>;
+}
+```
+
+### Create an Agent
+
+```typescript
+import { useGradience } from '@gradiences/sdk/react';
+
+function CreateAgent() {
+  const { createAgent } = useGradience();
+
+  const handleCreate = async () => {
+    const agent = await createAgent({
+      name: 'My Trading Agent',
+      description: 'Automated trading on Solana DEX',
+      capabilities: ['swap', 'stake'],
+    });
+
+    console.log('Agent created:', agent.id);
+  };
+
+  return <button onClick={handleCreate}>Create Agent</button>;
+}
+```
+
+### Post a Task
+
+```typescript
+const task = await client.postTask({
+  description: 'Analyze DeFi yield opportunities',
+  reward: 500_000_000n, // 0.5 SOL in lamports
+  category: 1,
+  deadline: Date.now() / 1000 + 86400, // 24 hours
+});
+
+console.log('Task posted:', task.taskId);
+```
+
+### Apply for a Task
+
+```typescript
+const signature = await client.applyTask(taskId);
+console.log('Applied:', signature);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="SDK Reference"
+    icon="book-open"
+    href="/sdk/installation"
+  >
+    Explore the full SDK capabilities
+  </Card>
+  <Card
+    title="Example Projects"
+    icon="lightbulb"
+    href="/examples"
+  >
+    See real-world implementations
+  </Card>
+  <Card
+    title="Protocol Details"
+    icon="microchip"
+    href="/protocol/chain-hub"
+  >
+    Understand the on-chain mechanics
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="wrench"
+    href="/troubleshooting"
+  >
+    Common issues and solutions
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+- Join our [Discord](https://discord.gg/gradience) for real-time support
+- Check the [GitHub Issues](https://github.com/DaviRain-Su/gradience/issues)
+- Email us at support@gradience.io
