@@ -10,6 +10,23 @@
  * @module ows/passkey-wallet
  */
 
+import {
+  isWebAuthnSupported,
+  isPasskeySupported,
+  createPasskey,
+  getPasskey,
+  bufferToBase64url,
+  base64urlToBuffer,
+  type CreatePasskeyOptions,
+  type GetPasskeyOptions,
+  type PasskeyCredential,
+} from '../webauthn/utils.js';
+import {
+  deriveKeyFromWallet,
+  encryptAgentId,
+  decryptAgentId,
+  generateRandomString,
+} from '../crypto/utils.js';
 import { logger } from '../utils/logger.js';
 
 // ============================================================================
@@ -97,70 +114,50 @@ export class PasskeyAgentWalletManager {
    *
    * 流程:
    * 1. 生成派生参数 (agentId, derivationIndex)
-   * 2. 使用 WebAuthn 创建 Passkey
-   * 3. 将派生参数存储在 Passkey 的 userHandle 中
-   * 4. 返回 credential ID 用于后续恢复
+   * 2. 派生加密密钥
+   * 3. 加密 agentId
+   * 4. 使用 WebAuthn 创建 Passkey
+   * 5. 返回 credential ID 用于后续恢复
    */
   async createPasskeyWallet(params: {
     agentId: string;
     masterWalletAddress: string;
     derivationIndex: number;
   }): Promise<AgentWalletCredential> {
-    // 1. 构建派生参数
+    // 1. 派生加密密钥
+    const encryptionKey = await deriveKeyFromWallet(
+      params.masterWalletAddress,
+      this.config.userId
+    );
+
+    // 2. 加密 agentId
+    const encryptedAgentId = await encryptAgentId(params.agentId, encryptionKey);
+
+    // 3. 构建派生参数
     const derivationParams: EncryptedDerivationParams = {
-      encryptedAgentId: await this.encryptAgentId(params.agentId),
+      encryptedAgentId,
       derivationIndex: params.derivationIndex,
       masterWalletAddress: params.masterWalletAddress,
       version: 'v1',
     };
 
-    // 2. 创建 Passkey
-    const credential = await navigator.credentials.create({
-      publicKey: {
-        // Relying Party
-        rp: {
-          id: this.config.rpId,
-          name: this.config.rpName,
-        },
-        // User info
-        user: {
-          id: this.encodeDerivationParams(derivationParams),
-          name: `${this.config.userName} - Agent ${params.agentId.slice(0, 8)}`,
-          displayName: `OWS Agent Wallet (${params.masterWalletAddress.slice(0, 6)}...)`,
-        },
-        // Challenge (用于防止重放攻击)
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        // 公钥参数
-        pubKeyCredParams: [
-          { type: 'public-key', alg: -7 },   // ES256
-          { type: 'public-key', alg: -257 }, // RS256
-        ],
-        // 认证器选择
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform', // 平台认证器 (TouchID/FaceID)
-          userVerification: 'required',
-          residentKey: 'required', // 必须存储 resident key
-        },
-        // 扩展: 存储额外数据
-        extensions: {
-          largeBlob: {
-            support: 'required',
-          },
-        } as any,
-      },
-    }) as PublicKeyCredential;
-
-    if (!credential) {
-      throw new Error('Failed to create passkey');
-    }
-
-    // 3. 尝试使用 largeBlob 存储更多数据
-    await this.storeLargeBlob(credential.rawId, derivationParams);
+    // 4. 创建 Passkey
+    const credential = await createPasskey({
+      rpId: this.config.rpId,
+      rpName: this.config.rpName,
+      userId: this.encodeDerivationParams(derivationParams),
+      userName: `${this.config.userName} - Agent ${params.agentId.slice(0, 8)}`,
+      userDisplayName: `OWS Agent Wallet (${params.masterWalletAddress.slice(0, 6)}...)`,
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      userVerification: 'required',
+      residentKey: 'required',
+      authenticatorAttachment: 'platform',
+    });
 
     const deviceInfo = this.detectDeviceInfo();
 
     const walletCredential: AgentWalletCredential = {
-      credentialId: this.arrayBufferToBase64url(credential.rawId),
+      credentialId: credential.id,
       derivationParams,
       createdAt: Date.now(),
       lastUsedAt: Date.now(),
@@ -185,53 +182,47 @@ export class PasskeyAgentWalletManager {
    * 流程:
    * 1. 调用 navigator.credentials.get() 获取 Passkey
    * 2. 从 userHandle 中解析派生参数
-   * 3. 验证主钱包地址
-   * 4. 返回恢复的 wallet 信息
+   * 3. 派生解密密钥
+   * 4. 解密 agentId
+   * 5. 返回恢复的 wallet 信息
    */
   async recoverWallet(): Promise<RecoveredWallet> {
     // 1. 获取 Passkey
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        // 允许任何我们创建的 credential
-        allowCredentials: [],
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        userVerification: 'required',
-        // 扩展: 读取 largeBlob
-        extensions: {
-          largeBlob: {
-            read: true,
-          },
-        } as any,
-      },
-    }) as PublicKeyCredential;
+    const credential = await getPasskey({
+      rpId: this.config.rpId,
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      userVerification: 'required',
+    });
 
-    if (!assertion) {
+    if (!credential) {
       throw new Error('No passkey found');
     }
 
     // 2. 解析派生参数
-    const response = assertion.response as AuthenticatorAssertionResponse;
+    const response = credential.response as AuthenticatorAssertionResponse;
     const userHandle = response.userHandle;
 
     if (!userHandle) {
       throw new Error('No user handle in passkey');
     }
 
-    // 3. 解密派生参数
     const derivationParams = this.decodeDerivationParams(
       new Uint8Array(userHandle)
     );
 
-    // 4. 尝试从 largeBlob 读取 (如果支持)
-    const largeBlobData = await this.readLargeBlob(assertion.rawId);
-    if (largeBlobData) {
-      Object.assign(derivationParams, largeBlobData);
-    }
+    // 3. 派生解密密钥
+    const decryptionKey = await deriveKeyFromWallet(
+      derivationParams.masterWalletAddress,
+      this.config.userId
+    );
 
-    // 5. 解密 agentId
-    const agentId = await this.decryptAgentId(derivationParams.encryptedAgentId);
+    // 4. 解密 agentId
+    const agentId = await decryptAgentId(
+      derivationParams.encryptedAgentId,
+      decryptionKey
+    );
 
-    // 6. 计算子钱包地址
+    // 5. 计算子钱包地址
     const subWalletAddress = this.deriveSubWalletAddress(
       derivationParams.masterWalletAddress,
       agentId,
@@ -326,150 +317,18 @@ export class PasskeyAgentWalletManager {
   }
 
   // -------------------------------------------------------------------------
-  // 加密/解密辅助方法
+  // 工具方法
   // -------------------------------------------------------------------------
 
-  /**
-   * 加密 agentId
-   *
-   * 使用主钱包地址作为密钥派生基础
-   */
-  private async encryptAgentId(agentId: string): Promise<string> {
-    // 简化实现: 使用 AES-GCM
-    // 实际生产环境应该使用更安全的方案
-    const encoder = new TextEncoder();
-    const data = encoder.encode(agentId);
-
-    // 生成密钥 (应该从主钱包派生)
-    const key = await this.deriveEncryptionKey();
-
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      data
-    );
-
-    // 组合 IV + ciphertext
-    const result = new Uint8Array(iv.length + encrypted.byteLength);
-    result.set(iv);
-    result.set(new Uint8Array(encrypted), iv.length);
-
-    return this.arrayBufferToBase64url(result.buffer);
-  }
-
-  /**
-   * 解密 agentId
-   */
-  private async decryptAgentId(encryptedAgentId: string): Promise<string> {
-    const key = await this.deriveEncryptionKey();
-    const data = this.base64urlToArrayBuffer(encryptedAgentId);
-
-    const iv = data.slice(0, 12);
-    const ciphertext = data.slice(12);
-
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      ciphertext
-    );
-
-    return new TextDecoder().decode(decrypted);
-  }
-
-  /**
-   * 派生加密密钥
-   *
-   * 从主钱包地址派生 (简化实现)
-   */
-  private async deriveEncryptionKey(): Promise<CryptoKey> {
-    // 实际应该从主钱包的私钥派生
-    // 这里使用一个基于 userId 的派生
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(`ows-wallet-${this.config.userId}`);
-
-    const hash = await crypto.subtle.digest('SHA-256', keyData);
-
-    return crypto.subtle.importKey(
-      'raw',
-      hash,
-      { name: 'AES-GCM' },
-      false,
-      ['encrypt', 'decrypt']
-    );
-  }
-
-  // -------------------------------------------------------------------------
-  // 编码/解码辅助方法
-  // -------------------------------------------------------------------------
-
-  private encodeDerivationParams(params: EncryptedDerivationParams): Uint8Array {
+  private encodeDerivationParams(params: EncryptedDerivationParams): string {
     const json = JSON.stringify(params);
-    return new TextEncoder().encode(json);
+    return json;
   }
 
   private decodeDerivationParams(data: Uint8Array): EncryptedDerivationParams {
     const json = new TextDecoder().decode(data);
     return JSON.parse(json);
   }
-
-  // -------------------------------------------------------------------------
-  // Large Blob 存储 (实验性功能)
-  // -------------------------------------------------------------------------
-
-  private async storeLargeBlob(
-    credentialId: ArrayBuffer,
-    data: EncryptedDerivationParams
-  ): Promise<void> {
-    try {
-      // 尝试使用 largeBlob 扩展存储更多数据
-      // 注意: 这是实验性功能，不是所有认证器都支持
-      const result = await (navigator.credentials as any).create({
-        publicKey: {
-          extensions: {
-            largeBlob: {
-              write: this.encodeDerivationParams(data),
-            },
-          },
-        },
-      });
-
-      logger.info('Large blob stored successfully');
-    } catch (error) {
-      // 如果不支持，数据已经存储在 userHandle 中
-      logger.warn('Large blob not supported, using userHandle');
-    }
-  }
-
-  private async readLargeBlob(
-    credentialId: ArrayBuffer
-  ): Promise<Partial<EncryptedDerivationParams> | null> {
-    try {
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          allowCredentials: [{
-            id: credentialId,
-            type: 'public-key',
-          }],
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          extensions: {
-            largeBlob: {
-              read: true,
-            },
-          },
-        } as any,
-      });
-
-      // 读取 largeBlob 数据
-      return null; // 简化实现
-    } catch {
-      return null;
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // 工具方法
-  // -------------------------------------------------------------------------
 
   private deriveSubWalletAddress(
     masterWallet: string,
@@ -521,32 +380,6 @@ export class PasskeyAgentWalletManager {
       os,
       browser,
     };
-  }
-
-  private arrayBufferToBase64url(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  }
-
-  private base64urlToArrayBuffer(base64url: string): Uint8Array {
-    const base64 = base64url
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(base64url.length + (4 - base64url.length % 4) % 4, '=');
-
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
   }
 }
 
