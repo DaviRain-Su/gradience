@@ -10,6 +10,11 @@ pub struct Config {
     pub mock_webhook_file: String,
     pub mock_webhook_only: bool,
     pub triton_stale_after_seconds: u64,
+    // Solana subscription config
+    pub solana_ws_url: String,
+    pub solana_program_id: String,
+    pub solana_commitment: String,
+    pub solana_subscribe: bool,
 }
 
 impl Config {

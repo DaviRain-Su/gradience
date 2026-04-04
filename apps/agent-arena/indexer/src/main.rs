@@ -1,6 +1,8 @@
 mod config;
 mod db;
 mod events;
+mod solana_subscriber;
+mod triton_client;
 mod webhook;
 
 use std::{
