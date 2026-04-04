@@ -5,23 +5,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 
-// Default daemon URL - always try localhost:7420
 const DEFAULT_DAEMON_URL = 'http://localhost:7420';
-
-// Helper to safely use connection - fallback to default URL
-function useDaemonConnection() {
-  try {
-    const { useConnection } = require('@/lib/connection/ConnectionContext');
-    const conn = useConnection();
-    return {
-      daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
-      isConnected: conn.isConnected || false,
-    };
-  } catch {
-    return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false };
-  }
-}
 
 export interface Post {
   id: string;
