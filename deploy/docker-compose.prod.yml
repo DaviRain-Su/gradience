@@ -1,18 +1,7 @@
-# Gradience Production Docker Compose (DigitalOcean)
+# Gradience Production — Core Backend Services Only
 #
-# Architecture (v2 -- Five-Layer Stack):
-#   Layer 3: Discovery via Nostr NIP-89/90 (decentralized, no server needed)
-#   Layer 2: Communication via XMTP (decentralized, no server needed)
-#   Layer 1: Settlement -- Solana programs (deployed separately)
-#   Layer 0: Protocol Kernel -- Escrow + Judge + Reputation
-#
-# Services deployed here:
-#   postgres        -- PostgreSQL 16 (Chain Hub data)
-#   agent-daemon    -- Fastify + SQLite daemon (Agent runtime backend)
-#   agentm-web      -- Next.js user entry app
-#   agentm-pro      -- Next.js developer dashboard
-#   developer-docs  -- Next.js documentation site
-#   website         -- Next.js landing page
+# Web frontends (agentm-web, agentm-pro, website, docs) are deployed separately
+# (Vercel / Cloudflare Pages / static hosting).
 #
 # Usage:
 #   cd /opt/gradience
@@ -20,26 +9,27 @@
 
 services:
 
-  # -- PostgreSQL 16 (Chain Hub data, future use)
+  # -- PostgreSQL 16 (Chain Hub Indexer data)
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: gradience
+      POSTGRES_DB: gradience_indexer
       POSTGRES_USER: ${POSTGRES_USER:-gradience}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gradience}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ../apps/chain-hub/indexer/migrations:/docker-entrypoint-initdb.d
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gradience} -d gradience"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gradience} -d gradience_indexer"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
 
-  # -- agent-daemon (Fastify + SQLite, Agent runtime backend)
+  # -- agent-daemon (Fastify + SQLite + A2A Router)
   agent-daemon:
     build:
       context: ..
@@ -53,8 +43,8 @@ services:
       AGENTD_LOG_LEVEL: ${AGENTD_LOG_LEVEL:-info}
       AGENTD_DB_PATH: /data/agentd.db
       AGENTD_ALLOW_ALL_INTERFACES: "true"
-      AGENTD_CHAIN_HUB_URL: ${AGENTD_CHAIN_HUB_URL:-}
-      SOLANA_RPC_ENDPOINT: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
+      AGENTD_A2A_ENABLED: "true"
+      AGENTD_SOLANA_RPC_URL: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,82 +53,13 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4001/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 20s
     ports:
-      - "127.0.0.1:4001:4001"
-
-  # -- agentm-web (Next.js user entry app)
-  agentm-web:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.agentm-web
-      args:
-        NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
-        NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
-    image: gradience/agentm-web:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: "5200"
-    networks:
-      - backend
-    ports:
-      - "127.0.0.1:5200:5200"
-
-  # -- agentm-pro (Next.js developer dashboard)
-  agentm-pro:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.agentm-pro
-      args:
-        NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
-        NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT: ${NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT:-}
-    image: gradience/agentm-pro:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: "5300"
-    networks:
-      - backend
-    ports:
-      - "127.0.0.1:5300:5300"
-
-  # -- developer-docs (Next.js documentation)
-  developer-docs:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.developer-docs
-    image: gradience/developer-docs:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: "3000"
-    networks:
-      - backend
-    ports:
-      - "127.0.0.1:3000:3000"
-
-  # -- website (Next.js landing page)
-  website:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.website
-      args:
-        RESEND_API_KEY: ${RESEND_API_KEY:-}
-    image: gradience/website:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: "3003"
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-    networks:
-      - backend
-    ports:
-      - "127.0.0.1:3003:3003"
+      - "0.0.0.0:4001:4001"
 
 volumes:
   postgres-data:

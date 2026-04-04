@@ -227,8 +227,14 @@ let _keccakFn: ((d: Uint8Array) => Uint8Array) | null = null;
 
 async function initKeccak(): Promise<(d: Uint8Array) => Uint8Array> {
     if (_keccakFn) return _keccakFn;
-    const mod = await import('@noble/hashes/sha3' as string) as { keccak_256: (d: Uint8Array) => Uint8Array };
-    _keccakFn = mod.keccak_256;
+    // @noble/hashes v2 exports './sha3.js', v1 exports './sha3'
+    let mod: any;
+    try {
+        mod = await import('@noble/hashes/sha3.js' as string);
+    } catch {
+        mod = await import('@noble/hashes/sha3' as string);
+    }
+    _keccakFn = mod.keccak_256 as (d: Uint8Array) => Uint8Array;
     return _keccakFn;
 }
 

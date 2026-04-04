@@ -544,9 +544,44 @@ function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
                 }
             } catch { /* fall through */ }
 
-            // Fallback to demo data
-            const sorted = [...DEMO_DISCOVER_AGENTS].sort((a, b) => (b.reputation?.global_avg_score ?? 0) - (a.reputation?.global_avg_score ?? 0));
-            setAgents(sorted);
+            // Try indexer for agents from task data
+            try {
+                const indexerBase = resolveIndexerBase();
+                if (indexerBase) {
+                    const res = await fetch(`${indexerBase}/api/tasks`, { signal: AbortSignal.timeout(5000) });
+                    if (res.ok) {
+                        const tasks = await res.json();
+                        if (Array.isArray(tasks) && tasks.length > 0) {
+                            const posters = new Map<string, { tasks: number; categories: string[] }>();
+                            for (const t of tasks) {
+                                const p = posters.get(t.poster) || { tasks: 0, categories: [] };
+                                p.tasks++;
+                                if (t.category !== undefined && !p.categories.includes(String(t.category))) {
+                                    p.categories.push(String(t.category));
+                                }
+                                posters.set(t.poster, p);
+                            }
+                            const fromIndexer: AgentDetailData[] = Array.from(posters.entries()).map(([addr, info]) => ({
+                                agent: `Agent ${addr.slice(0, 8)}`,
+                                bio: `${info.tasks} task${info.tasks > 1 ? 's' : ''} posted on-chain`,
+                                capabilities: info.categories.map(c => `category-${c}`),
+                                walletAddress: addr,
+                                weight: info.tasks,
+                                reputation: null,
+                            }));
+                            if (fromIndexer.length > 0) {
+                                setAgents(fromIndexer);
+                                setDataSource('indexer' as any);
+                                setLoading(false);
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch { /* fall through */ }
+
+            // No real data available
+            setAgents([]);
             setDataSource('demo');
             setLoading(false);
         }
@@ -599,8 +634,16 @@ function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
             />
             {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>}
             {!loading && agents.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                    <p style={{ color: '#16161A', opacity: 0.5 }}>No agents found.</p>
+                <div style={{ textAlign: 'center', padding: '48px 24px', background: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #16161A' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>\ud83e\udd16</div>
+                    <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: '#16161A', marginBottom: '8px' }}>No Agents Online Yet</h3>
+                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '13px', maxWidth: '400px', margin: '0 auto 16px', lineHeight: 1.5 }}>
+                        Be the first to register your agent on the network.
+                        Start your daemon and it will appear here automatically.
+                    </p>
+                    <div style={{ background: '#F3F3F8', borderRadius: '8px', padding: '12px', fontFamily: 'monospace', fontSize: '12px', display: 'inline-block', userSelect: 'all' }}>
+                        npx @gradiences/agent-daemon start
+                    </div>
                 </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1805,8 +1848,8 @@ function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; 
 function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' | 'daemon' }) {
     const style = (source === 'indexer' || source === 'daemon')
         ? { background: '#D1FAE5', color: '#059669', border: '#10B981' }
-        : { background: '#FEF3C7', color: '#D97706', border: '#F59E0B' };
-    const label = source === 'daemon' ? 'Daemon Live' : source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Demo Data' : 'Mock Data';
+        : { background: '#F3F3F8', color: '#16161A', border: '#C6BBFF' };
+    const label = source === 'daemon' ? 'Daemon Live' : source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Example Agents' : 'Sample Data';
     return (
         <span style={{
             fontSize: '10px',
