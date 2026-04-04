@@ -5,17 +5,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import Link from 'next/link';
-// Privy imports — kept for future use when Privy is configured
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { usePrivy } from '@privy-io/react-auth';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { User } from '@privy-io/react-auth';
-import { useOWSBinding } from '@/hooks/useOWSBinding';
-import { useOWSAgentRouter } from '@/hooks/useOWSAgentRouter';
-import { useMasterCosign } from '@/lib/ows/cosign';
-import { AesGcmEncryption, type EncryptionProvider } from '@/lib/ows/encrypted-store';
-import type { OWSAgentWalletBinding } from '@/lib/ows/agent-wallet';
-import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
 import { FeedView } from './views/FeedView';
 import { SocialView } from './views/SocialView';
@@ -48,14 +37,7 @@ interface SolanaWalletCandidate {
 }
 
 export default function AppPage() {
-    // Privy is available → use full Privy flow
-    // Otherwise → use direct Solana wallet adapter
-    try {
-        // If Privy provider is available in the tree, use PrivyApp
-        return <PrivyOrWalletApp />;
-    } catch {
-        return <DemoApp />;
-    }
+    return <DemoApp />;
 }
 
 /** Try Privy first; fall back to direct wallet adapter */

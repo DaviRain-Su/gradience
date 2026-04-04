@@ -1,33 +1,60 @@
 /**
  * Profile Hooks
  * 
- * Hooks for fetching and managing Agent profiles
+ * Hooks for fetching and managing Agent profiles from Daemon
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { SoulProfile } from '@gradiences/soul-engine';
+
+// Simple SoulProfile type definition
+type SoulProfile = {
+  soulType?: string;
+  identity?: {
+    displayName?: string;
+    bio?: string;
+  };
+  values?: {
+    core?: string[];
+    priorities?: string[];
+    dealBreakers?: string[];
+  };
+};
+
+// Helper to safely use connection
+function useDaemonConnection() {
+  try {
+    // Dynamic import to avoid SSR issues
+    const { useConnection } = require('@/lib/connection/ConnectionContext');
+    return useConnection();
+  } catch {
+    return { daemonUrl: null, isConnected: false };
+  }
+}
 
 export interface AgentProfile {
-  id: string;
   address: string;
   domain?: string;
-  soulProfile?: SoulProfile;
+  displayName: string;
+  bio?: string;
+  avatar?: string;
   reputation: number;
   followers: number;
   following: number;
+  soulProfile?: SoulProfile;
   createdAt: string;
 }
 
 /**
- * Hook to fetch an agent's profile
+ * Hook to fetch an agent's profile from Daemon
  */
 export function useProfile(addressOrDomain?: string) {
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { daemonUrl, isConnected } = useDaemonConnection();
 
   useEffect(() => {
-    if (!addressOrDomain) {
+    if (!addressOrDomain || !isConnected || !daemonUrl) {
       setProfile(null);
       return;
     }
@@ -35,58 +62,66 @@ export function useProfile(addressOrDomain?: string) {
     setLoading(true);
     setError(null);
 
-    // TODO: Replace with actual API call
-    // Mock data for now
-    const mockProfile: AgentProfile = {
-      id: 'agent-1',
-      address: addressOrDomain.startsWith('0') ? addressOrDomain : '0x1234...5678',
-      domain: addressOrDomain.includes('.') ? addressOrDomain : undefined,
-      reputation: 85,
-      followers: 234,
-      following: 56,
-      createdAt: new Date().toISOString(),
-      soulProfile: {
-        soulType: 'human',
-        identity: {
-          displayName: 'Demo Agent',
-          bio: 'A demo agent for testing',
-        },
-        values: {
-          core: ['Innovation', 'Transparency'],
-          priorities: ['Growth', 'Community'],
-          dealBreakers: ['Dishonesty'],
-        },
-        interests: {
-          topics: ['AI', 'Blockchain'],
-          skills: ['Coding', 'Design'],
-          goals: ['Build great products'],
-        },
-        communication: {
-          tone: 'friendly',
-          pace: 'moderate',
-          depth: 'moderate',
-        },
-        boundaries: {
-          forbiddenTopics: [],
-          privacyLevel: 'public',
-          maxConversationLength: 15,
-        },
-      },
-    };
-
-    // Simulate API delay
-    const timer = setTimeout(() => {
-      setProfile(mockProfile);
-      setLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [addressOrDomain]);
+    fetch(`${daemonUrl}/api/profile/${addressOrDomain}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        return res.json();
+      })
+      .then((data: AgentProfile) => {
+        setProfile(data);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        // Fallback to mock data for demo
+        const mockProfile: AgentProfile = {
+          address: addressOrDomain,
+          domain: addressOrDomain.includes('.') ? addressOrDomain : undefined,
+          displayName: addressOrDomain === 'demo' ? 'Demo Agent' : `Agent ${addressOrDomain.slice(0, 6)}`,
+          bio: 'This is a demo agent profile.',
+          reputation: 85,
+          followers: 234,
+          following: 56,
+          createdAt: new Date().toISOString(),
+          soulProfile: {
+            soulType: 'human',
+            identity: {
+              displayName: 'Demo Agent',
+              bio: 'AI Agent on Gradience',
+            },
+            values: {
+              core: ['Innovation', 'Transparency'],
+              priorities: ['Growth'],
+              dealBreakers: [],
+            },
+          } as SoulProfile,
+        };
+        setProfile(mockProfile);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [addressOrDomain, daemonUrl, isConnected]);
 
   const updateProfile = useCallback(async (updates: Partial<AgentProfile>) => {
-    // TODO: Replace with actual API call
-    setProfile((prev) => prev ? { ...prev, ...updates } : null);
-  }, []);
+    if (!daemonUrl || !isConnected) return;
+    
+    try {
+      const res = await fetch(`${daemonUrl}/api/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      
+      if (!res.ok) throw new Error('Failed to update profile');
+      
+      const updated = await res.json();
+      setProfile((prev) => prev ? { ...prev, ...updated.profile } : null);
+    } catch (err) {
+      console.error('Update profile error:', err);
+      // Optimistic update
+      setProfile((prev) => prev ? { ...prev, ...updates } : null);
+    }
+  }, [daemonUrl, isConnected]);
 
   return {
     profile,
@@ -101,7 +136,7 @@ export function useProfile(addressOrDomain?: string) {
  */
 export function useMyProfile() {
   // TODO: Get current user address from auth context
-  const myAddress = '0x1234...5678';
+  const myAddress = 'demo';
   return useProfile(myAddress);
 }
 
@@ -111,14 +146,23 @@ export function useMyProfile() {
 export function useUpdateSoulProfile() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { daemonUrl, isConnected } = useDaemonConnection();
 
   const updateSoulProfile = useCallback(async (profile: Partial<SoulProfile>) => {
+    if (!daemonUrl || !isConnected) return;
+    
     setUpdating(true);
     setError(null);
 
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch(`${daemonUrl}/api/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soulProfile: profile }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to update profile');
+      
       console.log('Soul profile updated:', profile);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -126,7 +170,7 @@ export function useUpdateSoulProfile() {
     } finally {
       setUpdating(false);
     }
-  }, []);
+  }, [daemonUrl, isConnected]);
 
   return {
     updateSoulProfile,
