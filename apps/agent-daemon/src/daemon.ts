@@ -119,6 +119,7 @@ export class Daemon {
             keyManager: this.keyManager,
             authorizationManager: this.authorizationManager,
             transactionManager: this.transactionManager,
+            database: db,
             startedAt: this.startedAt,
             version: VERSION,
         });

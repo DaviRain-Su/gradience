@@ -8,6 +8,7 @@ import { registerMessageRoutes } from './routes/messages.js';
 import { registerKeyRoutes } from './routes/keys.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { registerSolanaRoutes } from './routes/solana.js';
+import { registerSocialRoutes } from './routes/social.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
@@ -27,6 +28,8 @@ export interface APIServerDeps {
     keyManager: KeyManager;
     authorizationManager: AuthorizationManager;
     transactionManager: TransactionManager;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    database: any;
     startedAt: number;
     version: string;
 }
@@ -49,6 +52,7 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerKeyRoutes(app, deps.keyManager);
     registerWalletRoutes(app, deps.authorizationManager);
     registerSolanaRoutes(app, deps.transactionManager);
+    registerSocialRoutes(app, deps.database);
 
     await app.listen({ host: deps.host, port: deps.port });
     logger.info({ host: deps.host, port: deps.port }, 'API server listening');
