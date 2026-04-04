@@ -127,52 +127,38 @@ This document tracks the modularization of large monolithic files in the Gradien
 
 ### 7. Indexer Worker (1322 lines)
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 **Location:** `apps/agent-arena/indexer/worker/src/index.ts`
 
-**Analysis:**
-- Worker handling various event types
-- Similar pattern to main indexer
+**Refactoring:**
+- Created `types.ts` - All type definitions
+- Created `handlers/events.ts` - Event processing
+- Created `handlers/api.ts` - API route handlers
+- Created `handlers/webhook.ts` - Webhook processing
+- Created `db/operations.ts` - Database operations
+- Created `utils/index.ts` - Utility functions
+- Created `handlers/index.ts` and `db/index.ts` - Unified exports
+- Simplified `index.ts` as main entry point
 
-**Proposed Refactoring:**
-```
-worker/src/
-├── index.ts (main, backward compatible)
-├── handlers/
-│   ├── tasks.ts
-│   ├── submissions.ts
-│   ├── judges.ts
-│   └── reputation.ts
-├── utils.ts
-└── types.ts
-```
-
-**Estimated Reduction:** 1322 → ~200 lines (main) + 4×200 lines (modules)
+**Result:** Reduced index.ts from 1322 lines to ~100 lines
 
 ---
 
 ### 8. Chain Hub Indexer (879 lines)
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 **Location:** `apps/chain-hub/indexer-service/src/main.rs`
 
-**Analysis:**
-- Similar structure to agent-arena indexer
-- Can apply same pattern
+**Refactoring:**
+- Created `handlers.rs` - HTTP API handlers
+- Extracted: health, metrics, skills, protocols, royalties, invocations
+- Updated `main.rs` to use handlers module
 
-**Proposed Refactoring:**
-```
-indexer-service/src/
-├── main.rs (simplified)
-├── mappers.rs
-├── handlers.rs
-├── db.rs
-└── config.rs
-```
+**Result:** Reduced main.rs from 879 lines to 605 lines
 
-**Estimated Reduction:** 879 → ~300 lines (main) + 3×150 lines (modules)
+---
 
 ---
 
