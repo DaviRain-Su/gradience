@@ -6,6 +6,8 @@
  */
 
 import { NostrAdapter, type NostrAdapterOptions } from '@gradiences/nostr-adapter';
+import { XMTPAdapter, type XMTPAdapterOptions } from './xmtp-adapter.js';
+import type { WalletSigner } from '@gradiences/xmtp-adapter';
 import {
     NOSTR_CONFIG,
     A2A_ERROR_CODES,
@@ -32,17 +34,21 @@ export class A2ARouter {
     private options: Required<Pick<A2ARouterOptions, 'enableNostr' | 'enableXMTP' | 'healthCheckInterval' | 'messageTimeout'>>;
     private nostrRelays: string[];
     private nostrPrivateKey?: string;
+    private xmtpEnv?: 'production' | 'dev';
+    private xmtpWalletSigner?: { getAddress(): Promise<string>; signMessage(message: string | Uint8Array): Promise<string> };
     private agentId: string;
 
     constructor(options: A2ARouterOptions = {}) {
         this.options = {
             enableNostr: options.enableNostr ?? true,
-            enableXMTP: options.enableXMTP ?? false, // disabled by default until key is provided
+            enableXMTP: options.enableXMTP ?? false,
             healthCheckInterval: options.healthCheckInterval ?? 30000,
             messageTimeout: options.messageTimeout ?? 30000,
         };
         this.nostrRelays = options.nostrRelays ?? [...NOSTR_CONFIG.DEFAULT_RELAYS];
         this.nostrPrivateKey = options.nostrPrivateKey;
+        this.xmtpEnv = options.xmtpEnv;
+        this.xmtpWalletSigner = options.xmtpWalletSigner;
         this.agentId = options.agentId ?? 'unknown';
     }
 
@@ -67,11 +73,23 @@ export class A2ARouter {
             }
         }
 
-        // XMTP requires a wallet private key -- skip if not configured
-        // The @gradiences/xmtp-adapter package uses @xmtp/xmtp-js which needs
-        // a wallet signer at connect time. For now, XMTP is opt-in.
-        if (this.options.enableXMTP) {
-            logger.info('XMTP adapter enabled but requires wallet signer at runtime');
+        // XMTP requires a wallet signer for identity
+        if (this.options.enableXMTP && this.xmtpWalletSigner) {
+            try {
+                const xmtpOpts: XMTPAdapterOptions = {
+                    env: this.xmtpEnv ?? 'dev',
+                    walletSigner: this.xmtpWalletSigner,
+                    enableStreaming: true,
+                };
+                const xmtpAdapter = new XMTPAdapter(xmtpOpts);
+                await xmtpAdapter.initialize();
+                this.adapters.set('xmtp', xmtpAdapter);
+                logger.info({ env: this.xmtpEnv }, 'XMTP adapter initialized');
+            } catch (err) {
+                logger.warn({ err }, 'XMTP adapter failed to initialize');
+            }
+        } else if (this.options.enableXMTP) {
+            logger.info('XMTP enabled but no wallet signer provided, skipping');
         }
 
         this.startHealthCheck();

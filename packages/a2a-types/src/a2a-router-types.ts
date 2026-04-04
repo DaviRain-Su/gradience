@@ -128,6 +128,7 @@ export interface A2ARouterOptions {
     enableXMTP?: boolean;
     xmtpEnv?: 'production' | 'dev';
     xmtpPrivateKey?: string;
+    xmtpWalletSigner?: { getAddress(): Promise<string>; signMessage(message: string | Uint8Array): Promise<string> };
     agentId?: string;
     protocolPriority?: Record<ProtocolPriority, ProtocolType[]>;
     healthCheckInterval?: number;
