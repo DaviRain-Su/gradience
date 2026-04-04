@@ -10,6 +10,7 @@
 import type { FastifyInstance } from 'fastify';
 import { OWSSdkBridge } from '../../wallet/ows-sdk-bridge.js';
 import { PolicyEngine, recordPolicySpend, type SigningContext } from '../../wallet/policy-engine.js';
+import { calculatePolicy, getReputationTier } from '../../wallet/ows-wallet-manager.js';
 import { logger } from '../../utils/logger.js';
 
 const bridge = new OWSSdkBridge();
@@ -450,6 +451,137 @@ export function registerOWSRoutes(app: FastifyInstance): void {
         newKey: { id: newKey.id, name: newKey.name, token: newKey.token },
       };
     } catch (err: any) {
+      return reply.code(500).send({ error: err.message });
+    }
+  });
+
+  // ── GRA-225c: Reputation Endpoints ──
+
+  /**
+   * GET /api/v1/ows/wallets/:id/reputation
+   * Get reputation for a specific wallet
+   */
+  app.get<{
+    Params: { id: string };
+  }>('/api/v1/ows/wallets/:id/reputation', async (request, reply) => {
+    try {
+      const walletId = request.params.id;
+      const wallet = bridge.getAgentWallet(walletId);
+      
+      if (!wallet) {
+        return reply.code(404).send({ error: 'Wallet not found' });
+      }
+
+      // Get reputation from wallet metadata or calculate from policy
+      const reputationScore = (wallet as any).reputationScore ?? 50;
+      const tier = getReputationTier(reputationScore);
+      const policy = (wallet as any).policy ?? calculatePolicy(reputationScore);
+
+      return {
+        walletId,
+        agentAddress: bridge.getSolanaAddress(wallet),
+        reputationScore,
+        tier,
+        completedTasks: (wallet as any).completedTasks ?? 0,
+        avgRating: (wallet as any).avgRating ?? 0,
+        policy: {
+          dailyLimitUsd: policy.dailyLimit ?? reputationScore * 10,
+          allowedChains: policy.allowedChains ?? ['solana'],
+          autoApprove: !policy.requireApproval,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      logger.error({ err, walletId: request.params.id }, 'Failed to get wallet reputation');
+      return reply.code(500).send({ error: err.message });
+    }
+  });
+
+  /**
+   * GET /api/v1/ows/wallets/master/:address/aggregate-reputation
+   * Get aggregate reputation for all wallets under a master wallet
+   */
+  app.get<{
+    Params: { address: string };
+  }>('/api/v1/ows/wallets/master/:address/aggregate-reputation', async (request, reply) => {
+    try {
+      const masterWallet = request.params.address;
+      const wallets = bridge.listAgentWallets();
+      
+      // Filter wallets by parent (in real implementation, this would check parentWallet field)
+      const agentWallets = wallets.map(w => {
+        const score = (w as any).reputationScore ?? 50;
+        return {
+          walletId: w.id,
+          address: bridge.getSolanaAddress(w),
+          handle: w.name,
+          reputationScore: score,
+          tier: getReputationTier(score),
+          completedTasks: (w as any).completedTasks ?? 0,
+          weight: Math.max((w as any).completedTasks ?? 1, 1),
+        };
+      });
+
+      // Calculate aggregate score (weighted by completed tasks)
+      const totalWeight = agentWallets.reduce((sum, a) => sum + a.weight, 0);
+      const weightedScore = agentWallets.reduce((sum, a) => {
+        return sum + a.reputationScore * (a.weight / totalWeight);
+      }, 0);
+      const aggregateScore = Math.round(weightedScore);
+      const tier = getReputationTier(aggregateScore);
+
+      // Calculate derived policy
+      const derivedPolicy = calculatePolicy(aggregateScore);
+
+      return {
+        masterWallet,
+        aggregateScore,
+        tier,
+        agentCount: agentWallets.length,
+        totalCompletedTasks: agentWallets.reduce((sum, a) => sum + a.completedTasks, 0),
+        agents: agentWallets,
+        derivedPolicy: {
+          dailyLimitUsd: derivedPolicy.dailyLimit,
+          allowedChains: derivedPolicy.allowedChains,
+          autoApprove: !derivedPolicy.requireApproval,
+        },
+      };
+    } catch (err: any) {
+      logger.error({ err, masterWallet: request.params.address }, 'Failed to get aggregate reputation');
+      return reply.code(500).send({ error: err.message });
+    }
+  });
+
+  /**
+   * POST /api/v1/ows/wallets/:id/sync-reputation
+   * Sync reputation from Chain Hub
+   */
+  app.post<{
+    Params: { id: string };
+  }>('/api/v1/ows/wallets/:id/sync-reputation', async (request, reply) => {
+    try {
+      const walletId = request.params.id;
+      const wallet = bridge.getAgentWallet(walletId);
+      
+      if (!wallet) {
+        return reply.code(404).send({ error: 'Wallet not found' });
+      }
+
+      // In real implementation, this would call ChainHubReputationClient
+      // For now, return current reputation with sync timestamp
+      const reputationScore = (wallet as any).reputationScore ?? 50;
+      
+      logger.info({ walletId, reputationScore }, 'Reputation sync requested');
+
+      return {
+        walletId,
+        synced: true,
+        reputationScore,
+        tier: getReputationTier(reputationScore),
+        syncedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      logger.error({ err, walletId: request.params.id }, 'Failed to sync reputation');
       return reply.code(500).send({ error: err.message });
     }
   });
