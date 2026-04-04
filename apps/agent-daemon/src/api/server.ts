@@ -11,7 +11,9 @@ import { registerKeyRoutes } from './routes/keys.js';
 import { registerWalletRoutes } from './routes/wallet.js';
 import { registerSolanaRoutes } from './routes/solana.js';
 import { registerSocialRoutes } from './routes/social.js';
+import { registerNetworkRoutes } from './routes/network.js';
 import { registerSessionRoutes } from './routes/session.js';
+import { registerA2ARoutes } from './routes/a2a.js';
 import { SessionManager } from '../auth/session-manager.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
@@ -20,6 +22,7 @@ import type { MessageRouter } from '../messages/message-router.js';
 import type { KeyManager } from '../keys/key-manager.js';
 import type { AuthorizationManager } from '../wallet/authorization.js';
 import type { TransactionManager } from '../solana/transaction-manager.js';
+import type { A2ARouter } from '../a2a-router/router.js';
 
 export interface APIServerDeps {
     host: string;
@@ -32,6 +35,7 @@ export interface APIServerDeps {
     keyManager: KeyManager;
     authorizationManager: AuthorizationManager;
     transactionManager: TransactionManager;
+    a2aRouter: A2ARouter | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     database: any;
     startedAt: number;
@@ -49,6 +53,8 @@ export async function createAPIServer(deps: APIServerDeps) {
             'https://www.gradiences.xyz',
             'http://localhost:3000',
             'http://localhost:3001',
+            'http://localhost:5200',
+            'http://localhost:5201',
         ],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
@@ -64,7 +70,8 @@ export async function createAPIServer(deps: APIServerDeps) {
         if (request.method === 'GET') {
             const path = request.url.split('?')[0];
             if (path.startsWith('/api/feed') || path.startsWith('/api/profile/') ||
-                path.startsWith('/api/followers/') || path.startsWith('/api/following/')) {
+                path.startsWith('/api/followers/') || path.startsWith('/api/following/') ||
+                path.startsWith('/api/discover') || path.startsWith('/api/matches')) {
                 reply.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
             } else if (path.startsWith('/api/v1/tasks') || path.startsWith('/api/v1/agents')) {
                 reply.header('Cache-Control', 'private, max-age=5, stale-while-revalidate=10');
@@ -91,6 +98,10 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerWalletRoutes(app, deps.authorizationManager);
     registerSolanaRoutes(app, deps.transactionManager);
     registerSocialRoutes(app, deps.database);
+    registerNetworkRoutes(app, deps.database);
+    if (deps.a2aRouter) {
+        registerA2ARoutes(app, deps.a2aRouter, deps.messageRouter);
+    }
 
     await app.listen({ host: deps.host, port: deps.port });
     logger.info({ host: deps.host, port: deps.port }, 'API server listening');
