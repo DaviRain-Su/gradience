@@ -136,29 +136,50 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
             // 2. Try local daemon
             if (await tryDaemon(LOCAL_API_URL)) return;
 
-            // 2. Daemon not found -- try remote API as fallback
+            // 2. No local daemon -- try remote API
             if (!cancelled) {
-                setDaemonDetected(false);
-                const saved = loadSession();
-                if (saved) {
-                    try {
-                        const res = await fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
-                            headers: { Authorization: `Bearer ${saved.token}` },
-                            signal: AbortSignal.timeout(3000),
-                        });
-                        if (res.ok && !cancelled) {
+                try {
+                    const remoteHealth = await fetch(`${REMOTE_API_URL}/health`, { signal: AbortSignal.timeout(3000) });
+                    if (remoteHealth.ok && !cancelled) {
+                        setDaemonDetected(true);
+                        const saved = loadSession();
+                        if (saved) {
+                            try {
+                                const meRes = await fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
+                                    headers: { Authorization: `Bearer ${saved.token}` },
+                                    signal: AbortSignal.timeout(3000),
+                                });
+                                if (meRes.ok && !cancelled) {
+                                    setState(prev => ({
+                                        ...prev,
+                                        isConnected: true,
+                                        daemonUrl: REMOTE_API_URL,
+                                        mode: 'remote',
+                                        sessionToken: saved.token,
+                                        walletAddress: saved.walletAddress,
+                                    }));
+                                    return;
+                                }
+                            } catch {}
+                            clearSession();
+                        }
+                        if (!cancelled) {
                             setState(prev => ({
                                 ...prev,
-                                isConnected: true,
+                                isConnected: false,
+                                sessionToken: null,
+                                walletAddress: null,
                                 daemonUrl: REMOTE_API_URL,
                                 mode: 'remote',
                             }));
-                            return;
                         }
-                    } catch {}
-                    clearSession();
-                }
+                        return;
+                    }
+                } catch {}
+
+                // Remote also unreachable
                 if (!cancelled) {
+                    setDaemonDetected(false);
                     setState(prev => ({
                         ...prev,
                         isConnected: false,
