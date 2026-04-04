@@ -1,10 +1,18 @@
 mod config;
 mod db;
 mod events;
+mod mappers;
 mod solana_subscriber;
 mod triton_client;
+mod utils;
 mod webhook;
 
+use crate::mappers::{map_judge_pool, map_profile, map_reputation, map_submission, map_task};
+use crate::utils::{
+    internal_api_error, internal_error, normalize_publish_mode, now_unix_timestamp, parse_category,
+    parse_category_opt, parse_submissions_sort, parse_task_state, parse_u32_query_param,
+    parse_u8_query_param, resolve_task_offset, validate_task_id,
+};
 use std::{
     path::Path,
     sync::{
@@ -541,7 +549,7 @@ async fn handle_events_webhook_for_source(
     payload: IncomingWebhook,
     source: WebhookSource,
 ) -> Result<Json<IngestResponse>, (axum::http::StatusCode, String)> {
-    let envelopes = decode_webhook(payload).map_err(internal_error)?;
+    let envelopes = decode_webhook(payload).map_err(crate::utils::internal_error)?;
     if !state
         .metrics
         .allow_webhook_source(source, state.triton_stale_after)
@@ -552,7 +560,7 @@ async fn handle_events_webhook_for_source(
     }
     let processed_events = {
         let mut db = state.db.lock().await;
-        db.apply_events(&envelopes).await.map_err(internal_error)?
+        db.apply_events(&envelopes).await.map_err(crate::utils::internal_error)?
     };
     state.metrics.record_source_events(source, processed_events);
     state.metrics.record_envelopes(&envelopes, processed_events);
@@ -579,7 +587,7 @@ async fn handle_profile_sync(
         .unwrap_or_else(|| agent.to_string())
         .trim()
         .to_string();
-    let publish_mode = normalize_publish_mode(payload.publish_mode.as_deref())?;
+    let publish_mode = crate::utils::normalize_publish_mode(payload.publish_mode.as_deref())?;
     let updated_at = payload.updated_at.unwrap_or_else(now_unix_timestamp);
 
     let mut db = state.db.lock().await;
@@ -596,9 +604,9 @@ async fn handle_profile_sync(
             updated_at,
         })
         .await
-        .map_err(internal_api_error)?;
+        .map_err(crate::utils::internal_api_error)?;
 
-    Ok(Json(map_profile(profile)))
+    Ok(Json(crate::mappers::map_profile(profile)))
 }
 
 async fn handle_ws(
@@ -613,17 +621,17 @@ async fn get_tasks(
     State(state): State<AppState>,
     Query(query): Query<TasksQuery>,
 ) -> Result<Json<Vec<TaskApi>>, ApiError> {
-    let state_filter = parse_task_state(query.status.as_deref())?;
-    let category = parse_u8_query_param("category", query.category.as_deref())?;
-    let category_filter = parse_category_opt(category)?;
-    let sort = parse_tasks_sort(query.sort.as_deref())?;
-    let limit = i64::from(parse_u32_query_param("limit", query.limit.as_deref())?.unwrap_or(20));
+    let state_filter = crate::utils::parse_task_state(query.status.as_deref())?;
+    let category = crate::utils::parse_u8_query_param("category", query.category.as_deref())?;
+    let category_filter = crate::utils::parse_category_opt(category)?;
+    let sort = crate::utils::parse_tasks_sort(query.sort.as_deref())?;
+    let limit = i64::from(crate::utils::parse_u32_query_param("limit", query.limit.as_deref())?.unwrap_or(20));
     if !(1..=100).contains(&limit) {
         return Err(ApiError::bad_request("limit must be in range 1..=100"));
     }
-    let offset = resolve_task_offset(
-        parse_u32_query_param("offset", query.offset.as_deref())?,
-        parse_u32_query_param("page", query.page.as_deref())?,
+    let offset = crate::utils::resolve_task_offset(
+        crate::utils::parse_u32_query_param("offset", query.offset.as_deref())?,
+        crate::utils::parse_u32_query_param("page", query.page.as_deref())?,
         limit,
     )?;
 
@@ -639,22 +647,22 @@ async fn get_tasks(
             offset,
         })
         .await
-        .map_err(internal_api_error)?;
-    Ok(Json(rows.into_iter().map(map_task).collect()))
+        .map_err(crate::utils::internal_api_error)?;
+    Ok(Json(rows.into_iter().map(crate::mappers::map_task).collect()))
 }
 
 async fn get_task_by_id(
     State(state): State<AppState>,
     AxumPath(task_id): AxumPath<i64>,
 ) -> Result<Json<TaskApi>, ApiError> {
-    let task_id = validate_task_id(task_id)?;
+    let task_id = crate::utils::validate_task_id(task_id)?;
     let mut db = state.db.lock().await;
     let task = db
         .get_task(task_id)
         .await
-        .map_err(internal_api_error)?
+        .map_err(crate::utils::internal_api_error)?
         .ok_or_else(|| ApiError::not_found(format!("task {task_id} not found")))?;
-    Ok(Json(map_task(task)))
+    Ok(Json(crate::mappers::map_task(task)))
 }
 
 async fn get_task_submissions(
@@ -662,14 +670,14 @@ async fn get_task_submissions(
     AxumPath(task_id): AxumPath<i64>,
     Query(query): Query<SubmissionsQuery>,
 ) -> Result<Json<Vec<SubmissionApi>>, ApiError> {
-    let task_id = validate_task_id(task_id)?;
-    let sort = parse_submissions_sort(query.sort.as_deref())?;
+    let task_id = crate::utils::validate_task_id(task_id)?;
+    let sort = crate::utils::parse_submissions_sort(query.sort.as_deref())?;
 
     let mut db = state.db.lock().await;
     let task_exists = db
         .get_task(task_id)
         .await
-        .map_err(internal_api_error)?
+        .map_err(crate::utils::internal_api_error)?
         .is_some();
     if !task_exists {
         return Err(ApiError::not_found(format!("task {task_id} not found")));
@@ -678,8 +686,8 @@ async fn get_task_submissions(
     let submissions = db
         .list_submissions(task_id, sort)
         .await
-        .map_err(internal_api_error)?;
-    Ok(Json(submissions.into_iter().map(map_submission).collect()))
+        .map_err(crate::utils::internal_api_error)?;
+    Ok(Json(submissions.into_iter().map(crate::mappers::map_submission).collect()))
 }
 
 async fn get_agent_reputation(
@@ -712,8 +720,8 @@ async fn get_judge_pool(
     let rows = db
         .list_judge_pool(category)
         .await
-        .map_err(internal_api_error)?;
-    Ok(Json(rows.into_iter().map(map_judge_pool).collect()))
+        .map_err(crate::utils::internal_api_error)?;
+    Ok(Json(rows.into_iter().map(crate::mappers::map_judge_pool).collect()))
 }
 
 async fn fetch_reputation(state: AppState, agent: String) -> Result<Json<ReputationApi>, ApiError> {
@@ -721,9 +729,9 @@ async fn fetch_reputation(state: AppState, agent: String) -> Result<Json<Reputat
     let rep = db
         .get_reputation(&agent)
         .await
-        .map_err(internal_api_error)?
+        .map_err(crate::utils::internal_api_error)?
         .ok_or_else(|| ApiError::not_found(format!("reputation for {agent} not found")))?;
-    Ok(Json(map_reputation(rep)))
+    Ok(Json(crate::mappers::map_reputation(rep)))
 }
 
 async fn fetch_profile(state: AppState, agent: String) -> Result<Json<AgentProfileApi>, ApiError> {
@@ -731,9 +739,9 @@ async fn fetch_profile(state: AppState, agent: String) -> Result<Json<AgentProfi
     let profile = db
         .get_agent_profile(&agent)
         .await
-        .map_err(internal_api_error)?
+        .map_err(crate::utils::internal_api_error)?
         .ok_or_else(|| ApiError::not_found(format!("profile for {agent} not found")))?;
-    Ok(Json(map_profile(profile)))
+    Ok(Json(crate::mappers::map_profile(profile)))
 }
 
 async fn replay_mock_file(state: &AppState, file_path: &str) -> Result<()> {
@@ -886,87 +894,43 @@ fn to_ws_event(envelope: &EventEnvelope) -> Option<WsEvent> {
 }
 
 fn internal_error(err: anyhow::Error) -> (axum::http::StatusCode, String) {
-    (
-        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        format!("internal error: {err:#}"),
-    )
+    crate::utils::internal_error(err)
 }
 
 fn internal_api_error(err: anyhow::Error) -> ApiError {
-    ApiError::internal(format!("internal error: {err:#}"))
+    crate::utils::internal_api_error(err)
 }
 
 fn parse_task_state(value: Option<&str>) -> Result<Option<i16>, ApiError> {
-    match value {
-        None => Ok(None),
-        Some("open") => Ok(Some(TASK_STATE_OPEN)),
-        Some("completed") => Ok(Some(TASK_STATE_COMPLETED)),
-        Some("refunded") => Ok(Some(TASK_STATE_REFUNDED)),
-        Some(other) => Err(ApiError::bad_request(format!(
-            "invalid status value: {other} (expected open|completed|refunded)"
-        ))),
-    }
+    crate::utils::parse_task_state(value)
 }
 
 fn parse_category_opt(value: Option<u8>) -> Result<Option<i16>, ApiError> {
-    match value {
-        None => Ok(None),
-        Some(v) => parse_category(v).map(Some),
-    }
+    crate::utils::parse_category_opt(value)
 }
 
 fn parse_category(value: u8) -> Result<i16, ApiError> {
-    if value > 7 {
-        return Err(ApiError::bad_request("category must be in range 0..=7"));
-    }
-    Ok(i16::from(value))
+    crate::utils::parse_category(value)
 }
 
 fn parse_u8_query_param(name: &str, value: Option<&str>) -> Result<Option<u8>, ApiError> {
-    match value {
-        None => Ok(None),
-        Some(raw) => raw
-            .parse::<u8>()
-            .map(Some)
-            .map_err(|_| ApiError::bad_request(format!("{name} must be an integer"))),
-    }
+    crate::utils::parse_u8_query_param(name, value)
 }
 
 fn parse_u32_query_param(name: &str, value: Option<&str>) -> Result<Option<u32>, ApiError> {
-    match value {
-        None => Ok(None),
-        Some(raw) => raw
-            .parse::<u32>()
-            .map(Some)
-            .map_err(|_| ApiError::bad_request(format!("{name} must be an integer"))),
-    }
+    crate::utils::parse_u32_query_param(name, value)
 }
 
 fn parse_tasks_sort(value: Option<&str>) -> Result<TaskListSort, ApiError> {
-    match value {
-        None | Some("task_id_desc") | Some("desc") => Ok(TaskListSort::TaskIdDesc),
-        Some("task_id_asc") | Some("asc") => Ok(TaskListSort::TaskIdAsc),
-        Some(other) => Err(ApiError::bad_request(format!(
-            "invalid sort value: {other} (expected task_id_desc|task_id_asc)"
-        ))),
-    }
+    crate::utils::parse_tasks_sort(value)
 }
 
 fn validate_task_id(task_id: i64) -> Result<i64, ApiError> {
-    if task_id < 0 {
-        return Err(ApiError::bad_request("task_id must be >= 0"));
-    }
-    Ok(task_id)
+    crate::utils::validate_task_id(task_id)
 }
 
 fn parse_submissions_sort(value: Option<&str>) -> Result<SubmissionSort, ApiError> {
-    match value {
-        None | Some("score") | Some("score_desc") => Ok(SubmissionSort::Score),
-        Some("slot") | Some("slot_desc") | Some("submission_slot_desc") => Ok(SubmissionSort::Slot),
-        Some(other) => Err(ApiError::bad_request(format!(
-            "invalid sort value: {other} (expected score|slot)"
-        ))),
-    }
+    crate::utils::parse_submissions_sort(value)
 }
 
 fn resolve_task_offset(
@@ -974,105 +938,35 @@ fn resolve_task_offset(
     page: Option<u32>,
     limit: i64,
 ) -> Result<i64, ApiError> {
-    if let Some(offset) = offset {
-        return Ok(i64::from(offset));
-    }
-    match page {
-        None => Ok(0),
-        Some(0) => Err(ApiError::bad_request("page must be >= 1")),
-        Some(page) => Ok(i64::from(page.saturating_sub(1)) * limit),
-    }
+    crate::utils::resolve_task_offset(offset, page, limit)
 }
 
 fn map_task(task: crate::db::TaskRow) -> TaskApi {
-    TaskApi {
-        task_id: task.task_id,
-        poster: task.poster,
-        judge: task.judge,
-        judge_mode: task.judge_mode,
-        reward: task.reward,
-        mint: task.mint,
-        min_stake: task.min_stake,
-        state: match task.state {
-            0 => "open".to_string(),
-            1 => "completed".to_string(),
-            2 => "refunded".to_string(),
-            _ => "unknown".to_string(),
-        },
-        category: task.category,
-        eval_ref: task.eval_ref,
-        deadline: task.deadline,
-        judge_deadline: task.judge_deadline,
-        submission_count: task.submission_count,
-        winner: task.winner,
-        created_at: task.created_at,
-        slot: task.slot,
-    }
+    crate::mappers::map_task(task)
 }
 
 fn map_submission(submission: crate::db::SubmissionRow) -> SubmissionApi {
-    SubmissionApi {
-        task_id: submission.task_id,
-        agent: submission.agent,
-        result_ref: submission.result_ref,
-        trace_ref: submission.trace_ref,
-        runtime_provider: submission.runtime_provider,
-        runtime_model: submission.runtime_model,
-        runtime_runtime: submission.runtime_runtime,
-        runtime_version: submission.runtime_version,
-        submission_slot: submission.submission_slot,
-        submitted_at: submission.submitted_at,
-    }
+    crate::mappers::map_submission(submission)
 }
 
 fn map_reputation(rep: crate::db::ReputationRow) -> ReputationApi {
-    ReputationApi {
-        agent: rep.agent,
-        global_avg_score: rep.global_avg_score,
-        global_win_rate: rep.global_win_rate,
-        global_completed: rep.global_completed,
-        global_total_applied: rep.global_total_applied,
-        total_earned: rep.total_earned,
-        updated_slot: rep.updated_slot,
-    }
+    crate::mappers::map_reputation(rep)
 }
 
 fn map_judge_pool(entry: crate::db::JudgePoolRow) -> JudgePoolEntryApi {
-    JudgePoolEntryApi {
-        judge: entry.judge,
-        stake: entry.stake,
-        weight: entry.weight,
-    }
+    crate::mappers::map_judge_pool(entry)
 }
 
 fn map_profile(profile: crate::db::AgentProfileRow) -> AgentProfileApi {
-    AgentProfileApi {
-        agent: profile.agent,
-        display_name: profile.display_name,
-        bio: profile.bio,
-        links: AgentProfileLinksApi {
-            website: profile.website,
-            github: profile.github,
-            x: profile.x,
-        },
-        onchain_ref: profile.onchain_ref,
-        publish_mode: profile.publish_mode,
-        updated_at: profile.updated_at,
-    }
+    crate::mappers::map_profile(profile)
 }
 
 fn normalize_publish_mode(mode: Option<&str>) -> Result<String, ApiError> {
-    match mode.map(str::trim).filter(|value| !value.is_empty()) {
-        None => Ok("manual".to_string()),
-        Some("manual") => Ok("manual".to_string()),
-        Some("git-sync") => Ok("git-sync".to_string()),
-        Some(other) => Err(ApiError::bad_request(format!(
-            "invalid publish_mode: {other} (expected manual|git-sync)"
-        ))),
-    }
+    crate::utils::normalize_publish_mode(mode)
+}
 }
 
-fn now_unix_timestamp() -> i64 {
+fn crate::utils::now_unix_timestamp() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let now = SystemTime::now()
@@ -1187,11 +1081,11 @@ mod tests {
     #[test]
     fn resolve_task_offset_supports_page_alias() {
         assert_eq!(
-            resolve_task_offset(None, Some(1), 20).expect("page 1 should be valid"),
+            crate::utils::resolve_task_offset(None, Some(1), 20).expect("page 1 should be valid"),
             0
         );
         assert_eq!(
-            resolve_task_offset(None, Some(3), 20).expect("page 3 should be valid"),
+            crate::utils::resolve_task_offset(None, Some(3), 20).expect("page 3 should be valid"),
             40
         );
     }
@@ -1199,14 +1093,14 @@ mod tests {
     #[test]
     fn resolve_task_offset_prefers_offset_over_page() {
         assert_eq!(
-            resolve_task_offset(Some(7), Some(3), 20).expect("offset should win"),
+            crate::utils::resolve_task_offset(Some(7), Some(3), 20).expect("offset should win"),
             7
         );
     }
 
     #[test]
     fn resolve_task_offset_rejects_zero_page() {
-        let err = resolve_task_offset(None, Some(0), 20).expect_err("page 0 should fail");
+        let err = crate::utils::resolve_task_offset(None, Some(0), 20).expect_err("page 0 should fail");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(err.message, "page must be >= 1");
     }
@@ -1214,18 +1108,18 @@ mod tests {
     #[test]
     fn parse_submissions_sort_accepts_aliases() {
         assert!(matches!(
-            parse_submissions_sort(Some("score_desc")).expect("score_desc should map"),
+            crate::utils::parse_submissions_sort(Some("score_desc")).expect("score_desc should map"),
             SubmissionSort::Score
         ));
         assert!(matches!(
-            parse_submissions_sort(Some("submission_slot_desc")).expect("slot alias should map"),
+            crate::utils::parse_submissions_sort(Some("submission_slot_desc")).expect("slot alias should map"),
             SubmissionSort::Slot
         ));
     }
 
     #[test]
     fn parse_submissions_sort_rejects_invalid_values() {
-        let err = parse_submissions_sort(Some("bad_order"))
+        let err = crate::utils::parse_submissions_sort(Some("bad_order"))
             .expect_err("unexpected sort should be rejected");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(
@@ -1236,29 +1130,29 @@ mod tests {
 
     #[test]
     fn validate_task_id_rejects_negative_values() {
-        let err = validate_task_id(-1).expect_err("negative task id should be rejected");
+        let err = crate::utils::validate_task_id(-1).expect_err("negative task id should be rejected");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(err.message, "task_id must be >= 0");
     }
 
     #[test]
     fn validate_task_id_accepts_zero_and_positive() {
-        assert_eq!(validate_task_id(0).expect("zero should be valid"), 0);
-        assert_eq!(validate_task_id(42).expect("positive should be valid"), 42);
+        assert_eq!(crate::utils::validate_task_id(0).expect("zero should be valid"), 0);
+        assert_eq!(crate::utils::validate_task_id(42).expect("positive should be valid"), 42);
     }
 
     #[test]
     fn parse_tasks_sort_accepts_aliases() {
         assert!(matches!(
-            parse_tasks_sort(None).expect("default sort should work"),
+            crate::utils::parse_tasks_sort(None).expect("default sort should work"),
             TaskListSort::TaskIdDesc
         ));
         assert!(matches!(
-            parse_tasks_sort(Some("task_id_asc")).expect("asc should map"),
+            crate::utils::parse_tasks_sort(Some("task_id_asc")).expect("asc should map"),
             TaskListSort::TaskIdAsc
         ));
         assert!(matches!(
-            parse_tasks_sort(Some("desc")).expect("desc alias should map"),
+            crate::utils::parse_tasks_sort(Some("desc")).expect("desc alias should map"),
             TaskListSort::TaskIdDesc
         ));
     }
@@ -1266,7 +1160,7 @@ mod tests {
     #[test]
     fn parse_tasks_sort_rejects_invalid_values() {
         let err =
-            parse_tasks_sort(Some("created_at_desc")).expect_err("unexpected sort should fail");
+            crate::utils::parse_tasks_sort(Some("created_at_desc")).expect_err("unexpected sort should fail");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(
             err.message,
@@ -1276,7 +1170,7 @@ mod tests {
 
     #[test]
     fn parse_u32_query_param_rejects_invalid_values() {
-        let err = parse_u32_query_param("limit", Some("not_a_number"))
+        let err = crate::utils::parse_u32_query_param("limit", Some("not_a_number"))
             .expect_err("non-numeric limit should fail");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(err.message, "limit must be an integer");
@@ -1285,7 +1179,7 @@ mod tests {
     #[test]
     fn parse_u8_query_param_rejects_invalid_values() {
         let err =
-            parse_u8_query_param("category", Some("-1")).expect_err("invalid category should fail");
+            crate::utils::parse_u8_query_param("category", Some("-1")).expect_err("invalid category should fail");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(err.message, "category must be an integer");
     }
@@ -1399,22 +1293,22 @@ mod tests {
     #[test]
     fn normalize_publish_mode_accepts_supported_values() {
         assert_eq!(
-            normalize_publish_mode(None).expect("default should be manual"),
+            crate::utils::normalize_publish_mode(None).expect("default should be manual"),
             "manual"
         );
         assert_eq!(
-            normalize_publish_mode(Some("manual")).expect("manual should be accepted"),
+            crate::utils::normalize_publish_mode(Some("manual")).expect("manual should be accepted"),
             "manual"
         );
         assert_eq!(
-            normalize_publish_mode(Some("git-sync")).expect("git-sync should be accepted"),
+            crate::utils::normalize_publish_mode(Some("git-sync")).expect("git-sync should be accepted"),
             "git-sync"
         );
     }
 
     #[test]
     fn normalize_publish_mode_rejects_invalid_values() {
-        let err = normalize_publish_mode(Some("auto"))
+        let err = crate::utils::normalize_publish_mode(Some("auto"))
             .expect_err("unsupported publish mode should fail");
         assert_eq!(err.status, StatusCode::BAD_REQUEST);
         assert_eq!(
