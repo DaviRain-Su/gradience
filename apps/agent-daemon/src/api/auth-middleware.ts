@@ -5,6 +5,7 @@ import type { SessionManager } from '../auth/session-manager.js';
 const PUBLIC_ROUTES = [
     '/api/v1/auth/challenge',
     '/api/v1/auth/verify',
+    '/api/v1/domains',
     '/health',
     '/status',
 ];
