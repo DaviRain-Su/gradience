@@ -16,9 +16,10 @@ import { cachedFetch, invalidateCache } from '../../lib/cache';
 import { useSessionAuth } from '../../hooks/useSessionAuth';
 import { useNetworkRegistration } from '../../hooks/useNetworkRegistration';
 import { useOWSBinding } from '../../hooks/useOWSBinding';
-import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
+import { useOWSAgentRouter, type AgentSubWallet } from '../../hooks/useOWSAgentRouter';
 import type { OWSAgentWalletBinding } from '../../lib/ows/agent-wallet';
 import type { OWSAgentSubWallet } from '../../lib/ows/agent-router';
+import type { DaemonWallet } from '../../lib/ows/daemon-client';
 import { PolicyManager } from '../../components/wallet/PolicyManager';
 
 type ActiveView = 'discover' | 'tasks' | 'feed' | 'social' | 'me' | 'chat' | 'multi-agent' | 'settings';
@@ -169,8 +170,8 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
     const accountKey = user?.userId ?? address;
     const {
         binding: owsBinding,
-        bindingError,
-        bindingBusy,
+        error: bindingError,
+        loading: bindingBusy,
         providerAvailable,
         status: bindingStatus,
         bindSelectedWallet,
@@ -271,7 +272,7 @@ function Shell({
     view: ActiveView;
     setView: (v: ActiveView) => void;
     address: string | null;
-    activeSubWallet: OWSAgentSubWallet | null;
+    activeSubWallet: (OWSAgentSubWallet | AgentSubWallet) | null;
     loginEmail: string | null;
     wallets: SolanaWalletCandidate[];
     onWalletChange: (address: string) => void;
@@ -900,10 +901,10 @@ function MeView({
     bindingBusy: boolean;
     bindingError: string | null;
     providerAvailable: boolean;
-    onBindOWS: () => OWSAgentWalletBinding | null;
+    onBindOWS: () => Promise<OWSAgentWalletBinding | { daemonWallet: DaemonWallet } | null>;
     onUnbindOWS: () => void;
-    activeSubWallet: OWSAgentSubWallet | null;
-    subWallets: OWSAgentSubWallet[];
+    activeSubWallet: (OWSAgentSubWallet | AgentSubWallet) | null;
+    subWallets: (OWSAgentSubWallet | AgentSubWallet)[];
     routerError: string | null;
     onCreateSubWallet: (handle: string) => unknown;
     onSetActiveSubWallet: (subWalletId: string | null) => unknown;
@@ -1060,7 +1061,7 @@ function MeView({
                                     {wallet.walletAddress}
                                 </p>
                                 <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5 }}>
-                                    Route: {wallet.policy.strategy} · approval {wallet.policy.requireMasterApprovalAboveUsd} USD+
+                                    Route: {wallet.policy?.strategy} · approval {wallet.policy?.requireMasterApprovalAboveUsd} USD+
                                 </p>
                             </button>
                         ))}
