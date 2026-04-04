@@ -35,7 +35,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
 
     const wsRef = useRef<WebSocket | null>(null);
     const messageHandlersRef = useRef<Set<(message: unknown) => void>>(new Set());
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -102,7 +102,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
                 wsRef.current = null;
             };
 
-            ws.onerror = (error) => {
+            ws.onerror = () => {
                 setState(prev => ({
                     ...prev,
                     isConnected: false,
@@ -184,7 +184,7 @@ export function useDaemonApi() {
         options?: RequestInit
     ): Promise<T | null> => {
         if (!daemonUrl || !isConnected) {
-            console.error('Not connected to daemon');
+            console.warn('Not connected to daemon');
             return null;
         }
 
