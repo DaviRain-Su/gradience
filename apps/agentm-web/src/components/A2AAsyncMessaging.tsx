@@ -58,7 +58,7 @@ export function A2AAsyncMessaging() {
   const [taskReward, setTaskReward] = useState('');
 
   const { agents, isConnected } = useWebEntry({
-    gatewayUrl: process.env.NEXT_PUBLIC_AGENTM_GATEWAY || 'http://127.0.0.1:3939',
+    gatewayUrl: process.env.NEXT_PUBLIC_AGENTM_GATEWAY || 'http://127.0.0.1:7420',
     authToken: 'demo-token',
   });
 

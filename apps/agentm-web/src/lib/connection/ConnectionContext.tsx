@@ -20,8 +20,8 @@ interface ConnectionContextType extends ConnectionState {
 
 const ConnectionContext = createContext<ConnectionContextType | null>(null);
 
-const DEFAULT_DAEMON_URL = 'http://localhost:3939';
-const WS_URL = 'ws://localhost:3939';
+const DEFAULT_DAEMON_URL = 'http://localhost:7420';
+const WS_URL = 'ws://localhost:7420';
 
 export function ConnectionProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<ConnectionState>({

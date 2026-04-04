@@ -14,7 +14,7 @@ const colors = {
 export function ConnectionPanel() {
     const { isConnected, isConnecting, error, connect, disconnect, agentId } = useConnection();
     const [pairCode, setPairCode] = useState('');
-    const [daemonUrl, setDaemonUrl] = useState('http://localhost:3939');
+    const [daemonUrl, setDaemonUrl] = useState('http://localhost:7420');
     const [showSettings, setShowSettings] = useState(false);
 
     const handleConnect = async () => {

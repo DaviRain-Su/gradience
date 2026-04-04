@@ -5,7 +5,7 @@
  * ```tsx
  * function ChatComponent() {
  *   const { agents, connect, sendMessage, isConnected, messages } = useWebEntry({
- *     gatewayUrl: 'http://localhost:3939',
+ *     gatewayUrl: 'http://localhost:7420',
  *     authToken: '...',
  *   });
  *
