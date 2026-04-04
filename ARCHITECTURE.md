@@ -151,17 +151,42 @@ On-chain core flow (3 states, 4 transitions):
 
 ---
 
-## Deployment
+## Server Infrastructure
 
-| Component | Where | URL |
-|-----------|-------|-----|
-| agent-daemon | DigitalOcean Docker | https://api.gradiences.xyz |
-| indexer | DigitalOcean Docker | https://api.gradiences.xyz/indexer/ |
-| agentm-web | Vercel | https://agentm.gradiences.xyz |
-| agentm-pro | Vercel | -- |
-| developer-docs | Vercel | -- |
-| website | Standalone | https://gradiences.xyz |
-| Solana programs | Devnet | Program IDs in `programs/idl/` |
+Backend services run on a DigitalOcean droplet. Connection details are in `deploy/.env.prod` (not committed).
+
+### Running Services
+
+| Service | Image | Purpose |
+|---------|-------|---------|
+| agent-daemon | gradience/agent-daemon:latest | Platform daemon API |
+| daemon-db | postgres:16-alpine | Daemon database (sessions, social) |
+| indexer | gradience/indexer:latest | Chain data indexer REST API |
+| indexer-db | postgres:16-alpine | Indexer database |
+| indexer-cache | redis:7-alpine | Indexer query cache |
+| nginx | system | Reverse proxy + SSL termination |
+
+### Public Endpoints
+
+| URL | Routes to |
+|-----|----------|
+| `https://api.gradiences.xyz` | agent-daemon |
+| `https://api.gradiences.xyz/indexer/*` | indexer |
+| `https://indexer.gradiences.xyz` | indexer |
+
+---
+
+## Deployment Map
+
+| Component | Where | URL | Status |
+|-----------|-------|-----|--------|
+| agent-daemon | DigitalOcean Docker | https://api.gradiences.xyz | Running |
+| indexer | DigitalOcean Docker | https://api.gradiences.xyz/indexer/ | Running |
+| agentm-web | Vercel | https://agentm.gradiences.xyz | Deployed (manual `vercel --prod`) |
+| agentm-pro | Vercel | -- | Not deployed |
+| developer-docs | Vercel | -- | Not deployed |
+| website | Standalone | https://gradiences.xyz | Unknown |
+| Solana programs | Devnet | Program IDs in `programs/idl/` | Deployed |
 
 ---
 
@@ -175,3 +200,15 @@ On-chain core flow (3 states, 4 transitions):
 | `deploy/.env.prod.example` | Environment variable template |
 | `docker/Dockerfile.agent-daemon` | Monorepo build |
 | `docker/Dockerfile.agent-daemon-standalone` | Standalone build |
+
+---
+
+## Known Issues
+
+| Issue | Severity | Details |
+|-------|----------|---------|
+| indexer.gradiences.xyz SSL | Medium | Self-signed cert + Cloudflare Full mode. Works via api.gradiences.xyz/indexer/ as fallback. |
+| Vercel not auto-deploying | Medium | agentm-web Vercel project not connected to Git repo. Must deploy manually with `npx vercel --prod`. |
+| Indexer only has seed data | Low | Indexer not yet connected to real Solana devnet RPC for live events. |
+| Local daemon detection | Low | agentm-web probes localhost:7420. Users running locally may have port mismatch. |
+| Demo data in frontend | Low | DiscoverView falls back to example agents when no real agents registered. |
