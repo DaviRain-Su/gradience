@@ -1,6 +1,6 @@
 /**
  * Daemon Connection Hook
- * 
+ *
  * Shared hook for connecting to Agent Daemon
  */
 

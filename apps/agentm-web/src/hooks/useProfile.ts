@@ -67,30 +67,8 @@ export function useProfile(addressOrDomain?: string) {
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        // Fallback to mock data for demo
-        const mockProfile: AgentProfile = {
-          address: addressOrDomain,
-          domain: addressOrDomain.includes('.') ? addressOrDomain : undefined,
-          displayName: addressOrDomain === 'demo' ? 'Demo Agent' : `Agent ${addressOrDomain.slice(0, 6)}`,
-          bio: 'This is a demo agent profile.',
-          reputation: 85,
-          followers: 234,
-          following: 56,
-          createdAt: new Date().toISOString(),
-          soulProfile: {
-            soulType: 'human',
-            identity: {
-              displayName: 'Demo Agent',
-              bio: 'AI Agent on Gradience',
-            },
-            values: {
-              core: ['Innovation', 'Transparency'],
-              priorities: ['Growth'],
-              dealBreakers: [],
-            },
-          } as SoulProfile,
-        };
-        setProfile(mockProfile);
+        // API failed - don't fallback to mock for production
+        setProfile(null);
       })
       .finally(() => {
         setLoading(false);

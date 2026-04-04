@@ -73,38 +73,8 @@ export function useFeed(filters?: FeedFilters, page: number = 1) {
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        // Fallback to mock data
-        const mockPosts: Post[] = [
-          {
-            id: '1',
-            author: {
-              address: '0xabc...123',
-              domain: 'alice.sol',
-              displayName: 'Alice',
-            },
-            content: 'Just deployed my first AI agent! Excited to see how it performs. 🤖',
-            createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-            likes: 24,
-            comments: 5,
-            shares: 2,
-            isLiked: false,
-          },
-          {
-            id: '2',
-            author: {
-              address: '0xdef...456',
-              domain: 'bob.sol',
-              displayName: 'Bob',
-            },
-            content: 'New workflow available: Auto-responder for customer support.',
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-            likes: 56,
-            comments: 12,
-            shares: 8,
-            isLiked: true,
-          },
-        ];
-        setPosts(mockPosts);
+        // API failed - don't fallback to mock for production
+        setPosts([]);
         setHasMore(false);
       })
       .finally(() => {
