@@ -1,16 +1,14 @@
-# Gradience Production — Core Backend Services Only
+# Gradience Production -- All backend services
 #
-# Web frontends (agentm-web, agentm-pro, website, docs) are deployed separately
-# (Vercel / Cloudflare Pages / static hosting).
+# Web frontends are on Vercel (agentm-web, etc.)
 #
 # Usage:
-#   cd /opt/gradience
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
 
 services:
 
-  # -- PostgreSQL 16 (Chain Hub Indexer data)
-  postgres:
+  # -- Indexer PostgreSQL (chain data)
+  indexer-db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -18,7 +16,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-gradience}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gradience}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - indexer-pgdata:/var/lib/postgresql/data
       - ../apps/chain-hub/indexer/migrations:/docker-entrypoint-initdb.d
     networks:
       - backend
@@ -29,7 +27,56 @@ services:
       retries: 10
       start_period: 20s
 
-  # -- agent-daemon (Fastify + SQLite + A2A Router)
+  # -- Indexer Redis (cache)
+  indexer-cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -- Chain Hub Indexer (Solana on-chain data)
+  indexer:
+    image: gradience/indexer:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-gradience}:${POSTGRES_PASSWORD:-gradience}@indexer-db:5432/gradience_indexer
+      REDIS_URL: redis://indexer-cache:6379
+      INDEXER_BIND_ADDR: 0.0.0.0:3001
+    depends_on:
+      indexer-db:
+        condition: service_healthy
+      indexer-cache:
+        condition: service_healthy
+    networks:
+      - backend
+    ports:
+      - "0.0.0.0:3001:3001"
+
+  # -- Daemon PostgreSQL (session/social data)
+  daemon-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gradience
+      POSTGRES_USER: ${POSTGRES_USER:-gradience}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gradience}
+    volumes:
+      - daemon-pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gradience} -d gradience"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # -- Agent Daemon (Fastify + SQLite + A2A Router)
   agent-daemon:
     build:
       context: ..
@@ -46,10 +93,10 @@ services:
       AGENTD_A2A_ENABLED: "true"
       AGENTD_SOLANA_RPC_URL: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
     depends_on:
-      postgres:
+      daemon-db:
         condition: service_healthy
     volumes:
-      - agent-daemon-data:/data
+      - daemon-data:/data
     networks:
       - backend
     healthcheck:
@@ -62,9 +109,11 @@ services:
       - "0.0.0.0:4001:4001"
 
 volumes:
-  postgres-data:
+  indexer-pgdata:
     driver: local
-  agent-daemon-data:
+  daemon-pgdata:
+    driver: local
+  daemon-data:
     driver: local
 
 networks:
