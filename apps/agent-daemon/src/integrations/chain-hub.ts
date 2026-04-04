@@ -278,8 +278,35 @@ export class ChainHubIntegration extends EventEmitter {
   }
 
   /**
-   * Get reputation ranking
+   * Get reputations for all agents under a master wallet
+   * GRA-225a: Chain Hub Reputation Integration
    */
+  async getReputationsByMaster(
+    masterWallet: string
+  ): Promise<
+    Array<{
+      agentAddress: string;
+      reputation: ReputationData;
+    }>
+  > {
+    try {
+      // Fetch all agents under master wallet from Chain Hub
+      const agents = await this.client.getAgentsByMaster({
+        masterWallet,
+        includeReputation: true,
+      });
+
+      return agents
+        .filter((a) => a.reputation !== null)
+        .map((a) => ({
+          agentAddress: a.address,
+          reputation: a.reputation!,
+        }));
+    } catch (error) {
+      logger.error({ error, masterWallet }, 'Failed to get reputations by master');
+      return [];
+    }
+  }
   async getReputationRanking(
     category?: string,
     limit: number = 100

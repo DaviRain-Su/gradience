@@ -14,6 +14,7 @@
 import type Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
+import type { ChainHubReputationClient } from '../integrations/chain-hub-reputation.js';
 
 // ============================================================================
 // Types
@@ -141,9 +142,14 @@ export function getReputationTier(score: number): 'bronze' | 'silver' | 'gold' |
 
 export class OWSWalletManager {
   private readonly stmts: ReturnType<typeof OWSWalletManager.prepareStatements>;
+  private reputationClient?: ChainHubReputationClient;
 
-  constructor(private readonly db: Database.Database) {
+  constructor(
+    private readonly db: Database.Database,
+    options?: { reputationClient?: ChainHubReputationClient }
+  ) {
     this.stmts = OWSWalletManager.prepareStatements(db);
+    this.reputationClient = options?.reputationClient;
     this.initializeTables();
   }
 
@@ -215,11 +221,13 @@ export class OWSWalletManager {
 
   /**
    * Create a new OWS sub-wallet for an Agent
+   * GRA-225b: Auto-fetch reputation from Chain Hub
    */
   async createWallet(params: {
     agentId: string;
     parentWallet: string;
     name: string;
+    agentAddress?: string; // Solana address for reputation lookup
     initialReputation?: number;
   }): Promise<OWSWallet> {
     // Check if wallet already exists
@@ -234,7 +242,29 @@ export class OWSWalletManager {
       );
     }
 
-    const reputationScore = params.initialReputation ?? 50;
+    // GRA-225b: Fetch reputation from Chain Hub if agentAddress provided
+    let reputationScore = params.initialReputation ?? 50;
+    let reputationSource = 'default';
+
+    if (this.reputationClient && params.agentAddress) {
+      try {
+        const reputation = await this.reputationClient.getReputation(params.agentAddress);
+        if (reputation) {
+          reputationScore = reputation.score;
+          reputationSource = 'chain_hub';
+          logger.info(
+            { agentId: params.agentId, agentAddress: params.agentAddress, score: reputationScore },
+            'Fetched reputation from Chain Hub for wallet creation'
+          );
+        }
+      } catch (error) {
+        logger.warn(
+          { error, agentId: params.agentId, agentAddress: params.agentAddress },
+          'Failed to fetch reputation from Chain Hub, using default'
+        );
+      }
+    }
+
     const policy = calculatePolicy(reputationScore);
 
     // Generate wallet ID and address
@@ -256,9 +286,19 @@ export class OWSWalletManager {
       now
     );
 
+    // GRA-225b: Record reputation history entry
+    this.stmts.insertReputationHistory.run(
+      id,
+      params.agentId,
+      50, // default/old score
+      reputationScore,
+      `Wallet created with ${reputationSource} reputation`,
+      now
+    );
+
     logger.info(
-      { walletId: id, agentId: params.agentId, reputation: reputationScore, tier: getReputationTier(reputationScore) },
-      'OWS wallet created'
+      { walletId: id, agentId: params.agentId, reputation: reputationScore, tier: getReputationTier(reputationScore), source: reputationSource },
+      'OWS wallet created with reputation-based policy'
     );
 
     return {
@@ -456,9 +496,81 @@ export class OWSWalletManager {
     }));
   }
 
-  // -------------------------------------------------------------------------
-  // Transaction Management
-  // -------------------------------------------------------------------------
+  /**
+   * Sync reputation from Chain Hub for a wallet
+   * GRA-225b: Fetch latest reputation and update policy
+   */
+  async syncReputationFromChainHub(agentId: string): Promise<OWSWallet | null> {
+    if (!this.reputationClient) {
+      logger.warn('ChainHubReputationClient not configured, skipping sync');
+      return null;
+    }
+
+    const wallet = this.getWallet(agentId);
+    if (!wallet) return null;
+
+    try {
+      const reputation = await this.reputationClient.getReputation(wallet.address);
+      if (!reputation) {
+        logger.debug({ agentId, address: wallet.address }, 'No reputation found in Chain Hub');
+        return wallet;
+      }
+
+      return this.updateReputation(
+        agentId,
+        {
+          score: reputation.score,
+          completedTasks: reputation.completedTasks,
+          avgRating: reputation.avgRating,
+          updatedAt: reputation.updatedAt,
+        },
+        'sync_from_chain_hub'
+      );
+    } catch (error) {
+      logger.error({ error, agentId, address: wallet.address }, 'Failed to sync reputation from Chain Hub');
+      return null;
+    }
+  }
+
+  /**
+   * Batch sync reputations from Chain Hub for all wallets under a parent
+   * GRA-225b: Batch reputation sync
+   */
+  async batchSyncReputations(parentWallet: string): Promise<{
+    updated: number;
+    failed: number;
+    total: number;
+  }> {
+    if (!this.reputationClient) {
+      logger.warn('ChainHubReputationClient not configured, skipping batch sync');
+      return { updated: 0, failed: 0, total: 0 };
+    }
+
+    const wallets = this.listWallets(parentWallet);
+    let updated = 0;
+    let failed = 0;
+
+    for (const wallet of wallets) {
+      try {
+        const result = await this.syncReputationFromChainHub(wallet.agentId);
+        if (result) {
+          updated++;
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        failed++;
+        logger.error({ error, agentId: wallet.agentId }, 'Failed to sync reputation in batch');
+      }
+    }
+
+    logger.info(
+      { parentWallet, total: wallets.length, updated, failed },
+      'Batch reputation sync completed'
+    );
+
+    return { updated, failed, total: wallets.length };
+  }
 
   /**
    * Record a transaction
