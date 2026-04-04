@@ -13,7 +13,8 @@ import { FileKeyManager } from './keys/key-manager.js';
 import { AuthorizationManager } from './wallet/authorization.js';
 import { TransactionManager } from './solana/transaction-manager.js';
 import { createAPIServer } from './api/server.js';
-import { A2ARouter } from './a2a-router/router.js';
+// A2ARouter loaded dynamically to avoid hard dependency on nostr-tools
+type A2ARouterType = import('./a2a-router/router.js').A2ARouter;
 import { logger } from './utils/logger.js';
 
 const VERSION = '0.1.0';
@@ -31,7 +32,7 @@ export class Daemon {
     private keyManager: FileKeyManager | null = null;
     private authorizationManager: AuthorizationManager | null = null;
     private transactionManager: TransactionManager | null = null;
-    private a2aRouter: A2ARouter | null = null;
+    private a2aRouter: A2ARouterType | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -70,15 +71,20 @@ export class Daemon {
         this.taskExecutor = new TaskExecutor(this.taskQueue, this.processManager);
         this.transactionManager = new TransactionManager(this.config.solanaRpcUrl, this.keyManager);
 
-        // A2A Router (Nostr + XMTP)
+        // A2A Router (Nostr + XMTP) -- loaded dynamically
         if (this.config.a2aEnabled) {
-            this.a2aRouter = new A2ARouter({
-                enableNostr: true,
-                nostrRelays: this.config.nostrRelays,
-                nostrPrivateKey: this.config.nostrPrivateKey,
-                enableXMTP: this.config.xmtpEnabled,
-                agentId: this.keyManager.getPublicKey(),
-            });
+            try {
+                const { A2ARouter } = await import('./a2a-router/router.js');
+                this.a2aRouter = new A2ARouter({
+                    enableNostr: true,
+                    nostrRelays: this.config.nostrRelays,
+                    nostrPrivateKey: this.config.nostrPrivateKey,
+                    enableXMTP: this.config.xmtpEnabled,
+                    agentId: this.keyManager.getPublicKey(),
+                });
+            } catch (err) {
+                logger.warn({ err }, 'A2A Router not available (missing dependencies), continuing without A2A');
+            }
         }
 
         const recovered = this.taskQueue.recoverOnStartup();

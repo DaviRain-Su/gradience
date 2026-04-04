@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL ?? '';
+const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL
+    || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+        ? 'https://api.gradiences.xyz/indexer' : '');
 
 const colors = {
     bg: '#F3F3F8',

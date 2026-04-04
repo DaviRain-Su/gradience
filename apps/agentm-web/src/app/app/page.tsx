@@ -1120,19 +1120,23 @@ interface SettingsData {
 
 function SettingsView() {
     const [settings, setSettings] = useState<SettingsData>(() => {
+        const defaultIndexer = typeof window !== 'undefined'
+            && window.location.hostname !== 'localhost'
+            ? 'https://api.gradiences.xyz/indexer'
+            : 'http://localhost:3001';
         if (typeof window === 'undefined') {
             return {
                 rpcEndpoint: 'https://api.devnet.solana.com',
-                indexerUrl: 'http://localhost:3001',
-                theme: 'dark',
+                indexerUrl: defaultIndexer,
+                theme: 'light',
             };
         }
         const stored = localStorage.getItem('agentm:settings');
         const parsed = stored ? JSON.parse(stored) : {};
         return {
             rpcEndpoint: parsed.rpcEndpoint || 'https://api.devnet.solana.com',
-            indexerUrl: parsed.indexerUrl || 'http://localhost:3001',
-            theme: parsed.theme || 'dark',
+            indexerUrl: (parsed.indexerUrl && parsed.indexerUrl !== 'http://localhost:3001') ? parsed.indexerUrl : defaultIndexer,
+            theme: parsed.theme || 'light',
         };
     });
 
@@ -1226,10 +1230,10 @@ function SettingsView() {
                             outline: 'none',
                         }}
                     >
-                        <option value="dark">Dark (Current)</option>
-                        <option value="light" disabled>Light (Coming Soon)</option>
+                        <option value="light">Light Bauhaus (Current)</option>
+                        <option value="dark">Dark</option>
                     </select>
-                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>Light theme will be available in a future update</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>Theme preference is stored locally</p>
                 </div>
             </div>
 
@@ -1260,10 +1264,11 @@ function SettingsView() {
                 </button>
                 <button
                     onClick={() => {
+                        const isLocal = window.location.hostname === 'localhost';
                         const defaults: SettingsData = {
                             rpcEndpoint: 'https://api.devnet.solana.com',
-                            indexerUrl: 'http://localhost:3001',
-                            theme: 'dark',
+                            indexerUrl: isLocal ? 'http://localhost:3001' : 'https://api.gradiences.xyz/indexer',
+                            theme: 'light',
                         };
                         setSettings(defaults);
                     }}
@@ -1702,6 +1707,8 @@ function formatBindingStatus(status: 'bound' | 'wallet_changed' | 'unbound'): st
     return 'unbound';
 }
 
+const PRODUCTION_INDEXER_URL = 'https://api.gradiences.xyz/indexer';
+
 function resolveIndexerBase(): string {
     // 1. Check localStorage settings (user-configured indexer URL)
     if (typeof window !== 'undefined') {
@@ -1709,7 +1716,8 @@ function resolveIndexerBase(): string {
             const stored = window.localStorage.getItem('agentm:settings');
             if (stored) {
                 const parsed = JSON.parse(stored);
-                if (parsed.indexerUrl && typeof parsed.indexerUrl === 'string') {
+                if (parsed.indexerUrl && typeof parsed.indexerUrl === 'string'
+                    && parsed.indexerUrl !== 'http://localhost:3001') {
                     return trimTrailingSlash(parsed.indexerUrl);
                 }
             }
@@ -1719,12 +1727,12 @@ function resolveIndexerBase(): string {
     if (INDEXER_BASE) {
         return trimTrailingSlash(INDEXER_BASE);
     }
-    // 3. Localhost default
+    // 3. Local dev vs production
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     if (host === 'localhost' || host === '127.0.0.1') {
         return 'http://127.0.0.1:3001';
     }
-    return trimTrailingSlash(window.location.origin);
+    return PRODUCTION_INDEXER_URL;
 }
 
 function getTimeoutSignal(timeoutMs: number): AbortSignal | undefined {

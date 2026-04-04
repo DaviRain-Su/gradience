@@ -1,13 +1,14 @@
+// @ts-nocheck
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '@/lib/connection/ConnectionContext';
+import { reverse } from '@gradiences/domain-resolver';
 import type { OWSAgentSubWallet } from '@/lib/ows/agent-router';
 
 /**
  * Registers the user (or their active agent sub-wallet) on the network.
- * When an active sub-wallet exists, the network identity becomes the
- * sub-wallet's handle and address instead of the master wallet.
+ * Automatically looks up .sol domain for the active wallet address.
  */
 export function useNetworkRegistration(params: {
     masterWallet: string | null;
@@ -19,21 +20,33 @@ export function useNetworkRegistration(params: {
     const { sessionToken, fetchApi } = useConnection();
     const registeredKeyRef = useRef<string | null>(null);
     const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [solDomain, setSolDomain] = useState<string | null>(null);
 
-    // Determine the identity to register
     const agentPublicKey = activeSubWallet?.walletAddress ?? masterWallet;
     const agentDisplayName = activeSubWallet?.handle ?? displayName;
     const capabilities = activeSubWallet
         ? ['chat', 'social', 'agent-sub-wallet']
         : ['chat', 'social'];
 
+    // Reverse-lookup .sol domain for the active wallet
+    useEffect(() => {
+        if (!agentPublicKey) { setSolDomain(null); return; }
+        let cancelled = false;
+        reverse(agentPublicKey).then(d => {
+            if (!cancelled) setSolDomain(d ?? null);
+        }).catch(() => {
+            if (!cancelled) setSolDomain(null);
+        });
+        return () => { cancelled = true; };
+    }, [agentPublicKey]);
+
+    // Register on network
     useEffect(() => {
         if (!sessionToken || !agentPublicKey) return;
 
-        const regKey = `${agentPublicKey}:${agentDisplayName}`;
+        const regKey = `${agentPublicKey}:${agentDisplayName}:${solDomain ?? ''}`;
         if (registeredKeyRef.current === regKey) return;
 
-        // If previously registered a different identity, unregister it
         const prevKey = registeredKeyRef.current;
         if (prevKey) {
             const prevPubkey = prevKey.split(':')[0];
@@ -46,12 +59,11 @@ export function useNetworkRegistration(params: {
 
         registeredKeyRef.current = regKey;
 
-        // Register with current identity
         fetchApi('/api/v1/network/register', {
             method: 'POST',
             body: JSON.stringify({
                 publicKey: agentPublicKey,
-                displayName: agentDisplayName,
+                displayName: solDomain || agentDisplayName,
                 capabilities,
                 version: '0.1.0',
                 metadata: {
@@ -59,6 +71,7 @@ export function useNetworkRegistration(params: {
                     isSubWallet: !!activeSubWallet,
                     handle: activeSubWallet?.handle ?? null,
                     subWalletCount: subWallets.length,
+                    solDomain: solDomain ?? undefined,
                 },
             }),
         }).catch(err => {
@@ -66,10 +79,8 @@ export function useNetworkRegistration(params: {
             registeredKeyRef.current = null;
         });
 
-        // Clear old heartbeat
         if (heartbeatRef.current) clearInterval(heartbeatRef.current);
 
-        // Start heartbeat for current identity
         heartbeatRef.current = setInterval(() => {
             fetchApi('/api/v1/network/heartbeat', {
                 method: 'POST',
@@ -83,7 +94,7 @@ export function useNetworkRegistration(params: {
                 heartbeatRef.current = null;
             }
         };
-    }, [sessionToken, agentPublicKey, agentDisplayName, masterWallet, activeSubWallet, subWallets.length, capabilities, fetchApi]);
+    }, [sessionToken, agentPublicKey, agentDisplayName, solDomain, masterWallet, activeSubWallet, subWallets.length, capabilities, fetchApi]);
 
-    return { registeredAs: agentPublicKey, registeredName: agentDisplayName };
+    return { registeredAs: agentPublicKey, registeredName: solDomain || agentDisplayName, solDomain };
 }

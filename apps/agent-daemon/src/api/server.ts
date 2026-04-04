@@ -13,7 +13,8 @@ import { registerSolanaRoutes } from './routes/solana.js';
 import { registerSocialRoutes } from './routes/social.js';
 import { registerNetworkRoutes } from './routes/network.js';
 import { registerSessionRoutes } from './routes/session.js';
-import { registerA2ARoutes } from './routes/a2a.js';
+// A2A routes loaded dynamically to avoid hard dependency on nostr-tools
+import { registerDomainRoutes } from './routes/domains.js';
 import { SessionManager } from '../auth/session-manager.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
@@ -73,6 +74,8 @@ export async function createAPIServer(deps: APIServerDeps) {
                 path.startsWith('/api/followers/') || path.startsWith('/api/following/') ||
                 path.startsWith('/api/discover') || path.startsWith('/api/matches')) {
                 reply.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+            } else if (path.startsWith('/api/v1/domains')) {
+                reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
             } else if (path.startsWith('/api/v1/tasks') || path.startsWith('/api/v1/agents')) {
                 reply.header('Cache-Control', 'private, max-age=5, stale-while-revalidate=10');
             } else if (path === '/api/v1/status') {
@@ -99,8 +102,14 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerSolanaRoutes(app, deps.transactionManager);
     registerSocialRoutes(app, deps.database);
     registerNetworkRoutes(app, deps.database);
+    registerDomainRoutes(app);
     if (deps.a2aRouter) {
-        registerA2ARoutes(app, deps.a2aRouter, deps.messageRouter);
+        try {
+            const { registerA2ARoutes } = await import('./routes/a2a.js');
+            registerA2ARoutes(app, deps.a2aRouter, deps.messageRouter);
+        } catch (err) {
+            logger.warn({ err }, 'A2A routes not available (missing dependencies)');
+        }
     }
 
     await app.listen({ host: deps.host, port: deps.port });
