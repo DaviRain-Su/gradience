@@ -180,19 +180,19 @@ export async function cancelTask(params: CancelTaskParams): Promise<string> {
 // ---- Query Operations (via Indexer) ----
 
 export async function fetchTasks(params?: {
-  state?: string;
+  status?: 'open' | 'completed' | 'refunded';
   category?: number;
   poster?: string;
   limit?: number;
   offset?: number;
 }): Promise<TaskApi[]> {
   const sdk = getArenaSDK();
-  return sdk.indexer.tasks(params);
+  return sdk.getTasks(params);
 }
 
 export async function fetchTask(taskId: number): Promise<TaskApi | null> {
   const sdk = getArenaSDK();
-  return sdk.indexer.task(taskId);
+  return sdk.getTask(taskId);
 }
 
 export async function fetchSubmissions(taskId: number): Promise<SubmissionApi[] | null> {
@@ -202,15 +202,7 @@ export async function fetchSubmissions(taskId: number): Promise<SubmissionApi[] 
 
 export async function fetchReputation(agent: string): Promise<ReputationApi | null> {
   const sdk = getArenaSDK();
-  return sdk.indexer.reputation(agent);
-}
-
-export async function fetchLeaderboard(params?: {
-  sort?: string;
-  limit?: number;
-}): Promise<ReputationApi[]> {
-  const sdk = getArenaSDK();
-  return sdk.indexer.leaderboard(params);
+  return sdk.getReputation(agent);
 }
 
 // ---- Explorer ----
