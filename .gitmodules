@@ -1,3 +1,0 @@
-[submodule "docs/methodology"]
-	path = docs/methodology
-	url = ssh://git@codeberg.org/davirain/dev-lifecycle.git
