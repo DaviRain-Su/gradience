@@ -399,7 +399,7 @@ export class ConnectionManager extends EventEmitter {
 
         this.setState(peerId, 'reconnecting');
         const delay = this.calculateBackoff(connection.reconnectAttempts);
-        logger.info({ peerId, delay, attempt: connection.reconnectAttempts + 1 }, 'Scheduling reconnect');
+        logger.debug({ peerId, delay, attempt: connection.reconnectAttempts + 1 }, 'Scheduling reconnect');
 
         connection.reconnectTimer = setTimeout(() => {
             connection.reconnectAttempts++;
@@ -478,7 +478,7 @@ export class ConnectionManager extends EventEmitter {
             }
             
         } catch (err) {
-            logger.error({ err }, 'REST API polling error');
+            logger.debug({ err }, 'REST API polling error');
         }
     }
 
