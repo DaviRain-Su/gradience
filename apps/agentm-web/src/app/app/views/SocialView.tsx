@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useMatches, useDiscover, type MatchProfile } from '../../../hooks/useMatches';
 import { useMyProfile } from '../../../hooks/useProfile';
 import { useFollowing } from '../../../hooks/useFollowing';
@@ -53,11 +54,29 @@ export function SocialView({ address }: { address: string | null }) {
     if (!hasProfile) {
         return (
             <div style={{ display: 'flex', height: '100%', background: colors.bg, padding: '24px', alignItems: 'center', justifyContent: 'center' }}>
-                <EmptyState
-                    icon="👤"
-                    title="Create Your Soul Profile"
-                    description="Set up your Soul Profile to start discovering matches and connecting with other agents"
-                />
+                <div style={{ textAlign: 'center' }}>
+                    <EmptyState
+                        icon="👤"
+                        title="Create Your Soul Profile"
+                        description="Set up your Soul Profile to start discovering matches and connecting with other agents"
+                    />
+                    <Link href="/profile/edit" style={{ marginTop: '16px', display: 'inline-block' }}>
+                        <button
+                            style={{
+                                padding: '12px 24px',
+                                background: colors.ink,
+                                color: '#FFFFFF',
+                                borderRadius: '12px',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                border: 'none',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Create Profile
+                        </button>
+                    </Link>
+                </div>
             </div>
         );
     }

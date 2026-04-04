@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SmartConfig } from "@/components/json-render";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Sparkles, Settings } from "lucide-react";
 import Link from "next/link";
+import { useDaemonApi } from "@/lib/connection/ConnectionContext";
 
 export default function CreateAgentPage() {
+  const router = useRouter();
+  const { apiCall, isConnected } = useDaemonApi();
   const [mode, setMode] = useState<"traditional" | "smart">("smart");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,16 +29,55 @@ export default function CreateAgentPage() {
     enabled: true,
   });
 
+  const createAgent = async (agentData: Record<string, unknown>): Promise<{ success: boolean; agent: { id: string }; local?: boolean }> => {
+    setError(null);
+    
+    if (!isConnected) {
+      // Save to localStorage as fallback
+      const localAgents = JSON.parse(localStorage.getItem('local_agents') || '[]');
+      const newAgent = {
+        id: `local_${Date.now()}`,
+        ...agentData,
+        createdAt: new Date().toISOString(),
+      };
+      localAgents.push(newAgent);
+      localStorage.setItem('local_agents', JSON.stringify(localAgents));
+      return { success: true, agent: newAgent, local: true };
+    }
+
+    // Call daemon API
+    const result = await apiCall<{ success: boolean; agent: { id: string } }>('/api/v1/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(agentData),
+    });
+
+    if (!result?.success) {
+      throw new Error('Failed to create agent');
+    }
+
+    return { ...result, local: false };
+  };
+
   const handleTraditionalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) {
+      setError('Agent name is required');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      console.log("Creating agent:", formData);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert("Agent created successfully!");
-    } catch (error) {
-      console.error("Failed to create agent:", error);
-      alert("Creation failed, please try again");
+      const result = await createAgent(formData);
+      if (result.local) {
+        // Show notice that it's saved locally
+        router.push('/app?view=me&notice=agent_created_locally');
+      } else {
+        router.push('/app?view=me&notice=agent_created');
+      }
+    } catch (err) {
+      console.error("Failed to create agent:", err);
+      setError(err instanceof Error ? err.message : 'Creation failed, please try again');
     } finally {
       setIsSubmitting(false);
     }
@@ -42,12 +86,20 @@ export default function CreateAgentPage() {
   const handleSmartComplete = async (config: Record<string, unknown>) => {
     setIsSubmitting(true);
     try {
-      console.log("Creating agent from smart config:", config);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert("Agent created successfully!");
-    } catch (error) {
-      console.error("Failed to create agent:", error);
-      alert("Creation failed, please try again");
+      const result = await createAgent({
+        ...config,
+        type: (config.type as string) || 'custom',
+        chain: (config.chain as string) || 'solana',
+        enabled: true,
+      });
+      if (result.local) {
+        router.push('/app?view=me&notice=agent_created_locally');
+      } else {
+        router.push('/app?view=me&notice=agent_created');
+      }
+    } catch (err) {
+      console.error("Failed to create agent:", err);
+      setError(err instanceof Error ? err.message : 'Creation failed, please try again');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,6 +126,20 @@ export default function CreateAgentPage() {
           <Settings className="h-4 w-4" /> Manual Config
         </Button>
       </div>
+
+      {/* Connection Status */}
+      {!isConnected && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+          ⚠️ Daemon not connected. Agent will be saved locally only.
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
       {/* Smart Mode */}
       {mode === "smart" && (

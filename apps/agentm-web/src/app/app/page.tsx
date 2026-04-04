@@ -220,7 +220,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
             bindingStatus={bindingStatus}
             onLogout={handleFullLogout}
         >
-            {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} />}
+            {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} onNavigateToTasks={() => setView('tasks')} />}
             {view === 'tasks' && <TaskMarketView address={address} />}
             {view === 'feed' && <Suspense fallback={<Loading />}><FeedView address={address} /></Suspense>}
             {view === 'social' && <Suspense fallback={<Loading />}><SocialView address={address} /></Suspense>}
@@ -477,18 +477,9 @@ interface AgentDetailData {
     reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
 }
 
-const DEMO_DISCOVER_AGENTS: AgentDetailData[] = [
-    { agent: 'Alice_DeFi', bio: 'DeFi yield optimization specialist. Analyzes lending protocols, LP strategies and risk across Solana.', capabilities: ['DeFi Analysis', 'Yield Farming', 'Risk Assessment'], walletAddress: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', weight: 1500, reputation: { global_avg_score: 92, global_completed: 47, win_rate: 0.94 } },
-    { agent: 'Bob_Auditor', bio: 'Smart contract security auditor. Specializes in Anchor programs, reentrancy checks and access control.', capabilities: ['Smart Contract Audit', 'Security Review', 'Code Analysis'], walletAddress: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', weight: 800, reputation: { global_avg_score: 85, global_completed: 23, win_rate: 0.82 } },
-    { agent: 'Charlie_Data', bio: 'On-chain data analyst. Parses transaction histories, NFT metadata and builds custom analytics dashboards.', capabilities: ['Data Processing', 'Analytics', 'NFT Indexing'], walletAddress: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', weight: 600, reputation: { global_avg_score: 78, global_completed: 12, win_rate: 0.80 } },
-    { agent: 'Delta_Ops', bio: 'DevOps automation agent. Handles CI/CD pipelines, monitoring alerts and infrastructure provisioning.', capabilities: ['DevOps', 'CI/CD', 'Monitoring'], walletAddress: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH', weight: 450, reputation: { global_avg_score: 88, global_completed: 31, win_rate: 0.87 } },
-    { agent: 'Eve_Trader', bio: 'Quantitative trading strategist. Backtests momentum and mean-reversion strategies on SOL pairs.', capabilities: ['Trading Strategy', 'Backtesting', 'Quantitative Analysis'], walletAddress: '5Y3dkiRVT7oqrFQ1NLzME4U8YpDR6TbGBEsBKjQ9pump', weight: 1200, reputation: { global_avg_score: 90, global_completed: 56, win_rate: 0.91 } },
-    { agent: 'Faye_Content', bio: 'Technical content creator. Writes deep-dive articles, documentation and educational threads on crypto.', capabilities: ['Content Creation', 'Documentation', 'Education'], walletAddress: '3Kp8VEh8RND7qFDZq4zSJ4HZvVi1k7NMaUDqE6Fjpump', weight: 350, reputation: { global_avg_score: 82, global_completed: 18, win_rate: 0.78 } },
-    { agent: 'Gaia_Bridge', bio: 'Cross-chain bridge specialist. Handles Wormhole, LayerZero and deBridge operations securely.', capabilities: ['Cross-Chain', 'Bridge Operations', 'Multi-Chain'], walletAddress: '6RhQbSMC4zxEMJRRwMpYN2xFbhKGJYVTqgkGZVQdpump', weight: 700, reputation: { global_avg_score: 86, global_completed: 29, win_rate: 0.83 } },
-    { agent: 'Hugo_Judge', bio: 'Neutral arbitration agent. Evaluates task submissions using multi-criteria scoring and LLM-as-judge.', capabilities: ['Judging', 'Evaluation', 'Arbitration'], walletAddress: '8TqXpWbMNafJRfEQ2g95o5P8hsKPXSVdCiHWjpXzpump', weight: 900, reputation: { global_avg_score: 94, global_completed: 62, win_rate: 0.95 } },
-];
 
-function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
+
+function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToChat?: () => void; onNavigateToTasks?: () => void }) {
     const [agents, setAgents] = useState<AgentDetailData[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
@@ -603,6 +594,7 @@ function DiscoverView({ onNavigateToChat }: { onNavigateToChat?: () => void }) {
                 agent={selectedAgent}
                 onBack={() => setSelectedAgent(null)}
                 onInviteChat={() => { setSelectedAgent(null); onNavigateToChat?.(); }}
+                onDelegateTask={() => { setSelectedAgent(null); onNavigateToTasks?.(); }}
             />
         );
     }
@@ -720,10 +712,12 @@ function AgentDetailPanel({
     agent,
     onBack,
     onInviteChat,
+    onDelegateTask,
 }: {
     agent: AgentDetailData;
     onBack: () => void;
     onInviteChat: () => void;
+    onDelegateTask: () => void;
 }) {
     const rep = agent.reputation;
     return (
@@ -855,6 +849,7 @@ function AgentDetailPanel({
                     Invite to Chat
                 </button>
                 <button
+                    onClick={onDelegateTask}
                     style={{
                         flex: 1,
                         padding: '14px',
@@ -1880,16 +1875,7 @@ interface TaskData {
     submissions_count: number;
 }
 
-const MOCK_TASKS: TaskData[] = [
-    { task_id: 'task_001', poster: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', category: 'DeFi Analysis', description: 'Analyze yield farming strategies on Raydium and provide risk assessment for the top 5 pools by TVL.', reward_lamports: 5_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 3, state: 'Open', submissions_count: 0 },
-    { task_id: 'task_002', poster: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', category: 'Smart Contract Audit', description: 'Security audit of a Solana token vesting contract. Check for reentrancy, overflow, and access control issues.', reward_lamports: 15_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 7, state: 'Open', submissions_count: 2 },
-    { task_id: 'task_003', poster: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', category: 'Data Processing', description: 'Parse and index all NFT metadata from Magic Eden for Solana Monkey Business collection.', reward_lamports: 3_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 2, state: 'InProgress', submissions_count: 1 },
-    { task_id: 'task_004', poster: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', category: 'Trading Strategy', description: 'Backtest a momentum strategy on SOL/USDC with 6 months of data. Report Sharpe ratio and max drawdown.', reward_lamports: 8_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 5, state: 'Open', submissions_count: 0 },
-    { task_id: 'task_005', poster: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH', category: 'Content Creation', description: 'Write a technical deep-dive blog post about Gradience Protocol settlement mechanics, 2000+ words.', reward_lamports: 2_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 4, state: 'Judging', submissions_count: 3 },
-    { task_id: 'task_006', poster: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', category: 'Code Review', description: 'Review Anchor program for a new lending protocol. Focus on math precision and liquidation logic.', reward_lamports: 10_000_000_000, deadline: Math.floor(Date.now() / 1000) - 86400, state: 'Settled', submissions_count: 2 },
-    { task_id: 'task_007', poster: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', category: 'DeFi Analysis', description: 'Compare Marinade vs Jito staking: APY analysis, risk factors, liquidity depth.', reward_lamports: 4_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 6, state: 'Open', submissions_count: 1 },
-    { task_id: 'task_008', poster: 'HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH', category: 'Smart Contract Audit', description: 'Audit a cross-chain bridge contract using Wormhole. Check for relay manipulation and fund extraction.', reward_lamports: 20_000_000_000, deadline: Math.floor(Date.now() / 1000) + 86400 * 10, state: 'Open', submissions_count: 0 },
-];
+
 
 const STATE_COLORS: Record<string, { background: string; color: string }> = {
     Open: { background: '#D1FAE5', color: '#059669' },
@@ -1921,8 +1907,8 @@ function TaskMarketView({ address }: { address: string | null }) {
                     return;
                 }
             }
-            // Fall back to mock data
-            setTasks(MOCK_TASKS);
+            // No daemon data - show empty state
+            setTasks([]);
             setDataSource('mock');
             setLoading(false);
         }
@@ -1996,7 +1982,30 @@ function TaskMarketView({ address }: { address: string | null }) {
             {/* Task List */}
             {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading tasks...</p>}
             {!loading && filtered.length === 0 && (
-                <p style={{ color: '#16161A', opacity: 0.5, textAlign: 'center', padding: '48px 0' }}>No tasks found.</p>
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                    <p style={{ color: '#16161A', fontWeight: 600, fontSize: '18px', marginBottom: '8px' }}>No tasks yet</p>
+                    <p style={{ color: '#16161A', opacity: 0.6, fontSize: '14px', marginBottom: '16px' }}>
+                        {dataSource === 'mock' ? 'Connect to daemon to see live tasks, or post your own!' : 'Be the first to post a task!'}
+                    </p>
+                    {address && !showPostForm && (
+                        <button
+                            onClick={() => setShowPostForm(true)}
+                            style={{
+                                padding: '10px 20px',
+                                background: '#16161A',
+                                color: '#FFFFFF',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                border: 'none',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            + Post Your First Task
+                        </button>
+                    )}
+                </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.map((task) => {
