@@ -5,7 +5,23 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useDaemonConnection } from '@/lib/connection/ConnectionContext';
+
+// Default daemon URL - always try localhost:7420
+const DEFAULT_DAEMON_URL = 'http://localhost:7420';
+
+// Helper to safely use connection - fallback to default URL
+function useDaemonConnection() {
+  try {
+    const { useConnection } = require('@/lib/connection/ConnectionContext');
+    const conn = useConnection();
+    return {
+      daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
+      isConnected: conn.isConnected || false,
+    };
+  } catch {
+    return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false };
+  }
+}
 
 export interface Post {
   id: string;
@@ -43,10 +59,8 @@ export function useFeed(filters?: FeedFilters, page: number = 1) {
   const { daemonUrl, isConnected } = useDaemonConnection();
 
   useEffect(() => {
-    if (!isConnected || !daemonUrl) {
-      setPosts([]);
-      return;
-    }
+    // Always try to fetch from daemon, even if not "connected" via WebSocket
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
 
     setLoading(true);
     
@@ -57,7 +71,7 @@ export function useFeed(filters?: FeedFilters, page: number = 1) {
       ...(filters?.sortBy && { sortBy: filters.sortBy }),
     });
     
-    fetch(`${daemonUrl}/api/feed?${query}`)
+    fetch(`${url}/api/feed?${query}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to fetch feed');
         return res.json();

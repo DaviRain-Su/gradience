@@ -6,13 +6,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-// Helper to safely use connection
+// Default daemon URL - always try localhost:7420
+const DEFAULT_DAEMON_URL = 'http://localhost:7420';
+
+// Helper to safely use connection - fallback to default URL
 function useDaemonConnection() {
   try {
-    const { useDaemonConnection } = require('@/lib/connection/ConnectionContext');
-    return useDaemonConnection();
+    const { useConnection } = require('@/lib/connection/ConnectionContext');
+    const conn = useConnection();
+    return {
+      daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
+      isConnected: conn.isConnected || false,
+    };
   } catch {
-    return { daemonUrl: null, isConnected: false };
+    return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false };
   }
 }
 
@@ -43,13 +50,14 @@ export function useFollowing(targetAddress?: string) {
   }, [targetAddress]);
 
   const follow = useCallback(async () => {
-    if (!targetAddress || !daemonUrl || !isConnected) return;
+    if (!targetAddress) return;
     
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     setLoading(true);
     setError(null);
     
     try {
-      const res = await fetch(`${daemonUrl}/api/follow`, {
+      const res = await fetch(`${url}/api/follow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetAddress }),
@@ -68,13 +76,14 @@ export function useFollowing(targetAddress?: string) {
   }, [targetAddress, daemonUrl, isConnected]);
 
   const unfollow = useCallback(async () => {
-    if (!targetAddress || !daemonUrl || !isConnected) return;
+    if (!targetAddress) return;
     
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     setLoading(true);
     setError(null);
     
     try {
-      const res = await fetch(`${daemonUrl}/api/unfollow`, {
+      const res = await fetch(`${url}/api/unfollow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetAddress }),
@@ -111,14 +120,15 @@ export function useFollowers(address?: string) {
   const { daemonUrl, isConnected } = useDaemonConnection();
 
   useEffect(() => {
-    if (!address || !isConnected || !daemonUrl) {
+    if (!address) {
       setFollowers([]);
       return;
     }
 
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     setLoading(true);
     
-    fetch(`${daemonUrl}/api/followers/${address}`)
+    fetch(`${url}/api/followers/${address}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to fetch followers');
         return res.json();
@@ -166,14 +176,15 @@ export function useFollowingList(address?: string) {
   const { daemonUrl, isConnected } = useDaemonConnection();
 
   useEffect(() => {
-    if (!address || !isConnected || !daemonUrl) {
+    if (!address) {
       setFollowing([]);
       return;
     }
 
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     setLoading(true);
     
-    fetch(`${daemonUrl}/api/following/${address}`)
+    fetch(`${url}/api/following/${address}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to fetch following');
         return res.json();

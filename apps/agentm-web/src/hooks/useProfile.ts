@@ -20,14 +20,20 @@ type SoulProfile = {
   };
 };
 
-// Helper to safely use connection
+// Default daemon URL - always try localhost:7420
+const DEFAULT_DAEMON_URL = 'http://localhost:7420';
+
+// Helper to safely use connection - fallback to default URL
 function useDaemonConnection() {
   try {
-    // Dynamic import to avoid SSR issues
     const { useConnection } = require('@/lib/connection/ConnectionContext');
-    return useConnection();
+    const conn = useConnection();
+    return {
+      daemonUrl: conn.daemonUrl || DEFAULT_DAEMON_URL,
+      isConnected: conn.isConnected || false,
+    };
   } catch {
-    return { daemonUrl: null, isConnected: false };
+    return { daemonUrl: DEFAULT_DAEMON_URL, isConnected: false };
   }
 }
 
@@ -54,15 +60,18 @@ export function useProfile(addressOrDomain?: string) {
   const { daemonUrl, isConnected } = useDaemonConnection();
 
   useEffect(() => {
-    if (!addressOrDomain || !isConnected || !daemonUrl) {
+    if (!addressOrDomain) {
       setProfile(null);
       return;
     }
 
+    // Always try to fetch from daemon, even if not "connected" via WebSocket
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
+
     setLoading(true);
     setError(null);
 
-    fetch(`${daemonUrl}/api/profile/${addressOrDomain}`)
+    fetch(`${url}/api/profile/${addressOrDomain}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to fetch profile');
         return res.json();
@@ -103,10 +112,10 @@ export function useProfile(addressOrDomain?: string) {
   }, [addressOrDomain, daemonUrl, isConnected]);
 
   const updateProfile = useCallback(async (updates: Partial<AgentProfile>) => {
-    if (!daemonUrl || !isConnected) return;
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     
     try {
-      const res = await fetch(`${daemonUrl}/api/profile`, {
+      const res = await fetch(`${url}/api/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -149,13 +158,13 @@ export function useUpdateSoulProfile() {
   const { daemonUrl, isConnected } = useDaemonConnection();
 
   const updateSoulProfile = useCallback(async (profile: Partial<SoulProfile>) => {
-    if (!daemonUrl || !isConnected) return;
+    const url = daemonUrl || DEFAULT_DAEMON_URL;
     
     setUpdating(true);
     setError(null);
 
     try {
-      const res = await fetch(`${daemonUrl}/api/profile`, {
+      const res = await fetch(`${url}/api/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ soulProfile: profile }),
