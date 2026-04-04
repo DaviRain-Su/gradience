@@ -6,6 +6,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 import { ConnectionProvider as DaemonConnectionProvider } from '../../lib/connection/ConnectionContext';
+import { DynamicProvider } from '../../lib/dynamic/DynamicProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // Import wallet adapter CSS
@@ -41,15 +42,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     return (
         <ErrorBoundary>
-            <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
-                <WalletProvider wallets={wallets} autoConnect>
-                    <WalletModalProvider>
-                        <DaemonConnectionProvider>
-                            {children}
-                        </DaemonConnectionProvider>
-                    </WalletModalProvider>
-                </WalletProvider>
-            </SolanaConnectionProvider>
+            <DynamicProvider>
+                <SolanaConnectionProvider endpoint={RPC_ENDPOINT}>
+                    <WalletProvider wallets={wallets} autoConnect>
+                        <WalletModalProvider>
+                            <DaemonConnectionProvider>
+                                {children}
+                            </DaemonConnectionProvider>
+                        </WalletModalProvider>
+                    </WalletProvider>
+                </SolanaConnectionProvider>
+            </DynamicProvider>
         </ErrorBoundary>
     );
 }
