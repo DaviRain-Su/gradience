@@ -10,9 +10,9 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    # TypeScript: install + typecheck + build
-    build:
-        name: Build & Typecheck
+    # Format and lint check
+    lint:
+        name: Lint & Format Check
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -27,14 +27,38 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-      - name: Build workspace packages
-        run: pnpm --filter '@gradiences/a2a-types' --filter '@gradiences/nostr-adapter' --filter '@gradiences/sdk' --filter '@gradiences/chain-hub-sdk' run build
+            - name: Check Prettier formatting
+              run: pnpm exec prettier --check "**/*.{ts,tsx,js,jsx,json,md,yaml,yml}"
+
+            - name: Run ESLint
+              run: pnpm run lint
+
+    # TypeScript: install + typecheck + build
+    build:
+        name: Build & Typecheck
+        runs-on: ubuntu-latest
+        needs: lint
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build workspace packages
+              run: pnpm --filter '@gradiences/a2a-types' --filter '@gradiences/nostr-adapter' --filter '@gradiences/sdk' --filter '@gradiences/chain-hub-sdk' run build
 
             - name: Typecheck agentm-web
               run: pnpm --filter @gradiences/agentm-web exec tsc --noEmit
 
-      - name: Typecheck agent-daemon
-        run: pnpm --filter @gradiences/agent-daemon exec tsc --noEmit
+            - name: Typecheck agent-daemon
+              run: pnpm --filter @gradiences/agent-daemon exec tsc --noEmit
 
             - name: Build agentm-web
               run: pnpm --filter @gradiences/agentm-web run build

@@ -10,7 +10,7 @@ const colors = {
     lime: '#CDFF4D',
 };
 
-interface PostComposerProps {
+export interface PostComposerProps {
     onSubmit: (content: string, tags: string[]) => Promise<void>;
     disabled?: boolean;
     userAddress?: string | null;

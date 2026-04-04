@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react';
 import { resolve, reverse } from '../../lib/mocks/domain-resolver';
 
-interface DomainBadgeProps {
+export interface DomainBadgeProps {
     /** Domain to display (e.g., "alice.sol") */
     domain?: string;
     /** Wallet address (will be used for reverse lookup if domain not provided) */

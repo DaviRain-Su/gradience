@@ -1,29 +1,22 @@
 {
-  "name": "website",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "framer-motion": "^12.38.0",
-    "next": "^16.2.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "resend": "^6.10.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.2",
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "postcss": "^8.5.8",
-    "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2"
-  }
+    "name": "@gradiences/website",
+    "version": "1.0.0",
+    "description": "Gradience Protocol Marketing Website",
+    "author": "Gradience Team <hello@gradiences.xyz>",
+    "license": "MIT",
+    "dependencies": {
+        "framer-motion": "^12.38.0",
+        "next": "^16.2.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "resend": "^6.10.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.2.2",
+        "@types/node": "^25.5.0",
+        "@types/react": "^19.2.14",
+        "postcss": "^8.5.8",
+        "tailwindcss": "^4.2.2",
+        "typescript": "^6.0.2"
+    }
 }

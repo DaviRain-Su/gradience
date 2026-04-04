@@ -1,11 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
-
-const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL
-    || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? 'https://api.gradiences.xyz/indexer' : '');
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { useSocial, type SocialPost } from '@/hooks/useSocial';
+import { PostComposer } from '@/components/social/PostComposer';
 
 const colors = {
     bg: '#F3F3F8',
@@ -15,174 +12,143 @@ const colors = {
     lime: '#CDFF4D',
 };
 
-interface SocialPost {
-    id: string;
-    author: string;
-    authorDomain: string | null;
-    content: string;
-    tags: string[];
-    likes: number;
-    reposts: number;
-    createdAt: number;
-}
-
 type FeedTab = 'global' | 'following';
 
-export function FeedView({ address }: { address: string | null }) {
+interface FeedViewProps {
+    address: string | null;
+}
+
+export function FeedView({ address }: FeedViewProps) {
     const [tab, setTab] = useState<FeedTab>('global');
     const [posts, setPosts] = useState<SocialPost[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [newContent, setNewContent] = useState('');
     const [dataSource, setDataSource] = useState<'live' | 'none'>('none');
-    const { daemonUrl, sessionToken } = useDaemonConnection();
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    
+    const { createPost, deletePost, getFeed, getGlobalFeed, likePost } = useSocial(address);
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-    const loadFeed = useCallback(async () => {
-        setLoading(true);
+    // Initial load
+    const loadFeed = useCallback(async (reset = false) => {
+        if (loading || loadingMore) return;
+        
+        if (reset) {
+            setLoading(true);
+            setOffset(0);
+        } else {
+            setLoadingMore(true);
+        }
         setError(null);
         
-        // Try daemon API first
-        if (daemonUrl) {
-            try {
-                const endpoint = tab === 'following' && address
-                    ? `${daemonUrl}/api/v1/social/feed/${address}?limit=20`
-                    : `${daemonUrl}/api/v1/social/feed/global?limit=20`;
-                
-                const res = await fetch(endpoint, {
-                    headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {},
-                    signal: AbortSignal.timeout(5000),
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data.posts) && data.posts.length > 0) {
-                        setPosts(data.posts);
-                        setDataSource('live');
-                        setLoading(false);
-                        return;
-                    }
+        try {
+            const currentOffset = reset ? 0 : offset;
+            const data = tab === 'following' && address
+                ? await getFeed(20, currentOffset)
+                : await getGlobalFeed(20, currentOffset);
+            
+            if (data.length > 0) {
+                setPosts(prev => reset ? data : [...prev, ...data]);
+                setDataSource('live');
+                setOffset(currentOffset + data.length);
+                setHasMore(data.length === 20);
+            } else {
+                if (reset) {
+                    setPosts([]);
                 }
-            } catch (err) {
-                console.warn('Daemon API failed:', err);
+                setHasMore(false);
             }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load feed');
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
         }
+    }, [tab, address, getFeed, getGlobalFeed, offset, loading, loadingMore]);
 
-        // Try indexer API as fallback
-        if (INDEXER_BASE) {
-            try {
-                const endpoint = tab === 'following' && address
-                    ? `${INDEXER_BASE}/api/social/feed/${address}?limit=20`
-                    : `${INDEXER_BASE}/api/social/feed/global?limit=20`;
-                
-                const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        setPosts(data);
-                        setDataSource('live');
-                        setLoading(false);
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn('Indexer API failed:', err);
-            }
-        }
-
-        // No data available - show empty state
+    // Reset and reload when tab changes
+    useEffect(() => {
         setPosts([]);
-        setDataSource('none');
-        setLoading(false);
-    }, [tab, address, daemonUrl, sessionToken]);
+        setHasMore(true);
+        setOffset(0);
+        loadFeed(true);
+    }, [tab, address]);
 
-    useEffect(() => { loadFeed(); }, [loadFeed]);
+    // Infinite scroll observer
+    useEffect(() => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
 
-    async function handlePost() {
-        if (!address || !newContent.trim()) return;
-        
-        const content = newContent.trim();
-        
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+                    loadFeed(false);
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        if (loadMoreRef.current) {
+            observerRef.current.observe(loadMoreRef.current);
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [hasMore, loading, loadingMore, loadFeed]);
+
+    async function handlePost(content: string, tags: string[]) {
+        if (!address) return;
+
         // Optimistically add to UI
         const localPost: SocialPost = {
             id: `local_${Date.now()}`,
             author: address,
             authorDomain: null,
             content,
-            tags: [],
+            tags,
             likes: 0,
             reposts: 0,
             createdAt: Date.now(),
         };
         setPosts((prev) => [localPost, ...prev]);
-        setNewContent('');
 
         // Try to persist to backend
-        let posted = false;
-        
-        if (daemonUrl) {
-            try {
-                const res = await fetch(`${daemonUrl}/api/v1/social/posts`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
-                    },
-                    body: JSON.stringify({ author: address, content, tags: [] }),
-                    signal: AbortSignal.timeout(5000),
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    // Update with server-generated ID
-                    setPosts(prev => prev.map(p => 
-                        p.id === localPost.id ? { ...p, id: data.id || p.id } : p
-                    ));
-                    posted = true;
-                }
-            } catch (err) {
-                console.warn('Failed to post to daemon:', err);
-            }
+        const serverPost = await createPost(content, tags);
+        if (serverPost) {
+            // Update with server-generated data
+            setPosts(prev => prev.map(p => 
+                p.id === localPost.id ? serverPost : p
+            ));
         }
+    }
 
-        if (!posted && INDEXER_BASE) {
-            try {
-                await fetch(`${INDEXER_BASE}/api/social/posts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ author: address, content, tags: [] }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch {
-                // Silent fail - post stays in local UI
-            }
-        }
+    async function handleDelete(postId: string) {
+        if (!address) return;
+        
+        // Optimistic delete
+        setPosts(prev => prev.filter(p => p.id !== postId));
+        
+        // Persist to backend
+        await deletePost(postId);
     }
 
     async function handleLike(postId: string) {
         if (!address) return;
         
         // Optimistic update
-        setPosts((prev) =>
-            prev.map((p) =>
-                p.id === postId ? { ...p, likes: p.likes + 1 } : p
-            )
-        );
-
-        // Try to persist
-        if (daemonUrl) {
-            try {
-                await fetch(`${daemonUrl}/api/v1/social/posts/like`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
-                    },
-                    body: JSON.stringify({ postId, liker: address }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch {
-                // Silent fail
-            }
-        }
+        setPosts(prev => prev.map(p => 
+            p.id === postId ? { ...p, likes: p.likes + 1 } : p
+        ));
+        
+        // Persist to backend
+        await likePost(postId);
     }
 
     return (
@@ -327,66 +293,11 @@ export function FeedView({ address }: { address: string | null }) {
                 overflow: 'hidden',
             }}>
                 {/* Post Input */}
-                {address && (
-                    <div style={{
-                        background: colors.surface,
-                        borderRadius: '24px',
-                        padding: '20px',
-                        border: `1.5px solid ${colors.ink}`,
-                    }}>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{
-                                width: '44px',
-                                height: '44px',
-                                borderRadius: '50%',
-                                background: colors.lavender,
-                                border: `1.5px solid ${colors.ink}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '18px',
-                                flexShrink: 0,
-                            }}>👤</div>
-                            <div style={{ flex: 1 }}>
-                                <textarea
-                                    value={newContent}
-                                    onChange={(e) => setNewContent(e.target.value)}
-                                    placeholder="What's happening?"
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        borderRadius: '12px',
-                                        border: `1.5px solid ${colors.ink}`,
-                                        background: colors.bg,
-                                        fontSize: '14px',
-                                        resize: 'none',
-                                        minHeight: '80px',
-                                        fontFamily: 'inherit',
-                                    }}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                                    <button
-                                        onClick={handlePost}
-                                        disabled={!newContent.trim()}
-                                        style={{
-                                            padding: '10px 24px',
-                                            background: colors.ink,
-                                            color: colors.surface,
-                                            border: 'none',
-                                            borderRadius: '12px',
-                                            fontSize: '14px',
-                                            fontWeight: 600,
-                                            cursor: newContent.trim() ? 'pointer' : 'not-allowed',
-                                            opacity: newContent.trim() ? 1 : 0.5,
-                                        }}
-                                    >
-                                        Post
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <PostComposer 
+                    onSubmit={handlePost} 
+                    userAddress={address}
+                    disabled={loading}
+                />
 
                 {/* Tabs */}
                 <div style={{
@@ -397,6 +308,7 @@ export function FeedView({ address }: { address: string | null }) {
                         <button
                             key={t}
                             onClick={() => setTab(t)}
+                            disabled={loading}
                             style={{
                                 padding: '12px 24px',
                                 borderRadius: '12px',
@@ -406,13 +318,46 @@ export function FeedView({ address }: { address: string | null }) {
                                 background: tab === t ? colors.ink : colors.surface,
                                 color: tab === t ? colors.surface : colors.ink,
                                 border: `1.5px solid ${colors.ink}`,
-                                cursor: 'pointer',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                opacity: loading ? 0.6 : 1,
                             }}
                         >
                             {t === 'global' ? '🌍 Global' : '👥 Following'}
                         </button>
                     ))}
                 </div>
+
+                {/* Error State */}
+                {error && (
+                    <div style={{
+                        padding: '16px 20px',
+                        background: '#FEE2E2',
+                        borderRadius: '12px',
+                        border: '1.5px solid #EF4444',
+                        color: '#DC2626',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}>
+                        <span>{error}</span>
+                        <button
+                            onClick={() => loadFeed(true)}
+                            style={{
+                                padding: '6px 12px',
+                                background: '#DC2626',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
 
                 {/* Posts List */}
                 <div style={{
@@ -422,7 +367,7 @@ export function FeedView({ address }: { address: string | null }) {
                     flexDirection: 'column',
                     gap: '12px',
                 }}>
-                    {loading && (
+                    {loading && posts.length === 0 && (
                         <div style={{
                             padding: '40px',
                             textAlign: 'center',
@@ -457,116 +402,186 @@ export function FeedView({ address }: { address: string | null }) {
                     )}
 
                     {posts.map((post) => (
-                        <div key={post.id} style={{
-                            background: colors.surface,
-                            borderRadius: '20px',
-                            padding: '20px',
-                            border: `1.5px solid ${colors.ink}`,
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                marginBottom: '12px',
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        borderRadius: '50%',
-                                        background: colors.lavender,
-                                        border: `1.5px solid ${colors.ink}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '16px',
-                                    }}>
-                                        {post.authorDomain?.[0] || '👤'}
-                                    </div>
-                                    <div>
-                                        <p style={{
-                                            fontSize: '14px',
-                                            fontWeight: 700,
-                                            color: colors.ink,
-                                        }}>
-                                            {post.authorDomain ?? `${post.author.slice(0, 6)}...${post.author.slice(-4)}`}
-                                        </p>
-                                        <p style={{
-                                            fontSize: '12px',
-                                            color: colors.ink,
-                                            opacity: 0.5,
-                                        }}>
-                                            {new Date(post.createdAt).toLocaleString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <p style={{
-                                fontSize: '15px',
-                                color: colors.ink,
-                                lineHeight: 1.6,
-                                marginBottom: '12px',
-                            }}>{post.content}</p>
-                            
-                            {post.tags.length > 0 && (
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                                    {post.tags.map((tag) => (
-                                        <span key={tag} style={{
-                                            padding: '4px 10px',
-                                            background: colors.bg,
-                                            borderRadius: '8px',
-                                            fontSize: '12px',
-                                            border: `1.5px solid ${colors.ink}`,
-                                        }}>{tag}</span>
-                                    ))}
-                                </div>
-                            )}
-                            
-                            <div style={{
-                                display: 'flex',
-                                gap: '16px',
-                                paddingTop: '12px',
-                                borderTop: `1px dashed ${colors.ink}`,
-                            }}>
-                                <button 
-                                    onClick={() => handleLike(post.id)}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        padding: '6px 12px',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '13px',
-                                        color: colors.ink,
-                                        cursor: 'pointer',
-                                        opacity: 0.7,
-                                    }}
-                                >
-                                    ❤️ {post.likes}
-                                </button>
-                                <button style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '6px 12px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontSize: '13px',
-                                    color: colors.ink,
-                                    cursor: 'pointer',
-                                    opacity: 0.7,
-                                }}>
-                                    🔄 {post.reposts}
-                                </button>
-                            </div>
-                        </div>
+                        <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            isOwn={post.author === address}
+                            onDelete={handleDelete}
+                            onLike={handleLike}
+                        />
                     ))}
+
+                    {/* Load More Trigger */}
+                    {posts.length > 0 && (
+                        <div 
+                            ref={loadMoreRef}
+                            style={{
+                                padding: '20px',
+                                textAlign: 'center',
+                                color: colors.ink,
+                                opacity: 0.5,
+                                fontSize: '14px',
+                            }}
+                        >
+                            {loadingMore ? 'Loading more...' : hasMore ? 'Scroll for more' : 'No more posts'}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
+
+interface PostCardProps {
+    post: SocialPost;
+    isOwn?: boolean;
+    onDelete?: (postId: string) => void;
+    onLike?: (postId: string) => void;
+}
+
+function PostCard({ post, isOwn = false, onDelete, onLike }: PostCardProps) {
+    const displayName = post.authorDomain || `${post.author.slice(0, 6)}...${post.author.slice(-4)}`;
+    const formattedDate = new Date(post.createdAt).toLocaleString();
+
+    return (
+        <div style={{
+            background: colors.surface,
+            borderRadius: '20px',
+            padding: '20px',
+            border: `1.5px solid ${colors.ink}`,
+        }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '12px',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: colors.lavender,
+                        border: `1.5px solid ${colors.ink}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                    }}>
+                        {post.authorDomain?.[0] || '👤'}
+                    </div>
+                    <div>
+                        <p style={{
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            color: colors.ink,
+                        }}>
+                            {displayName}
+                        </p>
+                        <p style={{
+                            fontSize: '12px',
+                            color: colors.ink,
+                            opacity: 0.5,
+                        }}>
+                            {formattedDate}
+                        </p>
+                    </div>
+                </div>
+                
+                {isOwn && onDelete && (
+                    <button
+                        onClick={() => onDelete(post.id)}
+                        style={{
+                            padding: '6px 12px',
+                            background: 'transparent',
+                            border: `1.5px solid ${colors.ink}`,
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            color: colors.ink,
+                            cursor: 'pointer',
+                            opacity: 0.6,
+                            transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#FEE2E2';
+                            e.currentTarget.style.color = '#DC2626';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = colors.ink;
+                        }}
+                    >
+                        Delete
+                    </button>
+                )}
+            </div>
+            
+            <p style={{
+                fontSize: '15px',
+                color: colors.ink,
+                lineHeight: 1.6,
+                marginBottom: '12px',
+                whiteSpace: 'pre-wrap',
+            }}>{post.content}</p>
+            
+            {post.tags.length > 0 && (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    {post.tags.map((tag) => (
+                        <span key={tag} style={{
+                            padding: '4px 10px',
+                            background: colors.bg,
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            border: `1.5px solid ${colors.ink}`,
+                        }}>#{tag}</span>
+                    ))}
+                </div>
+            )}
+            
+            <div style={{
+                display: 'flex',
+                gap: '16px',
+                paddingTop: '12px',
+                borderTop: `1px dashed ${colors.ink}`,
+            }}>
+                <button 
+                    onClick={() => onLike?.(post.id)}
+                    disabled={!onLike}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        color: colors.ink,
+                        cursor: onLike ? 'pointer' : 'default',
+                        opacity: onLike ? 0.7 : 0.4,
+                        transition: 'opacity 0.2s ease',
+                    }}
+                >
+                    ❤️ {post.likes > 0 ? post.likes : ''}
+                </button>
+                <button style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    color: colors.ink,
+                    cursor: 'default',
+                    opacity: 0.4,
+                }}>
+                    🔄 {post.reposts > 0 ? post.reposts : ''}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+export default FeedView;
