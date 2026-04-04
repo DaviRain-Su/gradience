@@ -29,7 +29,45 @@ interface AgentRow {
 }
 
 export default function AppPage() {
-    const { isAuthenticated, user } = useDynamicContext();
+    const { isAuthenticated, user, isLoading, walletConnector } = useDynamicContext();
+    const [forceUpdate, setForceUpdate] = useState(0);
+
+    // Force re-render when auth state changes
+    useEffect(() => {
+        console.log('Auth state changed:', { isAuthenticated, isLoading, user: user?.email });
+        setForceUpdate(prev => prev + 1);
+    }, [isAuthenticated, isLoading, user]);
+
+    // Show loading while checking auth status
+    if (isLoading) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                background: '#F3F3F8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                        width: '48px',
+                        height: '48px',
+                        border: '3px solid #C6BBFF',
+                        borderTopColor: '#16161A',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto 16px',
+                    }} />
+                    <p style={{ color: '#16161A', fontSize: '14px' }}>Loading...</p>
+                    <style>{`
+                        @keyframes spin {
+                            to { transform: rotate(360deg); }
+                        }
+                    `}</style>
+                </div>
+            </div>
+        );
+    }
 
     // Show login screen if not authenticated
     if (!isAuthenticated) {
@@ -37,7 +75,7 @@ export default function AppPage() {
     }
 
     // Show main app when authenticated
-    return <MainApp user={user} />;
+    return <MainApp user={user} key={forceUpdate} />;
 }
 
 function LoginScreen() {

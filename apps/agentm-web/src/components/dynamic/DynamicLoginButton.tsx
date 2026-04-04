@@ -3,7 +3,21 @@
 import { DynamicWidget, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 export function DynamicLoginButton() {
-    const { user, isAuthenticated } = useDynamicContext();
+    const { user, isAuthenticated, isLoading } = useDynamicContext();
+
+    if (isLoading) {
+        return (
+            <div style={{
+                padding: '12px 24px',
+                background: '#F3F3F8',
+                borderRadius: '24px',
+                border: '1.5px solid #16161A',
+                textAlign: 'center',
+            }}>
+                <span style={{ fontSize: '14px', color: '#16161A' }}>Loading...</span>
+            </div>
+        );
+    }
 
     if (isAuthenticated && user) {
         return (

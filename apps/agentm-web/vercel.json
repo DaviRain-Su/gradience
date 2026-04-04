@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/auth/callback", "destination": "/auth/callback.html" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/auth/callback", "dest": "/auth/callback.html" },
+    { "src": "/(.*)", "dest": "/$1.html" }
+  ]
+}

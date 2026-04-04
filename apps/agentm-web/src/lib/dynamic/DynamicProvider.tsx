@@ -11,8 +11,10 @@ interface DynamicProviderProps {
 }
 
 export function DynamicProvider({ children }: DynamicProviderProps) {
-    // Hardcode environment ID if not set
-    const envId = environmentId || '5a93f4bd-397a-43c1-b990-8874810ea0fc';
+    // Clean environment ID - remove any whitespace or newlines
+    const envId = (environmentId || '5a93f4bd-397a-43c1-b990-8874810ea0fc').trim();
+
+    console.log('Dynamic Environment ID:', envId);
 
     return (
         <DynamicContextProvider
@@ -32,8 +34,8 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                         enabled: true,
                     },
                 },
-                // Prevent redirect after login, stay on same page
-                redirectUrl: typeof window !== 'undefined' ? window.location.href : '/app',
+                // No redirect - handle login in-place
+                redirectUrl: undefined,
             }}
         >
             {children}
