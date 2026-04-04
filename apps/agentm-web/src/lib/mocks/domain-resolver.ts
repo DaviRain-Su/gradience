@@ -10,3 +10,16 @@ export function validateDomain(domain: string): boolean {
 }
 
 export const DOMAIN_TLDS = ['.sol', '.agent'];
+
+// Additional exports needed by components
+export function resolve(domain: string): Promise<{ address: string; domain: string } | null> {
+    return Promise.resolve(null);
+}
+
+export function reverse(address: string): Promise<string | null> {
+    return Promise.resolve(null);
+}
+
+export function isValidDomain(domain: string): boolean {
+    return domain.length > 0 && (domain.endsWith('.sol') || domain.endsWith('.agent'));
+}
