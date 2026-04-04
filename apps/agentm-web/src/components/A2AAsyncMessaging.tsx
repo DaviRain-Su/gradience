@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWebEntry } from '../../hooks/use-web-entry.js';
+import { VoiceToggleButton } from './voice/VoiceButton';
 
 const colors = {
   bg: '#F3F3F8',
@@ -524,7 +525,12 @@ export function A2AAsyncMessaging() {
                     if (e.key === 'Enter') sendMessage();
                   }}
                 />
-                
+
+                <VoiceToggleButton
+                  onTranscript={(text) => setNewMessage((prev) => prev + (prev ? ' ' : '') + text)}
+                  size="md"
+                />
+
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}

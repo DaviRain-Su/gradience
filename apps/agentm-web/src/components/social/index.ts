@@ -16,3 +16,10 @@ export {
   type CompactFollowerCountProps,
 } from './FollowerCount';
 export { DomainBadge, DomainBadgeLink, type DomainBadgeProps } from './DomainBadge';
+
+// Soul Profile Components
+export { SoulProfileCard } from './SoulProfileCard';
+export { SoulProfileEditor } from './SoulProfileEditor';
+
+// Probe Components
+export { ProbeChat, ProbeInvitation } from './probe';

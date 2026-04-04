@@ -2114,11 +2114,13 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
         let taskId = `task_${Date.now()}`;
         let escrowSig: string | null = null;
 
-        // Try on-chain escrow via Memo + SOL transfer
+        // Try on-chain escrow via Agent Arena SDK
         if (primaryWallet) {
             try {
-                const { buildTaskEscrowTx } = await import('../../lib/solana/escrow-task');
-                const result = await buildTaskEscrowTx({
+                const { buildAndSubmitTaskEscrow } = await import('../../lib/solana/escrow-task');
+                const { createDynamicAdapter } = await import('../../lib/solana/dynamic-wallet-adapter');
+                const wallet = createDynamicAdapter(address);
+                const result = await buildAndSubmitTaskEscrow(wallet, {
                     description: description.trim(),
                     category,
                     rewardLamports,
@@ -2126,13 +2128,9 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
                     poster: address,
                 });
                 taskId = result.taskId;
-
-                // Sign and send transaction via Dynamic wallet
-                const signer = await (primaryWallet as any).getSigner();
-                const signature = await signer.signAndSendTransaction(result.tx);
-                escrowSig = signature;
-                setEscrowTx(signature);
-                console.log('Task posted on-chain:', signature);
+                escrowSig = result.signature;
+                setEscrowTx(result.signature);
+                console.log('Task posted on-chain:', result.signature);
             } catch (err) {
                 console.warn('On-chain escrow failed:', err);
                 setTxError(err instanceof Error ? err.message : 'Transaction failed');

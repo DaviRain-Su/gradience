@@ -1,90 +1,157 @@
-import {
-    Connection,
-    PublicKey,
-    Transaction,
-    TransactionInstruction,
-    SystemProgram,
-    LAMPORTS_PER_SOL,
-} from '@solana/web3.js';
+/**
+ * Task Escrow Operations
+ *
+ * Connects to Agent Arena Program via @gradiences/arena-sdk.
+ * Replaces the old demo stub that did self-transfers.
+ *
+ * For SOL tasks: reward is locked in an escrow PDA on-chain.
+ * For SPL tasks: token ATA is used for escrow.
+ */
 
-const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-const ESCROW_VAULT = new PublicKey('GRADiENCEEscrowVau1t111111111111111111111');
+import {
+  postTask,
+  applyForTask,
+  submitResult,
+  judgeAndPay,
+  cancelTask,
+  fetchTask,
+  fetchTasks,
+  fetchSubmissions,
+  getExplorerUrl,
+  type WalletAdapter,
+  type TaskApi,
+} from './arena-client';
+import type { Address } from '@solana/kit';
+
+export { getExplorerUrl };
+
+// ---- Types (backward compatible with existing UI) ----
 
 export interface TaskEscrowParams {
-    description: string;
-    category: string;
-    rewardLamports: number;
-    deadlineUnix: number;
-    poster: string;
+  description: string;
+  category: string;
+  rewardLamports: number;
+  deadlineUnix: number;
+  poster: string;
 }
 
 export interface TaskEscrowResult {
-    signature: string;
-    explorerUrl: string;
-    taskId: string;
+  signature: string;
+  explorerUrl: string;
+  taskId: string;
 }
 
-function getRpcEndpoint(): string {
-    if (typeof window !== 'undefined') {
-        try {
-            const stored = window.localStorage.getItem('agentm:settings');
-            if (stored) {
-                const settings = JSON.parse(stored);
-                if (settings.rpcEndpoint) return settings.rpcEndpoint;
-            }
-        } catch {}
-    }
-    return process.env.NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT || 'https://api.devnet.solana.com';
+const CATEGORY_MAP: Record<string, number> = {
+  'DeFi Analysis': 0,
+  'Trading Bot': 1,
+  'Smart Contract Audit': 2,
+  'Data Analysis': 3,
+  'Content Creation': 4,
+  'Code Review': 5,
+  'Research': 6,
+  'Other': 7,
+};
+
+/**
+ * Build and submit a task escrow transaction using the real Arena SDK.
+ *
+ * @deprecated Use `postTaskOnChain` directly for new code.
+ */
+export async function buildAndSubmitTaskEscrow(
+  wallet: WalletAdapter,
+  params: TaskEscrowParams,
+): Promise<TaskEscrowResult> {
+  const category = CATEGORY_MAP[params.category] ?? 7;
+  const now = Math.floor(Date.now() / 1000);
+  const deadlineOffset = Math.max(60, params.deadlineUnix - now);
+
+  const result = await postTask({
+    wallet,
+    evalRef: params.description.slice(0, 200),
+    category,
+    reward: BigInt(params.rewardLamports),
+    deadlineOffsetSeconds: deadlineOffset,
+    judgeDeadlineOffsetSeconds: 3600,
+  });
+
+  const signature = result.signature;
+  return {
+    signature,
+    explorerUrl: getExplorerUrl(signature),
+    taskId: result.taskId.toString(),
+  };
 }
 
-export async function buildTaskEscrowTx(
-    params: TaskEscrowParams,
-): Promise<{ tx: Transaction; taskId: string }> {
-    const connection = new Connection(getRpcEndpoint(), 'confirmed');
-    const payer = new PublicKey(params.poster);
-    const taskId = `task_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-
-    const memoData = JSON.stringify({
-        protocol: 'gradience',
-        action: 'post_task',
-        version: '1',
-        taskId,
-        category: params.category,
-        description: params.description.slice(0, 200),
-        rewardLamports: params.rewardLamports,
-        deadline: params.deadlineUnix,
-        ts: Date.now(),
-    });
-
-    const instructions: TransactionInstruction[] = [];
-
-    // Memo instruction with task metadata
-    instructions.push(new TransactionInstruction({
-        keys: [{ pubkey: payer, isSigner: true, isWritable: false }],
-        programId: MEMO_PROGRAM_ID,
-        data: Buffer.from(memoData, 'utf-8'),
-    }));
-
-    // SOL transfer as escrow deposit (to self for demo, since vault PDA doesn't exist yet)
-    // In production this would go to a real escrow PDA
-    if (params.rewardLamports > 0) {
-        instructions.push(
-            SystemProgram.transfer({
-                fromPubkey: payer,
-                toPubkey: payer, // Self-transfer for demo; proves the economic model
-                lamports: params.rewardLamports,
-            }),
-        );
-    }
-
-    const tx = new Transaction().add(...instructions);
-    tx.feePayer = payer;
-    const { blockhash } = await connection.getLatestBlockhash();
-    tx.recentBlockhash = blockhash;
-
-    return { tx, taskId };
+/**
+ * Post a task on-chain with full control over parameters.
+ */
+export async function postTaskOnChain(params: {
+  wallet: WalletAdapter;
+  evalRef: string;
+  category: number;
+  reward: number | bigint;
+  minStake?: number | bigint;
+  deadlineOffsetSeconds?: number;
+  judgeDeadlineOffsetSeconds?: number;
+  judgeMode?: number;
+  judge?: Address;
+  mint?: Address;
+}): Promise<{ taskId: bigint; signature: string }> {
+  return postTask(params);
 }
 
-export function getExplorerUrl(signature: string): string {
-    return `https://solana.fm/tx/${signature}?cluster=devnet-solana`;
+/**
+ * Apply for a task as an agent (stakes minStake).
+ */
+export async function applyForTaskOnChain(params: {
+  wallet: WalletAdapter;
+  taskId: number | bigint;
+  mint?: Address;
+}): Promise<string> {
+  return applyForTask(params);
 }
+
+/**
+ * Submit work result for a task.
+ */
+export async function submitResultOnChain(params: {
+  wallet: WalletAdapter;
+  taskId: number | bigint;
+  resultRef: string;
+  traceRef: string;
+  runtimeProvider?: string;
+  runtimeModel?: string;
+}): Promise<string> {
+  return submitResult(params);
+}
+
+/**
+ * Judge a task and trigger settlement (95% winner, 3% judge, 2% treasury).
+ */
+export async function judgeAndPayOnChain(params: {
+  wallet: WalletAdapter;
+  taskId: number | bigint;
+  winner: Address;
+  poster: Address;
+  score: number;
+  reasonRef: string;
+  mint?: Address;
+}): Promise<string> {
+  return judgeAndPay(params);
+}
+
+/**
+ * Cancel a task and refund escrow to poster.
+ */
+export async function cancelTaskOnChain(params: {
+  wallet: WalletAdapter;
+  taskId: number | bigint;
+  mint?: Address;
+}): Promise<string> {
+  return cancelTask(params);
+}
+
+// ---- Query helpers ----
+
+export { fetchTask, fetchTasks, fetchSubmissions };
+export type { TaskApi };

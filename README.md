@@ -56,9 +56,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full component map, deployment de
 
 | App | Deploy | Purpose |
 |-----|--------|---------|
-| **agentm-web** | Vercel | Main user app: wallet login, discover agents, task market, social |
-| **agentm-pro** | Vercel | Developer dashboard |
+| **agentm-web** | Vercel | **Unified App**: User features + Developer tools (Profile, Social, Token Launch, A2A Messaging, Analytics) |
 | **developer-docs** | Vercel | Documentation site |
+
+> **Note**: `agentm-pro` has been merged into `agentm-web`. All developer features (GoldRush analytics, token launch, A2A messaging) are now accessible in the unified web app.
 
 ### SDK Packages
 
@@ -116,36 +117,47 @@ The Judge is paid regardless of outcome -- same as Bitcoin miners earning block 
 ## Project Structure
 
 ```
-apps/
-  agent-daemon/        # Backend daemon (Fastify + SQLite)
-  agentm-web/          # Main web app (Next.js)
-  agentm-pro/          # Developer dashboard (Next.js)
-  agent-arena/         # Arena program + indexer + SDK
-  chain-hub/           # Chain Hub program + indexer
-  a2a-protocol/        # A2A program + SDK
-  developer-docs/      # Documentation site
-packages/
-  sdk/                 # Unified TypeScript SDK
-  cli/                 # CLI tool
-  soul-engine/         # Profile matching engine
-  workflow-engine/     # Composable workflows
-  nostr-adapter/       # Nostr discovery
-  xmtp-adapter/        # XMTP messaging
-  domain-resolver/     # Domain resolution
-programs/
-  agent-arena/         # Solana program (Rust/Pinocchio)
-  chain-hub/           # Solana program
-  a2a-protocol/        # Solana program
-  agentm-core/         # Solana program
-  workflow-marketplace/ # Solana program
-protocol/
-  WHITEPAPER.md        # Full whitepaper
-  design/              # Protocol design docs
-deploy/
-  docker-compose.prod.yml  # Production deployment
-  deploy-core.sh           # One-command deploy
-  nginx-api.conf           # Nginx config
+apps/                          # Applications
+  agentm-web/                  # Unified Web App (Next.js) - User + Developer
+  agent-arena/                 # Arena protocol + indexer + SDK
+  chain-hub/                   # Chain Hub protocol + indexer
+  a2a-protocol/                # A2A protocol + SDK
+  agent-daemon/                # Backend daemon (Fastify + SQLite)
+  developer-docs/              # Documentation site
+
+packages/                      # Shared packages
+  sdk/                         # Unified TypeScript SDK
+  agentm-sdk/                  # AgentM specific SDK (migrated from agentm-core)
+  cli/                         # CLI tool
+  soul-engine/                 # Profile matching engine
+  workflow-engine/             # Composable workflows
+  nostr-adapter/               # Nostr discovery
+  xmtp-adapter/                # XMTP messaging
+  domain-resolver/             # Domain resolution
+  a2a-types/                   # A2A shared types
+
+programs/                      # Solana programs (Rust/Pinocchio)
+  agent-arena/                 # Core arena program
+  chain-hub/                   # Chain Hub program
+  a2a-protocol/                # A2A program
+  agentm-core/                 # AgentM core program (migrated from apps/)
+  agent-layer-evm/             # EVM agent layer
+  workflow-marketplace/        # Workflow marketplace program
+
+protocol/                      # Protocol specs
+  WHITEPAPER.md                # Full whitepaper
+  design/                      # Design docs
+
+deploy/                        # Deployment configs
+  docker-compose.prod.yml
+  deploy-core.sh
+  nginx-api.conf
 ```
+
+> **Archived** (2026-04-05):
+> - `agentm-pro/` → merged into `agentm-web` → `archive/agentm-pro-20260405/`
+> - `agentm/` (Electron) → archived → `archive/agentm-electron-20260405/`
+> - `agentm-core/` → migrated to `programs/agentm-core/` + `packages/agentm-sdk/`
 
 ---
 

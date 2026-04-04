@@ -1,4 +1,4 @@
-// @ts-nocheck
+'use client';
 /**
  * Soul Profile Editor Component
  * 
@@ -6,7 +6,14 @@
  */
 
 import { useState } from 'react';
-import type { SoulProfile, SoulType, PrivacyLevel, CommunicationTone, CommunicationPace, CommunicationDepth } from '@gradiences/soul-engine';
+import type { 
+  SoulProfile, 
+  SoulType, 
+  PrivacyLevel, 
+  CommunicationTone, 
+  CommunicationPace, 
+  CommunicationDepth 
+} from '@/types/soul';
 
 interface SoulProfileEditorProps {
     /** Initial profile (for editing) */
