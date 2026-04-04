@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
     images: {
         unoptimized: true,
     },
+    webpack: (config) => {
+        // Mock workspace packages
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            '@gradiences/domain-resolver': '/src/lib/mocks/domain-resolver.ts',
+            '@gradiences/sdk': '/src/lib/mocks/sdk.ts',
+            '@gradiences/soul-engine': '/src/lib/mocks/soul-engine.ts',
+        };
+        return config;
+    },
 };
 
 export default nextConfig;
