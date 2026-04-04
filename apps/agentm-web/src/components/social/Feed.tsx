@@ -13,6 +13,14 @@ import { PostCard } from './PostCard';
 import { InfiniteScroll } from './InfiniteScroll';
 import { FilterBar } from './FilterBar';
 
+const c = {
+    bg: '#F3F3F8',
+    surface: '#FFFFFF',
+    ink: '#16161A',
+    lavender: '#C6BBFF',
+    lime: '#CDFF4D',
+};
+
 export interface FeedProps extends FeedCallbacks {
     /** Array of posts to display */
     posts: FeedPost[];
@@ -46,23 +54,9 @@ function EmptyState({ filter, message }: { filter: FeedFilter; message?: string 
     };
 
     return (
-        <div className="flex flex-col items-center justify-center py-12 px-6">
-            <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                <svg
-                    className="w-8 h-8 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                    />
-                </svg>
-            </div>
-            <p className="text-sm text-gray-500 text-center max-w-xs">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>ud83dudcdd</div>
+            <p style={{ fontSize: '14px', color: c.ink, opacity: 0.5, textAlign: 'center', maxWidth: '320px' }}>
                 {message ?? defaultMessages[filter]}
             </p>
         </div>
@@ -73,18 +67,19 @@ function EmptyState({ filter, message }: { filter: FeedFilter; message?: string 
  * Loading skeleton for posts
  */
 function PostSkeleton() {
+    const bar: React.CSSProperties = { background: c.bg, borderRadius: '6px', height: '14px' };
     return (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 animate-pulse">
-            <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gray-800 rounded-full" />
-                <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-800 rounded w-1/3" />
-                    <div className="h-3 bg-gray-800 rounded w-1/4" />
+        <div style={{ background: c.surface, border: `1.5px solid ${c.ink}`, borderRadius: '20px', padding: '20px' }}>
+            <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: c.bg }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ ...bar, width: '33%' }} />
+                    <div style={{ ...bar, width: '25%', height: '12px' }} />
                 </div>
             </div>
-            <div className="mt-4 space-y-2">
-                <div className="h-4 bg-gray-800 rounded w-full" />
-                <div className="h-4 bg-gray-800 rounded w-4/5" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                <div style={{ ...bar, width: '100%' }} />
+                <div style={{ ...bar, width: '80%' }} />
             </div>
         </div>
     );
@@ -173,28 +168,17 @@ export function Feed({
                         counts={filterCounts}
                     />
                 )}
-                <div className="flex flex-col items-center justify-center py-12 px-6">
-                    <div className="w-16 h-16 rounded-full bg-red-600/10 flex items-center justify-center mb-4">
-                        <svg
-                            className="w-8 h-8 text-red-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                        </svg>
-                    </div>
-                    <p className="text-sm text-red-400 text-center mb-4">{error}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>ud83dudea8</div>
+                    <p style={{ fontSize: '14px', color: '#DC2626', textAlign: 'center', marginBottom: '16px' }}>{error}</p>
                     {onLoadMore && (
                         <button
                             type="button"
                             onClick={() => void handleLoadMore()}
-                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition"
+                            style={{
+                                padding: '10px 20px', background: c.bg, border: `1.5px solid ${c.ink}`,
+                                borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', color: c.ink,
+                            }}
                         >
                             Try again
                         </button>
@@ -278,32 +262,17 @@ export function FeedHeader({
     className = '',
 }: FeedHeaderProps) {
     return (
-        <div
-            className={`flex items-center justify-between py-4 border-b border-gray-800 mb-4 ${className}`}
-        >
-            <h1 className="text-xl font-bold text-white">{title}</h1>
-
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', marginBottom: '16px', borderBottom: `1.5px solid ${c.ink}` }}>
+            <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: c.ink, margin: 0 }}>{title}</h1>
             {onRefresh && (
                 <button
                     type="button"
                     onClick={onRefresh}
                     disabled={refreshing}
-                    className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-lg transition disabled:opacity-50"
                     aria-label="Refresh feed"
+                    style={{ padding: '8px', background: 'transparent', border: `1.5px solid ${c.ink}`, borderRadius: '8px', cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, color: c.ink }}
                 >
-                    <svg
-                        className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                    </svg>
+                    u21bb
                 </button>
             )}
         </div>

@@ -77,12 +77,8 @@ export function DomainBadge({
         }
     };
 
-    // Size classes
-    const sizeClasses = {
-        sm: 'text-xs px-2 py-0.5',
-        md: 'text-sm px-3 py-1',
-        lg: 'text-base px-4 py-1.5',
-    };
+    const sizePx = { sm: { fontSize: '11px', padding: '2px 8px' }, md: { fontSize: '13px', padding: '4px 12px' }, lg: { fontSize: '15px', padding: '6px 16px' } };
+    const sp = sizePx[size];
 
     // Icon based on domain type
     const getDomainIcon = (d: string) => {
@@ -91,23 +87,28 @@ export function DomainBadge({
         return '🔗';
     };
 
-    // Background color based on domain type
-    const getDomainColor = (d: string) => {
-        if (d.endsWith('.sol')) return 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-300 border-purple-500/30';
-        if (d.endsWith('.eth')) return 'bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-300 border-blue-500/30';
-        return 'bg-gray-700 text-gray-300 border-gray-600';
+    const getDomainStyle = (d: string): React.CSSProperties => {
+        if (d.endsWith('.sol')) return { background: '#C6BBFF', color: '#16161A', border: '1.5px solid #16161A' };
+        if (d.endsWith('.eth')) return { background: '#DBEAFE', color: '#2563EB', border: '1.5px solid #2563EB' };
+        return { background: '#F3F3F8', color: '#16161A', border: '1.5px solid #16161A' };
     };
+
+    const baseStyle: React.CSSProperties = {
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        borderRadius: '999px', fontWeight: 600, cursor: 'pointer',
+        ...sp,
+    };
+
+    const copyBtn = (e: React.MouseEvent) => { e.stopPropagation(); handleCopy(); };
 
     if (loading) {
         return (
-            <span className={`inline-flex items-center gap-1.5 ${sizeClasses[size]} rounded-full border animate-pulse bg-gray-800 text-gray-500`}>
-                <span className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A', opacity: 0.5, border: '1.5px solid #16161A' }}>
                 Resolving...
             </span>
         );
     }
 
-    // If no domain resolved, show truncated address
     if (!resolvedDomain) {
         const displayAddress = address
             ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -117,18 +118,15 @@ export function DomainBadge({
 
         return (
             <span
-                className={`inline-flex items-center gap-1.5 ${sizeClasses[size]} rounded-full border font-mono bg-gray-800 text-gray-400 border-gray-700 cursor-pointer hover:bg-gray-700 transition`}
+                style={{ ...baseStyle, fontFamily: 'monospace', background: '#F3F3F8', color: '#16161A', border: '1.5px solid #16161A' }}
                 onClick={onClick}
                 title={address || resolvedAddress || undefined}
             >
                 {displayAddress}
                 {showCopy && (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy();
-                        }}
-                        className="ml-1 text-gray-500 hover:text-gray-300"
+                        onClick={copyBtn}
+                        style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: sp.fontSize }}
                     >
                         {copied ? '✓' : '📋'}
                     </button>
@@ -139,7 +137,7 @@ export function DomainBadge({
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 ${sizeClasses[size]} rounded-full border font-medium ${getDomainColor(resolvedDomain)} cursor-pointer hover:opacity-90 transition`}
+            style={{ ...baseStyle, ...getDomainStyle(resolvedDomain) }}
             onClick={onClick}
             title={`${resolvedDomain}${resolvedAddress ? ` → ${resolvedAddress}` : ''}`}
         >
@@ -147,11 +145,8 @@ export function DomainBadge({
             <span>{resolvedDomain}</span>
             {showCopy && (
                 <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopy();
-                    }}
-                    className="ml-1 opacity-70 hover:opacity-100"
+                    onClick={copyBtn}
+                    style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: sp.fontSize }}
                 >
                     {copied ? '✓' : '📋'}
                 </button>

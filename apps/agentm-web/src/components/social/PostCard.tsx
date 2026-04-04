@@ -60,9 +60,16 @@ function formatReward(lamports: number): string {
     return `${lamports.toLocaleString()} lamports`;
 }
 
-/**
- * Avatar component with fallback initials
- */
+const c = {
+    bg: '#F3F3F8',
+    surface: '#FFFFFF',
+    ink: '#16161A',
+    lavender: '#C6BBFF',
+    lime: '#CDFF4D',
+};
+
+const avatarSizes = { sm: 32, md: 40, lg: 48 };
+
 function Avatar({
     author,
     size = 'md',
@@ -72,12 +79,7 @@ function Avatar({
     size?: 'sm' | 'md' | 'lg';
     onClick?: () => void;
 }) {
-    const sizeClasses = {
-        sm: 'w-8 h-8 text-xs',
-        md: 'w-10 h-10 text-sm',
-        lg: 'w-12 h-12 text-base',
-    };
-
+    const px = avatarSizes[size];
     const displayName = author.displayName || author.address;
     const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -85,16 +87,23 @@ function Avatar({
         <button
             type="button"
             onClick={onClick}
-            className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 transition hover:opacity-80`}
+            style={{
+                width: px, height: px, borderRadius: '50%',
+                background: c.lavender, border: `1.5px solid ${c.ink}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, cursor: 'pointer', padding: 0,
+                fontSize: size === 'sm' ? '11px' : size === 'lg' ? '16px' : '13px',
+                fontWeight: 700, color: c.ink,
+            }}
         >
             {author.avatarUrl ? (
                 <img
                     src={author.avatarUrl}
                     alt={displayName}
-                    className="w-full h-full rounded-full object-cover"
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                 />
             ) : (
-                <span className="text-white font-semibold">{initials}</span>
+                <span>{initials}</span>
             )}
         </button>
     );
@@ -104,49 +113,35 @@ function Avatar({
  * Task-specific content section
  */
 function TaskContent({ data }: { data: TaskPostData }) {
+    const stateColors: Record<string, { bg: string; color: string }> = {
+        completed: { bg: '#D1FAE5', color: '#059669' },
+        active: { bg: '#DBEAFE', color: '#2563EB' },
+        default: { bg: c.bg, color: c.ink },
+    };
+    const sc = stateColors[data.state ?? ''] ?? stateColors.default;
+
     return (
-        <div className="mt-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-blue-400">Task #{data.taskId}</span>
+        <div style={{ marginTop: '12px', padding: '12px', background: c.bg, borderRadius: '12px', border: `1px solid ${c.ink}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: c.lavender }}>Task #{data.taskId}</span>
                 {data.state && (
-                    <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                            data.state === 'completed'
-                                ? 'bg-green-600/20 text-green-400'
-                                : data.state === 'active'
-                                    ? 'bg-blue-600/20 text-blue-400'
-                                    : 'bg-gray-600/20 text-gray-400'
-                        }`}
-                    >
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: sc.bg, color: sc.color, fontWeight: 600 }}>
                         {data.state}
                     </span>
                 )}
             </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', color: c.ink, opacity: 0.7 }}>
                 {data.reward !== undefined && (
-                    <div>
-                        <span className="text-gray-500">Reward: </span>
-                        <span className="text-emerald-400">{formatReward(data.reward)}</span>
-                    </div>
+                    <div><span style={{ opacity: 0.5 }}>Reward: </span><span style={{ color: '#059669', fontWeight: 600 }}>{formatReward(data.reward)}</span></div>
                 )}
                 {data.submissionCount !== undefined && (
-                    <div>
-                        <span className="text-gray-500">Submissions: </span>
-                        <span>{data.submissionCount}</span>
-                    </div>
+                    <div><span style={{ opacity: 0.5 }}>Submissions: </span><span>{data.submissionCount}</span></div>
                 )}
                 {data.deadline && (
-                    <div>
-                        <span className="text-gray-500">Deadline: </span>
-                        <span>{new Date(data.deadline).toLocaleDateString()}</span>
-                    </div>
+                    <div><span style={{ opacity: 0.5 }}>Deadline: </span><span>{new Date(data.deadline).toLocaleDateString()}</span></div>
                 )}
                 {data.winner && (
-                    <div>
-                        <span className="text-gray-500">Winner: </span>
-                        <span className="text-yellow-400 font-mono">{truncate(data.winner, 12)}</span>
-                    </div>
+                    <div><span style={{ opacity: 0.5 }}>Winner: </span><span style={{ fontFamily: 'monospace', color: '#D97706' }}>{truncate(data.winner, 12)}</span></div>
                 )}
             </div>
         </div>
@@ -168,29 +163,23 @@ function AchievementContent({ data }: { data: AchievementPostData }) {
     const icon = data.icon || achievementIcons[data.type];
 
     return (
-        <div className="mt-3 p-4 bg-gradient-to-r from-yellow-600/10 to-orange-600/10 rounded-lg border border-yellow-600/20">
-            <div className="flex items-center gap-3">
-                <span className="text-2xl">{icon}</span>
+        <div style={{ marginTop: '12px', padding: '16px', background: `${c.lime}30`, borderRadius: '12px', border: `1px solid ${c.lime}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '24px' }}>{icon}</span>
                 <div>
-                    <h4 className="font-semibold text-yellow-400">{data.title}</h4>
+                    <h4 style={{ fontWeight: 700, color: c.ink, fontSize: '14px', margin: 0 }}>{data.title}</h4>
                     {data.description && (
-                        <p className="text-sm text-gray-400 mt-0.5">{data.description}</p>
+                        <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '2px' }}>{data.description}</p>
                     )}
                 </div>
             </div>
-
             {(data.taskId !== undefined || data.value !== undefined) && (
-                <div className="flex gap-4 mt-3 text-xs text-gray-400">
+                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px', color: c.ink, opacity: 0.7 }}>
                     {data.taskId !== undefined && (
-                        <span>
-                            <span className="text-gray-500">Task: </span>#{data.taskId}
-                        </span>
+                        <span><span style={{ opacity: 0.5 }}>Task: </span>#{data.taskId}</span>
                     )}
                     {data.value !== undefined && (
-                        <span>
-                            <span className="text-gray-500">Value: </span>
-                            <span className="text-yellow-400">{data.value}</span>
-                        </span>
+                        <span><span style={{ opacity: 0.5 }}>Value: </span><span style={{ color: '#D97706', fontWeight: 600 }}>{data.value}</span></span>
                     )}
                 </div>
             )}
@@ -210,45 +199,28 @@ function PostActions({
     onLikeToggle?: (postId: string, isLiked: boolean) => void;
     onCommentClick?: (post: FeedPost) => void;
 }) {
+    const actionStyle: React.CSSProperties = {
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '6px 12px', background: 'transparent', border: 'none',
+        borderRadius: '8px', fontSize: '13px', cursor: 'pointer',
+        color: c.ink, opacity: 0.6,
+    };
+
     return (
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-800/50">
+        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', paddingTop: '12px', borderTop: `1px dashed ${c.ink}` }}>
             <button
                 type="button"
                 onClick={() => onLikeToggle?.(post.id, !post.isLiked)}
-                className={`flex items-center gap-1.5 text-sm transition ${
-                    post.isLiked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'
-                }`}
+                style={{ ...actionStyle, color: post.isLiked ? '#DC2626' : c.ink, opacity: post.isLiked ? 1 : 0.6 }}
             >
-                <svg
-                    className="w-5 h-5"
-                    fill={post.isLiked ? 'currentColor' : 'none'}
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                </svg>
-                <span>{post.likeCount > 0 ? post.likeCount : ''}</span>
+                {post.isLiked ? 'u2764ufe0f' : 'ud83eude76'} {post.likeCount > 0 ? post.likeCount : ''}
             </button>
-
             <button
                 type="button"
                 onClick={() => onCommentClick?.(post)}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-400 transition"
+                style={actionStyle}
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                </svg>
-                <span>{post.commentCount > 0 ? post.commentCount : ''}</span>
+                ud83dudcac {post.commentCount > 0 ? post.commentCount : ''}
             </button>
         </div>
     );
@@ -267,81 +239,62 @@ export function PostCard({
 }: PostCardProps) {
     const displayName = post.author.displayName || truncate(post.author.address, 16);
 
-    const typeIndicator: Record<FeedPost['type'], { label: string; color: string }> = {
-        text: { label: '', color: '' },
-        task: { label: 'Task', color: 'text-blue-400 bg-blue-600/20' },
-        achievement: { label: 'Achievement', color: 'text-yellow-400 bg-yellow-600/20' },
+    const typeIndicator: Record<FeedPost['type'], { label: string; bg: string; color: string }> = {
+        text: { label: '', bg: '', color: '' },
+        task: { label: 'Task', bg: '#DBEAFE', color: '#2563EB' },
+        achievement: { label: 'Achievement', bg: `${c.lime}60`, color: c.ink },
     };
 
     const indicator = typeIndicator[post.type];
 
     return (
         <article
-            className={`bg-gray-900 border border-gray-800 rounded-xl p-4 transition hover:border-gray-700 ${className}`}
+            style={{
+                background: c.surface, border: `1.5px solid ${c.ink}`,
+                borderRadius: '20px', padding: '20px', cursor: 'pointer',
+                transition: 'box-shadow 0.15s',
+            }}
             onClick={() => onPostClick?.(post)}
             role="article"
         >
-            {/* Header */}
-            <div className="flex items-start gap-3">
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <Avatar
                     author={post.author}
                     onClick={() => onAuthorClick?.(post.author)}
                 />
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <button
                             type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onAuthorClick?.(post.author);
-                            }}
-                            className="font-medium text-sm text-gray-200 hover:text-white transition"
+                            onClick={(e) => { e.stopPropagation(); onAuthorClick?.(post.author); }}
+                            style={{ fontWeight: 700, fontSize: '14px', color: c.ink, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                         >
                             {displayName}
                         </button>
-
                         {indicator.label && (
-                            <span
-                                className={`text-xs px-2 py-0.5 rounded-full ${indicator.color}`}
-                            >
+                            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: indicator.bg, color: indicator.color, fontWeight: 600 }}>
                                 {indicator.label}
                             </span>
                         )}
-
-                        <span className="text-xs text-gray-500">
+                        <span style={{ fontSize: '12px', color: c.ink, opacity: 0.5 }}>
                             · {formatTimeAgo(post.createdAt)}
                         </span>
                     </div>
-
                     {post.author.displayName && (
-                        <p className="text-xs text-gray-500 font-mono">
+                        <p style={{ fontSize: '12px', color: c.ink, opacity: 0.5, fontFamily: 'monospace', margin: '2px 0 0' }}>
                             {truncate(post.author.address, 16)}
                         </p>
                     )}
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="mt-3">
-                <p className="text-sm text-gray-300 whitespace-pre-wrap">{post.content}</p>
-
-                {/* Type-specific content */}
-                {post.type === 'task' && post.taskData && (
-                    <TaskContent data={post.taskData} />
-                )}
-
-                {post.type === 'achievement' && post.achievementData && (
-                    <AchievementContent data={post.achievementData} />
-                )}
+            <div style={{ marginTop: '12px' }}>
+                <p style={{ fontSize: '14px', color: c.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{post.content}</p>
+                {post.type === 'task' && post.taskData && <TaskContent data={post.taskData} />}
+                {post.type === 'achievement' && post.achievementData && <AchievementContent data={post.achievementData} />}
             </div>
 
-            {/* Actions */}
-            <PostActions
-                post={post}
-                onLikeToggle={onLikeToggle}
-                onCommentClick={onCommentClick}
-            />
+            <PostActions post={post} onLikeToggle={onLikeToggle} onCommentClick={onCommentClick} />
         </article>
     );
 }

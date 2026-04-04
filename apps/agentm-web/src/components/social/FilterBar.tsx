@@ -10,6 +10,14 @@
 import { useCallback } from 'react';
 import type { FeedFilter } from './types';
 
+const c = {
+    bg: '#F3F3F8',
+    surface: '#FFFFFF',
+    ink: '#16161A',
+    lavender: '#C6BBFF',
+    lime: '#CDFF4D',
+};
+
 export interface FilterBarProps {
     /** Currently active filter */
     activeFilter: FeedFilter;
@@ -125,52 +133,52 @@ export function FilterBar({
 
     return (
         <div
-            className={`bg-gray-900 border border-gray-800 rounded-xl p-1 ${className}`}
+            style={{
+                background: c.surface, border: `1.5px solid ${c.ink}`,
+                borderRadius: '16px', padding: '4px',
+                display: 'flex', gap: '4px',
+            }}
             role="tablist"
             aria-label="Feed filter"
         >
-            <div className="flex gap-1">
-                {FILTER_OPTIONS.map((option) => {
-                    const isActive = activeFilter === option.value;
-                    const count = counts?.[option.value];
+            {FILTER_OPTIONS.map((option) => {
+                const isActive = activeFilter === option.value;
+                const count = counts?.[option.value];
 
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            role="tab"
-                            aria-selected={isActive}
-                            onClick={() => handleFilterClick(option.value)}
-                            className={`
-                                flex items-center justify-center ${sizeClasses[size]}
-                                rounded-lg font-medium transition flex-1
-                                ${
-                                    isActive
-                                        ? 'bg-gray-800 text-white shadow-sm'
-                                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
-                                }
-                            `}
-                        >
-                            {option.icon}
-                            <span className="hidden sm:inline">{option.label}</span>
-                            {count !== undefined && count > 0 && (
-                                <span
-                                    className={`
-                                        ml-1 px-1.5 py-0.5 rounded-full text-xs
-                                        ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-700 text-gray-400'
-                                        }
-                                    `}
-                                >
-                                    {count > 99 ? '99+' : count}
-                                </span>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => handleFilterClick(option.value)}
+                        style={{
+                            flex: 1,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            padding: size === 'sm' ? '8px 10px' : '10px 14px',
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            fontSize: size === 'sm' ? '12px' : '14px',
+                            background: isActive ? c.ink : 'transparent',
+                            color: isActive ? c.surface : c.ink,
+                            border: 'none', cursor: 'pointer',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        {option.icon}
+                        <span>{option.label}</span>
+                        {count !== undefined && count > 0 && (
+                            <span style={{
+                                marginLeft: '4px', padding: '1px 6px', borderRadius: '999px', fontSize: '11px',
+                                background: isActive ? c.lavender : c.bg,
+                                color: c.ink,
+                            }}>
+                                {count > 99 ? '99+' : count}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
         </div>
     );
 }
@@ -202,11 +210,16 @@ export function FilterBarCompact({
     const activeOption = FILTER_OPTIONS.find((opt) => opt.value === activeFilter);
 
     return (
-        <div className={`relative ${className}`}>
+        <div style={{ position: 'relative' }}>
             <select
                 value={activeFilter}
                 onChange={handleChange}
-                className="appearance-none bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 pr-8 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                style={{
+                    appearance: 'none' as const,
+                    background: c.surface, border: `1.5px solid ${c.ink}`,
+                    borderRadius: '12px', padding: '8px 32px 8px 12px',
+                    fontSize: '14px', color: c.ink, cursor: 'pointer', outline: 'none',
+                }}
                 aria-label="Filter feed"
             >
                 {FILTER_OPTIONS.map((option) => (
@@ -215,17 +228,8 @@ export function FilterBarCompact({
                     </option>
                 ))}
             </select>
-
-            {/* Dropdown arrow */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                    />
-                </svg>
+            <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c.ink, opacity: 0.5 }}>
+                ▼
             </div>
         </div>
     );
