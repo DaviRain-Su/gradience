@@ -1909,7 +1909,30 @@ function TaskMarketView({ address }: { address: string | null }) {
                     return;
                 }
             }
-            // No daemon data - show empty state
+            
+            // Try Indexer API
+            const indexerBase = resolveIndexerBase();
+            if (indexerBase) {
+                try {
+                    const res = await fetch(`${indexerBase}/api/tasks?limit=50`, {
+                        signal: AbortSignal.timeout(5000),
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const taskList = Array.isArray(data) ? data : data.tasks || [];
+                        if (taskList.length > 0) {
+                            setTasks(taskList);
+                            setDataSource('daemon'); // Show as "indexer" source
+                            setLoading(false);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Indexer fetch failed:', err);
+                }
+            }
+            
+            // No data available - show empty state
             setTasks([]);
             setDataSource('mock');
             setLoading(false);
@@ -2071,17 +2094,20 @@ function TaskMarketView({ address }: { address: string | null }) {
 // ── Quick Post Task Form ──────────────────────────────────────────────
 
 function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (task: TaskData) => void }) {
+    const { primaryWallet } = useDynamicContext();
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('DeFi Analysis');
     const [rewardSol, setRewardSol] = useState('1');
     const [deadlineDays, setDeadlineDays] = useState('7');
     const [posting, setPosting] = useState(false);
     const [escrowTx, setEscrowTx] = useState<string | null>(null);
+    const [txError, setTxError] = useState<string | null>(null);
 
     const handleSubmit = async () => {
         if (!description.trim()) return;
         setPosting(true);
         setEscrowTx(null);
+        setTxError(null);
 
         const rewardLamports = Math.round(parseFloat(rewardSol) * 1_000_000_000);
         const deadlineUnix = Math.floor(Date.now() / 1000) + parseInt(deadlineDays) * 86400;
@@ -2089,23 +2115,29 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
         let escrowSig: string | null = null;
 
         // Try on-chain escrow via Memo + SOL transfer
-        try {
-            const { buildTaskEscrowTx } = await import('../../lib/solana/escrow-task');
-            const result = await buildTaskEscrowTx({
-                description: description.trim(),
-                category,
-                rewardLamports,
-                deadlineUnix,
-                poster: address,
-            });
-            taskId = result.taskId;
+        if (primaryWallet) {
+            try {
+                const { buildTaskEscrowTx } = await import('../../lib/solana/escrow-task');
+                const result = await buildTaskEscrowTx({
+                    description: description.trim(),
+                    category,
+                    rewardLamports,
+                    deadlineUnix,
+                    poster: address,
+                });
+                taskId = result.taskId;
 
-            const connection = new Connection(getRpcEndpoint(), 'confirmed');
-            // On-chain signing requires wallet connector - skip in demo
-            // In production: sign via Dynamic wallet connector
-            console.log('Task escrow tx built:', result.taskId);
-        } catch (err) {
-            console.warn('On-chain escrow skipped:', err);
+                // Sign and send transaction via Dynamic wallet
+                const signer = await (primaryWallet as any).getSigner();
+                const signature = await signer.signAndSendTransaction(result.tx);
+                escrowSig = signature;
+                setEscrowTx(signature);
+                console.log('Task posted on-chain:', signature);
+            } catch (err) {
+                console.warn('On-chain escrow failed:', err);
+                setTxError(err instanceof Error ? err.message : 'Transaction failed');
+                // Continue with off-chain posting
+            }
         }
 
         const task: TaskData = {
@@ -2119,6 +2151,7 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
             submissions_count: 0,
         };
 
+        // Save to indexer
         try {
             await fetch(`${resolveIndexerBase()}/api/tasks`, {
                 method: 'POST',
@@ -2209,6 +2242,25 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
                     <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>days</span>
                 </div>
             </div>
+            {/* Transaction status */}
+            {txError && (
+                <div style={{ padding: '8px 12px', background: '#FEE2E2', borderRadius: '8px', fontSize: '12px', color: '#DC2626' }}>
+                    ⚠️ On-chain tx failed: {txError}. Task will be posted off-chain.
+                </div>
+            )}
+            {escrowTx && (
+                <div style={{ padding: '8px 12px', background: '#D1FAE5', borderRadius: '8px', fontSize: '12px', color: '#059669' }}>
+                    ✓ On-chain:{' '}
+                    <a
+                        href={`https://solscan.io/tx/${escrowTx}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#059669', textDecoration: 'underline' }}
+                    >
+                        {escrowTx.slice(0, 8)}...
+                    </a>
+                </div>
+            )}
             <button
                 onClick={handleSubmit}
                 disabled={posting || !description.trim()}
@@ -2227,6 +2279,11 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
             >
                 {posting ? 'Posting...' : 'Post Task'}
             </button>
+            {!primaryWallet && (
+                <p style={{ fontSize: '11px', color: '#16161A', opacity: 0.5, marginTop: '4px', textAlign: 'center' }}>
+                    Connect wallet for on-chain escrow
+                </p>
+            )}
         </div>
     );
 }
