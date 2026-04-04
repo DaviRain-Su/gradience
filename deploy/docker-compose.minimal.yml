@@ -54,7 +54,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4001/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
       interval: 15s
       timeout: 5s
       retries: 3
