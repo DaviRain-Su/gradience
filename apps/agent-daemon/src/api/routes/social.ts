@@ -6,8 +6,19 @@
 
 import type { FastifyInstance } from 'fastify';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Database = any;
+/**
+ * Database interface for SQLite operations
+ */
+interface Database {
+  prepare(sql: string): Statement;
+  exec(sql: string): void;
+}
+
+interface Statement {
+  run(...params: unknown[]): { lastInsertRowid: number; changes: number };
+  get(...params: unknown[]): Record<string, unknown> | undefined;
+  all(...params: unknown[]): Record<string, unknown>[];
+}
 
 interface Profile {
   address: string;

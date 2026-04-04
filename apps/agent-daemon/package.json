@@ -2,10 +2,17 @@
     "name": "@gradiences/agent-daemon",
     "version": "0.1.0",
     "description": "Local daemon bridging Agent UIs to the Gradience network",
+    "license": "MIT",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "dist/src/index.js",
     "bin": {
-        "agentd": "dist/index.js"
+        "agentd": "dist/src/index.js"
+    },
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
     },
     "scripts": {
         "build": "tsc",
