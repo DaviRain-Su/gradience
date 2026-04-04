@@ -1,0 +1,197 @@
+# Phase 5: Test Spec — AgentM
+
+---
+
+## 1. 测试文件规划
+
+| 文件 | 测试数 | 测试内容 | 优先级 |
+|------|--------|---------|--------|
+| `a2a-client.test.ts` | 8 | A2A 消息收发、微支付、传输层 | P0 |
+| `ranking.test.ts` | 3 | Agent 发现排名（迁移自 agent-social，扩展） | P0 |
+| `store.test.ts` | 6 | Zustand 状态管理、对话/消息 CRUD | P0 |
+| `api-server.test.ts` | 7 | localhost:3939 API 端点 | P0 |
+| `indexer-api.test.ts` | 4 | Indexer 客户端、离线降级 | P1 |
+| `profile-api.test.ts` | 5 | Agent Profile 查询、降级、字段校验 | P0 |
+| `voice-engine.test.ts` | 3 | 语音识别/合成、降级逻辑 | P1 |
+| `auth.test.ts` | 3 | 认证状态管理（Privy mock） | P1 |
+
+---
+
+## 2. 运行方式
+
+```bash
+cd apps/agentm
+
+# 全部测试
+pnpm test
+
+# 单文件
+pnpm exec tsx --test src/renderer/lib/a2a-client.test.ts
+pnpm exec tsx --test src/renderer/lib/ranking.test.ts
+pnpm exec tsx --test src/renderer/lib/store.test.ts
+pnpm exec tsx --test src/main/api-server.test.ts
+pnpm exec tsx --test src/renderer/lib/indexer-api.test.ts
+pnpm exec tsx --test src/renderer/lib/profile-api.test.ts
+pnpm exec tsx --test src/main/voice-engine.test.ts
+pnpm exec tsx --test src/main/auth.test.ts
+```
+
+---
+
+## 3. 覆盖场景
+
+### 3.1 a2a-client.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | 发送消息 → envelope 字段完整 | from/to/topic/message/createdAt/paymentMicrolamports 全部正确 |
+| 2 | 微支付计算：`100 + byte_len * 2` 确定性 | `estimateMicropayment('defi', 'run strategy')` = 132 |
+| 3 | 接收方过滤：`to !== agentId` 的消息被丢弃 | 监听器不触发 |
+| 4 | `parseA2AEnvelope` 拒绝 createdAt=NaN | 返回 null |
+| 5 | `parseA2AEnvelope` 拒绝 paymentMicrolamports < 0 | 返回 null |
+| 6 | `parseA2AEnvelope` 各字段缺失 → null | 逐字段验证 |
+| 7 | InMemoryTransport：多 Agent 广播，各自只收自己的 | 隔离性验证 |
+| 8 | 发送后 direction='outgoing'，接收后 direction='incoming' | 方向正确 |
+
+### 3.2 ranking.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | score 高者排在前，weight 作为 tiebreaker | 排序正确 |
+| 2 | 无声誉 Agent 排在最后 | reputation=null 排末尾 |
+| 3 | query 过滤大小写不敏感 | `'alice'` 匹配 `'ALICE_ADDR'` |
+
+### 3.3 store.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | `addMessage` 新消息 → 对话列表自动更新 | conversation.lastMessage 更新 |
+| 2 | `addMessage` incoming → unreadCount +1 | 计数正确 |
+| 3 | `setActiveConversation` → unreadCount 归零 | 已读清除 |
+| 4 | `setAuth` 登录 → authenticated=true | 状态正确 |
+| 5 | `setAuth` 登出 → publicKey=null，conversations 保留 | 消息不丢 |
+| 6 | `setDiscoveryQuery` → discoveryRows 实时过滤 | 过滤结果正确 |
+
+### 3.4 api-server.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | `POST /a2a/send` 合法请求 → 200 + envelope | ok=true |
+| 2 | `POST /a2a/send` 缺少 `to` 字段 → 400 | 错误信息清晰 |
+| 3 | `GET /a2a/messages?peer=addr` → 消息列表 | 按时间倒序 |
+| 4 | `GET /discover/agents?category=0` → 排名列表 | 排序与 ranking.ts 一致 |
+| 5 | `GET /me/reputation` 已登录 → 声誉数据 | 4 个指标正确 |
+| 6 | `GET /me/reputation` 未登录 → 401 | 未认证错误 |
+| 7 | `GET /status` → 运行状态 | version + uptime 正确 |
+
+### 3.5 indexer-api.test.ts（P1）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | `getReputation(addr)` → 正确解析 Indexer 响应 | 4 个指标正确 |
+| 2 | `getReputation(unknown)` → null（不抛异常） | 404 静默处理 |
+| 3 | `getTasks` 分页参数正确传递 | limit/offset 在 URL 中 |
+| 4 | Indexer 不可用 → 返回缓存数据或空数组 | 不崩溃，显示离线提示 |
+
+### 3.6 voice-engine.test.ts（P1）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | Whisper WASM 不可用 → 降级到 Web Speech API | 自动降级，不报错 |
+| 2 | `stopAndTranscribe()` 返回文字 | string 非空 |
+| 3 | `speak(text)` 调用 speechSynthesis | TTS 被调用 |
+
+### 3.7 auth.test.ts（P1）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | Privy 登录成功 → AuthState 正确 | publicKey 非空，authenticated=true |
+| 2 | Privy 登录失败 → 错误提示 | authenticated=false，error 有值 |
+| 3 | 登出 → 清除会话，保留本地数据 | publicKey=null，messages 不变 |
+
+### 3.8 profile-api.test.ts（P0）
+
+| # | 场景 | 预期结果 |
+|---|------|---------|
+| 1 | `getAgentProfile(addr)` 返回完整 Profile | display_name/bio/links 字段可解析 |
+| 2 | Profile 404 | 返回 null，不抛异常 |
+| 3 | Profile 链接非法格式 | 过滤非法链接并记录 warning |
+| 4 | Indexer 超时 | 回退最小卡片（地址 + 声誉）数据结构 |
+| 5 | 内容流缺失 | UI 显示“暂无公开更新”占位，不报错 |
+
+---
+
+## 4. 测试策略
+
+- **运行时**：`tsx --test`（Node.js），与项目其他模块一致
+- **无浏览器依赖**：所有测试在 Node.js 环境运行，UI 组件不测渲染（测逻辑）
+- **A2A 协议**：使用 `InMemoryMagicBlockHub`（可控延迟），不依赖 BroadcastChannel
+- **Indexer**：mock HTTP 响应（`nock` 或 Node.js 原生 mock）
+- **Privy**：mock `usePrivy()` 返回值，不实际调用 OAuth
+- **语音**：mock `speechSynthesis` 和 Whisper WASM，测试逻辑而非硬件
+- **API 服务**：启动真实 Bun HTTP server（`localhost:0` 随机端口），用 `fetch` 测试
+- **状态管理**：直接测试 Zustand store，不渲染 React 组件
+
+---
+
+## 5. 缺失场景（后续补充）
+
+### P1（MVP 后）
+
+| 场景 | 说明 |
+|------|------|
+| 语音意图识别 | "发布任务" vs "发送消息" 判断准确性 |
+| 任务发布 E2E | `POST /tasks/post` → SDK `task.post` → 链上 |
+| 消息持久化恢复 | 关闭应用 → 重新打开 → 消息历史完整 |
+| Profile 内容流排序 | weekly/diary 条目按时间倒序展示 |
+
+### P2（长期）
+
+| 场景 | 说明 |
+|------|------|
+| Electrobun 打包验证 | macOS/Windows/Linux 三平台打包成功 |
+| 多用户并发 A2A | 10 个 Agent 同时发消息 |
+| AgentM Pro 连接 | 本地 Agent 进程连接器 |
+| 8004 注册验证 | Agent 注册后 8004scan.io 可发现 |
+| Profile 链上签名校验 | profile 引用与链上注册哈希一致 |
+
+---
+
+## 6. 生产分阶段补充验收（对应 Stage A/B）
+
+### 6.1 Stage A（P0）
+
+| 场景 | 预期结果 |
+|------|---------|
+| 默认 Indexer 基址与启动栈一致（`:3001`） | 无手工改配置即可显示任务/声誉数据 |
+| Privy 已配置 | 登录后 `publicKey` 非 `DEMO_*`，且 store/auth API 同步 |
+| Privy 未配置 | UI 明确提示 demo 模式，不崩溃 |
+| 启动脚本 smoke | 一键拉起后 `agent-im`、`judge-daemon`、`indexer` 状态正常 |
+
+### 6.2 Stage B（P0/P1）
+
+| 场景 | 预期结果 |
+|------|---------|
+| `/interop/events` 签名校验 | 非法签名 401，合法请求计数递增 |
+| 8004 状态回写一致性 | `/interop/status` 与 dashboard 计数一致 |
+| Attestation 展示闭环 | `sdk.attestations.list()` 成功返回并可渲染 |
+| 生产打包 smoke | 构建产物可启动，关键页面可用 |
+
+### 6.2A Stage C（Profile）
+
+| 场景 | 预期结果 |
+|------|---------|
+| Agent 详情页 Profile 展示 | display_name/bio/links 正常展示 |
+| Profile 缺失回退 | 自动降级最小卡片，提示“未发布 Profile” |
+| Profile 内容流展示 | 有内容展示摘要，无内容展示占位 |
+
+### 6.3 开发步骤级验收映射（IM-S01~IM-S12）
+
+| 步骤任务 | 主要验证 |
+|---------|---------|
+| IM-S01 ~ IM-S03 | `src/renderer/lib/auth.test.ts` + `src/main/api-server.test.ts`（登录状态、会话同步、错误回退） |
+| IM-S04 ~ IM-S06 | `src/main/api-server.test.ts`（`/me`、`/me/tasks`、`/me/submissions` 分页/鉴权） |
+| IM-S07 ~ IM-S09 | `src/renderer/lib/store.test.ts` + `src/renderer/lib/indexer-api.test.ts`（页面状态与 API 一致） |
+| IM-S10 | `src/main/api-server.test.ts`（GUI/API 共享会话、未登录 401） |
+| IM-S11 | `src/main/voice-engine.test.ts`（Whisper 不可用自动降级） |
+| IM-S12 | `pnpm test` + 打包 smoke（构建后启动并验证关键路径） |
