@@ -34,7 +34,8 @@ RUN corepack enable && corepack prepare pnpm@9.1.4 --activate
 RUN apk add --no-cache python3 make g++
 COPY --from=deps /app/ .
 COPY --from=pruner /app/out/full/ .
-RUN pnpm --filter @gradiences/agent-daemon build
+# Build agent-daemon and all its workspace dependencies via turbo
+RUN npx --yes turbo@2 run build --filter=@gradiences/agent-daemon...
 RUN pnpm --filter @gradiences/agent-daemon deploy /app/deployed --prod
 
 # ── Stage 4: Runtime ──────────────────────────────────────────────────────────
