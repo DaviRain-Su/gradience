@@ -20,6 +20,7 @@ import type { PaymentConfirmation } from '../../shared/a2a-payment-types.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { TritonCascadeClient } from '@gradiences/workflow-engine/triton-cascade';
+import { KeyManager, getKeyManager } from './key-manager.js';
 
 // ============================================================================
 // Types
@@ -70,8 +71,7 @@ export interface BridgeConfig {
   chainHubProgramId: string;
   rpcEndpoint: string;
   cascadeClient?: TritonCascadeClient;
-  evaluatorKeypair: Uint8Array;
-  evaluatorPubkey: string;
+  keyManager: KeyManager;
   retry: {
     maxAttempts: number;
     baseDelayMs: number;
@@ -102,10 +102,12 @@ export class SettlementBridge extends EventEmitter {
   private config: BridgeConfig;
   private connection: Connection;
   private cascadeClient: TritonCascadeClient;
+  private keyManager: KeyManager;
 
   constructor(config: BridgeConfig) {
     super();
     this.config = config;
+    this.keyManager = config.keyManager;
     this.connection = new Connection(config.rpcEndpoint, 'confirmed');
     
     this.cascadeClient = config.cascadeClient || new TritonCascadeClient({
@@ -115,6 +117,13 @@ export class SettlementBridge extends EventEmitter {
       enableJitoBundle: true,
       priorityFeeStrategy: 'auto',
     });
+  }
+
+  /**
+   * Get the evaluator's public key
+   */
+  getEvaluatorPublicKey(): string {
+    return this.keyManager.getPublicKey();
   }
 
   async settle(request: SettlementRequest): Promise<SettlementResult> {
@@ -175,7 +184,7 @@ export class SettlementBridge extends EventEmitter {
     const proofData = {
       evaluationId: request.evaluationId,
       taskId: request.taskId,
-      evaluatorId: this.config.evaluatorPubkey,
+      evaluatorId: this.keyManager.getPublicKey(),
       agentId: request.agentId,
       score: request.evaluationResult.score,
       passed: request.evaluationResult.passed,
@@ -184,7 +193,7 @@ export class SettlementBridge extends EventEmitter {
     };
 
     const verificationHash = this.hashProofData(proofData);
-    const signature = await this.signProof(verificationHash);
+    const signature = this.signProof(verificationHash);
 
     return { ...proofData, verificationHash, signature };
   }
@@ -195,8 +204,20 @@ export class SettlementBridge extends EventEmitter {
     return crypto.createHash('sha256').update(json).digest('hex');
   }
 
-  private async signProof(hash: string): Promise<string> {
-    return `sig_${hash.slice(0, 32)}`;
+  /**
+   * Sign proof with Ed25519 using KeyManager
+   */
+  private signProof(hash: string): string {
+    return this.keyManager.signHash(hash);
+  }
+
+  /**
+   * Verify a proof signature
+   */
+  verifyProof(proof: EvaluationProof): boolean {
+    const { signature, ...proofData } = proof;
+    const hash = this.hashProofData(proofData as Omit<EvaluationProof, 'signature'>);
+    return KeyManager.verifyHex(hash, signature, proof.evaluatorId);
   }
 
   private async submitWithRetry(
@@ -255,7 +276,7 @@ export class SettlementBridge extends EventEmitter {
       
       const { blockhash } = await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new PublicKey(this.config.evaluatorPubkey);
+      transaction.feePayer = this.keyManager.getKeypair().publicKey;
 
       const serializedTx = transaction.serialize({ requireAllSignatures: false });
       const base64Tx = Buffer.from(serializedTx).toString('base64');
@@ -331,7 +352,7 @@ export class SettlementBridge extends EventEmitter {
       keys: [
         { pubkey: new PublicKey(request.taskAccount), isSigner: false, isWritable: true },
         { pubkey: new PublicKey(request.escrowAccount), isSigner: false, isWritable: true },
-        { pubkey: new PublicKey(this.config.evaluatorPubkey), isSigner: true, isWritable: false },
+        { pubkey: this.keyManager.getKeypair().publicKey, isSigner: true, isWritable: false },
         { pubkey: new PublicKey(request.agentId), isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
@@ -436,7 +457,8 @@ export interface BridgeOptions {
   chainHubProgramId?: string;
   rpcEndpoint?: string;
   tritonApiToken?: string;
-  evaluatorPrivateKey?: string;
+  keyDir?: string;
+  keyPassword?: string;
   maxRetries?: number;
 }
 
@@ -444,23 +466,47 @@ export async function createSettlementBridge(options: BridgeOptions = {}): Promi
   const programId = options.chainHubProgramId || '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec';
   const rpcEndpoint = options.rpcEndpoint || 'https://api.devnet.solana.com';
 
-  const cascadeClient = new TritonCascadeClient({
-    rpcEndpoint: options.tritonApiToken ? 'https://api.triton.one/rpc' : rpcEndpoint,
-    apiToken: options.tritonApiToken,
-    network: options.rpcEndpoint?.includes('mainnet') ? 'mainnet' : 'devnet',
-    enableJitoBundle: true,
-    priorityFeeStrategy: 'auto',
+  // Initialize key manager
+  const keyManager = getKeyManager({
+    keyDir: options.keyDir || process.env.DAEMON_KEY_DIR || './keys',
+    keyName: 'evaluator',
   });
+  
+  // Load or create evaluator keypair
+  const keyPassword = options.keyPassword || process.env.DAEMON_KEY_PASSWORD;
+  await keyManager.loadOrCreate(keyPassword);
+  
+  logger.info(
+    { evaluatorPubkey: keyManager.getPublicKey(), keyDir: options.keyDir || './keys' },
+    'Settlement bridge initialized with evaluator key'
+  );
 
-  const evaluatorKeypair = new Uint8Array(64);
-  const evaluatorPubkey = 'evaluator_pubkey_placeholder';
+  // Initialize Triton Cascade client (optional - fallback to standard RPC)
+  let cascadeClient: TritonCascadeClient;
+  if (options.tritonApiToken || process.env.TRITON_API_TOKEN) {
+    cascadeClient = new TritonCascadeClient({
+      rpcEndpoint: 'https://api.triton.one/rpc',
+      apiToken: options.tritonApiToken || process.env.TRITON_API_TOKEN,
+      network: rpcEndpoint.includes('mainnet') ? 'mainnet' : 'devnet',
+      enableJitoBundle: true,
+      priorityFeeStrategy: 'auto',
+    });
+    logger.info('Using Triton Cascade for transaction delivery');
+  } else {
+    cascadeClient = new TritonCascadeClient({
+      rpcEndpoint,
+      network: rpcEndpoint.includes('mainnet') ? 'mainnet' : 'devnet',
+      enableJitoBundle: false,
+      priorityFeeStrategy: 'auto',
+    });
+    logger.info('Using standard RPC for transaction delivery (no Triton API token)');
+  }
 
   const config: BridgeConfig = {
     chainHubProgramId: programId,
     rpcEndpoint,
     cascadeClient,
-    evaluatorKeypair,
-    evaluatorPubkey,
+    keyManager,
     retry: {
       maxAttempts: options.maxRetries || 3,
       baseDelayMs: 1000,
@@ -475,3 +521,6 @@ export async function createSettlementBridge(options: BridgeOptions = {}): Promi
 
   return new SettlementBridge(config);
 }
+
+// Re-export KeyManager for external use
+export { KeyManager, getKeyManager, initializeKeyManager } from './key-manager.js';

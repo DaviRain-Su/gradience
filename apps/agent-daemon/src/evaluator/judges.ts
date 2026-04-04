@@ -21,6 +21,7 @@ import type {
 } from './runtime.js';
 import { PlaywrightHarness } from './playwright-harness.js';
 import { logger } from '../utils/logger.js';
+import { getLLMClient, isLLMAvailable, type LLMClient, type EvaluationScores } from './llm-client.js';
 
 // ============================================================================
 // Types
@@ -187,6 +188,8 @@ export abstract class BaseJudge extends EventEmitter {
 // ============================================================================
 
 export class CodeJudge extends BaseJudge {
+  private llmClient: LLMClient | null = null;
+
   constructor() {
     super({
       id: 'code',
@@ -200,6 +203,7 @@ export class CodeJudge extends BaseJudge {
       },
       minThreshold: 70,
     });
+    this.llmClient = getLLMClient();
   }
 
   protected async performEvaluation(
@@ -214,61 +218,100 @@ export class CodeJudge extends BaseJudge {
     const checks: CheckResult[] = [];
     const feedback: string[] = [];
 
-    // Mock evaluation - in production, this would:
-    // 1. Clone repo
-    // 2. Run tests
-    // 3. Check coverage
-    // 4. Run linters
-    // 5. Security scan
+    // Try LLM evaluation first
+    if (this.llmClient && isLLMAvailable()) {
+      try {
+        const codeContent = task.submission?.source || task.submission?.content || '';
+        const requirements = task.description || '';
+        
+        logger.info({ taskId: task.id }, 'Using LLM for code evaluation');
+        const llmResult = await this.llmClient.evaluateCode(codeContent, requirements);
+        
+        // Convert LLM scores to CategoryScore format
+        for (const s of llmResult.scores) {
+          const weightKey = s.category.toLowerCase().replace(/\s+/g, '');
+          scores.push({
+            name: s.category,
+            score: s.score,
+            maxScore: 100,
+            weight: this.config.weights[weightKey] || 0.25,
+            feedback: [s.feedback],
+          });
+        }
+        
+        feedback.push(`Code evaluated using LLM (${this.llmClient['config']?.model || 'unknown'})`);
+        feedback.push(llmResult.summary);
+        
+        // Add basic checks
+        checks.push(
+          { type: 'llm_evaluated', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
+        );
+        
+        return { scores, checks, feedback };
+      } catch (error) {
+        logger.warn({ error, taskId: task.id }, 'LLM evaluation failed, using fallback');
+        feedback.push('LLM evaluation failed, using fallback scoring');
+      }
+    }
 
-    // Functionality score
-    const funcScore = Math.floor(Math.random() * 30) + 70; // 70-100
+    // Fallback to basic scoring (when LLM unavailable)
+    logger.info({ taskId: task.id }, 'Using fallback code evaluation (LLM not available)');
+    
+    // Basic heuristic scoring based on code analysis
+    const codeContent = task.submission?.source || task.submission?.content || '';
+    const codeLength = codeContent.length;
+    const hasTests = /test|spec|describe|it\(|expect\(/.test(codeContent);
+    const hasComments = /\/\/|\/\*|\*\/|#/.test(codeContent);
+    const hasErrorHandling = /try|catch|throw|error/i.test(codeContent);
+    
+    // Functionality score - based on code presence
+    const funcScore = Math.min(100, 60 + (codeLength > 100 ? 20 : 0) + (hasTests ? 20 : 0));
     scores.push({
       name: 'Functionality',
       score: funcScore,
       maxScore: 100,
       weight: this.config.weights.functionality,
-      feedback: funcScore > 80 ? ['All tests passing'] : ['Some tests failing'],
+      feedback: hasTests ? ['Tests detected'] : ['No tests detected - consider adding tests'],
     });
 
     // Code quality score
-    const qualityScore = Math.floor(Math.random() * 30) + 70;
+    const qualityScore = Math.min(100, 60 + (hasComments ? 20 : 0) + (codeLength > 50 ? 20 : 0));
     scores.push({
       name: 'Code Quality',
       score: qualityScore,
       maxScore: 100,
       weight: this.config.weights.quality,
-      feedback: qualityScore > 80 ? ['Clean code'] : ['Lint warnings present'],
+      feedback: hasComments ? ['Code includes comments'] : ['Consider adding comments'],
     });
 
-    // Test coverage score
-    const coverageScore = Math.floor(Math.random() * 40) + 60;
+    // Test coverage score (heuristic)
+    const coverageScore = hasTests ? 75 : 50;
     scores.push({
       name: 'Test Coverage',
       score: coverageScore,
       maxScore: 100,
       weight: this.config.weights.tests,
-      feedback: [`${coverageScore}% coverage`],
+      feedback: [`Estimated coverage: ${coverageScore}%`],
     });
 
     // Security score
-    const securityScore = Math.floor(Math.random() * 20) + 80;
+    const securityScore = hasErrorHandling ? 85 : 70;
     scores.push({
       name: 'Security',
       score: securityScore,
       maxScore: 100,
       weight: this.config.weights.security,
-      feedback: securityScore > 90 ? ['No issues found'] : ['Minor warnings'],
+      feedback: hasErrorHandling ? ['Error handling detected'] : ['Consider adding error handling'],
     });
 
     // Add checks
     checks.push(
-      { type: 'compiles', passed: true, score: 100, details: 'Build successful', durationMs: 1000 },
-      { type: 'tests_pass', passed: funcScore > 80, score: funcScore, details: 'Tests executed', durationMs: 2000 },
-      { type: 'lint_clean', passed: qualityScore > 80, score: qualityScore, details: 'Linting complete', durationMs: 500 }
+      { type: 'code_present', passed: codeLength > 0, score: codeLength > 0 ? 100 : 0, details: 'Code submission present', durationMs: 0 },
+      { type: 'tests_detected', passed: hasTests, score: hasTests ? 100 : 50, details: hasTests ? 'Tests found' : 'No tests found', durationMs: 0 }
     );
 
-    feedback.push(`Code evaluation completed by ${this.config.name}`);
+    feedback.push(`Code evaluated using heuristic analysis (LLM_API_KEY not configured)`);
+    feedback.push('For better evaluation, configure LLM_API_KEY environment variable');
 
     return { scores, checks, feedback };
   }
@@ -461,6 +504,8 @@ export class APIJudge extends BaseJudge {
 // ============================================================================
 
 export class ContentJudge extends BaseJudge {
+  private llmClient: LLMClient | null = null;
+
   constructor() {
     super({
       id: 'content',
@@ -474,6 +519,7 @@ export class ContentJudge extends BaseJudge {
       },
       minThreshold: 70,
     });
+    this.llmClient = getLLMClient();
   }
 
   protected async performEvaluation(
@@ -488,26 +534,91 @@ export class ContentJudge extends BaseJudge {
     const checks: CheckResult[] = [];
     const feedback: string[] = [];
 
-    // Mock content evaluation - in production, this would use LLM
-    const categories = [
-      { name: 'Accuracy', weight: this.config.weights.accuracy },
-      { name: 'Clarity', weight: this.config.weights.clarity },
-      { name: 'Completeness', weight: this.config.weights.completeness },
-      { name: 'Originality', weight: this.config.weights.originality },
-    ];
-
-    for (const category of categories) {
-      const score = Math.floor(Math.random() * 30) + 70;
-      scores.push({
-        name: category.name,
-        score,
-        maxScore: 100,
-        weight: category.weight,
-        feedback: [`${category.name} score: ${score}%`],
-      });
+    // Try LLM evaluation first
+    if (this.llmClient && isLLMAvailable()) {
+      try {
+        const content = task.submission?.content || task.submission?.source || '';
+        const requirements = task.description || '';
+        
+        logger.info({ taskId: task.id }, 'Using LLM for content evaluation');
+        const llmResult = await this.llmClient.evaluateContent(content, requirements);
+        
+        // Convert LLM scores to CategoryScore format
+        for (const s of llmResult.scores) {
+          const weightKey = s.category.toLowerCase().replace(/\s+/g, '');
+          scores.push({
+            name: s.category,
+            score: s.score,
+            maxScore: 100,
+            weight: this.config.weights[weightKey] || 0.25,
+            feedback: [s.feedback],
+          });
+        }
+        
+        feedback.push(`Content evaluated using LLM (${this.llmClient['config']?.model || 'unknown'})`);
+        feedback.push(llmResult.summary);
+        
+        checks.push(
+          { type: 'llm_evaluated', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
+        );
+        
+        return { scores, checks, feedback };
+      } catch (error) {
+        logger.warn({ error, taskId: task.id }, 'LLM evaluation failed, using fallback');
+        feedback.push('LLM evaluation failed, using fallback scoring');
+      }
     }
 
-    feedback.push('Content evaluated using LLM-based analysis');
+    // Fallback to heuristic scoring
+    logger.info({ taskId: task.id }, 'Using fallback content evaluation (LLM not available)');
+    
+    const content = task.submission?.content || task.submission?.source || '';
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    const hasStructure = /#{1,6}\s|^\d+\.|^\-\s/m.test(content);
+    const hasParagraphs = content.split(/\n\n+/).length > 1;
+    
+    // Accuracy - hard to judge without LLM, give moderate score
+    const accuracyScore = 70;
+    scores.push({
+      name: 'Accuracy',
+      score: accuracyScore,
+      maxScore: 100,
+      weight: this.config.weights.accuracy,
+      feedback: ['Accuracy cannot be verified without LLM - using baseline score'],
+    });
+
+    // Clarity - based on structure
+    const clarityScore = Math.min(100, 60 + (hasStructure ? 20 : 0) + (hasParagraphs ? 20 : 0));
+    scores.push({
+      name: 'Clarity',
+      score: clarityScore,
+      maxScore: 100,
+      weight: this.config.weights.clarity,
+      feedback: hasStructure ? ['Content has clear structure'] : ['Consider adding headings or structure'],
+    });
+
+    // Completeness - based on length
+    const completenessScore = Math.min(100, 50 + Math.min(50, wordCount / 10));
+    scores.push({
+      name: 'Completeness',
+      score: completenessScore,
+      maxScore: 100,
+      weight: this.config.weights.completeness,
+      feedback: [`Content has ${wordCount} words`],
+    });
+
+    // Originality - can't judge without LLM
+    const originalityScore = 70;
+    scores.push({
+      name: 'Originality',
+      score: originalityScore,
+      maxScore: 100,
+      weight: this.config.weights.originality,
+      feedback: ['Originality cannot be verified without LLM - using baseline score'],
+    });
+
+    feedback.push('Content evaluated using heuristic analysis (LLM_API_KEY not configured)');
+    feedback.push('For better evaluation, configure LLM_API_KEY environment variable');
 
     return { scores, checks, feedback };
   }
