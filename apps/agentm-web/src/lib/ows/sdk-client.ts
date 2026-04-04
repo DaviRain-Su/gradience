@@ -267,7 +267,7 @@ class LocalKeypairStore {
 
 // ---- Provider types & helpers ----
 
-interface WindowWithOWS extends Window {
+interface WindowWithOWS {
     ows?: OWSRequestProvider;
     solana?: { isOWS?: boolean; request?: OWSRequestProvider['request'] };
 }

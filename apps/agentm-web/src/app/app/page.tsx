@@ -11,6 +11,7 @@ const ChatView = lazy(() => import('./views/ChatView').then(m => ({ default: m.C
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
 import { useDaemonApi } from '../../lib/connection/ConnectionContext';
+import { cachedFetch, invalidateCache } from '../../lib/cache';
 import { useSessionAuth } from '../../hooks/useSessionAuth';
 import { useOWSBinding } from '../../hooks/useOWSBinding';
 import { useOWSAgentRouter } from '../../hooks/useOWSAgentRouter';
@@ -204,8 +205,8 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
         >
             {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} />}
             {view === 'tasks' && <TaskMarketView address={address} />}
-            {view === 'feed' && <FeedView address={address} />}
-            {view === 'social' && <SocialView address={address} />}
+            {view === 'feed' && <Suspense fallback={<Loading />}><FeedView address={address} /></Suspense>}
+            {view === 'social' && <Suspense fallback={<Loading />}><SocialView address={address} /></Suspense>}
             {view === 'me' && (
                 <MeView
                     address={address}
@@ -226,7 +227,7 @@ function MainApp({ user, walletAddress, email }: { user: any; walletAddress: str
                     onSetActiveSubWallet={setActiveSubWallet}
                 />
             )}
-            {view === 'chat' && <ChatView />}
+            {view === 'chat' && <Suspense fallback={<Loading />}><ChatView /></Suspense>}
             {view === 'settings' && <SettingsView />}
         </Shell>
     );

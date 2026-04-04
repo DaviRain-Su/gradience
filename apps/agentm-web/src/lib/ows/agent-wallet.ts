@@ -75,7 +75,7 @@ export class OWSAgentWalletManager {
     }
 }
 
-interface WindowWithOWS extends Window {
+interface WindowWithOWS {
     ows?: unknown;
     solana?: { isOWS?: boolean };
 }

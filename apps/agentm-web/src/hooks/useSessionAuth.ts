@@ -16,7 +16,7 @@ export function useSessionAuth() {
 
         const doAuth = async () => {
             try {
-                const signer = await primaryWallet.getSigner();
+                const signer = await (primaryWallet as any).getSigner?.();
                 if (!signer || typeof signer.signMessage !== 'function') {
                     console.warn('Wallet does not support signMessage');
                     return;

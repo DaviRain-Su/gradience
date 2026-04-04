@@ -230,6 +230,6 @@ export function useConnection() {
 }
 
 export function useDaemonApi() {
-    const { fetchApi } = useConnection();
-    return { apiCall: fetchApi };
+    const { fetchApi, isConnected } = useConnection();
+    return { apiCall: fetchApi, isConnected };
 }
