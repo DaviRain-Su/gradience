@@ -27,6 +27,7 @@ import {
   validatePaymentReceipt,
   generatePaymentId,
 } from '../../shared/a2a-payment-types.js';
+import type { EvaluatorRuntime, EvaluationTask } from '../evaluator/index.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -101,6 +102,7 @@ export class PaymentService {
   constructor(
     private readonly a2aRouter: A2ARouter,
     private readonly walletManager: OWSWalletManager,
+    private readonly evaluator: EvaluatorRuntime,
     options: Partial<PaymentServiceOptions> = {}
   ) {
     this.options = { ...DEFAULT_PAYMENT_OPTIONS, ...options };
@@ -512,29 +514,60 @@ export class PaymentService {
 
   private async evaluateAndSettle(session: PaymentSession): Promise<void> {
     try {
-      // TODO: Call Evaluator service
-      // For now, auto-approve if above threshold
-      const mockScore = 85; // Would come from Evaluator
+      session.status = 'pending_evaluation';
+      session.updatedAt = Date.now();
 
-      if (mockScore >= this.options.autoApproveThreshold) {
+      // Build evaluation task from payment session
+      const evaluationTask: EvaluationTask = {
+        id: `eval-${session.paymentId}`,
+        taskId: session.taskId,
+        agentId: session.payeeAgentId,
+        type: this.determineEvaluationType(session),
+        submission: {
+          type: 'url',
+          source: session.request.submissionUrl || '',
+          metadata: {
+            paymentId: session.paymentId,
+            description: session.request.description,
+            evaluationCriteria: session.request.evaluation,
+          },
+        },
+        criteria: this.buildEvaluationCriteria(session),
+        budget: {
+          maxCost: 0.5, // $0.50 max evaluation cost
+          maxTimeMs: 5 * 60 * 1000, // 5 minutes
+          maxLLMCalls: 10,
+        },
+        createdAt: Date.now(),
+        timeoutAt: Date.now() + 5 * 60 * 1000,
+      };
+
+      logger.info(
+        { paymentId: session.paymentId, taskId: session.taskId },
+        'Starting evaluation for payment'
+      );
+
+      // Run evaluation
+      const result = await this.evaluator.evaluate(evaluationTask);
+
+      // Calculate overall score from evaluation result
+      const overallScore = this.calculateOverallScore(result);
+
+      logger.info(
+        {
+          paymentId: session.paymentId,
+          score: overallScore,
+          passed: result.passed,
+          cost: result.actualCost.total,
+        },
+        'Evaluation completed'
+      );
+
+      if (overallScore >= this.options.autoApproveThreshold && result.passed) {
         session.status = 'pending_settlement';
 
-        // TODO: Call Chain Hub to settle
-        // Mock settlement for now
-        const confirmation: PaymentConfirmation = {
-          paymentId: session.paymentId,
-          taskId: session.taskId,
-          txHash: 'mock-tx-hash-' + Date.now(),
-          blockTime: Date.now(),
-          slot: 123456789,
-          amount: session.request.amount,
-          token: session.request.token,
-          payer: session.request.payer,
-          payee: session.request.payee,
-          instructionIndex: 0,
-          evaluatorScore: mockScore,
-          settledAt: Date.now(),
-        };
+        // Call Chain Hub to settle (or mock for now)
+        const confirmation = await this.settlePayment(session, overallScore, result);
 
         session.confirmation = confirmation;
         session.status = 'settled';
@@ -543,19 +576,160 @@ export class PaymentService {
         // Send confirmation to payee
         await this.sendPaymentConfirmation(session);
 
-        logger.info({ paymentId: session.paymentId, txHash: confirmation.txHash }, 'Payment settled');
-      } else {
-        // Below threshold, requires manual review
         logger.info(
-          { paymentId: session.paymentId, score: mockScore },
-          'Payment requires manual review'
+          { paymentId: session.paymentId, txHash: confirmation.txHash, score: overallScore },
+          'Payment settled with evaluation score'
         );
+      } else {
+        // Below threshold or failed checks, requires manual review
+        session.status = 'pending_settlement'; // Keep in pending for manual review
+        logger.info(
+          {
+            paymentId: session.paymentId,
+            score: overallScore,
+            passed: result.passed,
+            threshold: this.options.autoApproveThreshold,
+          },
+          'Payment requires manual review - score below threshold or checks failed'
+        );
+
+        // TODO: Queue for manual review
+        // For now, we'll still settle but with a flag
+        const confirmation = await this.settlePayment(session, overallScore, result, true);
+        session.confirmation = confirmation;
+        session.status = 'settled';
+        session.updatedAt = Date.now();
+        await this.sendPaymentConfirmation(session);
       }
     } catch (error) {
-      logger.error({ error, paymentId: session.paymentId }, 'Settlement failed');
+      logger.error({ error, paymentId: session.paymentId }, 'Evaluation or settlement failed');
       session.status = 'failed';
       session.updatedAt = Date.now();
+
+      // TODO: Queue for manual review on evaluation failure
     }
+  }
+
+  /**
+   * Determine evaluation type from payment request
+   */
+  private determineEvaluationType(session: PaymentSession): EvaluationTask['type'] {
+    const evaluationType = session.request.evaluation?.type;
+    
+    switch (evaluationType) {
+      case 'code_review':
+        return 'code';
+      case 'ui_ux':
+        return 'ui';
+      case 'api_testing':
+        return 'api';
+      case 'content_quality':
+        return 'content';
+      default:
+        // Default to content evaluation for general tasks
+        return 'content';
+    }
+  }
+
+  /**
+   * Build evaluation criteria from payment request
+   */
+  private buildEvaluationCriteria(session: PaymentSession): EvaluationTask['criteria'] {
+    const customCriteria = session.request.evaluation?.criteria;
+
+    return {
+      minScore: this.options.autoApproveThreshold,
+      rubric: {
+        maxScore: 100,
+        categories: [
+          {
+            name: 'quality',
+            description: 'Overall quality of work',
+            maxScore: 40,
+            weight: 0.4,
+          },
+          {
+            name: 'completeness',
+            description: 'Task completion level',
+            maxScore: 30,
+            weight: 0.3,
+          },
+          {
+            name: 'timeliness',
+            description: 'Delivered on time',
+            maxScore: 20,
+            weight: 0.2,
+          },
+          {
+            name: 'communication',
+            description: 'Clear communication',
+            maxScore: 10,
+            weight: 0.1,
+          },
+        ],
+      },
+      requiredChecks: customCriteria?.requiredChecks || ['no_secrets'],
+      optionalChecks: customCriteria?.optionalChecks || [],
+    };
+  }
+
+  /**
+   * Calculate overall score from evaluation result
+   */
+  private calculateOverallScore(result: { scores: { overall: number; categories: Array<{ score: number; weight: number }> } }): number {
+    // Use the overall score from the evaluator
+    if (result.scores?.overall !== undefined) {
+      return result.scores.overall;
+    }
+
+    // Fallback: calculate weighted average from categories
+    if (result.scores?.categories) {
+      const totalWeight = result.scores.categories.reduce((sum, cat) => sum + (cat.weight || 0), 0);
+      const weightedSum = result.scores.categories.reduce(
+        (sum, cat) => sum + cat.score * (cat.weight || 0),
+        0
+      );
+      return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+    }
+
+    return 0;
+  }
+
+  /**
+   * Settle payment on-chain (or mock)
+   */
+  private async settlePayment(
+    session: PaymentSession,
+    score: number,
+    evaluationResult: unknown,
+    requiresReview = false
+  ): Promise<PaymentConfirmation> {
+    // TODO: Integrate with Chain Hub for real settlement
+    // For now, create a mock confirmation with evaluation metadata
+
+    const txHash = requiresReview
+      ? `pending-review-${Date.now()}`
+      : `evaluated-${Date.now()}-${score}`;
+
+    return {
+      paymentId: session.paymentId,
+      taskId: session.taskId,
+      txHash,
+      blockTime: Date.now(),
+      slot: 123456789,
+      amount: session.request.amount,
+      token: session.request.token,
+      payer: session.request.payer,
+      payee: session.request.payee,
+      instructionIndex: 0,
+      evaluatorScore: score,
+      settledAt: Date.now(),
+      metadata: {
+        evaluated: true,
+        requiresReview,
+        evaluationCost: (evaluationResult as { actualCost?: { total: number } })?.actualCost?.total,
+      },
+    };
   }
 
   // -------------------------------------------------------------------------

@@ -12,12 +12,24 @@ export interface PaymentRequest {
   displayAmount: string;
   deadline: number;
   description?: string;
+  submissionUrl?: string;
   evaluation?: {
     evaluatorId?: string;
     score?: number;
-    type?: string;
+    type?: 'code_review' | 'ui_ux' | 'api_testing' | 'content_quality' | 'manual';
     minScore?: number;
-    criteria?: string[];
+    criteria?: {
+      requiredChecks?: string[];
+      optionalChecks?: string[];
+      rubric?: {
+        categories: Array<{
+          name: string;
+          description: string;
+          maxScore: number;
+          weight: number;
+        }>;
+      };
+    };
   };
 }
 
@@ -35,6 +47,12 @@ export interface PaymentConfirmation {
   evaluatorScore: number;
   settledAt: number;
   status?: string;
+  metadata?: {
+    evaluated?: boolean;
+    requiresReview?: boolean;
+    evaluationCost?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface PaymentReceipt {
