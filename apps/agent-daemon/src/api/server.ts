@@ -15,6 +15,7 @@ import { registerNetworkRoutes } from './routes/network.js';
 import { registerSessionRoutes } from './routes/session.js';
 // A2A routes loaded dynamically to avoid hard dependency on nostr-tools
 import { registerDomainRoutes } from './routes/domains.js';
+import { registerOWSRoutes } from './routes/ows.js';
 import { SessionManager } from '../auth/session-manager.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
@@ -103,6 +104,7 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerSocialRoutes(app, deps.database);
     registerNetworkRoutes(app, deps.database);
     registerDomainRoutes(app);
+    registerOWSRoutes(app);
     if (deps.a2aRouter) {
         try {
             const { registerA2ARoutes } = await import('./routes/a2a.js');
