@@ -22,9 +22,19 @@ GRA-197 (escrow-task.ts 重构)
     │                  │
     │                  └──> GRA-200 (JudgeAndPay 结算)
     │                            │
-    │                            ├──> GRA-201 (Payment Channels)
+    │                            └──> GRA-201 (Payment Channels)
+
+GRA-203 (MagicBlock SDK 配置)
+    │
+    ├──> GRA-204 (ER 核心集成)
+    │        │
+    │        └──> GRA-205 (State Delegation)
+    │                  │
+    │                  └──> GRA-206 (Private ER / TEE)
     │                            │
-    │                            └──> GRA-202 (MagicBlock ER)
+    │                            └──> GRA-208 (前端 UI)
+    │
+    └──> GRA-207 (VRF Judge 选择)
 ```
 
 ## 任务列表
@@ -44,11 +54,21 @@ GRA-197 (escrow-task.ts 重构)
 |----|------|------|------|
 | [[GRA-201]] | 添加 Payment Channels UI | todo | GRA-200 |
 
-### P2 - 可选增强
+### P1 - MagicBlock 基础集成
 
 | ID | 标题 | 状态 | 依赖 |
 |----|------|------|------|
-| [[GRA-202]] | MagicBlock Ephemeral Rollups 集成 | todo | GRA-200 |
+| [[GRA-203]] | MagicBlock SDK 依赖和基础配置 | todo | - |
+| [[GRA-204]] | Ephemeral Rollups (ER) 核心集成 | todo | GRA-203 |
+| [[GRA-205]] | State Delegation 账户委托 | todo | GRA-204 |
+
+### P2 - MagicBlock 高级功能
+
+| ID | 标题 | 状态 | 依赖 |
+|----|------|------|------|
+| [[GRA-206]] | Private ER (PER) TEE 隐私执行 | todo | GRA-205 |
+| [[GRA-207]] | VRF 可验证随机 Judge 选择 | todo | GRA-203 |
+| [[GRA-208]] | 前端 UI 集成和执行模式切换 | todo | GRA-204, GRA-206 |
 
 ## 核心流程
 
@@ -83,6 +103,8 @@ Judge → 查看提交 → 选择 Winner → 评分 → 触发结算
 
 ## 预估工作量
 
+### 核心结算 (P0)
+
 | 任务 | 预估 | 说明 |
 |------|------|------|
 | GRA-197 | 2-3h | SDK 集成，PDA 推导 |
@@ -90,9 +112,23 @@ Judge → 查看提交 → 选择 Winner → 评分 → 触发结算
 | GRA-199 | 6-8h | 列表 + 申请 + 提交 |
 | GRA-200 | 6-8h | Judge 界面 + 结算 |
 | GRA-201 | 8-12h | 通道管理 + 签名状态 |
-| GRA-202 | 12-16h | MagicBlock 集成 |
 
-**总计**: P0 任务约 18-25h，全部约 40-50h
+**P0 小计**: 26-37h
+
+### MagicBlock 集成 (P1/P2)
+
+| 任务 | 预估 | 说明 |
+|------|------|------|
+| GRA-203 | 2-3h | SDK 依赖 + 配置 |
+| GRA-204 | 8-12h | ER 核心集成 |
+| GRA-205 | 4-6h | State Delegation |
+| GRA-206 | 12-16h | Private ER + TEE |
+| GRA-207 | 6-8h | VRF Judge 选择 |
+| GRA-208 | 6-8h | 前端 UI 集成 |
+
+**MagicBlock 小计**: 38-53h
+
+**总计**: 64-90h (约 8-12 人天)
 
 ## 验收标准
 

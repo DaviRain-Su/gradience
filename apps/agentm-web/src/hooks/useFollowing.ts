@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
+import { useDaemonConnection } from '../lib/connection/useDaemonConnection';
 
 export interface Following {
   address: string;
@@ -9,6 +9,7 @@ export interface Following {
   followedAt: number;
   domain?: string;
   reputation?: number;
+  capabilities?: string[];
 }
 
 export interface Follower {
@@ -52,6 +53,32 @@ export function useFollowingList(userAddress: string) {
   }, [userAddress, daemonUrl, sessionToken]);
 
   return { following, loading, error };
+}
+
+// Hook to check if current user is following a specific address
+export function useIsFollowing(targetAddress: string) {
+  const [isFollowingTarget, setIsFollowingTarget] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { daemonUrl, sessionToken, walletAddress } = useDaemonConnection();
+
+  useEffect(() => {
+    if (!walletAddress || !targetAddress) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${daemonUrl}/api/social/is-following?follower=${walletAddress}&following=${targetAddress}`, {
+      headers: authHeaders(sessionToken),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to check follow status');
+        const data = await res.json();
+        setIsFollowingTarget(data.following || false);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .finally(() => setLoading(false));
+  }, [walletAddress, targetAddress, daemonUrl, sessionToken]);
+
+  return { isFollowing: isFollowingTarget, loading, error };
 }
 
 // Hook for a specific user's followers
@@ -193,6 +220,46 @@ export function useFollowing() {
     loadFollowing,
     loadFollowers,
   };
+}
+
+// Hook to get follower/following counts for an address
+export function useFollowCounts(userAddress: string) {
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { daemonUrl, sessionToken } = useDaemonConnection();
+
+  useEffect(() => {
+    if (!userAddress) return;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      fetch(`${daemonUrl}/api/social/followers/${userAddress}/count`, {
+        headers: authHeaders(sessionToken),
+      }).then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load followers count');
+        const data = await res.json();
+        return data.count || 0;
+      }),
+      fetch(`${daemonUrl}/api/social/following/${userAddress}/count`, {
+        headers: authHeaders(sessionToken),
+      }).then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load following count');
+        const data = await res.json();
+        return data.count || 0;
+      }),
+    ])
+      .then(([followers, following]) => {
+        setFollowersCount(followers);
+        setFollowingCount(following);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .finally(() => setLoading(false));
+  }, [userAddress, daemonUrl, sessionToken]);
+
+  return { followersCount, followingCount, loading, error };
 }
 
 export default useFollowing;

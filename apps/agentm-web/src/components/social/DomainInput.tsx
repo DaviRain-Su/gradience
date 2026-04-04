@@ -10,7 +10,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { resolve, isValidDomain } from '../../lib/mocks/domain-resolver';
 
-interface DomainInputProps {
+export interface DomainInputProps {
     /** Current domain value */
     value?: string;
     /** On change handler */

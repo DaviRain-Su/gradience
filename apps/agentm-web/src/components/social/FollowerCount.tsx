@@ -2,11 +2,20 @@
  * FollowerCount Component
  *
  * Compact display of follower/following counts with optional interaction
+ * Styled for AgentM Web with inline styles
  *
- * @module components/social/following/FollowerCount
+ * @module components/social/FollowerCount
  */
 
 import { useCallback } from 'react';
+
+const c = {
+  bg: '#F3F3F8',
+  surface: '#FFFFFF',
+  ink: '#16161A',
+  lavender: '#C6BBFF',
+  lime: '#CDFF4D',
+};
 
 export interface FollowerCountProps {
   /** Number of followers */
@@ -23,8 +32,6 @@ export interface FollowerCountProps {
   size?: 'sm' | 'md' | 'lg';
   /** Whether the counts are loading */
   loading?: boolean;
-  /** Optional additional CSS classes */
-  className?: string;
   /** Whether to abbreviate large numbers (1.2k instead of 1200) */
   abbreviate?: boolean;
   /** Whether to use horizontal layout */
@@ -39,7 +46,6 @@ export function FollowerCount({
   onFollowingClick,
   size = 'md',
   loading = false,
-  className = '',
   abbreviate = true,
   horizontal = true,
 }: FollowerCountProps) {
@@ -55,28 +61,10 @@ export function FollowerCount({
     return num.toLocaleString();
   }, [abbreviate]);
 
-  const sizeClasses = {
-    sm: {
-      container: 'gap-2',
-      number: 'text-sm font-semibold',
-      label: 'text-xs',
-    },
-    md: {
-      container: 'gap-4',
-      number: 'text-base font-bold',
-      label: 'text-sm',
-    },
-    lg: {
-      container: horizontal ? 'gap-6' : 'gap-2',
-      number: horizontal ? 'text-lg font-bold' : 'text-2xl font-bold',
-      label: horizontal ? 'text-sm' : 'text-xs text-gray-500',
-    },
-  };
-
-  const verticalSizeClasses = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
+  const sizeStyles = {
+    sm: { number: { fontSize: '14px', fontWeight: 600 }, label: { fontSize: '12px' } },
+    md: { number: { fontSize: '16px', fontWeight: 700 }, label: { fontSize: '14px' } },
+    lg: { number: { fontSize: horizontal ? '18px' : '24px', fontWeight: 700 }, label: { fontSize: horizontal ? '14px' : '12px', opacity: 0.5 } },
   };
 
   const renderCount = (
@@ -90,16 +78,21 @@ export function FollowerCount({
         <button
           onClick={onClick}
           disabled={!clickable || loading}
-          className={`
-            flex items-baseline gap-1
-            ${clickable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}
-            ${loading ? 'opacity-50' : ''}
-          `}
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '4px',
+            background: 'transparent',
+            border: 'none',
+            cursor: clickable ? 'pointer' : 'default',
+            opacity: loading ? 0.5 : 1,
+            padding: 0,
+          }}
         >
-          <span className={sizeClasses[size].number}>
+          <span style={sizeStyles[size].number}>
             {loading ? '-' : formatNumber(count)}
           </span>
-          <span className={`${sizeClasses[size].label} text-gray-500`}>
+          <span style={{ ...sizeStyles[size].label, opacity: 0.5 }}>
             {label}
           </span>
         </button>
@@ -111,26 +104,32 @@ export function FollowerCount({
       <button
         onClick={onClick}
         disabled={!clickable || loading}
-        className={`
-          flex flex-col items-center
-          ${clickable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}
-          ${loading ? 'opacity-50' : ''}
-        `}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          background: 'transparent',
+          border: 'none',
+          cursor: clickable ? 'pointer' : 'default',
+          opacity: loading ? 0.5 : 1,
+          padding: 0,
+        }}
       >
-        <span className={`${verticalSizeClasses[size]} font-bold`}>
+        <span style={{ fontSize: size === 'lg' ? '24px' : size === 'md' ? '18px' : '16px', fontWeight: 700 }}>
           {loading ? '-' : formatNumber(count)}
         </span>
-        <span className="text-xs text-gray-500">{label}</span>
+        <span style={{ fontSize: '12px', opacity: 0.5 }}>{label}</span>
       </button>
     );
   };
 
-  const containerClasses = horizontal
-    ? `flex items-center ${sizeClasses[size].container}`
-    : `flex flex-col items-center ${sizeClasses[size].container}`;
-
   return (
-    <div className={`${containerClasses} ${className}`}>
+    <div style={{
+      display: 'flex',
+      alignItems: horizontal ? 'center' : 'flex-start',
+      gap: horizontal ? '16px' : '8px',
+      flexDirection: horizontal ? 'row' : 'column',
+    }}>
       {renderCount(
         followersCount,
         followersCount === 1 ? 'follower' : 'followers',
@@ -139,7 +138,7 @@ export function FollowerCount({
       )}
 
       {showBoth && horizontal && (
-        <span className="text-gray-700">·</span>
+        <span style={{ opacity: 0.3 }}>·</span>
       )}
 
       {showBoth && renderCount(
@@ -158,13 +157,11 @@ export function FollowerCount({
 export interface CompactFollowerCountProps {
   followers: number;
   following?: number;
-  className?: string;
 }
 
 export function CompactFollowerCount({
   followers,
   following,
-  className = '',
 }: CompactFollowerCountProps) {
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -173,7 +170,7 @@ export function CompactFollowerCount({
   };
 
   return (
-    <span className={`text-xs text-gray-500 ${className}`}>
+    <span style={{ fontSize: '12px', opacity: 0.5 }}>
       {formatNumber(followers)} followers
       {following !== undefined && (
         <span> · {formatNumber(following)} following</span>

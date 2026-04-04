@@ -1,13 +1,7 @@
 {
-    "name": "pinocchio-counter",
+    "name": "@gradiences/agent-arena",
     "version": "1.0.0",
-    "main": "index.js",
-    "bin": {
-        "gradience": "./bin/gradience"
-    },
-    "description": "Pinocchio Counter Program",
-    "displayName": "Pinocchio Counter",
-    "usecase": "Program Development",
+    "description": "Agent Arena - Decentralized Agent task settlement with race competition",
     "keywords": [
         "pinocchio",
         "counter",

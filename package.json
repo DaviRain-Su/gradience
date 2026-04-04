@@ -1,46 +1,45 @@
 {
-  "name": "gradience",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Gradience Protocol — The Trustless Settlement Layer for AI Agent Services",
-  "repository": "https://github.com/gradiences/gradience",
-  "license": "MIT",
-  "packageManager": "pnpm@9.1.4",
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
-  },
-  "scripts": {
-    "build": "turbo run build",
-    "build:packages": "turbo run build --filter='./packages/*'",
-    "dev": "turbo run dev --parallel",
-    "test": "turbo run test",
-    "test:packages": "turbo run test --filter='./packages/*'",
-    "lint": "turbo run lint",
-    "lint:root": "eslint 'packages/**/*.ts' 'apps/**/*.ts' --max-warnings 0",
-    "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
-    "test:e2e": "cd e2e && npm test",
-    "test:e2e:headed": "cd e2e && npm run test:headed",
-    "test:e2e:ui": "cd e2e && npm run test:ui",
-    "dev:web": "pnpm --filter @gradiences/agentm-web dev",
-    "dev:pro": "pnpm --filter @gradiences/agentm-pro dev",
-    "dev:docs": "pnpm --filter @gradiences/developer-docs dev",
-    "dev:website": "pnpm --filter website dev",
-    "dev:arena": "pnpm --filter @gradiences/frontend dev",
-
-    "dev:all": "concurrently \"pnpm dev:web\" \"pnpm dev:pro\" \"pnpm dev:docs\" \"pnpm dev:website\""
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "concurrently": "^9.1.0",
-    "eslint": "^10.1.0",
-    "prettier": "^3.5.0",
-    "turbo": "^2.5.0",
-    "typescript": "^5.8.0"
-  }
+    "name": "gradience",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Gradience Protocol — The Trustless Settlement Layer for AI Agent Services",
+    "repository": "https://github.com/gradiences/gradience",
+    "license": "MIT",
+    "packageManager": "pnpm@9.1.4",
+    "engines": {
+        "node": ">=20.0.0",
+        "pnpm": ">=9.0.0"
+    },
+    "scripts": {
+        "build": "turbo run build",
+        "build:packages": "turbo run build --filter='./packages/*'",
+        "dev": "turbo run dev --parallel",
+        "test": "turbo run test",
+        "test:packages": "turbo run test --filter='./packages/*'",
+        "lint": "turbo run lint",
+        "lint:root": "eslint 'packages/**/*.ts' 'apps/**/*.ts' --max-warnings 0",
+        "typecheck": "turbo run typecheck",
+        "clean": "turbo run clean && rm -rf node_modules .turbo",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .gitignore",
+        "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\" --ignore-path .gitignore",
+        "test:e2e": "pnpm --filter @gradiences/e2e test",
+        "test:e2e:headed": "pnpm --filter @gradiences/e2e test:headed",
+        "test:e2e:ui": "pnpm --filter @gradiences/e2e test:ui",
+        "dev:web": "pnpm --filter @gradiences/agentm-web dev",
+        "dev:pro": "pnpm --filter @gradiences/agentm-pro dev",
+        "dev:docs": "pnpm --filter @gradiences/developer-docs dev",
+        "dev:website": "pnpm --filter website dev",
+        "dev:arena": "pnpm --filter @gradiences/frontend dev",
+        "dev:all": "concurrently \"pnpm dev:web\" \"pnpm dev:pro\" \"pnpm dev:docs\" \"pnpm dev:website\""
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@typescript-eslint/eslint-plugin": "^6.12.0",
+        "@typescript-eslint/parser": "^6.12.0",
+        "concurrently": "^9.1.0",
+        "eslint": "^10.1.0",
+        "prettier": "^3.5.0",
+        "turbo": "^2.5.0",
+        "typescript": "^5.8.0"
+    }
 }

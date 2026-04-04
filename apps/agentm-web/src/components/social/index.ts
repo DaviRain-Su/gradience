@@ -3,7 +3,7 @@
  *
  * Components for managing agent follow relationships
  *
- * @module components/social/following
+ * @module components/social
  */
 
 export { FollowButton, type FollowButtonProps } from './FollowButton';
@@ -15,3 +15,4 @@ export {
   type FollowerCountProps,
   type CompactFollowerCountProps,
 } from './FollowerCount';
+export { DomainBadge, DomainBadgeLink, type DomainBadgeProps } from './DomainBadge';
