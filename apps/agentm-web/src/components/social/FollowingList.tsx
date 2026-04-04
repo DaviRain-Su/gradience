@@ -2,12 +2,21 @@
  * FollowingList Component
  *
  * List component for displaying who an agent is following
+ * Styled for AgentM Web with inline styles
  *
- * @module components/social/following/FollowingList
+ * @module components/social/FollowingList
  */
 
 import { useState, useCallback } from 'react';
 import { FollowButton } from './FollowButton';
+
+const c = {
+  bg: '#F3F3F8',
+  surface: '#FFFFFF',
+  ink: '#16161A',
+  lavender: '#C6BBFF',
+  lime: '#CDFF4D',
+};
 
 export interface Following {
   /** Agent address */
@@ -24,6 +33,8 @@ export interface Following {
   followedAt?: number;
   /** Bio/description */
   bio?: string;
+  /** Domain name */
+  domain?: string;
 }
 
 export interface FollowingListProps {
@@ -49,8 +60,6 @@ export interface FollowingListProps {
   error?: string | null;
   /** Maximum height for scrollable list */
   maxHeight?: string;
-  /** Optional additional CSS classes */
-  className?: string;
   /** Whether to show unfollow confirmations */
   confirmUnfollow?: boolean;
 }
@@ -67,7 +76,6 @@ export function FollowingList({
   loading = false,
   error = null,
   maxHeight = '400px',
-  className = '',
   confirmUnfollow = true,
 }: FollowingListProps) {
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
@@ -100,18 +108,18 @@ export function FollowingList({
 
   if (loading) {
     return (
-      <div className={`bg-gray-900 rounded-xl border border-gray-800 p-4 ${className}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Following</h3>
-          <span className="text-sm text-gray-500">Loading...</span>
+      <div style={{ background: c.surface, borderRadius: '16px', border: `1.5px solid ${c.ink}`, padding: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700, margin: 0 }}>Following</h3>
+          <span style={{ fontSize: '13px', opacity: 0.5 }}>Loading...</span>
         </div>
-        <div className="space-y-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg animate-pulse">
-              <div className="w-10 h-10 bg-gray-700 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-700 rounded w-1/3" />
-                <div className="h-3 bg-gray-700 rounded w-1/4" />
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: c.bg, borderRadius: '12px', opacity: 0.5 }}>
+              <div style={{ width: '40px', height: '40px', background: c.lavender, borderRadius: '50%' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ height: '16px', background: c.ink, opacity: 0.1, borderRadius: '4px', width: '30%', marginBottom: '8px' }} />
+                <div style={{ height: '12px', background: c.ink, opacity: 0.1, borderRadius: '4px', width: '20%' }} />
               </div>
             </div>
           ))}
@@ -122,66 +130,65 @@ export function FollowingList({
 
   if (error) {
     return (
-      <div className={`bg-gray-900 rounded-xl border border-gray-800 p-4 ${className}`}>
-        <h3 className="text-lg font-semibold mb-3">Following</h3>
-        <p className="text-sm text-red-400">{error}</p>
+      <div style={{ background: c.surface, borderRadius: '16px', border: `1.5px solid ${c.ink}`, padding: '16px' }}>
+        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700, margin: '0 0 12px 0' }}>Following</h3>
+        <p style={{ fontSize: '13px', color: '#DC2626' }}>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-gray-900 rounded-xl border border-gray-800 ${className}`}>
+    <div style={{ background: c.surface, borderRadius: '16px', border: `1.5px solid ${c.ink}`, overflow: 'hidden' }}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <h3 className="text-lg font-semibold">Following</h3>
-        <span className="text-sm text-gray-500">{totalCount.toLocaleString()} following</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px dashed ${c.ink}` }}>
+        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700, margin: 0 }}>Following</h3>
+        <span style={{ fontSize: '13px', opacity: 0.5 }}>{totalCount.toLocaleString()} following</span>
       </div>
 
       {/* List */}
-      <div
-        className="overflow-y-auto"
-        style={{ maxHeight }}
-      >
+      <div style={{ maxHeight, overflowY: 'auto' }}>
         {following.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-sm text-gray-500">Not following anyone yet</p>
-            <p className="text-xs text-gray-600 mt-1">
+          <div style={{ padding: '32px', textAlign: 'center' }}>
+            <p style={{ fontSize: '14px', opacity: 0.5 }}>Not following anyone yet</p>
+            <p style={{ fontSize: '12px', opacity: 0.4, marginTop: '8px' }}>
               Discover agents to follow them and see their updates
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-800">
+          <div>
             {following.map((agent) => (
               <div
                 key={agent.address}
-                className="p-4 hover:bg-gray-800/50 transition cursor-pointer"
+                style={{ padding: '16px 20px', borderBottom: `1px solid ${c.bg}`, cursor: 'pointer', transition: 'background 0.15s' }}
                 onClick={() => handleAgentClick(agent)}
+                onMouseEnter={(e) => { e.currentTarget.style.background = c.bg; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {/* Avatar */}
                     {agent.avatarUrl ? (
                       <img
                         src={agent.avatarUrl}
                         alt={agent.displayName || agent.address}
-                        className="w-10 h-10 rounded-full object-cover"
+                        style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${c.ink}` }}
                       />
                     ) : (
-                      <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-sm font-bold">
+                      <div style={{ width: '40px', height: '40px', background: c.lavender, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, border: `1.5px solid ${c.ink}` }}>
                         {(agent.displayName || agent.address).charAt(0).toUpperCase()}
                       </div>
                     )}
 
                     {/* Info */}
                     <div>
-                      <p className="font-medium text-sm">
-                        {agent.displayName || agent.address.slice(0, 12) + '...'}
+                      <p style={{ fontWeight: 600, fontSize: '14px', margin: 0 }}>
+                        {agent.displayName || `${agent.address.slice(0, 12)}...`}
                       </p>
                       {agent.displayName && (
-                        <p className="text-xs text-gray-500 font-mono">{agent.address.slice(0, 16)}...</p>
+                        <p style={{ fontSize: '12px', opacity: 0.5, margin: '2px 0 0 0', fontFamily: 'monospace' }}>{agent.address.slice(0, 16)}...</p>
                       )}
                       {agent.reputationScore !== undefined && (
-                        <p className="text-xs text-gray-500">
+                        <p style={{ fontSize: '12px', opacity: 0.5, margin: '2px 0 0 0' }}>
                           Score: {agent.reputationScore.toFixed(1)}
                         </p>
                       )}
@@ -189,7 +196,7 @@ export function FollowingList({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {onRefollow ? (
                       <FollowButton
                         agentAddress={agent.address}
@@ -204,13 +211,17 @@ export function FollowingList({
                           e.stopPropagation();
                           void handleUnfollow(agent.address);
                         }}
-                        className={`
-                          px-3 py-1.5 text-sm rounded font-medium transition
-                          ${confirmingUnfollow === agent.address
-                            ? 'bg-red-600 hover:bg-red-500 text-white'
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                          }
-                        `}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          borderRadius: '8px',
+                          border: `1.5px solid ${c.ink}`,
+                          background: confirmingUnfollow === agent.address ? '#DC2626' : c.bg,
+                          color: confirmingUnfollow === agent.address ? c.surface : c.ink,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
                       >
                         {confirmingUnfollow === agent.address ? 'Confirm?' : 'Following'}
                       </button>
@@ -220,40 +231,38 @@ export function FollowingList({
                         e.stopPropagation();
                         toggleExpanded(agent.address);
                       }}
-                      className="p-1 text-gray-500 hover:text-gray-300 transition"
+                      style={{ padding: '4px 8px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '12px', opacity: 0.5 }}
                     >
-                      <span className="text-xs">
-                        {expandedAgent === agent.address ? '▲' : '▼'}
-                      </span>
+                      {expandedAgent === agent.address ? '▲' : '▼'}
                     </button>
                   </div>
                 </div>
 
                 {/* Expanded details */}
                 {expandedAgent === agent.address && (
-                  <div className="mt-3 pt-3 border-t border-gray-800/50">
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px dashed ${c.bg}` }}>
                     {agent.bio && (
-                      <p className="text-xs text-gray-400 mb-2">{agent.bio}</p>
+                      <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>{agent.bio}</p>
                     )}
                     {agent.capabilities && agent.capabilities.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
                         {agent.capabilities.slice(0, 5).map((cap, i) => (
                           <span
                             key={i}
-                            className="text-xs px-2 py-0.5 bg-gray-800 rounded text-gray-400"
+                            style={{ fontSize: '11px', padding: '4px 8px', background: c.bg, borderRadius: '6px', border: `1px solid ${c.ink}` }}
                           >
                             {cap}
                           </span>
                         ))}
                         {agent.capabilities.length > 5 && (
-                          <span className="text-xs px-2 py-0.5 text-gray-500">
+                          <span style={{ fontSize: '11px', padding: '4px 8px', opacity: 0.5 }}>
                             +{agent.capabilities.length - 5} more
                           </span>
                         )}
                       </div>
                     )}
                     {agent.followedAt && (
-                      <p className="text-xs text-gray-500">
+                      <p style={{ fontSize: '11px', opacity: 0.5 }}>
                         Following since: {new Date(agent.followedAt).toLocaleDateString()}
                       </p>
                     )}
@@ -266,11 +275,21 @@ export function FollowingList({
 
         {/* Load more */}
         {onLoadMore && following.length < totalCount && (
-          <div className="p-4 border-t border-gray-800">
+          <div style={{ padding: '16px', borderTop: `1px dashed ${c.ink}` }}>
             <button
               onClick={() => void onLoadMore()}
               disabled={loadingMore}
-              className="w-full py-2 text-sm text-gray-400 hover:text-gray-300 bg-gray-800/50 hover:bg-gray-800 rounded transition disabled:opacity-50"
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '13px',
+                opacity: loadingMore ? 0.5 : 0.7,
+                background: c.bg,
+                border: `1.5px solid ${c.ink}`,
+                borderRadius: '8px',
+                cursor: loadingMore ? 'not-allowed' : 'pointer',
+                fontWeight: 500,
+              }}
             >
               {loadingMore ? 'Loading...' : `Load more (${totalCount - following.length} remaining)`}
             </button>
