@@ -11,10 +11,10 @@ import { DynamicLoginButton } from '../components/DynamicLoginButton';
 
 // Dynamic 配置
 const dynamicConfig = {
-  environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID || 'your-env-id',
+  environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID || '',
   rpcEndpoint: process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.devnet.solana.com',
   appName: 'AgentM',
-  appIcon: 'https://your-app-icon.png',
+  appIcon: '/logo.png',
   chains: ['solana'] as const,
   enableEmbeddedWallets: true,
   socialProviders: ['google', 'twitter', 'email'] as const,
