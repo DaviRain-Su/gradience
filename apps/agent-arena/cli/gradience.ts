@@ -21,7 +21,7 @@ import {
     GradienceSDK,
     KeypairAdapter,
     findEventAuthorityPda,
-} from '../clients/typescript/src/index.js';
+} from '@gradiences/arena-sdk';
 
 type ConfigKey = 'rpc' | 'keypair';
 
