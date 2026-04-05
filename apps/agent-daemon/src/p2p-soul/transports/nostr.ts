@@ -220,7 +220,7 @@ export class NostrTransportAdapter implements TransportAdapter {
 
       const handler = (event: MessageEvent) => {
         const data = JSON.parse(event.data);
-        if (data[0] === 'OK' && data[1] === event.id) {
+        if (data[0] === 'OK' && data[1] === (event as any).id) {
           clearTimeout(timeout);
           ws.removeEventListener('message', handler);
           resolve();

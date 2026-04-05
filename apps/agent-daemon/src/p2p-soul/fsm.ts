@@ -119,14 +119,14 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
       ctx.session.currentState = 'HANDSHAKING';
       ctx.session.currentLevel = event.initialDisclosure;
       ctx.session.updatedAt = Date.now();
-      clearTimeout(ctx);
+      clearFsTimeout(ctx);
       startTimeout(ctx, 'HANDSHAKING');
       
       return 'HANDSHAKING';
     },
     REJECT_INVITE: async (ctx) => {
       ctx.session.currentState = 'FAILED';
-      clearTimeout(ctx);
+      clearFsTimeout(ctx);
       return 'FAILED';
     },
     TIMEOUT: async (ctx) => {
@@ -150,12 +150,12 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
           if (event.level >= DisclosureLevel.LEVEL_3_DETAILED) {
             ctx.session.currentState = 'MATCHED';
             ctx.session.updatedAt = Date.now();
-            clearTimeout(ctx);
+            clearFsTimeout(ctx);
             return 'MATCHED';
           }
         } else if (ctx.localVerdict === 'pass' || ctx.remoteVerdict === 'pass') {
           ctx.session.currentState = 'FAILED';
-          clearTimeout(ctx);
+          clearFsTimeout(ctx);
           return 'FAILED';
         }
         // If either needs more info, stay in HANDSHAKING
@@ -170,12 +170,12 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
     CONFIRM_MATCH: async (ctx) => {
       ctx.session.currentState = 'MATCHED';
       ctx.session.updatedAt = Date.now();
-      clearTimeout(ctx);
+      clearFsTimeout(ctx);
       return 'MATCHED';
     },
     REJECT_MATCH: async (ctx) => {
       ctx.session.currentState = 'FAILED';
-      clearTimeout(ctx);
+      clearFsTimeout(ctx);
       return 'FAILED';
     },
     TIMEOUT: async (ctx) => {
@@ -184,7 +184,7 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
     },
     ERROR: async (ctx) => {
       ctx.session.currentState = 'FAILED';
-      clearTimeout(ctx);
+      clearFsTimeout(ctx);
       return 'FAILED';
     },
   },
@@ -203,7 +203,7 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
 // ============================================================================
 
 function startTimeout(ctx: FSMContext, state: HandshakeState): void {
-  clearTimeout(ctx);
+  clearFsTimeout(ctx);
   
   let timeoutMs: number;
   switch (state) {
@@ -222,7 +222,7 @@ function startTimeout(ctx: FSMContext, state: HandshakeState): void {
   
   ctx.timeoutHandle = setTimeout(() => {
     // Timeout will be handled by the FSM
-  }, timeoutMs);
+  }, timeoutMs) as unknown as NodeJS.Timeout;
 }
 
 function clearFsTimeout(ctx: FSMContext): void {

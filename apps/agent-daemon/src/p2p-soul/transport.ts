@@ -555,10 +555,3 @@ export class P2PTransportManager extends EventEmitter {
     };
   }
 }
-
-// Extend MessageType to include ACK
-declare module '../types.js' {
-  interface MessageType {
-    'ACK': 'ACK';
-  }
-}

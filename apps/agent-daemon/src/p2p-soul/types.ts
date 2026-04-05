@@ -31,7 +31,8 @@ export type MessageType =
   | 'HANDSHAKE_COMPLETE'
   | 'HANDSHAKE_REJECT'
   | 'MATCH_CONFIRM'
-  | 'MATCH_REJECT';
+  | 'MATCH_REJECT'
+  | 'ACK';
 
 // ============================================================================
 // Base Message Structure
