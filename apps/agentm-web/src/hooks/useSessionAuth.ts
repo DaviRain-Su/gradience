@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useConnection } from '@/lib/connection/ConnectionContext';
 
@@ -6,6 +6,8 @@ export function useSessionAuth() {
     const { primaryWallet } = useDynamicContext();
     const { sessionToken, authenticate, walletAddress } = useConnection();
     const attemptedRef = useRef<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         if (!primaryWallet) return;
@@ -43,5 +45,43 @@ export function useSessionAuth() {
         doAuth();
     }, [primaryWallet, sessionToken, walletAddress, authenticate]);
 
-    return { isAuthenticated: !!sessionToken, walletAddress };
+    const logout = useCallback(() => {
+        localStorage.removeItem('sessionToken');
+        window.location.reload();
+    }, []);
+
+    const refreshSession = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${sessionToken}`,
+                },
+            });
+            if (!response.ok) {
+                throw new Error('Failed to refresh session');
+            }
+            const data = await response.json();
+            localStorage.setItem('sessionToken', data.sessionToken);
+            return data;
+        } catch (err) {
+            setError(err instanceof Error ? err : new Error('Unknown error'));
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessionToken]);
+
+    return {
+        isAuthenticated: !!sessionToken,
+        walletAddress,
+        sessionToken,
+        isLoading,
+        error,
+        authenticate,
+        logout,
+        refreshSession,
+    };
 }
