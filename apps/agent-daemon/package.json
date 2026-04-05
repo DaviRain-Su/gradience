@@ -28,6 +28,7 @@
         "@bonfida/spl-name-service": "^0.2.4",
         "@fastify/compress": "^8.3.1",
         "@fastify/cors": "^10.1.0",
+        "@fastify/rate-limit": "^10.3.0",
         "@fastify/websocket": "^11.0.0",
         "@gradiences/a2a-types": "workspace:*",
         "@gradiences/nostr-adapter": "workspace:*",
@@ -50,7 +51,8 @@
         "zod": "^3.24.0"
     },
     "devDependencies": {
-        "@types/better-sqlite3": "^7.6.12",
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/express": "^5.0.6",
         "@types/node": "^22.0.0",
         "@types/pixelmatch": "^5.2.6",
         "@types/pngjs": "^6.0.5",

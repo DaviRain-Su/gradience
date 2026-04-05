@@ -30,6 +30,29 @@ import {
 } from './index.js';
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Safely convert a query parameter to string
+ * Handles string | string[] | ParsedQs | (string | ParsedQs)[] | undefined cases
+ */
+function toString(value: string | string[] | undefined | unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return String(value[0]);
+  return String(value);
+}
+
+/**
+ * Safely convert a param to string (non-undefined version)
+ * Handles string | string[] cases
+ */
+function paramToString(value: string | string[]): string {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+// ============================================================================
 // FSM Factory Interface
 // ============================================================================
 
@@ -117,9 +140,9 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       const { minReputation, seeking, limit } = req.query;
       
       const candidates = discovery.getCandidates({
-        minReputationScore: minReputation ? parseInt(minReputation as string) : undefined,
-        seeking: seeking as string | undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        minReputationScore: minReputation ? parseInt(toString(minReputation) || '0') : undefined,
+        seeking: toString(seeking),
+        limit: limit ? parseInt(toString(limit) || '0') : undefined,
       });
       
       res.json({
@@ -231,7 +254,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       const { inviteId } = req.params;
       const { accept, initialDisclosure = DisclosureLevel.LEVEL_1_ANONYMOUS } = req.body;
       
-      const invite = discovery.getPendingInvite(inviteId);
+      const invite = discovery.getPendingInvite(paramToString(inviteId));
       if (!invite) {
         return res.status(404).json({ error: 'Invite not found' });
       }
@@ -258,7 +281,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
         await fsm.acceptInvite(initialDisclosure);
         
         // Remove from pending
-        discovery.removePendingInvite(inviteId);
+        discovery.removePendingInvite(paramToString(inviteId));
         
         res.json({
           success: true,
@@ -268,7 +291,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
         });
       } else {
         await fsm.rejectInvite();
-        discovery.removePendingInvite(inviteId);
+        discovery.removePendingInvite(paramToString(inviteId));
         
         res.json({
           success: true,
@@ -297,7 +320,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       }
       
       const { sessionId } = req.params;
-      const fsm = activeSessions.get(sessionId) || await fsmFactory.get(sessionId);
+      const fsm = activeSessions.get(paramToString(sessionId)) || await fsmFactory.get(paramToString(sessionId));
       
       if (!fsm) {
         return res.status(404).json({ error: 'Session not found' });
@@ -341,7 +364,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
         return res.status(400).json({ error: 'level and verdict are required' });
       }
       
-      const fsm = activeSessions.get(sessionId);
+      const fsm = activeSessions.get(paramToString(sessionId));
       if (!fsm) {
         return res.status(404).json({ error: 'Session not found' });
       }
@@ -369,7 +392,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       // Save disclosure to storage
       await storage.saveDisclosure({
         id: await generateSessionId(),
-        sessionId,
+        sessionId: paramToString(sessionId),
         level,
         fromDid: userDid,
         toDid: fsm.getRemoteDid() || '',
@@ -405,7 +428,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       }
       
       const { sessionId } = req.params;
-      const fsm = activeSessions.get(sessionId);
+      const fsm = activeSessions.get(paramToString(sessionId));
       
       if (!fsm) {
         return res.status(404).json({ error: 'Session not found' });
@@ -418,7 +441,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       if (remoteDid) {
         await storage.saveMatch({
           id: await generateSessionId(),
-          sessionId,
+          sessionId: paramToString(sessionId),
           partyADid: userDid,
           partyBDid: remoteDid,
           matchedAt: Date.now(),
@@ -451,7 +474,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       const { sessionId } = req.params;
       const { reason } = req.body;
       
-      const fsm = activeSessions.get(sessionId);
+      const fsm = activeSessions.get(paramToString(sessionId));
       if (!fsm) {
         return res.status(404).json({ error: 'Session not found' });
       }
@@ -514,7 +537,7 @@ export function createP2pSoulRouter(deps: P2pSoulRouteDeps): Router {
       
       const { matchId } = req.params;
       const matches = await storage.getMatchesByDid(userDid);
-      const match = matches.find(m => m.id === matchId);
+      const match = matches.find(m => m.id === paramToString(matchId));
       
       if (!match) {
         return res.status(404).json({ error: 'Match not found' });
