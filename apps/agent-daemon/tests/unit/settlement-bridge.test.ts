@@ -8,12 +8,21 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { SettlementBridge, createSettlementBridge } from '../../src/bridge/settlement-bridge.js';
 import type { EvaluationResult } from '../../src/evaluator/runtime.js';
 
+// Valid Solana public keys for testing
+const VALID_PUBKEYS = {
+  taskAccount: '11111111111111111111111111111111',
+  escrowAccount: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  agentId: 'So11111111111111111111111111111111111111112',
+  payerAgentId: '9WzDXwN4wH91k8ZRJDE2hb5EbegTxSyk2X4z2wdr4RMM',
+  token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+};
+
 describe('SettlementBridge', () => {
   let bridge: SettlementBridge;
 
   beforeEach(async () => {
     bridge = await createSettlementBridge({
-      chainHubProgramId: 'mock-program-id',
+      chainHubProgramId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
       rpcEndpoint: 'https://mock.rpc',
       maxRetries: 2,
     });
@@ -45,13 +54,13 @@ describe('SettlementBridge', () => {
         evaluationId: 'eval-123',
         taskId: 'task-456',
         paymentId: 'payment-789',
-        agentId: 'agent-abc',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
-        token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        taskAccount: 'task-account-address',
-        escrowAccount: 'escrow-account-address',
+        token: VALID_PUBKEYS.token,
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       expect(result.status).toBe('confirmed');
@@ -89,13 +98,13 @@ describe('SettlementBridge', () => {
         evaluationId: 'eval-status',
         taskId: 'task-1',
         paymentId: 'payment-1',
-        agentId: 'agent-1',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
         token: 'USDC',
-        taskAccount: 'task',
-        escrowAccount: 'escrow',
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       // Check status during settlement
@@ -125,13 +134,13 @@ describe('SettlementBridge', () => {
         evaluationId: 'eval-proof',
         taskId: 'task-1',
         paymentId: 'payment-1',
-        agentId: 'agent-1',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
         token: 'USDC',
-        taskAccount: 'task',
-        escrowAccount: 'escrow',
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       expect(result.status).toBe('confirmed');
@@ -157,26 +166,26 @@ describe('SettlementBridge', () => {
         evaluationId: 'eval-confirm',
         taskId: 'task-1',
         paymentId: 'payment-1',
-        agentId: 'agent-1',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
         token: 'USDC',
-        taskAccount: 'task',
-        escrowAccount: 'escrow',
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       const confirmation = bridge.createPaymentConfirmation(settlementResult, {
         evaluationId: 'eval-confirm',
         taskId: 'task-1',
         paymentId: 'payment-1',
-        agentId: 'agent-1',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
-        token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        taskAccount: 'task',
-        escrowAccount: 'escrow',
+        token: VALID_PUBKEYS.token,
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       expect(confirmation.paymentId).toBe('payment-1');
@@ -209,13 +218,13 @@ describe('SettlementBridge', () => {
         evaluationId: 'eval-event',
         taskId: 'task-1',
         paymentId: 'payment-1',
-        agentId: 'agent-1',
-        payerAgentId: 'agent-payer',
+        agentId: VALID_PUBKEYS.agentId,
+        payerAgentId: VALID_PUBKEYS.payerAgentId,
         evaluationResult: mockEvaluationResult,
         amount: '1000000',
         token: 'USDC',
-        taskAccount: 'task',
-        escrowAccount: 'escrow',
+        taskAccount: VALID_PUBKEYS.taskAccount,
+        escrowAccount: VALID_PUBKEYS.escrowAccount,
       });
 
       expect(settledEvents.length).toBe(1);
@@ -230,7 +239,7 @@ describe('SettlementBridge', () => {
 
     it('should create bridge with custom options', async () => {
       const customBridge = await createSettlementBridge({
-        chainHubProgramId: 'custom-program',
+        chainHubProgramId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
         rpcEndpoint: 'https://custom.rpc',
         maxRetries: 5,
       });
