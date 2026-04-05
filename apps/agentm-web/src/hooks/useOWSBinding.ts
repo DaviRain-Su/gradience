@@ -9,7 +9,7 @@ export interface OWSBindingState {
   localBinding: {
     accountKey: string;
     loginEmail: string | null;
-    provider: 'privy';
+    provider: 'dynamic';
     chain: 'solana';
     masterWallet: string;
     owsDid: string;
@@ -194,7 +194,7 @@ function saveLegacyBinding(input: {
   const record = {
     accountKey: input.accountKey,
     loginEmail: input.loginEmail,
-    provider: 'privy' as const,
+    provider: 'dynamic' as const,
     chain: 'solana' as const,
     masterWallet: input.walletAddress,
     owsDid: `did:ows:solana:${input.walletAddress}`,

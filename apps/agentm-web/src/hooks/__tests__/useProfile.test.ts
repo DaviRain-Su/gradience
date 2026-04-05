@@ -29,13 +29,13 @@ describe("useProfile", () => {
 
     const { result } = renderHook(() => useProfile("did:sol:abc123"));
 
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.loading).toBe(true);
 
     await waitFor(() => {
       expect(result.current.profile).toEqual(mockProfile);
     });
 
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.loading).toBe(false);
   });
 
   it("should handle profile not found", async () => {

@@ -89,15 +89,11 @@ describe('Evaluator Integration', () => {
   });
 
   describe('Runtime + Judges Integration', () => {
-    it('should complete full code evaluation flow', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        expect(result.score).toBeGreaterThanOrEqual(0);
-        expect(result.score).toBeLessThanOrEqual(100);
-        expect(result.passed).toBeDefined();
-        expect(Array.isArray(result.categoryScores)).toBe(true);
-        expect(Array.isArray(result.checkResults)).toBe(true);
-        done();
+    it('should complete full code evaluation flow', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -140,14 +136,20 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
+      expect(result.score).toBeGreaterThanOrEqual(0);
+      expect(result.score).toBeLessThanOrEqual(100);
+      expect(result.passed).toBeDefined();
+      expect(Array.isArray(result.categoryScores)).toBe(true);
+      expect(Array.isArray(result.checkResults)).toBe(true);
     });
 
-    it('should complete full UI evaluation flow', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        expect(result.passed).toBeDefined();
-        expect(result.categoryScores.length).toBeGreaterThan(0);
-        done();
+    it('should complete full UI evaluation flow', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -180,14 +182,17 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
+      expect(result.passed).toBeDefined();
+      expect(result.categoryScores.length).toBeGreaterThan(0);
     });
 
-    it('should complete full API evaluation flow', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        expect(result.passed).toBeDefined();
-        expect(result.categoryScores.length).toBeGreaterThan(0);
-        done();
+    it('should complete full API evaluation flow', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -224,13 +229,17 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
+      expect(result.passed).toBeDefined();
+      expect(result.categoryScores.length).toBeGreaterThan(0);
     });
 
-    it('should handle content evaluation flow', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        expect(result.passed).toBeDefined();
-        done();
+    it('should handle content evaluation flow', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -263,6 +272,9 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
+      expect(result.passed).toBeDefined();
     });
 
     it('should emit correct sequence of events', async () => {
@@ -375,11 +387,11 @@ describe('Evaluator Integration', () => {
   });
 
   describe('Budget and Cost Tracking', () => {
-    it('should track actual cost within budget', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.actualCost.usd).toBeLessThanOrEqual(5);
-        expect(result.actualCost.timeSeconds).toBeLessThanOrEqual(60);
-        done();
+    it('should track actual cost within budget', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -397,14 +409,18 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.actualCost.usd).toBeLessThanOrEqual(5);
+      expect(result.actualCost.timeSeconds).toBeLessThanOrEqual(60);
     });
 
-    it('should include timestamps in result', (done) => {
+    it('should include timestamps in result', async () => {
       const startTime = Date.now();
 
-      runtime.on('completed', (result) => {
-        expect(result.completedAt).toBeGreaterThanOrEqual(startTime);
-        done();
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -417,16 +433,17 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.completedAt).toBeGreaterThanOrEqual(startTime);
     });
   });
 
   describe('Verification and Security', () => {
-    it('should generate verification hash', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.verificationHash).toBeDefined();
-        expect(typeof result.verificationHash).toBe('string');
-        expect(result.verificationHash.length).toBeGreaterThan(0);
-        done();
+    it('should generate verification hash', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -439,20 +456,24 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.verificationHash).toBeDefined();
+      expect(typeof result.verificationHash).toBe('string');
+      expect(result.verificationHash.length).toBeGreaterThan(0);
     });
 
-    it('should generate unique verification hashes', (done) => {
+    it('should generate unique verification hashes', async () => {
       const hashes: string[] = [];
-      let completed = 0;
+      const completedPromise = new Promise<void>((resolve) => {
+        let completed = 0;
+        runtime.on('completed', (result) => {
+          hashes.push(result.verificationHash);
+          completed++;
 
-      runtime.on('completed', (result) => {
-        hashes.push(result.verificationHash);
-        completed++;
-
-        if (completed === 2) {
-          expect(hashes[0]).not.toBe(hashes[1]);
-          done();
-        }
+          if (completed === 2) {
+            resolve();
+          }
+        });
       });
 
       const baseTask: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -466,15 +487,18 @@ describe('Evaluator Integration', () => {
 
       runtime.submit(baseTask);
       runtime.submit(baseTask);
+
+      await completedPromise;
+      expect(hashes[0]).not.toBe(hashes[1]);
     });
   });
 
   describe('Error Recovery', () => {
-    it('should handle evaluation errors gracefully', (done) => {
-      runtime.on('error', (data) => {
-        expect(data.error).toBeDefined();
-        expect(data.evaluationId).toBeDefined();
-        done();
+    it('should handle evaluation errors gracefully', async () => {
+      const errorPromise = new Promise<any>((resolve) => {
+        runtime.on('error', (data) => {
+          resolve(data);
+        });
       });
 
       // Submit with unknown type to trigger error
@@ -488,6 +512,9 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const data = await errorPromise;
+      expect(data.error).toBeDefined();
+      expect(data.evaluationId).toBeDefined();
     });
 
     it('should clean up after evaluation error', async () => {
@@ -597,10 +624,11 @@ describe('Evaluator Integration', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty submission', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        done();
+    it('should handle empty submission', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -613,12 +641,15 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
     });
 
-    it('should handle very long submission', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        done();
+    it('should handle very long submission', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -631,12 +662,15 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
     });
 
-    it('should handle submission with special characters', (done) => {
-      runtime.on('completed', (result) => {
-        expect(result.evaluationId).toBeDefined();
-        done();
+    it('should handle submission with special characters', async () => {
+      const completedPromise = new Promise<any>((resolve) => {
+        runtime.on('completed', (result) => {
+          resolve(result);
+        });
       });
 
       const task: Omit<EvaluationTask, 'id' | 'createdAt' | 'timeoutAt'> = {
@@ -649,6 +683,8 @@ describe('Evaluator Integration', () => {
       };
 
       runtime.submit(task);
+      const result = await completedPromise;
+      expect(result.evaluationId).toBeDefined();
     });
   });
 });

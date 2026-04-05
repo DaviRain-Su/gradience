@@ -65,7 +65,39 @@ export function useProfile(addressOrDomain?: string) {
     }
   }, [daemonUrl, sessionToken]);
 
-  return { profile, loading, error, updateProfile };
+  const follow = useCallback(async () => {
+    if (!addressOrDomain) throw new Error('No profile to follow');
+    try {
+      const res = await fetch(`${daemonUrl}/api/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
+        body: JSON.stringify({ address: addressOrDomain }),
+      });
+      if (!res.ok) throw new Error('Failed to follow');
+      return await res.json();
+    } catch (err) {
+      console.error('Follow error:', err);
+      throw err;
+    }
+  }, [daemonUrl, sessionToken, addressOrDomain]);
+
+  const unfollow = useCallback(async () => {
+    if (!addressOrDomain) throw new Error('No profile to unfollow');
+    try {
+      const res = await fetch(`${daemonUrl}/api/unfollow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sessionToken) },
+        body: JSON.stringify({ address: addressOrDomain }),
+      });
+      if (!res.ok) throw new Error('Failed to unfollow');
+      return await res.json();
+    } catch (err) {
+      console.error('Unfollow error:', err);
+      throw err;
+    }
+  }, [daemonUrl, sessionToken, addressOrDomain]);
+
+  return { profile, loading, error, updateProfile, follow, unfollow };
 }
 
 export function useMyProfile() {
