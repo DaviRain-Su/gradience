@@ -44,10 +44,38 @@
     "vitest": "^2.0.0"
   },
   "peerDependencies": {
-    "@layerzerolabs/lz-v2-utilities": "^2.0.0"
+    "@layerzerolabs/lz-v2-utilities": "^3.0.0",
+    "@layerzerolabs/lz-definitions": "^3.0.0",
+    "@wormhole-foundation/sdk": "^1.0.0",
+    "@wormhole-foundation/sdk-solana": "^1.0.0",
+    "@wormhole-foundation/sdk-evm": "^1.0.0",
+    "@debridge-finance/desdk": "^2.0.0-rc.0",
+    "@debridge-finance/dln-client": "^17.0.0",
+    "ethers": "^6.0.0"
   },
   "peerDependenciesMeta": {
     "@layerzerolabs/lz-v2-utilities": {
+      "optional": true
+    },
+    "@layerzerolabs/lz-definitions": {
+      "optional": true
+    },
+    "@wormhole-foundation/sdk": {
+      "optional": true
+    },
+    "@wormhole-foundation/sdk-solana": {
+      "optional": true
+    },
+    "@wormhole-foundation/sdk-evm": {
+      "optional": true
+    },
+    "@debridge-finance/desdk": {
+      "optional": true
+    },
+    "@debridge-finance/dln-client": {
+      "optional": true
+    },
+    "ethers": {
       "optional": true
     }
   }

@@ -122,7 +122,8 @@ export class CrossChainAdapter implements ProtocolAdapter {
       const payload = this.serializeForChain(message, targetChain);
 
       // Send via bridge (simulated)
-      const txHash = await this.sendViaBridge(payload, targetChain);
+      const _txHash = await this.sendViaBridge(payload, targetChain);
+      void _txHash;
 
       this.lastActivityAt = Date.now();
 
@@ -149,6 +150,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
     handler: (message: A2AMessage) => void | Promise<void>
   ): Promise<ProtocolSubscription> {
     this.messageHandler = handler;
+    void this.messageHandler;
 
     // Start listening on all chains
     for (const chain of this.options.chains) {
@@ -218,6 +220,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
   }
 
   private serializeForChain(message: A2AMessage, chain: string): string {
+    void message;
     return JSON.stringify({
       version: '1.0',
       chain,
@@ -227,6 +230,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
   }
 
   private async sendViaBridge(payload: string, targetChain: string): Promise<string> {
+    void payload;
     // Simulate bridge transaction
     console.log(`[CrossChainAdapter] Sending via bridge to ${targetChain}`);
     return `tx-${Date.now()}`;
@@ -238,6 +242,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
   }
 
   private async broadcastToChain(agentInfo: AgentInfo, chain: ChainConfig): Promise<void> {
+    void agentInfo;
     // Broadcast agent info to chain
     console.log(`[CrossChainAdapter] Broadcasting to ${chain.name}`);
   }
