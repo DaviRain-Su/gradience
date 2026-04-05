@@ -19,7 +19,7 @@ import type {
   MessageType,
   X25519KeyPair,
   EncryptedData,
-} from '../types.js';
+} from './types.js';
 import {
   generateX25519KeyPair,
   computeSharedSecret,
@@ -29,7 +29,7 @@ import {
   verifySignature,
   generateMessageId,
   sha256,
-} from '../crypto.js';
+} from './crypto.js';
 
 // ============================================================================
 // Transport Types

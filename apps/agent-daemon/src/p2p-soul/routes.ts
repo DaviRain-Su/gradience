@@ -8,16 +8,16 @@
 
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import type { HandshakeFSM } from '../fsm.js';
-import type { DiscoveryService } from '../discovery.js';
-import type { HandshakeStorage } from '../storage.js';
-import type { MatchEngine } from '../engine.js';
+import type { HandshakeFSM } from './fsm.js';
+import type { DiscoveryService } from './discovery.js';
+import type { HandshakeStorage } from './storage.js';
+import type { MatchEngine } from './engine.js';
 import {
   DisclosureLevel,
   type P2pSoulConfig,
   type DiscoveryCriteria,
   type SoulProfile,
-} from '../types.js';
+} from './types.js';
 import {
   generateX25519KeyPair,
   computeSharedSecret,
@@ -27,7 +27,7 @@ import {
   generateDisclosureData,
   parseSoulMd,
   toSoulProfile,
-} from '../index.js';
+} from './index.js';
 
 // ============================================================================
 // FSM Factory Interface
