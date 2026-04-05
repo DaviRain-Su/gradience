@@ -54,7 +54,7 @@ describe.skipIf(SKIP_E2E)('MPP Handler E2E', () => {
       const participants = [
         {
           address: agent1.publicKey.toBase58(),
-          shareBps: 9500,
+          shareBps: 10000, // Must sum to 10000 (100%)
           role: 'agent' as const,
         },
       ];

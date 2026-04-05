@@ -33,8 +33,8 @@ describe('CrossChainAdapter', () => {
 
     const result = await adapter.send({
       id: 'msg-1',
-      from: '0x123',
-      to: '0x456',
+      from: '0x1234567890123456789012345678901234567890',
+      to: '0x4567890123456789012345678901234567890123',
       protocol: 'cross-chain',
       timestamp: Date.now(),
       payload: { test: true },
