@@ -189,6 +189,7 @@ describe('Network (Agent Registry + Messages) E2E', () => {
     describe('Message Relay', () => {
         it('Agent A sends message to Agent B', async () => {
             const res = await post('/api/v1/network/messages', {
+                from: addrA,
                 to: addrB,
                 type: 'chat',
                 payload: { text: 'Hello from Alpha!' },
@@ -217,7 +218,10 @@ describe('Network (Agent Registry + Messages) E2E', () => {
         it('Agent B can use since param to get messages after timestamp', async () => {
             const beforeSend = Date.now() - 1; // -1ms to avoid race
             await post('/api/v1/network/messages', {
-                to: addrB, type: 'ping', payload: {},
+                from: addrA,
+                to: addrB,
+                type: 'ping',
+                payload: {},
             }, tokenA);
 
             const res = await get(`/api/v1/network/messages/inbox?since=${beforeSend}`, tokenB);
@@ -229,7 +233,10 @@ describe('Network (Agent Registry + Messages) E2E', () => {
         it('Agent B acks a message', async () => {
             // Send another
             const sendRes = await post('/api/v1/network/messages', {
-                to: addrB, type: 'task_proposal', payload: { taskId: '123' },
+                from: addrA,
+                to: addrB,
+                type: 'task_proposal',
+                payload: { taskId: '123' },
             }, tokenA);
             const { messageId } = await sendRes.json() as any;
 
@@ -242,7 +249,7 @@ describe('Network (Agent Registry + Messages) E2E', () => {
         });
 
         it('should reject send without to/type', async () => {
-            const res = await post('/api/v1/network/messages', { to: addrB }, tokenA);
+            const res = await post('/api/v1/network/messages', { from: addrA, to: addrB }, tokenA);
             expect(res.status).toBe(400);
         });
 
@@ -253,7 +260,10 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
         it('bidirectional: B sends to A, A receives', async () => {
             await post('/api/v1/network/messages', {
-                to: addrA, type: 'chat', payload: { text: 'Hi Alpha from Beta!' },
+                from: addrB,
+                to: addrA,
+                type: 'chat',
+                payload: { text: 'Hi Alpha from Beta!' },
             }, tokenB);
 
             const res = await get('/api/v1/network/messages/inbox', tokenA);

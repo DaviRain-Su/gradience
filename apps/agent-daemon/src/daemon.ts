@@ -195,6 +195,7 @@ export class Daemon {
                     enableMetrics: true,
                     enableHealthMonitor: true,
                 });
+                await this.a2aRouter.initialize();
                 logger.info('A2ARouter configured with production-grade features (circuit breaker, rate limiter, health monitor, metrics)');
             } catch (err) {
                 logger.warn({ err }, 'A2A Router not available (missing dependencies), continuing without A2A');

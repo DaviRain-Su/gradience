@@ -40,6 +40,7 @@ export function createAuthHook(daemonToken: string, sessionManager: SessionManag
         // Check daemon token first (CLI / internal)
         if (token === daemonToken) {
             (request as any).authType = 'daemon';
+            // For daemon token, walletAddress may be provided in request body for certain endpoints
             return;
         }
 

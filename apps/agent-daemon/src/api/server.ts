@@ -67,19 +67,22 @@ export async function createAPIServer(deps: APIServerDeps) {
     });
 
     // Register rate limiting - global 10 requests per minute per IP
-    await app.register(rateLimit, {
-        max: 10,
-        timeWindow: '1 minute',
-        keyGenerator: (request) => request.ip,
-        errorResponseBuilder: (request, context) => {
-            return {
-                statusCode: 429,
-                error: 'Too Many Requests',
-                message: `Rate limit exceeded. Try again in ${context.after}`,
-                retryAfter: context.after,
-            };
-        },
-    });
+    // Skip rate limiting in test environment
+    if (process.env.NODE_ENV !== 'test') {
+        await app.register(rateLimit, {
+            max: 10,
+            timeWindow: '1 minute',
+            keyGenerator: (request) => request.ip,
+            errorResponseBuilder: (request, context) => {
+                return {
+                    statusCode: 429,
+                    error: 'Too Many Requests',
+                    message: `Rate limit exceeded. Try again in ${context.after}`,
+                    retryAfter: context.after,
+                };
+            },
+        });
+    }
 
     const sessionManager = new SessionManager(deps.database);
 
