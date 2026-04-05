@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import './globals.css';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { ProvidersClient } from '../components/ProvidersClient';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -32,7 +34,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 padding: 0,
                 minHeight: '100vh',
             }}>
-                {children}
+                <ErrorBoundary>
+                    <ProvidersClient>
+                        {children}
+                    </ProvidersClient>
+                </ErrorBoundary>
             </body>
         </html>
     );

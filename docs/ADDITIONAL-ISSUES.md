@@ -19,11 +19,11 @@
 - **影响**: daemon 所有涉及 agentm-core 的链上操作（registerUser, follow/unfollow, updateReputation）都会发送到错误的程序，**静默失败**。
 - **修复**: 找到 agentm-core 在 devnet 的实际 Program ID，写入 `.env` 和 `deploy/.env.prod`
 
-### Bug 2: MultiAgentTaskView 调用不存在的 daemon 端点
-- **位置**: `apps/agentm-web/src/app/app/views/MultiAgentTaskView.tsx`
-- **现状**: 该 View 调用 `/api/v1/coordinator/tasks`、`/api/v1/coordinator/tasks/:id/broadcast` 等端点，但 daemon 的 `src/api/routes/` **根本没有 coordinator 路由**
-- **影响**: agentm-web 主 App 页面的"Multi-Agent Task"视图完全无法工作（所有操作返回 404）
-- **修复**: 要么在 daemon 实现 coordinator 路由，要么在 web 移除该 view（改走已有的链上 postTask 流程）
+### Bug 2: ~~MultiAgentTaskView 调用不存在的 daemon 端点~~ ✅ 已修复 (GRA-152)
+- **位置**: ~~`apps/agentm-web/src/app/app/views/MultiAgentTaskView.tsx`~~
+- **状态**: ✅ **已移除**
+- **原因**: daemon 未实现 coordinator 路由，该 View 调用的 `/api/v1/coordinator/*` 端点全部返回 404
+- **解决方案**: 移除 MultiAgentTaskView 组件及相关导航，使用已有的链上 postTask 流程
 
 ### Bug 3: CI Rust 检查路径错误
 - **位置**: `.github/workflows/ci.yml`

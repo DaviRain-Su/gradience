@@ -3,13 +3,23 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SmartConfig } from "@/components/json-render";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+} from "@gradiences/ui";
 import { ArrowLeft, Sparkles, Settings } from "lucide-react";
 import Link from "next/link";
 import { useDaemonApi } from "@/lib/connection/ConnectionContext";

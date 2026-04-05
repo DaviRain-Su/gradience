@@ -1,5 +1,9 @@
 // Main client
-export { XMTPClient, createXMTPClient } from "./client";
+export { XMTPClient, createXMTPClient } from "./client.js";
+
+// XMTP Adapter
+export { XMTPAdapter } from "./xmtp-adapter.js";
+export type { XMTPAdapterOptions } from "./xmtp-adapter.js";
 
 // Codec
 export {
@@ -8,12 +12,12 @@ export {
   GRADIENCE_CONTENT_TYPE_STR,
   buildSigningInput,
   buildUnsignedMessage,
-} from "./codec";
+} from "./codec.js";
 
 // Types
 export {
   GradienceMessageType,
-} from "./types";
+} from "./types.js";
 export type {
   A2AMessage,
   A2APayload,
@@ -26,7 +30,7 @@ export type {
   WalletSigner,
   MessageCallback,
   AdapterConfig,
-} from "./types";
+} from "./types.js";
 
 // Utils
 export {
@@ -41,4 +45,4 @@ export {
   isTaskResult,
   isJudgeVerdict,
   isPaymentConfirmation,
-} from "./utils";
+} from "./utils.js";

@@ -1,7 +1,7 @@
 export interface OWSAgentWalletBinding {
     accountKey: string;
     loginEmail: string | null;
-    provider: 'privy';
+    provider: 'dynamic';
     chain: 'solana';
     masterWallet: string;
     owsDid: string;
@@ -29,7 +29,7 @@ export class OWSAgentWalletManager {
         const record: OWSAgentWalletBinding = {
             accountKey: input.accountKey,
             loginEmail: input.loginEmail,
-            provider: 'privy',
+            provider: 'dynamic',
             chain: 'solana',
             masterWallet: input.walletAddress,
             owsDid: `did:ows:solana:${input.walletAddress}`,

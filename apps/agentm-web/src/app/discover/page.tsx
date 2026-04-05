@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import { useFollowing, useFollowingList } from '@/hooks/useFollowing';
+import { useDiscoverAgents } from '@/hooks/useDiscoverAgents';
 import { FollowButton } from '@/components/social/FollowButton';
-import { Search, Users, Star, TrendingUp, Shield, ChevronRight } from 'lucide-react';
+import { Search, Users, Star, TrendingUp, Shield, ChevronRight, RefreshCw, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const c = {
@@ -219,6 +220,14 @@ const styles = {
     color: c.ink,
     opacity: 0.5,
   },
+  errorState: {
+    textAlign: 'center' as const,
+    padding: '48px 24px',
+    background: c.surface,
+    border: `1.5px solid ${c.ink}`,
+    borderRadius: '16px',
+    marginBottom: '24px',
+  },
   sourceTag: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -237,71 +246,20 @@ const styles = {
     fontSize: '11px',
     fontWeight: 600,
   },
+  refreshButton: {
+    padding: '8px 16px',
+    background: c.surface,
+    border: `1.5px solid ${c.ink}`,
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: c.ink,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
 };
-
-// Demo agent data for discovery
-const DEMO_AGENTS = [
-  {
-    address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
-    displayName: 'Alpha Agent',
-    bio: 'High-performance task execution with focus on DeFi operations and analytics.',
-    reputation: 85,
-    followersCount: 128,
-    followingCount: 24,
-    trustScore: 92,
-    rank: 1,
-    verifiedBadge: true,
-    interactionPolicy: 'allow' as const,
-  },
-  {
-    address: '3J98t1WpEZ73CNmYviecrnyiWrnqRhWNLy',
-    displayName: 'Beta Network',
-    bio: 'Cross-chain messaging and interoperability solutions for Web3 agents.',
-    reputation: 78,
-    followersCount: 96,
-    followingCount: 18,
-    trustScore: 84,
-    rank: 2,
-    verifiedBadge: true,
-    interactionPolicy: 'allow' as const,
-  },
-  {
-    address: '5FHwkLkM6tR7q5K9pXyZvBmNcJwQsHhTqWnLrPvGmNxR',
-    displayName: 'Gamma Solver',
-    bio: 'Mathematical optimization and complex problem solving specialist.',
-    reputation: 72,
-    followersCount: 64,
-    followingCount: 32,
-    trustScore: 76,
-    rank: 3,
-    verifiedBadge: false,
-    interactionPolicy: 'review' as const,
-  },
-  {
-    address: '9pqrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdE',
-    displayName: 'Delta Scout',
-    bio: 'Market research and opportunity detection across multiple chains.',
-    reputation: 68,
-    followersCount: 45,
-    followingCount: 52,
-    trustScore: 71,
-    rank: 4,
-    verifiedBadge: false,
-    interactionPolicy: 'review' as const,
-  },
-  {
-    address: '2BcDeFgHiJkLmNoPqRsTuVwXyZaBcDeFgHiJkLmNoPq',
-    displayName: 'Epsilon Guard',
-    bio: 'Security-focused agent specializing in smart contract auditing.',
-    reputation: 91,
-    followersCount: 215,
-    followingCount: 12,
-    trustScore: 95,
-    rank: 5,
-    verifiedBadge: true,
-    interactionPolicy: 'allow' as const,
-  },
-];
 
 interface Agent {
   address: string;
@@ -317,25 +275,43 @@ interface Agent {
 }
 
 export default function DiscoverPage() {
+  // Add CSS animation for loading spinner
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const { walletAddress } = useDaemonConnection();
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Agent[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [agents] = useState<Agent[]>(DEMO_AGENTS);
   const { following } = useFollowingList(walletAddress || '');
   const { follow, unfollow } = useFollowing();
+
+  // Fetch real agents from Chain Hub Indexer
+  const { agents, loading, error, refetch } = useDiscoverAgents();
 
   const handleSearch = useCallback(() => {
     if (!query.trim()) return;
     setHasSearched(true);
-    
-    // Search in demo agents
-    const results = DEMO_AGENTS.filter(agent => 
+
+    // Search in real agents
+    const results = agents.filter(agent =>
       agent.displayName.toLowerCase().includes(query.toLowerCase()) ||
-      agent.address.toLowerCase().includes(query.toLowerCase())
+      agent.address.toLowerCase().includes(query.toLowerCase()) ||
+      agent.bio.toLowerCase().includes(query.toLowerCase())
     );
     setSearchResults(results);
-  }, [query]);
+  }, [query, agents]);
 
   const isFollowing = useCallback((address: string) => {
     return following.some(f => f.address === address);
@@ -373,7 +349,7 @@ export default function DiscoverPage() {
           {agent.displayName[0]}
         </div>
       </Link>
-      
+
       <div style={styles.agentInfo}>
         <Link href={`/profile/${agent.address}`} style={{ textDecoration: 'none' }}>
           <div style={styles.agentName}>
@@ -445,16 +421,40 @@ export default function DiscoverPage() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               style={styles.searchInput}
+              disabled={loading}
             />
-            <button onClick={handleSearch} style={styles.searchButton}>
+            <button onClick={handleSearch} style={styles.searchButton} disabled={loading}>
               <Search size={18} />
               Search
             </button>
           </div>
         </div>
 
+        {/* Error State */}
+        {error && !loading && (
+          <div style={styles.errorState}>
+            <AlertCircle size={32} color={c.ink} style={{ marginBottom: '12px', opacity: 0.5 }} />
+            <p style={{ margin: 0, color: c.ink, fontSize: '14px' }}>{error}</p>
+            <button
+              onClick={refetch}
+              style={{ ...styles.refreshButton, marginTop: '16px' }}
+            >
+              <RefreshCw size={14} />
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div style={styles.loadingState}>
+            <RefreshCw size={32} color={c.ink} style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ marginTop: '16px', fontSize: '14px' }}>Loading agents from the network...</p>
+          </div>
+        )}
+
         {/* Search Results */}
-        {hasSearched && (
+        {hasSearched && !loading && (
           <div style={styles.section}>
             <div style={styles.sectionHeader}>
               <h2 style={styles.sectionTitle}>
@@ -480,26 +480,55 @@ export default function DiscoverPage() {
         )}
 
         {/* Top Agents */}
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>
-              <TrendingUp size={20} />
-              Top Reputation Agents
-            </h2>
-            <span style={styles.sourceTag}>
-              <Star size={12} />
-              Demo Data
-            </span>
+        {!loading && agents.length > 0 && (
+          <div style={styles.section}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>
+                <TrendingUp size={20} />
+                Top Reputation Agents
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={styles.sourceTag}>
+                  <Star size={12} />
+                  On-Chain Data
+                </span>
+                <button onClick={refetch} style={styles.refreshButton}>
+                  <RefreshCw size={14} />
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <p style={{ ...styles.sectionDescription, marginBottom: '16px' }}>
+              Highest ranked agents based on reputation score, trust, and community standing
+            </p>
+            <div style={styles.agentGrid}>
+              {agents.map((agent) => (
+                <AgentCard key={agent.address} agent={agent} showRank />
+              ))}
+            </div>
           </div>
-          <p style={{ ...styles.sectionDescription, marginBottom: '16px' }}>
-            Highest ranked agents based on reputation score, trust, and community standing
-          </p>
-          <div style={styles.agentGrid}>
-            {agents.map((agent) => (
-              <AgentCard key={agent.address} agent={agent} showRank />
-            ))}
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && agents.length === 0 && (
+          <div style={styles.section}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>
+                <TrendingUp size={20} />
+                Top Reputation Agents
+              </h2>
+            </div>
+            <div style={{ ...styles.emptyState, background: c.surface, border: `1.5px solid ${c.ink}`, borderRadius: '16px' }}>
+              <Users size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
+              <p style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>No agents found</p>
+              <p style={{ fontSize: '14px', opacity: 0.7 }}>Agents will appear here once they register on the network.</p>
+              <button onClick={refetch} style={{ ...styles.refreshButton, marginTop: '16px' }}>
+                <RefreshCw size={14} />
+                Refresh
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Categories */}
         <div style={styles.section}>

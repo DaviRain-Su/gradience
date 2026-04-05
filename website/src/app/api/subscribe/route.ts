@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { kv } from '@vercel/kv';
 
-const submissions: Array<{ email: string; userType: string; timestamp: string }> = [];
 const ALLOWED_USER_TYPES = new Set(['developer', 'gamer', 'protocol', 'investor']);
+const EMAIL_SET_KEY = 'waitlist:emails';
+const USER_PREFIX = 'waitlist:user:';
 
 export async function POST(request: Request) {
   try {
@@ -23,7 +25,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const exists = submissions.some((entry) => entry.email === email);
+    // Check if email already exists using Redis set
+    const exists = await kv.sismember(EMAIL_SET_KEY, email);
     if (exists) {
       return NextResponse.json({
         success: true,
@@ -31,19 +34,24 @@ export async function POST(request: Request) {
       });
     }
 
-    submissions.push({
+    // Store email in set for deduplication
+    await kv.sadd(EMAIL_SET_KEY, email);
+
+    // Store user details as hash
+    const userData = {
       email,
       userType,
       timestamp: new Date().toISOString(),
-    });
+    };
+    await kv.hset(`${USER_PREFIX}${email}`, userData);
 
+    // Send welcome email
     const apiKey = process.env.RESEND_API_KEY;
-
     if (apiKey) {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(apiKey);
-        
+
         const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
         await resend.emails.send({
@@ -57,7 +65,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: "You're on the list! We'll notify you when early access is available."
     });
@@ -70,8 +78,68 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({ count: submissions.length });
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const action = url.searchParams.get('action');
+
+  // Count endpoint - public
+  if (action === 'count') {
+    try {
+      const count = await kv.scard(EMAIL_SET_KEY);
+      return NextResponse.json({ count });
+    } catch {
+      return NextResponse.json({ count: 0 });
+    }
+  }
+
+  // List endpoint - requires admin key
+  if (action === 'list') {
+    const adminKey = request.headers.get('x-admin-key');
+    const expectedKey = process.env.ADMIN_API_KEY;
+
+    if (!expectedKey || adminKey !== expectedKey) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    try {
+      const emails = await kv.smembers(EMAIL_SET_KEY);
+      type UserData = { email: string; userType?: string; timestamp?: string };
+      const users = await Promise.all(
+        emails.map(async (email) => {
+          const userData = await kv.hgetall<UserData>(`${USER_PREFIX}${email}`);
+          return userData || { email };
+        })
+      );
+
+      // Sort by timestamp descending
+      users.sort((a, b) => {
+        const timeA = new Date(a.timestamp || 0).getTime();
+        const timeB = new Date(b.timestamp || 0).getTime();
+        return timeB - timeA;
+      });
+
+      return NextResponse.json({
+        count: users.length,
+        users
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Failed to fetch waitlist' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Default: return count for backward compatibility
+  try {
+    const count = await kv.scard(EMAIL_SET_KEY);
+    return NextResponse.json({ count });
+  } catch {
+    return NextResponse.json({ count: 0 });
+  }
 }
 
 function normalizeEmail(value: unknown): string | null {

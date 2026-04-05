@@ -2,11 +2,24 @@
 
 import React, { useState, useCallback } from "react";
 import { JsonRender, JsonRenderSkeleton, JsonRenderError } from "@/components/json-render";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Button,
+  Textarea,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@gradiences/ui";
 import { Wand2, Copy, Share2, Download, RefreshCw, Maximize2, Lightbulb } from "lucide-react";
 import type { Spec } from "@json-render/core";
 

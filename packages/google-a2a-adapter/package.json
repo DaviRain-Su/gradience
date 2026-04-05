@@ -1,0 +1,39 @@
+{
+    "name": "@gradiences/google-a2a-adapter",
+    "version": "0.1.0",
+    "description": "Google A2A (Agent2Agent) Protocol Adapter for Gradience - Enables cross-framework agent interoperability",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": ["dist", "README.md"],
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist",
+        "typecheck": "tsc --noEmit"
+    },
+    "keywords": [
+        "google-a2a",
+        "a2a",
+        "agent2agent",
+        "agent",
+        "interop",
+        "gradience",
+        "json-rpc",
+        "protocol-adapter"
+    ],
+    "author": "Gradience",
+    "dependencies": {
+        "@gradiences/a2a-types": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.7.0"
+    }
+}

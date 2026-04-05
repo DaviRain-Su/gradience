@@ -964,9 +964,8 @@ fn map_profile(profile: crate::db::AgentProfileRow) -> AgentProfileApi {
 fn normalize_publish_mode(mode: Option<&str>) -> Result<String, ApiError> {
     crate::utils::normalize_publish_mode(mode)
 }
-}
 
-fn crate::utils::now_unix_timestamp() -> i64 {
+fn now_unix_timestamp() -> i64 {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let now = SystemTime::now()

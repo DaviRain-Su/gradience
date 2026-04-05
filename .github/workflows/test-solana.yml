@@ -5,17 +5,17 @@ on:
         branches: [main]
         paths:
             - apps/agent-arena/program/**
-            - apps/chain-hub/program/**
-            - apps/agentm-core/program/**
-            - apps/a2a-protocol/program/**
+            - programs/chain-hub/**
+            - programs/agentm-core/**
+            - programs/a2a-protocol/**
             - programs/**
             - .github/workflows/test-solana.yml
     pull_request:
         paths:
             - apps/agent-arena/program/**
-            - apps/chain-hub/program/**
-            - apps/agentm-core/program/**
-            - apps/a2a-protocol/program/**
+            - programs/chain-hub/**
+            - programs/agentm-core/**
+            - programs/a2a-protocol/**
             - programs/**
             - .github/workflows/test-solana.yml
     workflow_dispatch:
@@ -83,21 +83,21 @@ jobs:
                   path: |
                       ~/.cargo/registry
                       ~/.cargo/git
-                      apps/chain-hub/target
-                  key: solana-chain-hub-${{ runner.os }}-${{ hashFiles('apps/chain-hub/Cargo.lock') }}
+                      programs/target
+                  key: solana-chain-hub-${{ runner.os }}-${{ hashFiles('programs/Cargo.lock') }}
                   restore-keys: solana-chain-hub-${{ runner.os }}-
 
             - name: Build SBF program
-              working-directory: apps/chain-hub
-              run: cargo build-sbf --manifest-path program/Cargo.toml
+              working-directory: programs
+              run: cargo build-sbf --manifest-path chain-hub/Cargo.toml
 
-            - name: Run integration tests
-              working-directory: apps/chain-hub
-              run: cargo test
+            - name: Run tests
+              working-directory: programs
+              run: cargo test -p chain-hub
 
     # -------------------------------------------------------
     # agentm-core — Pinocchio program
-    # No root workspace Cargo.toml; program/ is standalone.
+    # Located in programs/agentm-core/
     # -------------------------------------------------------
     test-agentm-core:
         name: agentm-core (Pinocchio)
@@ -119,20 +119,21 @@ jobs:
                   path: |
                       ~/.cargo/registry
                       ~/.cargo/git
-                      apps/agentm-core/program/target
-                  key: solana-agentm-core-${{ runner.os }}-${{ hashFiles('apps/agentm-core/program/Cargo.lock') }}
+                      programs/target
+                  key: solana-agentm-core-${{ runner.os }}-${{ hashFiles('programs/Cargo.lock') }}
                   restore-keys: solana-agentm-core-${{ runner.os }}-
 
             - name: Build SBF program
-              working-directory: apps/agentm-core/program
-              run: cargo build-sbf
+              working-directory: programs
+              run: cargo build-sbf --manifest-path agentm-core/Cargo.toml
 
             - name: Run tests
-              working-directory: apps/agentm-core/program
-              run: cargo test
+              working-directory: programs
+              run: cargo test -p agentm-core
 
     # -------------------------------------------------------
     # a2a-protocol — Pinocchio program + integration tests
+    # Located in programs/a2a-protocol/
     # -------------------------------------------------------
     test-a2a-protocol:
         name: a2a-protocol (Pinocchio)
@@ -154,14 +155,14 @@ jobs:
                   path: |
                       ~/.cargo/registry
                       ~/.cargo/git
-                      apps/a2a-protocol/target
-                  key: solana-a2a-${{ runner.os }}-${{ hashFiles('apps/a2a-protocol/Cargo.lock') }}
+                      programs/target
+                  key: solana-a2a-${{ runner.os }}-${{ hashFiles('programs/Cargo.lock') }}
                   restore-keys: solana-a2a-${{ runner.os }}-
 
             - name: Build SBF program
-              working-directory: apps/a2a-protocol
-              run: cargo build-sbf --manifest-path program/Cargo.toml
+              working-directory: programs
+              run: cargo build-sbf --manifest-path a2a-protocol/Cargo.toml
 
-            - name: Run integration tests
-              working-directory: apps/a2a-protocol
-              run: cargo test -p a2a-protocol-tests
+            - name: Run tests
+              working-directory: programs
+              run: cargo test -p a2a-protocol

@@ -8,13 +8,13 @@
  * Content type ID: gradience.xyz/a2a:1.0
  */
 
-import { A2AMessage, A2APayload, GradienceMessageType } from "./types";
+import { A2AMessage, A2APayload, GradienceMessageType } from "./types.js";
 import {
   bigintReplacer,
   bigintReviver,
   canonicalize,
   generateMessageId,
-} from "./utils";
+} from "./utils.js";
 
 // ─── Content type identifier ───────────────────────────────────────────────────
 

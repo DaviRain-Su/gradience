@@ -20,9 +20,9 @@ import {
   MessageCallback,
   MessagingAdapter,
   WalletSigner,
-} from "./types";
-import { buildSigningInput, buildUnsignedMessage, GradienceCodec } from "./codec";
-import { normalizeAddress, withRetry } from "./utils";
+} from "./types.js";
+import { buildSigningInput, buildUnsignedMessage, GradienceCodec } from "./codec.js";
+import { normalizeAddress, withRetry } from "./utils.js";
 
 // ─── XMTP SDK types (thin structural interface) ────────────────────────────────
 // We use structural typing so the package compiles even when @xmtp/js-sdk is not
