@@ -11,8 +11,8 @@ const DaemonConfigSchema = z.object({
         .refine((h) => h !== '0.0.0.0' || process.env.AGENTD_ALLOW_ALL_INTERFACES === 'true', {
             message: 'Binding to 0.0.0.0 is forbidden for security. Set AGENTD_ALLOW_ALL_INTERFACES=true in Docker.',
         }),
-    chainHubUrl: z.string().url().default('wss://indexer.gradiences.xyz/ws'),
-    chainHubRestUrl: z.string().url().default('https://indexer.gradiences.xyz'),
+    chainHubUrl: z.string().default('wss://indexer.gradiences.xyz/ws'),
+    chainHubRestUrl: z.string().default('https://indexer.gradiences.xyz'),
     solanaRpcUrl: z.string().url().default('https://api.devnet.solana.com'),
     dbPath: z.string().default(() => join(getDataDir(), 'data.db')),
     logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

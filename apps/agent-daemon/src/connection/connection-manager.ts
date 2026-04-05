@@ -125,9 +125,9 @@ export class ConnectionManager extends EventEmitter {
     async connect(): Promise<void> {
         if (this.destroyed) return;
         
-        // Add the primary indexer connection if it doesn't exist
+        // Add the primary indexer connection if chainHubUrl is configured
         const indexerId = 'indexer-primary';
-        if (!this.connections.has(indexerId)) {
+        if (this.config.chainHubUrl && !this.connections.has(indexerId)) {
             this.addPeer(indexerId, this.config.chainHubUrl, 'indexer');
         }
         
