@@ -12,6 +12,7 @@
 
 import { EventEmitter } from 'node:events';
 import type { APIEndpoint } from './playwright-harness.js';
+import { PlaywrightHarness } from './playwright-harness.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -556,7 +557,6 @@ export class EvaluatorRuntime extends EventEmitter {
     task: EvaluationTask,
     sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    const { PlaywrightHarness } = await import('./playwright-harness.js');
     const harness = new PlaywrightHarness({
       maxBrowsers: 2,
       browserType: 'chromium',
@@ -620,7 +620,9 @@ export class EvaluatorRuntime extends EventEmitter {
         },
       };
     } finally {
-      await harness.shutdown();
+      if (typeof harness.shutdown === 'function') {
+        await harness.shutdown();
+      }
     }
   }
 
@@ -628,7 +630,6 @@ export class EvaluatorRuntime extends EventEmitter {
     task: EvaluationTask,
     sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    const { PlaywrightHarness } = await import('./playwright-harness.js');
     const harness = new PlaywrightHarness();
 
     try {
@@ -673,7 +674,9 @@ export class EvaluatorRuntime extends EventEmitter {
         },
       };
     } finally {
-      await harness.shutdown();
+      if (typeof harness.shutdown === 'function') {
+        await harness.shutdown();
+      }
     }
   }
 

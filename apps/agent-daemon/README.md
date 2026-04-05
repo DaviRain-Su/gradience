@@ -30,13 +30,18 @@ pnpm install
 cp .env.example .env
 # Edit .env with your configuration
 
+# Register agent (required before first start)
+pnpm dev register --master-wallet <YOUR_SOLANA_WALLET_PUBKEY>
+
 # Run development server
-pnpm dev
+pnpm dev start
 
 # Run production build
 pnpm build
 pnpm start
 ```
+
+For detailed installation and setup instructions, see [User Guide](./docs/USER_GUIDE.md).
 
 ## Environment Variables
 
