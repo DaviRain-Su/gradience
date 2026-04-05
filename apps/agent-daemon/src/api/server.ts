@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import compress from '@fastify/compress';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import { logger } from '../utils/logger.js';
 import { createAuthHook } from './auth-middleware.js';
 import { registerStatusRoutes } from './routes/status.js';
@@ -16,6 +17,8 @@ import { registerSessionRoutes } from './routes/session.js';
 // A2A routes loaded dynamically to avoid hard dependency on nostr-tools
 import { registerDomainRoutes } from './routes/domains.js';
 import { registerOWSRoutes } from './routes/ows.js';
+import { registerEvaluatorRoutes } from './routes/evaluator.js';
+import { registerCoordinatorRoutes } from './routes/coordinator.js';
 import { SessionManager } from '../auth/session-manager.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
@@ -63,6 +66,21 @@ export async function createAPIServer(deps: APIServerDeps) {
         credentials: true,
     });
 
+    // Register rate limiting - global 10 requests per minute per IP
+    await app.register(rateLimit, {
+        max: 10,
+        timeWindow: '1 minute',
+        keyGenerator: (request) => request.ip,
+        errorResponseBuilder: (request, context) => {
+            return {
+                statusCode: 429,
+                error: 'Too Many Requests',
+                message: `Rate limit exceeded. Try again in ${context.after}`,
+                retryAfter: context.after,
+            };
+        },
+    });
+
     const sessionManager = new SessionManager(deps.database);
 
     app.addHook('onRequest', createAuthHook(deps.authToken, sessionManager));
@@ -105,6 +123,8 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerNetworkRoutes(app, deps.database);
     registerDomainRoutes(app);
     registerOWSRoutes(app);
+    registerEvaluatorRoutes(app, deps.database);
+    registerCoordinatorRoutes(app);
     if (deps.a2aRouter) {
         try {
             const { registerA2ARoutes } = await import('./routes/a2a.js');
