@@ -4,7 +4,72 @@
  * @module bridge/settlement-bridge.test
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock @solana/web3.js to prevent actual network requests
+vi.mock('@solana/web3.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@solana/web3.js')>();
+  
+  // Create mock Keypair class
+  const MockKeypair = vi.fn().mockImplementation(() => ({
+    publicKey: {
+      toBase58: () => 'MockPublicKey12345678901234567890123456789012',
+      toBuffer: () => Buffer.alloc(32),
+      toBytes: () => new Uint8Array(32),
+    },
+    secretKey: new Uint8Array(64),
+  })) as unknown as typeof actual.Keypair;
+  
+  MockKeypair.generate = vi.fn().mockReturnValue({
+    publicKey: {
+      toBase58: () => 'MockPublicKey12345678901234567890123456789012',
+      toBuffer: () => Buffer.alloc(32),
+      toBytes: () => new Uint8Array(32),
+    },
+    secretKey: new Uint8Array(64),
+  });
+  
+  MockKeypair.fromSecretKey = vi.fn().mockReturnValue({
+    publicKey: {
+      toBase58: () => 'MockPublicKey12345678901234567890123456789012',
+      toBuffer: () => Buffer.alloc(32),
+      toBytes: () => new Uint8Array(32),
+    },
+    secretKey: new Uint8Array(64),
+  });
+  
+  return {
+    ...actual,
+    Keypair: MockKeypair,
+    Connection: vi.fn().mockImplementation(() => ({
+      getLatestBlockhash: vi.fn().mockResolvedValue({ blockhash: 'mock-blockhash' }),
+      sendRawTransaction: vi.fn().mockResolvedValue('2nBr3UHQZf1K5WwVWBnV6dKtX5VHBdQJNZmQW1RmzZzZqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQqQ'),
+      confirmTransaction: vi.fn().mockResolvedValue({ value: { err: null } }),
+      getSignatureStatus: vi.fn().mockResolvedValue({ value: { err: null } }),
+      getTransaction: vi.fn().mockResolvedValue({
+        blockTime: Date.now(),
+        slot: 12345,
+        meta: { err: null, logMessages: [] },
+      }),
+    })),
+    PublicKey: vi.fn().mockImplementation((key: string) => ({
+      toBase58: () => key,
+      toBuffer: () => Buffer.alloc(32),
+      toBytes: () => new Uint8Array(32),
+    })),
+    Transaction: vi.fn().mockImplementation(() => ({
+      add: vi.fn().mockReturnThis(),
+      serialize: vi.fn().mockReturnValue(Buffer.alloc(100)),
+      recentBlockhash: '',
+      feePayer: null,
+    })),
+    TransactionInstruction: vi.fn().mockImplementation((data) => data),
+    SystemProgram: {
+      programId: '11111111111111111111111111111111',
+    },
+  };
+});
+
 import { SettlementBridge, createSettlementBridge } from '../../src/bridge/settlement-bridge.js';
 import type { EvaluationResult } from '../../src/evaluator/runtime.js';
 
