@@ -122,11 +122,16 @@ export class RevenueSharingEngine {
   }
 
   private buildConfig(overrides: Partial<RevenueEngineConfig>): RevenueEngineConfig {
+    // Use valid Solana public keys for defaults (these are system program IDs and well-known addresses)
+    const defaultChainHubProgramId = new PublicKey('11111111111111111111111111111111'); // System Program as placeholder
+    const defaultProtocolTreasury = new PublicKey('11111111111111111111111111111111'); // System Program as placeholder
+    const defaultJudgePool = new PublicKey('11111111111111111111111111111111'); // System Program as placeholder
+    
     return {
       rpcEndpoint: overrides.rpcEndpoint ?? 'https://api.devnet.solana.com',
-      chainHubProgramId: overrides.chainHubProgramId ?? new PublicKey('ChainHub111111111111111111111111111111111111'),
-      protocolTreasury: overrides.protocolTreasury ?? new PublicKey('Treasury111111111111111111111111111111111111'),
-      judgePool: overrides.judgePool ?? new PublicKey('JudgePool11111111111111111111111111111111111'),
+      chainHubProgramId: overrides.chainHubProgramId ?? defaultChainHubProgramId,
+      protocolTreasury: overrides.protocolTreasury ?? defaultProtocolTreasury,
+      judgePool: overrides.judgePool ?? defaultJudgePool,
       percentages: overrides.percentages ?? {
         agent: 9500, // 95%
         judge: 300, // 3%

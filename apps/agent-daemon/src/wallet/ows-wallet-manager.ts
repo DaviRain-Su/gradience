@@ -141,16 +141,16 @@ export function getReputationTier(score: number): 'bronze' | 'silver' | 'gold' |
 // ============================================================================
 
 export class OWSWalletManager {
-  private readonly stmts: ReturnType<typeof OWSWalletManager.prepareStatements>;
+  private stmts: ReturnType<typeof OWSWalletManager.prepareStatements> | null = null;
   private reputationClient?: ChainHubReputationClient;
 
   constructor(
     private readonly db: Database.Database,
     options?: { reputationClient?: ChainHubReputationClient }
   ) {
-    this.stmts = OWSWalletManager.prepareStatements(db);
     this.reputationClient = options?.reputationClient;
     this.initializeTables();
+    this.stmts = OWSWalletManager.prepareStatements(db);
   }
 
   // -------------------------------------------------------------------------
@@ -289,7 +289,6 @@ export class OWSWalletManager {
     // GRA-225b: Record reputation history entry
     this.stmts.insertReputationHistory.run(
       id,
-      params.agentId,
       50, // default/old score
       reputationScore,
       `Wallet created with ${reputationSource} reputation`,

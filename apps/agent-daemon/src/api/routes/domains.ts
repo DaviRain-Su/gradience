@@ -227,13 +227,10 @@ let _keccakFn: ((d: Uint8Array) => Uint8Array) | null = null;
 
 async function initKeccak(): Promise<(d: Uint8Array) => Uint8Array> {
     if (_keccakFn) return _keccakFn;
-    // @noble/hashes v2 exports './sha3.js', v1 exports './sha3'
-    let mod: any;
-    try {
-        mod = await import('@noble/hashes/sha3.js' as string);
-    } catch {
-        mod = await import('@noble/hashes/sha3' as string);
-    }
+    // Use Function constructor to avoid Vitest's static import analysis
+    // @noble/hashes exports keccak_256 in the sha3 module
+    const dynamicImport = new Function('specifier', 'return import(specifier)');
+    const mod = await dynamicImport('@noble/hashes/sha3');
     _keccakFn = mod.keccak_256 as (d: Uint8Array) => Uint8Array;
     return _keccakFn;
 }

@@ -128,10 +128,13 @@ export class RevenueDistributor {
  * @deprecated Use individual modules from ./distribution/ instead
  */
 export function createRevenueDistributor(options: DistributorOptions = {}): RevenueDistributor {
+  // Use valid Solana public keys for defaults (System Program as placeholder)
+  const defaultPubkey = new PublicKey('11111111111111111111111111111111');
+  
   const config: DistributionConfig & { rpcEndpoint?: string } = {
-    chainHubProgramId: options.chainHubProgramId ?? new PublicKey('ChainHub111111111111111111111111111111111111'),
-    protocolTreasury: options.protocolTreasury ?? new PublicKey('Treasury111111111111111111111111111111111111'),
-    judgePool: options.judgePool ?? new PublicKey('JudgePool11111111111111111111111111111111111'),
+    chainHubProgramId: options.chainHubProgramId ?? defaultPubkey,
+    protocolTreasury: options.protocolTreasury ?? defaultPubkey,
+    judgePool: options.judgePool ?? defaultPubkey,
     percentages: {
       agent: options.percentages?.agent ?? 9500,
       judge: options.percentages?.judge ?? 300,
