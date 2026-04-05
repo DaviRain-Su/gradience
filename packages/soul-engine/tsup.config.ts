@@ -8,6 +8,7 @@ export default defineConfig({
         'src/storage.ts',
         'src/probe.ts',
         'src/matching/index.ts',
+        'src/llm-config.ts',
     ],
     format: ['esm'],
     dts: true,

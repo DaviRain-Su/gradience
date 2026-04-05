@@ -15,7 +15,7 @@ import { LLMAnalyzer } from './llm-analyzer.js';
 import { ReportGenerator } from './report-generator.js';
 import type { SoulProfile } from '../types.js';
 import type { ProbeSession } from '../probe-types.js';
-import type { LLMConfig } from './llm-analyzer.js';
+import type { LLMConfig, LLMConfigWithFallback } from '../llm-config.js';
 import type { EmbeddingMatcherConfig } from './embedding.js';
 import type { ReportOptions, MatchingReport } from './report-generator.js';
 
@@ -25,10 +25,24 @@ import type { ReportOptions, MatchingReport } from './report-generator.js';
 export interface MatchingEngineConfig {
     /** Embedding matcher config */
     embedding?: EmbeddingMatcherConfig;
-    
-    /** LLM analyzer config */
-    llm: LLMConfig;
+
+    /** LLM analyzer config (with fallback support) */
+    llm: LLMConfig | LLMConfigWithFallback;
 }
+
+// Re-export LLMConfig from unified config module for convenience
+export type { 
+    LLMConfig, 
+    LLMProvider, 
+    LLMConfigWithFallback, 
+    FallbackMode 
+} from '../llm-config.js';
+
+// Re-export functions
+export { 
+    buildLLMConfigWithFallback,
+    getFallbackModeDescription 
+} from '../llm-config.js';
 
 /**
  * Complete Matching Engine
@@ -38,10 +52,17 @@ export interface MatchingEngineConfig {
 export class MatchingEngine {
     private embeddingMatcher: EmbeddingMatcher;
     private llmAnalyzer: LLMAnalyzer;
+    private config: MatchingEngineConfig;
     
     constructor(config: MatchingEngineConfig) {
+        this.config = config;
         this.embeddingMatcher = new EmbeddingMatcher(config.embedding);
-        this.llmAnalyzer = new LLMAnalyzer(config.llm);
+        
+        // Check if we should use rule-based analysis
+        const llmConfig = config.llm as LLMConfigWithFallback;
+        const useRuleBased = llmConfig.fallbackMode !== 'off' || !config.llm.apiKey;
+        
+        this.llmAnalyzer = new LLMAnalyzer(config.llm, { useRuleBased });
     }
     
     /**
@@ -49,7 +70,11 @@ export class MatchingEngine {
      */
     async initialize(): Promise<void> {
         await this.embeddingMatcher.initialize();
-        console.log('[MatchingEngine] Initialized');
+        
+        const llmConfig = this.config.llm as LLMConfigWithFallback;
+        const mode = llmConfig.fallbackMode || (this.config.llm.apiKey ? 'off' : 'embedding-only');
+        
+        console.log(`[MatchingEngine] Initialized (mode: ${mode})`);
     }
     
     /**

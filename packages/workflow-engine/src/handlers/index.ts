@@ -2,7 +2,7 @@
  * Handlers module exports
  */
 
-// Trading/DeFi handlers (mock)
+// Trading/DeFi handlers (mock - for testing without blockchain)
 export {
   createSwapHandler,
   createBridgeHandler,
@@ -19,7 +19,7 @@ export {
   type StakeParams,
 } from './trading.js';
 
-// Trading/DeFi handlers (real Solana implementation)
+// Trading/DeFi handlers (real Solana implementation with Jupiter API)
 export {
   createRealSwapHandler,
   createRealBridgeHandler,
@@ -61,21 +61,55 @@ export {
   type LogParams,
 } from './utility.js';
 
+// Handler type
+import type { ActionHandler } from '../engine/step-executor.js';
+
+/**
+ * Handler creation mode
+ */
+export type HandlerMode = 'mock' | 'real' | 'auto';
+
 /**
  * Create all handlers combined
+ * 
+ * @param mode - 'mock' for mock handlers, 'real' for Jupiter API integration, 'auto' to detect based on environment
+ * @param config - Configuration options
  */
-export function createAllHandlers(config?: {
-  jupiterApiUrl?: string;
-  wormholeApiUrl?: string;
-  walletPrivateKey?: string;
-  tempoApiUrl?: string;
-  teeEndpoint?: string;
-  relayEndpoint?: string;
-  fetchFn?: typeof fetch;
-  logger?: Console;
-  defaultTimeout?: number;
-}): Map<string, import('../engine/step-executor.js').ActionHandler> {
-  const trading = createTradingHandlers(config);
+export function createAllHandlers(
+  mode: HandlerMode = 'auto',
+  config?: {
+    jupiterApiUrl?: string;
+    wormholeApiUrl?: string;
+    walletPrivateKey?: string;
+    tempoApiUrl?: string;
+    teeEndpoint?: string;
+    relayEndpoint?: string;
+    fetchFn?: typeof fetch;
+    logger?: Console;
+    defaultTimeout?: number;
+    useTritonCascade?: boolean;
+  }
+): Map<string, ActionHandler> {
+  // Auto-detect mode based on environment
+  const effectiveMode = mode === 'auto' 
+    ? (process.env.USE_REAL_HANDLERS === 'true' || process.env.SOLANA_RPC_URL ? 'real' : 'mock')
+    : mode;
+
+  console.log(`[Handlers] Creating handlers in '${effectiveMode}' mode`);
+
+  let trading: Map<string, ActionHandler>;
+  
+  if (effectiveMode === 'real') {
+    // Use real Jupiter API integration
+    trading = createRealTradingHandlers({
+      jupiterApiUrl: config?.jupiterApiUrl,
+      useTritonCascade: config?.useTritonCascade ?? true,
+    });
+  } else {
+    // Use mock handlers for testing
+    trading = createMockTradingHandlers(config);
+  }
+  
   const payment = createPaymentHandlers(config);
   const utility = createUtilityHandlers(config);
 
@@ -83,6 +117,7 @@ export function createAllHandlers(config?: {
 }
 
 // Need to import for the function above
-import { createTradingHandlers } from './trading.js';
+import { createTradingHandlers as createMockTradingHandlers } from './trading.js';
+import { createRealTradingHandlers } from './trading-real.js';
 import { createPaymentHandlers } from './payment.js';
 import { createUtilityHandlers } from './utility.js';

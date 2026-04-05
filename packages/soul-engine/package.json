@@ -30,6 +30,10 @@
         "./matching": {
             "import": "./dist/matching/index.js",
             "types": "./dist/matching/index.d.ts"
+        },
+        "./llm-config": {
+            "import": "./dist/llm-config.js",
+            "types": "./dist/llm-config.d.ts"
         }
     },
     "files": [
