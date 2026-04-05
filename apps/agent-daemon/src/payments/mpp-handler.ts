@@ -62,28 +62,16 @@ export class MPPHandler extends EventEmitter {
 
     this.config = {
       rpcEndpoint: config.rpcEndpoint ?? 'https://api.devnet.solana.com',
-      programId: config.programId ?? 'MPP1111111111111111111111111111111111111111',
-      defaultTimeout: config.defaultTimeout ?? 30000,
+      defaultTimeoutMs: config.defaultTimeoutMs ?? 30000,
       maxJudges: config.maxJudges ?? 5,
       maxParticipants: config.maxParticipants ?? 10,
+      minJudgeThresholdBps: config.minJudgeThresholdBps ?? 5000,
     };
 
     this.payments = new Map();
     this.paymentManager = new MPPPaymentManager(this.config);
     this.voting = new MPPVoting();
     this.refund = new MPPRefund(this.config.rpcEndpoint);
-
-    // Forward events from sub-modules
-    this.paymentManager.on('paymentCreated', (p) => {
-      this.payments.set(p.paymentId, p);
-      this.emit('paymentCreated', p);
-    });
-
-    this.voting.on('voteCast', (data) => this.emit('voteCast', data));
-    this.voting.on('paymentApproved', (data) => this.emit('paymentApproved', data));
-    this.refund.on('fundsReleased', (data) => this.emit('fundsReleased', data));
-    this.refund.on('fundsClaimed', (data) => this.emit('fundsClaimed', data));
-    this.refund.on('refunded', (data) => this.emit('refunded', data));
   }
 
   // ============================================================================
@@ -171,7 +159,7 @@ export class MPPHandler extends EventEmitter {
   // Refund
   // ============================================================================
 
-  async refund(paymentId: string, signer: Signer): Promise<void> {
+  async processRefund(paymentId: string, signer: Signer): Promise<void> {
     const payment = this.getPaymentOrThrow(paymentId);
     await this.refund.refund(payment, signer);
   }

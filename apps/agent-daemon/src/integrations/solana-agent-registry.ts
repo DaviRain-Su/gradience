@@ -19,6 +19,7 @@ import {
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
   ComputeBudgetProgram,
+  Keypair,
 } from '@solana/web3.js';
 import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
 import { logger } from '../utils/logger.js';
@@ -248,9 +249,20 @@ export class SolanaAgentRegistryClient {
     this.connection = new Connection(config.rpcUrl, 'confirmed');
 
     // Initialize provider
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.provider = new AnchorProvider(
       this.connection,
-      new web3.Wallet(this.oracleKeypair),
+      {
+        publicKey: this.oracleKeypair.publicKey,
+        signTransaction: async (tx: any) => {
+          tx.partialSign(this.oracleKeypair);
+          return tx;
+        },
+        signAllTransactions: async (txs: any[]) => {
+          txs.forEach(tx => tx.partialSign(this.oracleKeypair));
+          return txs;
+        },
+      } as any,
       { commitment: 'confirmed' }
     );
 
@@ -275,7 +287,7 @@ export class SolanaAgentRegistryClient {
     this.program = new Program(
       SOLANA_AGENT_REGISTRY_IDL as any,
       programId,
-      this.provider
+      this.provider as any
     );
 
     logger.info(
@@ -416,7 +428,7 @@ export class SolanaAgentRegistryClient {
   async getAgent(agentPDA: string): Promise<AgentData | null> {
     try {
       const pda = new PublicKey(agentPDA);
-      const account = await this.program.account.agent.fetch(pda);
+      const account = await (this.program.account as any).agent.fetch(pda);
 
       if (!account) {
         return null;
@@ -457,7 +469,7 @@ export class SolanaAgentRegistryClient {
         this.program.programId
       );
 
-      const account = await this.program.account.reputation.fetch(reputationPDA);
+      const account = await (this.program.account as any).reputation.fetch(reputationPDA);
 
       if (!account) {
         return null;
