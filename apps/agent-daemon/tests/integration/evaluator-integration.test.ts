@@ -12,40 +12,43 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { EvaluatorRuntime } from '../../src/evaluator/runtime.js';
+import { JudgeRegistry, createDefaultJudgeRegistry, CodeJudge, UIJudge, APIJudge, ContentJudge } from '../../src/evaluator/judges.js';
+import type { EvaluationTask } from '../../src/evaluator/runtime.js';
 
-// NOTE: This mock is currently not working correctly because PlaywrightHarness
-// is imported at the top level in judges.ts before the mock is applied.
-// Tests that depend on PlaywrightHarness (UI and API evaluations) are skipped.
-// TODO: Refactor to use dependency injection or factory pattern for better testability
-vi.doMock('../../src/evaluator/playwright-harness', () => ({
-  PlaywrightHarness: vi.fn().mockImplementation(() => ({
-    verifyUI: vi.fn().mockResolvedValue({
-      passed: true,
-      score: 85,
-      details: [
-        { name: 'navigation', passed: true, score: 100, message: 'Navigation successful' },
-        { name: 'visual', passed: true, score: 80, message: 'Visual check passed' },
-        { name: 'accessibility', passed: true, score: 75, message: 'Accessibility OK' },
-      ],
-      durationMs: 1000,
-    }),
-    verifyAPI: vi.fn().mockResolvedValue({
-      passed: true,
-      score: 90,
-      details: [
-        { name: 'GET /health', passed: true, score: 100, message: 'Health check passed', metadata: { status: 200, duration: 50 } },
-        { name: 'POST /users', passed: true, score: 80, message: 'Users created', metadata: { status: 201, duration: 100 } },
-      ],
-      durationMs: 500,
-    }),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-  })),
-}));
+// Mock PlaywrightHarness before any modules that import it
+vi.mock('../../src/evaluator/playwright-harness', () => {
+  const mockShutdown = vi.fn().mockResolvedValue(undefined);
+  const mockVerifyUI = vi.fn().mockResolvedValue({
+    passed: true,
+    score: 85,
+    details: [
+      { name: 'navigation', passed: true, score: 100, message: 'Navigation successful' },
+      { name: 'visual', passed: true, score: 80, message: 'Visual check passed' },
+      { name: 'accessibility', passed: true, score: 75, message: 'Accessibility OK' },
+    ],
+    durationMs: 1000,
+  });
+  const mockVerifyAPI = vi.fn().mockResolvedValue({
+    passed: true,
+    score: 90,
+    details: [
+      { name: 'GET /health', passed: true, score: 100, message: 'Health check passed', metadata: { status: 200, duration: 50 } },
+      { name: 'POST /users', passed: true, score: 80, message: 'Users created', metadata: { status: 201, duration: 100 } },
+    ],
+    durationMs: 500,
+  });
 
-// Import modules AFTER mocks are defined
-const { EvaluatorRuntime } = await import('../../src/evaluator/runtime.js');
-const { JudgeRegistry, createDefaultJudgeRegistry, CodeJudge, UIJudge, APIJudge, ContentJudge } = await import('../../src/evaluator/judges.js');
-type EvaluationTask = import('../../src/evaluator/runtime.js').EvaluationTask;
+  class MockPlaywrightHarness {
+    verifyUI = mockVerifyUI;
+    verifyAPI = mockVerifyAPI;
+    shutdown = mockShutdown;
+  }
+
+  return {
+    PlaywrightHarness: MockPlaywrightHarness,
+  };
+});
 
 // Mock logger
 vi.mock('../../src/utils/logger.js', () => ({
@@ -528,6 +531,13 @@ describe('Evaluator Integration', () => {
     });
 
     it('should clean up after evaluation error', async () => {
+      // Attach error handler to prevent unhandled error rejection
+      const errorPromise = new Promise<void>((resolve) => {
+        runtime.on('error', () => {
+          resolve();
+        });
+      });
+
       const task: any = {
         taskId: 'cleanup-task',
         agentId: 'agent-1',
@@ -540,7 +550,7 @@ describe('Evaluator Integration', () => {
       const evaluationId = await runtime.submit(task);
 
       // Wait for error to be processed
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await errorPromise;
 
       // Task should be removed from active evaluations
       expect(runtime.getStatus(evaluationId)).toBeUndefined();

@@ -322,6 +322,7 @@ export class EvaluatorRuntime extends EventEmitter {
     // Start evaluation asynchronously
     this.runEvaluation(fullTask).catch((error) => {
       logger.error({ error, evaluationId: id }, 'Evaluation failed');
+      this.activeEvaluations.delete(id);
       this.emit('error', { evaluationId: id, error });
     });
 
