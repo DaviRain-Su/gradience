@@ -177,31 +177,6 @@ export class Daemon {
         });
         logger.info('EvaluatorRuntime initialized');
 
-        // Initialize Payment Service (A2A + Bridge Settlement)
-        if (this.config.a2aEnabled && this.a2aRouter) {
-            try {
-                const { OWSWalletManager } = await import('./wallet/ows-wallet-manager.js');
-                const { EvaluatorRuntime } = await import('./evaluator/runtime.js');
-                const { PaymentService } = await import('./services/payment-service.js');
-                
-                this.paymentService = new PaymentService(
-                    this.a2aRouter,
-                    this.owsWalletManager,
-                    this.evaluatorRuntime,
-                    this.bridgeManager,
-                    {
-                        defaultTimeoutMs: this.config.paymentsTimeoutMs,
-                        autoApproveThreshold: this.config.judgeConfidenceThreshold,
-                        chainHubProgramId: this.config.bridgeProgramId,
-                        rpcEndpoint: this.config.solanaRpcUrl,
-                    }
-                );
-                logger.info('PaymentService initialized (A2A + Bridge Settlement)');
-            } catch (err) {
-                logger.warn({ err }, 'PaymentService initialization failed, continuing without A2A payments');
-            }
-        }
-
         // A2A Router (Nostr + XMTP) -- loaded dynamically with production-grade features
         if (this.config.a2aEnabled) {
             try {
@@ -223,6 +198,29 @@ export class Daemon {
                 logger.info('A2ARouter configured with production-grade features (circuit breaker, rate limiter, health monitor, metrics)');
             } catch (err) {
                 logger.warn({ err }, 'A2A Router not available (missing dependencies), continuing without A2A');
+            }
+        }
+
+        // Initialize Payment Service (A2A + Bridge Settlement)
+        if (this.config.a2aEnabled && this.a2aRouter) {
+            try {
+                const { PaymentService } = await import('./services/payment-service.js');
+                
+                this.paymentService = new PaymentService(
+                    this.a2aRouter,
+                    this.owsWalletManager,
+                    this.evaluatorRuntime,
+                    this.bridgeManager,
+                    {
+                        defaultTimeoutMs: this.config.paymentsTimeoutMs,
+                        autoApproveThreshold: this.config.judgeConfidenceThreshold,
+                        chainHubProgramId: this.config.bridgeProgramId,
+                        rpcEndpoint: this.config.solanaRpcUrl,
+                    }
+                );
+                logger.info('PaymentService initialized (A2A + Bridge Settlement)');
+            } catch (err) {
+                logger.warn({ err }, 'PaymentService initialization failed, continuing without A2A payments');
             }
         }
 
