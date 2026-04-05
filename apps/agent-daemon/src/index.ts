@@ -125,7 +125,7 @@ program
     .action(async (opts) => {
         const overrides: Record<string, unknown> = {};
         if (opts.port) overrides.port = Number(opts.port);
-        if (opts.chainHubUrl) overrides.chainHubUrl = opts.chainHubUrl;
+        if (opts.chainHubUrl !== undefined) overrides.chainHubUrl = opts.chainHubUrl;
 
         const config = loadConfig(overrides);
         const daemon = new Daemon(config);
