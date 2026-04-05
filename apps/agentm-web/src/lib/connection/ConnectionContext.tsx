@@ -64,14 +64,15 @@ function clearSession(): void {
 export function ConnectionProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<ConnectionState>(() => {
         const saved = loadSession();
+        // Default to remote API for web users
         return {
             isConnected: !!saved,
             isConnecting: false,
-            daemonUrl: saved ? (saved as any).daemonUrl || LOCAL_API_URL : LOCAL_API_URL,
+            daemonUrl: saved ? (saved as any).daemonUrl || REMOTE_API_URL : REMOTE_API_URL,
             sessionToken: saved?.token ?? null,
             walletAddress: saved?.walletAddress ?? null,
             error: null,
-            mode: 'local',
+            mode: 'remote', // Default to remote for web users
         };
     });
     const [daemonDetected, setDaemonDetected] = useState(false);
@@ -127,67 +128,68 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         }
 
         async function probe() {
-            // 1. Try saved custom daemon URL
+            // PRIORITY: Try remote API first for web users
+            // Local daemon is now opt-in for advanced users
+            
+            // 1. Try remote API first
+            try {
+                const remoteHealth = await fetch(`${REMOTE_API_URL}/health`, { signal: AbortSignal.timeout(3000) });
+                if (remoteHealth.ok && !cancelled) {
+                    setDaemonDetected(true);
+                    const saved = loadSession();
+                    if (saved) {
+                        try {
+                            const meRes = await fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
+                                headers: { Authorization: `Bearer ${saved.token}` },
+                                signal: AbortSignal.timeout(3000),
+                            });
+                            if (meRes.ok && !cancelled) {
+                                setState(prev => ({
+                                    ...prev,
+                                    isConnected: true,
+                                    daemonUrl: REMOTE_API_URL,
+                                    mode: 'remote',
+                                    sessionToken: saved.token,
+                                    walletAddress: saved.walletAddress,
+                                }));
+                                return;
+                            }
+                        } catch {}
+                        clearSession();
+                    }
+                    if (!cancelled) {
+                        setState(prev => ({
+                            ...prev,
+                            isConnected: false,
+                            sessionToken: null,
+                            walletAddress: null,
+                            daemonUrl: REMOTE_API_URL,
+                            mode: 'remote',
+                        }));
+                    }
+                    return;
+                }
+            } catch {}
+
+            // 2. Remote failed -- try saved custom daemon URL (for advanced users)
             const savedUrl = loadDaemonUrl();
             if (savedUrl && savedUrl !== LOCAL_API_URL) {
                 if (await tryDaemon(savedUrl)) return;
             }
 
-            // 2. Try local daemon
+            // 3. Try local daemon as fallback (for local development)
             if (await tryDaemon(LOCAL_API_URL)) return;
 
-            // 2. No local daemon -- try remote API
+            // Nothing worked
             if (!cancelled) {
-                try {
-                    const remoteHealth = await fetch(`${REMOTE_API_URL}/health`, { signal: AbortSignal.timeout(3000) });
-                    if (remoteHealth.ok && !cancelled) {
-                        setDaemonDetected(true);
-                        const saved = loadSession();
-                        if (saved) {
-                            try {
-                                const meRes = await fetch(`${REMOTE_API_URL}/api/v1/auth/me`, {
-                                    headers: { Authorization: `Bearer ${saved.token}` },
-                                    signal: AbortSignal.timeout(3000),
-                                });
-                                if (meRes.ok && !cancelled) {
-                                    setState(prev => ({
-                                        ...prev,
-                                        isConnected: true,
-                                        daemonUrl: REMOTE_API_URL,
-                                        mode: 'remote',
-                                        sessionToken: saved.token,
-                                        walletAddress: saved.walletAddress,
-                                    }));
-                                    return;
-                                }
-                            } catch {}
-                            clearSession();
-                        }
-                        if (!cancelled) {
-                            setState(prev => ({
-                                ...prev,
-                                isConnected: false,
-                                sessionToken: null,
-                                walletAddress: null,
-                                daemonUrl: REMOTE_API_URL,
-                                mode: 'remote',
-                            }));
-                        }
-                        return;
-                    }
-                } catch {}
-
-                // Remote also unreachable
-                if (!cancelled) {
-                    setDaemonDetected(false);
-                    setState(prev => ({
-                        ...prev,
-                        isConnected: false,
-                        sessionToken: null,
-                        walletAddress: null,
-                        mode: 'local',
-                    }));
-                }
+                setDaemonDetected(false);
+                setState(prev => ({
+                    ...prev,
+                    isConnected: false,
+                    sessionToken: null,
+                    walletAddress: null,
+                    mode: 'remote', // Keep remote as default even when unreachable
+                }));
             }
         }
         probe();

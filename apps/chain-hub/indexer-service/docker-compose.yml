@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chain-hub-indexer-db
+    environment:
+      POSTGRES_DB: gradience_chain_hub
+      POSTGRES_USER: gradience
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gradience_dev}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gradience -d gradience_chain_hub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+  migrate:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-gradience_dev}
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      - sh
+      - -c
+      - |
+        psql -h postgres -U gradience -d gradience_chain_hub -v ON_ERROR_STOP=1 -f /migrations/0001_init.sql
+    restart: 'no'
+
+  indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://gradience:***@postgres:5432/gradience_chain_hub
+      INDEXER_BIND_ADDR: 0.0.0.0:8788
+      # Chain Hub Program ID on devnet
+      CHAIN_HUB_PROGRAM_ID: ${CHAIN_HUB_PROGRAM_ID:-6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec}
+      SOLANA_WS_URL: ${SOLANA_WS_URL:-wss://api.devnet.solana.com}
+      SOLANA_COMMITMENT: ${SOLANA_COMMITMENT:-confirmed}
+      # Enable Solana real-time indexing by default
+      SOLANA_SUBSCRIBE: ${SOLANA_SUBSCRIBE:-true}
+    ports:
+      - '8788:8788'
+
+volumes:
+  pgdata:

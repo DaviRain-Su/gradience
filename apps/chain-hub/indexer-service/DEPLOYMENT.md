@@ -2,16 +2,18 @@
 
 ## 快速启动
 
+Indexer 现在默认连接 Solana devnet 进行实时事件索引。
+
 ```bash
 cd apps/chain-hub/indexer-service
 
-# 复制环境配置
+# 复制环境配置（可选，默认配置已预设）
 cp .env.example .env
 
 # 启动所有服务
 docker-compose up -d
 
-# 查看日志
+# 查看日志 - 检查 Solana 订阅是否成功启动
 docker-compose logs -f
 ```
 
@@ -64,9 +66,10 @@ docker exec chain-hub-indexer-db psql -U gradience -d gradience_chain_hub -c "\d
 | `POSTGRES_PORT` | 数据库端口 | 5433 |
 | `DATABASE_URL` | 数据库连接字符串 | - |
 | `INDEXER_BIND_ADDR` | 服务绑定地址 | 0.0.0.0:8788 |
-| `CHAIN_HUB_PROGRAM_ID` | Chain Hub 程序 ID | 11111111111111111111111111111111 |
+| `CHAIN_HUB_PROGRAM_ID` | Chain Hub 程序 ID (devnet) | 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec |
 | `SOLANA_WS_URL` | Solana WebSocket URL | wss://api.devnet.solana.com |
-| `SOLANA_SUBSCRIBE` | 启用 Solana 订阅 | false |
+| `SOLANA_COMMITMENT` | Solana 确认级别 | confirmed |
+| `SOLANA_SUBSCRIBE` | 启用 Solana 实时订阅 | true |
 
 ## 故障排除
 
@@ -116,9 +119,46 @@ docker-compose up -d --build
   - `/api/invocations` - 返回空数组 []
 - ✅ 数据库表已创建: skills, protocols, royalties, invocations
 
+## 2026-04-05 Solana 订阅集成
+
+### 重大更新
+
+1. **Solana 实时订阅默认启用**
+   - `SOLANA_SUBSCRIBE` 默认值从 `false` 改为 `true`
+   - Indexer 现在默认连接 Solana devnet 实时索引事件
+
+2. **Chain Hub Program ID 更新**
+   - 从占位符 `11111111111111111111111111111111` 改为实际 devnet Program ID
+   - 新默认值: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec`
+
+3. **main.rs 集成 SolanaSubscriber**
+   - 启动时自动初始化 WebSocket 连接
+   - 实时接收链上事件并写入数据库
+   - 通过 WebSocket 推送到前端
+
+### 验证 Solana 连接
+
+启动后查看日志，应该显示:
+```
+Starting Solana subscriber...
+  Program ID: 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec
+  WebSocket: wss://api.devnet.solana.com
+Solana subscriber started successfully
+```
+
+### 禁用 Solana 订阅（如需要）
+
+```bash
+# 临时禁用
+SOLANA_SUBSCRIBE=false docker-compose up -d
+
+# 或修改 .env 文件
+SOLANA_SUBSCRIBE=false
+```
+
 ## 注意事项
 
 1. 首次启动时会自动运行数据库迁移
 2. 服务依赖于 PostgreSQL，数据库健康检查通过后才会启动 indexer
-3. 默认配置使用本地开发环境设置
+3. **Solana 订阅需要互联网连接** - 确保可以访问 `wss://api.devnet.solana.com`
 4. 生产环境部署前请修改默认密码和密钥

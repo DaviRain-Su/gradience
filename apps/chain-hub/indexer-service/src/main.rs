@@ -340,10 +340,71 @@ async fn main() -> Result<()> {
     let (ws_tx, _) = broadcast::channel(1024);
     let state = AppState {
         db: Arc::new(Mutex::new(db)),
-        ws_tx,
-        metrics: app_metrics,
+        ws_tx: ws_tx.clone(),
+        metrics: app_metrics.clone(),
         triton_stale_after: Duration::from_secs(config.triton_stale_after_seconds.max(1)),
     };
+
+    // Start Solana subscriber if enabled
+    if config.solana_subscribe {
+        println!("Starting Solana subscriber...");
+        println!("  Program ID: {}", config.solana_program_id);
+        println!("  WebSocket: {}", config.solana_ws_url);
+        
+        let (event_tx, mut event_rx) = tokio::sync::mpsc::channel::<solana_subscriber::IndexedEvent>(100);
+        
+        let solana_config = solana_subscriber::SolanaSubscriberConfig {
+            ws_url: config.solana_ws_url.clone(),
+            program_id: config.solana_program_id.clone(),
+            commitment: match config.solana_commitment.as_str() {
+                "processed" => solana_subscriber::CommitmentLevel::Processed,
+                "finalized" => solana_subscriber::CommitmentLevel::Finalized,
+                _ => solana_subscriber::CommitmentLevel::Confirmed,
+            },
+            reconnect_interval_secs: 5,
+            ping_interval_secs: 30,
+        };
+        
+        let mut subscriber = solana_subscriber::SolanaSubscriber::new(solana_config, event_tx);
+        subscriber.start().await?;
+        
+        // Spawn event processor task
+        let db_clone = state.db.clone();
+        let metrics_clone = state.metrics.clone();
+        let ws_tx_clone = ws_tx.clone();
+        tokio::spawn(async move {
+            while let Some(indexed_event) = event_rx.recv().await {
+                println!("Received event: {:?}", indexed_event.event);
+                
+                // Convert to EventEnvelope and apply to database
+                let envelope = EventEnvelope {
+                    event: indexed_event.event,
+                    slot: indexed_event.slot,
+                    timestamp: indexed_event.timestamp,
+                };
+                
+                let mut db = db_clone.lock().await;
+                match db.apply_events(&[envelope.clone()]).await {
+                    Ok(processed) => {
+                        println!("Applied {} events to database", processed);
+                        metrics_clone.record_source_events(WebhookSource::Generic, processed);
+                        
+                        // Publish to WebSocket
+                        if let Some(ws_event) = to_ws_event(&envelope) {
+                            let _ = ws_tx_clone.send(ws_event);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to apply events: {}", e);
+                    }
+                }
+            }
+        });
+        
+        println!("Solana subscriber started successfully");
+    } else {
+        println!("Solana subscriber disabled (set SOLANA_SUBSCRIBE=true to enable)");
+    }
 
     if config.mock_webhook {
         replay_mock_file(&state, &config.mock_webhook_file).await?;
