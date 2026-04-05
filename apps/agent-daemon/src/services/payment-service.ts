@@ -15,6 +15,7 @@
 
 import type { A2ARouter } from '../a2a-router/router.js';
 import type { OWSWalletManager } from '../wallet/ows-wallet-manager.js';
+import type { BridgeManager } from '../bridge/index.js';
 import type {
   PaymentRequest,
   PaymentConfirmation,
@@ -27,7 +28,8 @@ import {
   validatePaymentReceipt,
   generatePaymentId,
 } from '../../shared/a2a-payment-types.js';
-import type { EvaluatorRuntime, EvaluationTask } from '../evaluator/index.js';
+import type { EvaluatorRuntime, EvaluationTask, EvaluationResult } from '../evaluator/index.js';
+import type { CheckType } from '../evaluator/runtime.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -103,6 +105,7 @@ export class PaymentService {
     private readonly a2aRouter: A2ARouter,
     private readonly walletManager: OWSWalletManager,
     private readonly evaluator: EvaluatorRuntime,
+    private readonly bridgeManager: BridgeManager,
     options: Partial<PaymentServiceOptions> = {}
   ) {
     this.options = { ...DEFAULT_PAYMENT_OPTIONS, ...options };
@@ -534,9 +537,10 @@ export class PaymentService {
         },
         criteria: this.buildEvaluationCriteria(session),
         budget: {
-          maxCost: 0.5, // $0.50 max evaluation cost
-          maxTimeMs: 5 * 60 * 1000, // 5 minutes
-          maxLLMCalls: 10,
+          maxCostUsd: 0.5,
+          maxTimeSeconds: 300, // 5 minutes
+          maxMemoryMb: 512,
+          contextWindowSize: 128000,
         },
         createdAt: Date.now(),
         timeoutAt: Date.now() + 5 * 60 * 1000,
@@ -547,8 +551,43 @@ export class PaymentService {
         'Starting evaluation for payment'
       );
 
-      // Run evaluation
-      const result = await this.evaluator.evaluate(evaluationTask);
+      // Run evaluation - submit and wait for result
+      const evaluationId = await this.evaluator.submit({
+        taskId: session.taskId,
+        agentId: session.payeeAgentId,
+        type: evaluationTask.type,
+        submission: evaluationTask.submission,
+        criteria: evaluationTask.criteria,
+        budget: evaluationTask.budget,
+      });
+      
+      // Wait for evaluation result via event
+      const result = await new Promise<EvaluationResult>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Evaluation timeout'));
+        }, 5 * 60 * 1000); // 5 minutes
+
+        const onCompleted = (completedResult: EvaluationResult) => {
+          if (completedResult.evaluationId === evaluationId) {
+            clearTimeout(timeout);
+            this.evaluator.off('completed', onCompleted);
+            this.evaluator.off('error', onError);
+            resolve(completedResult);
+          }
+        };
+
+        const onError = (error: { evaluationId: string; error: Error }) => {
+          if (error.evaluationId === evaluationId) {
+            clearTimeout(timeout);
+            this.evaluator.off('completed', onCompleted);
+            this.evaluator.off('error', onError);
+            reject(error.error);
+          }
+        };
+
+        this.evaluator.on('completed', onCompleted);
+        this.evaluator.on('error', onError);
+      });
 
       // Calculate overall score from evaluation result
       const overallScore = this.calculateOverallScore(result);
@@ -558,7 +597,7 @@ export class PaymentService {
           paymentId: session.paymentId,
           score: overallScore,
           passed: result.passed,
-          cost: result.actualCost.total,
+          cost: result.actualCost.usd,
         },
         'Evaluation completed'
       );
@@ -645,68 +684,162 @@ export class PaymentService {
           {
             name: 'quality',
             description: 'Overall quality of work',
-            maxScore: 40,
             weight: 0.4,
+            criteria: ['code_quality', 'best_practices'],
           },
           {
             name: 'completeness',
             description: 'Task completion level',
-            maxScore: 30,
             weight: 0.3,
+            criteria: ['requirements_met', 'edge_cases_handled'],
           },
           {
             name: 'timeliness',
             description: 'Delivered on time',
-            maxScore: 20,
             weight: 0.2,
+            criteria: ['on_schedule', 'responsive'],
           },
           {
             name: 'communication',
             description: 'Clear communication',
-            maxScore: 10,
             weight: 0.1,
+            criteria: ['documentation', 'clarity'],
           },
         ],
       },
-      requiredChecks: customCriteria?.requiredChecks || ['no_secrets'],
-      optionalChecks: customCriteria?.optionalChecks || [],
+      requiredChecks: (customCriteria?.requiredChecks as CheckType[]) || ['no_secrets'],
+      optionalChecks: (customCriteria?.optionalChecks as CheckType[]) || [],
     };
   }
 
   /**
    * Calculate overall score from evaluation result
    */
-  private calculateOverallScore(result: { scores: { overall: number; categories: Array<{ score: number; weight: number }> } }): number {
+  private calculateOverallScore(result: EvaluationResult): number {
     // Use the overall score from the evaluator
-    if (result.scores?.overall !== undefined) {
-      return result.scores.overall;
-    }
-
-    // Fallback: calculate weighted average from categories
-    if (result.scores?.categories) {
-      const totalWeight = result.scores.categories.reduce((sum, cat) => sum + (cat.weight || 0), 0);
-      const weightedSum = result.scores.categories.reduce(
-        (sum, cat) => sum + cat.score * (cat.weight || 0),
-        0
-      );
-      return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
-    }
-
-    return 0;
+    return result.score;
   }
 
   /**
-   * Settle payment on-chain (or mock)
+   * Settle payment on-chain using BridgeManager
    */
   private async settlePayment(
     session: PaymentSession,
     score: number,
-    evaluationResult: unknown,
+    evaluationResult: EvaluationResult,
     requiresReview = false
   ): Promise<PaymentConfirmation> {
-    // TODO: Integrate with Chain Hub for real settlement
-    // For now, create a mock confirmation with evaluation metadata
+    // Check if bridge settlement is available
+    if (!this.bridgeManager.isEnabled()) {
+      logger.warn({ paymentId: session.paymentId }, 'Bridge settlement disabled, using mock confirmation');
+      return this.createMockConfirmation(session, score, evaluationResult, requiresReview);
+    }
 
+    // Validate required accounts for on-chain settlement
+    if (!session.request.taskAccount || !session.request.escrowAccount) {
+      logger.warn(
+        { paymentId: session.paymentId, taskAccount: session.request.taskAccount, escrowAccount: session.request.escrowAccount },
+        'Missing task/escrow accounts for on-chain settlement, using mock confirmation'
+      );
+      return this.createMockConfirmation(session, score, evaluationResult, requiresReview);
+    }
+
+    try {
+      logger.info(
+        { paymentId: session.paymentId, taskId: session.taskId, score },
+        'Initiating on-chain settlement via BridgeManager'
+      );
+
+      // Build evaluation result for settlement
+      const evalResultForSettlement: EvaluationResult = {
+        evaluationId: `eval-${session.paymentId}`,
+        score,
+        passed: !requiresReview && evaluationResult.passed,
+        categoryScores: [],
+        checkResults: [],
+        verificationHash: this.generateVerificationHash(session, score),
+        executionLog: {
+          sandboxType: 'git_worktree',
+          steps: [],
+          stdout: '',
+          stderr: '',
+        },
+        driftStatus: {
+          driftDetected: false,
+          contextWindowUsage: 0,
+        },
+        actualCost: {
+          usd: evaluationResult.actualCost?.usd ?? 0,
+          timeSeconds: 0,
+          peakMemoryMb: 0,
+        },
+        completedAt: Date.now(),
+      };
+
+      // Submit settlement via BridgeManager
+      const settlementResult = await this.bridgeManager.settleEvaluation(evalResultForSettlement, {
+        taskId: session.taskId,
+        paymentId: session.paymentId,
+        agentId: session.payeeAgentId,
+        payerAgentId: session.payerAgentId,
+        amount: session.request.amount,
+        token: session.request.token,
+        taskAccount: session.request.taskAccount,
+        escrowAccount: session.request.escrowAccount,
+      });
+
+      if (settlementResult.status !== 'confirmed') {
+        throw new DaemonError(
+          ErrorCodes.SETTLEMENT_FAILED,
+          `Settlement failed: ${settlementResult.error || 'Unknown error'}`,
+          500
+        );
+      }
+
+      logger.info(
+        {
+          paymentId: session.paymentId,
+          txSignature: settlementResult.txSignature,
+          blockTime: settlementResult.blockTime,
+          slot: settlementResult.slot,
+        },
+        'On-chain settlement completed successfully'
+      );
+
+      // Create payment confirmation from settlement result
+      return {
+        paymentId: session.paymentId,
+        taskId: session.taskId,
+        txHash: settlementResult.txSignature,
+        blockTime: settlementResult.blockTime,
+        slot: settlementResult.slot,
+        amount: session.request.amount,
+        token: session.request.token,
+        payer: session.request.payer,
+        payee: session.request.payee,
+        instructionIndex: 0,
+        evaluatorScore: score,
+        settledAt: Date.now(),
+        status: requiresReview ? 'pending_review' : 'confirmed',
+      };
+    } catch (error) {
+      logger.error(
+        { error, paymentId: session.paymentId },
+        'On-chain settlement failed, falling back to mock confirmation'
+      );
+      return this.createMockConfirmation(session, score, evaluationResult, requiresReview);
+    }
+  }
+
+  /**
+   * Create mock confirmation for testing or when settlement is unavailable
+   */
+  private createMockConfirmation(
+    session: PaymentSession,
+    score: number,
+    _evaluationResult: EvaluationResult,
+    requiresReview = false
+  ): PaymentConfirmation {
     const txHash = requiresReview
       ? `pending-review-${Date.now()}`
       : `evaluated-${Date.now()}-${score}`;
@@ -724,12 +857,25 @@ export class PaymentService {
       instructionIndex: 0,
       evaluatorScore: score,
       settledAt: Date.now(),
-      metadata: {
-        evaluated: true,
-        requiresReview,
-        evaluationCost: (evaluationResult as { actualCost?: { total: number } })?.actualCost?.total,
-      },
+      status: requiresReview ? 'pending_review' : 'mock_confirmed',
     };
+  }
+
+  /**
+   * Generate verification hash for settlement proof
+   */
+  private generateVerificationHash(session: PaymentSession, score: number): string {
+    const crypto = require('crypto');
+    const data = {
+      paymentId: session.paymentId,
+      taskId: session.taskId,
+      payer: session.request.payer,
+      payee: session.request.payee,
+      amount: session.request.amount,
+      score,
+      timestamp: Date.now(),
+    };
+    return crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
   }
 
   // -------------------------------------------------------------------------
@@ -752,5 +898,21 @@ export class PaymentService {
     }
 
     return cleaned;
+  }
+
+  /**
+   * Clean up all resources
+   */
+  async cleanup(): Promise<void> {
+    // Clean up expired sessions one final time
+    const cleaned = this.cleanupExpiredSessions();
+    if (cleaned > 0) {
+      logger.info({ cleaned }, 'Cleaned up expired payment sessions');
+    }
+    
+    // Clear all sessions
+    this.sessions.clear();
+    
+    logger.info('PaymentService cleaned up');
   }
 }

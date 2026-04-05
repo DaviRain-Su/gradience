@@ -1,4 +1,4 @@
-// Stub: a2a-payment-types -- will be fully implemented with A2A payment system
+// A2A Payment Types - Chain Hub Settlement Integration
 
 export interface PaymentRequest {
   paymentId: string;
@@ -12,12 +12,20 @@ export interface PaymentRequest {
   displayAmount: string;
   deadline: number;
   description?: string;
+  /** Submission URL for evaluation */
+  submissionUrl?: string;
+  /** Solana account addresses for on-chain settlement */
+  taskAccount?: string;
+  escrowAccount?: string;
   evaluation?: {
     evaluatorId?: string;
     score?: number;
     type?: string;
     minScore?: number;
-    criteria?: string[];
+    criteria?: {
+      requiredChecks?: string[];
+      optionalChecks?: string[];
+    };
   };
 }
 
