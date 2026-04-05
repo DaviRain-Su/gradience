@@ -8,11 +8,27 @@ interface VerifyBody {
 }
 
 export function registerSessionRoutes(app: FastifyInstance, sessionManager: SessionManager): void {
-    app.post('/api/v1/auth/challenge', async (_request, _reply) => {
+    // Auth challenge endpoint - stricter rate limit: 5 requests per minute
+    app.post('/api/v1/auth/challenge', {
+        config: {
+            rateLimit: {
+                max: 5,
+                timeWindow: '1 minute',
+            },
+        },
+    }, async (_request, _reply) => {
         return sessionManager.requestChallenge();
     });
 
-    app.post<{ Body: VerifyBody }>('/api/v1/auth/verify', async (request, reply) => {
+    // Auth verify endpoint - stricter rate limit: 5 requests per minute
+    app.post<{ Body: VerifyBody }>('/api/v1/auth/verify', {
+        config: {
+            rateLimit: {
+                max: 5,
+                timeWindow: '1 minute',
+            },
+        },
+    }, async (request, reply) => {
         const { walletAddress, challenge, signature } = request.body;
 
         if (!walletAddress || !challenge || !signature) {

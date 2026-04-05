@@ -520,9 +520,10 @@ export class OWSWalletManager {
         agentId,
         {
           score: reputation.score,
-          completedTasks: reputation.completedTasks,
-          avgRating: reputation.avgRating,
-          updatedAt: reputation.updatedAt,
+          completed: reputation.completedTasks,
+          totalApplied: reputation.completedTasks || 0,
+          winRate: reputation.avgRating / 5, // Convert 0-5 rating to 0-1 winRate
+          totalEarned: 0, // Not available in ReputationRecord
         },
         'sync_from_chain_hub'
       );

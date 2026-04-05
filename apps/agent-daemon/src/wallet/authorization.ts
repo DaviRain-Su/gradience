@@ -2,6 +2,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { randomBytes } from 'node:crypto';
 import type Database from 'better-sqlite3';
+import type { TypedStatement, RunResult, DatabaseInstance } from '../types/database.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -66,16 +67,28 @@ interface SpendSumRow {
  *   - checkTransaction() must be called before every transaction
  *   - recordSpend() must be called after every successful transaction
  */
+interface AuthStatements {
+    upsertAuth: TypedStatement<[string, string, string, number, number | null], RunResult>;
+    getAuth: TypedStatement<[string], AuthorizationRow | undefined>;
+    revokeAuth: TypedStatement<[string], RunResult>;
+    insertChallenge: TypedStatement<[string, number, number], RunResult>;
+    getChallenge: TypedStatement<[string, number], ChallengeRow | undefined>;
+    deleteChallenge: TypedStatement<[string], RunResult>;
+    pruneExpiredChallenges: TypedStatement<[number], RunResult>;
+    insertSpend: TypedStatement<[string, number, string, string, number], RunResult>;
+    getDailySpend: TypedStatement<[number], SpendSumRow | undefined>;
+}
+
 export class AuthorizationManager {
     masterWallet: string | null = null;
     readonly agentWallet: string;
     authorized: boolean = false;
     policy: SigningPolicy = { ...DEFAULT_POLICY };
 
-    private readonly stmts: ReturnType<typeof AuthorizationManager.prepareStatements>;
+    private readonly stmts: AuthStatements;
 
     constructor(
-        private readonly db: Database.Database,
+        private readonly db: DatabaseInstance,
         agentWallet: string,
     ) {
         this.agentWallet = agentWallet;
@@ -127,7 +140,7 @@ export class AuthorizationManager {
     }): void {
         const masterPubkeyBytes = this.decodePubkey(params.masterWallet, 'masterWallet');
 
-        const challengeRow = this.stmts.getChallenge.get(params.challenge, Date.now()) as ChallengeRow | undefined;
+        const challengeRow = this.stmts.getChallenge.get(params.challenge, Date.now());
         if (!challengeRow) {
             throw new DaemonError(ErrorCodes.AUTH_INVALID, 'Challenge not found or expired', 401);
         }
@@ -247,7 +260,7 @@ export class AuthorizationManager {
 
     /** Total lamports spent today (UTC day boundary). */
     getDailySpend(): number {
-        const row = this.stmts.getDailySpend.get(this.utcDayStartMs()) as SpendSumRow | undefined;
+        const row = this.stmts.getDailySpend.get(this.utcDayStartMs());
         return row?.total ?? 0;
     }
 
@@ -272,7 +285,7 @@ export class AuthorizationManager {
     // -------------------------------------------------------------------------
 
     private loadFromDb(): void {
-        const row = this.stmts.getAuth.get(this.agentWallet) as AuthorizationRow | undefined;
+        const row = this.stmts.getAuth.get(this.agentWallet);
         if (!row || !row.authorized) return;
 
         if (row.expires_at !== null && row.expires_at < Date.now()) {
@@ -363,7 +376,7 @@ export class AuthorizationManager {
     // Prepared statements (static so we can type the return value)
     // -------------------------------------------------------------------------
 
-    private static prepareStatements(db: Database.Database) {
+    private static prepareStatements(db: DatabaseInstance): AuthStatements {
         return {
             upsertAuth: db.prepare(`
                 INSERT INTO wallet_authorizations
@@ -371,34 +384,34 @@ export class AuthorizationManager {
                 VALUES (?, ?, 1, ?, ?, ?)
                 ON CONFLICT(agent_wallet) DO UPDATE SET
                     master_wallet = excluded.master_wallet,
-                    authorized    = 1,
-                    policy        = excluded.policy,
+                    authorized = 1,
+                    policy = excluded.policy,
                     authorized_at = excluded.authorized_at,
-                    expires_at    = excluded.expires_at
+                    expires_at = excluded.expires_at
             `),
             getAuth: db.prepare(
-                `SELECT * FROM wallet_authorizations WHERE agent_wallet = ? LIMIT 1`,
+                `SELECT * FROM wallet_authorizations WHERE agent_wallet = ? LIMIT 1`
             ),
             revokeAuth: db.prepare(
-                `UPDATE wallet_authorizations SET authorized = 0 WHERE agent_wallet = ?`,
+                `UPDATE wallet_authorizations SET authorized = 0 WHERE agent_wallet = ?`
             ),
             insertChallenge: db.prepare(
-                `INSERT INTO wallet_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)`,
+                `INSERT INTO wallet_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)`
             ),
             getChallenge: db.prepare(
-                `SELECT * FROM wallet_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1`,
+                `SELECT * FROM wallet_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1`
             ),
             deleteChallenge: db.prepare(
-                `DELETE FROM wallet_challenges WHERE challenge = ?`,
+                `DELETE FROM wallet_challenges WHERE challenge = ?`
             ),
             pruneExpiredChallenges: db.prepare(
-                `DELETE FROM wallet_challenges WHERE expires_at <= ?`,
+                `DELETE FROM wallet_challenges WHERE expires_at <= ?`
             ),
             insertSpend: db.prepare(
-                `INSERT INTO wallet_spend_log (id, amount_lamports, program, tx_signature, created_at) VALUES (?, ?, ?, ?, ?)`,
+                `INSERT INTO wallet_spend_log (id, amount_lamports, program, tx_signature, created_at) VALUES (?, ?, ?, ?, ?)`
             ),
             getDailySpend: db.prepare(
-                `SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM wallet_spend_log WHERE created_at >= ?`,
+                `SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM wallet_spend_log WHERE created_at >= ?`
             ),
         };
     }

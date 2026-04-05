@@ -98,7 +98,7 @@ export class MPPHandler extends EventEmitter {
 
   async fundEscrow(paymentId: string, amount: bigint, signer: Signer): Promise<void> {
     const payment = this.getPaymentOrThrow(paymentId);
-    await this.paymentManager.fundEscrow(payment, amount, signer);
+    await this.paymentManager.fundEscrow(paymentId, payment.escrow, signer);
   }
 
   // ============================================================================
@@ -114,7 +114,7 @@ export class MPPHandler extends EventEmitter {
     await this.voting.castVote(payment, judgeAddress, vote);
 
     // Check if payment should be approved
-    if (this.voting.checkReleaseConditions(payment)) {
+    if (await this.voting.checkReleaseConditions(payment)) {
       this.emit('paymentApproved', { paymentId, payment });
     }
   }
@@ -129,7 +129,11 @@ export class MPPHandler extends EventEmitter {
     proof?: string
   ): Promise<void> {
     const payment = this.getPaymentOrThrow(paymentId);
-    await this.voting.completeMilestone(payment, milestoneIndex, proof);
+    const milestone = payment.releaseConditions.milestones?.[milestoneIndex];
+    if (!milestone) {
+      throw new DaemonError(ErrorCodes.MPP_MILESTONE_NOT_FOUND, `Milestone ${milestoneIndex} not found`);
+    }
+    await this.voting.completeMilestone(payment, milestone.id, proof);
   }
 
   async approveMilestone(
@@ -138,7 +142,11 @@ export class MPPHandler extends EventEmitter {
     milestoneIndex: number
   ): Promise<void> {
     const payment = this.getPaymentOrThrow(paymentId);
-    await this.voting.approveMilestone(payment, judgeAddress, milestoneIndex);
+    const milestone = payment.releaseConditions.milestones?.[milestoneIndex];
+    if (!milestone) {
+      throw new DaemonError(ErrorCodes.MPP_MILESTONE_NOT_FOUND, `Milestone ${milestoneIndex} not found`);
+    }
+    await this.voting.approveMilestone(payment, milestone.id, judgeAddress);
   }
 
   // ============================================================================
@@ -173,9 +181,7 @@ export class MPPHandler extends EventEmitter {
   }
 
   getVotes(paymentId: string): MPPVote[] {
-    const payment = this.getPayment(paymentId);
-    if (!payment) return [];
-    return this.voting.getVotes?.(payment) ?? [];
+    return this.voting.getVotes?.(paymentId) ?? [];
   }
 
   listPayments(filters?: { status?: MPPStatus; payer?: string }): MPPPayment[] {
@@ -187,13 +193,12 @@ export class MPPHandler extends EventEmitter {
   // ============================================================================
 
   cleanupExpiredPayments(): number {
-    return this.paymentManager.cleanupExpiredPayments(this.payments);
+    return this.paymentManager.cleanupExpiredPayments();
   }
 
   close(): void {
     this.paymentManager.close();
     this.voting.removeAllListeners();
-    this.refund.removeAllListeners();
     this.removeAllListeners();
     this.payments.clear();
   }

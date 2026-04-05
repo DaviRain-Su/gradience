@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import type { TypedStatement, RunResult, DatabaseInstance } from '../types/database.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
@@ -21,17 +22,41 @@ export interface Task {
     completedAt: number | null;
 }
 
-const TERMINAL_STATES: ReadonlySet<TaskState> = new Set(['completed', 'dead', 'cancelled']);
+interface TaskRow {
+    id: string;
+    type: string;
+    payload: string;
+    priority: number;
+    state: TaskState;
+    retries: number;
+    max_retries: number;
+    result: string | null;
+    error: string | null;
+    assigned_agent: string | null;
+    created_at: number;
+    updated_at: number;
+    completed_at: number | null;
+}
+
+interface TaskCountRow {
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+    total: number;
+}
+
+const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>(['completed', 'dead', 'cancelled']);
 
 export class TaskQueue {
-    private readonly stmtInsert;
-    private readonly stmtDequeue;
-    private readonly stmtUpdate;
-    private readonly stmtGet;
-    private readonly stmtList;
-    private readonly stmtCount;
+    private readonly stmtInsert: TypedStatement<[string, string, string, number, number, number, number], RunResult>;
+    private readonly stmtDequeue: TypedStatement<[number], TaskRow | undefined>;
+    private readonly stmtUpdate: TypedStatement<[TaskState, string | null, string | null, string | null, number, number | null, string], RunResult>;
+    private readonly stmtGet: TypedStatement<[string], TaskRow | undefined>;
+    private readonly stmtList: TypedStatement<[string | null, string | null, number, number], TaskRow>;
+    private readonly stmtCount: TypedStatement<[], TaskCountRow>;
 
-    constructor(private readonly db: Database.Database) {
+    constructor(private readonly db: DatabaseInstance) {
         this.stmtInsert = db.prepare(`
             INSERT OR IGNORE INTO tasks (id, type, payload, priority, state, retries, max_retries, created_at, updated_at)
             VALUES (?, ?, ?, ?, 'queued', 0, ?, ?, ?)
@@ -83,25 +108,28 @@ export class TaskQueue {
     }
 
     dequeue(): Task | null {
-        const row = this.stmtDequeue.get(Date.now()) as Record<string, unknown> | undefined;
+        const row = this.stmtDequeue.get(Date.now());
         if (!row) return null;
-        return this.rowToTask(row);
+        // Handle both single row and array return from RETURNING *
+        const singleRow = Array.isArray(row) ? row[0] : row;
+        if (!singleRow) return null;
+        return this.rowToTask(singleRow);
     }
 
     get(id: string): Task | null {
-        const row = this.stmtGet.get(id) as Record<string, unknown> | undefined;
+        const row = this.stmtGet.get(id);
         if (!row) return null;
         return this.rowToTask(row);
     }
 
     list(states?: TaskState[], limit = 50, offset = 0): Task[] {
         const stateFilter = states ? JSON.stringify(states) : null;
-        const rows = this.stmtList.all(stateFilter, stateFilter, Math.min(limit, 200), offset) as Record<string, unknown>[];
+        const rows = this.stmtList.all(stateFilter, stateFilter, Math.min(limit, 200), offset);
         return rows.map((r) => this.rowToTask(r));
     }
 
-    counts(): { queued: number; running: number; completed: number; failed: number; total: number } {
-        return this.stmtCount.get() as { queued: number; running: number; completed: number; failed: number; total: number };
+    counts(): TaskCountRow {
+        return this.stmtCount.get() ?? { queued: 0, running: 0, completed: 0, failed: 0, total: 0 };
     }
 
     updateState(id: string, state: TaskState, extra?: { result?: unknown; error?: string; assignedAgent?: string }): void {
@@ -145,21 +173,21 @@ export class TaskQueue {
         return result.changes;
     }
 
-    private rowToTask(row: Record<string, unknown>): Task {
+    private rowToTask(row: TaskRow): Task {
         return {
-            id: row.id as string,
-            type: row.type as string,
-            payload: JSON.parse(row.payload as string),
+            id: row.id,
+            type: row.type,
+            payload: JSON.parse(row.payload),
             priority: row.priority as TaskPriority,
-            state: row.state as TaskState,
-            retries: row.retries as number,
-            maxRetries: row.max_retries as number,
-            result: row.result ? JSON.parse(row.result as string) : null,
-            error: (row.error as string) ?? null,
-            assignedAgent: (row.assigned_agent as string) ?? null,
-            createdAt: row.created_at as number,
-            updatedAt: row.updated_at as number,
-            completedAt: (row.completed_at as number) ?? null,
+            state: row.state,
+            retries: row.retries,
+            maxRetries: row.max_retries,
+            result: row.result ? JSON.parse(row.result) : null,
+            error: row.error ?? null,
+            assignedAgent: row.assigned_agent ?? null,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            completedAt: row.completed_at ?? null,
         };
     }
 }

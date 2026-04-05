@@ -286,9 +286,9 @@ export class SolanaAgentRegistryClient {
     // Initialize program
     this.program = new Program(
       SOLANA_AGENT_REGISTRY_IDL as any,
-      programId,
+      programId as any,
       this.provider as any
-    );
+    ) as any;
 
     logger.info(
       {

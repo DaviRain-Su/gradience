@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type Database from 'better-sqlite3';
+import type { TypedStatement, RunResult, DatabaseInstance } from '../types/database.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import { logger } from '../utils/logger.js';
@@ -14,7 +15,17 @@ export interface A2AMessage {
     protocol?: string;
 }
 
-const TASK_MESSAGE_TYPES = new Set([
+interface MessageRow {
+    id: string;
+    from_addr: string;
+    to_addr: string;
+    type: string;
+    payload: string;
+    protocol: string | null;
+    created_at: number;
+}
+
+const TASK_MESSAGE_TYPES = new Set<string>([
     'task_proposal',
     'task_accept',
     'task_reject',
@@ -22,10 +33,10 @@ const TASK_MESSAGE_TYPES = new Set([
 ]);
 
 export class MessageRouter extends EventEmitter {
-    private readonly stmtInsert;
+    private readonly stmtInsert: TypedStatement<[string, string, string, string, string, string, string | null, number], RunResult>;
 
     constructor(
-        private readonly db: Database.Database,
+        private readonly db: DatabaseInstance,
         private readonly connectionManager: ConnectionManager,
         private readonly taskQueue: TaskQueue,
     ) {
@@ -64,7 +75,7 @@ export class MessageRouter extends EventEmitter {
 
     listMessages(direction?: 'inbound' | 'outbound', limit = 50, offset = 0): A2AMessage[] {
         let sql = 'SELECT * FROM messages';
-        const params: unknown[] = [];
+        const params: (string | number)[] = [];
 
         if (direction) {
             sql += ' WHERE direction = ?';
@@ -74,16 +85,8 @@ export class MessageRouter extends EventEmitter {
         sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
         params.push(Math.min(limit, 200), offset);
 
-        const rows = this.db.prepare(sql).all(...params) as Record<string, unknown>[];
-        return rows.map((r) => ({
-            id: r.id as string,
-            from: r.from_addr as string,
-            to: r.to_addr as string,
-            type: r.type as string,
-            timestamp: r.created_at as number,
-            payload: JSON.parse(r.payload as string),
-            protocol: (r.protocol as string) ?? undefined,
-        }));
+        const rows = this.db.prepare(sql).all(...params) as MessageRow[];
+        return rows.map((r) => this.rowToMessage(r));
     }
 
     private handleInbound(data: unknown): void {
@@ -162,5 +165,17 @@ export class MessageRouter extends EventEmitter {
         } catch (err) {
             logger.error({ err, messageId: message.id }, 'Failed to persist message');
         }
+    }
+
+    private rowToMessage(row: MessageRow): A2AMessage {
+        return {
+            id: row.id,
+            from: row.from_addr,
+            to: row.to_addr,
+            type: row.type,
+            timestamp: row.created_at,
+            payload: JSON.parse(row.payload),
+            protocol: row.protocol ?? undefined,
+        };
     }
 }

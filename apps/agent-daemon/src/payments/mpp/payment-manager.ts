@@ -57,6 +57,7 @@ export class MPPPaymentManager {
     tokenSymbol: string;
     decimals: number;
     payer: string;
+    escrow?: string;
     participants: Omit<MPPParticipant, 'allocatedAmount' | 'releasedAmount' | 'hasClaimed'>[];
     judges: Omit<MPPJudge, 'hasVoted' | 'vote'>[];
     releaseConditions: MPPReleaseCondition;
@@ -112,7 +113,7 @@ export class MPPPaymentManager {
       tokenSymbol: params.tokenSymbol,
       decimals: params.decimals,
       payer: params.payer,
-      escrow: '', // Will be set when funded
+      escrow: params.escrow || '', // Set escrow if provided
       participants,
       judges,
       releaseConditions: params.releaseConditions,

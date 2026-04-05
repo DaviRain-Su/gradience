@@ -45,7 +45,7 @@ export class RevenueDistributor {
   private builder: DistributionBuilder;
   private validator: DistributionValidator;
 
-  constructor(config: DistributionConfig) {
+  constructor(config: DistributionConfig & { rpcEndpoint?: string }) {
     // Validate percentages sum to 100%
     const total = config.percentages.agent + config.percentages.judge + config.percentages.protocol;
     if (total !== 10000) {
@@ -55,16 +55,18 @@ export class RevenueDistributor {
       );
     }
 
-    this.connection = new Connection(config.rpcEndpoint ?? 'https://api.devnet.solana.com');
+    this.connection = new Connection((config as any).rpcEndpoint ?? 'https://api.devnet.solana.com');
     this.config = config;
-    this.builder = new DistributionBuilder(config);
+    this.builder = new DistributionBuilder({ config });
     this.validator = new DistributionValidator(this.connection);
 
-    logger.info('RevenueDistributor initialized', {
-      agent: `${config.percentages.agent / 100}%`,
-      judge: `${config.percentages.judge / 100}%`,
-      protocol: `${config.percentages.protocol / 100}%`,
-    });
+    logger.info(
+      { agent: `${config.percentages.agent / 100}%`,
+        judge: `${config.percentages.judge / 100}%`,
+        protocol: `${config.percentages.protocol / 100}%`,
+      },
+      'RevenueDistributor initialized'
+    );
   }
 
   /**
@@ -87,12 +89,16 @@ export class RevenueDistributor {
   /**
    * Calculate distribution breakdown
    */
-  calculateBreakdown(totalAmount: bigint): {
-    agent: bigint;
-    judge: bigint;
-    protocol: bigint;
+  calculateBreakdown(
+    totalAmount: bigint,
+    agentAddress: PublicKey,
+    judgeAddress: PublicKey
+  ): {
+    agent: { address: PublicKey; amount: bigint };
+    judge: { address: PublicKey; amount: bigint };
+    protocol: { address: PublicKey; amount: bigint };
   } {
-    return this.builder.calculateBreakdown(totalAmount);
+    return this.builder.calculateBreakdown(totalAmount, agentAddress, judgeAddress);
   }
 
   /**
@@ -100,9 +106,13 @@ export class RevenueDistributor {
    */
   async verifyDistribution(
     txSignature: string,
-    request: DistributionRequest
-  ): Promise<boolean> {
-    return this.validator.verifyDistribution(txSignature, request);
+    expectedBreakdown: {
+      agent: { address: string; amount: bigint };
+      judge: { address: string; amount: bigint };
+      protocol: { address: string; amount: bigint };
+    }
+  ): Promise<{ valid: boolean; error?: string }> {
+    return this.validator.verifyDistribution(txSignature, expectedBreakdown);
   }
 
   /**
@@ -118,16 +128,16 @@ export class RevenueDistributor {
  * @deprecated Use individual modules from ./distribution/ instead
  */
 export function createRevenueDistributor(options: DistributorOptions = {}): RevenueDistributor {
-  const config: DistributionConfig = {
+  const config: DistributionConfig & { rpcEndpoint?: string } = {
     chainHubProgramId: options.chainHubProgramId ?? new PublicKey('ChainHub111111111111111111111111111111111111'),
     protocolTreasury: options.protocolTreasury ?? new PublicKey('Treasury111111111111111111111111111111111111'),
     judgePool: options.judgePool ?? new PublicKey('JudgePool11111111111111111111111111111111111'),
-    rpcEndpoint: options.rpcEndpoint ?? 'https://api.devnet.solana.com',
     percentages: {
       agent: options.percentages?.agent ?? 9500,
       judge: options.percentages?.judge ?? 300,
       protocol: options.percentages?.protocol ?? 200,
     },
+    rpcEndpoint: options.rpcEndpoint ?? 'https://api.devnet.solana.com',
   };
 
   return new RevenueDistributor(config);

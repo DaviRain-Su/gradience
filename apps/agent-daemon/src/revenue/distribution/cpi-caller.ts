@@ -7,6 +7,34 @@
  * @module revenue/distribution/cpi-caller
  */
 
+// ============================================================================
+// CPICaller Class
+// ============================================================================
+
+export class CPICaller {
+  private connection: Connection;
+
+  constructor(rpcEndpoint: string) {
+    this.connection = new Connection(rpcEndpoint);
+  }
+
+  async call(
+    config: DistributionConfig,
+    request: DistributionRequest,
+    signer: Signer
+  ): Promise<DistributionResult> {
+    return distribute(this.connection, config, request, signer);
+  }
+
+  async callTokens(
+    config: DistributionConfig,
+    request: DistributionRequest,
+    signer: Signer
+  ): Promise<DistributionResult> {
+    return distributeTokens(this.connection, config, request, signer);
+  }
+}
+
 import {
   Connection,
   PublicKey,

@@ -1,4 +1,10 @@
-: "bigint",
+export interface MPPPayment {
+  /** Payment ID */
+  paymentId: string;
+  /** Task ID associated with this payment */
+  taskId: string;
+  /** Total amount in smallest token unit */
+  totalAmount: bigint;
   /** Token mint */
   token: string;
   /** Token symbol */

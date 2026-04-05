@@ -1,17 +1,20 @@
 /**
  * LLM Client for Judge Evaluation
- * 
+ *
  * Pluggable LLM backend supporting any OpenAI-compatible API:
  * - OpenAI (GPT-4, GPT-3.5)
  * - Anthropic Claude (via proxy)
  * - Moonshot Kimi
  * - Ollama (local)
  * - Any OpenAI-compatible endpoint
- * 
+ *
+ * Uses unified LLM configuration from daemon config
+ *
  * @module evaluator/llm-client
  */
 
 import { logger } from '../utils/logger.js';
+import type { UnifiedLLMConfig, LLMProvider } from '../config.js';
 
 // ============================================================================
 // Types
@@ -30,6 +33,8 @@ export interface LLMConfig {
   temperature?: number;
   /** Request timeout in ms */
   timeout?: number;
+  /** Provider type (for unified config) */
+  provider?: LLMProvider;
 }
 
 export interface ChatMessage {
@@ -348,14 +353,28 @@ Output as JSON:
 let defaultLLMClient: LLMClient | null = null;
 
 /**
- * Get or create LLM client from environment
+ * Get or create LLM client from unified config
  */
-export function getLLMClient(): LLMClient | null {
+export function getLLMClient(config?: UnifiedLLMConfig): LLMClient | null {
   if (defaultLLMClient) {
     return defaultLLMClient;
   }
 
-  // Check for LLM configuration in environment
+  // Use provided config or fallback to environment
+  if (config) {
+    defaultLLMClient = new LLMClient({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl || detectBaseUrlFromProvider(config.provider),
+      model: config.model,
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+      timeout: config.timeout,
+      provider: config.provider,
+    });
+    return defaultLLMClient;
+  }
+
+  // Legacy: Check for LLM configuration in environment
   const apiKey = process.env.LLM_API_KEY;
   const baseUrl = process.env.LLM_BASE_URL || detectBaseUrl();
   const model = process.env.LLM_MODEL || detectModel(baseUrl);
@@ -375,6 +394,37 @@ export function getLLMClient(): LLMClient | null {
   });
 
   return defaultLLMClient;
+}
+
+/**
+ * Create LLM client from unified config
+ */
+export function createLLMClientFromConfig(config: UnifiedLLMConfig): LLMClient {
+  return new LLMClient({
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl || detectBaseUrlFromProvider(config.provider),
+    model: config.model,
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
+    timeout: config.timeout,
+    provider: config.provider,
+  });
+}
+
+/**
+ * Detect base URL from provider type
+ */
+function detectBaseUrlFromProvider(provider: LLMProvider): string {
+  switch (provider) {
+    case 'openai':
+      return 'https://api.openai.com/v1';
+    case 'claude':
+      return 'https://api.anthropic.com/v1';
+    case 'moonshot':
+      return 'https://api.moonshot.cn/v1';
+    default:
+      return 'https://api.openai.com/v1';
+  }
 }
 
 /**
@@ -427,7 +477,17 @@ export function createLLMClient(config: Partial<LLMConfig>): LLMClient {
 
 /**
  * Check if LLM is available
+ * Supports both unified config and legacy environment variables
  */
-export function isLLMAvailable(): boolean {
-  return !!(process.env.LLM_API_KEY);
+export function isLLMAvailable(config?: UnifiedLLMConfig): boolean {
+  if (config) {
+    return !!config.apiKey;
+  }
+  return !!(process.env.LLM_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.MOONSHOT_API_KEY);
 }
+
+// Re-export unified config types for convenience
+export type { UnifiedLLMConfig, LLMProvider } from '../config.js';

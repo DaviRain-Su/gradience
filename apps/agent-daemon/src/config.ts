@@ -35,6 +35,46 @@ const DaemonConfigSchema = z.object({
     ]),
     nostrPrivateKey: z.string().optional(),
     xmtpEnabled: z.boolean().default(false),
+    // Unified LLM configuration (for soul-engine and evaluator)
+    llmProvider: z.enum(['openai', 'claude', 'moonshot']).default('openai'),
+    llmModel: z.string().default('gpt-4'),
+    llmApiKey: z.string().default(''),
+    llmBaseUrl: z.string().optional(),
+    llmTemperature: z.number().min(0).max(1).default(0.3),
+    llmMaxTokens: z.number().int().min(1).default(2048),
+    llmTimeout: z.number().int().min(1000).default(60000),
+    // Evaluator configuration (legacy, will use unified LLM config if not set)
+    autoJudge: z.boolean().default(true),
+    judgeProvider: z.enum(['openai', 'claude', 'moonshot']).optional(),
+    judgeModel: z.string().optional(),
+    judgeConfidenceThreshold: z.number().min(0).max(1).default(0.7),
+    // Revenue sharing configuration
+    revenueSharingEnabled: z.boolean().default(true),
+    revenueAutoSettle: z.boolean().default(false),
+    revenueAgentPercentage: z.number().int().min(0).max(10000).default(9500),
+    revenueJudgePercentage: z.number().int().min(0).max(10000).default(300),
+    revenueProtocolPercentage: z.number().int().min(0).max(10000).default(200),
+    revenueProtocolTreasury: z.string().optional(),
+    revenueJudgePool: z.string().optional(),
+    revenueSettlementIntervalMs: z.number().int().min(5000).default(60_000),
+    // Payments configuration
+    paymentsMppEnabled: z.boolean().default(true),
+    paymentsX402Enabled: z.boolean().default(true),
+    paymentsTimeoutMs: z.number().int().min(1000).default(5 * 60 * 1000), // 5 minutes
+    paymentsAutoConfirm: z.boolean().default(true),
+    // Bridge settlement configuration
+    bridgeEnabled: z.boolean().default(true),
+    bridgeAutoSettle: z.boolean().default(false),
+    bridgeProgramId: z.string().default('6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec'),
+    bridgeKeyDir: z.string().default(() => join(getDataDir(), 'bridge-keys')),
+    bridgeTritonApiToken: z.string().optional(),
+    bridgeRetryMaxAttempts: z.number().int().min(1).default(3),
+    bridgeRetryBaseDelayMs: z.number().int().min(100).default(1000),
+    bridgeRetryMaxDelayMs: z.number().int().min(1000).default(30000),
+    bridgeConfirmationCommitment: z.enum(['processed', 'confirmed', 'finalized']).default('confirmed'),
+    bridgeDistributionAgentBps: z.number().int().min(0).max(10000).default(9500),
+    bridgeDistributionJudgeBps: z.number().int().min(0).max(10000).default(300),
+    bridgeDistributionProtocolBps: z.number().int().min(0).max(10000).default(200),
 });
 
 export type DaemonConfig = z.infer<typeof DaemonConfigSchema>;
@@ -74,7 +114,198 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_NOSTR_RELAYS) envConfig.nostrRelays = process.env.AGENTD_NOSTR_RELAYS.split(',');
     if (process.env.AGENTD_NOSTR_PRIVATE_KEY) envConfig.nostrPrivateKey = process.env.AGENTD_NOSTR_PRIVATE_KEY;
     if (process.env.AGENTD_XMTP_ENABLED) envConfig.xmtpEnabled = process.env.AGENTD_XMTP_ENABLED === 'true';
+    // Unified LLM configuration environment variables
+    if (process.env.LLM_PROVIDER) envConfig.llmProvider = process.env.LLM_PROVIDER;
+    if (process.env.LLM_MODEL) envConfig.llmModel = process.env.LLM_MODEL;
+    if (process.env.LLM_API_KEY) envConfig.llmApiKey = process.env.LLM_API_KEY;
+    if (process.env.LLM_BASE_URL) envConfig.llmBaseUrl = process.env.LLM_BASE_URL;
+    if (process.env.LLM_TEMPERATURE) envConfig.llmTemperature = Number(process.env.LLM_TEMPERATURE);
+    if (process.env.LLM_MAX_TOKENS) envConfig.llmMaxTokens = Number(process.env.LLM_MAX_TOKENS);
+    if (process.env.LLM_TIMEOUT) envConfig.llmTimeout = Number(process.env.LLM_TIMEOUT);
+    // Provider-specific API keys
+    if (process.env.OPENAI_API_KEY && !process.env.LLM_API_KEY) {
+        envConfig.llmApiKey = process.env.OPENAI_API_KEY;
+        if (!envConfig.llmProvider) envConfig.llmProvider = 'openai';
+    }
+    if (process.env.ANTHROPIC_API_KEY && !process.env.LLM_API_KEY) {
+        envConfig.llmApiKey = process.env.ANTHROPIC_API_KEY;
+        if (!envConfig.llmProvider) envConfig.llmProvider = 'claude';
+    }
+    if (process.env.MOONSHOT_API_KEY && !process.env.LLM_API_KEY) {
+        envConfig.llmApiKey = process.env.MOONSHOT_API_KEY;
+        if (!envConfig.llmProvider) envConfig.llmProvider = 'moonshot';
+    }
+    // Evaluator environment variables
+    if (process.env.AGENTD_AUTO_JUDGE) envConfig.autoJudge = process.env.AGENTD_AUTO_JUDGE === 'true';
+    if (process.env.AGENTD_JUDGE_PROVIDER) envConfig.judgeProvider = process.env.AGENTD_JUDGE_PROVIDER;
+    if (process.env.AGENTD_JUDGE_MODEL) envConfig.judgeModel = process.env.AGENTD_JUDGE_MODEL;
+    if (process.env.AGENTD_JUDGE_CONFIDENCE_THRESHOLD) {
+        envConfig.judgeConfidenceThreshold = Number(process.env.AGENTD_JUDGE_CONFIDENCE_THRESHOLD);
+    }
+    // Revenue sharing environment variables
+    if (process.env.AGENTD_REVENUE_SHARING_ENABLED) {
+        envConfig.revenueSharingEnabled = process.env.AGENTD_REVENUE_SHARING_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_REVENUE_AUTO_SETTLE) {
+        envConfig.revenueAutoSettle = process.env.AGENTD_REVENUE_AUTO_SETTLE === 'true';
+    }
+    if (process.env.AGENTD_REVENUE_AGENT_PERCENTAGE) {
+        envConfig.revenueAgentPercentage = Number(process.env.AGENTD_REVENUE_AGENT_PERCENTAGE);
+    }
+    if (process.env.AGENTD_REVENUE_JUDGE_PERCENTAGE) {
+        envConfig.revenueJudgePercentage = Number(process.env.AGENTD_REVENUE_JUDGE_PERCENTAGE);
+    }
+    if (process.env.AGENTD_REVENUE_PROTOCOL_PERCENTAGE) {
+        envConfig.revenueProtocolPercentage = Number(process.env.AGENTD_REVENUE_PROTOCOL_PERCENTAGE);
+    }
+    if (process.env.AGENTD_REVENUE_PROTOCOL_TREASURY) {
+        envConfig.revenueProtocolTreasury = process.env.AGENTD_REVENUE_PROTOCOL_TREASURY;
+    }
+    if (process.env.AGENTD_REVENUE_JUDGE_POOL) {
+        envConfig.revenueJudgePool = process.env.AGENTD_REVENUE_JUDGE_POOL;
+    }
+    if (process.env.AGENTD_REVENUE_SETTLEMENT_INTERVAL) {
+        envConfig.revenueSettlementIntervalMs = Number(process.env.AGENTD_REVENUE_SETTLEMENT_INTERVAL);
+    }
+    // Payments configuration environment variables
+    if (process.env.AGENTD_PAYMENTS_MPP_ENABLED) {
+        envConfig.paymentsMppEnabled = process.env.AGENTD_PAYMENTS_MPP_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_PAYMENTS_X402_ENABLED) {
+        envConfig.paymentsX402Enabled = process.env.AGENTD_PAYMENTS_X402_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_PAYMENTS_TIMEOUT_MS) {
+        envConfig.paymentsTimeoutMs = Number(process.env.AGENTD_PAYMENTS_TIMEOUT_MS);
+    }
+    if (process.env.AGENTD_PAYMENTS_AUTO_CONFIRM) {
+        envConfig.paymentsAutoConfirm = process.env.AGENTD_PAYMENTS_AUTO_CONFIRM === 'true';
+    }
+    // Bridge settlement environment variables
+    if (process.env.AGENTD_BRIDGE_ENABLED) {
+        envConfig.bridgeEnabled = process.env.AGENTD_BRIDGE_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_BRIDGE_AUTO_SETTLE) {
+        envConfig.bridgeAutoSettle = process.env.AGENTD_BRIDGE_AUTO_SETTLE === 'true';
+    }
+    if (process.env.AGENTD_BRIDGE_PROGRAM_ID) {
+        envConfig.bridgeProgramId = process.env.AGENTD_BRIDGE_PROGRAM_ID;
+    }
+    if (process.env.AGENTD_BRIDGE_KEY_DIR) {
+        envConfig.bridgeKeyDir = process.env.AGENTD_BRIDGE_KEY_DIR;
+    }
+    if (process.env.AGENTD_BRIDGE_TRITON_API_TOKEN) {
+        envConfig.bridgeTritonApiToken = process.env.AGENTD_BRIDGE_TRITON_API_TOKEN;
+    }
+    if (process.env.AGENTD_BRIDGE_RETRY_MAX_ATTEMPTS) {
+        envConfig.bridgeRetryMaxAttempts = Number(process.env.AGENTD_BRIDGE_RETRY_MAX_ATTEMPTS);
+    }
+    if (process.env.AGENTD_BRIDGE_RETRY_BASE_DELAY_MS) {
+        envConfig.bridgeRetryBaseDelayMs = Number(process.env.AGENTD_BRIDGE_RETRY_BASE_DELAY_MS);
+    }
+    if (process.env.AGENTD_BRIDGE_RETRY_MAX_DELAY_MS) {
+        envConfig.bridgeRetryMaxDelayMs = Number(process.env.AGENTD_BRIDGE_RETRY_MAX_DELAY_MS);
+    }
+    if (process.env.AGENTD_BRIDGE_CONFIRMATION_COMMITMENT) {
+        envConfig.bridgeConfirmationCommitment = process.env.AGENTD_BRIDGE_CONFIRMATION_COMMITMENT as any;
+    }
+    if (process.env.AGENTD_BRIDGE_DISTRIBUTION_AGENT_BPS) {
+        envConfig.bridgeDistributionAgentBps = Number(process.env.AGENTD_BRIDGE_DISTRIBUTION_AGENT_BPS);
+    }
+    if (process.env.AGENTD_BRIDGE_DISTRIBUTION_JUDGE_BPS) {
+        envConfig.bridgeDistributionJudgeBps = Number(process.env.AGENTD_BRIDGE_DISTRIBUTION_JUDGE_BPS);
+    }
+    if (process.env.AGENTD_BRIDGE_DISTRIBUTION_PROTOCOL_BPS) {
+        envConfig.bridgeDistributionProtocolBps = Number(process.env.AGENTD_BRIDGE_DISTRIBUTION_PROTOCOL_BPS);
+    }
 
     const merged = { ...fileConfig, ...envConfig, ...overrides };
     return DaemonConfigSchema.parse(merged);
+}
+
+// ============================================================================
+// Unified LLM Provider Configuration
+// ============================================================================
+
+export type LLMProvider = 'openai' | 'claude' | 'moonshot';
+
+export interface UnifiedLLMConfig {
+    provider: LLMProvider;
+    model: string;
+    apiKey: string;
+    baseUrl?: string;
+    temperature: number;
+    maxTokens: number;
+    timeout: number;
+}
+
+/**
+ * Get unified LLM configuration from daemon config
+ * This is used by both evaluator and soul-engine
+ */
+export function getUnifiedLLMConfig(config: DaemonConfig): UnifiedLLMConfig {
+    return {
+        provider: config.llmProvider,
+        model: config.llmModel,
+        apiKey: config.llmApiKey,
+        baseUrl: config.llmBaseUrl,
+        temperature: config.llmTemperature,
+        maxTokens: config.llmMaxTokens,
+        timeout: config.llmTimeout,
+    };
+}
+
+/**
+ * Get evaluator LLM configuration from daemon config
+ * Falls back to unified config if judge-specific config not set
+ */
+export function getEvaluatorLLMConfig(config: DaemonConfig): {
+    provider: LLMProvider;
+    model: string;
+} {
+    return {
+        provider: config.judgeProvider ?? config.llmProvider,
+        model: config.judgeModel ?? config.llmModel,
+    };
+}
+
+/**
+ * Check if LLM is properly configured
+ */
+export function isLLMConfigured(config: DaemonConfig): boolean {
+    return !!config.llmApiKey;
+}
+
+// ============================================================================
+// Legacy LLM Provider Configuration (for backward compatibility)
+// ============================================================================
+
+export interface LLMProviderConfig {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+}
+
+/**
+ * @deprecated Use getUnifiedLLMConfig instead
+ */
+export function getLLMProviderConfig(provider: 'openai' | 'claude' | 'moonshot'): LLMProviderConfig {
+    const configs: Record<string, LLMProviderConfig> = {
+        openai: {
+            baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+            apiKey: process.env.OPENAI_API_KEY || process.env.LLM_API_KEY || '',
+            model: process.env.OPENAI_MODEL || process.env.LLM_MODEL || 'gpt-4',
+        },
+        claude: {
+            baseUrl: process.env.CLAUDE_BASE_URL || 'https://api.anthropic.com/v1',
+            apiKey: process.env.ANTHROPIC_API_KEY || process.env.LLM_API_KEY || '',
+            model: process.env.CLAUDE_MODEL || process.env.LLM_MODEL || 'claude-3-sonnet-20240229',
+        },
+        moonshot: {
+            baseUrl: process.env.MOONSHOT_BASE_URL || 'https://api.moonshot.cn/v1',
+            apiKey: process.env.MOONSHOT_API_KEY || process.env.LLM_API_KEY || '',
+            model: process.env.MOONSHOT_MODEL || process.env.LLM_MODEL || 'moonshot-v1-8k',
+        },
+    };
+
+    return configs[provider] ?? configs.openai;
 }

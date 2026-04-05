@@ -104,3 +104,28 @@ export interface DistributionBreakdown {
 export interface DistributionBuilderOptions {
   config: DistributionConfig;
 }
+
+// ============================================================================
+// Distributor Options (Legacy)
+// ============================================================================
+
+export interface DistributorOptions {
+  chainHubProgramId?: PublicKey;
+  protocolTreasury?: PublicKey;
+  judgePool?: PublicKey;
+  rpcEndpoint?: string;
+  percentages?: {
+    agent?: number;
+    judge?: number;
+    protocol?: number;
+  };
+}
+
+// ============================================================================
+// Verification Result
+// ============================================================================
+
+export interface VerificationResult {
+  valid: boolean;
+  error?: string;
+}

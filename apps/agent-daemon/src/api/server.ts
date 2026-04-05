@@ -110,6 +110,7 @@ export async function createAPIServer(deps: APIServerDeps) {
         connectionManager: deps.connectionManager,
         taskQueue: deps.taskQueue,
         processManager: deps.processManager,
+        a2aRouter: deps.a2aRouter,
         startedAt: deps.startedAt,
         version: deps.version,
     });

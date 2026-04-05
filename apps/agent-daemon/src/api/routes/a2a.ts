@@ -101,8 +101,25 @@ export function registerA2ARoutes(
         return { messages, total: messages.length };
     });
 
-    // A2A health
+    // A2A health (basic)
     app.get('/api/v1/a2a/health', async () => {
         return a2aRouter.health();
+    });
+
+    // A2A system health (detailed with circuit breakers, rate limiters)
+    app.get('/api/v1/a2a/health/detailed', async () => {
+        return a2aRouter.getSystemHealth();
+    });
+
+    // A2A metrics (Prometheus format)
+    app.get('/api/v1/a2a/metrics', async (request, reply) => {
+        const metrics = a2aRouter.getMetrics();
+        reply.type('text/plain');
+        return metrics;
+    });
+
+    // A2A metrics (JSON format)
+    app.get('/api/v1/a2a/metrics/json', async () => {
+        return a2aRouter.getMetricsJSON();
     });
 }

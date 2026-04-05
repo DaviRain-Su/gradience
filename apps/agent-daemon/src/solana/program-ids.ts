@@ -10,9 +10,9 @@ export const ARENA_PROGRAM_ID = new PublicKey(
 
 /**
  * AgentM Core Program ID
- * Note: No fixed program ID is declared in the source; set via environment variable.
- * Default: System Program (placeholder - must be configured for actual usage)
+ * Devnet deployment: 2025-04-05
+ * Program deployed at: 2stkfkFaFLUvSR9yydmfQ7pZReo2M38zcVtL1QffCyDA
  */
 export const AGENTM_CORE_PROGRAM_ID = new PublicKey(
-    process.env.AGENTD_AGENTM_CORE_PROGRAM_ID ?? '11111111111111111111111111111111',
+    process.env.AGENTD_AGENTM_CORE_PROGRAM_ID ?? '2stkfkFaFLUvSR9yydmfQ7pZReo2M38zcVtL1QffCyDA',
 );

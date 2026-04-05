@@ -221,12 +221,12 @@ export class CodeJudge extends BaseJudge {
     // Try LLM evaluation first
     if (this.llmClient && isLLMAvailable()) {
       try {
-        const codeContent = task.submission?.source || task.submission?.content || '';
-        const requirements = task.description || '';
-        
+        const codeContent = task.submission?.source || '';
+        const requirements = (task as unknown as Record<string, string>).description || '';
+
         logger.info({ taskId: task.id }, 'Using LLM for code evaluation');
         const llmResult = await this.llmClient.evaluateCode(codeContent, requirements);
-        
+
         // Convert LLM scores to CategoryScore format
         for (const s of llmResult.scores) {
           const weightKey = s.category.toLowerCase().replace(/\s+/g, '');
@@ -238,13 +238,13 @@ export class CodeJudge extends BaseJudge {
             feedback: [s.feedback],
           });
         }
-        
+
         feedback.push(`Code evaluated using LLM (${this.llmClient['config']?.model || 'unknown'})`);
         feedback.push(llmResult.summary);
-        
+
         // Add basic checks
         checks.push(
-          { type: 'llm_evaluated', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
+          { type: 'compiles', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
         );
         
         return { scores, checks, feedback };
@@ -256,9 +256,9 @@ export class CodeJudge extends BaseJudge {
 
     // Fallback to basic scoring (when LLM unavailable)
     logger.info({ taskId: task.id }, 'Using fallback code evaluation (LLM not available)');
-    
+
     // Basic heuristic scoring based on code analysis
-    const codeContent = task.submission?.source || task.submission?.content || '';
+    const codeContent = task.submission?.source || '';
     const codeLength = codeContent.length;
     const hasTests = /test|spec|describe|it\(|expect\(/.test(codeContent);
     const hasComments = /\/\/|\/\*|\*\/|#/.test(codeContent);
@@ -306,8 +306,8 @@ export class CodeJudge extends BaseJudge {
 
     // Add checks
     checks.push(
-      { type: 'code_present', passed: codeLength > 0, score: codeLength > 0 ? 100 : 0, details: 'Code submission present', durationMs: 0 },
-      { type: 'tests_detected', passed: hasTests, score: hasTests ? 100 : 50, details: hasTests ? 'Tests found' : 'No tests found', durationMs: 0 }
+      { type: 'compiles', passed: codeLength > 0, score: codeLength > 0 ? 100 : 0, details: 'Code submission present', durationMs: 0 },
+      { type: 'tests_pass', passed: hasTests, score: hasTests ? 100 : 50, details: hasTests ? 'Tests found' : 'No tests found', durationMs: 0 }
     );
 
     feedback.push(`Code evaluated using heuristic analysis (LLM_API_KEY not configured)`);
@@ -537,12 +537,12 @@ export class ContentJudge extends BaseJudge {
     // Try LLM evaluation first
     if (this.llmClient && isLLMAvailable()) {
       try {
-        const content = task.submission?.content || task.submission?.source || '';
-        const requirements = task.description || '';
-        
+        const content = task.submission?.source || '';
+        const requirements = (task as unknown as Record<string, string>).description || '';
+
         logger.info({ taskId: task.id }, 'Using LLM for content evaluation');
         const llmResult = await this.llmClient.evaluateContent(content, requirements);
-        
+
         // Convert LLM scores to CategoryScore format
         for (const s of llmResult.scores) {
           const weightKey = s.category.toLowerCase().replace(/\s+/g, '');
@@ -554,12 +554,12 @@ export class ContentJudge extends BaseJudge {
             feedback: [s.feedback],
           });
         }
-        
+
         feedback.push(`Content evaluated using LLM (${this.llmClient['config']?.model || 'unknown'})`);
         feedback.push(llmResult.summary);
-        
+
         checks.push(
-          { type: 'llm_evaluated', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
+          { type: 'compiles', passed: true, score: 100, details: 'LLM evaluation successful', durationMs: 0 }
         );
         
         return { scores, checks, feedback };
@@ -571,8 +571,8 @@ export class ContentJudge extends BaseJudge {
 
     // Fallback to heuristic scoring
     logger.info({ taskId: task.id }, 'Using fallback content evaluation (LLM not available)');
-    
-    const content = task.submission?.content || task.submission?.source || '';
+
+    const content = task.submission?.source || '';
     const wordCount = content.split(/\s+/).filter(Boolean).length;
     const hasStructure = /#{1,6}\s|^\d+\.|^\-\s/m.test(content);
     const hasParagraphs = content.split(/\n\n+/).length > 1;

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import type { DatabaseInstance } from '../types/database.js';
 import { mkdirSync, existsSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { logger } from '../utils/logger.js';
@@ -81,9 +82,57 @@ CREATE TABLE IF NOT EXISTS wallet_spend_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_spend_log_created ON wallet_spend_log(created_at);
+
+CREATE TABLE IF NOT EXISTS evaluations (
+    id            TEXT PRIMARY KEY,
+    task_id       TEXT NOT NULL,
+    agent_id      TEXT NOT NULL,
+    type          TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'pending',
+    score         REAL,
+    passed        INTEGER,
+    reasoning     TEXT,
+    result        TEXT,
+    created_at    INTEGER NOT NULL,
+    completed_at  INTEGER,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_evaluations_task_id ON evaluations(task_id);
+CREATE INDEX IF NOT EXISTS idx_evaluations_status ON evaluations(status);
+CREATE INDEX IF NOT EXISTS idx_evaluations_created_at ON evaluations(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS revenue_distributions (
+    id                TEXT PRIMARY KEY,
+    task_id           TEXT NOT NULL,
+    payment_id        TEXT NOT NULL,
+    agent_address     TEXT NOT NULL,
+    judge_address     TEXT NOT NULL,
+    token_mint        TEXT NOT NULL,
+    total_amount      TEXT NOT NULL,
+    agent_amount      TEXT NOT NULL,
+    judge_amount      TEXT NOT NULL,
+    protocol_amount   TEXT NOT NULL,
+    agent_percentage  INTEGER NOT NULL DEFAULT 9500,
+    judge_percentage  INTEGER NOT NULL DEFAULT 300,
+    protocol_percentage INTEGER NOT NULL DEFAULT 200,
+    escrow_account    TEXT NOT NULL,
+    tx_signature      TEXT,
+    status            TEXT NOT NULL DEFAULT 'pending',
+    error             TEXT,
+    created_at        INTEGER NOT NULL,
+    updated_at        INTEGER NOT NULL,
+    confirmed_at      INTEGER,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_revenue_task_id ON revenue_distributions(task_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_status ON revenue_distributions(status);
+CREATE INDEX IF NOT EXISTS idx_revenue_created_at ON revenue_distributions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_revenue_tx_signature ON revenue_distributions(tx_signature);
 `;
 
-export function initDatabase(dbPath: string): Database.Database {
+export function initDatabase(dbPath: string): DatabaseInstance {
     const dir = dirname(dbPath);
     if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
