@@ -12,9 +12,9 @@ import type {
   SoulDigest,
   MatchEvaluation,
   MatchConfig,
-  DisclosureLevel,
   Verdict,
 } from './types.js';
+import { DisclosureLevel } from './types.js';
 import { hashInterest } from './crypto.js';
 
 // ============================================================================

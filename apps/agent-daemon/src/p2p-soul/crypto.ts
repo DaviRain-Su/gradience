@@ -38,22 +38,21 @@ const AES_TAG_SIZE = 16;
 /**
  * Generate a new X25519 key pair
  */
-export async function generateX25519KeyPair(): Promise<X25519KeyPair> {
-  const privateKey = await randomBytes(X25519_KEY_SIZE);
-  // Clamp private key according to X25519 spec
-  privateKey[0] &= 248;
-  privateKey[31] &= 127;
-  privateKey[31] |= 64;
-  
-  const publicKey = crypto.createPublicKey({
-    key: privateKey,
-    format: 'raw',
-    type: 'spki',
+export function generateX25519KeyPair(): X25519KeyPair {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519', {
+    publicKeyEncoding: { type: 'spki', format: 'der' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'der' },
   });
-  
+
+  // Extract raw 32-byte keys from DER encoding
+  // DER format: 30 2e 02 01 00 30 05 06 03 2b 65 6e 04 22 04 20 [32 bytes]
+  const privateKeyDer = privateKey as Buffer;
+  const publicKeyDer = publicKey as Buffer;
+
+  // Last 32 bytes are the raw key
   return {
-    publicKey: publicKey.export({ format: 'raw', type: 'spki' }),
-    privateKey,
+    publicKey: new Uint8Array(publicKeyDer.slice(-X25519_KEY_SIZE)),
+    privateKey: new Uint8Array(privateKeyDer.slice(-X25519_KEY_SIZE)),
   };
 }
 
@@ -64,22 +63,10 @@ export function computeSharedSecret(
   privateKey: Uint8Array,
   publicKey: Uint8Array
 ): Uint8Array {
-  const privateKeyObj = crypto.createPrivateKey({
-    key: Buffer.from(privateKey),
-    format: 'raw',
-    type: 'pkcs8',
-  });
-  
-  const publicKeyObj = crypto.createPublicKey({
-    key: Buffer.from(publicKey),
-    format: 'raw',
-    type: 'spki',
-  });
-  
-  return crypto.diffieHellman({
-    privateKey: privateKeyObj,
-    publicKey: publicKeyObj,
-  });
+  // Create ECDH instance for X25519
+  const ecdh = crypto.createECDH('X25519');
+  ecdh.setPrivateKey(Buffer.from(privateKey));
+  return ecdh.computeSecret(Buffer.from(publicKey));
 }
 
 // ============================================================================
@@ -98,7 +85,7 @@ export function hkdfSha256(
   const saltBuffer = typeof salt === 'string' ? Buffer.from(salt) : salt;
   const infoBuffer = typeof info === 'string' ? Buffer.from(info) : info;
   
-  return crypto.hkdfSync('sha256', ikm, saltBuffer, infoBuffer, length);
+  return new Uint8Array(crypto.hkdfSync('sha256', ikm, saltBuffer, infoBuffer, length));
 }
 
 // ============================================================================
@@ -174,10 +161,10 @@ export async function encryptDisclosure(
   
   // Combine ciphertext + tag for storage
   const combined = Buffer.concat([ciphertext, tag]);
-  
+
   return {
-    ciphertext: combined.toString('base64'),
-    nonce: iv.toString('base64'),
+    ciphertext: Buffer.from(combined).toString('base64'),
+    nonce: Buffer.from(iv).toString('base64'),
     algorithm: 'AES-256-GCM',
   };
 }
@@ -198,7 +185,7 @@ export function decryptDisclosure(
   const iv = Buffer.from(encrypted.nonce, 'base64');
   
   const plaintext = decryptAesGcm(ciphertext, key, iv, tag);
-  return JSON.parse(plaintext.toString('utf-8'));
+  return JSON.parse(Buffer.from(plaintext).toString('utf-8'));
 }
 
 // ============================================================================

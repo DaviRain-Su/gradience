@@ -7,7 +7,8 @@
  */
 
 import { EventEmitter } from 'node:events';
-import type { SoulDigest, DiscoverPayload, P2pSoulConfig, DisclosureLevel } from './types.js';
+import type { SoulDigest, DiscoverPayload, P2pSoulConfig } from './types.js';
+import { DisclosureLevel } from './types.js';
 
 // ============================================================================
 // Discovery Service

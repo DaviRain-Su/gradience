@@ -16,14 +16,13 @@ import type {
   HandshakeState,
   HandshakeEvent,
   HandshakeSession,
-  DisclosureLevel,
   SoulDigest,
   InviteMessage,
   Verdict,
   P2pSoulConfig,
-  HandshakeError,
   P2pSoulError,
 } from './types.js';
+import { DisclosureLevel, HandshakeError } from './types.js';
 
 // ============================================================================
 // Default Configuration
@@ -226,7 +225,7 @@ function startTimeout(ctx: FSMContext, state: HandshakeState): void {
   }, timeoutMs);
 }
 
-function clearTimeout(ctx: FSMContext): void {
+function clearFsTimeout(ctx: FSMContext): void {
   if (ctx.timeoutHandle) {
     clearTimeout(ctx.timeoutHandle);
     ctx.timeoutHandle = undefined;
@@ -490,7 +489,7 @@ export class HandshakeFSM extends EventEmitter {
    * Dispose resources
    */
   dispose(): void {
-    clearTimeout(this.context);
+    clearFsTimeout(this.context);
     this.removeAllListeners();
   }
 }
