@@ -6,6 +6,10 @@ export { createRealBridgeHandler } from './bridge.js';
 export { createRealYieldFarmHandler } from './yield-farm.js';
 export { createRealBorrowHandler } from './borrow.js';
 export { createRealRepayHandler } from './repay.js';
-export { createRealTradingHandlers } from './factory.js';
+export {
+  createRealTradingHandlers,
+  getSupportedActions,
+  type TradingActionMeta,
+} from '../trading-real.js';
 
 export * from './types.js';

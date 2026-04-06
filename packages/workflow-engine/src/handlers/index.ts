@@ -30,6 +30,8 @@ export {
   createRealBorrowHandler,
   createRealRepayHandler,
   createRealTradingHandlers,
+  getSupportedActions,
+  type TradingActionMeta,
 } from './trading-real.js';
 
 // Payment handlers

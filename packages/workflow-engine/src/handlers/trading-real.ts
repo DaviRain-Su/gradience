@@ -14,6 +14,7 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
   StakeProgram,
+  Lockup,
   Keypair,
   type Signer,
 } from '@solana/web3.js';
@@ -466,25 +467,14 @@ export function createRealStakeHandler(
       }
 
       try {
-        const lamports = BigInt(amount);
-        
-        // For now, we'll use a simple stake account creation
-        // In production, you'd want to use the StakeProgram from @solana/web3.js
-        // and handle stake account management properly
-        
-        // This is a simplified version - real implementation would:
-        // 1. Create stake account
-        // 2. Delegate to validator
-        // 3. Handle stake account keys
-        
-        throw new Error('Native staking implementation requires stake account management. Please use stake pools (e.g., Marinade, Jito) for easier staking.');
-        
-        /* Full implementation would look like:
-        import { StakeProgram, Lockup } from '@solana/web3.js';
-        
+        const lamports = Number(BigInt(amount));
+        if (lamports <= 0) {
+          throw new Error('Amount must be greater than 0');
+        }
+
         const validatorPubkey = validator ? new PublicKey(validator) : null;
         const stakeAccount = Keypair.generate();
-        
+
         const transaction = StakeProgram.createAccount({
           fromPubkey: signer.publicKey,
           stakePubkey: stakeAccount.publicKey,
@@ -493,9 +483,9 @@ export function createRealStakeHandler(
             withdrawer: signer.publicKey,
           },
           lockup: new Lockup(0, 0, signer.publicKey),
-          lamports: Number(lamports),
+          lamports,
         });
-        
+
         if (validatorPubkey) {
           transaction.add(
             StakeProgram.delegate({
@@ -505,9 +495,31 @@ export function createRealStakeHandler(
             })
           );
         }
-        
-        const signature = await connection.sendTransaction(transaction, [signer, stakeAccount]);
-        */
+
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = signer.publicKey;
+
+        const signature = await connection.sendTransaction(
+          transaction,
+          [signer, stakeAccount],
+          { maxRetries: 3, skipPreflight: false }
+        );
+
+        await connection.confirmTransaction(
+          { signature, blockhash, lastValidBlockHeight },
+          'confirmed'
+        );
+
+        return {
+          txHash: signature,
+          stakeAccount: stakeAccount.publicKey.toBase58(),
+          amount,
+          validator: validatorPubkey?.toBase58() ?? null,
+          action: 'create_stake_account',
+          delegated: !!validatorPubkey,
+          explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+        };
       } catch (error) {
         console.error('[Stake] Error:', error);
         throw error;
@@ -932,6 +944,32 @@ export function createRealRepayHandler(
   };
 }
 
+export type TradingActionStatus = 'stable' | 'beta' | 'stub';
+
+export interface TradingActionMeta {
+  name: string;
+  status: TradingActionStatus;
+  description: string;
+}
+
+const TRADING_ACTIONS: TradingActionMeta[] = [
+  { name: 'swap', status: 'stable', description: 'Jupiter API + Triton Cascade integration' },
+  { name: 'transfer', status: 'stable', description: 'Native SOL and SPL token transfers' },
+  { name: 'unstake', status: 'beta', description: 'Native Solana stake deactivation and split' },
+  { name: 'stake', status: 'beta', description: 'Native Solana stake account creation and delegation' },
+  { name: 'bridge', status: 'stub', description: 'Cross-chain bridge via Wormhole (not yet implemented)' },
+  { name: 'yieldFarm', status: 'stub', description: 'Orca Whirlpools LP (not yet implemented)' },
+  { name: 'borrow', status: 'stub', description: 'Solend/Jet borrowing (not yet implemented)' },
+  { name: 'repay', status: 'stub', description: 'Solend/Jet repayment (not yet implemented)' },
+];
+
+/**
+ * Get metadata about supported trading actions
+ */
+export function getSupportedActions(): TradingActionMeta[] {
+  return TRADING_ACTIONS.map(a => ({ ...a }));
+}
+
 /**
  * Export all real handlers
  */
@@ -942,13 +980,9 @@ export function createRealTradingHandlers(config?: {
 }): Map<string, ActionHandler> {
   return new Map([
     ['swap', createRealSwapHandler(config)],
-    ['bridge', createRealBridgeHandler(config)],
     ['transfer', createRealTransferHandler(config)],
     ['stake', createRealStakeHandler(config)],
     ['unstake', createRealUnstakeHandler(config)],
-    ['yieldFarm', createRealYieldFarmHandler(config)],
-    ['borrow', createRealBorrowHandler(config)],
-    ['repay', createRealRepayHandler(config)],
   ]);
 }
 

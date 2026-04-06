@@ -8,6 +8,7 @@ import {
   Transaction,
   type Signer,
 } from '@solana/web3.js';
+import { z } from 'zod';
 import type { ActionHandler } from '../../engine/step-executor.js';
 import type { SupportedChain } from '../../schema/types.js';
 import {
@@ -15,11 +16,19 @@ import {
   getCascadeClient,
 } from './utils.js';
 import type {
-  SwapParams,
   SwapHandlerConfig,
   JupiterQuote,
   JupiterSwapResponse,
 } from './types.js';
+
+const SwapParamsSchema = z.object({
+  from: z.string().min(1, 'from mint is required'),
+  to: z.string().min(1, 'to mint is required'),
+  amount: z.string().regex(/^\d+$/, 'amount must be a positive integer string'),
+  slippage: z.number().min(0).max(100).optional(),
+  signer: z.custom<Signer>((val) => val != null, 'signer is required'),
+  useJitoBundle: z.boolean().optional(),
+});
 
 /**
  * Create a real swap handler using Jupiter API with Triton Cascade
@@ -53,11 +62,7 @@ export function createRealSwapHandler(
         slippage = defaultSlippage,
         signer,
         useJitoBundle = false,
-      } = params as SwapParams;
-
-      if (!signer) {
-        throw new Error('Signer is required for swap. Please provide a valid keypair or wallet adapter.');
-      }
+      } = SwapParamsSchema.parse(params);
 
       try {
         // Step 1: Get quote from Jupiter (with retry)

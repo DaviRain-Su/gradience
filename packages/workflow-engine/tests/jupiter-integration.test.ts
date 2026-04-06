@@ -10,6 +10,7 @@ import {
   createRealTransferHandler,
   createRealTradingHandlers,
   createAllHandlers,
+  getSupportedActions,
   type HandlerMode,
 } from '../src/handlers/index.js';
 import type { ExecutionContext } from '../src/engine/step-executor.js';
@@ -127,24 +128,30 @@ describe('Jupiter API Integration', () => {
   });
 
   describe('Handler Exports', () => {
-    it('should export all handler types', () => {
-      // Verify all expected handlers are exported
+    it('should register implemented handlers by default', () => {
       const handlers = createRealTradingHandlers();
 
-      const expectedHandlers = [
-        'swap',
-        'bridge',
-        'transfer',
-        'stake',
-        'unstake',
-        'yieldFarm',
-        'borrow',
-        'repay',
-      ];
-
+      const expectedHandlers = ['swap', 'transfer', 'stake', 'unstake'];
       for (const handlerName of expectedHandlers) {
         expect(handlers.has(handlerName)).toBe(true);
       }
+
+      const stubHandlers = ['bridge', 'yieldFarm', 'borrow', 'repay'];
+      for (const handlerName of stubHandlers) {
+        expect(handlers.has(handlerName)).toBe(false);
+      }
+    });
+
+    it('should expose supported actions metadata', () => {
+      const actions = getSupportedActions();
+      expect(actions.length).toBeGreaterThan(0);
+
+      const stable = actions.filter((a) => a.status === 'stable');
+      expect(stable.map((a) => a.name)).toContain('swap');
+      expect(stable.map((a) => a.name)).toContain('transfer');
+
+      const stub = actions.filter((a) => a.status === 'stub');
+      expect(stub.map((a) => a.name)).toContain('bridge');
     });
   });
 });

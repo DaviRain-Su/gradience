@@ -14,10 +14,19 @@ import {
   createTransferInstruction,
   getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token';
+import { z } from 'zod';
 import type { ActionHandler, ExecutionContext } from '../../engine/step-executor.js';
 import type { SupportedChain } from '../../schema/types.js';
-import type { TransferParams, TransferHandlerConfig } from './types.js';
+import type { TransferHandlerConfig } from './types.js';
 import { getConnection, getCascadeClient } from './utils.js';
+
+const TransferParamsSchema = z.object({
+  token: z.string().min(1, 'token is required'),
+  to: z.string().min(1, 'recipient is required'),
+  amount: z.string().regex(/^\d+$/, 'amount must be a positive integer string'),
+  signer: z.custom<Signer>((val) => val != null, 'signer is required'),
+  useJitoBundle: z.boolean().optional(),
+});
 
 /**
  * Create a real transfer handler for SOL and SPL tokens with Triton Cascade
@@ -46,11 +55,7 @@ export function createRealTransferHandler(
         amount,
         signer,
         useJitoBundle = false,
-      } = params as TransferParams;
-
-      if (!signer) {
-        throw new Error('Signer is required for transfer');
-      }
+      } = TransferParamsSchema.parse(params);
 
       try {
         const recipient = new PublicKey(to);

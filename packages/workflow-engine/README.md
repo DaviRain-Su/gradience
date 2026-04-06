@@ -154,13 +154,25 @@ const arbitrageWorkflow: GradienceWorkflow = {
 
 ## Available Handlers
 
-### Trading/DeFi
-- `swap` — DEX token swap (Jupiter, Orca)
-- `bridge` — Cross-chain bridge (Wormhole, LayerZero)
-- `transfer` — Token transfer
-- `stake` / `unstake` — Staking operations
-- `yieldFarm` — Liquidity provision
-- `borrow` / `repay` — Lending operations
+### Trading/DeFi (Real Mode)
+
+In `real` mode, only the following handlers are registered by default. Use `getSupportedActions()` to inspect capabilities at runtime.
+
+| Action | Status | Description |
+|--------|--------|-------------|
+| `swap` | ✅ stable | Jupiter API + Triton Cascade transaction delivery |
+| `transfer` | ✅ stable | Native SOL and SPL token transfers |
+| `stake` | 🧪 beta | Native Solana stake account creation + validator delegation |
+| `unstake` | 🧪 beta | Native Solana stake deactivation and partial split |
+| `bridge` | 🚧 stub | Cross-chain via Wormhole (not yet implemented) |
+| `yieldFarm` | 🚧 stub | Orca Whirlpools LP (not yet implemented) |
+| `borrow` | 🚧 stub | Solend/Jet lending (not yet implemented) |
+| `repay` | 🚧 stub | Solend/Jet repayment (not yet implemented) |
+
+```typescript
+import { getSupportedActions } from '@gradiences/workflow-engine';
+console.log(getSupportedActions());
+```
 
 ### Payment
 - `x402Payment` — HTTP 402 micro-payments
