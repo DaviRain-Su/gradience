@@ -29,124 +29,105 @@ interface UseDiscoverAgentsResult {
 }
 
 /**
- * Hook to fetch discoverable agents from Chain Hub Indexer
- * Uses /api/agents endpoint or falls back to /api/tasks to extract agents
+ * Hook to fetch discoverable agents
+ * 
+ * Architecture: Web → Daemon (localhost:7420) → Indexer (optional sync)
+ * This ensures local-first data flow, not direct cloud connection.
  */
 export function useDiscoverAgents(): UseDiscoverAgentsResult {
   const [agents, setAgents] = useState<DiscoverAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'full' | 'readonly' | 'offline'>('offline');
 
   const fetchAgents = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const indexerBase = resolveIndexerBase();
-
-      if (!indexerBase) {
-        throw new Error('Indexer URL not configured');
-      }
-
-      // Try to fetch agents from /api/agents endpoint first
+      // Step 1: Try to connect to local daemon (preferred)
+      const daemonUrl = process.env.NEXT_PUBLIC_DAEMON_URL || 'http://localhost:7420';
+      
       try {
-        const res = await fetch(`${indexerBase}/api/agents?limit=50`, {
-          signal: AbortSignal.timeout(8000),
+        const healthRes = await fetch(`${daemonUrl}/health`, {
+          signal: AbortSignal.timeout(3000),
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const mappedAgents: DiscoverAgent[] = data.map((agent: any, index: number) => ({
-              address: agent.address || agent.agent || agent.publicKey || '',
-              displayName: agent.displayName || agent.name || `Agent ${agent.address?.slice(0, 8) || index}`,
-              bio: agent.bio || agent.description || 'AI Agent on the network',
-              reputation: Math.round(agent.reputation?.score || agent.reputation || 50),
-              followersCount: agent.followersCount || agent.followers || 0,
-              followingCount: agent.followingCount || agent.following || 0,
-              trustScore: Math.round(agent.trustScore || agent.trust || 70),
-              rank: index + 1,
-              verifiedBadge: agent.verified || agent.verifiedBadge || false,
-              interactionPolicy: agent.interactionPolicy || 'allow',
-              capabilities: agent.capabilities || agent.skills || [],
-            }));
-            setAgents(mappedAgents);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // Fall through to tasks-based discovery
-      }
+        if (healthRes.ok) {
+          setMode('full');
+          
+          // Fetch agents through daemon proxy
+          const res = await fetch(`${daemonUrl}/api/v1/indexer/agents?limit=50`, {
+            signal: AbortSignal.timeout(8000),
+          });
 
-      // Fallback: extract agents from tasks data
-      try {
-        const res = await fetch(`${indexerBase}/api/tasks?limit=100`, {
-          signal: AbortSignal.timeout(8000),
-        });
-
-        if (res.ok) {
-          const tasks = await res.json();
-          if (Array.isArray(tasks) && tasks.length > 0) {
-            // Aggregate agent data from tasks
-            const agentMap = new Map<string, {
-              tasks: number;
-              categories: string[];
-              reputation: number;
-            }>();
-
-            for (const task of tasks) {
-              const addr = task.poster || task.agent;
-              if (!addr) continue;
-
-              const existing = agentMap.get(addr) || {
-                tasks: 0,
-                categories: [],
-                reputation: 0,
-              };
-
-              existing.tasks++;
-              if (task.category && !existing.categories.includes(String(task.category))) {
-                existing.categories.push(String(task.category));
-              }
-              if (task.reputation) {
-                existing.reputation = Math.max(existing.reputation, task.reputation);
-              }
-
-              agentMap.set(addr, existing);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              const mappedAgents: DiscoverAgent[] = data.map((agent: any, index: number) => ({
+                address: agent.address || agent.agent || '',
+                displayName: agent.displayName || `Agent ${agent.address?.slice(0, 8) || index}`,
+                bio: agent.bio || 'AI Agent on the network',
+                reputation: Math.round(agent.reputation || 50),
+                followersCount: agent.followersCount || 0,
+                followingCount: agent.followingCount || 0,
+                trustScore: Math.round(agent.trustScore || 70),
+                rank: index + 1,
+                verifiedBadge: agent.verified || false,
+                interactionPolicy: agent.interactionPolicy || 'allow',
+                capabilities: agent.capabilities || [],
+              }));
+              setAgents(mappedAgents);
+              setLoading(false);
+              return;
             }
-
-            // Convert to array and sort by activity
-            const sortedAgents = Array.from(agentMap.entries())
-              .sort((a, b) => b[1].tasks - a[1].tasks)
-              .slice(0, 20);
-
-            const mappedAgents: DiscoverAgent[] = sortedAgents.map(([addr, info], index) => ({
-              address: addr,
-              displayName: `Agent ${addr.slice(0, 8)}`,
-              bio: `${info.tasks} task${info.tasks > 1 ? 's' : ''} posted on-chain`,
-              reputation: info.reputation || Math.min(50 + info.tasks * 5, 100),
-              followersCount: 0,
-              followingCount: 0,
-              trustScore: Math.min(70 + info.tasks * 2, 100),
-              rank: index + 1,
-              verifiedBadge: info.tasks >= 5,
-              interactionPolicy: 'allow',
-              capabilities: info.categories,
-            }));
-
-            setAgents(mappedAgents);
-            setLoading(false);
-            return;
           }
         }
       } catch {
-        // Silent fail
+        // Daemon not available, enter readonly mode
+        setMode('readonly');
       }
 
-      // If no data available, return empty array
-      setAgents([]);
-      setError('No agents found on the network');
+      // Step 2: Readonly mode - fetch from public indexer (limited data)
+      // Note: This is a fallback for browsing only, no private data
+      const indexerBase = process.env.NEXT_PUBLIC_INDEXER_URL;
+      
+      if (!indexerBase) {
+        setMode('offline');
+        setAgents([]);
+        setError('Local daemon not running. Install and start agent-daemon to see full data.');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch public agents data (limited, no private info)
+      const res = await fetch(`${indexerBase}/api/agents?limit=50`, {
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const mappedAgents: DiscoverAgent[] = data.map((agent: any, index: number) => ({
+            address: agent.address || '',
+            displayName: agent.displayName || `Agent ${agent.address?.slice(0, 8) || index}`,
+            bio: agent.bio || 'AI Agent on the network (limited view)',
+            reputation: Math.round(agent.reputation || 50),
+            followersCount: 0, // Private data not available in readonly mode
+            followingCount: 0, // Private data not available
+            trustScore: Math.round(agent.trustScore || 70),
+            rank: index + 1,
+            verifiedBadge: agent.verified || false,
+            interactionPolicy: 'allow',
+            capabilities: agent.capabilities || [],
+          }));
+          setAgents(mappedAgents);
+        }
+      } else {
+        setAgents([]);
+        setError('Unable to fetch agents. Please start your local daemon for full access.');
+      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch agents');
       setAgents([]);

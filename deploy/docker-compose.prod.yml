@@ -1,4 +1,4 @@
-# Gradience Production -- All backend services
+# Gradience Production — All backend services
 #
 # Web frontends are on Vercel (agentm-web, etc.)
 #
@@ -59,63 +59,23 @@ services:
         ports:
             - '0.0.0.0:3001:3001'
 
-  # -- Daemon PostgreSQL (session/social data)
-  daemon-db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: gradience
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-        volumes:
-            - daemon-pgdata:/var/lib/postgresql/data
-        networks:
-            - backend
-        healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d gradience']
-            interval: 10s
-            timeout: 5s
-            retries: 10
-            start_period: 20s
-
-    # -- Agent Daemon (Fastify + SQLite + A2A Router)
-    agent-daemon:
-        build:
-            context: ..
-            dockerfile: docker/Dockerfile.agent-daemon
-        image: gradience/agent-daemon:latest
+    # -- Nginx (reverse proxy)
+    nginx:
+        image: nginx:alpine
         restart: unless-stopped
-        environment:
-            NODE_ENV: production
-            AGENTD_HOST: '0.0.0.0'
-            AGENTD_PORT: '4001'
-            AGENTD_LOG_LEVEL: ${AGENTD_LOG_LEVEL:-info}
-            AGENTD_DB_PATH: /data/agentd.db
-            AGENTD_ALLOW_ALL_INTERFACES: 'true'
-            AGENTD_A2A_ENABLED: 'true'
-            AGENTD_SOLANA_RPC_URL: ${SOLANA_RPC_ENDPOINT:-https://api.devnet.solana.com}
-        depends_on:
-            daemon-db:
-                condition: service_healthy
+        ports:
+            - '80:80'
+            - '443:443'
         volumes:
-            - daemon-data:/data
+            - ./nginx-api.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./ssl:/etc/nginx/ssl:ro
         networks:
             - backend
-        healthcheck:
-            test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4001/health']
-            interval: 15s
-            timeout: 5s
-            retries: 3
-            start_period: 20s
-        ports:
-            - '0.0.0.0:4001:4001'
+        depends_on:
+            - indexer
 
 volumes:
     indexer-pgdata:
-        driver: local
-    daemon-pgdata:
-        driver: local
-    daemon-data:
         driver: local
 
 networks:
