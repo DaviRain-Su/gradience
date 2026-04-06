@@ -269,78 +269,14 @@ export class PaymentManager {
 
   /**
    * Release funds from MPP escrow
+   * @deprecated On-chain settlement is now handled by BridgeManager via Agent Arena judge_and_pay
    */
-  async releaseMPPFunds(paymentId: string): Promise<{ txSignature: string }> {
-    this.ensureMPPInitialized();
-
-    const payment = this.mppPaymentManager!.getPayment(paymentId);
-    if (!payment) {
-      throw new DaemonError(ErrorCodes.PAYMENT_NOT_FOUND, `Payment ${paymentId} not found`, 404);
-    }
-
-    // Check release conditions
-    const canRelease = await this.mppVoting!.checkReleaseConditions(payment);
-    if (!canRelease) {
-      throw new DaemonError(
-        ErrorCodes.PAYMENT_NOT_ALLOWED,
-        'Release conditions not met',
-        400
-      );
-    }
-
-    try {
-      // Create release transaction (distribute to participants)
-      const transaction = new Transaction();
-      const daemonPubkey = this.keyManager.getPublicKey();
-
-      for (const participant of payment.participants) {
-        if (participant.allocatedAmount > BigInt(0)) {
-          transaction.add(
-            SystemProgram.transfer({
-              fromPubkey: new PublicKey(payment.escrow),
-              toPubkey: new PublicKey(participant.address),
-              lamports: participant.allocatedAmount,
-            })
-          );
-        }
-      }
-
-      // If no instructions, nothing to release
-      if (transaction.instructions.length === 0) {
-        throw new DaemonError(
-          ErrorCodes.PAYMENT_INVALID_STATE,
-          'No funds to release',
-          400
-        );
-      }
-
-      const { blockhash } = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new PublicKey(daemonPubkey);
-
-      // Sign with key manager (escrow key)
-      const message = transaction.serializeMessage();
-      const signature = this.keyManager.sign(message);
-      transaction.addSignature(new PublicKey(daemonPubkey), Buffer.from(signature));
-
-      const txSignature = await this.connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-      });
-
-      await this.connection.confirmTransaction(txSignature, 'confirmed');
-
-      logger.info({ paymentId, txSignature }, 'MPP funds released');
-
-      return { txSignature };
-    } catch (error) {
-      logger.error({ error, paymentId }, 'Failed to release MPP funds');
-      throw new DaemonError(
-        ErrorCodes.SOLANA_ERROR,
-        `Failed to release funds: ${error instanceof Error ? error.message : String(error)}`,
-        500
-      );
-    }
+  async releaseMPPFunds(_paymentId: string): Promise<{ txSignature: string }> {
+    throw new DaemonError(
+      ErrorCodes.NOT_IMPLEMENTED,
+      'MPP local escrow release is deprecated. Use BridgeManager.settleEvaluation for on-chain settlement via Agent Arena.',
+      400
+    );
   }
 
   /**

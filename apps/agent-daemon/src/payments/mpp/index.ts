@@ -14,5 +14,4 @@ export { MPPPaymentManager } from './payment-manager.js';
 export { MPPVoting } from './voting.js';
 export { MPPRefund } from './refund.js';
 
-// Factory functions
-export { createMPPHandler } from '../mpp-handler.js';
+
