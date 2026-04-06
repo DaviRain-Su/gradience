@@ -59,7 +59,7 @@ Program IDs (Solana Devnet):
 | **chain-hub** | `programs/chain-hub/` | 1,225 | 🟢 Production | 工具层：registerProtocol, registerSkill, delegationTask, recordExecution |
 | **a2a-protocol** | `programs/a2a-protocol/` | 1,331 | 🟢 Production | Agent间通信：agent profiles, 消息线程, 支付通道, subtask bidding |
 | **agentm-core** | `programs/agentm-core/` | 523 | 🟢 Production | 用户层：registerUser, createAgent, follow/unfollow, updateReputation（✅ Program ID 已配置 GRA-151） |
-| **workflow-marketplace** | `programs/workflow-marketplace/` | 1,846 | 🟠 WIP | 技能市场：publish/purchase/execute workflows, revenue sharing |
+| **workflow-marketplace** | `programs/workflow-marketplace/` | 1,846 | 🟢 Production | 技能市场：publish/purchase/execute workflows, revenue sharing（程序已部署） |
 
 **Total on-chain**: ~7,070 lines of Rust（使用 Pinocchio，非 Anchor）
 
@@ -261,7 +261,7 @@ authenticate(walletAddress, signMessage)
 | Soul Profile + 隐私匹配 | 🟢 Production | `packages/soul-engine/` + daemon social | ✅ GRA-154 已完成：统一 LLM 配置（OpenAI/Claude/Moonshot） |
 | On-chain 声誉 | 🟢 Done | `programs/agentm-core/` | ✅ GRA-151 已完成：Program ID 已配置 |
 | A2A 协议（消息） | 🟢 Done | `programs/a2a-protocol/` + `nostr-adapter` + `xmtp-adapter` | ✅ GRA-138 已完成：XMTP A2A 消息 |
-| Workflow Marketplace | 🟠 WIP | `programs/workflow-marketplace/` + `packages/workflow-engine/` | Trading handlers 是 stub |
+| Workflow Marketplace | 🟡 Active | `programs/workflow-marketplace/` + `packages/workflow-engine/` | 程序已部署，Trading handlers 仍为 stub |
 | Nostr-based A2A 发现 | 🟠 WIP | `packages/nostr-adapter/` + daemon a2a-router | 已连接 relay，无真实 agent 注册 |
 | AgentM as Agent OS | 🟠 WIP | `apps/agentm-web/` | 本地 daemon 模式正确，UI 待完善 |
 | LLM-as-Judge（自动评分） | 🟢 Production | `apps/agent-daemon/src/evaluator/` | ✅ GRA-132 已完成：EvaluatorRuntime + Judges + Playwright Harness |

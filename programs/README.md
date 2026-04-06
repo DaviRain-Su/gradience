@@ -10,7 +10,7 @@ This directory contains all Solana programs for the Gradience Protocol.
 | `chain-hub/`            | Chain Hub for unified on-chain tooling access                 | 📐 Designed |
 | `agentm-core/`          | AgentM Core identity and messaging                            | 📐 Designed |
 | `a2a-protocol/`         | Agent-to-Agent communication protocol                         | 📐 Designed |
-| `workflow-marketplace/` | Workflow and marketplace functionality                        | 📐 Designed |
+| `workflow-marketplace/` | Workflow and marketplace functionality                        | ✅ Live     |
 
 ## Architecture
 
