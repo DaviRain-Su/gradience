@@ -128,10 +128,34 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
         }
 
         async function probe() {
-            // PRIORITY: Try remote API first for web users
-            // Local daemon is now opt-in for advanced users
-            
-            // 1. Try remote API first
+            const isLocalDev = typeof window !== 'undefined'
+                && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+            if (isLocalDev) {
+                // 1. In local development, try local daemon first to avoid CORS noise
+                if (await tryDaemon(LOCAL_API_URL)) return;
+
+                // 2. Try saved custom daemon URL
+                const savedUrl = loadDaemonUrl();
+                if (savedUrl && savedUrl !== LOCAL_API_URL) {
+                    if (await tryDaemon(savedUrl)) return;
+                }
+
+                // 3. Local didn't work -- still mark remote as the conceptual default
+                if (!cancelled) {
+                    setDaemonDetected(false);
+                    setState(prev => ({
+                        ...prev,
+                        isConnected: false,
+                        sessionToken: null,
+                        walletAddress: null,
+                        mode: 'remote',
+                    }));
+                }
+                return;
+            }
+
+            // PRIORITY for production web users: try remote API first
             try {
                 const remoteHealth = await fetch(`${REMOTE_API_URL}/health`, { signal: AbortSignal.timeout(3000) });
                 if (remoteHealth.ok && !cancelled) {
@@ -177,7 +201,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
                 if (await tryDaemon(savedUrl)) return;
             }
 
-            // 3. Try local daemon as fallback (for local development)
+            // 3. Try local daemon as fallback
             if (await tryDaemon(LOCAL_API_URL)) return;
 
             // Nothing worked
@@ -188,7 +212,7 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
                     isConnected: false,
                     sessionToken: null,
                     walletAddress: null,
-                    mode: 'remote', // Keep remote as default even when unreachable
+                    mode: 'remote',
                 }));
             }
         }

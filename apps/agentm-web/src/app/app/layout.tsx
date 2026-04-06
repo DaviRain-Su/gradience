@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
-import { ConnectionProvider as DaemonConnectionProvider } from '../../lib/connection/ConnectionContext';
-import { DynamicProvider } from '../../lib/dynamic/DynamicProvider';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -28,11 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     return (
         <ErrorBoundary>
-            <DynamicProvider>
-                <DaemonConnectionProvider>
-                    {children}
-                </DaemonConnectionProvider>
-            </DynamicProvider>
+            {children}
         </ErrorBoundary>
     );
 }
