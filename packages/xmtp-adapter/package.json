@@ -31,7 +31,7 @@
   ],
   "author": "Gradience",
   "dependencies": {
-    "@gradiences/a2a-types": "workspace:*",
+    "@gradiences/a2a-types": "^0.1.0",
     "@xmtp/xmtp-js": "^13.0.0"
   },
   "devDependencies": {

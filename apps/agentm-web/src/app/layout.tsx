@@ -4,7 +4,7 @@ import './globals.css';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { ProvidersClient } from '../components/ProvidersClient';
+import { Providers } from '../components/Providers';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -35,9 +35,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 minHeight: '100vh',
             }}>
                 <ErrorBoundary>
-                    <ProvidersClient>
+                    <Providers>
                         {children}
-                    </ProvidersClient>
+                    </Providers>
                 </ErrorBoundary>
             </body>
         </html>

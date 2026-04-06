@@ -95,9 +95,9 @@ pub fn resolve_task_offset(
     limit: i64,
 ) -> Result<i64, ApiError> {
     match (offset, page) {
-        (Some(o), _) => i64::from(o),
-        (None, Some(p)) => i64::from(p.saturating_sub(1)).saturating_mul(limit),
-        (None, None) => 0_i64,
+        (Some(o), _) => Ok(i64::from(o)),
+        (None, Some(p)) => Ok(i64::from(p.saturating_sub(1)).saturating_mul(limit)),
+        (None, None) => Ok(0_i64),
     }
 }
 

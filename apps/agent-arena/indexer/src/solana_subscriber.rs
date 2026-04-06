@@ -10,15 +10,13 @@
 use anyhow::{Context, Result};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::time::Duration;
-use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio::time::{interval, timeout};
-use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tracing::{debug, error, info, warn};
 
-use crate::events::{parse_events_from_logs, EventEnvelope, ProgramEvent};
+use crate::events::{parse_events_from_logs, ProgramEvent};
 
 /// Solana RPC WebSocket configuration
 #[derive(Debug, Clone)]
@@ -224,7 +222,7 @@ impl SolanaSubscriber {
 
         info!(url = %config.ws_url, "Connecting to Solana WebSocket");
 
-        let (ws_stream, _) = connect_async(url).await
+        let (ws_stream, _) = connect_async(url.as_str()).await
             .with_context(|| "Failed to connect to Solana WebSocket")?;
 
         info!("WebSocket connected");
@@ -246,7 +244,7 @@ impl SolanaSubscriber {
             ),
         };
 
-        let subscribe_msg = Message::Text(serde_json::to_string(&subscribe_req)?);
+        let subscribe_msg = Message::Text(serde_json::to_string(&subscribe_req)?.into());
         write.send(subscribe_msg).await
             .with_context(|| "Failed to send subscribe request")?;
 
@@ -270,6 +268,9 @@ impl SolanaSubscriber {
             }
             Err(_) => {
                 return Err(anyhow::anyhow!("Subscription confirmation timeout"));
+            }
+            _ => {
+                return Err(anyhow::anyhow!("Unexpected message during subscription"));
             }
         }
 
@@ -305,7 +306,7 @@ impl SolanaSubscriber {
                     }
                 }
                 _ = ping_interval.tick() => {
-                    if let Err(e) = write.send(Message::Ping(vec![])).await {
+                    if let Err(e) = write.send(Message::Ping(vec![].into())).await {
                         error!(error = %e, "Failed to send ping");
                         break;
                     }
@@ -323,8 +324,8 @@ impl SolanaSubscriber {
     ) -> Result<()> {
         // Try to parse as log notification
         if let Ok(notification) = serde_json::from_str::<LogNotification>(text) {
-            let value = notification.params.params.result.value;
-            let slot = notification.params.params.result.context.slot;
+            let value = notification.params.result.value;
+            let slot = notification.params.result.context.slot;
             let signature = value.signature;
 
             // Skip failed transactions

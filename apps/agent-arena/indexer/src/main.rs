@@ -7,12 +7,7 @@ mod triton_client;
 mod utils;
 mod webhook;
 
-use crate::mappers::{map_judge_pool, map_profile, map_reputation, map_submission, map_task};
-use crate::utils::{
-    internal_api_error, internal_error, normalize_publish_mode, now_unix_timestamp, parse_category,
-    parse_category_opt, parse_submissions_sort, parse_task_state, parse_u32_query_param,
-    parse_u8_query_param, resolve_task_offset, validate_task_id,
-};
+use crate::utils::{now_unix_timestamp, parse_category};
 use std::{
     path::Path,
     sync::{
@@ -40,7 +35,7 @@ use tokio::{
 
 use crate::{
     config::Config,
-    db::{Database, SubmissionSort, TaskListFilter, TaskListSort},
+    db::{Database, TaskListFilter, TaskListSort},
     events::{EventEnvelope, ProgramEvent},
     webhook::{decode_webhook, IncomingWebhook},
 };
@@ -891,88 +886,6 @@ fn to_ws_event(envelope: &EventEnvelope) -> Option<WsEvent> {
         slot: envelope.slot,
         timestamp: envelope.timestamp,
     })
-}
-
-fn internal_error(err: anyhow::Error) -> (axum::http::StatusCode, String) {
-    crate::utils::internal_error(err)
-}
-
-fn internal_api_error(err: anyhow::Error) -> ApiError {
-    crate::utils::internal_api_error(err)
-}
-
-fn parse_task_state(value: Option<&str>) -> Result<Option<i16>, ApiError> {
-    crate::utils::parse_task_state(value)
-}
-
-fn parse_category_opt(value: Option<u8>) -> Result<Option<i16>, ApiError> {
-    crate::utils::parse_category_opt(value)
-}
-
-fn parse_category(value: u8) -> Result<i16, ApiError> {
-    crate::utils::parse_category(value)
-}
-
-fn parse_u8_query_param(name: &str, value: Option<&str>) -> Result<Option<u8>, ApiError> {
-    crate::utils::parse_u8_query_param(name, value)
-}
-
-fn parse_u32_query_param(name: &str, value: Option<&str>) -> Result<Option<u32>, ApiError> {
-    crate::utils::parse_u32_query_param(name, value)
-}
-
-fn parse_tasks_sort(value: Option<&str>) -> Result<TaskListSort, ApiError> {
-    crate::utils::parse_tasks_sort(value)
-}
-
-fn validate_task_id(task_id: i64) -> Result<i64, ApiError> {
-    crate::utils::validate_task_id(task_id)
-}
-
-fn parse_submissions_sort(value: Option<&str>) -> Result<SubmissionSort, ApiError> {
-    crate::utils::parse_submissions_sort(value)
-}
-
-fn resolve_task_offset(
-    offset: Option<u32>,
-    page: Option<u32>,
-    limit: i64,
-) -> Result<i64, ApiError> {
-    crate::utils::resolve_task_offset(offset, page, limit)
-}
-
-fn map_task(task: crate::db::TaskRow) -> TaskApi {
-    crate::mappers::map_task(task)
-}
-
-fn map_submission(submission: crate::db::SubmissionRow) -> SubmissionApi {
-    crate::mappers::map_submission(submission)
-}
-
-fn map_reputation(rep: crate::db::ReputationRow) -> ReputationApi {
-    crate::mappers::map_reputation(rep)
-}
-
-fn map_judge_pool(entry: crate::db::JudgePoolRow) -> JudgePoolEntryApi {
-    crate::mappers::map_judge_pool(entry)
-}
-
-fn map_profile(profile: crate::db::AgentProfileRow) -> AgentProfileApi {
-    crate::mappers::map_profile(profile)
-}
-
-fn normalize_publish_mode(mode: Option<&str>) -> Result<String, ApiError> {
-    crate::utils::normalize_publish_mode(mode)
-}
-
-fn now_unix_timestamp() -> i64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    now as i64
 }
 
 #[cfg(test)]

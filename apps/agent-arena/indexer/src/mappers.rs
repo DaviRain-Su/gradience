@@ -30,7 +30,7 @@ pub fn map_task(task: crate::db::TaskRow) -> TaskApi {
 }
 
 /// Map task state integer to string
-fn map_task_state(state: i16) -> String {
+fn map_task_state(state: i32) -> String {
     match state {
         0 => "open".to_string(),
         1 => "completed".to_string(),

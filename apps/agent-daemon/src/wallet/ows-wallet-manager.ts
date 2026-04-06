@@ -231,7 +231,7 @@ export class OWSWalletManager {
     initialReputation?: number;
   }): Promise<OWSWallet> {
     // Check if wallet already exists
-    const existing = this.stmts.getWalletByAgent.get(params.agentId) as
+    const existing = this.stmts!.getWalletByAgent.get(params.agentId) as
       | { id: string }
       | undefined;
     if (existing) {
@@ -274,7 +274,7 @@ export class OWSWalletManager {
 
     const now = Date.now();
 
-    this.stmts.insertWallet.run(
+    this.stmts!.insertWallet.run(
       id,
       params.agentId,
       params.parentWallet,
@@ -287,7 +287,7 @@ export class OWSWalletManager {
     );
 
     // GRA-225b: Record reputation history entry
-    this.stmts.insertReputationHistory.run(
+    this.stmts!.insertReputationHistory.run(
       id,
       50, // default/old score
       reputationScore,
@@ -317,7 +317,7 @@ export class OWSWalletManager {
    * Get wallet by Agent ID
    */
   getWallet(agentId: string): OWSWallet | null {
-    const row = this.stmts.getWalletByAgent.get(agentId) as
+    const row = this.stmts!.getWalletByAgent.get(agentId) as
       | {
           id: string;
           agent_id: string;
@@ -350,7 +350,7 @@ export class OWSWalletManager {
    * Get wallet by address
    */
   getWalletByAddress(address: string): OWSWallet | null {
-    const row = this.stmts.getWalletByAddress.get(address) as
+    const row = this.stmts!.getWalletByAddress.get(address) as
       | {
           id: string;
           agent_id: string;
@@ -383,7 +383,7 @@ export class OWSWalletManager {
    * List all wallets for a parent wallet
    */
   listWallets(parentWallet: string): OWSWallet[] {
-    const rows = this.stmts.listWalletsByParent.all(parentWallet) as Array<{
+    const rows = this.stmts!.listWalletsByParent.all(parentWallet) as Array<{
       id: string;
       agent_id: string;
       parent_wallet: string;
@@ -435,7 +435,7 @@ export class OWSWalletManager {
     const now = Date.now();
 
     // Update wallet
-    this.stmts.updateReputation.run(
+    this.stmts!.updateReputation.run(
       newScore,
       JSON.stringify(newPolicy),
       now,
@@ -443,7 +443,7 @@ export class OWSWalletManager {
     );
 
     // Record history
-    this.stmts.insertReputationHistory.run(
+    this.stmts!.insertReputationHistory.run(
       wallet.id,
       oldScore,
       newScore,
@@ -480,7 +480,7 @@ export class OWSWalletManager {
     reason: string;
     changedAt: number;
   }> {
-    const rows = this.stmts.getReputationHistory.all(walletId) as Array<{
+    const rows = this.stmts!.getReputationHistory.all(walletId) as Array<{
       old_score: number;
       new_score: number;
       reason: string;
@@ -586,7 +586,7 @@ export class OWSWalletManager {
     const id = crypto.randomUUID();
     const now = Date.now();
 
-    this.stmts.insertTransaction.run(
+    this.stmts!.insertTransaction.run(
       id,
       params.walletId,
       params.agentId,
@@ -620,7 +620,7 @@ export class OWSWalletManager {
    * Confirm a transaction
    */
   async confirmTransaction(txId: string): Promise<void> {
-    this.stmts.confirmTransaction.run(Date.now(), txId);
+    this.stmts!.confirmTransaction.run(Date.now(), txId);
     logger.info({ txId }, 'Transaction confirmed');
   }
 
@@ -628,7 +628,7 @@ export class OWSWalletManager {
    * Mark transaction as failed
    */
   async failTransaction(txId: string): Promise<void> {
-    this.stmts.failTransaction.run(txId);
+    this.stmts!.failTransaction.run(txId);
     logger.info({ txId }, 'Transaction failed');
   }
 
@@ -636,7 +636,7 @@ export class OWSWalletManager {
    * Get transactions for a wallet
    */
   getTransactions(walletId: string, limit = 100): WalletTransaction[] {
-    const rows = this.stmts.getTransactions.all(walletId, limit) as Array<{
+    const rows = this.stmts!.getTransactions.all(walletId, limit) as Array<{
       id: string;
       wallet_id: string;
       agent_id: string;
@@ -672,7 +672,7 @@ export class OWSWalletManager {
    */
   getDailySpend(walletId: string): number {
     const today = new Date().toISOString().split('T')[0];
-    const row = this.stmts.getDailySpend.get(walletId, today) as
+    const row = this.stmts!.getDailySpend.get(walletId, today) as
       | { amount_usd_cents: number }
       | undefined;
     return row?.amount_usd_cents ?? 0;
@@ -683,7 +683,7 @@ export class OWSWalletManager {
    */
   recordSpend(walletId: string, amountUsdCents: number): void {
     const today = new Date().toISOString().split('T')[0];
-    this.stmts.upsertDailySpend.run(walletId, today, amountUsdCents, amountUsdCents);
+    this.stmts!.upsertDailySpend.run(walletId, today, amountUsdCents, amountUsdCents);
   }
 
   /**

@@ -29,6 +29,13 @@ impl Config {
             .unwrap_or_else(|_| "indexer/mock/webhook.json".to_string());
         let mock_webhook_only = parse_bool_env("MOCK_WEBHOOK_ONLY")?;
         let triton_stale_after_seconds = parse_u64_env("TRITON_STALE_AFTER_SECONDS")?.unwrap_or(30);
+        let solana_ws_url = env::var("SOLANA_WS_URL")
+            .unwrap_or_else(|_| "wss://api.devnet.solana.com".to_string());
+        let solana_program_id = env::var("SOLANA_PROGRAM_ID")
+            .unwrap_or_else(|_| "11111111111111111111111111111111".to_string());
+        let solana_commitment = env::var("SOLANA_COMMITMENT")
+            .unwrap_or_else(|_| "confirmed".to_string());
+        let solana_subscribe = parse_bool_env("SOLANA_SUBSCRIBE").unwrap_or(false);
 
         Ok(Self {
             bind_addr,
@@ -37,6 +44,10 @@ impl Config {
             mock_webhook_file,
             mock_webhook_only,
             triton_stale_after_seconds,
+            solana_ws_url,
+            solana_program_id,
+            solana_commitment,
+            solana_subscribe,
         })
     }
 }

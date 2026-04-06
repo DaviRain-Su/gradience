@@ -13,10 +13,10 @@
 
 use anyhow::{Context, Result};
 use reqwest::{Client, Url};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::time::Duration;
-use tracing::{debug, error, info, warn};
+
 
 /// Triton RPC configuration
 #[derive(Debug, Clone)]

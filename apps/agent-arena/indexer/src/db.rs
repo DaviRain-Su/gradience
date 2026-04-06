@@ -26,6 +26,9 @@ pub struct TaskListFilter<'a> {
 pub enum TaskListSort {
     TaskIdDesc,
     TaskIdAsc,
+    Newest,
+    Deadline,
+    Reward,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -140,39 +143,33 @@ impl Database {
     }
 
     pub async fn list_tasks(&mut self, filter: TaskListFilter<'_>) -> Result<Vec<TaskRow>> {
-        let query = match filter.sort {
-            TaskListSort::TaskIdDesc => {
-                "SELECT
-                    task_id, poster, judge, judge_mode, reward, mint, min_stake, state,
-                    category, eval_ref, deadline, judge_deadline, submission_count, winner,
-                    created_at, slot
-                 FROM tasks
-                 WHERE ($1::smallint IS NULL OR state = $1)
-                   AND ($2::smallint IS NULL OR category = $2)
-                   AND ($3::text IS NULL OR mint = $3)
-                   AND ($4::text IS NULL OR poster = $4)
-                 ORDER BY task_id DESC
-                 LIMIT $5 OFFSET $6"
-            }
-            TaskListSort::TaskIdAsc => {
-                "SELECT
-                    task_id, poster, judge, judge_mode, reward, mint, min_stake, state,
-                    category, eval_ref, deadline, judge_deadline, submission_count, winner,
-                    created_at, slot
-                 FROM tasks
-                 WHERE ($1::smallint IS NULL OR state = $1)
-                   AND ($2::smallint IS NULL OR category = $2)
-                   AND ($3::text IS NULL OR mint = $3)
-                   AND ($4::text IS NULL OR poster = $4)
-                 ORDER BY task_id ASC
-                 LIMIT $5 OFFSET $6"
-            }
+        let order_by = match filter.sort {
+            TaskListSort::TaskIdDesc => "task_id DESC",
+            TaskListSort::TaskIdAsc => "task_id ASC",
+            TaskListSort::Newest => "created_at DESC",
+            TaskListSort::Deadline => "deadline ASC",
+            TaskListSort::Reward => "reward DESC",
         };
+
+        let query = format!(
+            "SELECT
+                task_id, poster, judge, judge_mode, reward, mint, min_stake, state,
+                category, eval_ref, deadline, judge_deadline, submission_count, winner,
+                created_at, slot
+             FROM tasks
+             WHERE ($1::smallint IS NULL OR state = $1)
+               AND ($2::smallint IS NULL OR category = $2)
+               AND ($3::text IS NULL OR mint = $3)
+               AND ($4::text IS NULL OR poster = $4)
+             ORDER BY {}
+             LIMIT $5 OFFSET $6",
+            order_by
+        );
 
         let rows = self
             .client
             .query(
-                query,
+                &query,
                 &[
                     &filter.state,
                     &filter.category,
