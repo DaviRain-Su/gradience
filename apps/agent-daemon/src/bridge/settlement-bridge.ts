@@ -8,6 +8,7 @@
  */
 
 import { EventEmitter } from 'node:events';
+import { createHash } from 'node:crypto';
 import {
   Connection,
   PublicKey,
@@ -268,9 +269,8 @@ export class SettlementBridge extends EventEmitter {
   }
 
   private hashProofData(data: Omit<EvaluationProof, 'signature'>): string {
-    const crypto = require('crypto');
     const json = JSON.stringify(data);
-    return crypto.createHash('sha256').update(json).digest('hex');
+    return createHash('sha256').update(json).digest('hex');
   }
 
   /**

@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { createKeyPairSignerFromBytes } from '@solana/kit';
-import { GradienceSDK } from '../clients/typescript/dist/sdk.js';
-import { KeypairAdapter } from '../clients/typescript/dist/wallet-adapters.js';
+import { GradienceSDK, KeypairAdapter } from '../clients/typescript/dist/index.js';
 import { createSettlementBridge } from '../../agent-daemon/dist/src/bridge/settlement-bridge.js';
 import { resolveJudgeAndPayPdas } from '../../agent-daemon/dist/src/solana/pda-resolver.js';
 import { PublicKey } from '@solana/web3.js';
@@ -12,7 +11,7 @@ const WALLET2_PATH = '/tmp/agent2.json';
 const PROGRAM_ID = '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
 const TEMP_KEY_DIR = '/tmp/bridge-e2e-keys';
 
-function loadKitSigner(path) {
+async function loadKitSigner(path) {
   const raw = JSON.parse(readFileSync(path, 'utf8'));
   return createKeyPairSignerFromBytes(new Uint8Array(raw));
 }
@@ -25,10 +24,10 @@ async function main() {
 
   const sdk = new GradienceSDK({ rpcEndpoint: RPC });
 
-  const signer1 = loadKitSigner(WALLET1_PATH);
+  const signer1 = await loadKitSigner(WALLET1_PATH);
   const wallet1 = new KeypairAdapter({ signer: signer1, rpcEndpoint: RPC });
 
-  const signer2 = loadKitSigner(WALLET2_PATH);
+  const signer2 = await loadKitSigner(WALLET2_PATH);
   const wallet2 = new KeypairAdapter({ signer: signer2, rpcEndpoint: RPC });
 
   console.log('Poster/Judge:', signer1.address);

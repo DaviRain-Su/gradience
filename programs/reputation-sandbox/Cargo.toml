@@ -1,0 +1,19 @@
+[package]
+name = "reputation-sandbox"
+version = "0.1.0"
+edition = "2021"
+authors = ["Gradience Protocol Team"]
+description = "Sandbox for testing Gradience reputation algorithm with mock data"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+sha3 = "0.10"
+rand = "0.8"
+chrono = "0.4"
+hex = "0.4"
+
+[[bin]]
+name = "reputation-sandbox"
+path = "src/main.rs"
