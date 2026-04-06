@@ -238,6 +238,19 @@ function ensureSocialTables(db: Database): void {
             created_at           INTEGER NOT NULL,
             updated_at           INTEGER NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS notifications (
+            id          TEXT PRIMARY KEY,
+            address     TEXT NOT NULL,
+            type        TEXT NOT NULL,
+            actor       TEXT,
+            target_id   TEXT,
+            message     TEXT NOT NULL,
+            read        INTEGER NOT NULL DEFAULT 0,
+            created_at  INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_address ON notifications(address);
+        CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(address, read);
     `);
 }
 
@@ -282,6 +295,8 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         incLikes: db.prepare('UPDATE posts SET likes = likes + 1 WHERE id = ?'),
         decLikes: db.prepare('UPDATE posts SET likes = MAX(likes - 1, 0) WHERE id = ?'),
 
+        deletePost: db.prepare('DELETE FROM posts WHERE id = ? AND author_address = ?'),
+
         getFollowers: db.prepare(`
             SELECT f.follower as address, p.display_name, p.bio, p.avatar, p.domain
             FROM follows f LEFT JOIN profiles p ON f.follower = p.address
@@ -295,6 +310,16 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         isFollowing: db.prepare('SELECT 1 FROM follows WHERE follower = ? AND following = ?'),
         insertFollow: db.prepare('INSERT OR IGNORE INTO follows (follower, following, created_at) VALUES (?, ?, ?)'),
         removeFollow: db.prepare('DELETE FROM follows WHERE follower = ? AND following = ?'),
+
+        getNotifications: db.prepare(`
+            SELECT id, type, actor, target_id AS targetId, message, read, created_at AS createdAt
+            FROM notifications
+            WHERE address = ?
+            ORDER BY created_at DESC
+            LIMIT 50
+        `),
+        getUnreadCount: db.prepare('SELECT COUNT(*) AS count FROM notifications WHERE address = ? AND read = 0'),
+        markNotificationsRead: db.prepare('UPDATE notifications SET read = 1 WHERE address = ?'),
     };
 
     // ── Profile ──
@@ -465,6 +490,50 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         const { targetAddress } = request.body;
         if (!targetAddress) { reply.code(400).send({ error: 'targetAddress required' }); return; }
         stmts.removeFollow.run(wallet, targetAddress);
+        return { success: true };
+    });
+
+    app.get<{ Querystring: { follower: string; following: string } }>('/api/is-following', async (request) => {
+        const { follower, following } = request.query;
+        const row = stmts.isFollowing.get(follower, following);
+        return { following: !!row };
+    });
+
+    app.delete<{ Params: { id: string } }>('/api/posts/:id', async (request, reply) => {
+        const wallet = getWallet(request);
+        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        const { id } = request.params;
+        const result = stmts.deletePost.run(id, wallet);
+        if (result.changes === 0) {
+            reply.code(404).send({ error: 'Post not found or not authorized' });
+            return;
+        }
+        return { success: true };
+    });
+
+    // ── Notifications ──
+    app.get<{ Params: { address: string } }>('/api/notifications/:address', async (request) => {
+        const rows = stmts.getNotifications.all(request.params.address);
+        return rows.map((r: any) => ({
+            id: r.id,
+            type: r.type,
+            actor: r.actor,
+            targetId: r.targetId,
+            message: r.message,
+            read: !!r.read,
+            createdAt: Number(r.createdAt),
+        }));
+    });
+
+    app.get<{ Params: { address: string } }>('/api/notifications/:address/unread', async (request) => {
+        const row = stmts.getUnreadCount.get(request.params.address) as any;
+        return { count: row?.count ?? 0 };
+    });
+
+    app.post<{ Params: { address: string } }>('/api/notifications/:address/read', async (request, reply) => {
+        const wallet = getWallet(request);
+        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        stmts.markNotificationsRead.run(request.params.address);
         return { success: true };
     });
 

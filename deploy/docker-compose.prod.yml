@@ -16,7 +16,7 @@ services:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
         volumes:
             - indexer-pgdata:/var/lib/postgresql/data
-            - ../apps/chain-hub/indexer/migrations:/docker-entrypoint-initdb.d
+            - ../apps/agent-arena/indexer/migrations:/docker-entrypoint-initdb.d
         networks:
             - backend
         healthcheck:
@@ -38,12 +38,15 @@ services:
             timeout: 5s
             retries: 5
 
-    # -- Chain Hub Indexer (Solana on-chain data)
+    # -- Unified Gradience Indexer (Solana on-chain data)
     indexer:
+        build:
+            context: ../apps/agent-arena/indexer
+            dockerfile: Dockerfile
         image: gradience/indexer:latest
         restart: unless-stopped
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@indexer-db:5432/gradience_indexer
+        environment:
+            DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@indexer-db:5432/gradience_indexer
             REDIS_URL: redis://indexer-cache:6379
             INDEXER_BIND_ADDR: 0.0.0.0:3001
         depends_on:

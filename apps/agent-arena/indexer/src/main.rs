@@ -35,7 +35,10 @@ use tokio::{
 
 use crate::{
     config::Config,
-    db::{Database, TaskListFilter, TaskListSort},
+    db::{
+        Database, InvocationListFilter, ProtocolListFilter, SkillListFilter, TaskListFilter,
+        TaskListSort,
+    },
     events::{EventEnvelope, ProgramEvent},
     webhook::{decode_webhook, IncomingWebhook},
 };
@@ -91,12 +94,15 @@ struct HealthResponse {
 #[derive(Debug, Serialize)]
 struct ErrorResponse {
     error: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    code: Option<String>,
 }
 
 #[derive(Debug)]
 struct ApiError {
     status: StatusCode,
     message: String,
+    code: Option<String>,
 }
 
 impl ApiError {
@@ -104,6 +110,15 @@ impl ApiError {
         Self {
             status: StatusCode::BAD_REQUEST,
             message: message.into(),
+            code: None,
+        }
+    }
+
+    fn bad_request_code(code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::BAD_REQUEST,
+            message: message.into(),
+            code: Some(code.into()),
         }
     }
 
@@ -111,6 +126,7 @@ impl ApiError {
         Self {
             status: StatusCode::NOT_FOUND,
             message: message.into(),
+            code: None,
         }
     }
 
@@ -118,6 +134,7 @@ impl ApiError {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             message: message.into(),
+            code: None,
         }
     }
 }
@@ -128,6 +145,7 @@ impl IntoResponse for ApiError {
             self.status,
             Json(ErrorResponse {
                 error: self.message,
+                code: self.code,
             }),
         )
             .into_response()
@@ -248,6 +266,63 @@ struct JudgePoolEntryApi {
     judge: String,
     stake: i64,
     weight: i32,
+}
+
+// Chain Hub API types
+#[derive(Debug, Serialize)]
+struct SkillApi {
+    skill_id: i64,
+    authority: String,
+    judge_category: i16,
+    status: i16,
+    name: String,
+    metadata_uri: String,
+    created_at: i64,
+    slot: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct ProtocolApi {
+    protocol_id: String,
+    authority: String,
+    protocol_type: i16,
+    trust_model: i16,
+    auth_mode: i16,
+    status: i16,
+    capabilities_mask: i64,
+    endpoint: String,
+    docs_uri: String,
+    program_id: String,
+    idl_ref: String,
+    created_at: i64,
+    slot: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct RoyaltyApi {
+    agent: String,
+    total_earned: i64,
+    total_paid: i64,
+    balance: i64,
+    updated_slot: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct InvocationApi {
+    invocation_id: i64,
+    task_id: i64,
+    requester: String,
+    skill_id: i64,
+    protocol_id: String,
+    agent: String,
+    judge: String,
+    amount: i64,
+    status: i16,
+    royalty_amount: i64,
+    created_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    completed_at: Option<i64>,
+    slot: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -485,6 +560,16 @@ async fn main() -> Result<()> {
         .route("/api/agents/{pubkey}/reputation", get(get_agent_reputation))
         .route("/api/reputation/{agent}", get(get_agent_reputation_legacy))
         .route("/api/judge-pool/{category}", get(get_judge_pool))
+        .route("/api/agents", get(get_agents))
+        .route("/api/agents/register", post(register_agent))
+        // Chain Hub routes
+        .route("/api/skills", get(get_skills))
+        .route("/api/skills/{skill_id}", get(get_skill_by_id))
+        .route("/api/protocols", get(get_protocols))
+        .route("/api/protocols/{protocol_id}", get(get_protocol_by_id))
+        .route("/api/royalties/{agent}", get(get_agent_royalty))
+        .route("/api/invocations", get(get_invocations))
+        .route("/api/invocations/{invocation_id}", get(get_invocation_by_id))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr)
@@ -717,6 +802,285 @@ async fn get_judge_pool(
         .await
         .map_err(crate::utils::internal_api_error)?;
     Ok(Json(rows.into_iter().map(crate::mappers::map_judge_pool).collect()))
+}
+
+// Chain Hub handlers
+async fn get_skills(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let status = params
+        .get("status")
+        .and_then(|v| v.parse::<i16>().ok());
+    let category = params
+        .get("category")
+        .and_then(|v| v.parse::<i16>().ok());
+    let authority = params.get("authority").map(|s| s.as_str());
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(20)
+        .clamp(1, 100);
+    let page = params.get("page").and_then(|v| v.parse::<u32>().ok());
+    let offset = params.get("offset").and_then(|v| v.parse::<u32>().ok());
+    let offset = crate::utils::resolve_task_offset(offset, page, limit)?;
+
+    let filter = SkillListFilter {
+        status,
+        category,
+        authority,
+        limit,
+        offset,
+    };
+
+    let mut db = state.db.lock().await;
+    let rows = db
+        .list_skills(filter)
+        .await
+        .map_err(crate::utils::internal_api_error)?;
+    let total = rows.len() as i64; // Approximate without separate count query
+
+    Ok(Json(serde_json::json!({
+        "skills": rows.into_iter().map(crate::mappers::map_skill).collect::<Vec<_>>(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })))
+}
+
+async fn get_skill_by_id(
+    State(state): State<AppState>,
+    AxumPath(skill_id): AxumPath<i64>,
+) -> Result<Json<SkillApi>, ApiError> {
+    if skill_id <= 0 {
+        return Err(ApiError::bad_request_code("INVALID_SKILL_ID", "Invalid skill ID"));
+    }
+    let mut db = state.db.lock().await;
+    let skill = db
+        .get_skill(skill_id)
+        .await
+        .map_err(crate::utils::internal_api_error)?
+        .ok_or_else(|| ApiError::not_found(format!("skill {skill_id} not found")))?;
+    Ok(Json(crate::mappers::map_skill(skill)))
+}
+
+async fn get_protocols(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let status = params
+        .get("status")
+        .and_then(|v| v.parse::<i16>().ok());
+    let protocol_type = params.get("protocol_type").map(|s| s.as_str());
+    let authority = params.get("authority").map(|s| s.as_str());
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(20)
+        .clamp(1, 100);
+    let page = params.get("page").and_then(|v| v.parse::<u32>().ok());
+    let offset = params.get("offset").and_then(|v| v.parse::<u32>().ok());
+    let offset = crate::utils::resolve_task_offset(offset, page, limit)?;
+
+    let filter = ProtocolListFilter {
+        status,
+        protocol_type,
+        authority,
+        limit,
+        offset,
+    };
+
+    let mut db = state.db.lock().await;
+    let rows = db
+        .list_protocols(filter)
+        .await
+        .map_err(crate::utils::internal_api_error)?;
+    let total = rows.len() as i64;
+
+    Ok(Json(serde_json::json!({
+        "protocols": rows.into_iter().map(crate::mappers::map_protocol).collect::<Vec<_>>(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })))
+}
+
+async fn get_protocol_by_id(
+    State(state): State<AppState>,
+    AxumPath(protocol_id): AxumPath<String>,
+) -> Result<Json<ProtocolApi>, ApiError> {
+    if protocol_id.is_empty() {
+        return Err(ApiError::bad_request_code("INVALID_PROTOCOL_ID", "Invalid protocol ID"));
+    }
+    let mut db = state.db.lock().await;
+    let protocol = db
+        .get_protocol(&protocol_id)
+        .await
+        .map_err(crate::utils::internal_api_error)?
+        .ok_or_else(|| ApiError::not_found(format!("protocol {protocol_id} not found")))?;
+    Ok(Json(crate::mappers::map_protocol(protocol)))
+}
+
+async fn get_agent_royalty(
+    State(state): State<AppState>,
+    AxumPath(agent): AxumPath<String>,
+) -> Result<Json<RoyaltyApi>, ApiError> {
+    let mut db = state.db.lock().await;
+    let royalty = db
+        .get_royalty(&agent)
+        .await
+        .map_err(crate::utils::internal_api_error)?
+        .ok_or_else(|| ApiError::not_found(format!("royalty for {agent} not found")))?;
+    Ok(Json(crate::mappers::map_royalty(royalty)))
+}
+
+async fn get_invocations(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let agent = params.get("agent").map(|s| s.as_str());
+    let skill_id = params
+        .get("skill_id")
+        .and_then(|v| v.parse::<i64>().ok());
+    let protocol_id = params.get("protocol_id").map(|s| s.as_str());
+    let status = params.get("status").map(|s| s.as_str());
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(20)
+        .clamp(1, 100);
+    let page = params.get("page").and_then(|v| v.parse::<u32>().ok());
+    let offset = params.get("offset").and_then(|v| v.parse::<u32>().ok());
+    let offset = crate::utils::resolve_task_offset(offset, page, limit)?;
+
+    let filter = InvocationListFilter {
+        agent,
+        skill_id,
+        protocol_id,
+        status,
+        limit,
+        offset,
+    };
+
+    let mut db = state.db.lock().await;
+    let rows = db
+        .list_invocations(filter)
+        .await
+        .map_err(crate::utils::internal_api_error)?;
+    let total = rows.len() as i64;
+
+    Ok(Json(serde_json::json!({
+        "invocations": rows.into_iter().map(crate::mappers::map_invocation).collect::<Vec<_>>(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })))
+}
+
+async fn get_invocation_by_id(
+    State(state): State<AppState>,
+    AxumPath(invocation_id): AxumPath<i64>,
+) -> Result<Json<InvocationApi>, ApiError> {
+    if invocation_id <= 0 {
+        return Err(ApiError::bad_request_code("INVALID_INVOCATION_ID", "Invalid invocation ID"));
+    }
+    let mut db = state.db.lock().await;
+    let invocation = db
+        .get_invocation(invocation_id)
+        .await
+        .map_err(crate::utils::internal_api_error)?
+        .ok_or_else(|| ApiError::not_found(format!("invocation {invocation_id} not found")))?;
+    Ok(Json(crate::mappers::map_invocation(invocation)))
+}
+
+#[derive(Debug, Serialize)]
+struct AgentListItemApi {
+    address: String,
+    display_name: String,
+    bio: String,
+    reputation: i32,
+    followers_count: i32,
+    following_count: i32,
+    trust_score: i32,
+    capabilities: Vec<String>,
+}
+
+async fn get_agents(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(20)
+        .clamp(1, 100);
+    let page = params.get("page").and_then(|v| v.parse::<u32>().ok());
+    let offset = params.get("offset").and_then(|v| v.parse::<u32>().ok());
+    let offset = crate::utils::resolve_task_offset(offset, page, limit)?;
+
+    let mut db = state.db.lock().await;
+    let profiles = db
+        .list_agent_profiles(limit, offset)
+        .await
+        .map_err(crate::utils::internal_api_error)?;
+
+    let agents: Vec<AgentListItemApi> = profiles
+        .into_iter()
+        .map(|p| AgentListItemApi {
+            address: p.agent.clone(),
+            display_name: p.display_name,
+            bio: p.bio,
+            reputation: 50,
+            followers_count: 0,
+            following_count: 0,
+            trust_score: 70,
+            capabilities: vec![],
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "agents": agents,
+        "total": agents.len() as i64,
+        "limit": limit,
+        "offset": offset,
+    })))
+}
+
+#[derive(Debug, Deserialize)]
+struct AgentRegisterRequest {
+    agent: String,
+    display_name: Option<String>,
+    bio: Option<String>,
+    website: Option<String>,
+    github: Option<String>,
+    x: Option<String>,
+    onchain_ref: Option<String>,
+    publish_mode: Option<String>,
+}
+
+async fn register_agent(
+    State(state): State<AppState>,
+    Json(body): Json<AgentRegisterRequest>,
+) -> Result<Json<AgentProfileApi>, ApiError> {
+    let mut db = state.db.lock().await;
+    let profile = db
+        .upsert_agent_profile(crate::db::AgentProfileSyncInput {
+            agent: body.agent,
+            display_name: body.display_name.unwrap_or_default(),
+            bio: body.bio.unwrap_or_default(),
+            website: body.website,
+            github: body.github,
+            x: body.x,
+            onchain_ref: body.onchain_ref,
+            publish_mode: body.publish_mode.unwrap_or_else(|| "manual".to_string()),
+            updated_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() as i64,
+        })
+        .await
+        .map_err(crate::utils::internal_api_error)?;
+    Ok(Json(crate::mappers::map_profile(profile)))
 }
 
 async fn fetch_reputation(state: AppState, agent: String) -> Result<Json<ReputationApi>, ApiError> {

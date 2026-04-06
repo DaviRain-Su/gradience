@@ -31,6 +31,8 @@ services:
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0001_init.sql
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0002_judge_pool_members.sql
         psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0003_tasks_poster_index.sql
+        psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0004_agent_profiles.sql
+        psql -h postgres -U postgres -d gradience -v ON_ERROR_STOP=1 -f /migrations/0005_chain_hub_tables.sql
     restart: 'no'
 
   indexer:

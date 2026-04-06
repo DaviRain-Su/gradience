@@ -1,11 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
-
-const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL
-    || (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? 'https://api.gradiences.xyz/indexer' : '');
 
 export interface SocialPost {
     id: string;
@@ -46,90 +42,52 @@ export function useSocial(currentUserAddress: string | null) {
         return h;
     }, [sessionToken]);
 
+    const ensureDaemon = useCallback((): string => {
+        if (!daemonUrl) throw new Error('Daemon not connected');
+        return daemonUrl;
+    }, [daemonUrl]);
+
     // ── Follow ──
 
     const follow = useCallback(
         async (targetAddress: string): Promise<void> => {
             if (!currentUserAddress) return;
-            
-            // Try daemon first
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(`${daemonUrl}/api/v1/social/follow`, {
-                        method: 'POST',
-                        headers: headers(true),
-                        body: JSON.stringify({ follower: currentUserAddress, following: targetAddress }),
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (res.ok) return;
-                } catch {
-                    // Fall through to indexer
-                }
-            }
-
-            // Try indexer
-            if (INDEXER_BASE) {
-                await fetch(`${INDEXER_BASE}/api/social/follow`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ follower: currentUserAddress, following: targetAddress }),
-                    signal: AbortSignal.timeout(5000),
-                });
-            }
+            const base = ensureDaemon();
+            const res = await fetch(`${base}/api/follow`, {
+                method: 'POST',
+                headers: headers(true),
+                body: JSON.stringify({ targetAddress }),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!res.ok) throw new Error(`Follow failed: ${res.status}`);
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     const unfollow = useCallback(
         async (targetAddress: string): Promise<void> => {
             if (!currentUserAddress) return;
-            
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(`${daemonUrl}/api/v1/social/unfollow`, {
-                        method: 'POST',
-                        headers: headers(true),
-                        body: JSON.stringify({ follower: currentUserAddress, following: targetAddress }),
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (res.ok) return;
-                } catch {
-                    // Fall through
-                }
-            }
-
-            if (INDEXER_BASE) {
-                await fetch(`${INDEXER_BASE}/api/social/unfollow`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ follower: currentUserAddress, following: targetAddress }),
-                    signal: AbortSignal.timeout(5000),
-                });
-            }
+            const base = ensureDaemon();
+            const res = await fetch(`${base}/api/unfollow`, {
+                method: 'POST',
+                headers: headers(true),
+                body: JSON.stringify({ targetAddress }),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!res.ok) throw new Error(`Unfollow failed: ${res.status}`);
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     const checkFollowing = useCallback(
         async (targetAddress: string): Promise<boolean> => {
             if (!currentUserAddress) return false;
-            
             try {
-                let res;
-                if (daemonUrl) {
-                    res = await fetch(
-                        `${daemonUrl}/api/v1/social/is-following?follower=${currentUserAddress}&following=${targetAddress}`,
-                        { headers: headers(), signal: AbortSignal.timeout(3000) }
-                    );
-                } else if (INDEXER_BASE) {
-                    res = await fetch(
-                        `${INDEXER_BASE}/api/social/is-following?follower=${currentUserAddress}&following=${targetAddress}`,
-                        { signal: AbortSignal.timeout(3000) }
-                    );
-                } else {
-                    return false;
-                }
-                
+                const base = ensureDaemon();
+                const res = await fetch(
+                    `${base}/api/is-following?follower=${currentUserAddress}&following=${targetAddress}`,
+                    { headers: headers(), signal: AbortSignal.timeout(3000) }
+                );
                 if (res.ok) {
                     const data = await res.json();
                     return data.following;
@@ -139,7 +97,7 @@ export function useSocial(currentUserAddress: string | null) {
             }
             return false;
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     // ── Posts ──
@@ -147,76 +105,32 @@ export function useSocial(currentUserAddress: string | null) {
     const createPost = useCallback(
         async (content: string, tags: string[] = []): Promise<SocialPost | null> => {
             if (!currentUserAddress) return null;
-            
-            const body = { author: currentUserAddress, content, tags };
-
-            // Try daemon first
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(`${daemonUrl}/api/v1/social/posts`, {
-                        method: 'POST',
-                        headers: headers(true),
-                        body: JSON.stringify(body),
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (res.ok) {
-                        return await res.json();
-                    }
-                } catch {
-                    // Fall through
-                }
-            }
-
-            // Try indexer
-            if (INDEXER_BASE) {
-                try {
-                    const res = await fetch(`${INDEXER_BASE}/api/social/posts`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body),
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (res.ok) {
-                        return await res.json();
-                    }
-                } catch {
-                    // Silent fail
-                }
-            }
-
-            return null;
+            const base = ensureDaemon();
+            const body = { content, media: tags.map(t => ({ type: 'tag', url: t })) };
+            const res = await fetch(`${base}/api/posts`, {
+                method: 'POST',
+                headers: headers(true),
+                body: JSON.stringify(body),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!res.ok) throw new Error(`Create post failed: ${res.status}`);
+            return await res.json();
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     const deletePost = useCallback(
         async (postId: string): Promise<void> => {
             if (!currentUserAddress) return;
-            
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(`${daemonUrl}/api/v1/social/posts/delete`, {
-                        method: 'POST',
-                        headers: headers(true),
-                        body: JSON.stringify({ postId, author: currentUserAddress }),
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (res.ok) return;
-                } catch {
-                    // Fall through
-                }
-            }
-
-            if (INDEXER_BASE) {
-                await fetch(`${INDEXER_BASE}/api/social/posts/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, author: currentUserAddress }),
-                    signal: AbortSignal.timeout(5000),
-                });
-            }
+            const base = ensureDaemon();
+            const res = await fetch(`${base}/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: headers(),
+                signal: AbortSignal.timeout(5000),
+            });
+            if (!res.ok) throw new Error(`Delete post failed: ${res.status}`);
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     // ── Feed ──
@@ -224,105 +138,74 @@ export function useSocial(currentUserAddress: string | null) {
     const getFeed = useCallback(
         async (limit = 20, offset = 0): Promise<SocialPost[]> => {
             if (!currentUserAddress) return [];
-            
-            // Try daemon first
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(
-                        `${daemonUrl}/api/v1/social/feed/${currentUserAddress}?limit=${limit}&offset=${offset}`,
-                        { headers: headers(), signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) {
-                        const data = await res.json();
-                        return data.posts || [];
-                    }
-                } catch {
-                    // Fall through
+            try {
+                const base = ensureDaemon();
+                const res = await fetch(
+                    `${base}/api/feed?limit=${limit}&offset=${offset}`,
+                    { headers: headers(), signal: AbortSignal.timeout(5000) }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.posts || []).map((p: any) => ({
+                        id: p.id,
+                        author: p.authorAddress,
+                        authorDomain: p.authorDomain,
+                        content: p.content,
+                        tags: (p.media || []).map((m: any) => m.url || m).filter(Boolean),
+                        likes: p.likes || 0,
+                        reposts: p.shares || 0,
+                        createdAt: new Date(p.createdAt).getTime(),
+                    }));
                 }
+            } catch {
+                // Silent fail
             }
-
-            // Try indexer
-            if (INDEXER_BASE) {
-                try {
-                    const res = await fetch(
-                        `${INDEXER_BASE}/api/social/feed/${currentUserAddress}?limit=${limit}&offset=${offset}`,
-                        { signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Silent fail
-                }
-            }
-
             return [];
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     const getGlobalFeed = useCallback(
         async (limit = 20, offset = 0): Promise<SocialPost[]> => {
-            // Try daemon first
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(
-                        `${daemonUrl}/api/v1/social/feed/global?limit=${limit}&offset=${offset}`,
-                        { headers: headers(), signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) {
-                        const data = await res.json();
-                        return data.posts || [];
-                    }
-                } catch {
-                    // Fall through
+            try {
+                const base = ensureDaemon();
+                const res = await fetch(
+                    `${base}/api/feed?limit=${limit}&offset=${offset}`,
+                    { headers: headers(), signal: AbortSignal.timeout(5000) }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.posts || []).map((p: any) => ({
+                        id: p.id,
+                        author: p.authorAddress,
+                        authorDomain: p.authorDomain,
+                        content: p.content,
+                        tags: (p.media || []).map((m: any) => m.url || m).filter(Boolean),
+                        likes: p.likes || 0,
+                        reposts: p.shares || 0,
+                        createdAt: new Date(p.createdAt).getTime(),
+                    }));
                 }
+            } catch {
+                // Silent fail
             }
-
-            // Try indexer
-            if (INDEXER_BASE) {
-                try {
-                    const res = await fetch(
-                        `${INDEXER_BASE}/api/social/feed/global?limit=${limit}&offset=${offset}`,
-                        { signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Silent fail
-                }
-            }
-
             return [];
         },
-        [daemonUrl, headers],
+        [ensureDaemon, headers],
     );
 
     const likePost = useCallback(
         async (postId: string): Promise<void> => {
             if (!currentUserAddress) return;
-            
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(`${daemonUrl}/api/v1/social/posts/like`, {
-                        method: 'POST',
-                        headers: headers(true),
-                        body: JSON.stringify({ postId, liker: currentUserAddress }),
-                        signal: AbortSignal.timeout(3000),
-                    });
-                    if (res.ok) return;
-                } catch {
-                    // Fall through
-                }
-            }
-
-            if (INDEXER_BASE) {
-                await fetch(`${INDEXER_BASE}/api/social/posts/like`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, liker: currentUserAddress }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            }
+            const base = ensureDaemon();
+            const res = await fetch(`${base}/api/posts/${postId}/like`, {
+                method: 'POST',
+                headers: headers(),
+                signal: AbortSignal.timeout(3000),
+            });
+            if (!res.ok) throw new Error(`Like failed: ${res.status}`);
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     // ── Followers ──
@@ -331,68 +214,52 @@ export function useSocial(currentUserAddress: string | null) {
         async (address?: string): Promise<FollowRelation[]> => {
             const target = address ?? currentUserAddress;
             if (!target) return [];
-            
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(
-                        `${daemonUrl}/api/v1/social/followers/${target}`,
-                        { headers: headers(), signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Fall through
+            try {
+                const base = ensureDaemon();
+                const res = await fetch(
+                    `${base}/api/followers/${target}`,
+                    { headers: headers(), signal: AbortSignal.timeout(5000) }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.followers || []).map((r: any) => ({
+                        address: r.address,
+                        domain: r.domain,
+                        followedAt: Date.now(),
+                    }));
                 }
+            } catch {
+                // Silent fail
             }
-
-            if (INDEXER_BASE) {
-                try {
-                    const res = await fetch(
-                        `${INDEXER_BASE}/api/social/followers/${target}`,
-                        { signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Silent fail
-                }
-            }
-
             return [];
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     const getFollowing = useCallback(
         async (address?: string): Promise<FollowRelation[]> => {
             const target = address ?? currentUserAddress;
             if (!target) return [];
-            
-            if (daemonUrl) {
-                try {
-                    const res = await fetch(
-                        `${daemonUrl}/api/v1/social/following/${target}`,
-                        { headers: headers(), signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Fall through
+            try {
+                const base = ensureDaemon();
+                const res = await fetch(
+                    `${base}/api/following/${target}`,
+                    { headers: headers(), signal: AbortSignal.timeout(5000) }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    return (data.following || []).map((r: any) => ({
+                        address: r.address,
+                        domain: r.domain,
+                        followedAt: Date.now(),
+                    }));
                 }
+            } catch {
+                // Silent fail
             }
-
-            if (INDEXER_BASE) {
-                try {
-                    const res = await fetch(
-                        `${INDEXER_BASE}/api/social/following/${target}`,
-                        { signal: AbortSignal.timeout(5000) }
-                    );
-                    if (res.ok) return await res.json();
-                } catch {
-                    // Silent fail
-                }
-            }
-
             return [];
         },
-        [currentUserAddress, daemonUrl, headers],
+        [currentUserAddress, ensureDaemon, headers],
     );
 
     return {
@@ -422,100 +289,62 @@ export function useNotifications(address: string | null) {
     }, [sessionToken]);
 
     const refresh = useCallback(async () => {
-        if (!address) return;
+        if (!address || !daemonUrl) return;
         setLoading(true);
         try {
+            const [notifsRes, countRes] = await Promise.all([
+                fetch(`${daemonUrl}/api/notifications/${address}`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                }),
+                fetch(`${daemonUrl}/api/notifications/${address}/unread`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                }),
+            ]);
             let notifs: SocialNotification[] = [];
             let count = 0;
-
-            // Try daemon first
-            if (daemonUrl) {
-                try {
-                    const [notifsRes, countRes] = await Promise.all([
-                        fetch(`${daemonUrl}/api/v1/social/notifications/${address}`, {
-                            headers: headers(),
-                            signal: AbortSignal.timeout(5000),
-                        }),
-                        fetch(`${daemonUrl}/api/v1/social/notifications/${address}/unread`, {
-                            headers: headers(),
-                            signal: AbortSignal.timeout(5000),
-                        }),
-                    ]);
-                    if (notifsRes.ok) notifs = await notifsRes.json();
-                    if (countRes.ok) {
-                        const countData = await countRes.json();
-                        count = countData.count;
-                    }
-                    setNotifications(notifs);
-                    setUnreadCount(count);
-                    setLoading(false);
-                    return;
-                } catch {
-                    // Fall through
-                }
+            if (notifsRes.ok) {
+                const data = await notifsRes.json();
+                notifs = (Array.isArray(data) ? data : []).map((n: any) => ({
+                    id: n.id,
+                    type: n.type,
+                    actor: n.actor,
+                    actorDomain: n.actorDomain || null,
+                    targetId: n.targetId || null,
+                    message: n.message,
+                    read: n.read,
+                    createdAt: n.createdAt,
+                }));
             }
-
-            // Try indexer
-            if (INDEXER_BASE) {
-                try {
-                    const [notifsRes, countRes] = await Promise.all([
-                        fetch(`${INDEXER_BASE}/api/social/notifications/${address}`, {
-                            signal: AbortSignal.timeout(5000),
-                        }),
-                        fetch(`${INDEXER_BASE}/api/social/notifications/${address}/unread`, {
-                            signal: AbortSignal.timeout(5000),
-                        }),
-                    ]);
-                    if (notifsRes.ok) notifs = await notifsRes.json();
-                    if (countRes.ok) {
-                        const countData = await countRes.json();
-                        count = countData.count;
-                    }
-                } catch {
-                    // Silent fail
-                }
+            if (countRes.ok) {
+                const data = await countRes.json();
+                count = data.count || 0;
             }
-
             setNotifications(notifs);
             setUnreadCount(count);
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }
     }, [address, daemonUrl, headers]);
 
     const markRead = useCallback(async () => {
-        if (!address) return;
-        
-        if (daemonUrl) {
-            try {
-                const res = await fetch(`${daemonUrl}/api/v1/social/notifications/${address}/read`, {
-                    method: 'POST',
-                    headers: headers(),
-                    signal: AbortSignal.timeout(3000),
-                });
-                if (res.ok) {
-                    setUnreadCount(0);
-                    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-                    return;
-                }
-            } catch {
-                // Fall through
+        if (!address || !daemonUrl) return;
+        try {
+            const res = await fetch(`${daemonUrl}/api/notifications/${address}/read`, {
+                method: 'POST',
+                headers: headers(),
+                signal: AbortSignal.timeout(3000),
+            });
+            if (res.ok) {
+                setUnreadCount(0);
+                setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
             }
+        } catch {
+            // Silent fail
         }
-
-        if (INDEXER_BASE) {
-            try {
-                await fetch(`${INDEXER_BASE}/api/social/notifications/${address}/read`, {
-                    method: 'POST',
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch {
-                // Silent fail
-            }
-        }
-
-        setUnreadCount(0);
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }, [address, daemonUrl, headers]);
 
     useEffect(() => {

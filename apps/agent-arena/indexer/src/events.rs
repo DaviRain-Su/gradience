@@ -13,6 +13,14 @@ const EVENT_TASK_APPLIED: u8 = 0x06;
 const EVENT_TASK_CANCELLED: u8 = 0x07;
 const EVENT_JUDGE_UNSTAKED: u8 = 0x08;
 
+// Chain Hub event discriminators (share same tag)
+const EVENT_SKILL_REGISTERED: u8 = 0x01;
+const EVENT_PROTOCOL_REGISTERED: u8 = 0x02;
+const EVENT_SKILL_STATUS_UPDATED: u8 = 0x03;
+const EVENT_PROTOCOL_STATUS_UPDATED: u8 = 0x04;
+const EVENT_INVOCATION_CREATED: u8 = 0x05;
+const EVENT_INVOCATION_COMPLETED: u8 = 0x06;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EventEnvelope {
     pub slot: u64,
@@ -73,13 +81,79 @@ pub enum ProgramEvent {
         returned_stake: u64,
         categories: Vec<u8>,
     },
+    // Chain Hub events
+    SkillRegistered {
+        skill_id: u64,
+        authority: [u8; 32],
+        judge_category: u8,
+        name: String,
+        metadata_uri: String,
+    },
+    ProtocolRegistered {
+        protocol_id: String,
+        authority: [u8; 32],
+        protocol_type: u8,
+        trust_model: u8,
+        auth_mode: u8,
+        capabilities_mask: u64,
+        endpoint: String,
+        docs_uri: String,
+        program_id: [u8; 32],
+        idl_ref: String,
+    },
+    SkillStatusUpdated {
+        skill_id: u64,
+        authority: [u8; 32],
+        status: u8,
+    },
+    ProtocolStatusUpdated {
+        protocol_id: String,
+        authority: [u8; 32],
+        status: u8,
+    },
+    InvocationCreated {
+        invocation_id: u64,
+        task_id: u64,
+        requester: [u8; 32],
+        skill_id: u64,
+        protocol_id: String,
+        agent: [u8; 32],
+        judge: [u8; 32],
+        amount: u64,
+    },
+    InvocationCompleted {
+        invocation_id: u64,
+        task_id: u64,
+        success: bool,
+        royalty_amount: u64,
+    },
 }
 
+/// Parse Agent Arena events from logs.
 pub fn parse_events_from_logs(logs: &[String]) -> Result<Vec<ProgramEvent>> {
+    parse_arena_events_from_logs(logs)
+}
+
+/// Parse Agent Arena events from logs.
+pub fn parse_arena_events_from_logs(logs: &[String]) -> Result<Vec<ProgramEvent>> {
     let mut events = Vec::new();
     for line in logs {
         if let Some(encoded) = extract_program_data(line) {
-            let event = decode_program_event(encoded)?;
+            let event = decode_arena_event(encoded)?;
+            if let Some(event) = event {
+                events.push(event);
+            }
+        }
+    }
+    Ok(events)
+}
+
+/// Parse Chain Hub events from logs.
+pub fn parse_chain_hub_events_from_logs(logs: &[String]) -> Result<Vec<ProgramEvent>> {
+    let mut events = Vec::new();
+    for line in logs {
+        if let Some(encoded) = extract_program_data(line) {
+            let event = decode_chain_hub_event(encoded)?;
             if let Some(event) = event {
                 events.push(event);
             }
@@ -93,7 +167,7 @@ fn extract_program_data(line: &str) -> Option<&str> {
         .map(|(_, right)| right.trim())
 }
 
-fn decode_program_event(encoded: &str) -> Result<Option<ProgramEvent>> {
+fn decode_arena_event(encoded: &str) -> Result<Option<ProgramEvent>> {
     let bytes = STANDARD
         .decode(encoded.as_bytes())
         .with_context(|| "failed to decode base64 event log")?;
@@ -158,6 +232,73 @@ fn decode_program_event(encoded: &str) -> Result<Option<ProgramEvent>> {
             judge: cursor.read_pubkey()?,
             returned_stake: cursor.read_u64()?,
             categories: cursor.read_vec_u8()?,
+        },
+        _ => return Ok(None),
+    };
+    cursor.ensure_consumed()?;
+    Ok(Some(event))
+}
+
+fn decode_chain_hub_event(encoded: &str) -> Result<Option<ProgramEvent>> {
+    let bytes = STANDARD
+        .decode(encoded.as_bytes())
+        .with_context(|| "failed to decode base64 event log")?;
+    if bytes.len() < EVENT_IX_TAG_LE.len() + 1 {
+        return Ok(None);
+    }
+    if bytes[..EVENT_IX_TAG_LE.len()] != EVENT_IX_TAG_LE {
+        return Ok(None);
+    }
+
+    let discriminator = bytes[EVENT_IX_TAG_LE.len()];
+    let payload = &bytes[(EVENT_IX_TAG_LE.len() + 1)..];
+    let mut cursor = ByteCursor::new(payload);
+
+    let event = match discriminator {
+        EVENT_SKILL_REGISTERED => ProgramEvent::SkillRegistered {
+            skill_id: cursor.read_u64()?,
+            authority: cursor.read_pubkey()?,
+            judge_category: cursor.read_u8()?,
+            name: cursor.read_string()?,
+            metadata_uri: cursor.read_string()?,
+        },
+        EVENT_PROTOCOL_REGISTERED => ProgramEvent::ProtocolRegistered {
+            protocol_id: cursor.read_string()?,
+            authority: cursor.read_pubkey()?,
+            protocol_type: cursor.read_u8()?,
+            trust_model: cursor.read_u8()?,
+            auth_mode: cursor.read_u8()?,
+            capabilities_mask: cursor.read_u64()?,
+            endpoint: cursor.read_string()?,
+            docs_uri: cursor.read_string()?,
+            program_id: cursor.read_pubkey()?,
+            idl_ref: cursor.read_string()?,
+        },
+        EVENT_SKILL_STATUS_UPDATED => ProgramEvent::SkillStatusUpdated {
+            skill_id: cursor.read_u64()?,
+            authority: cursor.read_pubkey()?,
+            status: cursor.read_u8()?,
+        },
+        EVENT_PROTOCOL_STATUS_UPDATED => ProgramEvent::ProtocolStatusUpdated {
+            protocol_id: cursor.read_string()?,
+            authority: cursor.read_pubkey()?,
+            status: cursor.read_u8()?,
+        },
+        EVENT_INVOCATION_CREATED => ProgramEvent::InvocationCreated {
+            invocation_id: cursor.read_u64()?,
+            task_id: cursor.read_u64()?,
+            requester: cursor.read_pubkey()?,
+            skill_id: cursor.read_u64()?,
+            protocol_id: cursor.read_string()?,
+            agent: cursor.read_pubkey()?,
+            judge: cursor.read_pubkey()?,
+            amount: cursor.read_u64()?,
+        },
+        EVENT_INVOCATION_COMPLETED => ProgramEvent::InvocationCompleted {
+            invocation_id: cursor.read_u64()?,
+            task_id: cursor.read_u64()?,
+            success: cursor.read_u8()? != 0,
+            royalty_amount: cursor.read_u64()?,
         },
         _ => return Ok(None),
     };

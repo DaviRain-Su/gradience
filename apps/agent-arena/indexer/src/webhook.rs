@@ -1,7 +1,12 @@
 use anyhow::Result;
 use serde::Deserialize;
 
-use crate::events::{parse_events_from_logs, EventEnvelope, ProgramEvent};
+use crate::events::{
+    parse_arena_events_from_logs, parse_chain_hub_events_from_logs, EventEnvelope, ProgramEvent,
+};
+
+pub const AGENT_ARENA_PROGRAM_ID: &str = "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs";
+pub const CHAIN_HUB_PROGRAM_ID: &str = "6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec";
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -99,7 +104,30 @@ fn decode_transactions(transactions: Vec<WebhookTransaction>) -> Result<Vec<Even
         let slot = tx.slot;
         let timestamp = tx.timestamp.unwrap_or(0);
         let logs = tx.into_logs();
-        let events = parse_events_from_logs(&logs)?;
+
+        let events = match extract_program_id_from_logs(&logs).as_deref() {
+            Some(AGENT_ARENA_PROGRAM_ID) => parse_arena_events_from_logs(&logs)?,
+            Some(CHAIN_HUB_PROGRAM_ID) => parse_chain_hub_events_from_logs(&logs)?,
+            Some(_) => {
+                // Unknown program: try both parsers and merge results.
+                // Because the two programs share the same event tag, this fallback
+                // should only trigger when the log format doesn't include the
+                // Program ID line (rare).  The parsers validate payload lengths,
+                // so mis-parsed events are unlikely to succeed.
+                let mut arena = parse_arena_events_from_logs(&logs).unwrap_or_default();
+                let chain_hub = parse_chain_hub_events_from_logs(&logs).unwrap_or_default();
+                arena.extend(chain_hub);
+                arena
+            }
+            None => {
+                // No program ID found in logs: try both.
+                let mut arena = parse_arena_events_from_logs(&logs).unwrap_or_default();
+                let chain_hub = parse_chain_hub_events_from_logs(&logs).unwrap_or_default();
+                arena.extend(chain_hub);
+                arena
+            }
+        };
+
         envelopes.extend(events.into_iter().map(|event| EventEnvelope {
             slot,
             timestamp,
@@ -107,6 +135,17 @@ fn decode_transactions(transactions: Vec<WebhookTransaction>) -> Result<Vec<Even
         }));
     }
     Ok(envelopes)
+}
+
+fn extract_program_id_from_logs(logs: &[String]) -> Option<String> {
+    for line in logs {
+        if let Some(rest) = line.strip_prefix("Program ") {
+            if let Some((id, _)) = rest.split_once(" invoke [") {
+                return Some(id.to_string());
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
