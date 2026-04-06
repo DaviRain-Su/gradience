@@ -69,7 +69,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
       await this.connectChain(chain);
     }
 
-    console.log('[CrossChainAdapter] Initialized');
+    console.info('[CrossChainAdapter] Initialized');
   }
 
   async shutdown(): Promise<void> {
@@ -78,7 +78,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
       state.connected = false;
     }
 
-    console.log('[CrossChainAdapter] Shutdown');
+    console.info('[CrossChainAdapter] Shutdown');
   }
 
   isAvailable(): boolean {
@@ -198,7 +198,7 @@ export class CrossChainAdapter implements ProtocolAdapter {
 
   private async connectChain(chain: ChainConfig): Promise<void> {
     // Simulate chain connection
-    console.log(`[CrossChainAdapter] Connecting to ${chain.name}...`);
+    console.info(`[CrossChainAdapter] Connecting to ${chain.name}...`);
 
     this.chainStates.set(chain.name, {
       name: chain.name,
@@ -232,19 +232,19 @@ export class CrossChainAdapter implements ProtocolAdapter {
   private async sendViaBridge(payload: string, targetChain: string): Promise<string> {
     void payload;
     // Simulate bridge transaction
-    console.log(`[CrossChainAdapter] Sending via bridge to ${targetChain}`);
+    console.info(`[CrossChainAdapter] Sending via bridge to ${targetChain}`);
     return `tx-${Date.now()}`;
   }
 
   private startListening(chain: ChainConfig): void {
     // Start listening for incoming messages
-    console.log(`[CrossChainAdapter] Listening on ${chain.name}`);
+    console.info(`[CrossChainAdapter] Listening on ${chain.name}`);
   }
 
   private async broadcastToChain(agentInfo: AgentInfo, chain: ChainConfig): Promise<void> {
     void agentInfo;
     // Broadcast agent info to chain
-    console.log(`[CrossChainAdapter] Broadcasting to ${chain.name}`);
+    console.info(`[CrossChainAdapter] Broadcasting to ${chain.name}`);
   }
 }
 

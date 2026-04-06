@@ -322,7 +322,7 @@ export class WormholeAdapter implements ProtocolAdapter {
       this.options.logger.log(`[WormholeAdapter] Initialized on ${this.options.sourceChain} (Chain ID: ${this.options.sourceChainId})`);
     } catch (error) {
       this.options.logger.error('[WormholeAdapter] Initialization failed:', error);
-      throw new Error(`Failed to initialize Wormhole adapter: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to initialize Wormhole adapter: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -540,7 +540,7 @@ export class WormholeAdapter implements ProtocolAdapter {
       };
     } catch (error) {
       this.options.logger.error('[WormholeAdapter] Quote failed:', error);
-      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -662,8 +662,7 @@ export class WormholeAdapter implements ProtocolAdapter {
     try {
       // Try to initialize Wormhole SDK
       const moduleName = '@wormhole-foundation/sdk';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const whModule: any = await import(moduleName);
+      const whModule = await import(moduleName);
       this._wormholeSdk = { wormhole: whModule.wormhole };
       this.options.logger.log('[WormholeAdapter] Wormhole SDK loaded');
     } catch {
@@ -707,7 +706,7 @@ export class WormholeAdapter implements ProtocolAdapter {
       const fee = await contract.messageFee();
       this.options.logger.log(`[WormholeAdapter] Connected to core bridge, message fee: ${fee}`);
     } catch (error) {
-      throw new Error(`Failed to connect to Wormhole core bridge: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to connect to Wormhole core bridge: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 

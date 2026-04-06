@@ -358,7 +358,7 @@ export class DeBridgeAdapter implements ProtocolAdapter {
       this.options.logger.log(`[DeBridgeAdapter] Initialized on ${this.options.sourceChain} (Chain ID: ${this.options.sourceChainId})`);
     } catch (error) {
       this.options.logger.error('[DeBridgeAdapter] Initialization failed:', error);
-      throw new Error(`Failed to initialize DeBridge adapter: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to initialize DeBridge adapter: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -660,7 +660,7 @@ export class DeBridgeAdapter implements ProtocolAdapter {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.options.logger.error('[DeBridgeAdapter] Claim failed:', err);
-      throw new Error(`Claim failed: ${err.message}`);
+      throw new Error(`Claim failed: ${err.message}`, { cause: error });
     }
   }
 
@@ -725,7 +725,7 @@ export class DeBridgeAdapter implements ProtocolAdapter {
       };
     } catch (error) {
       this.options.logger.error('[DeBridgeAdapter] Quote failed:', error);
-      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -809,8 +809,7 @@ export class DeBridgeAdapter implements ProtocolAdapter {
     try {
       // Dynamic import for optional dependencies
       const moduleName = '@debridge-finance/desdk';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dbModule: any = await (await import(moduleName)).default;
+      const dbModule = await (await import(moduleName)).default;
       this._debridgeSdk = dbModule;
       this.options.logger.log('[DeBridgeAdapter] DeBridge SDK loaded');
     } catch {
@@ -867,7 +866,7 @@ export class DeBridgeAdapter implements ProtocolAdapter {
 
       this.options.logger.log(`[DeBridgeAdapter] Connected to DeBridge Gate on ${this.options.sourceChain}`);
     } catch (error) {
-      throw new Error(`Failed to connect to DeBridge Gate: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to connect to DeBridge Gate: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 

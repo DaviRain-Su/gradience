@@ -305,7 +305,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       this.options.logger.log(`[LayerZeroAdapter] Initialized on ${this.options.sourceChain} (EID: ${this.options.sourceEid})`);
     } catch (error) {
       this.options.logger.error('[LayerZeroAdapter] Initialization failed:', error);
-      throw new Error(`Failed to initialize LayerZero adapter: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to initialize LayerZero adapter: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -533,7 +533,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       };
     } catch (error) {
       this.options.logger.error('[LayerZeroAdapter] Quote failed:', error);
-      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Quote failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -573,8 +573,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       // Dynamic import for optional dependencies
       // The module is an optional peer dependency - may not be installed
       const moduleName = '@layerzerolabs/lz-v2-utilities';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lzModule: any = await (await import(moduleName)).default;
+      const lzModule = await (await import(moduleName)).default;
       this.lzSdk = { Options: lzModule.Options };
       this.options.logger.log('[LayerZeroAdapter] LayerZero SDK loaded');
     } catch {
@@ -622,7 +621,7 @@ export class LayerZeroAdapter implements ProtocolAdapter {
       
       this.options.logger.log(`[LayerZeroAdapter] Connected to endpoint, current nonce: ${nonce}`);
     } catch (error) {
-      throw new Error(`Failed to connect to LayerZero endpoint: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to connect to LayerZero endpoint: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
