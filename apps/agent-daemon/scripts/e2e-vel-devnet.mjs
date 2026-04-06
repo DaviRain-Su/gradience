@@ -6,7 +6,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { createKeyPairSignerFromBytes } from '@solana/kit';
-import { GradienceSDK, KeypairAdapter } from '@gradiences/arena-sdk';
+import { GradienceSDK, KeypairAdapter } from '../../agent-arena/clients/typescript/dist/index.js';
 import { createSettlementBridge } from '../dist/src/bridge/settlement-bridge.js';
 import { resolveJudgeAndPayPdas } from '../dist/src/solana/pda-resolver.js';
 import { PublicKey } from '@solana/web3.js';

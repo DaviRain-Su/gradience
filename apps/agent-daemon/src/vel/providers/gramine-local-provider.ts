@@ -8,7 +8,20 @@
 
 import { spawn, ChildProcess } from 'node:child_process';
 import { createConnection, createServer } from 'node:net';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function findPackageRoot(startDir: string): string {
+  let dir = startDir;
+  while (dir !== '/' && dir !== resolve(dir, '..')) {
+    if (existsSync(resolve(dir, 'package.json'))) return dir;
+    dir = resolve(dir, '..');
+  }
+  throw new Error('package.json not found when locating mock enclave script');
+}
 import type {
   TeeProviderConfig,
   EnclavePayload,
@@ -42,8 +55,9 @@ export class GramineLocalProvider implements TeeProvider {
     }
 
     // Default to mock enclave script path next to this file.
+    const packageRoot = findPackageRoot(__dirname);
     const mockScript = this.config.commandOverride
-      || resolve(__dirname, '../../../scripts/mock-gramine-enclave.mjs');
+      || resolve(packageRoot, 'scripts/mock-gramine-enclave.mjs');
 
     const port = await findFreePort();
     const child = spawn('node', [mockScript, String(port)], {
