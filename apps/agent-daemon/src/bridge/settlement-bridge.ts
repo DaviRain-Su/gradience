@@ -346,6 +346,7 @@ export class SettlementBridge extends EventEmitter {
       const { blockhash } = await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = this.keyManager.getKeypair().publicKey;
+      transaction.sign(this.keyManager.getKeypair());
 
       const serializedTx = transaction.serialize({ requireAllSignatures: false });
       const base64Tx = Buffer.from(serializedTx).toString('base64');
