@@ -93,7 +93,10 @@ class FallbackCascadeClient implements TritonCascadeClient {
 
 export interface SettlementRequest {
   evaluationId: string;
+  /** Internal/local task identifier (can be any string) */
   taskId: string;
+  /** On-chain task id used for PDA derivation (must be a valid u64 string) */
+  taskIdOnChain: string;
   paymentId: string;
   agentId: string;
   payerAgentId: string;
@@ -102,6 +105,12 @@ export interface SettlementRequest {
   token: string;
   taskAccount: string;
   escrowAccount: string;
+  /** Task poster address (required for judge_and_pay) */
+  poster: string;
+  /** Optional reason reference for the judgement */
+  reasonRef?: string;
+  /** Optional loser stake refund pairs */
+  losers?: Array<{ agent: string; account?: string }>;
 }
 
 export interface EvaluationProof {
@@ -296,7 +305,7 @@ export class SettlementBridge extends EventEmitter {
       }
 
       try {
-        const result = await this.submitToChainHub(request, proof);
+        const result = await this.submitToAgentArena(request, proof);
         if (result.status === 'confirmed') return result;
         lastError = new Error(result.error || 'Submission failed');
       } catch (error) {
@@ -321,19 +330,19 @@ export class SettlementBridge extends EventEmitter {
     );
   }
 
-  private async submitToChainHub(
+  private async submitToAgentArena(
     request: SettlementRequest,
     proof: EvaluationProof
   ): Promise<SettlementResult> {
     logger.info(
       { taskId: request.taskId, agentId: request.agentId, score: proof.score, programId: this.config.chainHubProgramId },
-      'Submitting to Chain Hub via Triton Cascade'
+      'Submitting judge_and_pay to Agent Arena'
     );
 
     try {
-      const instruction = await this.buildChainHubInstruction(request, proof);
+      const instruction = this.buildAgentArenaJudgeInstruction(request, proof);
       const transaction = new Transaction().add(instruction);
-      
+
       const { blockhash } = await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = this.keyManager.getKeypair().publicKey;
@@ -377,7 +386,7 @@ export class SettlementBridge extends EventEmitter {
         deliveryPath: cascadeResponse.deliveryPath,
       };
     } catch (error) {
-      logger.error({ error, taskId: request.taskId }, 'Failed to submit to Chain Hub');
+      logger.error({ error, taskId: request.taskId }, 'Failed to submit judge_and_pay');
       return {
         settlementId: `${request.evaluationId}-${Date.now()}`,
         txSignature: '',
@@ -391,33 +400,57 @@ export class SettlementBridge extends EventEmitter {
     }
   }
 
-  private async buildChainHubInstruction(
+  private buildAgentArenaJudgeInstruction(
     request: SettlementRequest,
     proof: EvaluationProof
-  ): Promise<TransactionInstruction> {
-    const instructionData = Buffer.alloc(100);
-    const discriminator = Buffer.from([1, 0, 0, 0, 0, 0, 0, 0]);
-    discriminator.copy(instructionData, 0);
-    
-    const proofData = Buffer.from(JSON.stringify({
-      evaluationId: proof.evaluationId,
+  ): TransactionInstruction {
+    const programId = new PublicKey(this.config.chainHubProgramId);
+    const judge = this.keyManager.getKeypair().publicKey;
+    const winner = new PublicKey(request.agentId);
+    const poster = new PublicKey(request.poster);
+    const taskId = BigInt(request.taskId);
+
+    const pdas = resolveJudgeAndPayPdas(taskId, judge, winner);
+
+    const keys = [
+      { pubkey: judge, isSigner: true, isWritable: true },
+      { pubkey: pdas.task, isSigner: false, isWritable: true },
+      { pubkey: pdas.escrow, isSigner: false, isWritable: true },
+      { pubkey: poster, isSigner: false, isWritable: true },
+      { pubkey: winner, isSigner: false, isWritable: true },
+      { pubkey: pdas.winnerApplication, isSigner: false, isWritable: false },
+      { pubkey: pdas.winnerSubmission, isSigner: false, isWritable: false },
+      { pubkey: pdas.winnerReputation, isSigner: false, isWritable: true },
+      { pubkey: pdas.judgeStake, isSigner: false, isWritable: true },
+      { pubkey: pdas.treasury, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: pdas.eventAuthority, isSigner: false, isWritable: false },
+      { pubkey: programId, isSigner: false, isWritable: false },
+    ];
+
+    // TODO: SPL token path support (8 optional accounts) — currently SOL-only
+    if (request.losers && request.losers.length > 0) {
+      for (const loser of request.losers) {
+        const agentPubkey = new PublicKey(loser.agent);
+        const [applicationPda] = PublicKey.findProgramAddressSync(
+          [Buffer.from('application'), u64LeBuffer(taskId), agentPubkey.toBuffer()],
+          programId,
+        );
+        keys.push({ pubkey: applicationPda, isSigner: false, isWritable: false });
+        keys.push({ pubkey: agentPubkey, isSigner: false, isWritable: true });
+      }
+    }
+
+    const data = serializeJudgeAndPayData({
+      winner: Array.from(winner.toBytes()),
       score: proof.score,
-      passed: proof.passed,
-      verificationHash: proof.verificationHash,
-      signature: proof.signature,
-    }));
-    proofData.copy(instructionData, 8);
+      reasonRef: request.reasonRef ?? null,
+    });
 
     return new TransactionInstruction({
-      keys: [
-        { pubkey: new PublicKey(request.taskAccount), isSigner: false, isWritable: true },
-        { pubkey: new PublicKey(request.escrowAccount), isSigner: false, isWritable: true },
-        { pubkey: this.keyManager.getKeypair().publicKey, isSigner: true, isWritable: false },
-        { pubkey: new PublicKey(request.agentId), isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      programId: new PublicKey(this.config.chainHubProgramId),
-      data: instructionData,
+      keys,
+      programId,
+      data,
     });
   }
 
@@ -523,7 +556,7 @@ export interface BridgeOptions {
 }
 
 export async function createSettlementBridge(options: BridgeOptions = {}): Promise<SettlementBridge> {
-  const programId = options.chainHubProgramId || '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec';
+  const programId = options.chainHubProgramId || '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
   const rpcEndpoint = options.rpcEndpoint || 'https://api.devnet.solana.com';
 
   // Initialize key manager
@@ -571,6 +604,34 @@ export async function createSettlementBridge(options: BridgeOptions = {}): Promi
   };
 
   return new SettlementBridge(config);
+}
+
+// ============================================================================
+// Borsh Serialization Helpers
+// ============================================================================
+
+function u64LeBuffer(value: bigint | number): Buffer {
+  const buf = Buffer.allocUnsafe(8);
+  buf.writeBigUInt64LE(BigInt(value));
+  return buf;
+}
+
+interface JudgeAndPayDataArgs {
+  winner: number[];
+  score: number;
+  reasonRef: string | null;
+}
+
+function serializeJudgeAndPayData(args: JudgeAndPayDataArgs): Buffer {
+  const schema = {
+    struct: {
+      winner: { array: { type: 'u8', len: 32 } },
+      score: 'u8',
+      reasonRef: { option: 'string' },
+    },
+  };
+  const serialized = serialize(schema, args);
+  return Buffer.concat([Buffer.from([4]), Buffer.from(serialized)]);
 }
 
 // Re-export KeyManager for external use

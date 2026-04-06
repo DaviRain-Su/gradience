@@ -786,6 +786,9 @@ export class PaymentService {
         token: session.request.token,
         taskAccount: session.request.taskAccount,
         escrowAccount: session.request.escrowAccount,
+        poster: session.request.payer,
+        reasonRef: session.request.reasonRef,
+        losers: session.request.losers,
       });
 
       if (settlementResult.status !== 'confirmed') {

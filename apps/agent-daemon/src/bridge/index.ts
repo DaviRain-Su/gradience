@@ -112,7 +112,7 @@ export class BridgeManager {
   ) {
     this.config = {
       rpcEndpoint: config.rpcEndpoint || 'https://api.devnet.solana.com',
-      chainHubProgramId: config.chainHubProgramId || '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
+      chainHubProgramId: config.chainHubProgramId || '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs',
       tritonApiToken: config.tritonApiToken,
       keyDir: config.keyDir || './keys',
       keyPassword: config.keyPassword,
@@ -225,6 +225,9 @@ export class BridgeManager {
       token: string;
       taskAccount: string;
       escrowAccount: string;
+      poster: string;
+      reasonRef?: string;
+      losers?: Array<{ agent: string; account?: string }>;
     }
   ): Promise<SettlementResult> {
     this.ensureInitialized();
@@ -240,6 +243,9 @@ export class BridgeManager {
       token: params.token,
       taskAccount: params.taskAccount,
       escrowAccount: params.escrowAccount,
+      poster: params.poster,
+      reasonRef: params.reasonRef,
+      losers: params.losers,
     };
 
     return this.settle(request);

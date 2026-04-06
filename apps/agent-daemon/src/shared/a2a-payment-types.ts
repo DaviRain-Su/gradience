@@ -13,6 +13,14 @@ export interface PaymentRequest {
   deadline: number;
   description?: string;
   submissionUrl?: string;
+  /** On-chain task account (PDA) for bridge settlement */
+  taskAccount?: string;
+  /** On-chain escrow account (PDA) for bridge settlement */
+  escrowAccount?: string;
+  /** Optional reason reference for the judgement */
+  reasonRef?: string;
+  /** Optional loser stake refund pairs */
+  losers?: Array<{ agent: string; account?: string }>;
   evaluation?: {
     evaluatorId?: string;
     score?: number;

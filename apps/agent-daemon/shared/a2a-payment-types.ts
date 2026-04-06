@@ -17,6 +17,10 @@ export interface PaymentRequest {
   /** Solana account addresses for on-chain settlement */
   taskAccount?: string;
   escrowAccount?: string;
+  /** Optional reason reference for the judgement */
+  reasonRef?: string;
+  /** Optional loser stake refund pairs */
+  losers?: Array<{ agent: string; account?: string }>;
   evaluation?: {
     evaluatorId?: string;
     score?: number;
