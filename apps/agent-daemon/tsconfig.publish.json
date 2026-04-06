@@ -14,6 +14,10 @@
         "src/bridge/settlement-bridge.ts",
         "src/evaluator/judges.ts",
         "src/evaluator/external-evaluators.ts",
-        "src/bridge/external-evaluation-stub.ts"
+        "src/bridge/external-evaluation-stub.ts",
+        "src/payments/x402-manager.ts",
+        "src/chainhub/services.ts",
+        "src/workflow/execution-engine.ts",
+        "src/workflow/protection.ts"
     ]
 }

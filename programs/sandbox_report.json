@@ -1,0 +1,228 @@
+{
+  "generated_at": "2026-04-06T14:25:24.045545+00:00",
+  "total_agents": 500,
+  "algorithm_version": "gradience-v1.0.0",
+  "overall_stats": {
+    "mean": 64.93,
+    "median": 67.85,
+    "std_dev": 14.13,
+    "min": 0.0,
+    "max": 82.43,
+    "p95": 78.72,
+    "p5": 51.13
+  },
+  "confidence_stats": {
+    "mean": 0.89,
+    "median": 0.98,
+    "std_dev": 0.14,
+    "min": 0.621,
+    "max": 1.0,
+    "p95": 1.0,
+    "p5": 0.629
+  },
+  "tier_distribution": {
+    "platinum": 18,
+    "gold": 381,
+    "silver": 80,
+    "unrated": 21
+  },
+  "dimension_averages": {
+    "social": 50.65,
+    "temporal": 77.68,
+    "reliability": 80.7,
+    "economic": 21.97,
+    "security": 83.32,
+    "activity": 83.21,
+    "expertise": 79.52,
+    "performance": 71.34
+  },
+  "persona_breakdown": {
+    "dormant": 59,
+    "veteran": 75,
+    "grinder": 48,
+    "sybil": 21,
+    "active_mid": 93,
+    "whale": 22,
+    "newbie": 100,
+    "disputed": 50,
+    "multi": 32
+  },
+  "anomalies": [
+    {
+      "agent_id": "agent_0102",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0111",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0182",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 1.0
+    },
+    {
+      "agent_id": "agent_0237",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0242",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0303",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 1.0
+    },
+    {
+      "agent_id": "agent_0305",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0308",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 1.0
+    },
+    {
+      "agent_id": "agent_0366",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0372",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.984
+    },
+    {
+      "agent_id": "agent_0403",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 0.985
+    },
+    {
+      "agent_id": "agent_0465",
+      "anomaly_type": "security_penalty_impact",
+      "description": "Score severely penalized by security penalty 0",
+      "overall_score": 0.0,
+      "confidence": 1.0
+    }
+  ],
+  "top_agents": [
+    {
+      "rank": 1,
+      "agent_id": "agent_0202",
+      "overall_score": 82.43,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "code-optimization"
+    },
+    {
+      "rank": 2,
+      "agent_id": "agent_0408",
+      "overall_score": 82.32,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "general-task"
+    },
+    {
+      "rank": 3,
+      "agent_id": "agent_0492",
+      "overall_score": 82.11,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "data-analysis"
+    },
+    {
+      "rank": 4,
+      "agent_id": "agent_0304",
+      "overall_score": 81.89,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "security-research"
+    },
+    {
+      "rank": 5,
+      "agent_id": "agent_0121",
+      "overall_score": 81.57,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "security-research"
+    },
+    {
+      "rank": 6,
+      "agent_id": "agent_0164",
+      "overall_score": 81.33,
+      "confidence": 1.0,
+      "tier": "platinum",
+      "best_category": "content-creation"
+    },
+    {
+      "rank": 7,
+      "agent_id": "agent_0398",
+      "overall_score": 81.18,
+      "confidence": 1.0,
+      "tier": "platinum",
+      "best_category": "content-creation"
+    },
+    {
+      "rank": 8,
+      "agent_id": "agent_0329",
+      "overall_score": 81.12,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "defi-strategy"
+    },
+    {
+      "rank": 9,
+      "agent_id": "agent_0314",
+      "overall_score": 80.99,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "data-analysis"
+    },
+    {
+      "rank": 10,
+      "agent_id": "agent_0295",
+      "overall_score": 80.86,
+      "confidence": 0.985,
+      "tier": "platinum",
+      "best_category": "ui-ux-design"
+    }
+  ],
+  "category_score_averages": [
+    35.39,
+    34.02,
+    33.08,
+    31.46,
+    33.06,
+    32.7,
+    32.27,
+    33.41
+  ]
+}

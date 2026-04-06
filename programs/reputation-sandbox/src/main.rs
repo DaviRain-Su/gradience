@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -357,9 +357,9 @@ fn calculate_category_score(cat: &CategoryStat) -> f64 {
     clamp(
         cat_cr * 0.40 + (cat_aq / 100.0) * 0.35 + (cat_de * 2.0).min(1.0) * 0.15
             + (if cat_tr > 0.0 {
-                (cat_tr * 2.0).min(1.0)
+                f64::min(cat_tr * 2.0, 1.0)
             } else {
-                (cat_tr * 2.0 + 1.0).max(0.0)
+                f64::max(cat_tr * 2.0 + 1.0, 0.0)
             }) * 0.10,
         0.0,
         1.0,
@@ -435,9 +435,9 @@ fn calculate_temporal(data: &AggregatedAgentData, now: i64) -> f64 {
     clamp(
         (ema / 100.0) * 0.40
             + (if lt > 0.0 {
-                (lt * 50.0).min(1.0)
+                f64::min(lt * 50.0, 1.0)
             } else {
-                (lt * 50.0 + 1.0).max(0.0)
+                f64::max(lt * 50.0 + 1.0, 0.0)
             }) * 0.30
             + re * 0.20
             + cp * 0.10,
@@ -737,9 +737,10 @@ fn generate_mock_agents(count: usize, now: i64) -> (Vec<AggregatedAgentData>, Ve
         chains.push(generate_chain_data(&mut rng, "solana", selected, now));
 
         if selected == "multi" || rng.gen_bool(0.15) {
+            let chain_name = if rng.gen_bool(0.6) { "base" } else { "arbitrum" };
             chains.push(generate_chain_data(
                 &mut rng,
-                if rng.gen_bool(0.6) { "base" } else { "arbitrum" },
+                chain_name,
                 selected,
                 now,
             ));
