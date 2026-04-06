@@ -412,6 +412,26 @@ pub fn process_judge_and_pay(
     let reward = task.reward;
     let is_low_score = ix.data.score < MIN_SCORE;
 
+    // Fee calculation: 95% Agent / 3% Judge / 2% Protocol
+    // 
+    // Implementation note: We use subtraction for agent_payout instead of
+    // direct percentage (reward * 9500 / 10000) to ensure zero precision loss.
+    // This guarantees: agent_payout + judge_fee + protocol_fee == reward
+    // 
+    // Example with reward = 100 lamports:
+    //   judge_fee = 100 * 300 / 10000 = 3
+    //   protocol_fee = 100 * 200 / 10000 = 2
+    //   agent_payout = 100 - 3 - 2 = 95  ✅ Exact match
+    //
+    // If we used direct percentage:
+    //   agent_payout = 100 * 9500 / 10000 = 95  ✅ Same result
+    //   
+    // But with indivisible amounts:
+    //   reward = 1 lamport
+    //   judge_fee = 1 * 300 / 10000 = 0
+    //   protocol_fee = 1 * 200 / 10000 = 0
+    //   agent_payout = 1 - 0 - 0 = 1  ✅ No dust loss
+
     let judge_fee = if is_low_score {
         0
     } else {
@@ -431,6 +451,7 @@ pub fn process_judge_and_pay(
     let agent_payout = if is_low_score {
         0
     } else {
+        // Use subtraction to ensure exact sum (avoid rounding errors)
         reward
             .checked_sub(judge_fee)
             .ok_or(GradienceProgramError::Overflow)?

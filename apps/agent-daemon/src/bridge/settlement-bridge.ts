@@ -1,8 +1,8 @@
 /**
- * Evaluator → Chain Hub Settlement Bridge
+ * Evaluator → Agent Arena Settlement Bridge
  *
- * Bridges off-chain evaluation results to on-chain Chain Hub settlement.
- * Uses Triton Cascade for high-performance transaction delivery.
+ * Bridges off-chain evaluation results to on-chain Agent Arena settlement
+ * via the judge_and_pay instruction.
  *
  * @module bridge/settlement-bridge
  */
@@ -15,11 +15,15 @@ import {
   TransactionInstruction,
   SystemProgram,
 } from '@solana/web3.js';
+import { serialize } from 'borsh';
 import type { EvaluationResult } from '../evaluator/runtime.js';
 import type { PaymentConfirmation } from '../../shared/a2a-payment-types.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { KeyManager, getKeyManager } from './key-manager.js';
+import {
+  resolveJudgeAndPayPdas,
+} from '../solana/pda-resolver.js';
 
 // TritonCascadeClient stub (actual implementation would come from @gradiences/workflow-engine)
 interface TritonCascadeClient {
