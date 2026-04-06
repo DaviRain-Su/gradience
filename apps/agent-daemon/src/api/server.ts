@@ -20,6 +20,8 @@ import { registerOWSRoutes } from './routes/ows.js';
 import { registerEvaluatorRoutes } from './routes/evaluator.js';
 import { registerCoordinatorRoutes } from './routes/coordinator.js';
 import { SessionManager } from '../auth/session-manager.js';
+import { IndexerSyncService } from '../storage/indexer-sync.js';
+import indexerRoutes from './routes/indexer-cache.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
@@ -129,6 +131,12 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerOWSRoutes(app);
     registerEvaluatorRoutes(app, deps.database);
     registerCoordinatorRoutes(app);
+
+    // Initialize indexer sync service for local caching
+    const syncService = new IndexerSyncService(deps.database);
+    await syncService.start();
+    await app.register(indexerRoutes, { syncService });
+    logger.info('Indexer sync service started');
     if (deps.a2aRouter) {
         try {
             const { registerA2ARoutes } = await import('./routes/a2a.js');

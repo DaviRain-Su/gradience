@@ -52,11 +52,23 @@ vi.mock('@solana/web3.js', async (importOriginal) => {
         meta: { err: null, logMessages: [] },
       }),
     })),
-    PublicKey: vi.fn().mockImplementation((key: string) => ({
-      toBase58: () => key,
-      toBuffer: () => Buffer.alloc(32),
-      toBytes: () => new Uint8Array(32),
-    })),
+    PublicKey: Object.assign(
+      vi.fn().mockImplementation((key: string) => ({
+        toBase58: () => key,
+        toBuffer: () => Buffer.alloc(32),
+        toBytes: () => new Uint8Array(32),
+      })),
+      {
+        findProgramAddressSync: vi.fn().mockReturnValue([
+          {
+            toBase58: () => 'MockPda1234567890123456789012345678901234',
+            toBuffer: () => Buffer.alloc(32),
+            toBytes: () => new Uint8Array(32),
+          },
+          255,
+        ]),
+      }
+    ),
     Transaction: vi.fn().mockImplementation(() => ({
       add: vi.fn().mockReturnThis(),
       serialize: vi.fn().mockReturnValue(Buffer.alloc(100)),
