@@ -11,32 +11,21 @@ vi.mock('@solana/web3.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@solana/web3.js')>();
   
   // Create mock Keypair class
-  const MockKeypair = vi.fn().mockImplementation(() => ({
+  const mockKeypairInstance = {
     publicKey: {
       toBase58: () => 'MockPublicKey12345678901234567890123456789012',
       toBuffer: () => Buffer.alloc(32),
       toBytes: () => new Uint8Array(32),
     },
     secretKey: new Uint8Array(64),
-  })) as unknown as typeof actual.Keypair;
-  
-  MockKeypair.generate = vi.fn().mockReturnValue({
-    publicKey: {
-      toBase58: () => 'MockPublicKey12345678901234567890123456789012',
-      toBuffer: () => Buffer.alloc(32),
-      toBytes: () => new Uint8Array(32),
-    },
-    secretKey: new Uint8Array(64),
-  });
-  
-  MockKeypair.fromSecretKey = vi.fn().mockReturnValue({
-    publicKey: {
-      toBase58: () => 'MockPublicKey12345678901234567890123456789012',
-      toBuffer: () => Buffer.alloc(32),
-      toBytes: () => new Uint8Array(32),
-    },
-    secretKey: new Uint8Array(64),
-  });
+    sign: vi.fn().mockReturnValue(new Uint8Array(64)),
+  };
+
+  const MockKeypair = vi.fn().mockImplementation(() => mockKeypairInstance) as unknown as typeof actual.Keypair;
+
+  MockKeypair.generate = vi.fn().mockReturnValue(mockKeypairInstance);
+
+  MockKeypair.fromSecretKey = vi.fn().mockReturnValue(mockKeypairInstance);
   
   return {
     ...actual,
@@ -71,6 +60,7 @@ vi.mock('@solana/web3.js', async (importOriginal) => {
     ),
     Transaction: vi.fn().mockImplementation(() => ({
       add: vi.fn().mockReturnThis(),
+      sign: vi.fn().mockReturnThis(),
       serialize: vi.fn().mockReturnValue(Buffer.alloc(100)),
       recentBlockhash: '',
       feePayer: null,

@@ -239,6 +239,69 @@ export class SettlementBridge extends EventEmitter {
     }
   }
 
+  /**
+   * Settle with a custom reasonRef and score (used by VEL / TEE path).
+   * Bypasses the default generateProof flow.
+   */
+  async settleWithReasonRef(
+    request: SettlementRequest,
+    score: number,
+    reasonRef: string
+  ): Promise<SettlementResult> {
+    const settlementId = `${request.evaluationId}-${Date.now()}`;
+
+    logger.info(
+      { settlementId, taskId: request.taskId, agentId: request.agentId, score, reasonRef },
+      'Initiating VEL settlement'
+    );
+
+    const status: SettlementStatus = {
+      settlementId,
+      status: 'pending',
+      attempts: 0,
+    };
+    this.pendingSettlements.set(settlementId, status);
+
+    try {
+      request.reasonRef = reasonRef;
+      const verificationHash = this.hashProofData({ reasonRef, score, settlementId } as unknown as Omit<EvaluationProof, 'signature'>);
+      const proof: EvaluationProof = {
+        evaluationId: request.evaluationId,
+        taskId: request.taskId,
+        evaluatorId: this.keyManager.getPublicKey(),
+        agentId: request.agentId,
+        score,
+        passed: score >= 60,
+        verificationHash,
+        timestamp: Date.now(),
+        signature: this.signProof(verificationHash),
+      };
+      logger.info({ settlementId, proofHash: proof.verificationHash }, 'VEL proof generated');
+
+      const result = await this.submitWithRetry(settlementId, request, proof);
+
+      status.status = result.status === 'confirmed' ? 'confirmed' : 'failed';
+      status.txSignature = result.txSignature;
+
+      this.emit(result.status === 'confirmed' ? 'settled' : 'failed', { settlementId, result });
+
+      logger.info(
+        { settlementId, txSignature: result.txSignature, status: result.status, deliveryPath: result.deliveryPath },
+        'VEL settlement completed'
+      );
+
+      return result;
+    } catch (error) {
+      status.status = 'failed';
+      status.error = error instanceof Error ? error.message : 'Unknown error';
+      this.emit('failed', { settlementId, error });
+      logger.error({ error, settlementId }, 'VEL settlement failed');
+      throw error;
+    } finally {
+      setTimeout(() => this.pendingSettlements.delete(settlementId), 60000);
+    }
+  }
+
   getStatus(settlementId: string): SettlementStatus | undefined {
     return this.pendingSettlements.get(settlementId);
   }
