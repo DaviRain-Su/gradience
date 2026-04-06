@@ -24,20 +24,14 @@ const PROGRAM_ID: Pubkey = Pubkey::new_from_array([1u8; 32]);
 /// Helper to create a test SVM instance with the program loaded
 fn setup_test() -> (LiteSVM, Keypair) {
     let mut svm = LiteSVM::new();
-    
-    // Load the program
-    let program_account = Account {
-        lamports: 1_000_000,
-        data: vec![],
-        owner: solana_sdk::bpf_loader::id(),
-        executable: true,
-        rent_epoch: 0,
-    };
-    svm.set_account(PROGRAM_ID, program_account).unwrap();
-    
+
+    // Load the compiled program ELF
+    svm.add_program_from_file(&PROGRAM_ID, "../target/deploy/agentm_core.so")
+        .unwrap();
+
     let payer = Keypair::new();
     svm.airdrop(&payer.pubkey(), 10_000_000_000).unwrap();
-    
+
     (svm, payer)
 }
 
@@ -73,6 +67,22 @@ fn execute_instruction(
     svm.send_transaction(transaction).is_ok()
 }
 
+/// Helper to execute an instruction with a custom fee payer.
+/// Useful for testing missing-signature cases.
+fn execute_instruction_with_payer(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    instruction: Instruction,
+) -> bool {
+    let transaction = Transaction::new_signed_with_payer(
+        &[instruction],
+        Some(&payer.pubkey()),
+        &[payer],
+        svm.latest_blockhash(),
+    );
+    svm.send_transaction(transaction).is_ok()
+}
+
 /// Helper to create an account with specified size and owner
 fn create_account(svm: &mut LiteSVM, _payer: &Keypair, size: usize, owner: Pubkey) -> Pubkey {
     let account_keypair = Keypair::new();
@@ -88,6 +98,16 @@ fn create_account(svm: &mut LiteSVM, _payer: &Keypair, size: usize, owner: Pubke
     
     svm.set_account(account_pubkey, account).unwrap();
     account_pubkey
+}
+
+/// Deserialize from account data that may contain trailing zeros.
+fn deserialize_account_data<T: borsh::BorshDeserialize>(data: &[u8]) -> T {
+    for i in 1..=data.len() {
+        if let Ok(val) = borsh::from_slice(&data[..i]) {
+            return val;
+        }
+    }
+    panic!("Failed to deserialize account data")
 }
 
 #[derive(BorshSerialize)]
@@ -144,7 +164,7 @@ fn test_initialize_success() {
     let config_data = svm.get_account(&config_account).unwrap().data;
     assert!(config_data.starts_with(&ProgramConfig::DISCRIMINATOR));
     
-    let config: ProgramConfig = borsh::from_slice(&config_data).unwrap();
+    let config: ProgramConfig = deserialize_account_data(&config_data);
     assert_eq!(config.admin, addr_to_bytes(&payer.pubkey()));
     assert_eq!(config.total_users, 0);
     assert_eq!(config.total_agents, 0);
@@ -178,18 +198,21 @@ fn test_initialize_already_initialized() {
 fn test_initialize_missing_signature() {
     let (mut svm, payer) = setup_test();
     let other_user = Keypair::new();
-    
+
     let config_account = create_account(&mut svm, &payer, ProgramConfig::size(), PROGRAM_ID);
-    
+
     let accounts = vec![
         AccountMeta::new(other_user.pubkey(), false), // Not a signer!
         AccountMeta::new(config_account, false),
         AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
     ];
-    
+
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let instruction = create_instruction(PROGRAM_ID, 0, accounts, vec![]);
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -215,7 +238,7 @@ fn test_register_user_success() {
     let user_data = svm.get_account(&user_account).unwrap().data;
     assert!(user_data.starts_with(&User::DISCRIMINATOR));
     
-    let user: User = borsh::from_slice(&user_data).unwrap();
+    let user: User = deserialize_account_data(&user_data);
     assert_eq!(user.username, username);
     assert_eq!(user.owner, addr_to_bytes(&payer.pubkey()));
     assert!(user.is_active);
@@ -254,9 +277,12 @@ fn test_register_user_missing_signature() {
         AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
     ];
     
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let instruction = create_instruction(PROGRAM_ID, 1, accounts, b"alice".to_vec());
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -288,7 +314,7 @@ fn test_update_profile_success() {
     let profile_account_data = svm.get_account(&profile_account).unwrap().data;
     assert!(profile_account_data.starts_with(&Profile::DISCRIMINATOR));
     
-    let profile: Profile = borsh::from_slice(&profile_account_data).unwrap();
+    let profile: Profile = deserialize_account_data(&profile_account_data);
     assert_eq!(profile.display_name, "Alice Smith");
     assert_eq!(profile.bio, "I love coding!");
     assert_eq!(profile.avatar_url, "https://example.com/avatar.jpg");
@@ -372,9 +398,12 @@ fn test_follow_user_missing_signature() {
         AccountMeta::new(target_user.pubkey(), false),
     ];
     
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let instruction = create_instruction(PROGRAM_ID, 3, accounts, vec![]);
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -405,9 +434,12 @@ fn test_unfollow_user_missing_signature() {
         AccountMeta::new(target_user.pubkey(), false),
     ];
     
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let instruction = create_instruction(PROGRAM_ID, 4, accounts, vec![]);
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -434,7 +466,7 @@ fn test_send_message_success() {
     let msg_data = svm.get_account(&message_account).unwrap().data;
     assert!(msg_data.starts_with(&Message::DISCRIMINATOR));
     
-    let message: Message = borsh::from_slice(&msg_data).unwrap();
+    let message: Message = deserialize_account_data(&msg_data);
     assert_eq!(message.content, content);
     assert_eq!(message.sender, addr_to_bytes(&payer.pubkey()));
     assert_eq!(message.recipient, addr_to_bytes(&recipient.pubkey()));
@@ -473,9 +505,12 @@ fn test_send_message_missing_signature() {
         AccountMeta::new(message_account, false),
     ];
     
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let instruction = create_instruction(PROGRAM_ID, 5, accounts, b"Hello".to_vec());
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -508,7 +543,7 @@ fn test_create_agent_success() {
     let agent_account_data = svm.get_account(&agent_account).unwrap().data;
     assert!(agent_account_data.starts_with(&Agent::DISCRIMINATOR));
     
-    let agent: Agent = borsh::from_slice(&agent_account_data).unwrap();
+    let agent: Agent = deserialize_account_data(&agent_account_data);
     assert_eq!(agent.name, "AI Assistant");
     assert_eq!(agent.description, "A helpful AI assistant");
     assert_eq!(agent.agent_type, AgentType::SocialAgent);
@@ -614,11 +649,14 @@ fn test_create_agent_missing_signature() {
         AccountMeta::new(payer.pubkey(), false), // Not a signer!
         AccountMeta::new(agent_account, false),
     ];
-    
+
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let serialized_data = borsh::to_vec(&agent_data).unwrap();
     let instruction = create_instruction(PROGRAM_ID, 6, accounts, serialized_data);
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
@@ -675,7 +713,7 @@ fn test_update_agent_config_success() {
     
     // Verify agent was updated
     let agent_account_data = svm.get_account(&agent_account).unwrap().data;
-    let agent: Agent = borsh::from_slice(&agent_account_data).unwrap();
+    let agent: Agent = deserialize_account_data(&agent_account_data);
     assert_eq!(agent.description, "Updated description");
     assert_eq!(agent.config, vec![3, 4, 5]);
     assert!(!agent.is_active); // Should be inactive now
@@ -764,7 +802,7 @@ fn test_update_reputation_success() {
     let rep_data = svm.get_account(&reputation_account).unwrap().data;
     assert!(rep_data.starts_with(&Reputation::DISCRIMINATOR));
     
-    let reputation: Reputation = borsh::from_slice(&rep_data).unwrap();
+    let reputation: Reputation = deserialize_account_data(&rep_data);
     assert_eq!(reputation.agent, addr_to_bytes(&agent_account.pubkey()));
     assert_eq!(reputation.total_reviews, 1);
     assert_eq!(reputation.avg_score_bps, 7500);
@@ -809,7 +847,7 @@ fn test_update_reputation_multiple_reviews() {
     
     // Verify aggregated reputation
     let rep_data = svm.get_account(&reputation_account).unwrap().data;
-    let reputation: Reputation = borsh::from_slice(&rep_data).unwrap();
+    let reputation: Reputation = deserialize_account_data(&rep_data);
     
     assert_eq!(reputation.total_reviews, 2);
     assert_eq!(reputation.avg_score_bps, 8000); // (7500 + 8500) / 2 = 8000
@@ -862,11 +900,14 @@ fn test_update_reputation_missing_signature() {
         AccountMeta::new(agent_account.pubkey(), false),
         AccountMeta::new(reputation_account, false),
     ];
-    
+
+    let fee_payer = Keypair::new();
+    svm.airdrop(&fee_payer.pubkey(), 1_000_000_000).unwrap();
+
     let serialized_data = borsh::to_vec(&reputation_data).unwrap();
     let instruction = create_instruction(PROGRAM_ID, 8, accounts, serialized_data);
-    let result = execute_instruction(&mut svm, &payer, instruction);
-    
+    let result = execute_instruction_with_payer(&mut svm, &fee_payer, instruction);
+
     assert!(!result, "Should fail - missing signature");
 }
 
