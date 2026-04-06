@@ -779,6 +779,7 @@ export class PaymentService {
       // Submit settlement via BridgeManager
       const settlementResult = await this.bridgeManager.settleEvaluation(evalResultForSettlement, {
         taskId: session.taskId,
+        taskIdOnChain: session.taskId,
         paymentId: session.paymentId,
         agentId: session.payeeAgentId,
         payerAgentId: session.payerAgentId,

@@ -6,7 +6,7 @@
  */
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { IndexerSyncService } from '../storage/indexer-sync.js';
+import { IndexerSyncService } from '../../storage/indexer-sync.js';
 
 export default async function indexerRoutes(
   fastify: FastifyInstance,

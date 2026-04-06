@@ -408,7 +408,7 @@ export class SettlementBridge extends EventEmitter {
     const judge = this.keyManager.getKeypair().publicKey;
     const winner = new PublicKey(request.agentId);
     const poster = new PublicKey(request.poster);
-    const taskId = BigInt(request.taskId);
+    const taskId = BigInt(request.taskIdOnChain);
 
     const pdas = resolveJudgeAndPayPdas(taskId, judge, winner);
 

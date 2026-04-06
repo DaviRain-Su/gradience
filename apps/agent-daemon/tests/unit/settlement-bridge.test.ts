@@ -87,7 +87,7 @@ describe('SettlementBridge', () => {
 
   beforeEach(async () => {
     bridge = await createSettlementBridge({
-      chainHubProgramId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
+      chainHubProgramId: '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs',
       rpcEndpoint: 'https://mock.rpc',
       maxRetries: 2,
     });
@@ -118,6 +118,7 @@ describe('SettlementBridge', () => {
       const result = await bridge.settle({
         evaluationId: 'eval-123',
         taskId: 'task-456',
+        taskIdOnChain: '456',
         paymentId: 'payment-789',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -126,6 +127,7 @@ describe('SettlementBridge', () => {
         token: VALID_PUBKEYS.token,
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       expect(result.status).toBe('confirmed');
@@ -162,6 +164,7 @@ describe('SettlementBridge', () => {
       const settlePromise = bridge.settle({
         evaluationId: 'eval-status',
         taskId: 'task-1',
+        taskIdOnChain: '1',
         paymentId: 'payment-1',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -170,6 +173,7 @@ describe('SettlementBridge', () => {
         token: 'USDC',
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       // Check status during settlement
@@ -198,6 +202,7 @@ describe('SettlementBridge', () => {
       const result = await bridge.settle({
         evaluationId: 'eval-proof',
         taskId: 'task-1',
+        taskIdOnChain: '1',
         paymentId: 'payment-1',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -206,6 +211,7 @@ describe('SettlementBridge', () => {
         token: 'USDC',
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       expect(result.status).toBe('confirmed');
@@ -230,6 +236,7 @@ describe('SettlementBridge', () => {
       const settlementResult = await bridge.settle({
         evaluationId: 'eval-confirm',
         taskId: 'task-1',
+        taskIdOnChain: '1',
         paymentId: 'payment-1',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -238,11 +245,13 @@ describe('SettlementBridge', () => {
         token: 'USDC',
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       const confirmation = bridge.createPaymentConfirmation(settlementResult, {
         evaluationId: 'eval-confirm',
         taskId: 'task-1',
+        taskIdOnChain: '1',
         paymentId: 'payment-1',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -251,6 +260,7 @@ describe('SettlementBridge', () => {
         token: VALID_PUBKEYS.token,
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       expect(confirmation.paymentId).toBe('payment-1');
@@ -282,6 +292,7 @@ describe('SettlementBridge', () => {
       await bridge.settle({
         evaluationId: 'eval-event',
         taskId: 'task-1',
+        taskIdOnChain: '1',
         paymentId: 'payment-1',
         agentId: VALID_PUBKEYS.agentId,
         payerAgentId: VALID_PUBKEYS.payerAgentId,
@@ -290,6 +301,7 @@ describe('SettlementBridge', () => {
         token: 'USDC',
         taskAccount: VALID_PUBKEYS.taskAccount,
         escrowAccount: VALID_PUBKEYS.escrowAccount,
+        poster: VALID_PUBKEYS.payerAgentId,
       });
 
       expect(settledEvents.length).toBe(1);
@@ -304,7 +316,7 @@ describe('SettlementBridge', () => {
 
     it('should create bridge with custom options', async () => {
       const customBridge = await createSettlementBridge({
-        chainHubProgramId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
+        chainHubProgramId: '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs',
         rpcEndpoint: 'https://custom.rpc',
         maxRetries: 5,
       });

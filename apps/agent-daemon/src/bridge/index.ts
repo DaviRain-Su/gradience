@@ -218,6 +218,7 @@ export class BridgeManager {
     evaluationResult: EvaluationResult,
     params: {
       taskId: string;
+      taskIdOnChain: string;
       paymentId: string;
       agentId: string;
       payerAgentId: string;
@@ -235,6 +236,7 @@ export class BridgeManager {
     const request: SettlementRequest = {
       evaluationId: evaluationResult.evaluationId,
       taskId: params.taskId,
+      taskIdOnChain: params.taskIdOnChain,
       paymentId: params.paymentId,
       agentId: params.agentId,
       payerAgentId: params.payerAgentId,

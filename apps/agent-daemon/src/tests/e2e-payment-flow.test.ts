@@ -202,6 +202,7 @@ describe('E2E Payment Flow', () => {
       const settlementResult = await settlementBridge.settle({
         evaluationId,
         taskId: session.taskId,
+        taskIdOnChain: session.taskId,
         paymentId: session.paymentId,
         agentId: 'e2e-payee',
         payerAgentId: 'e2e-payer',
@@ -210,6 +211,7 @@ describe('E2E Payment Flow', () => {
         token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
         taskAccount: 'task-account',
         escrowAccount: 'escrow-account',
+        poster: 'e2e-payer',
       });
 
       expect(settlementResult.status).toBe('confirmed');
@@ -227,6 +229,7 @@ describe('E2E Payment Flow', () => {
         {
           evaluationId,
           taskId: session.taskId,
+          taskIdOnChain: session.taskId,
           paymentId: session.paymentId,
           agentId: 'e2e-payee',
           payerAgentId: 'e2e-payer',
@@ -235,6 +238,7 @@ describe('E2E Payment Flow', () => {
           token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
           taskAccount: 'task-account',
           escrowAccount: 'escrow-account',
+          poster: 'e2e-payer',
         }
       );
 
