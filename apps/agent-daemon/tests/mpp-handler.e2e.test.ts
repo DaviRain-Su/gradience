@@ -1,8 +1,9 @@
 /**
  * MPP Handler E2E Tests
  *
- * End-to-end tests for Multi-Party Payment scenarios.
- * Tests run against devnet with real transactions.
+ * Tests for Multi-Party Payment scenarios.
+ * Pure logic tests (createPayment, castVote, cleanupExpiredPayments, validation)
+ * run without chain. The releaseFunds test requires real SOL and is skipped.
  *
  * @module payments/mpp-handler.e2e.test
  */
@@ -13,19 +14,14 @@ import { MPPHandler, type MPPPayment, type MPPParticipant, type MPPJudge } from 
 
 // Test configuration
 const DEVNET_RPC = 'https://api.devnet.solana.com';
-const SKIP_E2E = process.env.SKIP_E2E_TESTS === 'true';
 
-// Helper to create test keypair with airdrop
-async function createTestWallet(connection: Connection): Promise<Keypair> {
-  const keypair = Keypair.generate();
-  // Note: In real tests, you'd airdrop SOL here
-  // await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL);
-  return keypair;
+// Helper to create test keypair
+function createTestWallet(): Keypair {
+  return Keypair.generate();
 }
 
-describe.skipIf(SKIP_E2E)('MPP Handler E2E', () => {
+describe('MPP Handler', () => {
   let handler: MPPHandler;
-  let connection: Connection;
   let payer: Keypair;
   let agent1: Keypair;
   let agent2: Keypair;
@@ -33,20 +29,18 @@ describe.skipIf(SKIP_E2E)('MPP Handler E2E', () => {
   let judge2: Keypair;
   let judge3: Keypair;
 
-  beforeAll(async () => {
-    connection = new Connection(DEVNET_RPC, 'confirmed');
+  beforeAll(() => {
+    // No real connection needed — these are pure in-memory logic tests
+    [payer, agent1, agent2, judge1, judge2, judge3] = [
+      createTestWallet(),
+      createTestWallet(),
+      createTestWallet(),
+      createTestWallet(),
+      createTestWallet(),
+      createTestWallet(),
+    ];
 
-    // Create test wallets
-    [payer, agent1, agent2, judge1, judge2, judge3] = await Promise.all([
-      createTestWallet(connection),
-      createTestWallet(connection),
-      createTestWallet(connection),
-      createTestWallet(connection),
-      createTestWallet(connection),
-      createTestWallet(connection),
-    ]);
-
-    handler = new MPPHandler(connection);
+    handler = new MPPHandler({ rpcEndpoint: DEVNET_RPC });
   });
 
   describe('Multi-Judge Escrow', () => {

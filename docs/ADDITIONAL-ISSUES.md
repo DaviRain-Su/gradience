@@ -1,23 +1,18 @@
 # 补充问题分析 — 第二轮深度扫描
 
-**扫描日期**: 2026-04-04  
+**扫描日期**: 2026-04-07  
 **扫描重点**: CI/CD、隐藏 Bug、产品完整度、基础设施
+
+**状态**: 所有 P0 Bug 已修复 ✅
 
 ---
 
 ## 🔴 新发现的 P0 Bug（上轮遗漏）
 
-### Bug 1: `AGENTM_CORE_PROGRAM_ID` 是 SystemProgram 占位符
+### Bug 1: ~~`AGENTM_CORE_PROGRAM_ID` 是 SystemProgram 占位符~~ ✅ 已修复 (GRA-151)
 - **位置**: `apps/agent-daemon/src/solana/program-ids.ts`
-- **现状**: 
-  ```typescript
-  export const AGENTM_CORE_PROGRAM_ID = new PublicKey(
-    process.env.AGENTD_AGENTM_CORE_PROGRAM_ID ?? '11111111111111111111111111111111'
-  );
-  // ↑ 这是 Solana SystemProgram 的 ID，不是 agentm-core 程序！
-  ```
-- **影响**: daemon 所有涉及 agentm-core 的链上操作（registerUser, follow/unfollow, updateReputation）都会发送到错误的程序，**静默失败**。
-- **修复**: 找到 agentm-core 在 devnet 的实际 Program ID，写入 `.env` 和 `deploy/.env.prod`
+- **状态**: ✅ **已修复**
+- **修复内容**: Program ID 已更新为 `2stkfkFaFLUvSR9yydmfQ7pZReo2M38zcVtL1QffCyDA`，并配置在 `.env` 和 `deploy/.env.prod.example`
 
 ### Bug 2: ~~MultiAgentTaskView 调用不存在的 daemon 端点~~ ✅ 已修复 (GRA-152)
 - **位置**: ~~`apps/agentm-web/src/app/app/views/MultiAgentTaskView.tsx`~~

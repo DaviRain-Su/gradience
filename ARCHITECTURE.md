@@ -1,7 +1,7 @@
 # Gradience Protocol — Architecture & Component Map
 
-**Updated**: 2026-04-05  
-**Revision**: 架构文档全面更新 - 所有 P0/P1/P2 任务已完成，项目达到 Production Ready
+**Updated**: 2026-04-07  
+**Revision**: 架构文档更新 - 修复 arena-cli 编译错误，所有组件构建成功
 
 ---
 
