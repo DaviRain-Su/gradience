@@ -18,7 +18,15 @@ import {
   type Instruction,
   type TransactionSigner,
 } from '@solana/kit';
-import type { WalletAdapter, SendTransactionOptions } from '@gradiences/arena-sdk';
+// Local type declarations to work around incomplete arena-sdk types
+interface WalletAdapter {
+  signer: { address: Address } | any;
+  signAndSendTransaction(
+    instructions: readonly Instruction[],
+    options?: Record<string, unknown>,
+  ): Promise<string>;
+}
+interface SendTransactionOptions {}
 
 function getRpcEndpoint(): string {
   if (typeof window !== 'undefined') {

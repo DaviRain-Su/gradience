@@ -25,6 +25,7 @@ export interface AggregatedReputation {
   aggregateScore: number;
   tier: ReputationTier;
   agentCount: number;
+  totalCompletedTasks: number;
   agents: AgentReputation[];
   derivedPolicy: {
     dailyLimitUsd: number;
@@ -130,6 +131,7 @@ export function useAggregatedReputation(masterWallet: string | null) {
       aggregateScore: aggregate.score,
       tier: aggregate.tier,
       agentCount: agents.length,
+      totalCompletedTasks: agents.reduce((sum, a) => sum + a.completedTasks, 0),
       agents,
       derivedPolicy: {
         dailyLimitUsd: policy.dailyLimitUsd,

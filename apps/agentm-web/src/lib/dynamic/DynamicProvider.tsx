@@ -13,13 +13,13 @@ interface DynamicProviderProps {
 
 // Internal component to handle auth bridge
 function DynamicAuthBridge({ children }: { children: ReactNode }) {
-    const { primaryWallet, isAuthenticated } = useDynamicContext();
+    const { primaryWallet, user } = useDynamicContext();
     const { sessionToken, authenticate } = useConnection();
     const attemptedRef = useRef<string | null>(null);
 
     // Auto-bridge Dynamic auth to ConnectionContext
     useEffect(() => {
-        if (!isAuthenticated || !primaryWallet?.address) return;
+        if (!user || !primaryWallet?.address) return;
         if (sessionToken && attemptedRef.current === primaryWallet.address) return;
         if (attemptedRef.current === primaryWallet.address) return;
 
@@ -53,7 +53,7 @@ function DynamicAuthBridge({ children }: { children: ReactNode }) {
         };
 
         doAuth();
-    }, [isAuthenticated, primaryWallet, sessionToken, authenticate]);
+    }, [user, primaryWallet, sessionToken, authenticate]);
 
     return <>{children}</>;
 }

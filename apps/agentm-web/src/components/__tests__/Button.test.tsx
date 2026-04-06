@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { Button } from "@gradiences/ui";
 
 describe("Button Component", () => {
@@ -61,10 +62,11 @@ describe("Button Component", () => {
   });
 
   it("renders as child button when asChild prop is used", () => {
+    const AnyButton = Button as any;
     render(
-      <Button asChild>
+      <AnyButton asChild>
         <a href="/test">Link Button</a>
-      </Button>
+      </AnyButton>
     );
     expect(screen.getByRole("link", { name: "Link Button" })).toBeInTheDocument();
   });

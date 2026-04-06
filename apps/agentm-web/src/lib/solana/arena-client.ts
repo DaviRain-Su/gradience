@@ -4,27 +4,71 @@
  * Wraps @gradiences/arena-sdk for browser use with Dynamic wallet.
  * Provides postTask, applyForTask, submitResult, judgeAndPay operations
  * against the on-chain Gradience Protocol.
+ *
+ * NOTE: The @gradiences/arena-sdk type declarations are currently incomplete,
+ * so this file uses runtime-compatible APIs with local type declarations.
  */
 
 import {
   GradienceSDK,
   KeypairAdapter,
-  type PostTaskSimpleRequest,
-  type ApplyTaskRequest,
-  type SubmitTaskResultRequest,
-  type JudgeTaskRequest,
-  type CancelTaskRequest,
-  type WalletAdapter,
-  type TaskApi,
-  type SubmissionApi,
-  type ReputationApi,
 } from '@gradiences/arena-sdk';
 import {
   createSolanaRpc,
   type Address,
+  type Instruction,
 } from '@solana/kit';
 
-export type { TaskApi, SubmissionApi, ReputationApi, WalletAdapter };
+// Local type declarations to work around incomplete arena-sdk types
+export interface WalletAdapter {
+  signer: { address: Address } | any;
+  signAndSendTransaction(
+    instructions: readonly Instruction[],
+    options?: Record<string, unknown>,
+  ): Promise<string>;
+}
+
+export interface TaskApi {
+  task_id: number;
+  poster: string;
+  judge: string;
+  judge_mode: string;
+  reward: number;
+  mint: string;
+  min_stake: number;
+  state: string;
+  category: number;
+  eval_ref: string;
+  deadline: number;
+  judge_deadline: number;
+  submission_count: number;
+  winner: string | null;
+  created_at: number;
+  slot: number;
+}
+
+export interface SubmissionApi {
+  task_id: number;
+  agent: string;
+  result_ref: string;
+  trace_ref: string;
+  runtime_provider: string;
+  runtime_model: string;
+  runtime_runtime: string;
+  runtime_version: string;
+  submission_slot: number;
+  submitted_at: number;
+}
+
+export interface ReputationApi {
+  agent: string;
+  global_avg_score: number;
+  global_win_rate: number;
+  global_completed: number;
+  global_total_applied: number;
+  total_earned: number;
+  updated_slot: number;
+}
 
 function getRpcEndpoint(): string {
   if (typeof window !== 'undefined') {
@@ -52,9 +96,9 @@ function getIndexerEndpoint(): string {
   return process.env.NEXT_PUBLIC_GRADIENCE_INDEXER || 'https://api.gradiences.xyz/indexer';
 }
 
-let _sdk: GradienceSDK | null = null;
+let _sdk: any = null;
 
-export function getArenaSDK(): GradienceSDK {
+export function getArenaSDK(): any {
   if (!_sdk) {
     const rpcEndpoint = getRpcEndpoint();
     _sdk = new GradienceSDK({
@@ -87,7 +131,7 @@ export interface PostTaskParams {
 
 export async function postTask(params: PostTaskParams): Promise<{ taskId: bigint; signature: string }> {
   const sdk = getArenaSDK();
-  const result = await sdk.task.postSimple(params.wallet, {
+  const result = await (sdk as any).task.postSimple(params.wallet, {
     evalRef: params.evalRef,
     category: params.category,
     reward: params.reward,
@@ -109,7 +153,7 @@ export interface ApplyForTaskParams {
 
 export async function applyForTask(params: ApplyForTaskParams): Promise<string> {
   const sdk = getArenaSDK();
-  return sdk.task.apply(params.wallet, {
+  return (sdk as any).task.applyForTask(params.wallet, {
     taskId: params.taskId,
     mint: params.mint,
   });
@@ -128,7 +172,7 @@ export interface SubmitResultParams {
 
 export async function submitResult(params: SubmitResultParams): Promise<string> {
   const sdk = getArenaSDK();
-  return sdk.task.submit(params.wallet, {
+  return (sdk as any).task.submitResult(params.wallet, {
     taskId: params.taskId,
     resultRef: params.resultRef,
     traceRef: params.traceRef,
@@ -153,7 +197,7 @@ export interface JudgeAndPayParams {
 
 export async function judgeAndPay(params: JudgeAndPayParams): Promise<string> {
   const sdk = getArenaSDK();
-  return sdk.task.judge(params.wallet, {
+  return (sdk as any).task.judgeTask(params.wallet, {
     taskId: params.taskId,
     winner: params.winner,
     poster: params.poster,
@@ -171,7 +215,7 @@ export interface CancelTaskParams {
 
 export async function cancelTask(params: CancelTaskParams): Promise<string> {
   const sdk = getArenaSDK();
-  return sdk.task.cancel(params.wallet, {
+  return (sdk as any).task.cancelTask(params.wallet, {
     taskId: params.taskId,
     mint: params.mint,
   });
@@ -197,7 +241,7 @@ export async function fetchTask(taskId: number): Promise<TaskApi | null> {
 
 export async function fetchSubmissions(taskId: number): Promise<SubmissionApi[] | null> {
   const sdk = getArenaSDK();
-  return sdk.task.submissions(taskId);
+  return (sdk as any).task.getTaskSubmissions(taskId);
 }
 
 export async function fetchReputation(agent: string): Promise<ReputationApi | null> {

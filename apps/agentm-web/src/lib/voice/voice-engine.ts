@@ -153,12 +153,12 @@ export class WebSpeechVoiceEngine implements VoiceEngine {
       utterance.lang = 'en-US';
       
       utterance.onend = () => resolve();
-      utterance.onerror = (e) => {
+      utterance.onerror = (e: SpeechSynthesisErrorEvent) => {
         // Don't reject on cancellation
-        if ((e as ErrorEvent).error === 'canceled' || (e as ErrorEvent).error === 'interrupted') {
+        if (e.error === 'canceled' || e.error === 'interrupted') {
           resolve();
         } else {
-          reject(new Error(`TTS error: ${(e as ErrorEvent).error}`));
+          reject(new Error(`TTS error: ${e.error}`));
         }
       };
       

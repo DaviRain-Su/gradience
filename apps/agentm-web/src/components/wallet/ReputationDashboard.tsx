@@ -86,7 +86,7 @@ export function ReputationDashboard({
             onClick={onRefresh}
             style={{
               padding: '8px 16px',
-              background: COLORS.primary,
+              background: COLORS.info,
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -186,7 +186,7 @@ export function ReputationDashboard({
             onClick={() => setActiveTab(tab)}
             style={{
               padding: '8px 16px',
-              background: activeTab === tab ? COLORS.primary : 'transparent',
+              background: activeTab === tab ? COLORS.info : 'transparent',
               border: 'none',
               borderRadius: '8px',
               color: activeTab === tab ? 'white' : COLORS.ink,
@@ -206,9 +206,8 @@ export function ReputationDashboard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <TierProgressionBar score={score} />
           <SpendingMeter
-            currentSpend={currentDailySpend}
-            dailyLimit={wallet.dailyLimit}
-            monthlyLimit={wallet.monthlyLimit}
+            current={currentDailySpend ?? 0}
+            limit={wallet?.policy?.dailyLimit ?? 0}
           />
           <PolicyCard wallet={wallet} />
           <UpgradeBenefits currentScore={score} />

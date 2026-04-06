@@ -14,12 +14,12 @@ const ChatView = lazy(() => import('../views/ChatView').then(m => ({ default: m.
 // Components
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
 import { DynamicLoginButton } from '../../components/dynamic/DynamicLoginButton';
-import { LoginScreen } from './components/LoginScreen';
+import { LoginScreen } from '../components/LoginScreen';
 import { PolicyManager } from '../../components/wallet/PolicyManager';
 import { MasterReputationCard } from '../../components/wallet/MasterReputationCard';
 import { AgentWalletList } from '../../components/wallet/AgentWalletList';
 
-import { useConnection } from '../../lib/connection/ConnectionContext';
+import { useConnection, useDaemonApi } from '../../lib/connection/ConnectionContext';
 import { useNetworkRegistration } from '../../hooks/useNetworkRegistration';
 import { useOWSBinding } from '../../hooks/useOWSBinding';
 import { useOWSAgentRouter, type AgentSubWallet } from '../../hooks/useOWSAgentRouter';
@@ -39,8 +39,9 @@ import type {
   PostedTask,
   TaskData,
   IndexerConnectionStatus,
+  TaskCategory,
 } from '../types';
-import { INDEXER_BASE, TASK_CATEGORIES, STATE_COLORS } from '../constants';
+import { INDEXER_BASE, STATE_COLORS, TASK_CATEGORIES } from '../constants';
 import {
   formatBindingStatus,
   resolveIndexerBase,
@@ -167,7 +168,7 @@ export default function MainApp({ user, walletAddress, email }: { user: any; wal
     const { registeredAs, registeredName } = useNetworkRegistration({
         masterWallet: address,
         displayName: email,
-        activeSubWallet,
+        activeSubWallet: activeSubWallet as OWSAgentSubWallet | null,
         subWallets,
     });
 
@@ -434,17 +435,6 @@ function Shell({
 
 // ── Discover ─────────────────────────────────────────────────────────
 
-interface AgentDetailData {
-    agent: string;
-    bio: string;
-    capabilities: string[];
-    walletAddress: string;
-    weight: number;
-    reputation: { global_avg_score: number; global_completed: number; win_rate: number } | null;
-}
-
-
-
 function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToChat?: () => void; onNavigateToTasks?: () => void }) {
     const [agents, setAgents] = useState<AgentDetailData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -462,7 +452,7 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                     online: boolean; lastSeen: number; metadata: any;
                 }> }>('/api/v1/network/agents?online=true');
                 if (result?.agents && result.agents.length > 0) {
-                    const mapped: AgentDetailData[] = result.agents.map((a) => ({
+                    const mapped: AgentDetailData[] = result.agents.map((a: any) => ({
                         agent: a.displayName || `Agent ${a.publicKey.slice(0, 8)}`,
                         bio: a.metadata?.bio || '',
                         capabilities: a.capabilities || [],
@@ -484,7 +474,7 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                     reputationScore: number; available: boolean; discoveredVia: string;
                 }> }>('/api/v1/a2a/agents?limit=50');
                 if (a2aResult?.agents && a2aResult.agents.length > 0) {
-                    const mapped: AgentDetailData[] = a2aResult.agents.map((a) => ({
+                    const mapped: AgentDetailData[] = a2aResult.agents.map((a: any) => ({
                         agent: a.displayName || `Agent ${a.address.slice(0, 8)}`,
                         bio: `Discovered via ${a.discoveredVia}`,
                         capabilities: a.capabilities || [],
@@ -1137,12 +1127,6 @@ function WalletBalance({ address }: { address: string }) {
 
 // ── Settings View ──────────────────────────────────────────────────────────
 
-interface SettingsData {
-    rpcEndpoint: string;
-    indexerUrl: string;
-    theme: 'dark' | 'light';
-}
-
 function SettingsView() {
     const [settings, setSettings] = useState<SettingsData>(() => {
         const defaultIndexer = typeof window !== 'undefined'
@@ -1462,27 +1446,6 @@ function TaskDetailModal({
 
 // ── Post Task Form ───────────────────────────────────────────────────
 
-const TASK_CATEGORIES = [
-    'DeFi Analysis',
-    'Smart Contract Audit',
-    'Data Processing',
-    'Content Creation',
-    'Trading Strategy',
-    'Other',
-] as const;
-
-type TaskCategory = (typeof TASK_CATEGORIES)[number];
-
-interface PostedTask {
-    id: string;
-    description: string;
-    category: TaskCategory;
-    rewardSol: number;
-    deadline: string;
-    poster: string;
-    createdAt: string;
-}
-
 function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => void }) {
     const { primaryWallet } = useDynamicContext();
     const poster = primaryWallet?.address ?? null;
@@ -1726,74 +1689,6 @@ function Loading() {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#16161A', opacity: 0.5 }}>Loading...</div>;
 }
 
-function formatBindingStatus(status: 'bound' | 'wallet_changed' | 'unbound'): string {
-    if (status === 'bound') return 'bound';
-    if (status === 'wallet_changed') return 'wallet changed (rebind required)';
-    return 'unbound';
-}
-
-const PRODUCTION_INDEXER_URL = 'https://api.gradiences.xyz/indexer';
-
-function resolveIndexerBase(): string {
-    // 1. Check localStorage settings (user-configured indexer URL)
-    if (typeof window !== 'undefined') {
-        try {
-            const stored = window.localStorage.getItem('agentm:settings');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed.indexerUrl && typeof parsed.indexerUrl === 'string'
-                    && parsed.indexerUrl !== 'http://localhost:3001') {
-                    return trimTrailingSlash(parsed.indexerUrl);
-                }
-            }
-        } catch {}
-    }
-    // 2. Check env var
-    if (INDEXER_BASE) {
-        return trimTrailingSlash(INDEXER_BASE);
-    }
-    // 3. Local dev vs production
-    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    if (host === 'localhost' || host === '127.0.0.1') {
-        return 'http://127.0.0.1:3001';
-    }
-    return PRODUCTION_INDEXER_URL;
-}
-
-function getTimeoutSignal(timeoutMs: number): AbortSignal | undefined {
-    const timeoutFactory = (
-        AbortSignal as unknown as { timeout?: (ms: number) => AbortSignal }
-    ).timeout;
-    if (typeof timeoutFactory !== 'function') {
-        return undefined;
-    }
-    return timeoutFactory(timeoutMs);
-}
-
-// ── Indexer Status Hook & Indicator ───────────────────────────────────
-
-type IndexerConnectionStatus = 'checking' | 'connected' | 'disconnected';
-
-function useIndexerStatus(): { status: IndexerConnectionStatus; indexerUrl: string } {
-    const [status, setStatus] = useState<IndexerConnectionStatus>('checking');
-    const indexerUrl = typeof window !== 'undefined' ? resolveIndexerBase() : '';
-
-    useEffect(() => {
-        if (!indexerUrl) { setStatus('disconnected'); return; }
-        let cancelled = false;
-        const check = () => {
-            fetch(`${indexerUrl}/api/tasks`, { signal: getTimeoutSignal(3000) })
-                .then((r) => { if (!cancelled) setStatus(r.ok ? 'connected' : 'disconnected'); })
-                .catch(() => { if (!cancelled) setStatus('disconnected'); });
-        };
-        check();
-        const interval = setInterval(check, 30000); // re-check every 30s
-        return () => { cancelled = true; clearInterval(interval); };
-    }, [indexerUrl]);
-
-    return { status, indexerUrl };
-}
-
 function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; url: string }) {
     const colors = {
         checking: { background: '#FEF3C7', color: '#D97706', border: '#F59E0B' },
@@ -1807,7 +1702,7 @@ function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; 
     };
     const style = colors[status];
     return (
-        <span 
+        <span
             style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1847,27 +1742,6 @@ function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' | 'da
 }
 
 // ── Task Market View ──────────────────────────────────────────────────
-
-interface TaskData {
-    task_id: string;
-    poster: string;
-    category: string;
-    description: string;
-    reward_lamports: number;
-    deadline: number;
-    state: 'Open' | 'InProgress' | 'Judging' | 'Settled' | 'Cancelled';
-    submissions_count: number;
-}
-
-
-
-const STATE_COLORS: Record<string, { background: string; color: string }> = {
-    Open: { background: '#D1FAE5', color: '#059669' },
-    InProgress: { background: '#FEF3C7', color: '#D97706' },
-    Judging: { background: '#E0E7FF', color: '#4F46E5' },
-    Settled: { background: '#DBEAFE', color: '#2563EB' },
-    Cancelled: { background: '#FEE2E2', color: '#DC2626' },
-};
 
 function TaskMarketView({ address }: { address: string | null }) {
     const [tasks, setTasks] = useState<TaskData[]>([]);

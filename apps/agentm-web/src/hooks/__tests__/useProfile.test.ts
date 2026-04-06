@@ -7,14 +7,14 @@ global.fetch = vi.fn();
 
 describe("useProfile", () => {
   const mockProfile = {
-    did: "did:sol:abc123",
-    name: "Test Agent",
+    address: "did:sol:abc123",
+    displayName: "Test Agent",
     bio: "A test agent",
     avatar: "https://example.com/avatar.png",
-    skills: ["Rust", "TypeScript"],
-    reputationScore: 85,
+    reputation: 85,
     followers: 100,
     following: 50,
+    createdAt: new Date().toISOString(),
   };
 
   beforeEach(() => {
@@ -69,10 +69,10 @@ describe("useProfile", () => {
     });
 
     await act(async () => {
-      await result.current.updateProfile({ name: "Updated Name" });
+      await result.current.updateProfile({ displayName: "Updated Name" });
     });
 
-    expect(result.current.profile?.name).toBe("Updated Name");
+    expect(result.current.profile?.displayName).toBe("Updated Name");
   });
 
   it("should follow/unfollow user", async () => {

@@ -16,8 +16,6 @@ export {
   ReputationResource,
   JudgePoolResource,
   ProfileResource,
-  AttestationsResource,
-  ConfigResource,
 } from './resources/index.js';
 
 // Re-export generated instructions
@@ -77,15 +75,12 @@ import {
   type PostTaskSimpleResult,
   type AgentProfileApi,
   type AgentProfileUpdate,
-  type TaskCompletionAttestationData,
 } from './types.js';
 
 import { TasksResource } from './resources/tasks.js';
 import { ReputationResource } from './resources/reputation.js';
 import { JudgePoolResource } from './resources/judge-pool.js';
 import { ProfileResource } from './resources/profile.js';
-import { AttestationsResource } from './resources/attestations.js';
-import { ConfigResource } from './resources/config.js';
 
 /**
  * Gradience SDK - Backward Compatible Wrapper
@@ -104,8 +99,6 @@ export class GradienceSDK {
   readonly reputation: ReputationResource;
   readonly judgePool: JudgePoolResource;
   readonly profile: ProfileResource;
-  readonly attestations: AttestationsResource;
-  readonly config: ConfigResource;
 
   // Instructions namespace (backward compatible)
   readonly instructions: {
@@ -151,15 +144,6 @@ export class GradienceSDK {
       indexerEndpoint: this.indexerEndpoint,
     });
 
-    this.attestations = new AttestationsResource({
-      attestationEndpoint: this.attestationEndpoint,
-    });
-
-    this.config = new ConfigResource({
-      programAddress: this.programAddress,
-      rpc: this.rpc,
-    });
-
     // Expose instructions (backward compatible)
     this.instructions = {
       initialize: getInitializeInstruction,
@@ -188,7 +172,6 @@ export class GradienceSDK {
 
   setAttestationEndpoint(endpoint: string): void {
     this.attestationEndpoint = endpoint;
-    (this.attestations as unknown as { attestationEndpoint: string }).attestationEndpoint = endpoint;
   }
 
   setWallet(wallet: WalletAdapter): void {
@@ -278,22 +261,6 @@ export class GradienceSDK {
   async updateAgentProfile(agent: string, data: AgentProfileUpdate): Promise<void> {
     return this.profile.update(agent, data);
   }
-
-  // ============================================================================
-  // Attestation Methods (delegate to AttestationsResource)
-  // ============================================================================
-
-  async getAgentAttestations(agent: string): Promise<unknown[]> {
-    return this.attestations.list(agent);
-  }
-
-  async getDecodedAgentAttestations(agent: string): Promise<TaskCompletionAttestationData[]> {
-    return this.attestations.listDecoded(agent);
-  }
-
-  static decodeTaskCompletionAttestation(raw: Uint8Array): TaskCompletionAttestationData {
-    return AttestationsResource.decode(raw);
-  }
 }
 
 // ============================================================================
@@ -302,26 +269,3 @@ export class GradienceSDK {
 
 /** Self-Attestation Service Program ID */
 export const SAS_PROGRAM_ID = 'SAS222222222222222222222222222222222222222' as Address;
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * Normalize task completion attestation
- * @deprecated Use AttestationsResource.decode instead
- */
-export function normalizeTaskCompletionAttestation(
-  attestation: unknown
-): TaskCompletionAttestationData {
-  // Implementation would be here - delegating to AttestationsResource
-  throw new Error('Use AttestationsResource.decode instead');
-}
-
-/**
- * Decode task completion attestation
- * @deprecated Use AttestationsResource.decode instead
- */
-export function decodeTaskCompletionAttestation(raw: Uint8Array): TaskCompletionAttestationData {
-  return AttestationsResource.decode(raw);
-}

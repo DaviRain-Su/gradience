@@ -6,55 +6,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { SoulProfile, MatchingReport, ProbeSession } from '@/types/soul';
-
-interface MatchingDimension {
-  dimension: string;
-  score: number;
-  summary: string;
-  evidence: string[];
-  risks: string[];
-  suggestions: string[];
-}
-
-interface MatchingAnalysis {
-  assessment: string;
-  recommendedTopics: string[];
-  avoidTopics: string[];
-  dimensions: {
-    values: MatchingDimension;
-    tone: MatchingDimension;
-    boundaries: MatchingDimension;
-    interests: MatchingDimension;
-  };
-}
-
-interface MatchingReport {
-  id: string;
-  sourceProfileId: string;
-  targetProfileId: string;
-  compatibilityScore: number;
-  embeddingMatch: {
-    overall: number;
-    sections: {
-      identity: number;
-      values: number;
-      interests: number;
-      communication: number;
-    };
-  };
-  analysis: MatchingAnalysis;
-  sessionId?: string;
-  generatedAt: number;
-  breakdown: {
-    embedding: number;
-    llm: number;
-    weights: {
-      embedding: number;
-      llm: number;
-    };
-  };
-}
+import type { SoulProfile, MatchingReport, ProbeSession, MatchingDimension } from '@/types/soul';
 
 interface UseSoulMatchingOptions {
   /** LLM API key */

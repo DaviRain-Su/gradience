@@ -303,7 +303,7 @@ function NotificationFilters({
 }: {
     activeFilter: FilterOption;
     onFilterChange: (filter: FilterOption) => void;
-    notifications: Notification[];
+    notifications: AppNotification[];
 }) {
     // Count per type
     const counts = useMemo(() => {

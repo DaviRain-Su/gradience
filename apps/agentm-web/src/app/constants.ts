@@ -4,8 +4,6 @@
  * Centralized constants for the main app page.
  */
 
-import { TaskCategory, AgentCapability } from './types';
-
 /** Indexer base URL from environment or default */
 export const INDEXER_BASE = process.env.NEXT_PUBLIC_INDEXER_URL ?? '';
 
@@ -16,7 +14,7 @@ export const PRODUCTION_INDEXER_URL = 'https://api.gradiences.xyz/indexer';
 export const DEFAULT_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 
 /** Task categories for posting */
-export const TASK_CATEGORIES: TaskCategory[] = [
+export const TASK_CATEGORIES = [
   'DeFi Analysis',
   'Trading Bot',
   'Smart Contract Audit',
@@ -25,10 +23,10 @@ export const TASK_CATEGORIES: TaskCategory[] = [
   'Code Review',
   'Research',
   'Other',
-];
+] as const;
 
 /** Agent capabilities for registration */
-export const AGENT_CAPABILITIES: AgentCapability[] = [
+export const AGENT_CAPABILITIES = [
   'DeFi Analysis',
   'Trading',
   'Smart Contract Audit',
@@ -43,7 +41,7 @@ export const AGENT_CAPABILITIES: AgentCapability[] = [
   'Design',
   'Marketing',
   'Other',
-];
+] as const;
 
 /** State colors for task status badges */
 export const STATE_COLORS: Record<string, { background: string; color: string }> = {
