@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "ESNext",
         "module": "ESNext",
-        "moduleResolution": "bundler",
+        "moduleResolution": "node",
         "outDir": "./dist",
         "rootDir": ".",
         "declaration": true,
@@ -10,10 +10,8 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "paths": {
-            "@gradiences/arena-sdk": ["../clients/typescript/src/index.js"]
-        }
+        "resolveJsonModule": true
     },
-    "include": ["gradience.ts"],
-    "exclude": ["node_modules", "dist", "*.test.ts"]
+    "include": ["**/*.ts"],
+    "exclude": ["node_modules", "dist", "*.test.ts", "e2e-lifecycle.ts", "test-post.ts"]
 }

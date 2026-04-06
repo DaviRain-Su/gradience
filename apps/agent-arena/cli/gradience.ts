@@ -9,7 +9,7 @@
  * @deprecated Use modular imports from ./commands/ and ./utils/
  */
 
-// Re-export types
+// Re-export types (includes command guards like isTaskCommand)
 export * from './types.js';
 
 // Re-export commands

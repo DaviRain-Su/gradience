@@ -5,13 +5,6 @@
  * Wraps the lower-level router and adds developer-friendly error handling.
  */
 
-import type {
-    ProtocolMetadata,
-    TransactionRecord,
-    TransactionQuery,
-    HttpClient,
-} from "./types";
-
 export interface ChainHubClientConfig {
     /** Indexer base URL */
     baseUrl: string;

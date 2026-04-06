@@ -1,6 +1,6 @@
 import { fetchMaybeJudgePool } from '../generated/index.js';
-import type { Address, Rpc } from '@solana/kit';
-import { getProgramDerivedAddress, getAddressEncoder, getAddressDecoder } from '@solana/kit';
+import type { Address } from '@solana/kit';
+import { getProgramDerivedAddress, getAddressDecoder, fetchEncodedAccount } from '@solana/kit';
 
 const TEXT_ENCODER = new TextEncoder();
 
@@ -29,7 +29,7 @@ export interface JudgePoolMemberOnChain {
 
 export interface JudgePoolResourceOptions {
     programAddress: Address;
-    rpc: Rpc;
+    rpc: Parameters<typeof fetchEncodedAccount>[0];
     indexerEndpoint: string;
 }
 
@@ -37,7 +37,7 @@ type QueryValue = string | number | undefined;
 
 export class JudgePoolResource {
     private programAddress: Address;
-    private rpc: Rpc;
+    private rpc: Parameters<typeof fetchEncodedAccount>[0];
     private indexerEndpoint: string;
 
     constructor(options: JudgePoolResourceOptions) {

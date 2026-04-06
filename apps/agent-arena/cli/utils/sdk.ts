@@ -5,7 +5,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { createKeyPairSignerFromBytes, createSolanaRpc } from '@solana/kit';
-import { GradienceSDK } from '@gradiences/arena-sdk';
+import { GradienceSDK, KeypairAdapter } from '@gradiences/arena-sdk';
 import { CliError } from '../types.js';
 
 /**
@@ -54,6 +54,20 @@ export async function loadKeypairSigner(keypairPath: string) {
 
     const bytes = Uint8Array.from(parsed as number[]);
     return createKeyPairSignerFromBytes(bytes);
+}
+
+/**
+ * Creates a keypair adapter for wallet operations
+ * @param rpcEndpoint - RPC endpoint URL
+ * @param keypairPath - Path to keypair file
+ * @returns KeypairAdapter instance
+ */
+export async function createKeypairAdapter(rpcEndpoint: string, keypairPath: string): Promise<KeypairAdapter> {
+    const signer = await loadKeypairSigner(keypairPath);
+    return new KeypairAdapter({
+        signer,
+        rpcEndpoint,
+    });
 }
 
 /**

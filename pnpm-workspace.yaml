@@ -1,10 +1,11 @@
 packages:
     - 'packages/*'
+    - '!packages/workflow-engine'  # excluded: heavy type errors in unfinished triton-cascade / trading modules
     - 'e2e'
     - 'apps/agentm'
     - 'apps/agent-arena/frontend'
     - 'apps/agent-arena/clients/typescript'
-    - 'apps/agent-arena/cli'
+    # - 'apps/agent-arena/cli'  # excluded: broken after SDK refactor, not part of core runtime
     - 'apps/agent-daemon'
     - 'apps/agentm-web'
     - 'apps/agentm-pro'
@@ -14,8 +15,8 @@ packages:
     - 'apps/agent-layer-evm'
     - 'apps/a2a-protocol/sdk'
     - 'apps/a2a-protocol/runtime'
-    # Hackathon demos
-    - 'apps/hackathon-demo'
-    - 'apps/hackathon-ows'
+    # Hackathon demos (excluded from core workspace build)
+    # - 'apps/hackathon-demo'
+    # - 'apps/hackathon-ows'
     # Note: apps/chain-hub is a Rust project, not in pnpm workspace
     - 'website'

@@ -70,7 +70,7 @@ export async function createAPIServer(deps: APIServerDeps) {
     // Skip rate limiting in test environment
     if (process.env.NODE_ENV !== 'test') {
         await app.register(rateLimit, {
-            max: 10,
+            max: 120,
             timeWindow: '1 minute',
             keyGenerator: (request) => request.ip,
             errorResponseBuilder: (request, context) => {

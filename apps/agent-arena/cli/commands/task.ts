@@ -29,15 +29,16 @@ import {
     STAKE_DISCRIMINATOR,
     PROGRAM_CONFIG_DISCRIMINATOR,
     CATEGORY_NAME_TO_ID,
-    isMockTaskMode,
+    ByteReader,
     isTaskCommand,
-    parseFlags,
-    requiredFlag,
+    isMockTaskMode,
     parseU64,
+    parseFlags,
     parseAddress,
+    requiredFlag,
     toCliTaskState,
-    loadConfig,
-    createSdk,
+    parseCategories,
+    appendRemainingAccounts,
     fetchPosterAddress,
     findConfigPda,
     findStakePda,
@@ -45,11 +46,13 @@ import {
     findJudgePoolPda,
     fetchMinJudgeStake,
     fetchStakeCategories,
-    parseCategories,
-    appendRemainingAccounts,
-    printJson,
-    ByteReader,
 } from '../types.js';
+
+import {
+    loadConfig,
+    createSdk,
+    printJson,
+} from '../utils/index.js';
 
 export async function handleTaskCommand(
     taskArgs: string[],

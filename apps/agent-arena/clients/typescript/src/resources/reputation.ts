@@ -47,7 +47,7 @@ export class ReputationResource {
      * Returns `null` when the account does not exist.
      */
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
-        const { getProgramDerivedAddress, fetchEncodedAccount, getAddressEncoder } = await import('@solana/kit');
+        const { getProgramDerivedAddress, fetchEncodedAccount, getAddressEncoder, getAddressDecoder } = await import('@solana/kit');
         
         const TEXT_ENCODER = new TextEncoder();
         const REPUTATION_DISCRIMINATOR = 0x05;
@@ -62,7 +62,7 @@ export class ReputationResource {
 
         function bytesToAddress(value: number[] | Uint8Array): Address {
             const bytes = value instanceof Uint8Array ? value : Uint8Array.from(value);
-            return getAddressEncoder().decode(Uint8Array.from(bytes) as unknown as Uint8Array);
+            return getAddressDecoder().decode(Uint8Array.from(bytes) as unknown as Uint8Array);
         }
 
         class ByteReader {

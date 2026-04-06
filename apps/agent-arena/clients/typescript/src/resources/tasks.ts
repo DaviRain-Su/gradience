@@ -1,19 +1,11 @@
 import {
     getApplyForTaskInstructionAsync,
-    getApplyForTaskInstruction,
     getCancelTaskInstructionAsync,
-    getCancelTaskInstruction,
     getForceRefundInstructionAsync,
-    getForceRefundInstruction,
     getJudgeAndPayInstructionAsync,
-    getJudgeAndPayInstruction,
     getPostTaskInstructionAsync,
-    getPostTaskInstruction,
     getRefundExpiredInstructionAsync,
-    getRefundExpiredInstruction,
     getSubmitResultInstructionAsync,
-    getSubmitResultInstruction,
-    fetchMaybeJudgePool,
     type RuntimeEnvInputArgs,
 } from '../generated/index.js';
 import {
@@ -225,8 +217,6 @@ type QueryValue = string | number | undefined;
 export class TasksResource {
     constructor(
         private readonly programAddress: Address,
-        private readonly indexerEndpoint: string,
-        private readonly rpc: Parameters<typeof import('@solana/kit').fetchEncodedAccount>[0],
         private readonly findConfigPda: () => Promise<readonly [Address, number]>,
         private readonly findTaskPda: (taskId: bigint) => Promise<readonly [Address, number]>,
         private readonly findEscrowPda: (taskId: bigint) => Promise<readonly [Address, number]>,

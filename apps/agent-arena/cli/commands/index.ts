@@ -4,6 +4,7 @@
  * Command handlers for the Gradience CLI.
  */
 
-export { handleTaskCommand, isTaskCommand } from './task.js';
-export { handleJudgeCommand, isJudgeCommand } from './judge.js';
-export { handleProfileCommand, isProfileCommand } from './profile.js';
+export { handleTaskCommand } from './task.js';
+export { handleJudgeCommand } from './judge.js';
+export { handleProfileCommand } from './profile.js';
+export { isTaskCommand, isJudgeCommand, isProfileCommand } from '../types.js';
