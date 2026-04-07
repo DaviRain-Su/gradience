@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useMatches, useDiscover, type MatchProfile } from '../../hooks/useMatches';
 import { useMyProfile } from '../../hooks/useProfile';
@@ -8,6 +8,7 @@ import { useFollowing } from '../../hooks/useFollowing';
 import { FollowingList } from '../../components/social/FollowingList';
 import { FollowersList } from '../../components/social/FollowersList';
 import { FollowButton } from '../../components/social/FollowButton';
+import { calculateCompatibility, DEMO_PROFILES, buildMatchProfile } from '../../lib/mocks/soul-engine';
 
 type SocialTab = 'discover' | 'matches' | 'probes' | 'following';
 
@@ -19,25 +20,66 @@ const colors = {
     lime: '#CDFF4D',
 };
 
+export interface ProbeSession {
+    id: string;
+    startedAt: number;
+    match: MatchProfile;
+    status: 'active' | 'completed';
+}
+
 export function SocialView({ address }: { address: string | null }) {
     const [activeTab, setActiveTab] = useState<SocialTab>('discover');
     const [selectedMatch, setSelectedMatch] = useState<MatchProfile | null>(null);
+    const [probes, setProbes] = useState<ProbeSession[]>([]);
 
     // Real data from server
     const { profile: myProfile, loading: profileLoading } = useMyProfile();
     const { matches: serverMatches, loading: matchesLoading } = useMatches();
     const { profiles: serverProfiles, loading: discoverLoading } = useDiscover();
 
+    // Deterministic demo matches when no server data
+    const demoMatches: MatchProfile[] = useMemo(() => {
+        if (!myProfile?.soulProfile) return [];
+        const me = {
+            address: myProfile.address,
+            soulType: myProfile.soulProfile?.soulType || 'human',
+            displayName: myProfile.displayName,
+            bio: myProfile.bio,
+            privacyLevel: 'public',
+            values: {
+                core: myProfile.soulProfile?.values?.core || [],
+                priorities: myProfile.soulProfile?.values?.priorities || [],
+                dealBreakers: myProfile.soulProfile?.values?.dealBreakers || [],
+            },
+            interests: {
+                topics: myProfile.soulProfile?.values?.priorities || [],
+                skills: myProfile.soulProfile?.values?.priorities || [],
+                goals: myProfile.soulProfile?.values?.priorities || [],
+            },
+            communication: {
+                tone: 'friendly',
+                pace: 'moderate',
+                depth: 'moderate',
+            },
+        };
+        return DEMO_PROFILES.map((p) => {
+            const result = calculateCompatibility(me, p);
+            return buildMatchProfile(p, result);
+        }).sort((a, b) => b.score - a.score);
+    }, [myProfile]);
+
+    const effectiveMatches = serverMatches.length > 0 ? serverMatches : demoMatches;
+
     const isLoading = profileLoading || matchesLoading || discoverLoading;
     const hasProfile = !!myProfile;
 
     // Stats
-    const matchCount = serverMatches.length;
-    const avgScore = serverMatches.length > 0
-        ? Math.round(serverMatches.reduce((s, m) => s + m.score, 0) / serverMatches.length)
+    const matchCount = effectiveMatches.length;
+    const avgScore = effectiveMatches.length > 0
+        ? Math.round(effectiveMatches.reduce((s, m) => s + m.score, 0) / effectiveMatches.length)
         : 0;
-    const topScore = serverMatches[0] ? `${Math.round(serverMatches[0].score)}%` : '-';
-    const sharedCount = serverMatches.reduce((s, m) => s + (m.sharedValues?.length || 0), 0);
+    const topScore = effectiveMatches[0] ? `${Math.round(effectiveMatches[0].score)}%` : '-';
+    const sharedCount = effectiveMatches.reduce((s, m) => s + (m.sharedValues?.length || 0), 0);
 
     const handleViewMatch = (m: MatchProfile) => {
         setSelectedMatch(m);
@@ -45,6 +87,13 @@ export function SocialView({ address }: { address: string | null }) {
 
     const closeModal = () => {
         setSelectedMatch(null);
+    };
+
+    const startProbe = (match: MatchProfile) => {
+        const id = `probe-${Date.now()}`;
+        setProbes((prev) => [...prev, { id, startedAt: Date.now(), match, status: 'active' }]);
+        setSelectedMatch(null);
+        setActiveTab('probes');
     };
 
     if (isLoading) {
@@ -130,7 +179,7 @@ export function SocialView({ address }: { address: string | null }) {
                         {[
                             { id: 'discover' as SocialTab, label: '🔍 Discover', count: serverProfiles.length },
                             { id: 'matches' as SocialTab, label: '💕 Matches', count: matchCount },
-                            { id: 'probes' as SocialTab, label: '💬 Probes', count: 0 },
+                            { id: 'probes' as SocialTab, label: '💬 Probes', count: probes.length },
                             { id: 'following' as SocialTab, label: '👥 Following', count: 0 },
                         ].map(tab => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
@@ -169,10 +218,10 @@ export function SocialView({ address }: { address: string | null }) {
 
                     {activeTab === 'matches' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {serverMatches.length === 0 ? (
+                            {effectiveMatches.length === 0 ? (
                                 <EmptyState icon="💕" title="No Matches Yet" description="Matches appear when other agents have compatible Soul Profiles" />
                             ) : (
-                                serverMatches.map(m => (
+                                effectiveMatches.map(m => (
                                     <MatchCard key={m.address} match={m} onClick={() => handleViewMatch(m)} />
                                 ))
                             )}
@@ -180,7 +229,15 @@ export function SocialView({ address }: { address: string | null }) {
                     )}
 
                     {activeTab === 'probes' && (
-                        <EmptyState icon="💬" title="No Active Probes" description="Start a probe from Discover or Matches to begin a compatibility conversation" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {probes.length === 0 ? (
+                                <EmptyState icon="💬" title="No Active Probes" description="Start a probe from Discover or Matches to begin a compatibility conversation" />
+                            ) : (
+                                probes.map(p => (
+                                    <ProbeCard key={p.id} probe={p} onResume={() => handleViewMatch(p.match)} onClose={() => setProbes(prev => prev.filter(x => x.id !== p.id))} />
+                                ))
+                            )}
+                        </div>
                     )}
 
                     {activeTab === 'following' && (
@@ -190,7 +247,7 @@ export function SocialView({ address }: { address: string | null }) {
             </div>
 
             {/* Modal */}
-            {selectedMatch && <MatchModal match={selectedMatch} onClose={closeModal} />}
+            {selectedMatch && <MatchModal match={selectedMatch} onClose={closeModal} onStartProbe={() => startProbe(selectedMatch)} />}
         </div>
     );
 }
@@ -275,7 +332,7 @@ function MatchCard({ match, onClick }: { match: MatchProfile; onClick: () => voi
     );
 }
 
-function MatchModal({ match, onClose }: { match: MatchProfile; onClose: () => void }) {
+function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onClose: () => void; onStartProbe?: () => void }) {
     return (
         <div onClick={onClose} style={{
             position: 'fixed', inset: 0, background: 'rgba(243,243,248,0.85)', backdropFilter: 'blur(4px)',
@@ -351,9 +408,15 @@ function MatchModal({ match, onClose }: { match: MatchProfile; onClose: () => vo
                         </div>
                     )}
 
+                    {onStartProbe && (
+                        <button onClick={onStartProbe} style={{
+                            padding: '16px 24px', background: colors.lime, color: colors.ink, border: `1.5px solid ${colors.ink}`,
+                            borderRadius: '16px', fontSize: '16px', fontWeight: 700, cursor: 'pointer',
+                        }}>Start Probe 💬</button>
+                    )}
                     <button onClick={onClose} style={{
                         padding: '16px 24px', background: colors.ink, color: colors.surface, border: 'none',
-                        borderRadius: '16px', fontSize: '16px', fontWeight: 600, cursor: 'pointer', marginTop: 'auto',
+                        borderRadius: '16px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
                     }}>Close</button>
                 </div>
 
@@ -416,6 +479,47 @@ function MatchModal({ match, onClose }: { match: MatchProfile; onClose: () => vo
                         </div>
                     )}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// Probe Card Component
+function ProbeCard({ probe, onResume, onClose }: { probe: ProbeSession; onResume: () => void; onClose: () => void }) {
+    return (
+        <div style={{
+            background: colors.surface, borderRadius: '16px', padding: '20px', border: `1.5px solid ${colors.ink}`,
+            display: 'flex', alignItems: 'center', gap: '20px',
+        }}>
+            <div style={{
+                width: '56px', height: '56px', borderRadius: '12px', background: colors.lavender,
+                border: `1.5px solid ${colors.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700,
+            }}>
+                {probe.match.displayName[0]}
+            </div>
+            <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '16px' }}>{probe.match.displayName}</div>
+                <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '2px' }}>
+                    Started {new Date(probe.startedAt).toLocaleTimeString()}
+                </div>
+                {probe.match.sharedValues && probe.match.sharedValues.length > 0 && (
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        {probe.match.sharedValues.slice(0, 3).map(v => (
+                            <span key={v} style={{ padding: '2px 8px', background: colors.lime, borderRadius: '999px', fontSize: '10px', fontWeight: 600 }}>{v}</span>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={onResume} style={{
+                    padding: '10px 16px', borderRadius: '10px', border: 'none', background: colors.lime,
+                    color: colors.ink, fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                }}>Resume</button>
+                <button onClick={onClose} style={{
+                    padding: '10px 16px', borderRadius: '10px', border: `1.5px solid ${colors.ink}`,
+                    background: colors.surface, color: colors.ink, fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                }}>End</button>
             </div>
         </div>
     );

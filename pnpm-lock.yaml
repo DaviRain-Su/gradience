@@ -301,6 +301,9 @@ importers:
       '@gradiences/arena-sdk':
         specifier: workspace:^
         version: link:../agent-arena/clients/typescript
+      '@gradiences/soul-engine':
+        specifier: workspace:^
+        version: link:../../packages/soul-engine
       '@gradiences/ui':
         specifier: workspace:^
         version: link:../../packages/ui

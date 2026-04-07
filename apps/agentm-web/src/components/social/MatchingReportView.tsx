@@ -1,11 +1,6 @@
-// @ts-nocheck
-/**
- * Matching Report View Component
- * 
- * Display AI-powered compatibility analysis reports
- */
+'use client';
 
-import type { MatchingReport } from '@gradiences/soul-engine';
+import type { MatchingReport, DimensionAnalysis } from '@gradiences/soul-engine';
 import { useState } from 'react';
 
 interface MatchingReportViewProps {
@@ -199,7 +194,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
 }
 
 // Dimension Analysis Card
-function DimensionCard({ dimension }: { dimension: any }) {
+function DimensionCard({ dimension }: { dimension: DimensionAnalysis }) {
     const getScoreColor = (score: number) => {
         if (score >= 80) return 'text-green-400';
         if (score >= 60) return 'text-yellow-400';
@@ -219,6 +214,7 @@ function DimensionCard({ dimension }: { dimension: any }) {
         tone: 'Communication Style',
         boundaries: 'Boundary Respect',
         interests: 'Interest Overlap',
+        [dimension.dimension]: (dimension.dimension.charAt(0).toUpperCase() + dimension.dimension.slice(1)),
     };
     
     return (
@@ -306,7 +302,7 @@ export function MatchingReportCard({ report, onClick }: { report: MatchingReport
                 </div>
             </div>
             
-            <p className="text-sm text-gray-400 line-clamp-2">{report.analysis.assessment}</p>
+            <p className="text-sm text-gray-400">{report.analysis.assessment}</p>
             
             <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-700">
                 <div className="text-center">
