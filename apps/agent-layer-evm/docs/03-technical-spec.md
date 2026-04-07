@@ -444,27 +444,47 @@ EVM 链上的声誉来源有两条路径：
 
 ### 6.1 EVM Subgraph
 
-The Graph 子图监听以下事件：
+The Graph 子图项目位于 `apps/agent-layer-evm/subgraph/`，监听以下事件：
 
 **AgentArenaEVM**
-- `TaskCreated(uint256 indexed taskId, address indexed poster, address indexed judge, ...)`
-- `TaskApplied(uint256 indexed taskId, address indexed agent, uint256 stake)`
-- `SubmissionReceived(uint256 indexed taskId, address indexed agent, string resultRef, string traceRef)`
-- `TaskJudged(uint256 indexed taskId, address indexed winner, uint8 score, uint256 winnerPayout, uint256 judgeFee, uint256 protocolFee)`
-- `TaskRefunded(uint256 indexed taskId, address indexed poster, uint256 reward)`
-- `StakeRefunded(uint256 indexed taskId, address indexed agent, uint256 stake)`
+- `TaskCreated(uint256,address,address,uint8,uint256,uint256,uint64,uint64,string)`
+- `TaskApplied(uint256,address,uint256)`
+- `SubmissionReceived(uint256,address,string,string)`
+- `TaskJudged(uint256,address,uint8,uint256,uint256,uint256)`
+- `TaskRefunded(uint256,address,uint8)`
+- `StakeRefunded(uint256,address,uint256)`
+- `AgentCompensated(uint256,address,uint256)`
+- `DisputeOpened(uint256,address,uint256,bytes32)`
+- `DisputeResolved(uint256,uint8,address,address,uint8)`
+- `ProtocolFeesWithdrawn(address,address,uint256)`
+- `TaskJudgedWithProof(uint256,address,uint8,bytes32)`
 
 **AgentMRegistry**
-- `UserRegistered(address indexed user, string username, string metadataURI, uint64 version)`
-- `AgentCreated(address indexed owner, uint256 indexed agentId, string metadataURI)`
-- `ProfileUpdated(address indexed user, string metadataURI, uint64 version)`
+- `UserRegistered(address,string,string,uint64)`
+- `ProfileUpdated(address,string,uint64,string)`
+- `AgentCreated(address,uint256,string)`
+- `AgentUpdated(uint256,string,bool)`
 
-**SocialGraph**
-- `Followed(address indexed from, address indexed to)`
-- `Unfollowed(address indexed from, address indexed to)`
+**SocialGraph** (reserved)
+- `Followed(address,address)`
+- `Unfollowed(address,address)`
 
 **GradienceReputationFeed**
-- `ReputationUpdated(address indexed evmAddress, bytes32 solanaPubkey, uint16 globalScore, uint64 timestamp)`
+- `ReputationUpdated(address,bytes32,uint16,uint64,address)`
+
+**核心实体设计** (`schema.graphql`)：
+- `Task` — 任务全生命周期状态机（Open / Completed / Refunded）
+- `Application` — Agent 申请记录（stake + appliedAt）
+- `Submission` — 结果提交记录（resultRef / traceRef）
+- `Dispute` — 争议记录（bond / reasonHash / resolution）
+- `User` — 跨合约聚合身份（AgentArenaEVM + AgentMRegistry + ReputationFeed）
+- `AgentProfile` — Agent 元数据与活跃状态
+- `Reputation` — Oracle 声誉快照（globalScore + categoryScores）
+- `ProtocolMetric` — 全局聚合统计（总任务数、完成数、争议数、累积 protocol fee）
+
+**配置要求**：部署前必须更新 `subgraph.yaml` 中的 `network`、`source.address`、`startBlock`。
+
+**多链部署策略**：每条链维护独立的 `subgraph.yaml` 变体（如 `subgraph.base.yaml`、`subgraph.xlayer.yaml`），通过相同的 schema 和 mappings 分别部署到对应网络。
 
 ### 6.2 agent-daemon 适配
 
