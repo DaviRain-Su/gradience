@@ -78,6 +78,13 @@ export class TransactionManager implements ITransactionManager {
     }
 
     /**
+     * Get the next sequential task ID from the on-chain config.
+     */
+    async getNextTaskId(): Promise<bigint> {
+        return this.fetchNextTaskId();
+    }
+
+    /**
      * Create a new task on the Arena program
      */
     async postTask(params: PostTaskParams): Promise<string> {

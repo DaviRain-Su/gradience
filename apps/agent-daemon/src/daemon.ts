@@ -38,6 +38,11 @@ import {
     stopEvaluationDomain,
     type EvaluationDomainServices,
 } from './daemon/evaluation-domain.js';
+import {
+    initGatewayDomain,
+    stopGatewayDomain,
+    type GatewayDomainServices,
+} from './daemon/gateway-domain.js';
 
 const VERSION = '0.1.0';
 
@@ -52,6 +57,7 @@ export class Daemon {
     private network: NetworkDomainServices | null = null;
     private settlement: SettlementDomainServices | null = null;
     private evaluation: EvaluationDomainServices | null = null;
+    private gateway: GatewayDomainServices | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -128,7 +134,16 @@ export class Daemon {
             bridgeManager: this.settlement.bridgeManager,
         });
 
-        // 9. Wire cross-domain events on ConnectionManager
+        // 9. Gateway Domain (EVM-only for now)
+        if (this.config.defaultChain === 'evm' && this.transactionManager instanceof EvmTransactionManager) {
+            this.gateway = initGatewayDomain(
+                this.config,
+                this.config.dbPath,
+                this.transactionManager,
+            );
+        }
+
+        // 10. Wire cross-domain events on ConnectionManager
         this.wireConnectionEvents();
 
         // 10. Start API Server
@@ -179,6 +194,7 @@ export class Daemon {
     async stop(): Promise<void> {
         logger.info('Stopping Agent Daemon');
 
+        if (this.gateway) await stopGatewayDomain(this.gateway);
         if (this.coordinator) await stopCoordinatorDomain(this.coordinator);
         if (this.settlement) await stopSettlementDomain(this.settlement);
         if (this.network) await stopNetworkDomain(this.network);

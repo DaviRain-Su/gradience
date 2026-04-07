@@ -95,6 +95,13 @@ const AGENT_ARENA_EVM_ABI = [
     ],
     anonymous: false,
   },
+  {
+    type: 'function',
+    name: 'taskCount',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
 ] as const;
 
 export interface EvmTransactionManagerConfig {
@@ -128,6 +135,25 @@ export class EvmTransactionManager implements ITransactionManager {
       { rpcUrl: config.rpcUrl, chainId: config.chainId, address: this.account.address },
       'EvmTransactionManager initialized'
     );
+  }
+
+  async getNextTaskId(): Promise<bigint> {
+    try {
+      const count = await this.publicClient.readContract({
+        address: this.config.agentArenaAddress,
+        abi: AGENT_ARENA_EVM_ABI,
+        functionName: 'taskCount',
+        args: [],
+      });
+      return (count as bigint) + 1n;
+    } catch (error) {
+      logger.error({ error }, 'Failed to get next EVM task ID');
+      throw new DaemonError(
+        ErrorCodes.SOLANA_ERROR,
+        `Failed to get next task ID: ${error instanceof Error ? error.message : String(error)}`,
+        500,
+      );
+    }
   }
 
   async getBalance(): Promise<number> {

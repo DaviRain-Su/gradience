@@ -23,6 +23,7 @@ export interface RuntimeEnv {
 
 export interface ITransactionManager {
     getBalance(): Promise<number>;
+    getNextTaskId?(): Promise<bigint>;
     postTask(params: PostTaskParams): Promise<string>;
     applyForTask(taskId: string): Promise<string>;
     submitResult(taskId: string, resultCid: string, traceCid?: string, runtimeEnv?: RuntimeEnv): Promise<string>;
