@@ -467,3 +467,110 @@ apps/agentm-web/
 - [x] 本文档可以直接交给任何开发者实现
 
 **验收通过后，进入 Phase 4: Task Breakdown →**
+
+---
+
+## 3.9 Settlement Module (GRA-200 JudgeAndPay)
+
+### 3.9.1 Types
+```typescript
+interface JudgeTask {
+  taskId: number;
+  title?: string;
+  submissions: SubmissionApi[];
+}
+```
+
+### 3.9.2 Hooks
+**`useJudgeAndPay(wallet: WalletAdapter | null)`**
+```typescript
+interface UseJudgeAndPayResult {
+  tasksToJudge: TaskApi[];
+  loading: boolean;
+  error: string | null;
+  judgeTask: (params: {
+    taskId: number | bigint;
+    winner: Address;
+    poster: Address;
+    score: number;
+    reasonRef: string;
+  }) => Promise<string | null>;
+  txHash: string | null;
+}
+```
+
+### 3.9.3 Components
+- **`JudgeDashboard`** — 展示待评判任务列表，支持点击进入评判。
+- **`JudgeSubmissionView`** — 展示指定任务的所有 submissions，供 Judge 对比并选择 winner。
+
+### 3.9.4 SDK
+使用 `lib/solana/arena-client.ts` 中的 `judgeAndPay`、`fetchTasks`、`fetchSubmissions`。
+
+### 3.9.5 Route
+| 路由 | 页面组件 | 功能 |
+|------|---------|------|
+| `/judge` | `judge/page.tsx` | JudgeDashboard |
+
+### 3.9.6 样式规范
+沿用 3.4.1 Inline styles，卡片背景 `#FFFFFF`，边框圆角 `12px`，按钮主色 `#CDFF4D`。
+
+---
+
+## 3.10 Payment Channels Module (GRA-201 A2A)
+
+### 3.10.1 Types
+```typescript
+interface Channel {
+  channelId: string;
+  payee: string;
+  depositAmount: number;
+  spentAmount: number;
+  status: 'open' | 'closing' | 'closed' | 'disputed';
+  expiresAt: number;
+}
+```
+
+### 3.10.2 Hooks
+**`useChannelState(wallet: WalletAdapter | null)`**
+```typescript
+interface UseChannelStateResult {
+  channels: Channel[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+}
+```
+
+**`useOpenChannel(wallet: WalletAdapter | null)`**
+```typescript
+interface UseOpenChannelResult {
+  openChannel: (params: {
+    payee: Address;
+    depositAmount: number;
+    expiresAt: number;
+  }) => Promise<string | null>;
+  loading: boolean;
+  error: string | null;
+}
+```
+
+**`useCloseChannel(wallet: WalletAdapter | null)`**
+```typescript
+interface UseCloseChannelResult {
+  closeChannel: (channelId: string, spentAmount: number) => Promise<string | null>;
+  loading: boolean;
+  error: string | null;
+}
+```
+
+### 3.10.3 Components
+- **`PaymentChannelsView`** — 展示所有通道，支持创建新通道。
+- **`ChannelCard`** — 单条通道卡片，显示余额、状态和操作按钮（关闭/争议）。
+
+### 3.10.4 Route
+| 路由 | 页面组件 | 功能 |
+|------|---------|------|
+| `/payment-channels` | `payment-channels/page.tsx` | PaymentChannelsView |
+
+### 3.10.5 样式规范
+沿用 3.4.1 Inline styles，状态标签颜色：`open=#CDFF4D`，`closing=#C6BBFF`，`disputed=#FF6B6B`。
