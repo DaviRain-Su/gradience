@@ -48,12 +48,21 @@ describe("JudgeRegistry", function () {
         ).to.be.revertedWithCustomError(registry, "InsufficientPool");
     });
 
-    it("only owner can slash", async function () {
+    it("owner or arena can slash", async function () {
         const { registry, judgeA, attacker } = await deployFixture();
         await expect(registry.connect(attacker).slash(judgeA.address, 100n, "test"))
             .to.be.revertedWithCustomError(registry, "OwnableUnauthorizedAccount");
 
         await expect(registry.slash(judgeA.address, 100n, "test"))
+            .to.emit(registry, "JudgeSlashed")
+            .withArgs(judgeA.address, 100n, "test");
+    });
+
+    it("arena can slash after setArena", async function () {
+        const { registry, judgeA, attacker } = await deployFixture();
+        await registry.setArena(attacker.address);
+
+        await expect(registry.connect(attacker).slash(judgeA.address, 100n, "test"))
             .to.emit(registry, "JudgeSlashed")
             .withArgs(judgeA.address, 100n, "test");
     });

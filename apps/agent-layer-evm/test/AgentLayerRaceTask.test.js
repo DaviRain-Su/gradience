@@ -698,6 +698,90 @@ describe("AgentLayerRaceTask", function () {
         });
     });
 
+    describe("JudgeRegistry Integration (GRA-179)", function () {
+        async function deployWithRegistry() {
+            const base = await deployFixture();
+            const registryFactory = await ethers.getContractFactory("JudgeRegistry", base.deployer);
+            const registry = await registryFactory.deploy(base.deployer.address);
+            await registry.waitForDeployment();
+            await registry.connect(base.deployer).setArena(await base.contract.getAddress());
+            await base.contract.connect(base.deployer).setJudgeRegistry(await registry.getAddress());
+            return { ...base, registry };
+        }
+
+        it("auto-assigns judge from registry when judge is zero address", async function () {
+            const { contract, poster, judge, registry } = await deployWithRegistry();
+            await registry.connect(judge).register(2);
+
+            const reward = ethers.parseEther("0.5");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await expect(
+                contract.connect(poster).post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
+                    value: reward,
+                }),
+            )
+                .to.emit(contract, "TaskCreated")
+                .withArgs(1n, poster.address, judge.address, 2n, 0n, reward, deadline, judgeDeadline, "cid://eval");
+
+            const task = await contract.tasks(1n);
+            expect(task[1]).to.equal(judge.address);
+        });
+
+        it("reverts auto-assignment for high-value tasks without designated judge", async function () {
+            const { contract, poster, registry } = await deployWithRegistry();
+
+            const reward = ethers.parseEther("2"); // > 1 ether
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await expect(
+                contract.connect(poster).post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
+                    value: reward,
+                }),
+            ).to.be.revertedWithCustomError(contract, "HighValueTaskRequiresDesignatedJudge");
+        });
+
+        it("reassign_judge slashes inactive judge and picks new one", async function () {
+            const { contract, poster, judge, agentA, registry } = await deployWithRegistry();
+            await registry.connect(judge).register(2);
+            await registry.connect(agentA).register(2);
+
+            const reward = ethers.parseEther("0.5");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 2n * 86400n; // 2 days after deadline
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, minStake, {
+                    value: reward,
+                });
+
+            const taskBefore = await contract.tasks(1n);
+            const oldJudge = taskBefore[1];
+            expect(oldJudge).to.not.equal(ethers.ZeroAddress);
+
+            await expect(contract.reassign_judge(1n)).to.be.revertedWithCustomError(
+                contract,
+                "ReassignWindowNotOpen",
+            );
+
+            await warpTo(judgeDeadline - 60n * 60n * 23n); // 23h before judgeDeadline, inside reassign window
+            await expect(contract.reassign_judge(1n))
+                .to.emit(contract, "JudgeSlashed")
+                .withArgs(0n, oldJudge, minStake / 10n, "SLASHED")
+                .to.emit(contract, "JudgeSlashed"); // second event not matched fully
+
+            const taskAfter = await contract.tasks(1n);
+            expect(taskAfter[1]).to.not.equal(oldJudge);
+        });
+    });
+
     async function currentTime() {
         const latestBlock = await ethers.provider.getBlock("latest");
         return BigInt(latestBlock.timestamp);

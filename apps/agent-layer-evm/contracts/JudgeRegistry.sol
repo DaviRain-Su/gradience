@@ -20,9 +20,12 @@ contract JudgeRegistry is Ownable {
     event JudgeRegistered(address indexed judge, uint8 indexed category);
     event JudgeUnregistered(address indexed judge, uint8 indexed category);
     event JudgeSlashed(address indexed judge, uint256 amount, string reason);
+    event ArenaSet(address indexed arena);
 
     /// @notice Maps judge => category => registered
     mapping(address => mapping(uint8 => bool)) public registrations;
+
+    address public arena;
 
     /// @notice Per-category list of registered judges
     mapping(uint8 => address[]) private _judgesByCategory;
@@ -56,7 +59,13 @@ contract JudgeRegistry is Ownable {
         emit JudgeUnregistered(msg.sender, category);
     }
 
-    function slash(address judge, uint256 amount, string calldata reason) external onlyOwner {
+    function setArena(address arena_) external onlyOwner {
+        arena = arena_;
+        emit ArenaSet(arena_);
+    }
+
+    function slash(address judge, uint256 amount, string calldata reason) external {
+        if (msg.sender != owner() && msg.sender != arena) revert OwnableUnauthorizedAccount(msg.sender);
         if (amount == 0) revert ZeroAmount();
         totalSlashed[judge] += amount;
         emit JudgeSlashed(judge, amount, reason);
@@ -95,6 +104,14 @@ contract JudgeRegistry is Ownable {
             workingPool[index] = workingPool[available - 1];
             available--;
         }
+    }
+
+    function selectJudge(uint8 category, uint256 randomness) external view returns (address judge) {
+        if (category > 7) revert InvalidCategory(category);
+        address[] storage pool = _judgesByCategory[category];
+        if (pool.length == 0) revert InsufficientPool(1, 0);
+        uint256 index = uint256(keccak256(abi.encodePacked(randomness, block.number))) % pool.length;
+        return pool[index];
     }
 
     function getJudgesByCategory(uint8 category) external view returns (address[] memory) {

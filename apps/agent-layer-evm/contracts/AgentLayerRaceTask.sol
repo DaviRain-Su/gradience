@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IJudgeRegistry} from "./interfaces/IJudgeRegistry.sol";
 
 contract AgentLayerRaceTask is ReentrancyGuard {
     uint256 public constant MIN_SCORE = 60;
@@ -13,9 +14,11 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     uint256 public constant MAX_REF_LEN = 128;
 
     uint256 public constant DISPUTE_WINDOW = 7 days;
+    uint256 public constant REASSIGN_WINDOW = 1 days;
     uint256 public constant CHALLENGER_BOND_BPS = 1_000; // 10%
     uint256 public constant JUDGE_SLASH_BPS = 2_500; // 25%
     uint256 public constant CHALLENGER_BOUNTY_BPS = 500; // 5% of slashed amount
+    uint256 public constant PREVRANDAO_MAX_REWARD = 1 ether;
 
     enum TaskState {
         Open,
@@ -135,6 +138,9 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error QuorumNotReached(uint256 taskId);
     error AlreadyJudged(uint256 taskId, address judge);
     error DuplicateVote(uint256 taskId, address judge);
+    error ReassignWindowNotOpen(uint256 taskId);
+    error TaskHasJudged(uint256 taskId);
+    error HighValueTaskRequiresDesignatedJudge(uint256 taskId);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -186,6 +192,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     mapping(uint256 => Dispute) public disputes;
     mapping(uint256 => address[]) public taskJudgePool;
     mapping(uint256 => mapping(address => Judgement)) public judgements;
+    mapping(uint256 => bool) public hasJudged;
 
     modifier onlyResolver() {
         if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
@@ -223,7 +230,12 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (deadline <= block.timestamp) revert InvalidDeadline(deadline);
         if (judge_deadline <= deadline) revert InvalidJudgeDeadline(judge_deadline);
 
-        address taskJudge = judge == address(0) ? msg.sender : judge;
+        address taskJudge = judge;
+        if (taskJudge == address(0)) {
+            if (msg.value > PREVRANDAO_MAX_REWARD) revert HighValueTaskRequiresDesignatedJudge(0);
+            if (judgeRegistry == address(0)) revert NoJudgeRegistry();
+            taskJudge = IJudgeRegistry(judgeRegistry).selectJudge(category, block.prevrandao);
+        }
         task_id = ++taskCount;
         tasks[task_id] = Task({
             poster: msg.sender,
@@ -323,7 +335,12 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
         _transferTokenFrom(token, msg.sender, address(this), reward_amount);
 
-        address taskJudge = judge == address(0) ? msg.sender : judge;
+        address taskJudge = judge;
+        if (taskJudge == address(0)) {
+            if (reward_amount > PREVRANDAO_MAX_REWARD) revert HighValueTaskRequiresDesignatedJudge(0);
+            if (judgeRegistry == address(0)) revert NoJudgeRegistry();
+            taskJudge = IJudgeRegistry(judgeRegistry).selectJudge(category, block.prevrandao);
+        }
         task_id = ++taskCount;
         tasks[task_id] = Task({
             poster: msg.sender,
@@ -489,6 +506,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             _payout(task, task.poster, task.reward);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
         }
+        hasJudged[task_id] = true;
     }
 
     function submit_judgement(uint256 task_id, address winner, uint8 score) external {
@@ -687,6 +705,26 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         emit TaskRefunded(task_id, task.poster, posterRefund, 0);
     }
 
+    function reassign_judge(uint256 task_id) external nonReentrant {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.judgeMode != uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
+        if (hasJudged[task_id]) revert TaskHasJudged(task_id);
+        if (block.timestamp <= task.judgeDeadline - REASSIGN_WINDOW) revert ReassignWindowNotOpen(task_id);
+        if (judgeRegistry == address(0)) revert NoJudgeRegistry();
+
+        address oldJudge = task.judge;
+        address newJudge = oldJudge;
+        uint256 seed = block.prevrandao;
+        for (uint8 i = 0; i < 10; i++) {
+            newJudge = IJudgeRegistry(judgeRegistry).selectJudge(task.category, seed);
+            if (newJudge != oldJudge) break;
+            seed = uint256(keccak256(abi.encodePacked(seed, i, task_id)));
+        }
+        task.judge = newJudge;
+        _attemptSlash(oldJudge, task.minStake / 10);
+    }
+
     function cancel_task(uint256 task_id) external nonReentrant {
         Task storage task = _loadOpenTask(task_id);
         if (msg.sender != task.poster) revert NotTaskPoster(task_id, msg.sender, task.poster);
@@ -850,10 +888,9 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             emit JudgeSlashed(0, judge, 0, "NO_REGISTRY");
             return;
         }
-        (bool success,) = judgeRegistry.call(abi.encodeWithSelector(bytes4(keccak256("slash(address,uint256)")), judge, amount));
-        if (success) {
+        try IJudgeRegistry(judgeRegistry).slash(judge, amount, "REASSIGN_OR_ABSENTEE") {
             emit JudgeSlashed(0, judge, amount, "SLASHED");
-        } else {
+        } catch {
             emit JudgeSlashed(0, judge, amount, "SLASH_FAILED");
         }
     }
