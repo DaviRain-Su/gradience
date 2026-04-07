@@ -8,6 +8,7 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IJudgeRegistry} from "./interfaces/IJudgeRegistry.sol";
+import {IGradienceReputationFeed} from "./interfaces/IGradienceReputationFeed.sol";
 
 contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -191,6 +192,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     address public treasury;
     address public disputeResolver;
     address public judgeRegistry;
+    address public reputationFeed;
     address public llmJudgeOracle;
     uint256 public taskCount;
 
@@ -235,6 +237,10 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
     function setJudgeRegistry(address registry) external onlyOwner {
         judgeRegistry = registry;
+    }
+
+    function setReputationFeed(address feed) external onlyOwner {
+        reputationFeed = feed;
     }
 
     function setLlmJudgeOracle(address oracle) external onlyOwner {
@@ -468,6 +474,22 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         );
     }
 
+    function getRequiredStake(uint256 task_id, address agent) public view returns (uint256) {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+
+        uint256 baseStake = task.minStake;
+        if (reputationFeed == address(0)) {
+            return baseStake;
+        }
+        IGradienceReputationFeed.AggregatedReputation memory rep = IGradienceReputationFeed(reputationFeed)
+            .getReputation(agent);
+        if (rep.exists) {
+            return baseStake;
+        }
+        return baseStake * 2;
+    }
+
     function applyForTask(uint256 task_id) external payable nonReentrant {
         Task storage task = _loadOpenTask(task_id);
         if (block.timestamp >= task.deadline) revert DeadlinePassed(task_id);
@@ -475,12 +497,13 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
-        uint256 actualStake = task.minStake;
+        uint256 requiredStake = getRequiredStake(task_id, msg.sender);
+        uint256 actualStake = requiredStake;
         if (task.paymentToken == address(0)) {
-            if (msg.value != task.minStake) revert InvalidStakeAmount(task.minStake, msg.value);
+            if (msg.value != requiredStake) revert InvalidStakeAmount(requiredStake, msg.value);
         } else {
             if (msg.value != 0) revert UnexpectedEther(msg.value);
-            actualStake = _safeTransferFromWithAmount(task.paymentToken, msg.sender, task.minStake);
+            actualStake = _safeTransferFromWithAmount(task.paymentToken, msg.sender, requiredStake);
         }
 
         app.exists = true;

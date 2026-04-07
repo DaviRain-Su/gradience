@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
@@ -10,7 +12,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  *      Each update records lastUpdatedAt and the signing oracle for auditability.
  *      Updates are authorized via ECDSA signature from the configured oracle.
  */
-contract GradienceReputationFeed is Ownable {
+contract GradienceReputationFeed is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using ECDSA for bytes32;
 
     struct AggregatedReputation {
@@ -41,7 +43,8 @@ contract GradienceReputationFeed is Ownable {
     error InvalidSignature();
     error StaleTimestamp(uint64 provided, uint64 required);
 
-    constructor(address owner_, address oracle_) Ownable(owner_) {
+    function initialize(address owner_, address oracle_) external initializer {
+        __Ownable_init(owner_);
         if (oracle_ == address(0)) revert ZeroAddress();
         oracle = oracle_;
     }
@@ -108,4 +111,6 @@ contract GradienceReputationFeed is Ownable {
     function getReputationBySolana(bytes32 solanaPubkey) external view returns (AggregatedReputation memory) {
         return feedBySolanaPubkey[solanaPubkey];
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

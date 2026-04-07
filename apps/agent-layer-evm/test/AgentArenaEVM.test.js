@@ -873,6 +873,80 @@ describe("AgentArenaEVM", function () {
         });
     });
 
+    describe("Reputation Integration (GRA-243 / GRA-248)", function () {
+        async function deployWithReputationFixture() {
+            const base = await deployFixture();
+            const oracleWallet = ethers.Wallet.createRandom();
+            const feedFactory = await ethers.getContractFactory("GradienceReputationFeed", base.deployer);
+            const feedImpl = await feedFactory.deploy();
+            await feedImpl.waitForDeployment();
+            const proxyFactory = await ethers.getContractFactory("ERC1967Proxy", base.deployer);
+            const initData = feedFactory.interface.encodeFunctionData("initialize", [base.deployer.address, oracleWallet.address]);
+            const proxy = await proxyFactory.deploy(await feedImpl.getAddress(), initData);
+            await proxy.waitForDeployment();
+            const feed = feedFactory.attach(await proxy.getAddress());
+            await base.contract.setReputationFeed(await feed.getAddress());
+            return { ...base, feed, oracleWallet };
+        }
+
+        function signReputationUpdate(oracleWallet, evmAddress, solanaPubkey, globalScore, categoryScores, merkleRoot, timestamp, chainId) {
+            const abiCoder = new ethers.AbiCoder();
+            const encoded = abiCoder.encode(
+                ["address", "bytes32", "uint16", "uint16[8]", "bytes32", "uint64", "uint256"],
+                [evmAddress, solanaPubkey, globalScore, categoryScores, merkleRoot, timestamp, chainId],
+            );
+            const digest = ethers.keccak256(encoded);
+            const sig = oracleWallet.signingKey.sign(digest);
+            return ethers.Signature.from(sig).serialized;
+        }
+
+        it("applies with base stake when reputationFeed is not set", async function () {
+            const { contract, poster, agentA } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            await contract.connect(poster).postTask("cid://eval", now + 3600n, now + 7200n, poster.address, 2, minStake, { value: reward });
+            await expect(contract.connect(agentA).applyForTask(1n, { value: minStake })).to.not.be.reverted;
+        });
+
+        it("requires 2x stake when reputationFeed is set but agent has no record", async function () {
+            const { contract, poster, agentA } = await deployWithReputationFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            await contract.connect(poster).postTask("cid://eval", now + 3600n, now + 7200n, poster.address, 2, minStake, { value: reward });
+            await expect(contract.connect(agentA).applyForTask(1n, { value: minStake }))
+                .to.be.revertedWithCustomError(contract, "InvalidStakeAmount");
+            await expect(contract.connect(agentA).applyForTask(1n, { value: minStake * 2n })).to.not.be.reverted;
+        });
+
+        it("applies with base stake when reputationFeed has agent record", async function () {
+            const { contract, poster, agentA, feed, oracleWallet } = await deployWithReputationFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            await contract.connect(poster).postTask("cid://eval", now + 3600n, now + 7200n, poster.address, 2, minStake, { value: reward });
+            const cats = [10, 20, 30, 40, 50, 60, 70, 80];
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const sig = signReputationUpdate(oracleWallet, agentA.address, ethers.ZeroHash, 75, cats, ethers.ZeroHash, now, chainId);
+            await feed.updateReputation(agentA.address, ethers.ZeroHash, 75, cats, ethers.ZeroHash, now, chainId, sig);
+            await expect(contract.connect(agentA).applyForTask(1n, { value: minStake })).to.not.be.reverted;
+        });
+
+        it("getRequiredStake reflects reputation state", async function () {
+            const { contract, poster, agentA, feed, oracleWallet } = await deployWithReputationFixture();
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            await contract.connect(poster).postTask("cid://eval", now + 3600n, now + 7200n, poster.address, 2, minStake, { value: ethers.parseEther("1") });
+            expect(await contract.getRequiredStake(1n, agentA.address)).to.equal(minStake * 2n);
+            const cats = [10, 20, 30, 40, 50, 60, 70, 80];
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const sig = signReputationUpdate(oracleWallet, agentA.address, ethers.ZeroHash, 75, cats, ethers.ZeroHash, now, chainId);
+            await feed.updateReputation(agentA.address, ethers.ZeroHash, 75, cats, ethers.ZeroHash, now, chainId, sig);
+            expect(await contract.getRequiredStake(1n, agentA.address)).to.equal(minStake);
+        });
+    });
+
     async function currentTime() {
         const latestBlock = await ethers.provider.getBlock("latest");
         return BigInt(latestBlock.timestamp);

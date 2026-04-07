@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {GradienceReputationFeed} from "../src/GradienceReputationFeed.sol";
 
 contract GradienceReputationFeedTest is Test {
@@ -14,7 +15,10 @@ contract GradienceReputationFeedTest is Test {
 
     function setUp() public {
         (oracleAddr, oracleKey) = makeAddrAndKey("oracle");
-        feed = new GradienceReputationFeed(owner, oracleAddr);
+        GradienceReputationFeed impl = new GradienceReputationFeed();
+        bytes memory initData = abi.encodeWithSelector(GradienceReputationFeed.initialize.selector, owner, oracleAddr);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
+        feed = GradienceReputationFeed(address(proxy));
     }
 
     function _signUpdate(
