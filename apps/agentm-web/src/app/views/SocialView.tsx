@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useMatches, useDiscover, type MatchProfile } from '../../hooks/useMatches';
 import { useMyProfile } from '../../hooks/useProfile';
@@ -8,7 +8,7 @@ import { useFollowing } from '../../hooks/useFollowing';
 import { FollowingList } from '../../components/social/FollowingList';
 import { FollowersList } from '../../components/social/FollowersList';
 import { FollowButton } from '../../components/social/FollowButton';
-import { calculateCompatibility, DEMO_PROFILES, buildMatchProfile } from '../../lib/mocks/soul-engine';
+
 
 type SocialTab = 'discover' | 'matches' | 'probes' | 'following';
 
@@ -37,38 +37,7 @@ export function SocialView({ address }: { address: string | null }) {
     const { matches: serverMatches, loading: matchesLoading } = useMatches();
     const { profiles: serverProfiles, loading: discoverLoading } = useDiscover();
 
-    // Deterministic demo matches when no server data
-    const demoMatches: MatchProfile[] = useMemo(() => {
-        if (!myProfile?.soulProfile) return [];
-        const me = {
-            address: myProfile.address,
-            soulType: myProfile.soulProfile?.soulType || 'human',
-            displayName: myProfile.displayName,
-            bio: myProfile.bio,
-            privacyLevel: 'public',
-            values: {
-                core: myProfile.soulProfile?.values?.core || [],
-                priorities: myProfile.soulProfile?.values?.priorities || [],
-                dealBreakers: myProfile.soulProfile?.values?.dealBreakers || [],
-            },
-            interests: {
-                topics: myProfile.soulProfile?.values?.priorities || [],
-                skills: myProfile.soulProfile?.values?.priorities || [],
-                goals: myProfile.soulProfile?.values?.priorities || [],
-            },
-            communication: {
-                tone: 'friendly',
-                pace: 'moderate',
-                depth: 'moderate',
-            },
-        };
-        return DEMO_PROFILES.map((p) => {
-            const result = calculateCompatibility(me, p);
-            return buildMatchProfile(p, result);
-        }).sort((a, b) => b.score - a.score);
-    }, [myProfile]);
-
-    const effectiveMatches = serverMatches.length > 0 ? serverMatches : demoMatches;
+    const effectiveMatches = serverMatches;
 
     const isLoading = profileLoading || matchesLoading || discoverLoading;
     const hasProfile = !!myProfile;

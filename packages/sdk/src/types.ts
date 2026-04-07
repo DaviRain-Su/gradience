@@ -73,6 +73,8 @@ export interface PostTaskOptions {
     category: number;
     /** Absolute Unix timestamp (seconds) or omit to use default offset */
     deadline?: number | bigint;
+    /** Seconds from now until task deadline (default: 3600). Maps to on-chain deadline. */
+    deadlineOffsetSeconds?: number | bigint;
     /** Seconds after deadline for judge decision (default: 3600) */
     judgeDeadlineOffsetSeconds?: number | bigint;
     /** Judge mode: 0 = designated, 1 = pool (default: 1) */

@@ -28,6 +28,8 @@ import type {
     WalletAdapter,
     PostTaskSimpleResult,
     SubmitTaskResultRequest,
+    JudgeTaskRequest,
+    CancelTaskRequest,
     TaskApi,
     SubmissionApi,
     ReputationOnChain,
@@ -111,7 +113,7 @@ export class Gradience {
             evalRef: options.description,
             reward: options.reward,
             category: options.category,
-            deadline: options.deadline,
+            deadline: options.deadline ?? options.deadlineOffsetSeconds,
             judgeDeadlineOffsetSeconds: options.judgeDeadlineOffsetSeconds,
             judgeMode: options.judgeMode,
             judge: options.judge as Address | undefined,
@@ -143,6 +145,30 @@ export class Gradience {
         const signer = wallet ?? this.defaultWallet;
         if (!signer) throw new Error('A wallet is required for submitResult.');
         return this.arena.task.submit(signer, options);
+    }
+
+    /**
+     * Judge a task and settle rewards to the winner.
+     */
+    async judgeTask(
+        options: JudgeTaskRequest,
+        wallet?: WalletAdapter,
+    ): Promise<string> {
+        const signer = wallet ?? this.defaultWallet;
+        if (!signer) throw new Error('A wallet is required for judgeTask.');
+        return this.arena.task.judge(signer, options);
+    }
+
+    /**
+     * Cancel a task and refund the poster.
+     */
+    async cancelTask(
+        options: CancelTaskRequest,
+        wallet?: WalletAdapter,
+    ): Promise<string> {
+        const signer = wallet ?? this.defaultWallet;
+        if (!signer) throw new Error('A wallet is required for cancelTask.');
+        return this.arena.task.cancel(signer, options);
     }
 
     // ── Off-chain queries (no wallet needed) ─────────────────────────────────
