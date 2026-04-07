@@ -1,15 +1,23 @@
 /**
- * Solana Workflow Marketplace SDK
- * 
+ * Solana Workflow Marketplace SDK (@solana/kit)
+ *
  * Full-featured SDK for interacting with the deployed Solana program
  */
 import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  sendAndConfirmTransaction,
-} from '@solana/web3.js';
+  address,
+  createSolanaRpc,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  signTransactionMessageWithSigners,
+  getBase64EncodedWireTransaction,
+  getBase58Decoder,
+  type Address,
+  type Instruction,
+  type TransactionSigner,
+  type Blockhash,
+} from '@solana/kit';
 import type { GradienceWorkflow } from '../schema/types.js';
 import { validate } from '../schema/validate.js';
 import {
@@ -32,28 +40,57 @@ import {
   type CreateWorkflowParams,
 } from './solana-instructions.js';
 
+type RpcClient = ReturnType<typeof createSolanaRpc>;
+
+async function sendInstruction(
+  instruction: Instruction,
+  signer: TransactionSigner,
+  rpc: RpcClient
+): Promise<string> {
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+  const transactionMessage = appendTransactionMessageInstructions(
+    [instruction],
+    setTransactionMessageLifetimeUsingBlockhash(
+      latestBlockhash,
+      setTransactionMessageFeePayerSigner(signer, createTransactionMessage({ version: 0 }))
+    )
+  );
+  const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+  const wireTransaction = getBase64EncodedWireTransaction(signedTransaction);
+  return rpc.sendTransaction(wireTransaction, { encoding: 'base64' }).send();
+}
+
+async function fetchAccountData(rpc: RpcClient, addr: Address): Promise<Uint8Array | null> {
+  const result = await rpc.getAccountInfo(addr, { encoding: 'base64' }).send();
+  const encoded = result.value?.data;
+  if (!encoded || typeof encoded !== 'string') return null;
+  // In @solana/kit v6 base64 encoding returns [string, 'base64'] tuple; handle both shapes
+  const base64Str = Array.isArray(encoded) ? encoded[0] : encoded;
+  return Uint8Array.from(Buffer.from(base64Str, 'base64'));
+}
+
 /**
  * Solana SDK Configuration
  */
 export interface SolanaSDKConfig {
-  /** RPC connection */
-  connection: Connection;
-  /** Payer/authority keypair */
-  payer: Keypair;
+  /** RPC endpoint */
+  rpcEndpoint: string;
+  /** Payer/authority signer */
+  payer: TransactionSigner;
   /** Program ID (optional, defaults to deployed) */
-  programId?: PublicKey;
+  programId?: Address;
 }
 
 /**
  * Workflow on-chain metadata
  */
 export interface OnChainWorkflowMetadata {
-  workflowId: PublicKey;
-  author: PublicKey;
+  workflowId: Address;
+  author: Address;
   contentHash: string;
   version: string;
   pricingModel: number;
-  priceMint: PublicKey;
+  priceMint: Address;
   priceAmount: bigint;
   creatorShare: number;
   totalPurchases: number;
@@ -69,12 +106,12 @@ export interface OnChainWorkflowMetadata {
  * Solana Workflow Marketplace SDK
  */
 export class SolanaWorkflowSDK {
-  private connection: Connection;
-  private payer: Keypair;
-  private programId: PublicKey;
+  private rpc: RpcClient;
+  private payer: TransactionSigner;
+  private programId: Address;
 
   constructor(config: SolanaSDKConfig) {
-    this.connection = config.connection;
+    this.rpc = createSolanaRpc(config.rpcEndpoint);
     this.payer = config.payer;
     this.programId = config.programId || PROGRAM_ID;
   }
@@ -83,23 +120,15 @@ export class SolanaWorkflowSDK {
    * Initialize the program (one-time setup)
    */
   async initialize(
-    treasury: PublicKey,
-    upgradeAuthority: PublicKey
+    treasury: Address,
+    upgradeAuthority: Address
   ): Promise<string> {
-    const instruction = createInitializeInstruction(
-      this.payer.publicKey,
+    const instruction = await createInitializeInstruction(
+      this.payer.address,
       treasury,
       upgradeAuthority
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
@@ -107,17 +136,16 @@ export class SolanaWorkflowSDK {
    */
   async createWorkflow(
     workflow: GradienceWorkflow,
-    workflowId: PublicKey
+    workflowId: Address
   ): Promise<string> {
-    // Validate workflow schema
     const validation = validate(workflow);
     if (!validation.success) {
       throw new Error(`Invalid workflow: ${validation.error}`);
     }
 
-    // Convert workflow to on-chain format
-    const contentHash = Buffer.alloc(64);
-    Buffer.from(workflow.contentHash.slice(7), 'hex').copy(contentHash); // Remove 'ipfs://' prefix
+    const contentHash = new Uint8Array(64);
+    const hashBytes = Buffer.from(workflow.contentHash.slice(7), 'hex');
+    contentHash.set(hashBytes, 0);
 
     const pricingModelMap: Record<string, number> = {
       free: 0,
@@ -133,8 +161,8 @@ export class SolanaWorkflowSDK {
       version: workflow.version,
       pricingModel: pricingModelMap[workflow.pricing.model] || 0,
       priceMint: workflow.pricing.oneTimePrice?.mint
-        ? new PublicKey(workflow.pricing.oneTimePrice.mint)
-        : PublicKey.default,
+        ? address(workflow.pricing.oneTimePrice.mint)
+        : address('11111111111111111111111111111111'),
       priceAmount: workflow.pricing.oneTimePrice?.amount
         ? BigInt(workflow.pricing.oneTimePrice.amount)
         : 0n,
@@ -142,217 +170,143 @@ export class SolanaWorkflowSDK {
       isPublic: workflow.isPublic,
     };
 
-    const instruction = createCreateWorkflowInstruction(
-      this.payer.publicKey,
+    const instruction = await createCreateWorkflowInstruction(
+      this.payer.address,
       params
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Purchase a workflow
    */
   async purchaseWorkflow(
-    workflowId: PublicKey,
+    workflowId: Address,
     accessType: number = 0
   ): Promise<string> {
-    const instruction = createPurchaseWorkflowInstruction(
-      this.payer.publicKey,
+    const instruction = await createPurchaseWorkflowInstruction(
+      this.payer.address,
       workflowId,
       accessType
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Purchase a workflow with payment (V2)
-   * Includes SOL payment and revenue distribution
    */
   async purchaseWorkflowWithPayment(
-    workflowId: PublicKey,
-    author: PublicKey,
+    workflowId: Address,
+    author: Address,
     accessType: number = 0
   ): Promise<string> {
-    const instruction = createPurchaseWorkflowV2Instruction(
-      this.payer.publicKey,
+    const instruction = await createPurchaseWorkflowV2Instruction(
+      this.payer.address,
       workflowId,
       author,
       accessType
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Record workflow execution
-   * Should be called after successful off-chain execution
    */
-  async recordExecution(workflowId: PublicKey): Promise<string> {
-    const instruction = createRecordExecutionInstruction(
-      this.payer.publicKey,
+  async recordExecution(workflowId: Address): Promise<string> {
+    const instruction = await createRecordExecutionInstruction(
+      this.payer.address,
       workflowId
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Review a workflow
    */
   async reviewWorkflow(
-    workflowId: PublicKey,
+    workflowId: Address,
     rating: number,
     comment: string
   ): Promise<string> {
-    // Validate rating
     if (rating < 1 || rating > 5) {
       throw new Error('Rating must be between 1 and 5');
     }
 
-    // Hash comment (simplified - in production use proper IPFS hash)
-    const commentHash = Buffer.alloc(32);
-    Buffer.from(comment.substring(0, 32)).copy(commentHash);
+    const commentHash = new Uint8Array(32);
+    const commentBytes = Buffer.from(comment.substring(0, 32));
+    commentHash.set(commentBytes, 0);
 
-    const instruction = createReviewWorkflowInstruction(
-      this.payer.publicKey,
+    const instruction = await createReviewWorkflowInstruction(
+      this.payer.address,
       workflowId,
       rating,
       commentHash
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Update workflow metadata
    */
   async updateWorkflow(
-    workflowId: PublicKey,
+    workflowId: Address,
     newContentHash: string
   ): Promise<string> {
-    const contentHash = Buffer.alloc(64);
-    Buffer.from(newContentHash.slice(7), 'hex').copy(contentHash);
+    const contentHash = new Uint8Array(64);
+    const hashBytes = Buffer.from(newContentHash.slice(7), 'hex');
+    contentHash.set(hashBytes, 0);
 
-    const instruction = createUpdateWorkflowInstruction(
-      this.payer.publicKey,
+    const instruction = await createUpdateWorkflowInstruction(
+      this.payer.address,
       workflowId,
       contentHash
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
-   * Deactivate workflow (make unavailable for purchase)
+   * Deactivate workflow
    */
-  async deactivateWorkflow(workflowId: PublicKey): Promise<string> {
-    const instruction = createDeactivateWorkflowInstruction(
-      this.payer.publicKey,
+  async deactivateWorkflow(workflowId: Address): Promise<string> {
+    const instruction = await createDeactivateWorkflowInstruction(
+      this.payer.address,
       workflowId
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
-   * Activate workflow (make available for purchase)
+   * Activate workflow
    */
-  async activateWorkflow(workflowId: PublicKey): Promise<string> {
-    const instruction = createActivateWorkflowInstruction(
-      this.payer.publicKey,
+  async activateWorkflow(workflowId: Address): Promise<string> {
+    const instruction = await createActivateWorkflowInstruction(
+      this.payer.address,
       workflowId
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Delete workflow (only if no purchases)
    */
-  async deleteWorkflow(workflowId: PublicKey): Promise<string> {
-    const instruction = createDeleteWorkflowInstruction(
-      this.payer.publicKey,
+  async deleteWorkflow(workflowId: Address): Promise<string> {
+    const instruction = await createDeleteWorkflowInstruction(
+      this.payer.address,
       workflowId
     );
-
-    const transaction = new Transaction().add(instruction);
-    const signature = await sendAndConfirmTransaction(
-      this.connection,
-      transaction,
-      [this.payer]
-    );
-
-    return signature;
+    return sendInstruction(instruction, this.payer, this.rpc);
   }
 
   /**
    * Check if user has access to workflow
    */
-  async hasAccess(workflowId: PublicKey, user?: PublicKey): Promise<boolean> {
-    const userPubkey = user || this.payer.publicKey;
-    const [accessPDA] = getAccessPDA(workflowId, userPubkey);
+  async hasAccess(workflowId: Address, user?: Address): Promise<boolean> {
+    const userAddr = user || this.payer.address;
+    const [accessPDA] = await getAccessPDA(workflowId, userAddr);
 
     try {
-      const accountInfo = await this.connection.getAccountInfo(accessPDA);
-      return accountInfo !== null && accountInfo.data.length > 0;
+      const data = await fetchAccountData(this.rpc, accessPDA);
+      return data !== null && data.length > 0;
     } catch {
       return false;
     }
@@ -362,36 +316,40 @@ export class SolanaWorkflowSDK {
    * Get workflow metadata from chain
    */
   async getWorkflow(
-    workflowId: PublicKey
+    workflowId: Address
   ): Promise<OnChainWorkflowMetadata | null> {
-    const [workflowPDA] = getWorkflowPDA(workflowId);
+    const [workflowPDA] = await getWorkflowPDA(workflowId);
 
     try {
-      const accountInfo = await this.connection.getAccountInfo(workflowPDA);
-      if (!accountInfo || accountInfo.data.length === 0) {
+      const data = await fetchAccountData(this.rpc, workflowPDA);
+      if (!data || data.length === 0) {
         return null;
       }
 
-      // Parse account data (Borsh deserialization)
-      // This is simplified - in production use proper Borsh deserializer
-      const data = accountInfo.data;
+      const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      const base58Decoder = getBase58Decoder();
+      const toBase58 = (bytes: Uint8Array) => base58Decoder.decode(bytes);
+      const hexSlice = (start: number, end: number) =>
+        Buffer.from(data.slice(start, end)).toString('hex');
+      const utf8Slice = (start: number, end: number) =>
+        Buffer.from(data.slice(start, end)).toString('utf-8').replace(/\0/g, '');
 
       return {
         workflowId,
-        author: new PublicKey(data.slice(2, 34)),
-        contentHash: data.slice(34, 98).toString('hex'),
-        version: data.slice(98, 114).toString('utf-8').replace(/\0/g, ''),
+        author: address(toBase58(data.slice(2, 34))),
+        contentHash: hexSlice(34, 98),
+        version: utf8Slice(98, 114),
         pricingModel: data[114],
-        priceMint: new PublicKey(data.slice(115, 147)),
-        priceAmount: data.readBigUInt64LE(147),
-        creatorShare: data.readUInt16LE(155),
-        totalPurchases: data.readUInt32LE(157),
-        totalExecutions: data.readUInt32LE(161),
-        avgRating: data.readUInt16LE(165),
+        priceMint: address(toBase58(data.slice(115, 147))),
+        priceAmount: dv.getBigUint64(147, true),
+        creatorShare: dv.getUint16(155, true),
+        totalPurchases: dv.getUint32(157, true),
+        totalExecutions: dv.getUint32(161, true),
+        avgRating: dv.getUint16(165, true),
         isPublic: data[167] === 1,
         isActive: data[168] === 1,
-        createdAt: new Date(Number(data.readBigInt64LE(169)) * 1000),
-        updatedAt: new Date(Number(data.readBigInt64LE(177)) * 1000),
+        createdAt: new Date(Number(dv.getBigInt64(169, true)) * 1000),
+        updatedAt: new Date(Number(dv.getBigInt64(177, true)) * 1000),
       };
     } catch (error) {
       console.error('Failed to get workflow:', error);
@@ -402,42 +360,42 @@ export class SolanaWorkflowSDK {
   /**
    * Get config PDA address
    */
-  getConfigAddress(): PublicKey {
-    const [configPDA] = getConfigPDA();
+  async getConfigAddress(): Promise<Address> {
+    const [configPDA] = await getConfigPDA();
     return configPDA;
   }
 
   /**
    * Get treasury PDA address
    */
-  getTreasuryAddress(): PublicKey {
-    const [treasuryPDA] = getTreasuryPDA();
+  async getTreasuryAddress(): Promise<Address> {
+    const [treasuryPDA] = await getTreasuryPDA();
     return treasuryPDA;
   }
 
   /**
    * Get workflow PDA address
    */
-  getWorkflowAddress(workflowId: PublicKey): PublicKey {
-    const [workflowPDA] = getWorkflowPDA(workflowId);
+  async getWorkflowAddress(workflowId: Address): Promise<Address> {
+    const [workflowPDA] = await getWorkflowPDA(workflowId);
     return workflowPDA;
   }
 
   /**
    * Get access PDA address
    */
-  getAccessAddress(workflowId: PublicKey, user?: PublicKey): PublicKey {
-    const userPubkey = user || this.payer.publicKey;
-    const [accessPDA] = getAccessPDA(workflowId, userPubkey);
+  async getAccessAddress(workflowId: Address, user?: Address): Promise<Address> {
+    const userAddr = user || this.payer.address;
+    const [accessPDA] = await getAccessPDA(workflowId, userAddr);
     return accessPDA;
   }
 
   /**
    * Get review PDA address
    */
-  getReviewAddress(workflowId: PublicKey, reviewer?: PublicKey): PublicKey {
-    const reviewerPubkey = reviewer || this.payer.publicKey;
-    const [reviewPDA] = getReviewPDA(workflowId, reviewerPubkey);
+  async getReviewAddress(workflowId: Address, reviewer?: Address): Promise<Address> {
+    const reviewerAddr = reviewer || this.payer.address;
+    const [reviewPDA] = await getReviewPDA(workflowId, reviewerAddr);
     return reviewPDA;
   }
 }

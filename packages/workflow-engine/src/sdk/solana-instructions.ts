@@ -19,37 +19,38 @@ const SYSTEM_PROGRAM_ADDRESS = address('11111111111111111111111111111111');
 const addressEncoder = getAddressEncoder();
 
 function toBytes(addr: Address): Uint8Array {
-  return addressEncoder.encode(addr);
+  return new Uint8Array(addressEncoder.encode(addr));
 }
 
 /**
  * Find PDA with seeds
  */
-export async function findPDA(seeds: (Buffer | Uint8Array)[]): Promise<{ address: Address; bump: number }> {
-  return getProgramDerivedAddress({
+export async function findPDA(seeds: (Buffer | Uint8Array)[]): Promise<[Address, number]> {
+  const result = await getProgramDerivedAddress({
     programAddress: PROGRAM_ID,
     seeds: seeds.map((s) => new Uint8Array(s)),
   });
+  return [result[0], result[1] as number];
 }
 
 /**
  * Get Config PDA
  */
-export async function getConfigPDA(): Promise<{ address: Address; bump: number }> {
+export async function getConfigPDA(): Promise<[Address, number]> {
   return findPDA([Buffer.from('config')]);
 }
 
 /**
  * Get Treasury PDA
  */
-export async function getTreasuryPDA(): Promise<{ address: Address; bump: number }> {
+export async function getTreasuryPDA(): Promise<[Address, number]> {
   return findPDA([Buffer.from('treasury')]);
 }
 
 /**
  * Get Workflow PDA
  */
-export async function getWorkflowPDA(workflowId: Address): Promise<{ address: Address; bump: number }> {
+export async function getWorkflowPDA(workflowId: Address): Promise<[Address, number]> {
   return findPDA([Buffer.from('workflow'), toBytes(workflowId)]);
 }
 
@@ -59,7 +60,7 @@ export async function getWorkflowPDA(workflowId: Address): Promise<{ address: Ad
 export async function getAccessPDA(
   workflowId: Address,
   user: Address
-): Promise<{ address: Address; bump: number }> {
+): Promise<[Address, number]> {
   return findPDA([
     Buffer.from('access'),
     toBytes(workflowId),
@@ -73,7 +74,7 @@ export async function getAccessPDA(
 export async function getReviewPDA(
   workflowId: Address,
   reviewer: Address
-): Promise<{ address: Address; bump: number }> {
+): Promise<[Address, number]> {
   return findPDA([
     Buffer.from('review'),
     toBytes(workflowId),
@@ -89,8 +90,8 @@ export async function createInitializeInstruction(
   treasury: Address,
   upgradeAuthority: Address
 ): Promise<Instruction> {
-  const { address: configPDA } = await getConfigPDA();
-  const { address: treasuryPDA } = await getTreasuryPDA();
+  const [configPDA] = await getConfigPDA();
+  const [treasuryPDA] = await getTreasuryPDA();
 
   const data = new Uint8Array([
     0, // instruction 0
@@ -128,7 +129,7 @@ export async function createCreateWorkflowInstruction(
   author: Address,
   params: CreateWorkflowParams
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(params.workflowId);
+  const [workflowPDA] = await getWorkflowPDA(params.workflowId);
 
   // Prepare version buffer (16 bytes)
   const versionBuffer = new Uint8Array(16);
@@ -176,8 +177,8 @@ export async function createPurchaseWorkflowInstruction(
   workflowId: Address,
   accessType: number = 0 // 0=purchased, 1=subscribed, 2=rented
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
-  const { address: accessPDA } = await getAccessPDA(workflowId, buyer);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
+  const [accessPDA] = await getAccessPDA(workflowId, buyer);
 
   const data = new Uint8Array([
     2, // instruction 2
@@ -206,9 +207,9 @@ export async function createReviewWorkflowInstruction(
   rating: number, // 1-5
   commentHash: Uint8Array // 32 bytes
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
-  const { address: reviewPDA } = await getReviewPDA(workflowId, reviewer);
-  const { address: accessPDA } = await getAccessPDA(workflowId, reviewer);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
+  const [reviewPDA] = await getReviewPDA(workflowId, reviewer);
+  const [accessPDA] = await getAccessPDA(workflowId, reviewer);
 
   const data = new Uint8Array([
     3, // instruction 3
@@ -238,7 +239,7 @@ export async function createUpdateWorkflowInstruction(
   workflowId: Address,
   newContentHash: Uint8Array // 64 bytes
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
 
   const data = new Uint8Array([
     4, // instruction 4
@@ -263,7 +264,7 @@ export async function createDeactivateWorkflowInstruction(
   author: Address,
   workflowId: Address
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
 
   const data = new Uint8Array([
     5, // instruction 5
@@ -287,7 +288,7 @@ export async function createActivateWorkflowInstruction(
   author: Address,
   workflowId: Address
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
 
   const data = new Uint8Array([
     6, // instruction 6
@@ -311,7 +312,7 @@ export async function createDeleteWorkflowInstruction(
   author: Address,
   workflowId: Address
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
 
   const data = new Uint8Array([
     7, // instruction 7
@@ -337,10 +338,10 @@ export async function createPurchaseWorkflowV2Instruction(
   author: Address,
   accessType: number = 0 // 0=purchased, 1=subscribed, 2=rented
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
-  const { address: accessPDA } = await getAccessPDA(workflowId, buyer);
-  const { address: configPDA } = await getConfigPDA();
-  const { address: treasuryPDA } = await getTreasuryPDA();
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
+  const [accessPDA] = await getAccessPDA(workflowId, buyer);
+  const [configPDA] = await getConfigPDA();
+  const [treasuryPDA] = await getTreasuryPDA();
 
   const data = new Uint8Array([
     8, // instruction 8
@@ -370,8 +371,8 @@ export async function createRecordExecutionInstruction(
   executor: Address,
   workflowId: Address
 ): Promise<Instruction> {
-  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
-  const { address: accessPDA } = await getAccessPDA(workflowId, executor);
+  const [workflowPDA] = await getWorkflowPDA(workflowId);
+  const [accessPDA] = await getAccessPDA(workflowId, executor);
 
   const data = new Uint8Array([
     9, // instruction 9

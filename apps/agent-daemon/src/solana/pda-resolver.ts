@@ -7,8 +7,10 @@
  * @module solana/pda-resolver
  */
 
-import { PublicKey } from '@solana/web3.js';
-import { ARENA_PROGRAM_ID } from './program-ids.js';
+import { getProgramDerivedAddress, getAddressEncoder, type Address } from '@solana/kit';
+import { ARENA_PROGRAM_ADDRESS } from './program-ids.js';
+
+const addressEncoder = getAddressEncoder();
 
 // ---------------------------------------------------------------------------
 // Seeds
@@ -35,78 +37,98 @@ function u64LeBuffer(value: bigint | number): Buffer {
     return buf;
 }
 
+function toSeed(addr: Address): Uint8Array {
+    return new Uint8Array(addressEncoder.encode(addr));
+}
+
 // ---------------------------------------------------------------------------
 // PDA Resolvers
 // ---------------------------------------------------------------------------
 
-export function findConfigPda(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync([CONFIG_SEED], ARENA_PROGRAM_ID);
+export async function findConfigPda(): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [CONFIG_SEED],
+    });
+    return [addr, bump];
 }
 
-export function findTaskPda(taskId: bigint | number): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [TASK_SEED, u64LeBuffer(taskId)],
-        ARENA_PROGRAM_ID,
-    );
+export async function findTaskPda(taskId: bigint | number): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [TASK_SEED, u64LeBuffer(taskId)],
+    });
+    return [addr, bump];
 }
 
-export function findEscrowPda(taskId: bigint | number): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [ESCROW_SEED, u64LeBuffer(taskId)],
-        ARENA_PROGRAM_ID,
-    );
+export async function findEscrowPda(taskId: bigint | number): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [ESCROW_SEED, u64LeBuffer(taskId)],
+    });
+    return [addr, bump];
 }
 
-export function findApplicationPda(
+export async function findApplicationPda(
     taskId: bigint | number,
-    agent: PublicKey,
-): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [APPLICATION_SEED, u64LeBuffer(taskId), agent.toBuffer()],
-        ARENA_PROGRAM_ID,
-    );
+    agent: Address,
+): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [APPLICATION_SEED, u64LeBuffer(taskId), toSeed(agent)],
+    });
+    return [addr, bump];
 }
 
-export function findSubmissionPda(
+export async function findSubmissionPda(
     taskId: bigint | number,
-    agent: PublicKey,
-): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [SUBMISSION_SEED, u64LeBuffer(taskId), agent.toBuffer()],
-        ARENA_PROGRAM_ID,
-    );
+    agent: Address,
+): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [SUBMISSION_SEED, u64LeBuffer(taskId), toSeed(agent)],
+    });
+    return [addr, bump];
 }
 
-export function findReputationPda(agent: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [REPUTATION_SEED, agent.toBuffer()],
-        ARENA_PROGRAM_ID,
-    );
+export async function findReputationPda(agent: Address): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [REPUTATION_SEED, toSeed(agent)],
+    });
+    return [addr, bump];
 }
 
-export function findStakePda(judge: PublicKey): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [STAKE_SEED, judge.toBuffer()],
-        ARENA_PROGRAM_ID,
-    );
+export async function findStakePda(judge: Address): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [STAKE_SEED, toSeed(judge)],
+    });
+    return [addr, bump];
 }
 
-export function findTreasuryPda(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync([TREASURY_SEED], ARENA_PROGRAM_ID);
+export async function findTreasuryPda(): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [TREASURY_SEED],
+    });
+    return [addr, bump];
 }
 
-export function findEventAuthorityPda(): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [EVENT_AUTHORITY_SEED],
-        ARENA_PROGRAM_ID,
-    );
+export async function findEventAuthorityPda(): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [EVENT_AUTHORITY_SEED],
+    });
+    return [addr, bump];
 }
 
-export function findJudgePoolPda(category: number): [PublicKey, number] {
-    return PublicKey.findProgramAddressSync(
-        [JUDGE_POOL_SEED, Buffer.from([category])],
-        ARENA_PROGRAM_ID,
-    );
+export async function findJudgePoolPda(category: number): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [JUDGE_POOL_SEED, Buffer.from([category])],
+    });
+    return [addr, bump];
 }
 
 // ---------------------------------------------------------------------------
@@ -114,29 +136,29 @@ export function findJudgePoolPda(category: number): [PublicKey, number] {
 // ---------------------------------------------------------------------------
 
 export interface JudgeAndPayPdas {
-    task: PublicKey;
-    escrow: PublicKey;
-    winnerApplication: PublicKey;
-    winnerSubmission: PublicKey;
-    winnerReputation: PublicKey;
-    judgeStake: PublicKey;
-    treasury: PublicKey;
-    eventAuthority: PublicKey;
+    task: Address;
+    escrow: Address;
+    winnerApplication: Address;
+    winnerSubmission: Address;
+    winnerReputation: Address;
+    judgeStake: Address;
+    treasury: Address;
+    eventAuthority: Address;
 }
 
-export function resolveJudgeAndPayPdas(
+export async function resolveJudgeAndPayPdas(
     taskId: bigint | number,
-    judge: PublicKey,
-    winner: PublicKey,
-): JudgeAndPayPdas {
+    judge: Address,
+    winner: Address,
+): Promise<JudgeAndPayPdas> {
     return {
-        task: findTaskPda(taskId)[0],
-        escrow: findEscrowPda(taskId)[0],
-        winnerApplication: findApplicationPda(taskId, winner)[0],
-        winnerSubmission: findSubmissionPda(taskId, winner)[0],
-        winnerReputation: findReputationPda(winner)[0],
-        judgeStake: findStakePda(judge)[0],
-        treasury: findTreasuryPda()[0],
-        eventAuthority: findEventAuthorityPda()[0],
+        task: (await findTaskPda(taskId))[0],
+        escrow: (await findEscrowPda(taskId))[0],
+        winnerApplication: (await findApplicationPda(taskId, winner))[0],
+        winnerSubmission: (await findSubmissionPda(taskId, winner))[0],
+        winnerReputation: (await findReputationPda(winner))[0],
+        judgeStake: (await findStakePda(judge))[0],
+        treasury: (await findTreasuryPda())[0],
+        eventAuthority: (await findEventAuthorityPda())[0],
     };
 }

@@ -190,6 +190,13 @@ export class KeyManager {
   }
 
   /**
+   * Get public key as @solana/kit Address
+   */
+  getAddress(): import('@solana/kit').Address {
+    return this.getPublicKey() as import('@solana/kit').Address;
+  }
+
+  /**
    * Get public key as base58 string
    */
   getPublicKey(): string {

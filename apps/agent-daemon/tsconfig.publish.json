@@ -11,7 +11,6 @@
         "src/**/*.test.ts",
         "src/integrations/chain-hub.ts",
         "src/evaluator/playwright-harness.ts",
-        "src/bridge/settlement-bridge.ts",
         "src/evaluator/judges.ts",
         "src/evaluator/external-evaluators.ts",
         "src/bridge/external-evaluation-stub.ts",

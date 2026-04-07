@@ -9,12 +9,10 @@
 
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
-import {
-  Connection,
-  PublicKey,
-} from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import {
   address,
+  getAddressEncoder,
   AccountRole,
   createTransactionMessage,
   setTransactionMessageFeePayerSigner,
@@ -24,6 +22,7 @@ import {
   getBase64EncodedWireTransaction,
   type Instruction,
   type Blockhash,
+  type Address,
 } from '@solana/kit';
 import { serialize } from 'borsh';
 import type { EvaluationResult } from '../evaluator/runtime.js';
@@ -33,6 +32,7 @@ import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { KeyManager, getKeyManager } from './key-manager.js';
 import {
   resolveJudgeAndPayPdas,
+  findApplicationPda,
 } from '../solana/pda-resolver.js';
 
 // TritonCascadeClient stub (actual implementation would come from @gradiences/workflow-engine)
@@ -412,7 +412,7 @@ export class SettlementBridge extends EventEmitter {
     );
 
     try {
-      const instruction = this.buildAgentArenaJudgeInstruction(request, proof);
+      const instruction = await this.buildAgentArenaJudgeInstruction(request, proof);
       const signer = await this.keyManager.getSigner();
 
       const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
@@ -478,55 +478,53 @@ export class SettlementBridge extends EventEmitter {
     }
   }
 
-  private buildAgentArenaJudgeInstruction(
+  private async buildAgentArenaJudgeInstruction(
     request: SettlementRequest,
     proof: EvaluationProof
-  ): Instruction {
-    const programId = new PublicKey(this.config.chainHubProgramId);
-    const judge = this.keyManager.getKeypair().publicKey;
-    const winner = new PublicKey(request.agentId);
-    const poster = new PublicKey(request.poster);
+  ): Promise<Instruction> {
+    const programId = address(this.config.chainHubProgramId);
+    const judge = this.keyManager.getAddress();
+    const winner = address(request.agentId);
+    const poster = address(request.poster);
     const taskId = BigInt(request.taskIdOnChain);
 
-    const pdas = resolveJudgeAndPayPdas(taskId, judge, winner);
+    const pdas = await resolveJudgeAndPayPdas(taskId, judge, winner);
+    const toBytes = (addr: Address) => Array.from(getAddressEncoder().encode(addr));
 
     const accounts = [
-      { address: address(judge.toBase58()), role: AccountRole.WRITABLE_SIGNER },
-      { address: address(pdas.task.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(pdas.escrow.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(poster.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(winner.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(pdas.winnerApplication.toBase58()), role: AccountRole.READONLY },
-      { address: address(pdas.winnerSubmission.toBase58()), role: AccountRole.READONLY },
-      { address: address(pdas.winnerReputation.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(pdas.judgeStake.toBase58()), role: AccountRole.WRITABLE },
-      { address: address(pdas.treasury.toBase58()), role: AccountRole.WRITABLE },
+      { address: judge, role: AccountRole.WRITABLE_SIGNER },
+      { address: pdas.task, role: AccountRole.WRITABLE },
+      { address: pdas.escrow, role: AccountRole.WRITABLE },
+      { address: poster, role: AccountRole.WRITABLE },
+      { address: winner, role: AccountRole.WRITABLE },
+      { address: pdas.winnerApplication, role: AccountRole.READONLY },
+      { address: pdas.winnerSubmission, role: AccountRole.READONLY },
+      { address: pdas.winnerReputation, role: AccountRole.WRITABLE },
+      { address: pdas.judgeStake, role: AccountRole.WRITABLE },
+      { address: pdas.treasury, role: AccountRole.WRITABLE },
       { address: address('11111111111111111111111111111111'), role: AccountRole.READONLY },
-      { address: address(pdas.eventAuthority.toBase58()), role: AccountRole.READONLY },
-      { address: address(programId.toBase58()), role: AccountRole.READONLY },
+      { address: pdas.eventAuthority, role: AccountRole.READONLY },
+      { address: programId, role: AccountRole.READONLY },
     ];
 
     // TODO: SPL token path support (8 optional accounts) — currently SOL-only
     if (request.losers && request.losers.length > 0) {
       for (const loser of request.losers) {
-        const agentPubkey = new PublicKey(loser.agent);
-        const [applicationPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from('application'), u64LeBuffer(taskId), agentPubkey.toBuffer()],
-          programId,
-        );
-        accounts.push({ address: address(applicationPda.toBase58()), role: AccountRole.READONLY });
-        accounts.push({ address: address(agentPubkey.toBase58()), role: AccountRole.WRITABLE });
+        const agentAddr = address(loser.agent);
+        const [applicationPda] = await findApplicationPda(taskId, agentAddr);
+        accounts.push({ address: applicationPda, role: AccountRole.READONLY });
+        accounts.push({ address: agentAddr, role: AccountRole.WRITABLE });
       }
     }
 
     const data = new Uint8Array(serializeJudgeAndPayData({
-      winner: Array.from(winner.toBytes()),
+      winner: toBytes(winner),
       score: proof.score,
       reasonRef: request.reasonRef ?? null,
     }));
 
     return {
-      programAddress: address(programId.toBase58()),
+      programAddress: programId,
       accounts,
       data,
     };

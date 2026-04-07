@@ -12,12 +12,13 @@ import type {
 import { validate } from '../schema/validate.js';
 import { WorkflowEngine } from '../engine/workflow-engine.js';
 import { createAllHandlers } from '../handlers/index.js';
-import { 
-  Connection, 
-  PublicKey, 
+import {
+  Connection,
+  PublicKey,
   Keypair,
   type Transaction,
 } from '@solana/web3.js';
+import { address } from '@solana/kit';
 import {
   SolanaWorkflowSDK,
   createSolanaWorkflowSDK,
@@ -150,31 +151,14 @@ export class WorkflowSDK {
 
   /**
    * Initialize Solana SDK if wallet and connection are available
+   * @deprecated Auto-initialization is disabled during @solana/kit migration.
+   *             Pass an initialized SolanaWorkflowSDK instance directly if needed.
    */
   private initializeSolanaSDK(): void {
-    if (!this.config.connection && !this.config.rpcEndpoint) {
-      return;
-    }
-
-    try {
-      const connection = this.config.connection || 
-        new Connection(this.config.rpcEndpoint, 'confirmed');
-      
-      // Create a keypair wrapper for the wallet adapter
-      // Note: This requires the wallet to support signing
-      if (this.config.wallet?.publicKey) {
-        const payer = this.createKeypairFromWallet();
-        if (payer) {
-          this.solanaSDK = createSolanaWorkflowSDK({
-            connection,
-            payer,
-            programId: this.config.programId ? new PublicKey(this.config.programId) : undefined,
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('[WorkflowSDK] Failed to initialize Solana SDK:', error);
-    }
+    // Disabled: SolanaWorkflowSDK now requires a TransactionSigner which
+    // cannot be derived from the legacy WalletAdapter interface.
+    // External callers should inject a pre-built SolanaWorkflowSDK instance.
+    this.solanaSDK = null as unknown as SolanaWorkflowSDK;
   }
 
   /**
@@ -182,12 +166,7 @@ export class WorkflowSDK {
    * Note: This is a simplified approach. Real implementation would use
    * a proper wallet adapter that can sign transactions.
    */
-  private createKeypairFromWallet(): Keypair | null {
-    // In a real implementation, this would use the wallet adapter
-    // to create a signing proxy. For now, we return null and require
-    // the Solana SDK to be initialized separately.
-    return null;
-  }
+
 
   /**
    * Create a new workflow
@@ -210,10 +189,10 @@ export class WorkflowSDK {
     // If Solana SDK is available, create on-chain
     if (this.solanaSDK) {
       try {
-        const workflowId = Keypair.generate().publicKey;
+        const workflowId = address(Keypair.generate().publicKey.toBase58());
         const signature = await this.solanaSDK.createWorkflow(workflow, workflowId);
         console.log(`[SDK] Workflow created on-chain: ${signature}`);
-        return workflowId.toBase58();
+        return workflowId;
       } catch (error) {
         console.warn('[SDK] On-chain creation failed, using local:', error);
       }
@@ -236,7 +215,7 @@ export class WorkflowSDK {
     // If Solana SDK is available, try on-chain
     if (this.solanaSDK) {
       try {
-        const metadata = await this.solanaSDK.getWorkflow(new PublicKey(workflowId));
+        const metadata = await this.solanaSDK.getWorkflow(address(workflowId));
         if (metadata) {
           // Convert on-chain metadata to GradienceWorkflow format
           return this.convertOnChainToWorkflow(metadata, workflowId);
@@ -267,14 +246,14 @@ export class WorkflowSDK {
     return {
       id: workflowId,
       name: `Workflow ${workflowId.slice(0, 8)}`,
-      description: `On-chain workflow by ${metadata.author.toBase58().slice(0, 8)}...`,
+      description: `On-chain workflow by ${metadata.author.slice(0, 8)}...`,
       version: metadata.version,
       contentHash: `ipfs://${metadata.contentHash}`,
       steps: [], // Would fetch full content from IPFS
       pricing: {
         model: pricingModelMap[metadata.pricingModel] || 'free',
         oneTimePrice: metadata.priceAmount > 0n ? {
-          mint: metadata.priceMint.toBase58(),
+          mint: metadata.priceMint,
           amount: metadata.priceAmount.toString(),
         } : undefined,
       },
@@ -287,7 +266,7 @@ export class WorkflowSDK {
       },
       isPublic: metadata.isPublic,
       isTemplate: false,
-      author: metadata.author.toBase58(),
+      author: metadata.author,
       createdAt: metadata.createdAt.getTime(),
       updatedAt: metadata.updatedAt.getTime(),
       requirements: {
@@ -315,28 +294,28 @@ export class WorkflowSDK {
     // If Solana SDK is available, use it
     if (this.solanaSDK) {
       try {
-        const workflowPubkey = new PublicKey(workflowId);
-        const authorPubkey = author ? new PublicKey(author) : 
+        const workflowAddr = address(workflowId);
+        const authorAddr = author ? address(author) : 
           // Fetch author from on-chain metadata
-          (await this.solanaSDK.getWorkflow(workflowPubkey))?.author || 
-          this.solanaSDK.getTreasuryAddress(); // Fallback to treasury
+          (await this.solanaSDK.getWorkflow(workflowAddr))?.author || 
+          await this.solanaSDK.getTreasuryAddress(); // Fallback to treasury
 
         const signature = await this.solanaSDK.purchaseWorkflowWithPayment(
-          workflowPubkey,
-          authorPubkey,
+          workflowAddr,
+          authorAddr,
           0 // purchased
         );
 
-        const accessPDA = this.solanaSDK.getAccessAddress(
-          workflowPubkey,
-          new PublicKey(this.config.wallet.publicKey)
+        const accessPDA = await this.solanaSDK.getAccessAddress(
+          workflowAddr,
+          address(this.config.wallet.publicKey)
         );
 
         console.log(`[SDK] Workflow purchased: ${signature}`);
 
         return {
           signature,
-          accessPDA: accessPDA.toBase58(),
+          accessPDA: accessPDA,
           workflowId,
           timestamp: Date.now(),
         };
@@ -368,8 +347,8 @@ export class WorkflowSDK {
     if (this.solanaSDK) {
       try {
         const hasAccess = await this.solanaSDK.hasAccess(
-          new PublicKey(workflowId),
-          new PublicKey(userKey)
+          address(workflowId),
+          address(userKey)
         );
         return hasAccess;
       } catch (error) {
@@ -401,7 +380,7 @@ export class WorkflowSDK {
     // Record execution on-chain if SDK available
     if (this.solanaSDK) {
       try {
-        const signature = await this.solanaSDK.recordExecution(new PublicKey(workflowId));
+        const signature = await this.solanaSDK.recordExecution(address(workflowId));
         console.log(`[SDK] Execution recorded on-chain: ${signature}`);
       } catch (error) {
         console.warn('[SDK] Failed to record execution on-chain:', error);
@@ -452,7 +431,7 @@ export class WorkflowSDK {
     if (this.solanaSDK) {
       try {
         const signature = await this.solanaSDK.reviewWorkflow(
-          new PublicKey(workflowId),
+          address(workflowId),
           rating,
           comment
         );
@@ -563,7 +542,7 @@ export class WorkflowSDK {
         // This is a simplified implementation
         const newContentHash = await this.uploadComment(updates.description);
         const signature = await this.solanaSDK.updateWorkflow(
-          new PublicKey(workflowId),
+          address(workflowId),
           newContentHash
         );
 
@@ -603,7 +582,7 @@ export class WorkflowSDK {
     if (this.solanaSDK) {
       try {
         const signature = await this.solanaSDK.deactivateWorkflow(
-          new PublicKey(workflowId)
+          address(workflowId)
         );
 
         console.log(`[SDK] Workflow deactivated on-chain: ${signature}`);
@@ -641,7 +620,7 @@ export class WorkflowSDK {
     if (this.solanaSDK) {
       try {
         const signature = await this.solanaSDK.activateWorkflow(
-          new PublicKey(workflowId)
+          address(workflowId)
         );
 
         console.log(`[SDK] Workflow activated on-chain: ${signature}`);
@@ -680,7 +659,7 @@ export class WorkflowSDK {
     if (this.solanaSDK) {
       try {
         const signature = await this.solanaSDK.deleteWorkflow(
-          new PublicKey(workflowId)
+          address(workflowId)
         );
 
         console.log(`[SDK] Workflow deleted on-chain: ${signature}`);
