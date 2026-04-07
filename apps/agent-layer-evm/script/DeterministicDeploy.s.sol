@@ -4,18 +4,18 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {DeterministicDeployer} from "../src/utils/DeterministicDeployer.sol";
-import {AgentLayerRaceTask} from "../src/AgentLayerRaceTask.sol";
+import {AgentArenaEVM} from "../src/AgentArenaEVM.sol";
 import {JudgeRegistry} from "../src/JudgeRegistry.sol";
 
 /**
- * @notice Deploys AgentLayerRaceTask infrastructure deterministically via CREATE2.
+ * @notice Deploys AgentArenaEVM infrastructure deterministically via CREATE2.
  * @dev Salt format: keccak256("GRADIENCE_V1_<CONTRACT_NAME>")
  */
 contract DeterministicDeployScript is Script {
     bytes32 internal constant SALT_DEPLOYER = keccak256("GRADIENCE_V1_DeterministicDeployer");
     bytes32 internal constant SALT_JUDGE_REGISTRY = keccak256("GRADIENCE_V1_JudgeRegistry");
-    bytes32 internal constant SALT_ARENA_IMPL = keccak256("GRADIENCE_V1_AgentLayerRaceTask_Impl");
-    bytes32 internal constant SALT_ARENA_PROXY = keccak256("GRADIENCE_V1_AgentLayerRaceTask_Proxy");
+    bytes32 internal constant SALT_ARENA_IMPL = keccak256("GRADIENCE_V1_AgentArenaEVM_Impl");
+    bytes32 internal constant SALT_ARENA_PROXY = keccak256("GRADIENCE_V1_AgentArenaEVM_Proxy");
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -38,14 +38,14 @@ contract DeterministicDeployScript is Script {
         }
         JudgeRegistry registry = JudgeRegistry(predictedRegistry);
 
-        // 3. Deploy AgentLayerRaceTask implementation
-        address predictedImpl = dd.computeAddress(SALT_ARENA_IMPL, keccak256(type(AgentLayerRaceTask).creationCode));
+        // 3. Deploy AgentArenaEVM implementation
+        address predictedImpl = dd.computeAddress(SALT_ARENA_IMPL, keccak256(type(AgentArenaEVM).creationCode));
         if (predictedImpl.code.length == 0) {
-            dd.deploy(SALT_ARENA_IMPL, type(AgentLayerRaceTask).creationCode);
+            dd.deploy(SALT_ARENA_IMPL, type(AgentArenaEVM).creationCode);
         }
 
         // 4. Deploy proxy with deterministic init data
-        bytes memory proxyInitData = abi.encodeWithSelector(AgentLayerRaceTask.initialize.selector, deployer, deployer);
+        bytes memory proxyInitData = abi.encodeWithSelector(AgentArenaEVM.initialize.selector, deployer, deployer);
         address predictedProxy = dd.computeAddress(
             SALT_ARENA_PROXY,
             keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedImpl, proxyInitData)))
@@ -56,7 +56,7 @@ contract DeterministicDeployScript is Script {
                 abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedImpl, proxyInitData))
             );
         }
-        AgentLayerRaceTask arena = AgentLayerRaceTask(predictedProxy);
+        AgentArenaEVM arena = AgentArenaEVM(predictedProxy);
 
         // 5. Wire up references
         arena.setJudgeRegistry(address(registry));
