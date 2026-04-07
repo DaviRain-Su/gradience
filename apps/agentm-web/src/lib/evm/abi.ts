@@ -1,0 +1,142 @@
+/**
+ * Minimal AgentArenaEVM ABI for frontend interactions.
+ * Full ABI is available at apps/agent-layer-evm/out/AgentArenaEVM.sol/AgentArenaEVM.json
+ */
+
+export const AGENT_ARENA_EVM_ABI = [
+  {
+    type: 'function',
+    name: 'initialize',
+    inputs: [
+      { name: 'owner_', type: 'address', internalType: 'address' },
+      { name: 'treasury_', type: 'address', internalType: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'postTask',
+    inputs: [
+      { name: 'evalRef', type: 'string', internalType: 'string' },
+      { name: 'deadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'judgeDeadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'judge', type: 'address', internalType: 'address' },
+      { name: 'category', type: 'uint8', internalType: 'uint8' },
+      { name: 'minStake', type: 'uint256', internalType: 'uint256' },
+    ],
+    outputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'postTaskQuorum',
+    inputs: [
+      { name: 'evalRef', type: 'string', internalType: 'string' },
+      { name: 'deadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'judgeDeadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'category', type: 'uint8', internalType: 'uint8' },
+      { name: 'minStake', type: 'uint256', internalType: 'uint256' },
+      { name: 'judgeMode', type: 'uint8', internalType: 'uint8' },
+      { name: 'judges', type: 'address[]', internalType: 'address[]' },
+    ],
+    outputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'applyForTask',
+    inputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'submitResult',
+    inputs: [
+      { name: 'taskId', type: 'uint256', internalType: 'uint256' },
+      { name: 'resultRef', type: 'string', internalType: 'string' },
+      { name: 'traceRef', type: 'string', internalType: 'string' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'judgeAndPay',
+    inputs: [
+      { name: 'taskId', type: 'uint256', internalType: 'uint256' },
+      { name: 'winner', type: 'address', internalType: 'address' },
+      { name: 'score', type: 'uint8', internalType: 'uint8' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'cancelTask',
+    inputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'claimExpired',
+    inputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'claimStake',
+    inputs: [{ name: 'taskId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'tasks',
+    inputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    outputs: [
+      { name: 'poster', type: 'address', internalType: 'address' },
+      { name: 'judge', type: 'address', internalType: 'address' },
+      { name: 'winner', type: 'address', internalType: 'address' },
+      { name: 'paymentToken', type: 'address', internalType: 'address' },
+      { name: 'minStake', type: 'uint256', internalType: 'uint256' },
+      { name: 'reward', type: 'uint256', internalType: 'uint256' },
+      { name: 'deadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'judgeDeadline', type: 'uint64', internalType: 'uint64' },
+      { name: 'category', type: 'uint8', internalType: 'uint8' },
+      { name: 'score', type: 'uint8', internalType: 'uint8' },
+      { name: 'state', type: 'uint8', internalType: 'enum AgentArenaEVM.TaskState' },
+      { name: 'judgeMode', type: 'uint8', internalType: 'enum AgentArenaEVM.JudgeMode' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'TaskCreated',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'poster', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'judge', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'category', type: 'uint8', indexed: false, internalType: 'uint8' },
+      { name: 'minStake', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'reward', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'deadline', type: 'uint64', indexed: false, internalType: 'uint64' },
+      { name: 'judgeDeadline', type: 'uint64', indexed: false, internalType: 'uint64' },
+      { name: 'evalRef', type: 'string', indexed: false, internalType: 'string' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'TaskApplied',
+    inputs: [
+      { name: 'taskId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'agent', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'stake', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+] as const;

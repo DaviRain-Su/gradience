@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useArenaTask, type TaskApi, type SubmissionApi } from '@/hooks/useArenaTask';
 import type { Address } from '@solana/kit';
 
@@ -16,11 +16,10 @@ export interface UseJudgeAndPayResult {
   txHash: string | null;
   judgeTask: (params: {
     taskId: number | bigint;
-    winner: Address;
-    poster: Address;
+    winner: Address | `0x${string}`;
+    poster: Address | `0x${string}`;
     score: number;
     reasonRef: string;
-    mint?: Address;
   }) => Promise<string | null>;
 }
 
@@ -40,7 +39,7 @@ export function useJudgeAndPay(walletAddress: string | null): UseJudgeAndPayResu
     try {
       const allOpen = await arena.fetchTasks({ status: 'open', limit: 200 });
       const myTasks = (allOpen || []).filter(
-        (t) => t.judge?.toLowerCase?.() === walletAddress.toLowerCase()
+        (t) => (t.judge || '').toLowerCase() === walletAddress.toLowerCase()
       );
       const withSubmissions: JudgeTask[] = await Promise.all(
         myTasks.map(async (task) => {
@@ -63,11 +62,10 @@ export function useJudgeAndPay(walletAddress: string | null): UseJudgeAndPayResu
   const judgeTask = useCallback(
     async (params: {
       taskId: number | bigint;
-      winner: Address;
-      poster: Address;
+      winner: Address | `0x${string}`;
+      poster: Address | `0x${string}`;
       score: number;
       reasonRef: string;
-      mint?: Address;
     }): Promise<string | null> => {
       const sig = await arena.judgeAndPay(params);
       if (sig) {

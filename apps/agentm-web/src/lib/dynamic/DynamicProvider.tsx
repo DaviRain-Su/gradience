@@ -2,6 +2,7 @@
 
 import { DynamicContextProvider, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { SolanaWalletConnectors } from '@dynamic-labs/solana';
+import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { ReactNode, useEffect, useRef } from 'react';
 import { useConnection } from '@/lib/connection/ConnectionContext';
 
@@ -70,7 +71,10 @@ export function DynamicProvider({ children }: DynamicProviderProps) {
                 environmentId: envId,
                 appName: 'AgentM',
                 appLogoUrl: '',
-                walletConnectors: [SolanaWalletConnectors],
+                walletConnectors: [
+                    (props?: any) => SolanaWalletConnectors(props),
+                    (props?: any) => EthereumWalletConnectors(props),
+                ] as any,
                 redirectUrl: undefined,
                 events: {
                     onAuthFlowClose: () => {
