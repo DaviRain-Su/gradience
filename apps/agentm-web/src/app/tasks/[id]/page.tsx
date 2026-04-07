@@ -1,62 +1,16 @@
-"use client";
+import TaskDetailPageClient from "./TaskDetailPageClient";
 
-import { useParams, useRouter } from "next/navigation";
-import { TaskDetailView } from "@/components/task/TaskDetailView";
-import { useDaemonConnection } from "@/lib/connection/useDaemonConnection";
+// Required for static export of dynamic routes
+export function generateStaticParams() {
+  return [{ id: "1" }, { id: "2" }, { id: "3" }];
+}
 
-const c = {
-  bg: "#F3F3F8",
-  surface: "#FFFFFF",
-  ink: "#16161A",
-};
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-const styles = {
-  container: {
-    minHeight: "100vh",
-    background: c.bg,
-    padding: "24px",
-  },
-  content: {
-    maxWidth: "900px",
-    margin: "0 auto",
-  },
-};
-
-export default function TaskDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { walletAddress } = useDaemonConnection();
-  const taskId = Number(params.id);
-
-  if (Number.isNaN(taskId)) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.content}>
-          <div
-            style={{
-              padding: "40px",
-              textAlign: "center",
-              background: c.surface,
-              borderRadius: "16px",
-              border: `1.5px solid ${c.ink}`,
-            }}
-          >
-            Invalid task ID
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <TaskDetailView
-          taskId={taskId}
-          walletAddress={walletAddress}
-          onBack={() => router.push("/tasks")}
-        />
-      </div>
-    </div>
-  );
+export default async function TaskDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const taskId = Number(id);
+  return <TaskDetailPageClient taskId={taskId} />;
 }

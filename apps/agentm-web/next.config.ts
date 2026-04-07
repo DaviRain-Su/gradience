@@ -28,11 +28,10 @@ const nextConfig: NextConfig = {
         ],
     },
     webpack: (config, { isServer }) => {
-        // Mock workspace packages
+        // Mock workspace packages that don't have a runtime implementation yet
         config.resolve.alias = {
             ...config.resolve.alias,
             '@gradiences/domain-resolver': '/src/lib/mocks/domain-resolver.ts',
-            '@gradiences/sdk': '/src/lib/mocks/sdk.ts',
             '@gradiences/soul-engine': '/src/lib/mocks/soul-engine.ts',
         };
 
