@@ -356,7 +356,7 @@ describe("AgentArenaEVM", function () {
             .withArgs(1n);
     });
 
-    it("cancel_task with no applicants: only 2% protocol fee", async function () {
+    it("cancelTask with no applicants: 100% refund, no protocol fee", async function () {
         const { contract, poster, judge, treasury } = await deployFixture();
         const reward = ethers.parseEther("0.5");
         const minStake = ethers.parseEther("0.02");
@@ -371,7 +371,6 @@ describe("AgentArenaEVM", function () {
             });
 
         const posterBefore = await ethers.provider.getBalance(poster.address);
-        const treasuryBefore = await ethers.provider.getBalance(treasury.address);
 
         const cancelTx = await contract.connect(poster).cancelTask(1n);
         const cancelReceipt = await cancelTx.wait();
@@ -379,11 +378,9 @@ describe("AgentArenaEVM", function () {
         const gasCost = cancelReceipt.gasUsed * gasPrice;
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
-        const treasuryAfter = await ethers.provider.getBalance(treasury.address);
 
-        const expectedRefund = (reward * 9800n) / 10000n;
-        expect(posterAfter - posterBefore + gasCost).to.equal(expectedRefund);
-        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal((reward * 200n) / 10000n);
+        expect(posterAfter - posterBefore + gasCost).to.equal(reward);
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(0n);
 
         const task = await contract.tasks(1n);
         expect(task[10]).to.equal(2n); // Refunded

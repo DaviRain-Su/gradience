@@ -795,10 +795,11 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         }
         if (hasSubmission) revert CannotCancelAfterSubmission(task_id);
 
-        uint256 protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 compensations = 0;
+        uint256 protocolFee = 0;
 
         if (applicants.length > 0) {
+            protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
             uint256 cancelPenalty = (task.reward * 500) / BPS_DENOMINATOR; // 5%
             uint256 perApplicant = cancelPenalty / applicants.length;
             for (uint256 i = 0; i < applicants.length; i++) {
@@ -811,7 +812,9 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint256 refund = task.reward - protocolFee - compensations;
         task.state = TaskState.Refunded;
         _payout(task, task.poster, refund);
-        protocolFees[task.paymentToken] += protocolFee;
+        if (protocolFee > 0) {
+            protocolFees[task.paymentToken] += protocolFee;
+        }
         emit TaskRefunded(task_id, task.poster, refund, 0);
     }
 
