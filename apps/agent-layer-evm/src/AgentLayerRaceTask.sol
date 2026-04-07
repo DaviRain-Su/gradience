@@ -2,10 +2,15 @@
 pragma solidity ^0.8.24;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IJudgeRegistry} from "./interfaces/IJudgeRegistry.sol";
 
-contract AgentLayerRaceTask is ReentrancyGuard {
+contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     uint256 public constant MIN_SCORE = 60;
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint256 public constant WINNER_PAYOUT_BPS = 9_500;
@@ -125,6 +130,8 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error TransferFailed(address to, uint256 amount);
     error UnexpectedEther(uint256 amount);
     error TokenTransferFailed(address token, address from, address to, uint256 amount);
+    error AlreadyInitialized();
+    error TransferFeeTooHigh(uint256 expected, uint256 actual);
     error DisputeAlreadyOpen(uint256 taskId);
     error DisputeWindowClosed(uint256 taskId);
     error DisputeNotOpen(uint256 taskId);
@@ -176,7 +183,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     );
     event JudgeSlashed(uint256 indexed taskId, address indexed judge, uint256 amount, string reason);
 
-    address public immutable treasury;
+    address public treasury;
     address public disputeResolver;
     address public judgeRegistry;
     uint256 public taskCount;
@@ -199,22 +206,31 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         _;
     }
 
-    constructor(address treasury_) {
-        if (treasury_ == address(0)) revert ZeroAddress();
-        treasury = treasury_;
-        disputeResolver = msg.sender;
+    constructor() {
+        _disableInitializers();
     }
 
-    function setDisputeResolver(address resolver) external {
-        if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+    function initialize(address owner_, address treasury_) external initializer {
+        _initialize(owner_, treasury_);
+    }
+
+    function _initialize(address owner_, address treasury_) internal {
+        if (treasury_ == address(0)) revert ZeroAddress();
+        __Ownable_init(owner_);
+        treasury = treasury_;
+        disputeResolver = owner_;
+    }
+
+    function setDisputeResolver(address resolver) external onlyOwner {
         if (resolver == address(0)) revert ZeroAddress();
         disputeResolver = resolver;
     }
 
-    function setJudgeRegistry(address registry) external {
-        if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+    function setJudgeRegistry(address registry) external onlyOwner {
         judgeRegistry = registry;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function post_task(
         string calldata eval_ref,
@@ -333,7 +349,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (deadline <= block.timestamp) revert InvalidDeadline(deadline);
         if (judge_deadline <= deadline) revert InvalidJudgeDeadline(judge_deadline);
 
-        _transferTokenFrom(token, msg.sender, address(this), reward_amount);
+        uint256 actualReward = _safeTransferFromWithAmount(token, msg.sender, reward_amount);
 
         address taskJudge = judge;
         if (taskJudge == address(0)) {
@@ -348,7 +364,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             winner: address(0),
             paymentToken: token,
             minStake: min_stake,
-            reward: reward_amount,
+            reward: actualReward,
             deadline: deadline,
             judgeDeadline: judge_deadline,
             category: category,
@@ -364,7 +380,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             taskJudge,
             category,
             min_stake,
-            reward_amount,
+            actualReward,
             deadline,
             judge_deadline,
             eval_ref
@@ -391,7 +407,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         if (judge_mode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(0);
         if (judges.length == 0) revert InvalidJudgeMode(0);
 
-        _transferTokenFrom(token, msg.sender, address(this), reward_amount);
+        uint256 actualReward = _safeTransferFromWithAmount(token, msg.sender, reward_amount);
 
         task_id = ++taskCount;
         Task storage task = tasks[task_id];
@@ -400,7 +416,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         task.winner = address(0);
         task.paymentToken = token;
         task.minStake = min_stake;
-        task.reward = reward_amount;
+        task.reward = actualReward;
         task.deadline = deadline;
         task.judgeDeadline = judge_deadline;
         task.category = category;
@@ -419,7 +435,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             address(0),
             category,
             min_stake,
-            reward_amount,
+            actualReward,
             deadline,
             judge_deadline,
             eval_ref
@@ -433,21 +449,22 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
+        uint256 actualStake = task.minStake;
         if (task.paymentToken == address(0)) {
             if (msg.value != task.minStake) revert InvalidStakeAmount(task.minStake, msg.value);
         } else {
             if (msg.value != 0) revert UnexpectedEther(msg.value);
-            _transferTokenFrom(task.paymentToken, msg.sender, address(this), task.minStake);
+            actualStake = _safeTransferFromWithAmount(task.paymentToken, msg.sender, task.minStake);
         }
 
         app.exists = true;
-        app.stake = task.minStake;
+        app.stake = actualStake;
         _taskApplicants[task_id].push(msg.sender);
 
         Reputation storage rep = reputations[msg.sender];
         rep.totalApplied += 1;
 
-        emit TaskApplied(task_id, msg.sender, task.minStake);
+        emit TaskApplied(task_id, msg.sender, actualStake);
     }
 
     function submit_result(
@@ -895,15 +912,16 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         }
     }
 
-    function _transferTokenFrom(address token, address from, address to, uint256 amount) internal {
-        if (amount == 0) return;
-        bool success = IERC20(token).transferFrom(from, to, amount);
-        if (!success) revert TokenTransferFailed(token, from, to, amount);
+    function _safeTransferFromWithAmount(address token, address from, uint256 amount) internal returns (uint256 actual) {
+        if (amount == 0) return 0;
+        uint256 before = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransferFrom(from, address(this), amount);
+        actual = IERC20(token).balanceOf(address(this)) - before;
+        if (actual < (amount * 95) / 100) revert TransferFeeTooHigh(amount, actual);
     }
 
     function _sendToken(address token, address to, uint256 amount) internal {
         if (amount == 0) return;
-        bool success = IERC20(token).transfer(to, amount);
-        if (!success) revert TokenTransferFailed(token, address(this), to, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 }

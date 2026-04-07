@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {AgentLayerRaceTask} from "../src/AgentLayerRaceTask.sol";
 import {JudgeRegistry} from "../src/JudgeRegistry.sol";
 
@@ -14,7 +15,12 @@ contract AgentLayerRaceTaskTest is Test {
     address treasury = address(4);
 
     function setUp() public {
-        arena = new AgentLayerRaceTask(treasury);
+        AgentLayerRaceTask impl = new AgentLayerRaceTask();
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(impl),
+            abi.encodeWithSelector(AgentLayerRaceTask.initialize.selector, address(this), treasury)
+        );
+        arena = AgentLayerRaceTask(address(proxy));
         registry = new JudgeRegistry(address(this));
         arena.setJudgeRegistry(address(registry));
         registry.setArena(address(arena));
@@ -64,7 +70,7 @@ contract AgentLayerRaceTaskTest is Test {
         arena.judge_and_pay(taskId, agent, 80);
 
         (,address taskJudge,,,,,,,,uint8 score,AgentLayerRaceTask.TaskState state,) = arena.tasks(taskId);
-        assertEq(uint256(state), 1); // Completed
+        assertEq(uint256(state), uint256(AgentLayerRaceTask.TaskState.Completed)); // Completed
         assertEq(score, 80);
     }
 }

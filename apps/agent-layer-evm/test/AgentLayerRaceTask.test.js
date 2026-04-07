@@ -7,8 +7,13 @@ describe("AgentLayerRaceTask", function () {
         const [deployer, poster, judge, agentA, agentB, treasury, attacker] =
             await ethers.getSigners();
         const factory = await ethers.getContractFactory("AgentLayerRaceTask", deployer);
-        const contract = await factory.deploy(treasury.address);
-        await contract.waitForDeployment();
+        const impl = await factory.deploy();
+        await impl.waitForDeployment();
+        const proxyFactory = await ethers.getContractFactory("ERC1967Proxy", deployer);
+        const initData = factory.interface.encodeFunctionData("initialize", [deployer.address, treasury.address]);
+        const proxy = await proxyFactory.deploy(await impl.getAddress(), initData);
+        await proxy.waitForDeployment();
+        const contract = factory.attach(await proxy.getAddress());
         return { contract, deployer, poster, judge, agentA, agentB, treasury, attacker };
     }
 
