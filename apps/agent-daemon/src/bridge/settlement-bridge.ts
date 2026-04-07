@@ -9,7 +9,8 @@
 
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import {
   address,
   getAddressEncoder,
@@ -507,13 +508,40 @@ export class SettlementBridge extends EventEmitter {
       { address: programId, role: AccountRole.READONLY },
     ];
 
-    // TODO: SPL token path support (8 optional accounts) — currently SOL-only
+    const isSolPath = request.token === 'SOL';
+    const mintAddr = isSolPath ? null : address(request.token);
+    const mintPk = isSolPath ? null : new PublicKey(request.token);
+
+    if (!isSolPath && mintAddr && mintPk) {
+      const [judgeAta, escrowAta, winnerAta, posterAta, treasuryAta] = await Promise.all([
+        getAssociatedTokenAddress(mintPk, new PublicKey(judge)),
+        getAssociatedTokenAddress(mintPk, new PublicKey(pdas.escrow)),
+        getAssociatedTokenAddress(mintPk, new PublicKey(winner)),
+        getAssociatedTokenAddress(mintPk, new PublicKey(poster)),
+        getAssociatedTokenAddress(mintPk, new PublicKey(pdas.treasury)),
+      ]);
+
+      accounts.push({ address: address(judgeAta.toBase58()), role: AccountRole.WRITABLE });
+      accounts.push({ address: address(escrowAta.toBase58()), role: AccountRole.WRITABLE });
+      accounts.push({ address: address(winnerAta.toBase58()), role: AccountRole.WRITABLE });
+      accounts.push({ address: address(posterAta.toBase58()), role: AccountRole.WRITABLE });
+      accounts.push({ address: address(treasuryAta.toBase58()), role: AccountRole.WRITABLE });
+      accounts.push({ address: mintAddr, role: AccountRole.READONLY });
+      accounts.push({ address: address(TOKEN_PROGRAM_ID.toBase58()), role: AccountRole.READONLY });
+      accounts.push({ address: address('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'), role: AccountRole.READONLY });
+    }
+
     if (request.losers && request.losers.length > 0) {
       for (const loser of request.losers) {
         const agentAddr = address(loser.agent);
         const [applicationPda] = await findApplicationPda(taskId, agentAddr);
         accounts.push({ address: applicationPda, role: AccountRole.READONLY });
-        accounts.push({ address: agentAddr, role: AccountRole.WRITABLE });
+        if (isSolPath) {
+          accounts.push({ address: agentAddr, role: AccountRole.WRITABLE });
+        } else {
+          const agentAta = await getAssociatedTokenAddress(mintPk!, new PublicKey(agentAddr));
+          accounts.push({ address: address(agentAta.toBase58()), role: AccountRole.WRITABLE });
+        }
       }
     }
 
