@@ -1,374 +1,390 @@
 /**
- * Solana Program Instruction Builders
- * 
+ * Solana Program Instruction Builders (@solana/kit)
+ *
  * Builds instructions for the Workflow Marketplace program
  */
 import {
-  PublicKey,
-  SystemProgram,
-  TransactionInstruction,
-  SYSVAR_RENT_PUBKEY,
-} from '@solana/web3.js';
+  address,
+  AccountRole,
+  getProgramDerivedAddress,
+  getAddressEncoder,
+  type Address,
+  type Instruction,
+} from '@solana/kit';
 
-export const PROGRAM_ID = new PublicKey('3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW');
+export const PROGRAM_ID = address('3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW');
+
+const SYSTEM_PROGRAM_ADDRESS = address('11111111111111111111111111111111');
+
+const addressEncoder = getAddressEncoder();
+
+function toBytes(addr: Address): Uint8Array {
+  return addressEncoder.encode(addr);
+}
 
 /**
  * Find PDA with seeds
  */
-export function findPDA(seeds: (Buffer | Uint8Array)[]): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID);
+export async function findPDA(seeds: (Buffer | Uint8Array)[]): Promise<{ address: Address; bump: number }> {
+  return getProgramDerivedAddress({
+    programAddress: PROGRAM_ID,
+    seeds: seeds.map((s) => new Uint8Array(s)),
+  });
 }
 
 /**
  * Get Config PDA
  */
-export function getConfigPDA(): [PublicKey, number] {
+export async function getConfigPDA(): Promise<{ address: Address; bump: number }> {
   return findPDA([Buffer.from('config')]);
 }
 
 /**
  * Get Treasury PDA
  */
-export function getTreasuryPDA(): [PublicKey, number] {
+export async function getTreasuryPDA(): Promise<{ address: Address; bump: number }> {
   return findPDA([Buffer.from('treasury')]);
 }
 
 /**
  * Get Workflow PDA
  */
-export function getWorkflowPDA(workflowId: PublicKey): [PublicKey, number] {
-  return findPDA([Buffer.from('workflow'), workflowId.toBuffer()]);
+export async function getWorkflowPDA(workflowId: Address): Promise<{ address: Address; bump: number }> {
+  return findPDA([Buffer.from('workflow'), toBytes(workflowId)]);
 }
 
 /**
  * Get Access PDA
  */
-export function getAccessPDA(
-  workflowId: PublicKey,
-  user: PublicKey
-): [PublicKey, number] {
+export async function getAccessPDA(
+  workflowId: Address,
+  user: Address
+): Promise<{ address: Address; bump: number }> {
   return findPDA([
     Buffer.from('access'),
-    workflowId.toBuffer(),
-    user.toBuffer(),
+    toBytes(workflowId),
+    toBytes(user),
   ]);
 }
 
 /**
  * Get Review PDA
  */
-export function getReviewPDA(
-  workflowId: PublicKey,
-  reviewer: PublicKey
-): [PublicKey, number] {
+export async function getReviewPDA(
+  workflowId: Address,
+  reviewer: Address
+): Promise<{ address: Address; bump: number }> {
   return findPDA([
     Buffer.from('review'),
-    workflowId.toBuffer(),
-    reviewer.toBuffer(),
+    toBytes(workflowId),
+    toBytes(reviewer),
   ]);
 }
 
 /**
  * Instruction 0: Initialize Program
  */
-export function createInitializeInstruction(
-  payer: PublicKey,
-  treasury: PublicKey,
-  upgradeAuthority: PublicKey
-): TransactionInstruction {
-  const [configPDA] = getConfigPDA();
-  const [treasuryPDA] = getTreasuryPDA();
+export async function createInitializeInstruction(
+  payer: Address,
+  treasury: Address,
+  upgradeAuthority: Address
+): Promise<Instruction> {
+  const { address: configPDA } = await getConfigPDA();
+  const { address: treasuryPDA } = await getTreasuryPDA();
 
-  const data = Buffer.concat([
-    Buffer.from([0]), // instruction 0
-    treasury.toBuffer(),
-    upgradeAuthority.toBuffer(),
+  const data = new Uint8Array([
+    0, // instruction 0
+    ...toBytes(treasury),
+    ...toBytes(upgradeAuthority),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: payer, isSigner: true, isWritable: true },
-      { pubkey: configPDA, isSigner: false, isWritable: true },
-      { pubkey: treasuryPDA, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: payer, role: AccountRole.WRITABLE_SIGNER },
+      { address: configPDA, role: AccountRole.WRITABLE },
+      { address: treasuryPDA, role: AccountRole.WRITABLE },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 1: Create Workflow
  */
 export interface CreateWorkflowParams {
-  workflowId: PublicKey;
-  contentHash: Buffer; // 64 bytes
+  workflowId: Address;
+  contentHash: Uint8Array; // 64 bytes
   version: string; // max 16 bytes
   pricingModel: number; // 0-4
-  priceMint: PublicKey;
+  priceMint: Address;
   priceAmount: bigint;
   creatorShare: number; // bps (0-10000)
   isPublic: boolean;
 }
 
-export function createCreateWorkflowInstruction(
-  author: PublicKey,
+export async function createCreateWorkflowInstruction(
+  author: Address,
   params: CreateWorkflowParams
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(params.workflowId);
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(params.workflowId);
 
   // Prepare version buffer (16 bytes)
-  const versionBuffer = Buffer.alloc(16);
-  Buffer.from(params.version).copy(versionBuffer, 0);
+  const versionBuffer = new Uint8Array(16);
+  const versionBytes = Buffer.from(params.version);
+  versionBuffer.set(versionBytes, 0);
 
   // Prepare price amount (8 bytes, little-endian)
-  const priceAmountBuffer = Buffer.alloc(8);
-  priceAmountBuffer.writeBigUInt64LE(params.priceAmount);
+  const priceAmountBuffer = new Uint8Array(8);
+  const priceAmountView = new DataView(priceAmountBuffer.buffer);
+  priceAmountView.setBigUint64(0, params.priceAmount, true);
 
   // Prepare creator share (2 bytes, little-endian)
-  const creatorShareBuffer = Buffer.alloc(2);
-  creatorShareBuffer.writeUInt16LE(params.creatorShare);
+  const creatorShareBuffer = new Uint8Array(2);
+  const creatorShareView = new DataView(creatorShareBuffer.buffer);
+  creatorShareView.setUint16(0, params.creatorShare, true);
 
   const data = Buffer.concat([
     Buffer.from([1]), // instruction 1
-    params.workflowId.toBuffer(),
-    params.contentHash,
-    versionBuffer,
+    Buffer.from(toBytes(params.workflowId)),
+    Buffer.from(params.contentHash),
+    Buffer.from(versionBuffer),
     Buffer.from([params.pricingModel]),
-    params.priceMint.toBuffer(),
-    priceAmountBuffer,
-    creatorShareBuffer,
+    Buffer.from(toBytes(params.priceMint)),
+    Buffer.from(priceAmountBuffer),
+    Buffer.from(creatorShareBuffer),
     Buffer.from([params.isPublic ? 1 : 0]),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: author, isSigner: true, isWritable: true },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: author, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],
-    programId: PROGRAM_ID,
-    data,
-  });
+    data: new Uint8Array(data),
+  };
 }
 
 /**
  * Instruction 2: Purchase Workflow
  */
-export function createPurchaseWorkflowInstruction(
-  buyer: PublicKey,
-  workflowId: PublicKey,
+export async function createPurchaseWorkflowInstruction(
+  buyer: Address,
+  workflowId: Address,
   accessType: number = 0 // 0=purchased, 1=subscribed, 2=rented
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
-  const [accessPDA] = getAccessPDA(workflowId, buyer);
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const { address: accessPDA } = await getAccessPDA(workflowId, buyer);
 
-  const data = Buffer.concat([
-    Buffer.from([2]), // instruction 2
-    workflowId.toBuffer(),
-    Buffer.from([accessType]),
+  const data = new Uint8Array([
+    2, // instruction 2
+    ...toBytes(workflowId),
+    accessType,
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: buyer, isSigner: true, isWritable: true },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
-      { pubkey: accessPDA, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: buyer, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
+      { address: accessPDA, role: AccountRole.WRITABLE },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 3: Review Workflow
  */
-export function createReviewWorkflowInstruction(
-  reviewer: PublicKey,
-  workflowId: PublicKey,
+export async function createReviewWorkflowInstruction(
+  reviewer: Address,
+  workflowId: Address,
   rating: number, // 1-5
-  commentHash: Buffer // 32 bytes
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
-  const [reviewPDA] = getReviewPDA(workflowId, reviewer);
-  const [accessPDA] = getAccessPDA(workflowId, reviewer);
+  commentHash: Uint8Array // 32 bytes
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const { address: reviewPDA } = await getReviewPDA(workflowId, reviewer);
+  const { address: accessPDA } = await getAccessPDA(workflowId, reviewer);
 
-  const data = Buffer.concat([
-    Buffer.from([3]), // instruction 3
-    workflowId.toBuffer(),
-    Buffer.from([rating]),
-    commentHash,
+  const data = new Uint8Array([
+    3, // instruction 3
+    ...toBytes(workflowId),
+    rating,
+    ...commentHash,
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: reviewer, isSigner: true, isWritable: true },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
-      { pubkey: reviewPDA, isSigner: false, isWritable: true },
-      { pubkey: accessPDA, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: reviewer, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
+      { address: reviewPDA, role: AccountRole.WRITABLE },
+      { address: accessPDA, role: AccountRole.READONLY },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 4: Update Workflow
  */
-export function createUpdateWorkflowInstruction(
-  author: PublicKey,
-  workflowId: PublicKey,
-  newContentHash: Buffer // 64 bytes
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
+export async function createUpdateWorkflowInstruction(
+  author: Address,
+  workflowId: Address,
+  newContentHash: Uint8Array // 64 bytes
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
 
-  const data = Buffer.concat([
-    Buffer.from([4]), // instruction 4
-    workflowId.toBuffer(),
-    newContentHash,
+  const data = new Uint8Array([
+    4, // instruction 4
+    ...toBytes(workflowId),
+    ...newContentHash,
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: author, isSigner: true, isWritable: false },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: author, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 5: Deactivate Workflow
  */
-export function createDeactivateWorkflowInstruction(
-  author: PublicKey,
-  workflowId: PublicKey
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
+export async function createDeactivateWorkflowInstruction(
+  author: Address,
+  workflowId: Address
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
 
-  const data = Buffer.concat([
-    Buffer.from([5]), // instruction 5
-    workflowId.toBuffer(),
+  const data = new Uint8Array([
+    5, // instruction 5
+    ...toBytes(workflowId),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: author, isSigner: true, isWritable: false },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: author, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 6: Activate Workflow
  */
-export function createActivateWorkflowInstruction(
-  author: PublicKey,
-  workflowId: PublicKey
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
+export async function createActivateWorkflowInstruction(
+  author: Address,
+  workflowId: Address
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
 
-  const data = Buffer.concat([
-    Buffer.from([6]), // instruction 6
-    workflowId.toBuffer(),
+  const data = new Uint8Array([
+    6, // instruction 6
+    ...toBytes(workflowId),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: author, isSigner: true, isWritable: false },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: author, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 7: Delete Workflow
  */
-export function createDeleteWorkflowInstruction(
-  author: PublicKey,
-  workflowId: PublicKey
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
+export async function createDeleteWorkflowInstruction(
+  author: Address,
+  workflowId: Address
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
 
-  const data = Buffer.concat([
-    Buffer.from([7]), // instruction 7
-    workflowId.toBuffer(),
+  const data = new Uint8Array([
+    7, // instruction 7
+    ...toBytes(workflowId),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: author, isSigner: true, isWritable: true },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: author, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 8: Purchase Workflow V2 (with payment)
  */
-export function createPurchaseWorkflowV2Instruction(
-  buyer: PublicKey,
-  workflowId: PublicKey,
-  author: PublicKey,
+export async function createPurchaseWorkflowV2Instruction(
+  buyer: Address,
+  workflowId: Address,
+  author: Address,
   accessType: number = 0 // 0=purchased, 1=subscribed, 2=rented
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
-  const [accessPDA] = getAccessPDA(workflowId, buyer);
-  const [configPDA] = getConfigPDA();
-  const [treasuryPDA] = getTreasuryPDA();
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const { address: accessPDA } = await getAccessPDA(workflowId, buyer);
+  const { address: configPDA } = await getConfigPDA();
+  const { address: treasuryPDA } = await getTreasuryPDA();
 
-  const data = Buffer.concat([
-    Buffer.from([8]), // instruction 8
-    workflowId.toBuffer(),
-    Buffer.from([accessType]),
+  const data = new Uint8Array([
+    8, // instruction 8
+    ...toBytes(workflowId),
+    accessType,
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: buyer, isSigner: true, isWritable: true },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
-      { pubkey: accessPDA, isSigner: false, isWritable: true },
-      { pubkey: author, isSigner: false, isWritable: true },
-      { pubkey: treasuryPDA, isSigner: false, isWritable: true },
-      { pubkey: configPDA, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: buyer, role: AccountRole.WRITABLE_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
+      { address: accessPDA, role: AccountRole.WRITABLE },
+      { address: author, role: AccountRole.WRITABLE },
+      { address: treasuryPDA, role: AccountRole.WRITABLE },
+      { address: configPDA, role: AccountRole.READONLY },
+      { address: SYSTEM_PROGRAM_ADDRESS, role: AccountRole.READONLY },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }
 
 /**
  * Instruction 9: Record Execution
  */
-export function createRecordExecutionInstruction(
-  executor: PublicKey,
-  workflowId: PublicKey
-): TransactionInstruction {
-  const [workflowPDA] = getWorkflowPDA(workflowId);
-  const [accessPDA] = getAccessPDA(workflowId, executor);
+export async function createRecordExecutionInstruction(
+  executor: Address,
+  workflowId: Address
+): Promise<Instruction> {
+  const { address: workflowPDA } = await getWorkflowPDA(workflowId);
+  const { address: accessPDA } = await getAccessPDA(workflowId, executor);
 
-  const data = Buffer.concat([
-    Buffer.from([9]), // instruction 9
-    workflowId.toBuffer(),
+  const data = new Uint8Array([
+    9, // instruction 9
+    ...toBytes(workflowId),
   ]);
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: executor, isSigner: true, isWritable: false },
-      { pubkey: workflowPDA, isSigner: false, isWritable: true },
-      { pubkey: accessPDA, isSigner: false, isWritable: true },
+  return {
+    programAddress: PROGRAM_ID,
+    accounts: [
+      { address: executor, role: AccountRole.READONLY_SIGNER },
+      { address: workflowPDA, role: AccountRole.WRITABLE },
+      { address: accessPDA, role: AccountRole.WRITABLE },
     ],
-    programId: PROGRAM_ID,
     data,
-  });
+  };
 }

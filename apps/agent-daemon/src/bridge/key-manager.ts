@@ -11,6 +11,8 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Keypair } from '@solana/web3.js';
+import { createKeyPairSignerFromBytes } from '@solana/kit';
+import type { KeyPairSigner } from '@solana/kit';
 import nacl from 'tweetnacl';
 import { logger } from '../utils/logger.js';
 
@@ -168,12 +170,23 @@ export class KeyManager {
 
   /**
    * Get current keypair (must call loadOrCreate first)
+   * @deprecated Use getSigner() for new @solana/kit code
    */
   getKeypair(): Keypair {
     if (!this.keypair) {
       throw new Error('Keypair not loaded - call loadOrCreate() first');
     }
     return this.keypair;
+  }
+
+  /**
+   * Get a @solana/kit KeyPairSigner (must call loadOrCreate first)
+   */
+  async getSigner(): Promise<KeyPairSigner<string>> {
+    if (!this.keypair) {
+      throw new Error('Keypair not loaded - call loadOrCreate() first');
+    }
+    return createKeyPairSignerFromBytes(this.keypair.secretKey);
   }
 
   /**

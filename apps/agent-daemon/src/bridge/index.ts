@@ -10,7 +10,7 @@
 
 import type { KeyManager } from '../keys/key-manager.js';
 import type { TransactionManager } from '../solana/transaction-manager.js';
-import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 

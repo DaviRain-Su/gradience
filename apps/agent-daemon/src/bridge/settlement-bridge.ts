@@ -12,10 +12,19 @@ import { createHash } from 'node:crypto';
 import {
   Connection,
   PublicKey,
-  Transaction,
-  TransactionInstruction,
-  SystemProgram,
 } from '@solana/web3.js';
+import {
+  address,
+  AccountRole,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  signTransactionMessageWithSigners,
+  getBase64EncodedWireTransaction,
+  type Instruction,
+  type Blockhash,
+} from '@solana/kit';
 import { serialize } from 'borsh';
 import type { EvaluationResult } from '../evaluator/runtime.js';
 import type { PaymentConfirmation } from '../../shared/a2a-payment-types.js';
@@ -404,15 +413,20 @@ export class SettlementBridge extends EventEmitter {
 
     try {
       const instruction = this.buildAgentArenaJudgeInstruction(request, proof);
-      const transaction = new Transaction().add(instruction);
+      const signer = await this.keyManager.getSigner();
 
-      const { blockhash } = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = this.keyManager.getKeypair().publicKey;
-      transaction.sign(this.keyManager.getKeypair());
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
 
-      const serializedTx = transaction.serialize({ requireAllSignatures: false });
-      const base64Tx = Buffer.from(serializedTx).toString('base64');
+      const transactionMessage = appendTransactionMessageInstructions(
+        [instruction],
+        setTransactionMessageLifetimeUsingBlockhash(
+          { blockhash: blockhash as Blockhash, lastValidBlockHeight: BigInt(lastValidBlockHeight) },
+          setTransactionMessageFeePayerSigner(signer, createTransactionMessage({ version: 0 }))
+        )
+      );
+
+      const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+      const base64Tx = getBase64EncodedWireTransaction(signedTransaction);
 
       const cascadeResponse = await this.cascadeClient.sendTransaction(base64Tx, {
         transactionType: 'other',
@@ -467,7 +481,7 @@ export class SettlementBridge extends EventEmitter {
   private buildAgentArenaJudgeInstruction(
     request: SettlementRequest,
     proof: EvaluationProof
-  ): TransactionInstruction {
+  ): Instruction {
     const programId = new PublicKey(this.config.chainHubProgramId);
     const judge = this.keyManager.getKeypair().publicKey;
     const winner = new PublicKey(request.agentId);
@@ -476,20 +490,20 @@ export class SettlementBridge extends EventEmitter {
 
     const pdas = resolveJudgeAndPayPdas(taskId, judge, winner);
 
-    const keys = [
-      { pubkey: judge, isSigner: true, isWritable: true },
-      { pubkey: pdas.task, isSigner: false, isWritable: true },
-      { pubkey: pdas.escrow, isSigner: false, isWritable: true },
-      { pubkey: poster, isSigner: false, isWritable: true },
-      { pubkey: winner, isSigner: false, isWritable: true },
-      { pubkey: pdas.winnerApplication, isSigner: false, isWritable: false },
-      { pubkey: pdas.winnerSubmission, isSigner: false, isWritable: false },
-      { pubkey: pdas.winnerReputation, isSigner: false, isWritable: true },
-      { pubkey: pdas.judgeStake, isSigner: false, isWritable: true },
-      { pubkey: pdas.treasury, isSigner: false, isWritable: true },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      { pubkey: pdas.eventAuthority, isSigner: false, isWritable: false },
-      { pubkey: programId, isSigner: false, isWritable: false },
+    const accounts = [
+      { address: address(judge.toBase58()), role: AccountRole.WRITABLE_SIGNER },
+      { address: address(pdas.task.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(pdas.escrow.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(poster.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(winner.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(pdas.winnerApplication.toBase58()), role: AccountRole.READONLY },
+      { address: address(pdas.winnerSubmission.toBase58()), role: AccountRole.READONLY },
+      { address: address(pdas.winnerReputation.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(pdas.judgeStake.toBase58()), role: AccountRole.WRITABLE },
+      { address: address(pdas.treasury.toBase58()), role: AccountRole.WRITABLE },
+      { address: address('11111111111111111111111111111111'), role: AccountRole.READONLY },
+      { address: address(pdas.eventAuthority.toBase58()), role: AccountRole.READONLY },
+      { address: address(programId.toBase58()), role: AccountRole.READONLY },
     ];
 
     // TODO: SPL token path support (8 optional accounts) — currently SOL-only
@@ -500,22 +514,22 @@ export class SettlementBridge extends EventEmitter {
           [Buffer.from('application'), u64LeBuffer(taskId), agentPubkey.toBuffer()],
           programId,
         );
-        keys.push({ pubkey: applicationPda, isSigner: false, isWritable: false });
-        keys.push({ pubkey: agentPubkey, isSigner: false, isWritable: true });
+        accounts.push({ address: address(applicationPda.toBase58()), role: AccountRole.READONLY });
+        accounts.push({ address: address(agentPubkey.toBase58()), role: AccountRole.WRITABLE });
       }
     }
 
-    const data = serializeJudgeAndPayData({
+    const data = new Uint8Array(serializeJudgeAndPayData({
       winner: Array.from(winner.toBytes()),
       score: proof.score,
       reasonRef: request.reasonRef ?? null,
-    });
+    }));
 
-    return new TransactionInstruction({
-      keys,
-      programId,
+    return {
+      programAddress: address(programId.toBase58()),
+      accounts,
       data,
-    });
+    };
   }
 
   createPaymentConfirmation(

@@ -40,6 +40,7 @@
         "@gradiences/xmtp-adapter": "^0.1.0",
         "@noble/hashes": "^2.0.1",
         "@open-wallet-standard/core": "^1.2.4",
+        "@solana/kit": "^6.7.0",
         "@solana/spl-token": "^0.4.0",
         "@solana/web3.js": "^1.98.4",
         "better-sqlite3": "^11.7.0",
@@ -60,7 +61,6 @@
         "zod": "^3.24.0"
     },
     "devDependencies": {
-        "@solana/kit": "^6.7.0",
         "@types/better-sqlite3": "^7.6.13",
         "@types/express": "^5.0.6",
         "@types/node": "^22.0.0",
