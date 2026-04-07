@@ -35,6 +35,12 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         Reject
     }
 
+    enum JudgeMode {
+        DESIGNATED,
+        SINGLE_POOL,
+        MULTI_QUORUM
+    }
+
     struct Task {
         address poster;
         address judge;
@@ -47,6 +53,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         uint8 category;
         uint8 score;
         TaskState state;
+        uint8 judgeMode;
     }
 
     struct Dispute {
@@ -82,6 +89,13 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         uint256 winRateBps;
     }
 
+    struct Judgement {
+        bool exists;
+        address winner;
+        uint8 score;
+        uint64 submittedAt;
+    }
+
     error ZeroAddress();
     error InvalidCategory(uint8 category);
     error InvalidDeadline(uint64 deadline);
@@ -115,6 +129,12 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error InvalidDisputeOutcome(uint8 outcome);
     error TaskNotCompleted(uint256 taskId);
     error BondAmountIncorrect(uint256 expected, uint256 actual);
+    error InvalidJudgeMode(uint256 taskId);
+    error NoJudgeRegistry();
+    error NotPoolJudge(uint256 taskId, address caller);
+    error QuorumNotReached(uint256 taskId);
+    error AlreadyJudged(uint256 taskId, address judge);
+    error DuplicateVote(uint256 taskId, address judge);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -164,6 +184,8 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     // Dynamic metadata extracted from Task struct for cleaner storage layout
     mapping(uint256 => string) public taskEvalRef;
     mapping(uint256 => Dispute) public disputes;
+    mapping(uint256 => address[]) public taskJudgePool;
+    mapping(uint256 => mapping(address => Judgement)) public judgements;
 
     modifier onlyResolver() {
         if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
@@ -214,7 +236,8 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             judgeDeadline: judge_deadline,
             category: category,
             score: 0,
-            state: TaskState.Open
+            state: TaskState.Open,
+            judgeMode: uint8(JudgeMode.DESIGNATED)
         });
         taskEvalRef[task_id] = eval_ref;
 
@@ -222,6 +245,56 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             task_id,
             msg.sender,
             taskJudge,
+            category,
+            min_stake,
+            msg.value,
+            deadline,
+            judge_deadline,
+            eval_ref
+        );
+    }
+
+    function post_task_quorum(
+        string calldata eval_ref,
+        uint64 deadline,
+        uint64 judge_deadline,
+        uint8 category,
+        uint256 min_stake,
+        uint8 judge_mode,
+        address[] calldata judges
+    ) external payable returns (uint256 task_id) {
+        if (msg.value == 0) revert ZeroReward();
+        if (bytes(eval_ref).length == 0 || bytes(eval_ref).length > MAX_REF_LEN) revert InvalidRefLength();
+        if (category > 7) revert InvalidCategory(category);
+        if (deadline <= block.timestamp) revert InvalidDeadline(deadline);
+        if (judge_deadline <= deadline) revert InvalidJudgeDeadline(judge_deadline);
+        if (judge_mode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(0);
+        if (judges.length == 0) revert InvalidJudgeMode(0);
+
+        task_id = ++taskCount;
+        Task storage task = tasks[task_id];
+        task.poster = msg.sender;
+        task.judge = address(0);
+        task.winner = address(0);
+        task.paymentToken = address(0);
+        task.minStake = min_stake;
+        task.reward = msg.value;
+        task.deadline = deadline;
+        task.judgeDeadline = judge_deadline;
+        task.category = category;
+        task.score = 0;
+        task.state = TaskState.Open;
+        task.judgeMode = judge_mode;
+        taskEvalRef[task_id] = eval_ref;
+
+        for (uint256 i = 0; i < judges.length; i++) {
+            taskJudgePool[task_id].push(judges[i]);
+        }
+
+        emit TaskCreated(
+            task_id,
+            msg.sender,
+            address(0),
             category,
             min_stake,
             msg.value,
@@ -263,7 +336,8 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             judgeDeadline: judge_deadline,
             category: category,
             score: 0,
-            state: TaskState.Open
+            state: TaskState.Open,
+            judgeMode: uint8(JudgeMode.DESIGNATED)
         });
         taskEvalRef[task_id] = eval_ref;
 
@@ -280,10 +354,65 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         );
     }
 
+    function post_task_erc20_quorum(
+        string calldata eval_ref,
+        uint64 deadline,
+        uint64 judge_deadline,
+        uint8 category,
+        uint256 min_stake,
+        address token,
+        uint256 reward_amount,
+        uint8 judge_mode,
+        address[] calldata judges
+    ) external returns (uint256 task_id) {
+        if (token == address(0)) revert ZeroAddress();
+        if (reward_amount == 0) revert ZeroReward();
+        if (bytes(eval_ref).length == 0 || bytes(eval_ref).length > MAX_REF_LEN) revert InvalidRefLength();
+        if (category > 7) revert InvalidCategory(category);
+        if (deadline <= block.timestamp) revert InvalidDeadline(deadline);
+        if (judge_deadline <= deadline) revert InvalidJudgeDeadline(judge_deadline);
+        if (judge_mode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(0);
+        if (judges.length == 0) revert InvalidJudgeMode(0);
+
+        _transferTokenFrom(token, msg.sender, address(this), reward_amount);
+
+        task_id = ++taskCount;
+        Task storage task = tasks[task_id];
+        task.poster = msg.sender;
+        task.judge = address(0);
+        task.winner = address(0);
+        task.paymentToken = token;
+        task.minStake = min_stake;
+        task.reward = reward_amount;
+        task.deadline = deadline;
+        task.judgeDeadline = judge_deadline;
+        task.category = category;
+        task.score = 0;
+        task.state = TaskState.Open;
+        task.judgeMode = judge_mode;
+        taskEvalRef[task_id] = eval_ref;
+
+        for (uint256 i = 0; i < judges.length; i++) {
+            taskJudgePool[task_id].push(judges[i]);
+        }
+
+        emit TaskCreated(
+            task_id,
+            msg.sender,
+            address(0),
+            category,
+            min_stake,
+            reward_amount,
+            deadline,
+            judge_deadline,
+            eval_ref
+        );
+    }
+
     function apply_for_task(uint256 task_id) external payable nonReentrant {
         Task storage task = _loadOpenTask(task_id);
         if (block.timestamp >= task.deadline) revert DeadlinePassed(task_id);
-        if (msg.sender == task.judge) revert JudgeCannotApply(task_id, msg.sender);
+        if (_isJudge(task_id, msg.sender)) revert JudgeCannotApply(task_id, msg.sender);
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
@@ -330,6 +459,7 @@ contract AgentLayerRaceTask is ReentrancyGuard {
 
     function judge_and_pay(uint256 task_id, address winner, uint8 score) external nonReentrant {
         Task storage task = _loadOpenTask(task_id);
+        if (task.judgeMode != uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
         if (block.timestamp > task.judgeDeadline) revert JudgeDeadlinePassed(task_id);
         if (msg.sender != task.judge) revert NotTaskJudge(task_id, msg.sender, task.judge);
         if (score > 100) revert InvalidScore(score);
@@ -358,6 +488,94 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             task.state = TaskState.Refunded;
             _payout(task, task.poster, task.reward);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
+        }
+    }
+
+    function submit_judgement(uint256 task_id, address winner, uint8 score) external {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.state != TaskState.Open) revert TaskNotOpen(task_id);
+        if (block.timestamp > task.judgeDeadline) revert JudgeDeadlinePassed(task_id);
+        if (score > 100) revert InvalidScore(score);
+        if (task.judgeMode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
+
+        if (!_isPoolJudge(task_id, msg.sender)) revert NotPoolJudge(task_id, msg.sender);
+
+        Judgement storage j = judgements[task_id][msg.sender];
+        if (j.exists) revert AlreadyJudged(task_id, msg.sender);
+
+        j.exists = true;
+        j.winner = winner;
+        j.score = score;
+        j.submittedAt = uint64(block.timestamp);
+    }
+
+    function settle_with_quorum(uint256 task_id) external nonReentrant {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.state != TaskState.Open) revert TaskNotOpen(task_id);
+        if (block.timestamp <= task.judgeDeadline) revert JudgeDeadlineNotReached(task_id);
+        if (task.judgeMode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
+
+        address[] memory pool = taskJudgePool[task_id];
+        uint256 quorum = (pool.length + 1) / 2; // simple majority
+
+        // Find majority vote through pairwise counting
+        address majorityWinner;
+        uint8 majorityScore;
+        uint256 bestCount = 0;
+
+        for (uint256 i = 0; i < pool.length; i++) {
+            Judgement memory ji = judgements[task_id][pool[i]];
+            if (!ji.exists) continue;
+            uint256 count = 1;
+            for (uint256 j = i + 1; j < pool.length; j++) {
+                Judgement memory jj = judgements[task_id][pool[j]];
+                if (!jj.exists) continue;
+                if (ji.winner == jj.winner && ji.score == jj.score) {
+                    count++;
+                }
+            }
+            if (count > bestCount) {
+                bestCount = count;
+                majorityWinner = ji.winner;
+                majorityScore = ji.score;
+            }
+        }
+
+        if (bestCount == 0 || bestCount < quorum) revert QuorumNotReached(task_id);
+
+        task.winner = majorityWinner;
+        task.score = majorityScore;
+
+        Application storage winnerApplication = applications[task_id][majorityWinner];
+        if (!winnerApplication.exists) revert WinnerNotApplied(task_id, majorityWinner);
+        if (!_submissions[task_id][majorityWinner].exists) revert WinnerSubmissionMissing(task_id, majorityWinner);
+
+        if (majorityScore >= MIN_SCORE) {
+            task.state = TaskState.Completed;
+
+            uint256 protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+            uint256 judgeFee = (task.reward * JUDGE_FEE_BPS) / BPS_DENOMINATOR;
+            uint256 winnerPayout = task.reward - protocolFee - judgeFee;
+
+            _payout(task, majorityWinner, winnerPayout);
+            _payout(task, treasury, protocolFee);
+            _distributeJudgeFee(task_id, task, judgeFee, pool, majorityWinner, majorityScore);
+            _updateWinnerReputation(majorityWinner, winnerPayout, majorityScore);
+
+            emit TaskJudged(task_id, majorityWinner, majorityScore, winnerPayout, judgeFee, protocolFee);
+        } else {
+            task.state = TaskState.Refunded;
+            _payout(task, task.poster, task.reward);
+            emit TaskRefunded(task_id, task.poster, task.reward, majorityScore);
+        }
+
+        // Slash absentees after settlement
+        for (uint256 i = 0; i < pool.length; i++) {
+            if (!judgements[task_id][pool[i]].exists) {
+                _attemptSlash(pool[i], task.minStake / 10);
+            }
         }
     }
 
@@ -495,6 +713,10 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         emit StakeRefunded(task_id, msg.sender, stake);
     }
 
+    function get_task_judge_pool(uint256 task_id) external view returns (address[] memory) {
+        return taskJudgePool[task_id];
+    }
+
     function get_submission(uint256 task_id, address agent) external view returns (Submission memory) {
         return _submissions[task_id][agent];
     }
@@ -557,6 +779,69 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             _sendEth(to, amount);
         } else {
             _sendToken(task.paymentToken, to, amount);
+        }
+    }
+
+    function _isJudge(uint256 task_id, address addr) internal view returns (bool) {
+        Task storage task = tasks[task_id];
+        if (task.judgeMode == uint8(JudgeMode.DESIGNATED)) {
+            return addr == task.judge;
+        }
+        return _isPoolJudge(task_id, addr);
+    }
+
+    function _isPoolJudge(uint256 task_id, address addr) internal view returns (bool) {
+        address[] storage pool = taskJudgePool[task_id];
+        for (uint256 i = 0; i < pool.length; i++) {
+            if (pool[i] == addr) return true;
+        }
+        return false;
+    }
+
+    function _distributeJudgeFee(
+        uint256 taskId,
+        Task storage task,
+        uint256 judgeFee,
+        address[] memory pool,
+        address majorityWinner,
+        uint8 majorityScore
+    ) internal {
+        uint256 majorityCount;
+        uint256 outlierCount;
+        for (uint256 i = 0; i < pool.length; i++) {
+            Judgement memory j = judgements[taskId][pool[i]];
+            if (!j.exists) continue;
+            if (j.winner == majorityWinner && j.score == majorityScore) {
+                majorityCount++;
+            } else {
+                outlierCount++;
+            }
+        }
+
+        uint256 distributed;
+        if (majorityCount > 0) {
+            uint256 perMajority = (judgeFee * 7) / 10 / majorityCount;
+            for (uint256 i = 0; i < pool.length; i++) {
+                Judgement memory j = judgements[taskId][pool[i]];
+                if (j.exists && j.winner == majorityWinner && j.score == majorityScore) {
+                    _payout(task, pool[i], perMajority);
+                    distributed += perMajority;
+                }
+            }
+        }
+        if (outlierCount > 0) {
+            uint256 perOutlier = (judgeFee * 3) / 10 / outlierCount;
+            for (uint256 i = 0; i < pool.length; i++) {
+                Judgement memory j = judgements[taskId][pool[i]];
+                if (j.exists && (j.winner != majorityWinner || j.score != majorityScore)) {
+                    _payout(task, pool[i], perOutlier);
+                    distributed += perOutlier;
+                }
+            }
+        }
+        uint256 remainder = judgeFee - distributed;
+        if (remainder > 0) {
+            _payout(task, treasury, remainder);
         }
     }
 

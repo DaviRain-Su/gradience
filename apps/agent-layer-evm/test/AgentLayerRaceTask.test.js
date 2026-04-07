@@ -570,6 +570,134 @@ describe("AgentLayerRaceTask", function () {
         });
     });
 
+    describe("Quorum", function () {
+        it("post_task_quorum creates a pool-based task", async function () {
+            const { contract, poster, judge, agentA, agentB } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+            const judges = [judge.address, agentA.address, agentB.address];
+
+            await expect(
+                contract
+                    .connect(poster)
+                    .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                        value: reward,
+                    }),
+            )
+                .to.emit(contract, "TaskCreated")
+                .withArgs(1n, poster.address, ethers.ZeroAddress, 1n, minStake, reward, deadline, judgeDeadline, "cid://eval");
+
+            const task = await contract.tasks(1n);
+            expect(task[10]).to.equal(0n); // TaskState.Open
+            expect(task[11]).to.equal(1n); // judgeMode = SINGLE_POOL
+
+            const pool = await contract.get_task_judge_pool(1n);
+            expect(pool.map((a) => a)).to.deep.equal(judges);
+        });
+
+        it("pool judges can submit judgements and settle with quorum", async function () {
+            const { contract, poster, judge, agentA, agentB, treasury, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+            const judges = [judge.address, agentA.address, agentB.address];
+
+            await contract
+                .connect(poster)
+                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                    value: reward,
+                });
+
+            const applicant = attacker;
+            await contract.connect(applicant).apply_for_task(1n, { value: minStake });
+            await contract.connect(applicant).submit_result(1n, "cid://result", "cid://trace");
+
+            // 2-of-3 majority required
+            await contract.connect(judge).submit_judgement(1n, applicant.address, 80);
+            await contract.connect(agentA).submit_judgement(1n, applicant.address, 80);
+            // agentB votes differently
+            await contract.connect(agentB).submit_judgement(1n, ethers.ZeroAddress, 0);
+
+            await expect(contract.connect(treasury).settle_with_quorum(1n))
+                .to.be.revertedWithCustomError(contract, "JudgeDeadlineNotReached")
+                .withArgs(1n);
+
+            await warpTo(judgeDeadline + 1n);
+
+            const winnerBefore = await ethers.provider.getBalance(applicant.address);
+            await expect(contract.connect(treasury).settle_with_quorum(1n))
+                .to.emit(contract, "TaskJudged")
+                .withArgs(
+                    1n,
+                    applicant.address,
+                    80n,
+                    (reward * 9500n) / 10000n,
+                    (reward * 300n) / 10000n,
+                    (reward * 200n) / 10000n,
+                );
+            const winnerAfter = await ethers.provider.getBalance(applicant.address);
+            expect(winnerAfter - winnerBefore).to.equal((reward * 9500n) / 10000n);
+
+            const task = await contract.tasks(1n);
+            expect(task[10]).to.equal(1n); // Completed
+            expect(task[2]).to.equal(applicant.address);
+            expect(task[9]).to.equal(80n);
+        });
+
+        it("non-pool judge cannot submit judgement", async function () {
+            const { contract, poster, judge, agentA, agentB, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+            const judges = [judge.address, agentA.address];
+
+            await contract
+                .connect(poster)
+                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                    value: reward,
+                });
+
+            await expect(
+                contract.connect(attacker).submit_judgement(1n, agentA.address, 80),
+            ).to.be.revertedWithCustomError(contract, "NotPoolJudge");
+        });
+
+        it("quorum rejects when no majority reached", async function () {
+            const { contract, poster, judge, agentA, agentB, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+            const judges = [judge.address, agentA.address, agentB.address];
+
+            await contract
+                .connect(poster)
+                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                    value: reward,
+                });
+
+            await contract.connect(attacker).apply_for_task(1n, { value: minStake });
+            await contract.connect(attacker).submit_result(1n, "cid://result", "cid://trace");
+
+            // No majority: 1-1-0 split
+            await contract.connect(judge).submit_judgement(1n, attacker.address, 80);
+            await contract.connect(agentA).submit_judgement(1n, attacker.address, 70);
+
+            await warpTo(judgeDeadline + 1n);
+            await expect(contract.settle_with_quorum(1n))
+                .to.be.revertedWithCustomError(contract, "QuorumNotReached")
+                .withArgs(1n);
+        });
+    });
+
     async function currentTime() {
         const latestBlock = await ethers.provider.getBlock("latest");
         return BigInt(latestBlock.timestamp);
