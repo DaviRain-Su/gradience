@@ -36,6 +36,12 @@ export interface ReputationApi {
     global_total_applied: number;
     total_earned: number;
     updated_slot: number;
+    /** Unix timestamp of the last oracle update (seconds). */
+    last_updated_at?: number;
+    /** Oracle address that produced this snapshot. */
+    oracle?: string;
+    /** Human-readable freshness hint: "fresh" | "stale" | "unknown". */
+    freshness?: 'fresh' | 'stale' | 'unknown';
 }
 
 export interface ReputationCategoryOnChain {
@@ -53,4 +59,8 @@ export interface ReputationOnChain {
     winRate: number;
     byCategory: ReputationCategoryOnChain[];
     bump: number;
+    /** Unix timestamp of the last oracle update (seconds). */
+    lastUpdatedAt?: number;
+    /** Oracle address that produced this snapshot. */
+    oracle?: string;
 }
