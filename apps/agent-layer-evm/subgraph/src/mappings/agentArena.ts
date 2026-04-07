@@ -29,7 +29,9 @@ export function handleTaskCreated(event: TaskCreated): void {
   let task = new Task(event.params.taskId.toString());
   task.taskId = event.params.taskId;
   task.poster = getOrCreateUser(event.params.poster).id;
-  task.judge = getOrCreateUser(event.params.judge).id;
+  if (event.params.judge != Address.zero()) {
+    task.judge = getOrCreateUser(event.params.judge).id;
+  }
   task.category = event.params.category;
   task.minStake = event.params.minStake;
   task.reward = event.params.reward;
@@ -83,7 +85,9 @@ export function handleTaskJudged(event: TaskJudged): void {
   if (!task) return;
   task.state = 'Completed';
   task.score = event.params.score;
-  task.winner = getOrCreateUser(event.params.winner).id;
+  if (event.params.winner != Address.zero()) {
+    task.winner = getOrCreateUser(event.params.winner).id;
+  }
   task.winnerPayout = event.params.winnerPayout;
   task.judgeFee = event.params.judgeFee;
   task.protocolFee = event.params.protocolFee;
@@ -139,7 +143,9 @@ export function handleDisputeResolved(event: DisputeResolved): void {
   if (!dispute) return;
   dispute.state = 'Resolved';
   dispute.outcome = event.params.outcome;
-  dispute.resolver = getOrCreateUser(event.params.resolver).id;
+  if (event.params.resolver != Address.zero()) {
+    dispute.resolver = getOrCreateUser(event.params.resolver).id;
+  }
   if (event.params.correctWinner != Address.zero()) {
     dispute.correctWinner = getOrCreateUser(event.params.correctWinner).id;
   }

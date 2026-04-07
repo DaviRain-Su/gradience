@@ -28,6 +28,11 @@ import {
   fetchTaskEVM,
 } from '@/lib/evm/arena-client';
 import { getExplorerUrl as getEVMExplorerUrl } from '@/lib/evm/explorer';
+import {
+  fetchTasksFromSubgraph,
+  fetchTaskFromSubgraph,
+  fetchSubmissionsFromSubgraph,
+} from '@/lib/evm/subgraph-client';
 import { useWalletChain } from './useWalletChain';
 
 export type { TaskApi, SubmissionApi, ReputationApi };
@@ -223,6 +228,37 @@ export function useArenaTask(walletAddress: string | null) {
     }
   }, [chain, getWallet, getEthereumProvider, walletAddress]);
 
+  const doFetchTasks = useCallback(async (params?: {
+    status?: 'open' | 'completed' | 'refunded';
+    category?: number;
+    poster?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<TaskApi[]> => {
+    if (chain === 'evm') {
+      return fetchTasksFromSubgraph({
+        state: params?.status,
+        poster: params?.poster,
+        limit: params?.limit,
+      });
+    }
+    return fetchTasks(params);
+  }, [chain]);
+
+  const doFetchTask = useCallback(async (taskId: number): Promise<TaskApi | null> => {
+    if (chain === 'evm') {
+      return fetchTaskFromSubgraph(taskId);
+    }
+    return fetchTask(taskId);
+  }, [chain]);
+
+  const doFetchSubmissions = useCallback(async (taskId: number): Promise<SubmissionApi[] | null> => {
+    if (chain === 'evm') {
+      return fetchSubmissionsFromSubgraph(taskId);
+    }
+    return fetchSubmissions(taskId);
+  }, [chain]);
+
   return {
     loading,
     error,
@@ -233,9 +269,9 @@ export function useArenaTask(walletAddress: string | null) {
     submitResult: doSubmitResult,
     judgeAndPay: doJudgeAndPay,
     cancelTask: doCancelTask,
-    fetchTasks,
-    fetchTask,
-    fetchSubmissions,
+    fetchTasks: doFetchTasks,
+    fetchTask: doFetchTask,
+    fetchSubmissions: doFetchSubmissions,
     fetchReputation,
     getExplorerUrl: (sig: string) => getExplorerUrl(sig, chain ?? 'solana'),
   } as const;

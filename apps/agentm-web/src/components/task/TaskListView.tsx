@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useArenaTask, type TaskApi } from '@/hooks/useArenaTask';
+import { useWalletChain } from '@/hooks/useWalletChain';
 import Link from 'next/link';
 
 const CATEGORY_LABELS: Record<number, string> = {
@@ -33,8 +34,14 @@ interface TaskListViewProps {
   walletAddress: string | null;
 }
 
+function formatTokenAmount(amount: number, chain: 'solana' | 'evm' | null): string {
+  const divisor = chain === 'evm' ? 1e18 : 1e9;
+  return `${(amount / divisor).toFixed(4)} ${chain === 'evm' ? 'ETH' : 'SOL'}`;
+}
+
 export function TaskListView({ walletAddress }: TaskListViewProps) {
   const arena = useArenaTask(walletAddress);
+  const { chain } = useWalletChain();
   const [tasks, setTasks] = useState<TaskApi[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'open' | 'completed' | 'refunded'>('all');
@@ -54,6 +61,8 @@ export function TaskListView({ walletAddress }: TaskListViewProps) {
     if (sortBy === 'reward') return b.reward - a.reward;
     return a.deadline - b.deadline;
   });
+
+  const tokenLabel = chain === 'evm' ? 'ETH' : 'SOL';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -193,11 +202,11 @@ export function TaskListView({ walletAddress }: TaskListViewProps) {
               >
                 <div>
                   <span style={{ opacity: 0.5 }}>Reward:</span>{' '}
-                  <strong>{(task.reward / 1e9).toFixed(4)} SOL</strong>
+                  <strong>{formatTokenAmount(task.reward, chain)}</strong>
                 </div>
                 <div>
                   <span style={{ opacity: 0.5 }}>Min Stake:</span>{' '}
-                  <strong>{(task.min_stake / 1e9).toFixed(4)} SOL</strong>
+                  <strong>{formatTokenAmount(task.min_stake, chain)}</strong>
                 </div>
                 <div>
                   <span style={{ opacity: 0.5 }}>Deadline:</span>{' '}

@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useArenaTask, type TaskApi, type SubmissionApi, getExplorerUrl } from '@/hooks/useArenaTask';
+import { useWalletChain } from '@/hooks/useWalletChain';
 import type { Address } from '@solana/kit';
+
+function formatTokenAmount(amount: number, chain: 'solana' | 'evm' | null): string {
+  const divisor = chain === 'evm' ? 1e18 : 1e9;
+  return `${(amount / divisor).toFixed(4)} ${chain === 'evm' ? 'ETH' : 'SOL'}`;
+}
 
 const CATEGORY_LABELS: Record<number, string> = {
   0: 'DeFi Analysis',
@@ -31,6 +37,7 @@ export function TaskDetailPanel({
   onClose: () => void;
 }) {
   const arena = useArenaTask(walletAddress);
+  const { chain } = useWalletChain();
   const [submissions, setSubmissions] = useState<SubmissionApi[]>([]);
   const [resultRef, setResultRef] = useState('');
   const [traceRef, setTraceRef] = useState('');
@@ -39,10 +46,10 @@ export function TaskDetailPanel({
   const [selectedWinner, setSelectedWinner] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
 
-  const isMyTask = task.poster === walletAddress;
-  const isJudge = task.judge === walletAddress;
+  const isMyTask = task.poster.toLowerCase() === walletAddress.toLowerCase();
+  const isJudge = task.judge.toLowerCase() === walletAddress.toLowerCase();
   const isOpen = task.state === 'open';
-  const rewardSol = (task.reward / 1e9).toFixed(4);
+  const rewardDisplay = formatTokenAmount(task.reward, chain);
 
   useEffect(() => {
     arena.fetchSubmissions(task.task_id).then(subs => {
@@ -129,8 +136,8 @@ export function TaskDetailPanel({
         </div>
         <p style={{ fontSize: '14px', color: '#16161A', marginBottom: '12px' }}>{task.eval_ref}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
-          <div><span style={{ opacity: 0.5 }}>Reward:</span> <strong>{rewardSol} SOL</strong></div>
-          <div><span style={{ opacity: 0.5 }}>Min Stake:</span> <strong>{(task.min_stake / 1e9).toFixed(4)} SOL</strong></div>
+          <div><span style={{ opacity: 0.5 }}>Reward:</span> <strong>{rewardDisplay}</strong></div>
+          <div><span style={{ opacity: 0.5 }}>Min Stake:</span> <strong>{formatTokenAmount(task.min_stake, chain)}</strong></div>
           <div><span style={{ opacity: 0.5 }}>Deadline:</span> {new Date(task.deadline * 1000).toLocaleString()}</div>
           <div><span style={{ opacity: 0.5 }}>Submissions:</span> {task.submission_count}</div>
           <div style={{ gridColumn: '1 / -1' }}>
@@ -170,7 +177,7 @@ export function TaskDetailPanel({
           <h4 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', marginBottom: '12px' }}>Agent Actions</h4>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button onClick={handleApply} disabled={arena.loading} style={btnPrimary}>
-              {arena.loading ? 'Sending...' : `Apply (Stake ${(task.min_stake / 1e9).toFixed(4)} SOL)`}
+              {arena.loading ? 'Sending...' : `Apply (Stake ${formatTokenAmount(task.min_stake, chain)})`}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -273,7 +280,7 @@ export function TaskDetailPanel({
             disabled={arena.loading || !selectedWinner}
             style={{ ...btnPrimary, background: selectedWinner ? '#16161A' : '#ccc' }}
           >
-            {arena.loading ? 'Sending...' : `Judge & Settle (${rewardSol} SOL)`}
+            {arena.loading ? 'Sending...' : `Judge & Settle (${rewardDisplay})`}
           </button>
         </div>
       )}
