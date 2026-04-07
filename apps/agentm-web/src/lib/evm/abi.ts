@@ -3,6 +3,118 @@
  * Full ABI is available at apps/agent-layer-evm/out/AgentArenaEVM.sol/AgentArenaEVM.json
  */
 
+export const AGENT_M_REGISTRY_ABI = [
+  {
+    type: 'function',
+    name: 'registerUser',
+    inputs: [
+      { name: 'username', type: 'string', internalType: 'string' },
+      { name: 'metadataURI', type: 'string', internalType: 'string' },
+      { name: 'ensName', type: 'string', internalType: 'string' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'updateProfile',
+    inputs: [
+      { name: 'metadataURI', type: 'string', internalType: 'string' },
+      { name: 'ensName', type: 'string', internalType: 'string' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'createAgent',
+    inputs: [{ name: 'metadataURI', type: 'string', internalType: 'string' }],
+    outputs: [{ name: 'agentId', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'updateAgent',
+    inputs: [
+      { name: 'agentId', type: 'uint256', internalType: 'uint256' },
+      { name: 'metadataURI', type: 'string', internalType: 'string' },
+      { name: 'isActive', type: 'bool', internalType: 'bool' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'users',
+    inputs: [{ name: 'user', type: 'address', internalType: 'address' }],
+    outputs: [
+      { name: 'exists', type: 'bool', internalType: 'bool' },
+      { name: 'username', type: 'string', internalType: 'string' },
+      { name: 'ensName', type: 'string', internalType: 'string' },
+      { name: 'metadataURI', type: 'string', internalType: 'string' },
+      { name: 'createdAt', type: 'uint64', internalType: 'uint64' },
+      { name: 'updatedAt', type: 'uint64', internalType: 'uint64' },
+      { name: 'version', type: 'uint64', internalType: 'uint64' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'agents',
+    inputs: [{ name: 'agentId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [
+      { name: 'exists', type: 'bool', internalType: 'bool' },
+      { name: 'owner', type: 'address', internalType: 'address' },
+      { name: 'metadataURI', type: 'string', internalType: 'string' },
+      { name: 'createdAt', type: 'uint64', internalType: 'uint64' },
+      { name: 'isActive', type: 'bool', internalType: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'usernameToAddress',
+    inputs: [{ name: 'username', type: 'string', internalType: 'string' }],
+    outputs: [{ name: 'addr', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getUserAgents',
+    inputs: [{ name: 'user', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256[]', internalType: 'uint256[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'agentCount',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'UserRegistered',
+    inputs: [
+      { name: 'user', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'username', type: 'string', indexed: false, internalType: 'string' },
+      { name: 'metadataURI', type: 'string', indexed: false, internalType: 'string' },
+      { name: 'version', type: 'uint64', indexed: false, internalType: 'uint64' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'AgentCreated',
+    inputs: [
+      { name: 'owner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'agentId', type: 'uint256', indexed: true, internalType: 'uint256' },
+      { name: 'metadataURI', type: 'string', indexed: false, internalType: 'string' },
+    ],
+    anonymous: false,
+  },
+] as const;
+
 export const AGENT_ARENA_EVM_ABI = [
   {
     type: 'function',

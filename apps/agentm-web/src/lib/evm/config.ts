@@ -11,6 +11,7 @@ export interface EvmChainConfig {
   chain: Chain;
   rpcEndpoint: string;
   agentArenaAddress: `0x${string}`;
+  agentMRegistryAddress: `0x${string}`;
   blockExplorer: string;
 }
 
@@ -19,32 +20,37 @@ const defaultChains: Record<number, EvmChainConfig> = {
     chain: baseSepolia,
     rpcEndpoint: 'https://sepolia.base.org',
     agentArenaAddress: '0x0000000000000000000000000000000000000000',
+    agentMRegistryAddress: '0x0000000000000000000000000000000000000000',
     blockExplorer: 'https://sepolia.basescan.org',
   },
   [arbitrumSepolia.id]: {
     chain: arbitrumSepolia,
     rpcEndpoint: 'https://sepolia-rollup.arbitrum.io/rpc',
     agentArenaAddress: '0x0000000000000000000000000000000000000000',
+    agentMRegistryAddress: '0x0000000000000000000000000000000000000000',
     blockExplorer: 'https://sepolia.arbiscan.io',
   },
 };
 
 function getChainConfig(chainId: number): EvmChainConfig {
   const envRpc = process.env.NEXT_PUBLIC_EVM_RPC_ENDPOINT;
-  const envAddress = process.env.NEXT_PUBLIC_AGENT_ARENA_EVM_ADDRESS as `0x${string}` | undefined;
+  const envArenaAddress = process.env.NEXT_PUBLIC_AGENT_ARENA_EVM_ADDRESS as `0x${string}` | undefined;
+  const envRegistryAddress = process.env.NEXT_PUBLIC_AGENT_M_REGISTRY_ADDRESS as `0x${string}` | undefined;
   const envExplorer = process.env.NEXT_PUBLIC_EVM_BLOCK_EXPLORER;
 
   const base = defaultChains[chainId] ?? {
     chain: { ...baseSepolia, id: chainId, name: `EVM Chain ${chainId}` } as Chain,
     rpcEndpoint: envRpc || 'https://sepolia.base.org',
-    agentArenaAddress: envAddress || '0x0000000000000000000000000000000000000000',
+    agentArenaAddress: envArenaAddress || '0x0000000000000000000000000000000000000000',
+    agentMRegistryAddress: envRegistryAddress || '0x0000000000000000000000000000000000000000',
     blockExplorer: envExplorer || 'https://sepolia.basescan.org',
   };
 
   return {
     chain: base.chain,
     rpcEndpoint: envRpc || base.rpcEndpoint,
-    agentArenaAddress: envAddress || base.agentArenaAddress,
+    agentArenaAddress: envArenaAddress || base.agentArenaAddress,
+    agentMRegistryAddress: envRegistryAddress || base.agentMRegistryAddress,
     blockExplorer: envExplorer || base.blockExplorer,
   };
 }
@@ -64,6 +70,10 @@ export const EVM_RPC_ENDPOINT =
 /** @deprecated Use getChainConfig(chainId).agentArenaAddress */
 export const AGENT_ARENA_EVM_ADDRESS =
   (process.env.NEXT_PUBLIC_AGENT_ARENA_EVM_ADDRESS as `0x${string}`) || getChainConfig(getDefaultEvmChainId()).agentArenaAddress;
+
+/** @deprecated Use getChainConfig(chainId).agentMRegistryAddress */
+export const AGENT_M_REGISTRY_ADDRESS =
+  (process.env.NEXT_PUBLIC_AGENT_M_REGISTRY_ADDRESS as `0x${string}`) || getChainConfig(getDefaultEvmChainId()).agentMRegistryAddress;
 
 /** @deprecated Use getChainConfig(chainId).blockExplorer */
 export const EVM_BLOCK_EXPLORER =

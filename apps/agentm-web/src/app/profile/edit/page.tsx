@@ -6,7 +6,9 @@ import { SoulProfileEditor } from '@/components/social/SoulProfileEditor';
 import { ProfileForm } from '@/components/profile';
 import { DomainInput } from '@/components/social/DomainInput';
 import Link from 'next/link';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useState, useEffect } from 'react';
+import { createAgentEVM, isUserRegisteredEVM, registerUserEVM } from '@/lib/evm/agent-registry';
 import type { ProfileDraft } from '@/types/profile';
 
 const c = {
@@ -19,6 +21,100 @@ const c = {
 
 type EditSection = 'domain' | 'soul' | 'agent';
 
+function EVMProfileRegistrationCard({
+  domain,
+  displayName,
+  bio,
+  onRegistered,
+}: {
+  domain: string;
+  displayName: string;
+  bio?: string;
+  onRegistered?: () => void;
+}) {
+  const { primaryWallet } = useDynamicContext();
+  const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!primaryWallet?.address) return;
+    isUserRegisteredEVM(primaryWallet.address as `0x${string}`).then((exists) => setRegistered(exists));
+  }, [primaryWallet?.address]);
+
+  const handleRegister = async () => {
+    if (!primaryWallet?.address || !username.trim()) return;
+    const account = primaryWallet.address as `0x${string}`;
+    const provider = (primaryWallet as any).connector;
+    const metadataURI = `data:application/json;base64,${typeof btoa !== 'undefined' ? btoa(JSON.stringify({ name: displayName, bio: bio || '', domain })) : Buffer.from(JSON.stringify({ name: displayName, bio: bio || '', domain })).toString('base64')}`;
+    setLoading(true);
+    try {
+      await registerUserEVM({
+        ethereumProvider: provider,
+        account,
+        username: username.trim(),
+        metadataURI,
+        ensName: domain.endsWith('.eth') ? domain : '',
+      });
+      setRegistered(true);
+      onRegistered?.();
+    } catch (err) {
+      console.error('EVM registration failed:', err);
+      alert('Registration failed: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: `1px solid ${c.ink}` }}>
+      <h3 style={{ fontSize: '16px', fontWeight: 700, color: c.ink, marginBottom: '8px' }}>EVM Profile Registration</h3>
+      {registered === true ? (
+        <p style={{ fontSize: '13px', color: '#10B981', fontWeight: 600 }}>✅ You are registered on EVM</p>
+      ) : (
+        <>
+          <p style={{ fontSize: '13px', color: c.ink, opacity: 0.7, marginBottom: '12px' }}>
+            Register a Gradience username on-chain so you can publish agents to EVM.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="username"
+              style={{
+                flex: 1,
+                minWidth: '200px',
+                padding: '10px 14px',
+                background: c.bg,
+                border: `1.5px solid ${c.ink}`,
+                borderRadius: '10px',
+                fontSize: '14px',
+              }}
+            />
+            <button
+              onClick={handleRegister}
+              disabled={loading || username.trim().length < 3}
+              style={{
+                padding: '10px 20px',
+                background: c.ink,
+                color: c.surface,
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: loading || username.trim().length < 3 ? 'not-allowed' : 'pointer',
+                opacity: loading || username.trim().length < 3 ? 0.6 : 1,
+              }}
+            >
+              {loading ? 'Registering...' : 'Register on EVM'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function EditProfilePage() {
   const { profile, loading: profileLoading } = useMyProfile();
   const { updateSoulProfile, updating: soulUpdating } = useUpdateSoulProfile();
@@ -29,11 +125,17 @@ export default function EditProfilePage() {
     updateProfile,
     refreshProfiles,
   } = useAgentProfiles();
+  const { primaryWallet } = useDynamicContext();
   const [domain, setDomain] = useState(profile?.domain || '');
   const [activeSection, setActiveSection] = useState<EditSection>('domain');
   const [editingAgentProfile, setEditingAgentProfile] = useState<(typeof profiles)[0] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const isEvmWalletConnected =
+    (primaryWallet?.chain as string | undefined)?.toLowerCase?.() === 'evm' ||
+    (primaryWallet?.connector as any)?.name?.toLowerCase?.().includes('evm') ||
+    false;
 
   useEffect(() => {
     void refreshProfiles();
@@ -90,12 +192,37 @@ export default function EditProfilePage() {
   const handleAgentProfileSubmit = async (draft: ProfileDraft) => {
     setSubmitting(true);
     try {
+      let onChainResult: { agentId: string; txHash: string; chain: string } | undefined;
+
+      if (isEvmWalletConnected && primaryWallet?.address) {
+        const account = primaryWallet.address as `0x${string}`;
+        const provider = (primaryWallet as any).connector;
+        try {
+          const registered = await isUserRegisteredEVM(account);
+          if (!registered) {
+            setToastMessage({ type: 'error', message: 'Please register your Gradience profile on EVM first (Domain tab).' });
+            setSubmitting(false);
+            return;
+          }
+          const metadataURI = `data:application/json;base64,${typeof btoa !== 'undefined' ? btoa(JSON.stringify(draft)) : Buffer.from(JSON.stringify(draft)).toString('base64')}`;
+          const { agentId, txHash } = await createAgentEVM({
+            ethereumProvider: provider,
+            account,
+            metadataURI,
+          });
+          onChainResult = { agentId: agentId.toString(), txHash, chain: 'ethereum' };
+        } catch (evmErr) {
+          console.error('EVM publish failed:', evmErr);
+          setToastMessage({ type: 'error', message: 'EVM publish failed, profile saved locally only.' });
+        }
+      }
+
       if (editingAgentProfile) {
-        await updateProfile(editingAgentProfile.id, draft);
-        setToastMessage({ type: 'success', message: 'Agent profile updated successfully' });
+        await updateProfile(editingAgentProfile.id, { ...draft, onChain: onChainResult });
+        setToastMessage({ type: 'success', message: onChainResult ? 'Agent profile updated and published to EVM' : 'Agent profile updated successfully' });
       } else {
-        await createProfile(draft);
-        setToastMessage({ type: 'success', message: 'Agent profile created successfully' });
+        await createProfile({ ...draft, onChain: onChainResult } as ProfileDraft);
+        setToastMessage({ type: 'success', message: onChainResult ? 'Agent profile created and published to EVM' : 'Agent profile created successfully' });
       }
       setEditingAgentProfile(null);
       setActiveSection('domain');
@@ -226,6 +353,15 @@ export default function EditProfilePage() {
               showValidation
               autoResolve
             />
+
+            {isEvmWalletConnected && (
+              <EVMProfileRegistrationCard
+                domain={domain}
+                displayName={profile.displayName}
+                bio={profile.bio}
+                onRegistered={() => setToastMessage({ type: 'success', message: 'EVM profile registered successfully' })}
+              />
+            )}
           </div>
         )}
 

@@ -22,11 +22,14 @@ import {
 } from "@gradiences/ui";
 import { ArrowLeft, Sparkles, Settings } from "lucide-react";
 import Link from "next/link";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useDaemonApi } from "@/lib/connection/ConnectionContext";
+import { isUserRegisteredEVM, createAgentEVM } from "@/lib/evm/agent-registry";
 
 export default function CreateAgentPage() {
   const router = useRouter();
   const { apiCall, isConnected } = useDaemonApi();
+  const { primaryWallet } = useDynamicContext();
   const [mode, setMode] = useState<"traditional" | "smart">("smart");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,34 +42,68 @@ export default function CreateAgentPage() {
     enabled: true,
   });
 
-  const createAgent = async (agentData: Record<string, unknown>): Promise<{ success: boolean; agent: { id: string }; local?: boolean }> => {
+  const isEvmWalletConnected =
+    (primaryWallet?.chain as string | undefined)?.toLowerCase?.() === 'evm' ||
+    (primaryWallet?.connector as any)?.name?.toLowerCase?.().includes('evm') ||
+    false;
+
+  const createAgent = async (agentData: Record<string, unknown>): Promise<{ success: boolean; agent: { id: string }; local?: boolean; onChain?: { agentId: string; txHash: string; chain: string } }> => {
     setError(null);
-    
+
+    const chain = (agentData.chain as string) || 'solana';
+    let onChainResult: { agentId: string; txHash: string; chain: string } | undefined;
+
+    // EVM on-chain registration path
+    if (chain === 'ethereum' && isEvmWalletConnected && primaryWallet?.address) {
+      const account = primaryWallet.address as `0x${string}`;
+      const provider = (primaryWallet as any).connector;
+      try {
+        const registered = await isUserRegisteredEVM(account);
+        if (!registered) {
+          throw new Error('You must register a Gradience profile on EVM before creating an agent. Go to Profile → Register.');
+        }
+        const metadataURI = typeof agentData.description === 'string' && (agentData.description as string).startsWith('http')
+          ? (agentData.description as string)
+          : `ipfs://gradience-agent/${encodeURIComponent(agentData.name as string)}`;
+        const { agentId, txHash } = await createAgentEVM({
+          ethereumProvider: provider,
+          account,
+          metadataURI,
+        });
+        onChainResult = { agentId: agentId.toString(), txHash, chain: 'ethereum' };
+      } catch (evmErr) {
+        console.error('EVM on-chain registration failed:', evmErr);
+        // Surface error but still fallback to daemon/local below
+      }
+    }
+
     if (!isConnected) {
-      // Save to localStorage as fallback
       const localAgents = JSON.parse(localStorage.getItem('local_agents') || '[]');
       const newAgent = {
-        id: `local_${Date.now()}`,
+        id: onChainResult?.agentId ?? `local_${Date.now()}`,
         ...agentData,
+        onChain: onChainResult,
         createdAt: new Date().toISOString(),
       };
       localAgents.push(newAgent);
       localStorage.setItem('local_agents', JSON.stringify(localAgents));
-      return { success: true, agent: newAgent, local: true };
+      return { success: true, agent: newAgent, local: true, onChain: onChainResult };
     }
 
-    // Call daemon API
     const result = await apiCall<{ success: boolean; agent: { id: string } }>('/api/v1/agents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(agentData),
+      body: JSON.stringify({
+        ...agentData,
+        onChain: onChainResult,
+      }),
     });
 
     if (!result?.success) {
       throw new Error('Failed to create agent');
     }
 
-    return { ...result, local: false };
+    return { ...result, local: false, onChain: onChainResult };
   };
 
   const handleTraditionalSubmit = async (e: React.FormEvent) => {
@@ -75,16 +112,16 @@ export default function CreateAgentPage() {
       setError('Agent name is required');
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       const result = await createAgent(formData);
-      if (result.local) {
-        // Show notice that it's saved locally
-        router.push('/app?view=me&notice=agent_created_locally');
-      } else {
-        router.push('/app?view=me&notice=agent_created');
-      }
+      const notice = result.onChain
+        ? 'agent_created_onchain'
+        : result.local
+          ? 'agent_created_locally'
+          : 'agent_created';
+      router.push(`/app?view=me&notice=${notice}`);
     } catch (err) {
       console.error("Failed to create agent:", err);
       setError(err instanceof Error ? err.message : 'Creation failed, please try again');
@@ -102,11 +139,12 @@ export default function CreateAgentPage() {
         chain: (config.chain as string) || 'solana',
         enabled: true,
       });
-      if (result.local) {
-        router.push('/app?view=me&notice=agent_created_locally');
-      } else {
-        router.push('/app?view=me&notice=agent_created');
-      }
+      const notice = result.onChain
+        ? 'agent_created_onchain'
+        : result.local
+          ? 'agent_created_locally'
+          : 'agent_created';
+      router.push(`/app?view=me&notice=${notice}`);
     } catch (err) {
       console.error("Failed to create agent:", err);
       setError(err instanceof Error ? err.message : 'Creation failed, please try again');
