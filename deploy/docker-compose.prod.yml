@@ -49,6 +49,10 @@ services:
             DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@indexer-db:5432/gradience_indexer
             REDIS_URL: redis://indexer-cache:6379
             INDEXER_BIND_ADDR: 0.0.0.0:3001
+            SOLANA_WS_URL: ${SOLANA_WS_URL:-wss://api.devnet.solana.com}
+            SOLANA_PROGRAM_ID: ${SOLANA_PROGRAM_ID:-11111111111111111111111111111111}
+            SOLANA_COMMITMENT: ${SOLANA_COMMITMENT:-confirmed}
+            SOLANA_SUBSCRIBE: 'true'
         depends_on:
             indexer-db:
                 condition: service_healthy

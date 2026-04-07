@@ -7,6 +7,7 @@ mod triton_client;
 mod utils;
 mod webhook;
 
+use crate::solana_subscriber::{SolanaSubscriber, SolanaSubscriberConfig};
 use crate::utils::{now_unix_timestamp, parse_category};
 use std::{
     path::Path,
@@ -539,6 +540,46 @@ async fn main() -> Result<()> {
             println!("MOCK_WEBHOOK_ONLY=true -> exiting after replay");
             return Ok(());
         }
+    }
+
+    // Start Solana on-chain subscriber if enabled
+    if config.solana_subscribe {
+        let solana_config = SolanaSubscriberConfig {
+            ws_url: config.solana_ws_url.clone(),
+            program_id: config.solana_program_id.clone(),
+            commitment: match config.solana_commitment.as_str() {
+                "processed" => crate::solana_subscriber::CommitmentLevel::Processed,
+                "finalized" => crate::solana_subscriber::CommitmentLevel::Finalized,
+                _ => crate::solana_subscriber::CommitmentLevel::Confirmed,
+            },
+            reconnect_interval_secs: 5,
+            ping_interval_secs: 30,
+        };
+        let (solana_tx, mut solana_rx) = tokio::sync::mpsc::channel(1024);
+        let mut subscriber = SolanaSubscriber::new(solana_config, solana_tx);
+        subscriber.start().await?;
+
+        let solana_state = state.clone();
+        tokio::spawn(async move {
+            while let Some(indexed) = solana_rx.recv().await {
+                let envelopes = vec![EventEnvelope {
+                    slot: indexed.slot,
+                    timestamp: indexed.timestamp,
+                    event: indexed.event,
+                }];
+                let mut db = solana_state.db.lock().await;
+                match db.apply_events(&envelopes).await {
+                    Ok(processed) => {
+                        solana_state.metrics.record_source_events(WebhookSource::Generic, processed);
+                    }
+                    Err(e) => {
+                        eprintln!("Solana subscriber DB apply error: {}", e);
+                    }
+                }
+                drop(db);
+                publish_ws_events(&solana_state, &envelopes);
+            }
+        });
     }
 
     let app = Router::new()
