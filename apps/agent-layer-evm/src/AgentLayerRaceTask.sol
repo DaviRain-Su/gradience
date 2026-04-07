@@ -134,6 +134,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
     error TransferFeeTooHigh(uint256 expected, uint256 actual);
     error DisputeAlreadyOpen(uint256 taskId);
     error DisputeWindowClosed(uint256 taskId);
+    error CannotCancelAfterSubmission(uint256 taskId);
     error DisputeNotOpen(uint256 taskId);
     error NotDisputeResolver(address caller);
     error InvalidDisputeOutcome(uint8 outcome);
@@ -148,6 +149,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
     error ReassignWindowNotOpen(uint256 taskId);
     error TaskHasJudged(uint256 taskId);
     error HighValueTaskRequiresDesignatedJudge(uint256 taskId);
+    error NotTreasury(address caller);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -182,6 +184,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
         uint8 correctScore
     );
     event JudgeSlashed(uint256 indexed taskId, address indexed judge, uint256 amount, string reason);
+    event ProtocolFeesWithdrawn(address indexed token, address indexed treasury, uint256 amount);
 
     address public treasury;
     address public disputeResolver;
@@ -200,6 +203,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
     mapping(uint256 => address[]) public taskJudgePool;
     mapping(uint256 => mapping(address => Judgement)) public judgements;
     mapping(uint256 => bool) public hasJudged;
+    mapping(address => uint256) public protocolFees;
 
     modifier onlyResolver() {
         if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
@@ -228,6 +232,19 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
 
     function setJudgeRegistry(address registry) external onlyOwner {
         judgeRegistry = registry;
+    }
+
+    function withdrawProtocolFees(address token) external {
+        if (msg.sender != treasury) revert NotTreasury(msg.sender);
+        uint256 amount = protocolFees[token];
+        if (amount == 0) return;
+        protocolFees[token] = 0;
+        if (token == address(0)) {
+            _sendEth(treasury, amount);
+        } else {
+            _sendToken(token, treasury, amount);
+        }
+        emit ProtocolFeesWithdrawn(token, treasury, amount);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -514,7 +531,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
 
             _payout(task, winner, winnerPayout);
             _payout(task, task.judge, judgeFee);
-            _payout(task, treasury, protocolFee);
+            protocolFees[task.paymentToken] += protocolFee;
 
             _updateWinnerReputation(winner, winnerPayout, score);
             emit TaskJudged(task_id, winner, score, winnerPayout, judgeFee, protocolFee);
@@ -595,7 +612,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
             uint256 winnerPayout = task.reward - protocolFee - judgeFee;
 
             _payout(task, majorityWinner, winnerPayout);
-            _payout(task, treasury, protocolFee);
+            protocolFees[task.paymentToken] += protocolFee;
             _distributeJudgeFee(task_id, task, judgeFee, pool, majorityWinner, majorityScore);
             _updateWinnerReputation(majorityWinner, winnerPayout, majorityScore);
 
@@ -670,7 +687,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
             uint256 toJudge = d.bond / 2;
             uint256 toTreasury = d.bond - toJudge;
             _payout(task, task.judge, toJudge);
-            _payout(task, treasury, toTreasury);
+            protocolFees[task.paymentToken] += toTreasury;
         }
 
         emit DisputeResolved(task_id, outcome, msg.sender, correct_winner, correct_score);
@@ -703,7 +720,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
         uint256 compensationPool = (task.reward * JUDGE_FEE_BPS) / BPS_DENOMINATOR;
         uint256 posterRefund = task.reward - protocolFee - compensationPool;
         _payout(task, task.poster, posterRefund);
-        _payout(task, treasury, protocolFee);
+        protocolFees[task.paymentToken] += protocolFee;
 
         uint256 perAgentCompensation = compensationPool / submittedCount;
         uint256 remainder = compensationPool - (perAgentCompensation * submittedCount);
@@ -746,11 +763,33 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
         Task storage task = _loadOpenTask(task_id);
         if (msg.sender != task.poster) revert NotTaskPoster(task_id, msg.sender, task.poster);
 
-        task.state = TaskState.Refunded;
+        address[] storage applicants = _taskApplicants[task_id];
+        bool hasSubmission = false;
+        for (uint256 i = 0; i < applicants.length; i++) {
+            if (_submissions[task_id][applicants[i]].exists) {
+                hasSubmission = true;
+                break;
+            }
+        }
+        if (hasSubmission) revert CannotCancelAfterSubmission(task_id);
+
         uint256 protocolFee = (task.reward * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
-        uint256 refund = task.reward - protocolFee;
+        uint256 compensations = 0;
+
+        if (applicants.length > 0) {
+            uint256 cancelPenalty = (task.reward * 500) / BPS_DENOMINATOR; // 5%
+            uint256 perApplicant = cancelPenalty / applicants.length;
+            for (uint256 i = 0; i < applicants.length; i++) {
+                _payout(task, applicants[i], perApplicant);
+                emit AgentCompensated(task_id, applicants[i], perApplicant);
+            }
+            compensations = perApplicant * applicants.length;
+        }
+
+        uint256 refund = task.reward - protocolFee - compensations;
+        task.state = TaskState.Refunded;
         _payout(task, task.poster, refund);
-        _payout(task, treasury, protocolFee);
+        protocolFees[task.paymentToken] += protocolFee;
         emit TaskRefunded(task_id, task.poster, refund, 0);
     }
 
@@ -896,7 +935,7 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
         }
         uint256 remainder = judgeFee - distributed;
         if (remainder > 0) {
-            _payout(task, treasury, remainder);
+            protocolFees[task.paymentToken] += remainder;
         }
     }
 

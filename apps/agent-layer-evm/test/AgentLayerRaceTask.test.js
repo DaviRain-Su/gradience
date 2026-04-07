@@ -88,13 +88,12 @@ describe("AgentLayerRaceTask", function () {
 
         const winnerBalanceAfterJudge = await ethers.provider.getBalance(agentA.address);
         const loserBalanceAfterJudge = await ethers.provider.getBalance(agentB.address);
-        const treasuryAfter = await ethers.provider.getBalance(treasury.address);
 
         expect(winnerBalanceAfterJudge - winnerBalanceBefore).to.equal(
             (reward * 9500n) / 10000n,
         );
         expect(loserBalanceAfterJudge - loserBalanceBefore).to.equal(0n);
-        expect(treasuryAfter - treasuryBefore).to.equal((reward * 200n) / 10000n);
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal((reward * 200n) / 10000n);
 
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
         await expect(() => contract.connect(agentB).claim_stake(1n)).to.changeEtherBalance(agentB, minStake);
@@ -154,7 +153,7 @@ describe("AgentLayerRaceTask", function () {
         expect(winnerAfterJudge - winnerBefore).to.equal((reward * 9500n) / 10000n);
         expect(loserAfterJudge - loserBefore).to.equal(0n);
         expect(judgeAfter - judgeBefore).to.equal((reward * 300n) / 10000n);
-        expect(treasuryAfter - treasuryBefore).to.equal((reward * 200n) / 10000n);
+        expect(await contract.protocolFees(await token.getAddress())).to.equal((reward * 200n) / 10000n);
 
         const winnerAfterStake = await token.balanceOf(agentA.address);
         const loserAfterStake = await token.balanceOf(agentB.address);
@@ -326,7 +325,7 @@ describe("AgentLayerRaceTask", function () {
         const agentBAfter = await ethers.provider.getBalance(agentB.address);
 
         expect(posterAfter - posterBefore).to.equal((reward * 9500n) / 10000n);
-        expect(treasuryAfter - treasuryBefore).to.equal((reward * 200n) / 10000n);
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal((reward * 200n) / 10000n);
         expect(agentAAfter - agentABefore).to.equal((reward * 300n) / 10000n / 2n);
         expect(agentBAfter - agentBBefore).to.equal((reward * 300n) / 10000n / 2n);
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
@@ -357,7 +356,40 @@ describe("AgentLayerRaceTask", function () {
             .withArgs(1n);
     });
 
-    it("cancel_task allows poster cancellation with 2% protocol fee", async function () {
+    it("cancel_task with no applicants: only 2% protocol fee", async function () {
+        const { contract, poster, judge, treasury } = await deployFixture();
+        const reward = ethers.parseEther("0.5");
+        const minStake = ethers.parseEther("0.02");
+        const now = await currentTime();
+        const deadline = now + 3600n;
+        const judgeDeadline = deadline + 1800n;
+
+        await contract
+            .connect(poster)
+            .post_task("cid://eval-cancel", deadline, judgeDeadline, judge.address, 1, minStake, {
+                value: reward,
+            });
+
+        const posterBefore = await ethers.provider.getBalance(poster.address);
+        const treasuryBefore = await ethers.provider.getBalance(treasury.address);
+
+        const cancelTx = await contract.connect(poster).cancel_task(1n);
+        const cancelReceipt = await cancelTx.wait();
+        const gasPrice = cancelReceipt.gasPrice ?? cancelReceipt.effectiveGasPrice ?? 0n;
+        const gasCost = cancelReceipt.gasUsed * gasPrice;
+
+        const posterAfter = await ethers.provider.getBalance(poster.address);
+        const treasuryAfter = await ethers.provider.getBalance(treasury.address);
+
+        const expectedRefund = (reward * 9800n) / 10000n;
+        expect(posterAfter - posterBefore + gasCost).to.equal(expectedRefund);
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal((reward * 200n) / 10000n);
+
+        const task = await contract.tasks(1n);
+        expect(task[10]).to.equal(2n); // Refunded
+    });
+
+    it("cancel_task with applicants but no submissions: 5% compensation split", async function () {
         const { contract, poster, judge, agentA, attacker, treasury } = await deployFixture();
         const reward = ethers.parseEther("0.5");
         const minStake = ethers.parseEther("0.02");
@@ -378,24 +410,81 @@ describe("AgentLayerRaceTask", function () {
 
         const posterBefore = await ethers.provider.getBalance(poster.address);
         const treasuryBefore = await ethers.provider.getBalance(treasury.address);
+        const agentBefore = await ethers.provider.getBalance(agentA.address);
 
         const cancelTx = await contract.connect(poster).cancel_task(1n);
-        await expect(cancelTx)
-            .to.emit(contract, "TaskRefunded")
-            .withArgs(1n, poster.address, (reward * 9800n) / 10000n, 0n);
         const cancelReceipt = await cancelTx.wait();
         const gasPrice = cancelReceipt.gasPrice ?? cancelReceipt.effectiveGasPrice ?? 0n;
         const gasCost = cancelReceipt.gasUsed * gasPrice;
 
+        const protocolFee = (reward * 200n) / 10000n;
+        const cancelPenalty = (reward * 500n) / 10000n;
+        const expectedRefund = reward - protocolFee - cancelPenalty;
+
         const posterAfter = await ethers.provider.getBalance(poster.address);
         const treasuryAfter = await ethers.provider.getBalance(treasury.address);
+        const agentAfter = await ethers.provider.getBalance(agentA.address);
 
-        expect(posterAfter - posterBefore + gasCost).to.equal((reward * 9800n) / 10000n);
-        expect(treasuryAfter - treasuryBefore).to.equal((reward * 200n) / 10000n);
+        expect(posterAfter - posterBefore + gasCost).to.equal(expectedRefund);
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(protocolFee);
+        expect(agentAfter - agentBefore).to.equal(cancelPenalty);
+
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
         expect(task[10]).to.equal(2n);
+    });
+
+    it("cancel_task after submission is blocked", async function () {
+        const { contract, poster, judge, agentA } = await deployFixture();
+        const reward = ethers.parseEther("0.1");
+        const minStake = ethers.parseEther("0.01");
+        const now = await currentTime();
+        const deadline = now + 3600n;
+        const judgeDeadline = deadline + 1800n;
+
+        await contract
+            .connect(poster)
+            .post_task("cid://eval-cancel-block", deadline, judgeDeadline, judge.address, 1, minStake, {
+                value: reward,
+            });
+        await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+        await contract.connect(agentA).submit_result(1n, "result", "trace");
+
+        await expect(contract.connect(poster).cancel_task(1n))
+            .to.be.revertedWithCustomError(contract, "CannotCancelAfterSubmission")
+            .withArgs(1n);
+    });
+
+    it("treasury can withdraw accumulated protocol fees", async function () {
+        const { contract, poster, judge, agentA, treasury } = await deployFixture();
+        const reward = ethers.parseEther("0.1");
+        const minStake = ethers.parseEther("0.01");
+        const now = await currentTime();
+        const deadline = now + 3600n;
+        const judgeDeadline = deadline + 1800n;
+
+        await contract
+            .connect(poster)
+            .post_task("cid://eval-withdraw", deadline, judgeDeadline, judge.address, 1, minStake, {
+                value: reward,
+            });
+        await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+        await contract.connect(agentA).submit_result(1n, "result", "trace");
+        await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+        const expectedFee = (reward * 200n) / 10000n;
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(expectedFee);
+
+        await expect(contract.connect(poster).withdrawProtocolFees(ethers.ZeroAddress))
+            .to.be.revertedWithCustomError(contract, "NotTreasury")
+            .withArgs(poster.address);
+
+        await expect(contract.connect(treasury).withdrawProtocolFees(ethers.ZeroAddress))
+            .to.emit(contract, "ProtocolFeesWithdrawn")
+            .withArgs(ethers.ZeroAddress, treasury.address, expectedFee);
+
+        expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(0n);
     });
 
     it("get_reputation derives avg score from totalScore without cumulative drift", async function () {

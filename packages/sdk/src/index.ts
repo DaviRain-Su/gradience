@@ -56,6 +56,14 @@ export {
 export { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
 export type { ChainHubClientConfig, ReputationData, AgentInfo, SqlQueryResult } from '@gradiences/chain-hub-sdk';
 
+// EVM Multicall3 — batch operations without native contract batch functions
+export {
+    MULTICALL3_ADDRESS,
+    MULTICALL3_ABI,
+    encodeAggregate3Value,
+} from './evm/multicall';
+export type { Call3Value, Aggregate3ValuePayload } from './evm/multicall';
+
 // ── Gradience unified client ──────────────────────────────────────────────────
 
 /**
