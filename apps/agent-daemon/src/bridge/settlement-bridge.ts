@@ -9,8 +9,10 @@
 
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
-import { Connection, PublicKey } from '@solana/web3.js';
+
+import { Connection } from '@solana/web3.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { addressToPublicKey } from '../solana/kit-compat.js';
 import {
   address,
   getAddressEncoder,
@@ -510,15 +512,15 @@ export class SettlementBridge extends EventEmitter {
 
     const isSolPath = request.token === 'SOL';
     const mintAddr = isSolPath ? null : address(request.token);
-    const mintPk = isSolPath ? null : new PublicKey(request.token);
+    const mintPk = isSolPath ? null : addressToPublicKey(address(request.token));
 
     if (!isSolPath && mintAddr && mintPk) {
       const [judgeAta, escrowAta, winnerAta, posterAta, treasuryAta] = await Promise.all([
-        getAssociatedTokenAddress(mintPk, new PublicKey(judge)),
-        getAssociatedTokenAddress(mintPk, new PublicKey(pdas.escrow)),
-        getAssociatedTokenAddress(mintPk, new PublicKey(winner)),
-        getAssociatedTokenAddress(mintPk, new PublicKey(poster)),
-        getAssociatedTokenAddress(mintPk, new PublicKey(pdas.treasury)),
+        getAssociatedTokenAddress(mintPk, addressToPublicKey(address(judge))),
+        getAssociatedTokenAddress(mintPk, addressToPublicKey(address(pdas.escrow))),
+        getAssociatedTokenAddress(mintPk, addressToPublicKey(address(winner))),
+        getAssociatedTokenAddress(mintPk, addressToPublicKey(address(poster))),
+        getAssociatedTokenAddress(mintPk, addressToPublicKey(address(pdas.treasury))),
       ]);
 
       accounts.push({ address: address(judgeAta.toBase58()), role: AccountRole.WRITABLE });
@@ -539,7 +541,7 @@ export class SettlementBridge extends EventEmitter {
         if (isSolPath) {
           accounts.push({ address: agentAddr, role: AccountRole.WRITABLE });
         } else {
-          const agentAta = await getAssociatedTokenAddress(mintPk!, new PublicKey(agentAddr));
+          const agentAta = await getAssociatedTokenAddress(mintPk!, addressToPublicKey(agentAddr));
           accounts.push({ address: address(agentAta.toBase58()), role: AccountRole.WRITABLE });
         }
       }

@@ -18,7 +18,8 @@ import {
 import type { KeyManager } from '../keys/key-manager.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import { ARENA_PROGRAM_ID } from './program-ids.js';
+import { ARENA_PROGRAM_ADDRESS } from './program-ids.js';
+import { addressToPublicKey } from './kit-compat.js';
 
 // PDA seeds
 const CONFIG_SEED = Buffer.from('config');
@@ -102,14 +103,14 @@ export class TransactionManager {
             taskIdBuf.writeBigUInt64LE(taskId, 0);
 
             // Derive PDAs
-            const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], ARENA_PROGRAM_ID);
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], ARENA_PROGRAM_ID);
-            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], ARENA_PROGRAM_ID);
+            const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
             const [judgePoolPda] = PublicKey.findProgramAddressSync(
                 [JUDGE_POOL_SEED, Buffer.from([params.category])],
-                ARENA_PROGRAM_ID,
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], ARENA_PROGRAM_ID);
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
 
             // Prepare mint and judge bytes
             const mintBytes = params.mint ? this.parsePubkeyToBytes(params.mint) : new Uint8Array(32).fill(0);
@@ -134,7 +135,7 @@ export class TransactionManager {
                 { pubkey: judgePoolPda, isSigner: false, isWritable: false }, // judge_pool
                 { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
                 { pubkey: eventAuthorityPda, isSigner: false, isWritable: false }, // event_authority
-                { pubkey: ARENA_PROGRAM_ID, isSigner: false, isWritable: false }, // gradience_program
+                { pubkey: addressToPublicKey(ARENA_PROGRAM_ADDRESS), isSigner: false, isWritable: false }, // gradience_program
             ];
 
             // For SPL tokens, we would add optional accounts here
@@ -149,7 +150,7 @@ export class TransactionManager {
 
             const instruction = new TransactionInstruction({
                 keys,
-                programId: ARENA_PROGRAM_ID,
+                programId: addressToPublicKey(ARENA_PROGRAM_ADDRESS),
                 data,
             });
 
@@ -177,17 +178,17 @@ export class TransactionManager {
             taskIdBuf.writeBigUInt64LE(taskIdBigInt, 0);
 
             // Derive PDAs
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], ARENA_PROGRAM_ID);
-            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], ARENA_PROGRAM_ID);
+            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
             const [applicationPda] = PublicKey.findProgramAddressSync(
                 [APPLICATION_SEED, taskIdBuf, this.publicKey.toBytes()],
-                ARENA_PROGRAM_ID,
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
             const [reputationPda] = PublicKey.findProgramAddressSync(
                 [REPUTATION_SEED, this.publicKey.toBytes()],
-                ARENA_PROGRAM_ID,
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], ARENA_PROGRAM_ID);
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
 
             // Build instruction data (just discriminator for ApplyForTask)
             const data = Buffer.from([APPLY_FOR_TASK_DISCRIMINATOR]);
@@ -200,12 +201,12 @@ export class TransactionManager {
                 { pubkey: reputationPda, isSigner: false, isWritable: true }, // reputation
                 { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
                 { pubkey: eventAuthorityPda, isSigner: false, isWritable: false }, // event_authority
-                { pubkey: ARENA_PROGRAM_ID, isSigner: false, isWritable: false }, // gradience_program
+                { pubkey: addressToPublicKey(ARENA_PROGRAM_ADDRESS), isSigner: false, isWritable: false }, // gradience_program
             ];
 
             const instruction = new TransactionInstruction({
                 keys,
-                programId: ARENA_PROGRAM_ID,
+                programId: addressToPublicKey(ARENA_PROGRAM_ADDRESS),
                 data,
             });
 
@@ -238,16 +239,16 @@ export class TransactionManager {
             taskIdBuf.writeBigUInt64LE(taskIdBigInt, 0);
 
             // Derive PDAs
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], ARENA_PROGRAM_ID);
+            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
             const [applicationPda] = PublicKey.findProgramAddressSync(
                 [APPLICATION_SEED, taskIdBuf, this.publicKey.toBytes()],
-                ARENA_PROGRAM_ID,
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
             const [submissionPda] = PublicKey.findProgramAddressSync(
                 [SUBMISSION_SEED, taskIdBuf, this.publicKey.toBytes()],
-                ARENA_PROGRAM_ID,
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], ARENA_PROGRAM_ID);
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
 
             // Use defaults for optional params
             const finalTraceCid = traceCid ?? resultCid;
@@ -272,12 +273,12 @@ export class TransactionManager {
                 { pubkey: submissionPda, isSigner: false, isWritable: true }, // submission
                 { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
                 { pubkey: eventAuthorityPda, isSigner: false, isWritable: false }, // event_authority
-                { pubkey: ARENA_PROGRAM_ID, isSigner: false, isWritable: false }, // gradience_program
+                { pubkey: addressToPublicKey(ARENA_PROGRAM_ADDRESS), isSigner: false, isWritable: false }, // gradience_program
             ];
 
             const instruction = new TransactionInstruction({
                 keys,
-                programId: ARENA_PROGRAM_ID,
+                programId: addressToPublicKey(ARENA_PROGRAM_ADDRESS),
                 data,
             });
 
@@ -311,7 +312,7 @@ export class TransactionManager {
     // ==================== Private Helpers ====================
 
     private async fetchNextTaskId(): Promise<bigint> {
-        const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], ARENA_PROGRAM_ID);
+        const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
 
         const accountInfo = await this.connection.getAccountInfo(configPda, 'confirmed');
         if (!accountInfo) {
