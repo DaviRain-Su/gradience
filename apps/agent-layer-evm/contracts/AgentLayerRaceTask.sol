@@ -12,25 +12,53 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     uint256 public constant PROTOCOL_FEE_BPS = 200;
     uint256 public constant MAX_REF_LEN = 128;
 
+    uint256 public constant DISPUTE_WINDOW = 7 days;
+    uint256 public constant CHALLENGER_BOND_BPS = 1_000; // 10%
+    uint256 public constant JUDGE_SLASH_BPS = 2_500; // 25%
+    uint256 public constant CHALLENGER_BOUNTY_BPS = 500; // 5% of slashed amount
+
     enum TaskState {
         Open,
         Completed,
         Refunded
     }
 
+    enum DisputeState {
+        None,
+        Open,
+        Resolved
+    }
+
+    enum DisputeOutcome {
+        Unresolved,
+        Uphold,
+        Reject
+    }
+
     struct Task {
         address poster;
         address judge;
-        uint8 category;
-        uint64 deadline;
-        uint64 judgeDeadline;
+        address winner;
+        address paymentToken;
         uint256 minStake;
         uint256 reward;
-        TaskState state;
-        string evalRef;
-        address winner;
+        uint64 deadline;
+        uint64 judgeDeadline;
+        uint8 category;
         uint8 score;
-        address paymentToken;
+        TaskState state;
+    }
+
+    struct Dispute {
+        DisputeState state;
+        address challenger;
+        bytes32 reasonHash;
+        uint64 openedAt;
+        uint256 bond;
+        DisputeOutcome outcome;
+        address resolver;
+        address correctWinner;
+        uint8 correctScore;
     }
 
     struct Application {
@@ -80,6 +108,13 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     error TransferFailed(address to, uint256 amount);
     error UnexpectedEther(uint256 amount);
     error TokenTransferFailed(address token, address from, address to, uint256 amount);
+    error DisputeAlreadyOpen(uint256 taskId);
+    error DisputeWindowClosed(uint256 taskId);
+    error DisputeNotOpen(uint256 taskId);
+    error NotDisputeResolver(address caller);
+    error InvalidDisputeOutcome(uint8 outcome);
+    error TaskNotCompleted(uint256 taskId);
+    error BondAmountIncorrect(uint256 expected, uint256 actual);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -105,8 +140,19 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     event TaskRefunded(uint256 indexed taskId, address indexed poster, uint256 reward, uint8 score);
     event StakeRefunded(uint256 indexed taskId, address indexed agent, uint256 stake);
     event AgentCompensated(uint256 indexed taskId, address indexed agent, uint256 amount);
+    event DisputeOpened(uint256 indexed taskId, address indexed challenger, uint256 bond, bytes32 reasonHash);
+    event DisputeResolved(
+        uint256 indexed taskId,
+        uint8 outcome,
+        address indexed resolver,
+        address correctWinner,
+        uint8 correctScore
+    );
+    event JudgeSlashed(uint256 indexed taskId, address indexed judge, uint256 amount, string reason);
 
     address public immutable treasury;
+    address public disputeResolver;
+    address public judgeRegistry;
     uint256 public taskCount;
 
     mapping(uint256 => Task) public tasks;
@@ -115,9 +161,30 @@ contract AgentLayerRaceTask is ReentrancyGuard {
     mapping(uint256 => address[]) private _taskApplicants;
     mapping(address => Reputation) public reputations;
 
+    // Dynamic metadata extracted from Task struct for cleaner storage layout
+    mapping(uint256 => string) public taskEvalRef;
+    mapping(uint256 => Dispute) public disputes;
+
+    modifier onlyResolver() {
+        if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+        _;
+    }
+
     constructor(address treasury_) {
         if (treasury_ == address(0)) revert ZeroAddress();
         treasury = treasury_;
+        disputeResolver = msg.sender;
+    }
+
+    function setDisputeResolver(address resolver) external {
+        if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+        if (resolver == address(0)) revert ZeroAddress();
+        disputeResolver = resolver;
+    }
+
+    function setJudgeRegistry(address registry) external {
+        if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+        judgeRegistry = registry;
     }
 
     function post_task(
@@ -139,17 +206,17 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         tasks[task_id] = Task({
             poster: msg.sender,
             judge: taskJudge,
-            category: category,
-            deadline: deadline,
-            judgeDeadline: judge_deadline,
+            winner: address(0),
+            paymentToken: address(0),
             minStake: min_stake,
             reward: msg.value,
-            state: TaskState.Open,
-            evalRef: eval_ref,
-            winner: address(0),
+            deadline: deadline,
+            judgeDeadline: judge_deadline,
+            category: category,
             score: 0,
-            paymentToken: address(0)
+            state: TaskState.Open
         });
+        taskEvalRef[task_id] = eval_ref;
 
         emit TaskCreated(
             task_id,
@@ -188,17 +255,17 @@ contract AgentLayerRaceTask is ReentrancyGuard {
         tasks[task_id] = Task({
             poster: msg.sender,
             judge: taskJudge,
-            category: category,
-            deadline: deadline,
-            judgeDeadline: judge_deadline,
+            winner: address(0),
+            paymentToken: token,
             minStake: min_stake,
             reward: reward_amount,
-            state: TaskState.Open,
-            evalRef: eval_ref,
-            winner: address(0),
+            deadline: deadline,
+            judgeDeadline: judge_deadline,
+            category: category,
             score: 0,
-            paymentToken: token
+            state: TaskState.Open
         });
+        taskEvalRef[task_id] = eval_ref;
 
         emit TaskCreated(
             task_id,
@@ -292,6 +359,68 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             _payout(task, task.poster, task.reward);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
         }
+    }
+
+    function dispute_task(uint256 task_id, bytes32 reason_hash) external payable nonReentrant {
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.state != TaskState.Completed) revert TaskNotCompleted(task_id);
+
+        Dispute storage d = disputes[task_id];
+        if (d.state == DisputeState.Open) revert DisputeAlreadyOpen(task_id);
+
+        uint256 bond = (task.reward * CHALLENGER_BOND_BPS) / BPS_DENOMINATOR;
+        if (msg.value != bond) revert BondAmountIncorrect(bond, msg.value);
+
+        uint256 windowEnd = task.judgeDeadline + DISPUTE_WINDOW;
+        if (block.timestamp > windowEnd) revert DisputeWindowClosed(task_id);
+
+        d.state = DisputeState.Open;
+        d.challenger = msg.sender;
+        d.reasonHash = reason_hash;
+        d.openedAt = uint64(block.timestamp);
+        d.bond = bond;
+        d.outcome = DisputeOutcome.Unresolved;
+
+        emit DisputeOpened(task_id, msg.sender, bond, reason_hash);
+    }
+
+    function resolve_dispute(
+        uint256 task_id,
+        uint8 outcome,
+        address correct_winner,
+        uint8 correct_score
+    ) external nonReentrant onlyResolver {
+        if (outcome == 0 || outcome > uint8(type(DisputeOutcome).max)) revert InvalidDisputeOutcome(outcome);
+
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+
+        Dispute storage d = disputes[task_id];
+        if (d.state != DisputeState.Open) revert DisputeNotOpen(task_id);
+
+        d.state = DisputeState.Resolved;
+        d.outcome = DisputeOutcome(outcome);
+        d.resolver = msg.sender;
+        d.correctWinner = correct_winner;
+        d.correctScore = correct_score;
+
+        if (d.outcome == DisputeOutcome.Uphold) {
+            // MVP: return challenger bond. Full overturn/redistribution requires
+            // escrow redesign so that funds remain held during dispute window.
+            uint256 slashAmount = (task.reward * JUDGE_SLASH_BPS) / BPS_DENOMINATOR;
+            if (slashAmount > 0) {
+                _attemptSlash(task.judge, slashAmount);
+            }
+            _payout(task, d.challenger, d.bond);
+        } else if (d.outcome == DisputeOutcome.Reject) {
+            uint256 toJudge = d.bond / 2;
+            uint256 toTreasury = d.bond - toJudge;
+            _payout(task, task.judge, toJudge);
+            _payout(task, treasury, toTreasury);
+        }
+
+        emit DisputeResolved(task_id, outcome, msg.sender, correct_winner, correct_score);
     }
 
     function claim_expired(uint256 task_id) external nonReentrant {
@@ -428,6 +557,19 @@ contract AgentLayerRaceTask is ReentrancyGuard {
             _sendEth(to, amount);
         } else {
             _sendToken(task.paymentToken, to, amount);
+        }
+    }
+
+    function _attemptSlash(address judge, uint256 amount) internal {
+        if (judgeRegistry == address(0)) {
+            emit JudgeSlashed(0, judge, 0, "NO_REGISTRY");
+            return;
+        }
+        (bool success,) = judgeRegistry.call(abi.encodeWithSelector(bytes4(keccak256("slash(address,uint256)")), judge, amount));
+        if (success) {
+            emit JudgeSlashed(0, judge, amount, "SLASHED");
+        } else {
+            emit JudgeSlashed(0, judge, amount, "SLASH_FAILED");
         }
     }
 

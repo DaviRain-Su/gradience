@@ -44,8 +44,8 @@ describe("AgentLayerRaceTask", function () {
         const task = await contract.tasks(1n);
         expect(task[0]).to.equal(poster.address);
         expect(task[1]).to.equal(judge.address);
-        expect(task[6]).to.equal(reward);
-        expect(task[7]).to.equal(0n);
+        expect(task[5]).to.equal(reward);
+        expect(task[10]).to.equal(0n);
     });
 
     it("apply_for_task + submit_result + judge_and_pay completes payout path", async function () {
@@ -95,9 +95,9 @@ describe("AgentLayerRaceTask", function () {
         await expect(() => contract.connect(agentB).claim_stake(1n)).to.changeEtherBalance(agentB, minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[7]).to.equal(1n);
-        expect(task[9]).to.equal(agentA.address);
-        expect(task[10]).to.equal(80n);
+        expect(task[10]).to.equal(1n);
+        expect(task[2]).to.equal(agentA.address);
+        expect(task[9]).to.equal(80n);
     });
 
     it("supports ERC20 reward and stake lifecycle", async function () {
@@ -161,7 +161,7 @@ describe("AgentLayerRaceTask", function () {
         expect(loserFinal - loserAfterStake).to.equal(minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[11]).to.equal(await token.getAddress());
+        expect(task[3]).to.equal(await token.getAddress());
     });
 
     it("judge_and_pay with score < MIN_SCORE refunds poster", async function () {
@@ -195,7 +195,7 @@ describe("AgentLayerRaceTask", function () {
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[7]).to.equal(2n);
+        expect(task[10]).to.equal(2n);
     });
 
     it("judge_and_pay rejects non-judge signer", async function () {
@@ -279,7 +279,7 @@ describe("AgentLayerRaceTask", function () {
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[7]).to.equal(2n);
+        expect(task[10]).to.equal(2n);
     });
 
     it("force_refund compensates submitted agents when judge times out", async function () {
@@ -328,7 +328,7 @@ describe("AgentLayerRaceTask", function () {
         await expect(() => contract.connect(agentB).claim_stake(1n)).to.changeEtherBalance(agentB, minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[7]).to.equal(2n);
+        expect(task[10]).to.equal(2n);
     });
 
     it("force_refund rejects tasks without any submitted agent", async function () {
@@ -390,7 +390,7 @@ describe("AgentLayerRaceTask", function () {
         await expect(() => contract.connect(agentA).claim_stake(1n)).to.changeEtherBalance(agentA, minStake);
 
         const task = await contract.tasks(1n);
-        expect(task[7]).to.equal(2n);
+        expect(task[10]).to.equal(2n);
     });
 
     it("get_reputation derives avg score from totalScore without cumulative drift", async function () {
@@ -417,6 +417,157 @@ describe("AgentLayerRaceTask", function () {
         expect(reputation[1]).to.equal(3n);
         expect(reputation[3]).to.equal(183n);
         expect(reputation[4]).to.equal(61n);
+    });
+
+    describe("Dispute", function () {
+        it("dispute_task opens a dispute during window with correct bond", async function () {
+            const { contract, poster, judge, agentA, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                    value: reward,
+                });
+            await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+            const bond = reward / 10n;
+            await expect(
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond }),
+            )
+                .to.emit(contract, "DisputeOpened")
+                .withArgs(1n, attacker.address, bond, ethers.encodeBytes32String("reason"));
+
+            const d = await contract.disputes(1n);
+            expect(d[0]).to.equal(1n); // DisputeState.Open
+            expect(d[1]).to.equal(attacker.address);
+        });
+
+        it("rejects dispute with wrong bond or outside window", async function () {
+            const { contract, poster, judge, agentA, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                    value: reward,
+                });
+            await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+            const bond = reward / 10n;
+            await expect(
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond - 1n }),
+            ).to.be.revertedWithCustomError(contract, "BondAmountIncorrect");
+
+            await warpTo(judgeDeadline + 7n * 86400n + 1n);
+            await expect(
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond }),
+            ).to.be.revertedWithCustomError(contract, "DisputeWindowClosed");
+        });
+
+        it("resolver can uphold dispute and redistribute", async function () {
+            const { contract, poster, judge, agentA, attacker, deployer } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                    value: reward,
+                });
+            await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+            const bond = reward / 10n;
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+
+            const challengerBefore = await ethers.provider.getBalance(attacker.address);
+
+            const tx = await contract
+                .connect(deployer)
+                .resolve_dispute(1n, 1, agentA.address, 80); // DisputeOutcome.Uphold = 1
+            await expect(tx)
+                .to.emit(contract, "DisputeResolved")
+                .withArgs(1n, 1n, deployer.address, agentA.address, 80n);
+            await tx.wait();
+
+            const challengerAfter = await ethers.provider.getBalance(attacker.address);
+            expect(challengerAfter - challengerBefore).to.equal(bond);
+
+            const d = await contract.disputes(1n);
+            expect(d[0]).to.equal(2n); // DisputeState.Resolved
+            expect(d[5]).to.equal(1n); // DisputeOutcome.Uphold
+        });
+
+        it("resolver can reject dispute and split bond to judge and treasury", async function () {
+            const { contract, poster, judge, agentA, attacker, deployer } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                    value: reward,
+                });
+            await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+            const bond = reward / 10n;
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+
+            await expect(() =>
+                contract.connect(deployer).resolve_dispute(1n, 2, agentA.address, 80), // DisputeOutcome.Reject = 2
+            ).to.changeEtherBalance(judge, bond / 2n);
+
+            const d = await contract.disputes(1n);
+            expect(d[0]).to.equal(2n); // DisputeState.Resolved
+            expect(d[5]).to.equal(2n); // DisputeOutcome.Reject
+        });
+
+        it("non-resolver cannot resolve dispute", async function () {
+            const { contract, poster, judge, agentA, attacker } = await deployFixture();
+            const reward = ethers.parseEther("1");
+            const minStake = ethers.parseEther("0.1");
+            const now = await currentTime();
+            const deadline = now + 3600n;
+            const judgeDeadline = deadline + 1800n;
+
+            await contract
+                .connect(poster)
+                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                    value: reward,
+                });
+            await contract.connect(agentA).apply_for_task(1n, { value: minStake });
+            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
+
+            const bond = reward / 10n;
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+
+            await expect(
+                contract.connect(attacker).resolve_dispute(1n, 1, agentA.address, 80),
+            ).to.be.revertedWithCustomError(contract, "NotDisputeResolver");
+        });
     });
 
     async function currentTime() {
