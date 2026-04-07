@@ -9,7 +9,7 @@
  */
 
 import type { KeyManager } from '../keys/key-manager.js';
-import type { TransactionManager } from '../solana/transaction-manager.js';
+import type { ITransactionManager } from '../shared/transaction-manager.js';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
@@ -96,7 +96,7 @@ export class BridgeManager {
   private config: BridgeManagerConfig;
   private connection: Connection;
   private keyManager: KeyManager;
-  private transactionManager: TransactionManager;
+  private transactionManager: ITransactionManager;
 
   // Sub-managers
   private settlementBridge?: SettlementBridge;
@@ -108,7 +108,7 @@ export class BridgeManager {
   constructor(
     config: Partial<BridgeManagerConfig>,
     keyManager: KeyManager,
-    transactionManager: TransactionManager
+    transactionManager: ITransactionManager
   ) {
     this.config = {
       rpcEndpoint: config.rpcEndpoint || 'https://api.devnet.solana.com',
@@ -455,7 +455,7 @@ export class BridgeManager {
 export function createBridgeManager(
   config: Partial<BridgeManagerConfig>,
   keyManager: KeyManager,
-  transactionManager: TransactionManager
+  transactionManager: ITransactionManager
 ): BridgeManager {
   return new BridgeManager(config, keyManager, transactionManager);
 }

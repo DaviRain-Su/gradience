@@ -20,6 +20,10 @@ import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { ARENA_PROGRAM_ADDRESS } from './program-ids.js';
 import { addressToPublicKey } from './kit-compat.js';
+import type { ITransactionManager, PostTaskParams, RuntimeEnv } from '../shared/transaction-manager.js';
+
+// Re-export for backward compatibility
+export type { PostTaskParams, RuntimeEnv };
 
 // PDA seeds
 const CONFIG_SEED = Buffer.from('config');
@@ -40,30 +44,11 @@ const SUBMIT_RESULT_DISCRIMINATOR = 3;
 // Account data offsets for ProgramConfig
 const CONFIG_TASK_COUNT_OFFSET = 74; // 2 header + 32 treasury + 32 upgrade_authority + 8 min_judge_stake
 
-export interface PostTaskParams {
-    evalRef: string;
-    deadline: number;
-    judgeDeadline: number;
-    judgeMode: number;
-    judge?: string;
-    category: number;
-    mint?: string;
-    minStake: number;
-    reward: number;
-}
-
-export interface RuntimeEnv {
-    provider: string;
-    model: string;
-    runtime: string;
-    version: string;
-}
-
 /**
  * Manages Solana transactions for the Agent Daemon.
  * Interacts with the Gradience Arena program for task operations.
  */
-export class TransactionManager {
+export class TransactionManager implements ITransactionManager {
     private connection: Connection;
     private keyManager: KeyManager;
     private publicKey: PublicKey;

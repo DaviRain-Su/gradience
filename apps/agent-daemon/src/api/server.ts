@@ -28,7 +28,7 @@ import type { ProcessManager } from '../agents/process-manager.js';
 import type { MessageRouter } from '../messages/message-router.js';
 import type { KeyManager } from '../keys/key-manager.js';
 import type { AuthorizationManager } from '../wallet/authorization.js';
-import type { TransactionManager } from '../solana/transaction-manager.js';
+import type { ITransactionManager } from '../shared/transaction-manager.js';
 import type { A2ARouter } from '../a2a-router/router.js';
 
 export interface APIServerDeps {
@@ -41,7 +41,7 @@ export interface APIServerDeps {
     messageRouter: MessageRouter;
     keyManager: KeyManager;
     authorizationManager: AuthorizationManager;
-    transactionManager: TransactionManager;
+    transactionManager: ITransactionManager;
     a2aRouter: A2ARouter | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     database: any;
@@ -124,7 +124,9 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerMessageRoutes(app, deps.messageRouter);
     registerKeyRoutes(app, deps.keyManager);
     registerWalletRoutes(app, deps.authorizationManager);
-    registerSolanaRoutes(app, deps.transactionManager);
+    if ('publicKey' in deps.transactionManager) {
+      registerSolanaRoutes(app, deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager);
+    }
     registerSocialRoutes(app, deps.database);
     registerNetworkRoutes(app, deps.database);
     registerDomainRoutes(app);

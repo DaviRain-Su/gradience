@@ -8,7 +8,7 @@
  */
 
 import type { KeyManager } from '../keys/key-manager.js';
-import type { TransactionManager } from '../solana/transaction-manager.js';
+import type { ITransactionManager } from '../shared/transaction-manager.js';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
@@ -51,7 +51,7 @@ export class PaymentManager {
   private config: PaymentsConfig;
   private connection: Connection;
   private keyManager: KeyManager;
-  private transactionManager: TransactionManager;
+  private transactionManager: ITransactionManager;
 
   // Sub-managers
   private mppPaymentManager?: MPPPaymentManager;
@@ -65,7 +65,7 @@ export class PaymentManager {
   constructor(
     config: Partial<PaymentsConfig>,
     keyManager: KeyManager,
-    transactionManager: TransactionManager
+    transactionManager: ITransactionManager
   ) {
     this.config = {
       rpcEndpoint: config.rpcEndpoint || 'https://api.devnet.solana.com',
@@ -536,7 +536,7 @@ export class PaymentManager {
 export function createPaymentManager(
   config: Partial<PaymentsConfig>,
   keyManager: KeyManager,
-  transactionManager: TransactionManager
+  transactionManager: ITransactionManager
 ): PaymentManager {
   return new PaymentManager(config, keyManager, transactionManager);
 }

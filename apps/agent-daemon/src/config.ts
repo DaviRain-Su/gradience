@@ -14,6 +14,11 @@ const DaemonConfigSchema = z.object({
     chainHubUrl: z.string().default('wss://indexer.gradiences.xyz/ws'),
     chainHubRestUrl: z.string().default('https://indexer.gradiences.xyz'),
     solanaRpcUrl: z.string().url().default('https://api.devnet.solana.com'),
+    evmRpcUrl: z.string().url().optional(),
+    evmChainId: z.number().int().min(1).optional(),
+    agentArenaEvmAddress: z.string().optional(),
+    agentMRegistryEvmAddress: z.string().optional(),
+    defaultChain: z.enum(['solana', 'evm']).default('solana'),
     dbPath: z.string().default(() => join(getDataDir(), 'data.db')),
     logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     maxAgentProcesses: z.number().int().min(1).max(64).default(8),
@@ -108,6 +113,11 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_CHAIN_HUB_URL) envConfig.chainHubUrl = process.env.AGENTD_CHAIN_HUB_URL;
     if (process.env.AGENTD_CHAIN_HUB_REST_URL) envConfig.chainHubRestUrl = process.env.AGENTD_CHAIN_HUB_REST_URL;
     if (process.env.AGENTD_SOLANA_RPC_URL) envConfig.solanaRpcUrl = process.env.AGENTD_SOLANA_RPC_URL;
+    if (process.env.AGENTD_EVM_RPC_URL) envConfig.evmRpcUrl = process.env.AGENTD_EVM_RPC_URL;
+    if (process.env.AGENTD_EVM_CHAIN_ID) envConfig.evmChainId = Number(process.env.AGENTD_EVM_CHAIN_ID);
+    if (process.env.AGENTD_ARENA_EVM_ADDRESS) envConfig.agentArenaEvmAddress = process.env.AGENTD_ARENA_EVM_ADDRESS;
+    if (process.env.AGENTD_REGISTRY_EVM_ADDRESS) envConfig.agentMRegistryEvmAddress = process.env.AGENTD_REGISTRY_EVM_ADDRESS;
+    if (process.env.AGENTD_DEFAULT_CHAIN) envConfig.defaultChain = process.env.AGENTD_DEFAULT_CHAIN as any;
     if (process.env.AGENTD_DB_PATH) envConfig.dbPath = process.env.AGENTD_DB_PATH;
     if (process.env.AGENTD_LOG_LEVEL) envConfig.logLevel = process.env.AGENTD_LOG_LEVEL;
     if (process.env.AGENTD_A2A_ENABLED) envConfig.a2aEnabled = process.env.AGENTD_A2A_ENABLED === 'true';

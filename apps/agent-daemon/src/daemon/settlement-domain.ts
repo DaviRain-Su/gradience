@@ -3,7 +3,7 @@ import type { KeyManager } from '../keys/key-manager.js';
 import { PaymentManager } from '../payments/index.js';
 import { BridgeManager, createBridgeManager } from '../bridge/index.js';
 import { logger } from '../utils/logger.js';
-import type { TransactionManager } from '../solana/transaction-manager.js';
+import type { ITransactionManager } from '../shared/transaction-manager.js';
 
 // A2ARouter loaded dynamically to avoid hard dependency on nostr-tools
 type A2ARouterType = import('../a2a-router/router.js').A2ARouter;
@@ -20,7 +20,7 @@ export interface SettlementDomainServices {
 export async function initSettlementDomain(
     config: DaemonConfig,
     keyManager: KeyManager,
-    transactionManager: TransactionManager,
+    transactionManager: ITransactionManager,
 ): Promise<Pick<SettlementDomainServices, 'paymentManager' | 'bridgeManager'>> {
     const paymentManager = new PaymentManager(
         {

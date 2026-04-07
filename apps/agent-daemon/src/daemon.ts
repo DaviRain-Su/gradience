@@ -4,7 +4,9 @@ import { join } from 'node:path';
 import type { DaemonConfig } from './config.js';
 import { getDataDir, getUnifiedLLMConfig, getEvaluatorLLMConfig } from './config.js';
 import { initDatabase } from './storage/database.js';
-import { TransactionManager } from './solana/transaction-manager.js';
+import { TransactionManager as SolanaTransactionManager } from './solana/transaction-manager.js';
+import { EvmTransactionManager } from './evm/transaction-manager.js';
+import type { ITransactionManager } from './shared/transaction-manager.js';
 import { createAPIServer } from './api/server.js';
 import { logger } from './utils/logger.js';
 import {
@@ -44,7 +46,7 @@ export class Daemon {
     private readonly authToken: string;
     private readonly startedAt: number;
     private server: Awaited<ReturnType<typeof createAPIServer>> | null = null;
-    private transactionManager: TransactionManager | null = null;
+    private transactionManager: ITransactionManager | null = null;
     private identity: IdentityDomainServices | null = null;
     private coordinator: CoordinatorDomainServices | null = null;
     private network: NetworkDomainServices | null = null;
@@ -85,14 +87,31 @@ export class Daemon {
         this.network = { connectionManager, messageRouter, a2aRouter: null };
 
         // 4. Transaction Manager (cross-cutting infrastructure)
-        this.transactionManager = new TransactionManager(this.config.solanaRpcUrl, this.identity.keyManager);
+        if (this.config.defaultChain === 'evm' && this.config.evmRpcUrl && this.config.agentArenaEvmAddress) {
+            this.transactionManager = new EvmTransactionManager({
+                rpcUrl: this.config.evmRpcUrl,
+                chainId: this.config.evmChainId || 84532,
+                agentArenaAddress: this.config.agentArenaEvmAddress as `0x${string}`,
+                privateKey: (process.env.AGENTD_EVM_PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000') as `0x${string}`,
+            });
+            logger.info('Using EVM transaction manager');
+        } else {
+            this.transactionManager = new SolanaTransactionManager(this.config.solanaRpcUrl, this.identity.keyManager);
+            logger.info('Using Solana transaction manager');
+        }
 
         // 5. Evaluation Domain
         this.evaluation = initEvaluationDomain(unifiedLLMConfig);
 
         // 6. Settlement Domain (base)
+        // Note: PaymentManager and BridgeManager are currently Solana-specific.
+        // For EVM mode they receive the EVM transaction manager but MPP/X402
+        // modules are disabled to avoid Solana-only runtime errors.
+        const settlementConfig = this.config.defaultChain === 'evm'
+            ? { ...this.config, paymentsMppEnabled: false, paymentsX402Enabled: false, bridgeEnabled: false }
+            : this.config;
         const { paymentManager, bridgeManager } = await initSettlementDomain(
-            this.config,
+            settlementConfig,
             this.identity.keyManager,
             this.transactionManager,
         );
