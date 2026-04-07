@@ -14,7 +14,7 @@
 | **扩展链** | **Base / Arbitrum / Ethereum L1** | 合约和 SDK 完全通用，后续只需配置网络参数和地址映射 |
 | **声誉策略** | **全局统一 + Oracle 桥接** | Agent 的核心资产是声誉，必须在所有 EVM 链间可验证、可携带 |
 | **SDK 策略** | **Unified SDK（链抽象层）** | 前端和开发者无需为每条链写独立逻辑 |
-| **Solana 定位** | **共存维护 → 逐步引导** | 现有用户和状态不强制迁移，新功能优先在 EVM 实现 |
+| **Solana 定位** | **同级核心链** | 与 EVM 长期并行支持，新功能同步规划，不因 EVM 扩展而降级 |
 
 ---
 
@@ -200,6 +200,6 @@ User Wallet Connection
 2. **运行部署脚本**: 使用现有 UUPS 部署脚本在新链上部署全部合约
 3. **更新地址映射**: 在 SDK 的 `CONTRACTS` 常量表中新增该链的合约地址
 4. **配置 Subgraph**: 复制现有 subgraph 配置，修改网络名称和起始区块
-5. **更新 Oracle 配置**: 在 Reputation Oracle 中增加新链的 `updateReputation` 调用目标
+5. **更新 Oracle 配置**: 在 Reputation Oracle 中增加新 EVM 链的 `updateReputation` 调用目标，同时确保 Solana 声誉回写通道正常
 
 **XLayer → Base 的扩展时间预估**: 1 天（纯配置和部署工作）

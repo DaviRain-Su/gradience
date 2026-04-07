@@ -10,7 +10,12 @@
     "deploy:base-sepolia": "hardhat run scripts/deploy-base-sepolia.js --network baseSepolia",
     "deploy:reputation-verifier:base-sepolia": "hardhat run scripts/deploy-reputation-verifier.js --network baseSepolia",
     "sign:t44": "node scripts/sign-reputation.js",
-    "relay:start": "node scripts/reputation-relay-server.js"
+    "relay:start": "node scripts/reputation-relay-server.js",
+    "forge:build": "forge build",
+    "forge:test": "forge test",
+    "forge:deploy:xlayer-testnet": "source .env && forge script script/Deploy.s.sol --rpc-url xlayer-testnet --broadcast --verify",
+    "forge:deploy:base-sepolia": "source .env && forge script script/Deploy.s.sol --rpc-url baseSepolia --broadcast --verify",
+    "forge:anvil": "anvil --fork-url https://testrpc.xlayer.tech"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

@@ -6,6 +6,12 @@ const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL;
 
 /** @type import("hardhat/config").HardhatUserConfig */
 module.exports = {
+    paths: {
+        sources: "./src",
+        tests: "./test",
+        cache: "./cache",
+        artifacts: "./artifacts",
+    },
     solidity: {
         compilers: [
             {

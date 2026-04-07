@@ -130,6 +130,7 @@ mapping(uint256 => mapping(address => Application)) public applications;
 mapping(uint256 => mapping(address => Submission)) private _submissions;
 mapping(uint256 => address[]) private _taskApplicants;
 mapping(address => Reputation) public reputations;
+mapping(address => uint256) public protocolFees; // token maps to accumulated fees, address(0) = ETH
 ```
 
 ### 3.2 JudgeRegistry
@@ -270,6 +271,7 @@ CategoryStats[8] memory categories
 function setTreasury(address newTreasury) external;
 function setJudgeRegistry(address newRegistry) external;
 function setReputationFeed(address newFeed) external;
+function withdrawProtocolFees(address token) external; // 仅 treasury 可提取累积的 protocol fees
 ```
 
 ### 4.2 JudgeRegistry
@@ -365,20 +367,26 @@ judgeAndPay            │
 - `winnerPayout = reward * 9500 / 10000`
 - `judgeFee = reward * 300 / 10000`
 - `protocolFee = reward * 200 / 10000`
+- **Protocol Fee 累积**：`protocolFee` 不实时转出，而是累加在 `protocolFees[paymentToken]` 中，由 `treasury` 通过 `withdrawProtocolFees` 按需提取。
 - 所有未获奖 Agent 的 `stake` 原路退回。
 
-2. **评判权限**：
+2. **Cancel 规则**（`cancelTask` 时执行）：
+- **0 申请者**：Poster 可免费取消，100% reward 退回（仅扣除累积的 protocol fee = 0，因未评判）。
+- **有申请者但无提交者**：Poster 仍可取消，但需扣除 **5% reward** 平分给所有已申请者作为补偿，剩余 95% 退回。
+- **有提交者后**：**禁止 cancel**。任务必须进入正常评判流程或等待 `claimExpired` / `forceRefund`。
+
+3. **评判权限**：
 - `msg.sender == task.judge`
 - `score >= 60`（否则 revert `InvalidScore`）
 - `winner` 必须在 applicants 列表中且已 submit
 
-3. **时间检查**：
+4. **时间检查**：
 - `applyForTask`: `block.timestamp <= deadline`
 - `submitResult`: `block.timestamp <= deadline`
 - `judgeAndPay`: `block.timestamp <= judgeDeadline`
 - `claimExpired`: `block.timestamp > judgeDeadline && task.state == Open`
 
-4. **ERC20 支持**：
+5. **ERC20 支持**：
 - `postTask` 和 `applyForTask` 都需要 `safeTransferFrom` 或 `safeTransfer`。
 - ETH 使用 `msg.value`；ERC20 使用 `transferFrom`。
 - 支持 `permit2`（长期优化）
@@ -411,7 +419,7 @@ EVM 链上的声誉来源有两条路径：
 1. **Solana 原生声誉** → `ReputationVerifier.sol`
 - 由 Agent 自己或 Oracle 提交 `ReputationPayload` + Ed25519 签名
 - 合约验证签名后存储 snapshot
-- 用于防止女巫攻击，证明该 Agent 在 Solana 上有历史记录
+- 用于防止女巫攻击，证明该 Agent 在 Solana 或 EVM 上有历史记录
 
 2. **Gradience 聚合声誉** → `GradienceReputationFeed.sol`
 - 仅由受信任的 Oracle 地址调用
@@ -419,7 +427,7 @@ EVM 链上的声誉来源有两条路径：
 - `AgentArenaEVM` 在任务匹配、stake 折扣、Judge 选择权重时读取
 
 **两条路径的关系**：
-- `ReputationVerifier` 是**可自助提交**的 Solana 证明库。
+- `ReputationVerifier` 是**可自助提交**的 Solana 声誉证明库（未来扩展支持 EVM 本地声誉证明）。
 - `GradienceReputationFeed` 是**官方 Oracle 维护**的权威声誉数据库。
 - `AgentArenaEVM` 优先读取 `GradienceReputationFeed`；如果 feed 不存在， fallback 到 `ReputationVerifier` 的 snapshot。
 
@@ -503,7 +511,40 @@ getReputationClient(): IReputationClient { return new EVMReputationClient(...); 
 }
 ```
 
-### 6.4 Reputation Oracle
+### 6.4 批量操作（Multicall3）
+
+> **决策**：不增加原生 `batchPostTask` / `batchJudgeAndPay` 合约函数，而是通过 **Multicall3**（`0xcA11bde05977b3631167028862bE2a173976CA11`）在 SDK 层实现批量操作。
+
+**理由**：
+- 无需增加合约字节码大小（避免接近 EIP-170 的 24KB 限制）
+- 通用性强：任何外部函数都可以被批量调用
+- 前端和 Keeper Bot 都可以复用同一套逻辑
+
+**SDK 封装示例**：
+```typescript
+// packages/sdk/src/evm/multicall.ts
+const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11';
+
+export async function batchPostTasks(
+  walletClient: WalletClient,
+  calls: { target: string; value: bigint; data: Hex }[]
+): Promise<TransactionReceipt> {
+  return walletClient.writeContract({
+    address: MULTICALL3,
+    abi: MULTICALL3_ABI,
+    functionName: 'aggregate3Value',
+    args: [calls.map(c => ({ target: c.target, callData: c.data, value: c.value, allowFailure: false }))],
+    value: calls.reduce((sum, c) => sum + c.value, 0n),
+  });
+}
+```
+
+**适用场景**：
+- Poster 一次性发布多个任务
+- Judge 批量评判多个已完成的任务
+- Keeper Bot 批量调用 `claimExpired`
+
+### 6.5 Reputation Oracle
 
 参考 `docs/multi-chain/03-reputation-oracle-spec.md`：
 
@@ -763,7 +804,7 @@ await oracle.syncReputationToChain('xlayer', proof);
 | **Ed25519 链上验证 gas 过高** | `ReputationVerifier` 调用昂贵 | 1. 改为链下 ZK Proof（Risc0）验证<br>2. 批量提交 Merkle Proof 减少链上计算 |
 | **VRF 延迟** | Judge 分配慢 | Phase 1 回退到 poster 指定 Judge 或伪随机 |
 | **合约漏洞** | 资金损失 | 1. 所有业务合约使用 UUPS 代理<br>2. 设置 `emergencyPause`（可选）<br>3. 上线前完成第三方审计 |
-| **用户不迁移** | Solana 生态停滞 | 不强制关闭 Solana，长期并行运营，通过声誉桥接降低迁移成本 |
+| **用户迁移意愿低** | EVM 扩展受阻 | 通过声誉桥接和 SDK 链抽象降低跨链感知，Solana 与 EVM 无差别运营 |
 
 ---
 

@@ -1,0 +1,3 @@
+[submodule "apps/agent-layer-evm/lib/forge-std"]
+	path = apps/agent-layer-evm/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
