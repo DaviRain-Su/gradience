@@ -34,6 +34,7 @@ contract GradienceReputationFeed is Ownable {
 
     error NotOracle(address caller);
     error ZeroAddress();
+    error WrongChainId(uint256 expected, uint256 actual);
 
     modifier onlyOracle() {
         if (msg.sender != oracle) revert NotOracle(msg.sender);
@@ -57,8 +58,11 @@ contract GradienceReputationFeed is Ownable {
         bytes32 solanaPubkey,
         uint16 globalScore,
         uint16[8] calldata categoryScores,
-        bytes32 merkleRoot
+        bytes32 merkleRoot,
+        uint256 chainId
     ) external onlyOracle {
+        if (chainId != block.chainid) revert WrongChainId(block.chainid, chainId);
+
         AggregatedReputation memory rep = AggregatedReputation({
             globalScore: globalScore,
             categoryScores: categoryScores,

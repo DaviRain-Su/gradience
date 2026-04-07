@@ -166,6 +166,7 @@ string username;        // 唯一，3-32 字符
 string metadataURI;     // IPFS/Arweave
 uint64 createdAt;
 uint64 updatedAt;
+uint64 version;         // 每次更新递增，用于缓存失效
 }
 
 struct AgentProfile {
@@ -454,9 +455,9 @@ The Graph 子图监听以下事件：
 - `StakeRefunded(uint256 indexed taskId, address indexed agent, uint256 stake)`
 
 **AgentMRegistry**
-- `UserRegistered(address indexed user, string username, string metadataURI)`
+- `UserRegistered(address indexed user, string username, string metadataURI, uint64 version)`
 - `AgentCreated(address indexed owner, uint256 indexed agentId, string metadataURI)`
-- `ProfileUpdated(address indexed user, string metadataURI)`
+- `ProfileUpdated(address indexed user, string metadataURI, uint64 version)`
 
 **SocialGraph**
 - `Followed(address indexed from, address indexed to)`
@@ -800,6 +801,7 @@ await oracle.syncReputationToChain('xlayer', proof);
 | 风险 | 影响 | 回退方案 |
 |------|------|---------|
 | **Gas 成本过高** | 小额任务不经济 | 1. 强制小额任务走 XLayer<br>2. 引入 Batch Poster 机制（第三方代付 gas） |
+| **Relayer / Paymaster** | ERC-4337 普及后需要代付 gas | 当前 `msg.sender` 保持原生模式；未来通过 UUPS 升级到带 `ERC2771Context` 的实现 |
 | **Oracle 中心化** | 声誉数据被操纵 | 1. 公开 Oracle 运算逻辑和输入数据<br>2. 长期迁移到 EigenLayer AVS 或 Chainlink Functions |
 | **Ed25519 链上验证 gas 过高** | `ReputationVerifier` 调用昂贵 | 1. 改为链下 ZK Proof（Risc0）验证<br>2. 批量提交 Merkle Proof 减少链上计算 |
 | **VRF 延迟** | Judge 分配慢 | Phase 1 回退到 poster 指定 Judge 或伪随机 |

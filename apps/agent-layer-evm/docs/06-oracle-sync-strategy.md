@@ -154,6 +154,23 @@ function calculateFreshness(lastUpdatedAt?: number): 'fresh' | 'stale' | 'unknow
 
 ---
 
+## 8. 跨链重放与测试网隔离
+
+### 8.1 chainId 验证
+
+`GradienceReputationFeed.updateReputation()` 要求调用者传入 `chainId`，合约内验证 `chainId == block.chainid`。这防止以下两类错误：
+- Oracle 配置错误，将测试网签名数据提交到主网；
+- 同一条链上的重复提交不会跨链生效。
+
+### 8.2 Reputation proof 的消耗语义
+
+Reputation proof **不是一次性凭证**，而是**可验证的声明（attestation）**。同一 Agent 的合法 reputation proof 允许在多条 EVM 链上分别使用。
+
+- 如需“一次性消耗”语义，需引入跨链状态 oracle（不在当前 P0/P1 范围）。
+- 当前设计下，消费者应关注 `lastUpdatedAt` 的新鲜度，而非 proof 的重放次数。
+
+---
+
 ## 7. 监控指标
 
 | 指标 | 目标 |

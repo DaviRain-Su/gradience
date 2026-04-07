@@ -1,0 +1,90 @@
+name: EVM Contract Tests (Foundry + Hardhat)
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - apps/agent-layer-evm/**
+            - .github/workflows/test-evm-foundry.yml
+    pull_request:
+        paths:
+            - apps/agent-layer-evm/**
+            - .github/workflows/test-evm-foundry.yml
+    workflow_dispatch:
+
+jobs:
+    # -------------------------------------------------------
+    # Foundry build + test + coverage
+    # -------------------------------------------------------
+    foundry:
+        name: Foundry Build & Test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            - name: Cache Foundry dependencies
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      apps/agent-layer-evm/cache
+                      apps/agent-layer-evm/out
+                  key: foundry-${{ runner.os }}-${{ hashFiles('apps/agent-layer-evm/foundry.toml', 'apps/agent-layer-evm/remappings.txt') }}
+                  restore-keys: foundry-${{ runner.os }}-
+
+            - name: Run forge build
+              working-directory: apps/agent-layer-evm
+              run: forge build --sizes
+
+            - name: Run forge test
+              working-directory: apps/agent-layer-evm
+              run: forge test -vvv
+
+            # Coverage is informational only; do not fail CI on low coverage
+            - name: Run forge coverage
+              working-directory: apps/agent-layer-evm
+              run: forge coverage --report summary || true
+
+    # -------------------------------------------------------
+    # Hardhat build + test (legacy tests still supported)
+    # -------------------------------------------------------
+    hardhat:
+        name: Hardhat Build & Test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              with:
+                  version: 9
+
+            - name: Install dependencies
+              working-directory: apps/agent-layer-evm
+              run: pnpm install
+
+            - name: Cache Hardhat compilation cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      apps/agent-layer-evm/cache
+                      apps/agent-layer-evm/artifacts
+                  key: hardhat-${{ runner.os }}-${{ hashFiles('apps/agent-layer-evm/hardhat.config.js', 'apps/agent-layer-evm/package.json') }}
+                  restore-keys: hardhat-${{ runner.os }}-
+
+            - name: Compile Hardhat contracts
+              working-directory: apps/agent-layer-evm
+              run: pnpm run compile
+
+            - name: Run Hardhat tests
+              working-directory: apps/agent-layer-evm
+              run: pnpm run test

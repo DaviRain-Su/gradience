@@ -18,6 +18,8 @@ export interface AgentProfileApi {
     onchain_ref: string | null;
     publish_mode: ProfilePublishMode;
     updated_at: number;
+    /** Optional ENS/SNS fallback display name (not verified on-chain). */
+    ens_name?: string;
 }
 
 export interface AgentProfileUpdate {

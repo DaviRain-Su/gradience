@@ -185,10 +185,13 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
     );
     event JudgeSlashed(uint256 indexed taskId, address indexed judge, uint256 amount, string reason);
     event ProtocolFeesWithdrawn(address indexed token, address indexed treasury, uint256 amount);
+    event LLMJudgeSet(address indexed previousOracle, address indexed newOracle);
+    event TaskJudgedWithProof(uint256 indexed taskId, address indexed winner, uint8 score, bytes32 evaluationHash);
 
     address public treasury;
     address public disputeResolver;
     address public judgeRegistry;
+    address public llmJudgeOracle;
     uint256 public taskCount;
 
     mapping(uint256 => Task) public tasks;
@@ -232,6 +235,12 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
 
     function setJudgeRegistry(address registry) external onlyOwner {
         judgeRegistry = registry;
+    }
+
+    function setLlmJudgeOracle(address oracle) external onlyOwner {
+        address previous = llmJudgeOracle;
+        llmJudgeOracle = oracle;
+        emit LLMJudgeSet(previous, oracle);
     }
 
     function withdrawProtocolFees(address token) external {
@@ -513,7 +522,20 @@ contract AgentLayerRaceTask is Initializable, OwnableUpgradeable, UUPSUpgradeabl
         if (task.judgeMode != uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
         if (block.timestamp > task.judgeDeadline) revert JudgeDeadlinePassed(task_id);
         if (msg.sender != task.judge) revert NotTaskJudge(task_id, msg.sender, task.judge);
+        _finalizeJudgement(task_id, winner, score);
+    }
+
+    function judge_with_proof(uint256 task_id, address winner, uint8 score, bytes32 evaluationHash) external nonReentrant {
+        if (msg.sender != llmJudgeOracle) revert NotTaskJudge(task_id, msg.sender, llmJudgeOracle);
+        _finalizeJudgement(task_id, winner, score);
+        emit TaskJudgedWithProof(task_id, winner, score, evaluationHash);
+    }
+
+    function _finalizeJudgement(uint256 task_id, address winner, uint8 score) internal {
         if (score > 100) revert InvalidScore(score);
+        Task storage task = tasks[task_id];
+        if (task.poster == address(0)) revert TaskNotFound(task_id);
+        if (task.state != TaskState.Open) revert TaskNotOpen(task_id);
 
         Application storage winnerApplication = applications[task_id][winner];
         if (!winnerApplication.exists) revert WinnerNotApplied(task_id, winner);

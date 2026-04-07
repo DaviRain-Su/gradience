@@ -19,7 +19,7 @@ contract GradienceReputationFeedTest is Test {
         uint16[8] memory cats = [uint16(10), 20, 30, 40, 50, 60, 70, 80];
 
         vm.prank(oracle);
-        feed.updateReputation(evmAddr, solanaPubkey, 75, cats, bytes32(uint256(0xabc)));
+        feed.updateReputation(evmAddr, solanaPubkey, 75, cats, bytes32(uint256(0xabc)), block.chainid);
 
         GradienceReputationFeed.AggregatedReputation memory rep = feed.getReputation(evmAddr);
         assertEq(rep.globalScore, 75);
@@ -35,7 +35,14 @@ contract GradienceReputationFeedTest is Test {
     function test_revertWhenNonOracleUpdates() public {
         uint16[8] memory cats;
         vm.expectRevert(abi.encodeWithSelector(GradienceReputationFeed.NotOracle.selector, address(this)));
-        feed.updateReputation(evmAddr, bytes32(0), 50, cats, bytes32(0));
+        feed.updateReputation(evmAddr, bytes32(0), 50, cats, bytes32(0), block.chainid);
+    }
+
+    function test_revertWrongChainId() public {
+        uint16[8] memory cats;
+        vm.prank(oracle);
+        vm.expectRevert(abi.encodeWithSelector(GradienceReputationFeed.WrongChainId.selector, block.chainid, 999));
+        feed.updateReputation(evmAddr, bytes32(0), 50, cats, bytes32(0), 999);
     }
 
     function test_ownerCanChangeOracle() public {
