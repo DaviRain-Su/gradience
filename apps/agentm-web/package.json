@@ -16,6 +16,7 @@
     "@gradiences/ui": "workspace:^",
     "@dynamic-labs/solana": "^4.75.0",
     "@gradiences/arena-sdk": "workspace:^",
+    "@gradiences/a2a-sdk": "workspace:^",
     "@json-render/core": "^0.16.0",
     "@json-render/react": "^0.16.0",
     "@solana/kit": "5.5.1",
