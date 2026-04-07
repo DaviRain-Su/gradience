@@ -61,4 +61,25 @@ contract AgentMRegistryTest is Test {
         vm.expectRevert(abi.encodeWithSelector(AgentMRegistry.UsernameTaken.selector, "alice"));
         registry.registerUser("alice", "ipfs://other", "");
     }
+
+    function test_revertAlreadyRegistered() public {
+        vm.prank(user);
+        registry.registerUser("alice", "ipfs://alice", "");
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(AgentMRegistry.AlreadyRegistered.selector, user));
+        registry.registerUser("alice2", "ipfs://alice2", "");
+    }
+
+    function test_resolveUsernameAndUserAgents() public {
+        vm.prank(user);
+        registry.registerUser("alice", "ipfs://alice", "");
+
+        vm.prank(user);
+        uint256 agentId = registry.createAgent("ipfs://agent-1");
+
+        assertEq(registry.usernameToAddress("alice"), user);
+        uint256[] memory agents = registry.getUserAgents(user);
+        assertEq(agents.length, 1);
+        assertEq(agents[0], agentId);
+    }
 }

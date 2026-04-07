@@ -44,11 +44,12 @@ contract AgentMRegistry is Ownable {
     error EmptyMetadata();
     error MetadataTooLong();
     error UserNotRegistered(address user);
+    error AlreadyRegistered(address user);
 
     constructor(address owner_) Ownable(owner_) {}
 
     function registerUser(string calldata username, string calldata metadataURI, string calldata ensName) external {
-        if (users[msg.sender].exists) revert UserNotRegistered(msg.sender); // already registered guard
+        if (users[msg.sender].exists) revert AlreadyRegistered(msg.sender);
         _validateUsername(username);
         _validateMetadata(metadataURI);
         if (bytes(ensName).length > MAX_REF_LEN) revert MetadataTooLong();
@@ -103,6 +104,10 @@ contract AgentMRegistry is Ownable {
         a.metadataURI = metadataURI;
         a.isActive = isActive;
         emit AgentUpdated(agentId, metadataURI, isActive);
+    }
+
+    function getUserAgents(address user) external view returns (uint256[] memory) {
+        return userAgents[user];
     }
 
     function _validateUsername(string calldata username) internal pure {

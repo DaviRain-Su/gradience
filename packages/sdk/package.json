@@ -44,7 +44,8 @@
     "dependencies": {
         "@gradiences/arena-sdk": "workspace:*",
         "@gradiences/chain-hub-sdk": "workspace:*",
-        "@solana-program/address-lookup-table": "^0.11.0"
+        "@solana-program/address-lookup-table": "^0.11.0",
+        "viem": "^2.0.0"
     },
     "devDependencies": {
         "@solana/kit": "^5.0.0",
