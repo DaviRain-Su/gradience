@@ -1,4 +1,5 @@
 **/generated/
+!clients/*/src/generated/
 **/target/
 **/node_modules/
 .deployments/

@@ -11,15 +11,13 @@ import path from 'path';
 import { createPinocchioCounterCodamaBuilder } from './lib/pinocchio-counter-codama-builder';
 import { preserveConfigFiles } from './lib/utils';
 
-const projectRoot = path.join(__dirname, '..');
-const idlDir = path.join(projectRoot, 'idl');
-const pinocchioCounterIdl = JSON.parse(
-    fs.readFileSync(path.join(idlDir, 'pinocchio_counter.json'), 'utf-8'),
-) as AnchorIdl;
+const projectRoot = path.join(__dirname, '..', '..', '..');
+const idlPath = path.join(projectRoot, 'programs', 'idl', 'gradiences.json');
+const gradienceIdl = JSON.parse(fs.readFileSync(idlPath, 'utf-8')) as AnchorIdl;
 const rustClientsDir = path.join(__dirname, '..', 'clients', 'rust');
 const typescriptClientsDir = path.join(__dirname, '..', 'clients', 'typescript');
 
-const pinocchioCounterCodama = createPinocchioCounterCodamaBuilder(pinocchioCounterIdl)
+const gradienceCodama = createPinocchioCounterCodamaBuilder(gradienceIdl)
     .appendAccountDiscriminator()
     .appendPdaDerivers()
     .setInstructionAccountDefaultValues()
@@ -32,7 +30,7 @@ void main();
 async function main(): Promise<void> {
     const configPreserver = preserveConfigFiles(typescriptClientsDir, rustClientsDir);
     try {
-        await pinocchioCounterCodama.accept(
+        await gradienceCodama.accept(
             renderRustVisitor(path.join(rustClientsDir, 'src', 'generated'), {
                 crateFolder: rustClientsDir,
                 deleteFolderBeforeRendering: true,
@@ -40,7 +38,7 @@ async function main(): Promise<void> {
             }),
         );
 
-        await pinocchioCounterCodama.accept(
+        await gradienceCodama.accept(
             renderJavaScriptVisitor(path.join(typescriptClientsDir, 'src', 'generated'), {
                 deleteFolderBeforeRendering: true,
                 formatCode: true,
