@@ -6,20 +6,23 @@
  */
 
 import { createPublicClient, createWalletClient, custom, http, parseEther, decodeEventLog } from 'viem';
-import { baseSepolia } from 'viem/chains';
 import { AGENT_ARENA_EVM_ABI } from './abi';
-import { AGENT_ARENA_EVM_ADDRESS, EVM_RPC_ENDPOINT, EVM_CHAIN_ID } from './config';
+import { getChainConfig, getDefaultEvmChainId } from './config';
 
-function getPublicClient() {
+function getPublicClient(chainId?: number) {
+  const id = chainId ?? getDefaultEvmChainId();
+  const cfg = getChainConfig(id);
   return createPublicClient({
-    chain: { ...baseSepolia, id: EVM_CHAIN_ID },
-    transport: http(EVM_RPC_ENDPOINT),
+    chain: cfg.chain,
+    transport: http(cfg.rpcEndpoint),
   });
 }
 
-function getWalletClient(ethereumProvider: any) {
+function getWalletClient(ethereumProvider: any, chainId?: number) {
+  const id = chainId ?? getDefaultEvmChainId();
+  const cfg = getChainConfig(id);
   return createWalletClient({
-    chain: { ...baseSepolia, id: EVM_CHAIN_ID },
+    chain: cfg.chain,
     transport: custom(ethereumProvider),
   });
 }
@@ -34,11 +37,13 @@ export interface PostTaskEVMParams {
   deadlineOffsetSeconds?: number;
   judgeDeadlineOffsetSeconds?: number;
   judge?: `0x${string}`;
+  chainId?: number;
 }
 
 export async function postTaskEVM(params: PostTaskEVMParams): Promise<{ taskId: bigint; txHash: `0x${string}` }> {
-  const publicClient = getPublicClient();
-  const walletClient = getWalletClient(params.ethereumProvider);
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
+  const walletClient = getWalletClient(params.ethereumProvider, params.chainId);
 
   const now = Math.floor(Date.now() / 1000);
   const deadline = BigInt(now + (params.deadlineOffsetSeconds ?? 3600));
@@ -47,7 +52,7 @@ export async function postTaskEVM(params: PostTaskEVMParams): Promise<{ taskId: 
   const reward = parseEther(params.reward);
 
   const { request } = await publicClient.simulateContract({
-    address: AGENT_ARENA_EVM_ADDRESS,
+    address: cfg.agentArenaAddress,
     abi: AGENT_ARENA_EVM_ABI,
     functionName: 'postTask',
     args: [
@@ -92,14 +97,16 @@ export interface ApplyForTaskEVMParams {
   account: `0x${string}`;
   taskId: bigint;
   stake?: string;
+  chainId?: number;
 }
 
 export async function applyForTaskEVM(params: ApplyForTaskEVMParams): Promise<`0x${string}`> {
-  const publicClient = getPublicClient();
-  const walletClient = getWalletClient(params.ethereumProvider);
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
+  const walletClient = getWalletClient(params.ethereumProvider, params.chainId);
 
   const { request } = await publicClient.simulateContract({
-    address: AGENT_ARENA_EVM_ADDRESS,
+    address: cfg.agentArenaAddress,
     abi: AGENT_ARENA_EVM_ABI,
     functionName: 'applyForTask',
     args: [params.taskId],
@@ -116,14 +123,16 @@ export interface SubmitResultEVMParams {
   taskId: bigint;
   resultRef: string;
   traceRef?: string;
+  chainId?: number;
 }
 
 export async function submitResultEVM(params: SubmitResultEVMParams): Promise<`0x${string}`> {
-  const publicClient = getPublicClient();
-  const walletClient = getWalletClient(params.ethereumProvider);
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
+  const walletClient = getWalletClient(params.ethereumProvider, params.chainId);
 
   const { request } = await publicClient.simulateContract({
-    address: AGENT_ARENA_EVM_ADDRESS,
+    address: cfg.agentArenaAddress,
     abi: AGENT_ARENA_EVM_ABI,
     functionName: 'submitResult',
     args: [params.taskId, params.resultRef, params.traceRef ?? ''],
@@ -139,14 +148,16 @@ export interface JudgeAndPayEVMParams {
   taskId: bigint;
   winner: `0x${string}`;
   score: number;
+  chainId?: number;
 }
 
 export async function judgeAndPayEVM(params: JudgeAndPayEVMParams): Promise<`0x${string}`> {
-  const publicClient = getPublicClient();
-  const walletClient = getWalletClient(params.ethereumProvider);
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
+  const walletClient = getWalletClient(params.ethereumProvider, params.chainId);
 
   const { request } = await publicClient.simulateContract({
-    address: AGENT_ARENA_EVM_ADDRESS,
+    address: cfg.agentArenaAddress,
     abi: AGENT_ARENA_EVM_ABI,
     functionName: 'judgeAndPay',
     args: [params.taskId, params.winner, params.score],
@@ -160,14 +171,16 @@ export interface CancelTaskEVMParams {
   ethereumProvider: any;
   account: `0x${string}`;
   taskId: bigint;
+  chainId?: number;
 }
 
 export async function cancelTaskEVM(params: CancelTaskEVMParams): Promise<`0x${string}`> {
-  const publicClient = getPublicClient();
-  const walletClient = getWalletClient(params.ethereumProvider);
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
+  const walletClient = getWalletClient(params.ethereumProvider, params.chainId);
 
   const { request } = await publicClient.simulateContract({
-    address: AGENT_ARENA_EVM_ADDRESS,
+    address: cfg.agentArenaAddress,
     abi: AGENT_ARENA_EVM_ABI,
     functionName: 'cancelTask',
     args: [params.taskId],
@@ -177,7 +190,12 @@ export async function cancelTaskEVM(params: CancelTaskEVMParams): Promise<`0x${s
   return walletClient.writeContract(request);
 }
 
-export async function fetchTaskEVM(taskId: bigint): Promise<{
+export interface FetchTaskEVMParams {
+  taskId: bigint;
+  chainId?: number;
+}
+
+export async function fetchTaskEVM(params: FetchTaskEVMParams): Promise<{
   poster: `0x${string}`;
   judge: `0x${string}`;
   winner: `0x${string}`;
@@ -191,13 +209,14 @@ export async function fetchTaskEVM(taskId: bigint): Promise<{
   state: number;
   judgeMode: number;
 } | null> {
-  const publicClient = getPublicClient();
+  const cfg = getChainConfig(params.chainId ?? getDefaultEvmChainId());
+  const publicClient = getPublicClient(params.chainId);
   try {
     const result = await publicClient.readContract({
-      address: AGENT_ARENA_EVM_ADDRESS,
+      address: cfg.agentArenaAddress,
       abi: AGENT_ARENA_EVM_ABI,
       functionName: 'tasks',
-      args: [taskId],
+      args: [params.taskId],
     });
     return {
       poster: result[0],

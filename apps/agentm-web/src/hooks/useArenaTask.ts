@@ -38,8 +38,8 @@ import { useWalletChain } from './useWalletChain';
 
 export type { TaskApi, SubmissionApi };
 
-export function getExplorerUrl(signature: string, chain: 'solana' | 'evm' = 'solana'): string {
-  if (chain === 'evm') return getEVMExplorerUrl(signature);
+export function getExplorerUrl(signature: string, chain: 'solana' | 'evm' = 'solana', chainId?: number): string {
+  if (chain === 'evm') return getEVMExplorerUrl(signature, chainId);
   return getSolanaExplorerUrl(signature);
 }
 
@@ -47,7 +47,7 @@ export function useArenaTask(walletAddress: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
-  const { chain, primaryWallet } = useWalletChain();
+  const { chain, chainId, primaryWallet } = useWalletChain();
 
   const getWallet = useCallback((): WalletAdapter => {
     if (!walletAddress) throw new Error('Wallet not connected');
@@ -79,6 +79,7 @@ export function useArenaTask(walletAddress: string | null) {
         const result = await postTaskEVM({
           ethereumProvider: getEthereumProvider(),
           account,
+          chainId,
           evalRef: params.evalRef,
           category: params.category,
           reward: params.reward as string,
@@ -118,6 +119,7 @@ export function useArenaTask(walletAddress: string | null) {
         const txHash = await applyForTaskEVM({
           ethereumProvider: getEthereumProvider(),
           account: walletAddress as `0x${string}`,
+          chainId,
           taskId: BigInt(taskId),
         });
         setLastTxSignature(txHash);
@@ -148,6 +150,7 @@ export function useArenaTask(walletAddress: string | null) {
         const txHash = await submitResultEVM({
           ethereumProvider: getEthereumProvider(),
           account: walletAddress as `0x${string}`,
+          chainId,
           taskId: BigInt(params.taskId),
           resultRef: params.resultRef,
           traceRef: params.traceRef,
@@ -180,6 +183,7 @@ export function useArenaTask(walletAddress: string | null) {
         const txHash = await judgeAndPayEVM({
           ethereumProvider: getEthereumProvider(),
           account: walletAddress as `0x${string}`,
+          chainId,
           taskId: BigInt(params.taskId),
           winner: params.winner as `0x${string}`,
           score: params.score,
@@ -213,6 +217,7 @@ export function useArenaTask(walletAddress: string | null) {
         const txHash = await cancelTaskEVM({
           ethereumProvider: getEthereumProvider(),
           account: walletAddress as `0x${string}`,
+          chainId,
           taskId: BigInt(taskId),
         });
         setLastTxSignature(txHash);
@@ -248,24 +253,24 @@ export function useArenaTask(walletAddress: string | null) {
 
   const doFetchTask = useCallback(async (taskId: number): Promise<TaskApi | null> => {
     if (chain === 'evm') {
-      return fetchTaskFromSubgraph(taskId);
+      return fetchTaskFromSubgraph(taskId, chainId);
     }
     return fetchTask(taskId);
-  }, [chain]);
+  }, [chain, chainId]);
 
   const doFetchSubmissions = useCallback(async (taskId: number): Promise<SubmissionApi[] | null> => {
     if (chain === 'evm') {
-      return fetchSubmissionsFromSubgraph(taskId);
+      return fetchSubmissionsFromSubgraph(taskId, chainId);
     }
     return fetchSubmissions(taskId);
-  }, [chain]);
+  }, [chain, chainId]);
 
   const doFetchReputation = useCallback(async (agent: string): Promise<ReputationData | null> => {
     if (chain === 'evm') {
-      return fetchReputationFromSubgraph(agent);
+      return fetchReputationFromSubgraph(agent, chainId);
     }
     return fetchReputation(agent);
-  }, [chain]);
+  }, [chain, chainId]);
 
   return {
     loading,
@@ -281,6 +286,6 @@ export function useArenaTask(walletAddress: string | null) {
     fetchTask: doFetchTask,
     fetchSubmissions: doFetchSubmissions,
     fetchReputation: doFetchReputation,
-    getExplorerUrl: (sig: string) => getExplorerUrl(sig, chain ?? 'solana'),
+    getExplorerUrl: (sig: string) => getExplorerUrl(sig, chain ?? 'solana', chainId),
   } as const;
 }

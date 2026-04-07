@@ -23,7 +23,7 @@ export function useTaskSubmit(walletAddress: string | null): UseTaskSubmitResult
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSignature, setLastSignature] = useState<string | null>(null);
-  const { chain, primaryWallet } = useWalletChain();
+  const { chain, chainId, primaryWallet } = useWalletChain();
 
   const getEthereumProvider = useCallback((): unknown => {
     const provider = (primaryWallet?.connector as any)?.getProvider?.();
@@ -52,6 +52,7 @@ export function useTaskSubmit(walletAddress: string | null): UseTaskSubmitResult
           const txHash = await submitResultEVM({
             ethereumProvider: getEthereumProvider(),
             account: walletAddress as `0x${string}`,
+            chainId,
             taskId: BigInt(params.taskId),
             resultRef: params.resultRef,
             traceRef: params.traceRef ?? '',
@@ -77,7 +78,7 @@ export function useTaskSubmit(walletAddress: string | null): UseTaskSubmitResult
         setLoading(false);
       }
     },
-    [walletAddress, chain, getEthereumProvider],
+    [walletAddress, chain, chainId, getEthereumProvider],
   );
 
   return { submit, loading, error, lastSignature };

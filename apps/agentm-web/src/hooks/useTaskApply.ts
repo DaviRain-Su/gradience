@@ -17,7 +17,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSignature, setLastSignature] = useState<string | null>(null);
-  const { chain, primaryWallet } = useWalletChain();
+  const { chain, chainId, primaryWallet } = useWalletChain();
 
   const getEthereumProvider = useCallback((): unknown => {
     const provider = (primaryWallet?.connector as any)?.getProvider?.();
@@ -40,6 +40,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
           const txHash = await applyForTaskEVM({
             ethereumProvider: getEthereumProvider(),
             account: walletAddress as `0x${string}`,
+            chainId,
             taskId: BigInt(taskId),
             stake,
           });
@@ -57,7 +58,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
         setLoading(false);
       }
     },
-    [walletAddress, chain, getEthereumProvider],
+    [walletAddress, chain, chainId, getEthereumProvider],
   );
 
   return { apply, loading, error, lastSignature };

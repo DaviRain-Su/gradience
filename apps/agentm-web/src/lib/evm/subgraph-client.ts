@@ -5,7 +5,7 @@
  * shapes used by the Solana indexer so the UI stays chain-agnostic.
  */
 
-import { EVM_SUBGRAPH_ENDPOINT } from './subgraph-config';
+import { getSubgraphEndpoint } from './subgraph-config';
 import type { TaskApi, SubmissionApi } from '@/lib/solana/arena-client';
 import type { ReputationData } from '@gradiences/sdk';
 
@@ -14,11 +14,12 @@ interface GraphQLResponse<T> {
   errors?: Array<{ message: string }>;
 }
 
-async function query<T>(queryString: string, variables?: Record<string, unknown>): Promise<T> {
-  if (!EVM_SUBGRAPH_ENDPOINT) {
-    throw new Error('EVM_SUBGRAPH_ENDPOINT is not configured');
+async function query<T>(queryString: string, variables?: Record<string, unknown>, chainId?: number): Promise<T> {
+  const endpoint = getSubgraphEndpoint(chainId);
+  if (!endpoint) {
+    throw new Error(`EVM Subgraph endpoint is not configured for chain ${chainId ?? 'default'}`);
   }
-  const res = await fetch(EVM_SUBGRAPH_ENDPOINT, {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query: queryString, variables }),
@@ -126,6 +127,7 @@ export async function fetchTasksFromSubgraph(params?: {
   state?: 'open' | 'completed' | 'refunded';
   poster?: string;
   limit?: number;
+  chainId?: number;
 }): Promise<TaskApi[]> {
   const whereParts: string[] = [];
   if (params?.state) {
@@ -165,11 +167,11 @@ export async function fetchTasksFromSubgraph(params?: {
     }
   `;
 
-  const data = await query<{ tasks: SubgraphTask[] }>(q);
+  const data = await query<{ tasks: SubgraphTask[] }>(q, undefined, params?.chainId);
   return data.tasks.map(mapSubgraphTaskToTaskApi);
 }
 
-export async function fetchTaskFromSubgraph(taskId: number): Promise<TaskApi | null> {
+export async function fetchTaskFromSubgraph(taskId: number, chainId?: number): Promise<TaskApi | null> {
   const q = `
     query {
       tasks(where: { taskId: ${taskId} }) {
@@ -194,12 +196,12 @@ export async function fetchTaskFromSubgraph(taskId: number): Promise<TaskApi | n
       }
     }
   `;
-  const data = await query<{ tasks: SubgraphTask[] }>(q);
+  const data = await query<{ tasks: SubgraphTask[] }>(q, undefined, chainId);
   if (!data.tasks.length) return null;
   return mapSubgraphTaskToTaskApi(data.tasks[0]);
 }
 
-export async function fetchSubmissionsFromSubgraph(taskId: number): Promise<SubmissionApi[]> {
+export async function fetchSubmissionsFromSubgraph(taskId: number, chainId?: number): Promise<SubmissionApi[]> {
   const q = `
     query {
       submissions(where: { task_: { taskId: ${taskId} } }, orderBy: submittedAt, orderDirection: desc) {
@@ -211,7 +213,7 @@ export async function fetchSubmissionsFromSubgraph(taskId: number): Promise<Subm
       }
     }
   `;
-  const data = await query<{ submissions: SubgraphSubmission[] }>(q);
+  const data = await query<{ submissions: SubgraphSubmission[] }>(q, undefined, chainId);
   return data.submissions.map(mapSubgraphSubmissionToSubmissionApi);
 }
 
@@ -225,7 +227,7 @@ interface SubgraphReputation {
   merkleRoot?: string | null;
 }
 
-export async function fetchReputationFromSubgraph(agent: string): Promise<ReputationData | null> {
+export async function fetchReputationFromSubgraph(agent: string, chainId?: number): Promise<ReputationData | null> {
   const normalized = agent.toLowerCase();
   const q = `
     query {
@@ -241,7 +243,7 @@ export async function fetchReputationFromSubgraph(agent: string): Promise<Reputa
     }
   `;
   try {
-    const data = await query<{ reputations: SubgraphReputation[] }>(q);
+    const data = await query<{ reputations: SubgraphReputation[] }>(q, undefined, chainId);
     if (!data.reputations.length) return null;
     const rep = data.reputations[0];
     return {

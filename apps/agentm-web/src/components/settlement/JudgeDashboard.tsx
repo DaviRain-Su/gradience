@@ -18,7 +18,7 @@ interface JudgeDashboardProps {
 
 export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
   const { tasksToJudge, loading, error, txHash, judgeTask } = useJudgeAndPay(walletAddress);
-  const { chain } = useWalletChain();
+  const { chain, chainId } = useWalletChain();
   const [selectedTask, setSelectedTask] = useState<JudgeTask | null>(null);
 
   const handleJudge = async (params: {
@@ -47,7 +47,7 @@ export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
       {txHash && (
         <div style={styles.successBox}>
           Transaction confirmed:{' '}
-          <a href={getExplorerUrl(txHash, chain ?? 'solana')} target="_blank" rel="noreferrer" style={styles.link}>
+          <a href={getExplorerUrl(txHash, chain ?? 'solana', chainId)} target="_blank" rel="noreferrer" style={styles.link}>
             {txHash.slice(0, 16)}…
           </a>
         </div>
