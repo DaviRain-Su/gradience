@@ -7,6 +7,7 @@
 
 import { EVM_SUBGRAPH_ENDPOINT } from './subgraph-config';
 import type { TaskApi, SubmissionApi } from '@/lib/solana/arena-client';
+import type { ReputationData } from '@gradiences/sdk';
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -212,4 +213,49 @@ export async function fetchSubmissionsFromSubgraph(taskId: number): Promise<Subm
   `;
   const data = await query<{ submissions: SubgraphSubmission[] }>(q);
   return data.submissions.map(mapSubgraphSubmissionToSubmissionApi);
+}
+
+interface SubgraphReputation {
+  id: string;
+  agent: { id: string; address: string };
+  globalScore: number;
+  categoryScores: number[];
+  lastUpdatedAt: string;
+  oracle: string;
+  merkleRoot?: string | null;
+}
+
+export async function fetchReputationFromSubgraph(agent: string): Promise<ReputationData | null> {
+  const normalized = agent.toLowerCase();
+  const q = `
+    query {
+      reputations(where: { agent_: { address: "${normalized}" } }) {
+        id
+        agent { id address }
+        globalScore
+        categoryScores
+        lastUpdatedAt
+        oracle
+        merkleRoot
+      }
+    }
+  `;
+  try {
+    const data = await query<{ reputations: SubgraphReputation[] }>(q);
+    if (!data.reputations.length) return null;
+    const rep = data.reputations[0];
+    return {
+      agent: hexToAddress(rep.agent.address),
+      globalAvgScore: rep.globalScore,
+      // EVM subgraph does not track winRate/completed/applied/earned yet
+      globalWinRate: 0,
+      globalCompleted: 0,
+      globalTotalApplied: 0,
+      totalEarned: 0,
+      updatedSlot: Number(rep.lastUpdatedAt),
+    };
+  } catch (err) {
+    console.warn('[EVM Subgraph] Failed to fetch reputation:', err);
+    return null;
+  }
 }

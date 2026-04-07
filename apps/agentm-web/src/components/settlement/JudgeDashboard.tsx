@@ -3,8 +3,14 @@
 import { useState } from 'react';
 import type { Address } from '@solana/kit';
 import { useJudgeAndPay, type JudgeTask } from '@/hooks/useJudgeAndPay';
+import { useWalletChain } from '@/hooks/useWalletChain';
 import { JudgeSubmissionView } from './JudgeSubmissionView';
 import { getExplorerUrl } from '@/hooks/useArenaTask';
+
+function formatTokenAmount(amount: number, chain: 'solana' | 'evm' | null): string {
+  const divisor = chain === 'evm' ? 1e18 : 1e9;
+  return `${(amount / divisor).toFixed(4)} ${chain === 'evm' ? 'ETH' : 'SOL'}`;
+}
 
 interface JudgeDashboardProps {
   walletAddress: string | null;
@@ -12,10 +18,11 @@ interface JudgeDashboardProps {
 
 export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
   const { tasksToJudge, loading, error, txHash, judgeTask } = useJudgeAndPay(walletAddress);
+  const { chain } = useWalletChain();
   const [selectedTask, setSelectedTask] = useState<JudgeTask | null>(null);
 
   const handleJudge = async (params: {
-    winner: Address;
+    winner: Address | `0x${string}`;
     score: number;
     reasonRef: string;
   }) => {
@@ -23,7 +30,7 @@ export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
     const sig = await judgeTask({
       taskId: selectedTask.task.task_id,
       winner: params.winner,
-      poster: selectedTask.task.poster as Address,
+      poster: selectedTask.task.poster as Address | `0x${string}`,
       score: params.score,
       reasonRef: params.reasonRef,
     });
@@ -40,7 +47,7 @@ export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
       {txHash && (
         <div style={styles.successBox}>
           Transaction confirmed:{' '}
-          <a href={getExplorerUrl(txHash)} target="_blank" rel="noreferrer" style={styles.link}>
+          <a href={getExplorerUrl(txHash, chain ?? 'solana')} target="_blank" rel="noreferrer" style={styles.link}>
             {txHash.slice(0, 16)}…
           </a>
         </div>
@@ -64,7 +71,7 @@ export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
                 <span style={styles.taskId}>Task #{task.task_id.toString()}</span>
                 <span style={styles.submissionCount}>{submissions.length} submissions</span>
               </div>
-              <div style={styles.taskReward}>Reward: {Number(task.reward) / 1e9} SOL</div>
+              <div style={styles.taskReward}>Reward: {formatTokenAmount(task.reward, chain)}</div>
             </button>
           ))}
         </div>

@@ -2,17 +2,23 @@
 
 import { useState } from 'react';
 import type { Address } from '@solana/kit';
+import { useWalletChain } from '@/hooks/useWalletChain';
 import type { SubmissionApi, TaskApi } from '@/hooks/useArenaTask';
 
 interface JudgeSubmissionViewProps {
   task: TaskApi;
   submissions: SubmissionApi[];
   onJudge: (params: {
-    winner: Address;
+    winner: Address | `0x${string}`;
     score: number;
     reasonRef: string;
   }) => void;
   loading?: boolean;
+}
+
+function formatTokenAmount(amount: number, chain: 'solana' | 'evm' | null): string {
+  const divisor = chain === 'evm' ? 1e18 : 1e9;
+  return `${(amount / divisor).toFixed(4)} ${chain === 'evm' ? 'ETH' : 'SOL'}`;
 }
 
 export function JudgeSubmissionView({
@@ -21,6 +27,7 @@ export function JudgeSubmissionView({
   onJudge,
   loading,
 }: JudgeSubmissionViewProps) {
+  const { chain } = useWalletChain();
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [score, setScore] = useState<number>(85);
   const [reasonRef, setReasonRef] = useState('');
@@ -28,7 +35,7 @@ export function JudgeSubmissionView({
   const handleJudge = () => {
     if (!selectedAgent) return;
     onJudge({
-      winner: selectedAgent as Address,
+      winner: selectedAgent as Address | `0x${string}`,
       score,
       reasonRef,
     });
@@ -42,9 +49,9 @@ export function JudgeSubmissionView({
   return (
     <div style={styles.container}>
       <h2 style={styles.heading}>Task #{task.task_id.toString()}</h2>
-      <p style={styles.reward}>Reward: {reward / 1e9} SOL</p>
+      <p style={styles.reward}>Reward: {formatTokenAmount(reward, chain)}</p>
       <p style={styles.split}>
-        Winner: {(agentPayout / 1e9).toFixed(4)} SOL · Judge: {(judgeFee / 1e9).toFixed(4)} SOL · Protocol: {(protocolFee / 1e9).toFixed(4)} SOL
+        Winner: {formatTokenAmount(agentPayout, chain)} · Judge: {formatTokenAmount(judgeFee, chain)} · Protocol: {formatTokenAmount(protocolFee, chain)}
       </p>
 
       <div style={styles.submissions}>

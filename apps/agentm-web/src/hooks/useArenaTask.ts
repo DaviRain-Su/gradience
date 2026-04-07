@@ -14,9 +14,9 @@ import {
   getExplorerUrl as getSolanaExplorerUrl,
   type TaskApi,
   type SubmissionApi,
-  type ReputationApi,
   type WalletAdapter,
 } from '@/lib/solana/arena-client';
+import type { ReputationData } from '@gradiences/sdk';
 import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
 import type { Address } from '@solana/kit';
 import {
@@ -32,10 +32,11 @@ import {
   fetchTasksFromSubgraph,
   fetchTaskFromSubgraph,
   fetchSubmissionsFromSubgraph,
+  fetchReputationFromSubgraph,
 } from '@/lib/evm/subgraph-client';
 import { useWalletChain } from './useWalletChain';
 
-export type { TaskApi, SubmissionApi, ReputationApi };
+export type { TaskApi, SubmissionApi };
 
 export function getExplorerUrl(signature: string, chain: 'solana' | 'evm' = 'solana'): string {
   if (chain === 'evm') return getEVMExplorerUrl(signature);
@@ -259,6 +260,13 @@ export function useArenaTask(walletAddress: string | null) {
     return fetchSubmissions(taskId);
   }, [chain]);
 
+  const doFetchReputation = useCallback(async (agent: string): Promise<ReputationData | null> => {
+    if (chain === 'evm') {
+      return fetchReputationFromSubgraph(agent);
+    }
+    return fetchReputation(agent);
+  }, [chain]);
+
   return {
     loading,
     error,
@@ -272,7 +280,7 @@ export function useArenaTask(walletAddress: string | null) {
     fetchTasks: doFetchTasks,
     fetchTask: doFetchTask,
     fetchSubmissions: doFetchSubmissions,
-    fetchReputation,
+    fetchReputation: doFetchReputation,
     getExplorerUrl: (sig: string) => getExplorerUrl(sig, chain ?? 'solana'),
   } as const;
 }
