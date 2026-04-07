@@ -1,14 +1,22 @@
-// @ts-nocheck
-/**
- * Passkey Wallet Recovery Component
- *
- * 用于在新设备上恢复 Agent Wallet
- *
- * @module components/PasskeyWalletRecovery
- */
+'use client';
 
-import React from 'react';
-import { usePasskeyWallet } from '../../hooks/usePasskeyWallet';
+import { usePasskeyWallet } from '@/hooks/usePasskeyWallet';
+
+const c = {
+  bg: '#F3F3F8',
+  surface: '#FFFFFF',
+  ink: '#16161A',
+  lavender: '#C6BBFF',
+  lime: '#CDFF4D',
+  redBg: '#fef2f2',
+  redBorder: '#fca5a5',
+  redText: '#991b1b',
+  redBtn: '#fecaca',
+  redBtnHover: '#fca5a5',
+  greenBg: '#f0fdf4',
+  greenBorder: '#86efac',
+  greenText: '#166534',
+};
 
 interface PasskeyWalletRecoveryProps {
   rpId: string;
@@ -23,14 +31,13 @@ interface PasskeyWalletRecoveryProps {
   onError?: (error: string) => void;
 }
 
-export const PasskeyWalletRecovery: React.FC<PasskeyWalletRecoveryProps> = ({
+export function PasskeyWalletRecovery({
   rpId,
   rpName,
   userId,
   userName,
   onRecovered,
-  onError,
-}) => {
+}: PasskeyWalletRecoveryProps) {
   const {
     isSupported,
     isLoading,
@@ -59,61 +66,92 @@ export const PasskeyWalletRecovery: React.FC<PasskeyWalletRecoveryProps> = ({
     }
   };
 
-  // 不支持 Passkey
+  const cardStyle: React.CSSProperties = {
+    padding: '24px',
+    background: c.surface,
+    borderRadius: '16px',
+    border: `1.5px solid ${c.ink}`,
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    width: '100%',
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: 'none',
+    background: c.ink,
+    color: '#fff',
+    fontSize: '15px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+  };
+
   if (!isSupported) {
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl">⚠️</span>
-          <h3 className="text-lg font-semibold text-red-800">
-            设备不支持 Passkey
+      <div style={{ ...cardStyle, background: c.redBg, borderColor: c.redBorder }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+          <span style={{ fontSize: '24px' }}>⚠️</span>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: c.redText }}>
+            Passkey Not Supported
           </h3>
         </div>
-        <p className="text-red-600 mb-4">
-          您的浏览器或设备不支持 Passkey。请使用以下浏览器之一：
+        <p style={{ fontSize: '14px', color: c.redText, marginBottom: '12px' }}>
+          Your browser or device does not support Passkey. Please use one of the following:
         </p>
-        <ul className="list-disc list-inside text-red-600 space-y-1">
+        <ul style={{ fontSize: '14px', color: c.redText, paddingLeft: '18px', marginBottom: '16px' }}>
           <li>Chrome 108+</li>
           <li>Safari 16+</li>
           <li>Edge 108+</li>
         </ul>
         <button
           onClick={checkSupport}
-          className="mt-4 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '10px',
+            border: 'none',
+            background: c.redBtn,
+            color: c.redText,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = c.redBtnHover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = c.redBtn; }}
         >
-          重新检测
+          Check Again
         </button>
       </div>
     );
   }
 
-  // 恢复成功
   if (recoveredWallet) {
     return (
-      <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl">✅</span>
-          <h3 className="text-lg font-semibold text-green-800">
-            钱包恢复成功
+      <div style={{ ...cardStyle, background: c.greenBg, borderColor: c.greenBorder }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+          <span style={{ fontSize: '24px' }}>✅</span>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: c.greenText }}>
+            Wallet Recovered
           </h3>
         </div>
-        <div className="space-y-2 text-sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
           <p>
-            <span className="text-gray-500">Agent ID:</span>{' '}
-            <span className="font-mono text-green-700">
+            <span style={{ opacity: 0.6 }}>Agent ID:</span>{' '}
+            <span style={{ fontFamily: 'monospace', color: c.greenText, fontWeight: 600 }}>
               {recoveredWallet.agentId}
             </span>
           </p>
           <p>
-            <span className="text-gray-500">子钱包地址:</span>{' '}
-            <span className="font-mono text-green-700">
+            <span style={{ opacity: 0.6 }}>Sub-wallet:</span>{' '}
+            <span style={{ fontFamily: 'monospace', color: c.greenText, fontWeight: 600 }}>
               {recoveredWallet.subWalletAddress.slice(0, 12)}...
               {recoveredWallet.subWalletAddress.slice(-8)}
             </span>
           </p>
           <p>
-            <span className="text-gray-500">主钱包:</span>{' '}
-            <span className="font-mono text-green-700">
+            <span style={{ opacity: 0.6 }}>Master wallet:</span>{' '}
+            <span style={{ fontFamily: 'monospace', color: c.greenText, fontWeight: 600 }}>
               {recoveredWallet.masterWalletAddress.slice(0, 8)}...
             </span>
           </p>
@@ -123,59 +161,60 @@ export const PasskeyWalletRecovery: React.FC<PasskeyWalletRecoveryProps> = ({
   }
 
   return (
-    <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="text-center mb-6">
-        <span className="text-4xl mb-3 block">🔐</span>
-        <h3 className="text-lg font-semibold text-gray-800">
-          恢复 Agent Wallet
+    <div style={cardStyle}>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <span style={{ fontSize: '36px', display: 'block', marginBottom: '8px' }}>🔐</span>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, color: c.ink }}>
+          Recover Agent Wallet
         </h3>
-        <p className="text-gray-500 text-sm mt-1">
-          使用 Passkey 恢复您的 Agent 钱包
+        <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '4px' }}>
+          Restore your Agent wallet using Passkey
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div style={{ marginBottom: '16px', padding: '12px', background: c.redBg, borderRadius: '10px', border: `1px solid ${c.redBorder}` }}>
+          <p style={{ fontSize: '13px', color: c.redText }}>{error}</p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <button
           onClick={handleRecover}
           disabled={isLoading}
-          className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          style={{
+            ...btnPrimary,
+            ...(isLoading ? { opacity: 0.7, cursor: 'not-allowed' } : {}),
+          }}
         >
           {isLoading ? (
             <>
-              <span className="animate-spin">⏳</span>
-              正在恢复...
+              <span>⏳</span>
+              Recovering...
             </>
           ) : (
             <>
               <span>🔑</span>
-              使用 Passkey 恢复
+              Recover with Passkey
             </>
           )}
         </button>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-400">
-            需要使用之前创建钱包时的设备或已同步的 Passkey
-          </p>
-        </div>
+        <p style={{ fontSize: '12px', color: c.ink, opacity: 0.4, textAlign: 'center' }}>
+          Use the same device or a synced Passkey you used when creating the wallet.
+        </p>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">如何工作？</h4>
-        <ol className="text-xs text-gray-500 space-y-1 list-decimal list-inside">
-          <li>点击"使用 Passkey 恢复"按钮</li>
-          <li>使用 Face ID / Touch ID / Windows Hello 验证</li>
-          <li>系统自动恢复您的 Agent 钱包</li>
+      <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${c.bg}` }}>
+        <h4 style={{ fontSize: '13px', fontWeight: 700, color: c.ink, marginBottom: '8px' }}>How it works</h4>
+        <ol style={{ fontSize: '12px', color: c.ink, opacity: 0.6, paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <li>Click "Recover with Passkey"</li>
+          <li>Verify with Face ID / Touch ID / Windows Hello</li>
+          <li>Your Agent wallet is restored automatically</li>
         </ol>
       </div>
     </div>
   );
-};
+}
 
 export default PasskeyWalletRecovery;
