@@ -110,7 +110,10 @@ export function registerIdentityRoutes(app: FastifyInstance, db: Database.Databa
       return {
         accountId,
         tier: tier.tier,
-        permissions: tier.permissions,
+        permissions: {
+          ...tier.permissions,
+          maxTaskValue: String(tier.permissions.maxTaskValue),
+        },
         requirements: tier.requirements,
         metrics,
       };

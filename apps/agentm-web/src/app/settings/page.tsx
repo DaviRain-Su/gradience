@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import { useDashboard } from '@/hooks/useDashboard';
+import { ZkKycButton } from '@/components/identity/ZkKycButton';
 import { Settings, Wallet, Shield, Bell, Globe, Key } from 'lucide-react';
 
 const c = {
@@ -360,6 +361,13 @@ export default function SettingsPage() {
                 <span style={{ fontWeight: 600 }}>{stats.totalProfiles}</span>
               </div>
             </div>
+            {walletAddress && (
+              <ZkKycButton
+                accountId={walletAddress}
+                walletAddress={walletAddress}
+                appId={process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID}
+              />
+            )}
           </div>
         </div>
 

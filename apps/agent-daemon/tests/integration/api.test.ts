@@ -160,4 +160,44 @@ describe('API Server Integration', () => {
         const body = await res.json();
         expect(body.messages).toEqual([]);
     });
+
+    // Identity binding
+    it('should bind wallet and retrieve tier', async () => {
+        const bindRes = await post('/api/v1/identity/bind', {
+            accountId: 'acc-api-1',
+            primaryWallet: '0xAAA111',
+            oauthHash: 'sha256-oauth-1',
+            signature: 'sig-1',
+        });
+        expect(bindRes.status).toBe(200);
+        const bindBody = await bindRes.json();
+        expect(bindBody.accountId).toBe('acc-api-1');
+
+        const tierRes = await get('/api/v1/identity/tier/acc-api-1');
+        const tierBody = await tierRes.json();
+        expect(tierRes.status).toBe(200);
+        expect(tierBody.tier).toBe('guest');
+    });
+
+    it('should verify ZK-KYC nullifier', async () => {
+        await post('/api/v1/identity/bind', {
+            accountId: 'acc-api-zk',
+            primaryWallet: '0xBBB222',
+            signature: 'sig-zk',
+        });
+
+        const zkRes = await post('/api/v1/identity/zk-verify', {
+            accountId: 'acc-api-zk',
+            nullifierHash: 'nullifier-abc-123',
+        });
+        expect(zkRes.status).toBe(200);
+        const zkBody = await zkRes.json();
+        expect(zkBody.zkVerified).toBe(true);
+        expect(zkBody.nullifierHash).toBe('nullifier-abc-123');
+
+        const tierRes = await get('/api/v1/identity/tier/acc-api-zk');
+        expect(tierRes.status).toBe(200);
+        const tierBody = await tierRes.json();
+        expect(tierBody.metrics.zkKycBound).toBe(true);
+    });
 });
