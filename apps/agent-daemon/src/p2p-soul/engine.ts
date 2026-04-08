@@ -236,6 +236,11 @@ export interface ParsedSoulMd {
     telegram?: string;
     discord?: string;
   };
+  links?: {
+    portfolio?: string;
+    github?: string;
+    linkedin?: string;
+  };
 }
 
 /**
@@ -252,6 +257,7 @@ export function parseSoulMd(content: string): ParsedSoulMd {
     availability: { hoursPerWeek: 0, timezone: 'UTC' },
     projects: [],
     contact: {},
+    links: {},
   };
   
   let currentSection: string | null = null;
@@ -317,6 +323,13 @@ export function parseSoulMd(content: string): ParsedSoulMd {
           break;
         case 'contact':
           (profile.contact as any)[key.toLowerCase()] = value;
+          break;
+        case 'links':
+          if (!profile.links) profile.links = {};
+          const linkKey = key.toLowerCase();
+          if (linkKey === 'portfolio' || linkKey === 'github' || linkKey === 'linkedin') {
+            (profile.links as any)[linkKey] = value;
+          }
           break;
       }
     }
@@ -400,6 +413,10 @@ export function generateLevel1Data(profile: SoulProfile): Level1Data {
  * Generate Level 2 disclosure data
  */
 export function generateLevel2Data(profile: SoulProfile): Level2Data {
+  const hasEmail = !!profile.contact.email;
+  const hasSocial = !!(profile.contact.telegram || profile.contact.discord);
+  const communicationPreference = hasEmail && hasSocial ? 'mixed' : hasSocial ? 'informal' : 'formal';
+
   return {
     skillDetails: profile.skills.map(s => ({
       category: s.category,
@@ -408,7 +425,7 @@ export function generateLevel2Data(profile: SoulProfile): Level2Data {
     })),
     projectTypes: profile.experience.categories,
     collaborationStyle: profile.availability.hoursPerWeek > 20 ? 'small_team' : 'solo',
-    communicationPreference: 'mixed', // TODO: Parse from profile
+    communicationPreference,
   };
 }
 
@@ -416,12 +433,11 @@ export function generateLevel2Data(profile: SoulProfile): Level2Data {
  * Generate Level 3 disclosure data
  */
 export function generateLevel3Data(profile: SoulProfile): Level3Data {
+  const portfolioUrl = profile.projects.find(p => p.url)?.url;
   return {
     notableProjects: profile.projects,
     specificSkills: profile.skills.map(s => s.name),
-    portfolioUrl: undefined, // TODO: Parse from profile
-    githubUrl: undefined,
-    linkedinUrl: undefined,
+    portfolioUrl,
   };
 }
 
