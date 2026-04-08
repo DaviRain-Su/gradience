@@ -176,6 +176,23 @@ pub const DELEGATION_TASK_DATA_LEN: usize =
 pub const DELEGATION_TASK_DISCRIMINATOR: u8 = 0x06;
 pub const DELEGATION_TASK_LEN: usize = ACCOUNT_HEADER_LEN + DELEGATION_TASK_DATA_LEN;
 
+pub const MAX_PROOF_LEN: usize = 64;
+
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+pub struct ExternalEvaluationAccount {
+    pub task_id: u64,
+    pub evaluator: PubkeyBytes,
+    pub score: u8,
+    pub proof: String,
+    pub evaluated_at: i64,
+    pub bump: u8,
+}
+
+pub const EXTERNAL_EVALUATION_DATA_LEN: usize =
+    8 + 32 + 1 + (BORSH_STRING_PREFIX_LEN + MAX_PROOF_LEN) + 8 + 1;
+pub const EXTERNAL_EVALUATION_DISCRIMINATOR: u8 = 0x07;
+pub const EXTERNAL_EVALUATION_LEN: usize = ACCOUNT_HEADER_LEN + EXTERNAL_EVALUATION_DATA_LEN;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,5 +211,7 @@ mod tests {
         assert_eq!(PROTOCOL_ENTRY_LEN, 511);
         assert_eq!(DELEGATION_TASK_DATA_LEN, 251);
         assert_eq!(DELEGATION_TASK_LEN, 253);
+        assert_eq!(EXTERNAL_EVALUATION_DATA_LEN, 114);
+        assert_eq!(EXTERNAL_EVALUATION_LEN, 116);
     }
 }

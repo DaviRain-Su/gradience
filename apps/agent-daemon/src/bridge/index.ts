@@ -170,7 +170,7 @@ export class BridgeManager {
 
     // Initialize external evaluation manager
     this.externalEvaluator = new ExternalEvaluationManager(this.config.chainHubProgramId);
-    
+
     // Register this daemon's evaluator
     const evaluatorPubkey = this.settlementBridge.getEvaluatorPublicKey();
     this.externalEvaluator.addAuthorizedEvaluator(evaluatorPubkey);

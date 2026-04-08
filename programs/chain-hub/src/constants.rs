@@ -16,6 +16,9 @@ pub const PROTOCOL_ENTRY_SEED: &[u8] = b"protocol";
 /// PDA seed prefix for delegation task records.
 pub const DELEGATION_TASK_SEED: &[u8] = b"delegation_task";
 
+/// PDA seed prefix for external evaluation records.
+pub const EXTERNAL_EVALUATION_SEED: &[u8] = b"external_evaluation";
+
 /// Agent Layer JudgePool PDA seed prefix (integration touchpoint).
 pub const AGENT_LAYER_JUDGE_POOL_SEED: &[u8] = b"judge_pool";
 

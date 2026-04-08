@@ -4,7 +4,8 @@ use crate::instructions::{
     process_activate_delegation_task, process_cancel_delegation_task,
     process_complete_delegation_task, process_delegation_task, process_initialize,
     process_record_delegation_execution, process_register_protocol, process_register_skill,
-    process_set_skill_status, process_update_protocol_status, process_upgrade_config,
+    process_set_skill_status, process_submit_external_evaluation, process_update_protocol_status,
+    process_upgrade_config,
 };
 
 entrypoint!(process_instruction);
@@ -22,6 +23,7 @@ pub enum ChainHubInstructionDiscriminators {
     CompleteDelegationTask = 8,
     CancelDelegationTask = 9,
     UpgradeConfig = 10,
+    SubmitExternalEvaluation = 11,
 }
 
 impl TryFrom<u8> for ChainHubInstructionDiscriminators {
@@ -87,6 +89,9 @@ pub fn process_instruction(
         }
         ChainHubInstructionDiscriminators::UpgradeConfig => {
             process_upgrade_config(program_id, accounts, payload)
+        }
+        ChainHubInstructionDiscriminators::SubmitExternalEvaluation => {
+            process_submit_external_evaluation(program_id, accounts, payload)
         }
     }
 }

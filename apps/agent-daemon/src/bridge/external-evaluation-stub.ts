@@ -10,8 +10,15 @@
  * @module bridge/external-evaluation-stub
  */
 
+import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair } from '@solana/web3.js';
+import { serialize } from 'borsh';
 import { logger } from '../utils/logger.js';
 import type { EvaluationProof } from './settlement-bridge.js';
+
+interface SignerProvider {
+  getSigner(): Promise<Keypair> | Keypair;
+  getPublicKey(): string;
+}
 
 /**
  * External evaluation submission parameters
@@ -47,10 +54,19 @@ export interface ExternalEvaluationResult {
  */
 export class ExternalEvaluationManager {
   private authorizedEvaluators: Set<string> = new Set();
+  private connection?: Connection;
+  private signerProvider?: SignerProvider;
 
   constructor(private chainHubProgramId: string) {
-    // Load authorized evaluators (would be fetched from on-chain whitelist)
     this.loadAuthorizedEvaluators();
+  }
+
+  /**
+   * Enable real on-chain submission by providing a Solana connection and signer.
+   */
+  setConnection(connection: Connection, signerProvider: SignerProvider): void {
+    this.connection = connection;
+    this.signerProvider = signerProvider;
   }
 
   /**
@@ -68,7 +84,7 @@ export class ExternalEvaluationManager {
         evaluator: params.evaluatorAuthority,
         score: params.proof.score,
       },
-      'Submitting external evaluation (STUB)'
+      'Submitting external evaluation'
     );
 
     // Check if evaluator is authorized
@@ -88,15 +104,67 @@ export class ExternalEvaluationManager {
       };
     }
 
-    // STUB: In production, this would:
-    // 1. Build Solana transaction with `submit_external_evaluation` instruction
-    // 2. Sign with evaluator keypair
-    // 3. Send to Solana RPC
-    // 4. Wait for confirmation
-    // 5. Update task state on-chain
+    // Real on-chain submission when connection + signer available
+    if (this.connection && this.signerProvider) {
+      try {
+        const signer = await this.signerProvider.getSigner();
+        const programId = new PublicKey(this.chainHubProgramId);
+        const taskId = BigInt(params.taskId);
 
-    logger.warn('External evaluation submission is a STUB - Solana program changes required');
+        // Derive evaluation PDA
+        const taskIdBytes = Buffer.alloc(8);
+        taskIdBytes.writeBigUInt64LE(taskId, 0);
+        const [evaluationPDA] = PublicKey.findProgramAddressSync(
+          [Buffer.from('external_evaluation'), taskIdBytes],
+          programId
+        );
 
+        // Borsh serialize: discriminator 11 + task_id(u64) + score(u8) + proof(String)
+        const schema = {
+          struct: {
+            task_id: 'u64',
+            score: 'u8',
+            proof: 'string',
+          },
+        };
+        const data = serialize(schema, {
+          task_id: taskId,
+          score: params.proof.score,
+          proof: params.proof.verificationHash || '',
+        });
+        const instructionData = Buffer.concat([Buffer.from([11]), Buffer.from(data)]);
+
+        const ix = new TransactionInstruction({
+          keys: [
+            { pubkey: signer.publicKey, isSigner: true, isWritable: true },
+            { pubkey: evaluationPDA, isSigner: false, isWritable: true },
+            { pubkey: PublicKey.default, isSigner: false, isWritable: false }, // system_program placeholder
+          ],
+          programId,
+          data: instructionData,
+        });
+
+        const tx = new Transaction().add(ix);
+        const signature = await this.connection.sendTransaction(tx, [signer]);
+        await this.connection.confirmTransaction(signature, 'confirmed');
+
+        logger.info({ taskId: params.taskId, signature }, 'External evaluation submitted on-chain');
+
+        return {
+          success: true,
+          txSignature: signature,
+          newStatus: 'evaluated',
+        };
+      } catch (error: any) {
+        logger.error({ error: error.message, taskId: params.taskId }, 'On-chain submission failed');
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+
+    logger.warn('No connection/signer configured; returning stub result');
     return {
       success: true,
       txSignature: `stub_tx_${Date.now()}`,

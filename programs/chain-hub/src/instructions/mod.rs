@@ -7,6 +7,7 @@ mod record_delegation_execution;
 mod register_protocol;
 mod register_skill;
 mod set_skill_status;
+mod submit_external_evaluation;
 mod update_protocol_status;
 mod upgrade_config;
 
@@ -21,5 +22,8 @@ pub use record_delegation_execution::{
 pub use register_protocol::{process_register_protocol, RegisterProtocolData};
 pub use register_skill::{process_register_skill, RegisterSkillData};
 pub use set_skill_status::{process_set_skill_status, SetSkillStatusData};
+pub use submit_external_evaluation::{
+    process_submit_external_evaluation, SubmitExternalEvaluationData,
+};
 pub use update_protocol_status::{process_update_protocol_status, UpdateProtocolStatusData};
 pub use upgrade_config::{process_upgrade_config, UpgradeConfigData};
