@@ -740,18 +740,61 @@ export class EvaluatorRuntime extends EventEmitter {
     task: EvaluationTask,
     sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    // TODO: Implement composite evaluation (multiple types)
+    logger.info({ evaluationId: task.id }, 'Running composite evaluation');
 
-    logger.info({ evaluationId: task.id }, 'Composite evaluation not yet implemented');
+    const types = task.metadata?.compositeTypes as Array<EvaluationType> | undefined;
+    const evaluations: Partial<EvaluationResult>[] = [];
+    const steps: Array<{ name: string; status: string; durationMs: number }> = [];
+
+    const typesToRun = types?.length ? types : ['code', 'content'] as EvaluationType[];
+
+    for (const evalType of typesToRun) {
+      const stepStart = Date.now();
+      let result: Partial<EvaluationResult>;
+
+      switch (evalType) {
+        case 'code':
+          result = await this.evaluateCode(task, sandbox);
+          break;
+        case 'ui':
+          result = await this.evaluateUI(task, sandbox);
+          break;
+        case 'api':
+          result = await this.evaluateAPI(task, sandbox);
+          break;
+        case 'content':
+          result = await this.evaluateContent(task, sandbox);
+          break;
+        default:
+          result = {
+            categoryScores: [{ category: evalType, score: 0, weight: 1 }],
+            checkResults: [{ name: `eval_${evalType}`, passed: false, message: `Unsupported composite type: ${evalType}` }],
+          };
+      }
+
+      evaluations.push(result);
+      steps.push({ name: `composite_${evalType}`, status: 'completed', durationMs: Date.now() - stepStart });
+    }
+
+    // Aggregate scores
+    const allCategoryScores = evaluations.flatMap((e) => e.categoryScores || []);
+    const allCheckResults = evaluations.flatMap((e) => e.checkResults || []);
+    const overallScores = evaluations.map((e) => e.overallScore ?? 0).filter((s) => s > 0);
+    const aggregatedOverall = overallScores.length
+      ? Math.round(overallScores.reduce((a, b) => a + b, 0) / overallScores.length)
+      : 0;
+    const passed = aggregatedOverall >= task.criteria.minScore && allCheckResults.every((c) => c.passed);
 
     return {
-      categoryScores: [],
-      checkResults: [],
+      overallScore: aggregatedOverall,
+      passed,
+      categoryScores: allCategoryScores,
+      checkResults: allCheckResults,
       executionLog: {
         sandboxType: this.config.sandbox.type,
-        steps: [],
-        stdout: '',
-        stderr: '',
+        steps,
+        stdout: evaluations.map((e) => e.executionLog?.stdout || '').join('\n'),
+        stderr: evaluations.map((e) => e.executionLog?.stderr || '').join('\n'),
       },
     };
   }
