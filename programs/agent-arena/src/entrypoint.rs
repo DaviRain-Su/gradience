@@ -3,8 +3,8 @@ use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address, 
 use crate::{
     instructions::{
         process_apply_for_task, process_cancel_task, process_emit_event, process_force_refund,
-        process_initialize, process_judge_and_pay, process_post_task, process_refund_expired,
-        process_register_judge, process_submit_result, process_unstake_judge,
+        process_initialize, process_judge_and_pay, process_post_task, process_receive_vrf_randomness,
+        process_refund_expired, process_register_judge, process_submit_result, process_unstake_judge,
         process_upgrade_config,
     },
     traits::GradienceInstructionDiscriminators,
@@ -56,6 +56,9 @@ pub fn process_instruction(
         }
         GradienceInstructionDiscriminators::UpgradeConfig => {
             process_upgrade_config(program_id, accounts, instruction_data)
+        }
+        GradienceInstructionDiscriminators::ReceiveVrfRandomness => {
+            process_receive_vrf_randomness(program_id, accounts, instruction_data)
         }
         GradienceInstructionDiscriminators::EmitEvent => {
             process_emit_event(program_id, accounts)

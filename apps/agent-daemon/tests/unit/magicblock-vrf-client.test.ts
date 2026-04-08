@@ -7,6 +7,7 @@ import {
   parseQueueHeader,
   iterateQueueItems,
   findQueueItemById,
+  deserializeVrfResult,
   type SerializableAccountMeta,
 } from '../../src/settlement/magicblock-vrf-client.js';
 import { PublicKey } from '@solana/web3.js';
@@ -106,5 +107,22 @@ describe('MagicBlockVRFClient', () => {
 
     const notFound = findQueueItemById(data, new Uint8Array(32).fill(0x00));
     expect(notFound).toBeUndefined();
+  });
+
+  it('should deserialize a VrfResult account', () => {
+    const data = Buffer.alloc(44);
+    data[0] = 0x0a; // VRF_RESULT_DISCRIMINATOR
+    data[1] = 1;    // ACCOUNT_VERSION_V1
+    data.writeBigUInt64LE(42n, 2); // task_id = 42
+    const randomness = Buffer.alloc(32).fill(0xcd);
+    randomness.copy(data, 10); // randomness at offset 10
+    data[42] = 1; // fulfilled = true
+    data[43] = 255; // bump
+
+    const result = deserializeVrfResult(data);
+    expect(result.taskId).toBe(42n);
+    expect(Array.from(result.randomness)).toEqual(Array.from(randomness));
+    expect(result.fulfilled).toBe(true);
+    expect(result.bump).toBe(255);
   });
 });

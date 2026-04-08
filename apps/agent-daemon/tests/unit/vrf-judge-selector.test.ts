@@ -54,12 +54,13 @@ describe('VRFJudgeSelector', () => {
     expect(result.verifiable).toBe(false);
   });
 
-  it('should build a RequestRandomness instruction', () => {
+  it('should build a generic RequestRandomness instruction', () => {
     const selector = new VRFJudgeSelector();
     const payer = new PublicKey('DRa2PkgPiLZEATXgAXN8sjXMU3BWzkkgesQhGvPY9TLH');
     const callbackProgramId = new PublicKey('11111111111111111111111111111111');
+    const seed = new Uint8Array(32).fill(0xab);
     const ix = selector.buildRequestRandomnessIx(
-      'task-5',
+      seed,
       callbackProgramId,
       Buffer.from([0xab, 0xcd]),
       [],
@@ -71,6 +72,20 @@ describe('VRFJudgeSelector', () => {
     );
     expect(ix.keys[0].pubkey.equals(payer)).toBe(true);
     expect(ix.keys[0].isSigner).toBe(true);
+    expect(ix.data.length).toBeGreaterThan(8 + 32 + 32);
+  });
+
+  it('should build a Gradience callback RequestRandomness instruction', () => {
+    const selector = new VRFJudgeSelector();
+    const payer = new PublicKey('DRa2PkgPiLZEATXgAXN8sjXMU3BWzkkgesQhGvPY9TLH');
+    const ix = selector.buildGradienceRequestRandomnessIx('task-5', 42n, payer);
+    expect(ix.programId.toBase58()).toBe(
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz',
+    );
+    expect(ix.keys[0].pubkey.equals(payer)).toBe(true);
+    expect(ix.keys[0].isSigner).toBe(true);
+    // callback account (vrf_result PDA) should be present in remaining accounts
+    expect(ix.keys.length).toBeGreaterThan(4);
     expect(ix.data.length).toBeGreaterThan(8 + 32 + 32);
   });
 });

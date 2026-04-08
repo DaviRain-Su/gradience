@@ -6,6 +6,7 @@ pub mod force_refund;
 pub mod initialize;
 pub mod judge_and_pay;
 pub mod post_task;
+pub mod receive_vrf_randomness;
 pub mod register_judge;
 pub mod refund_expired;
 pub mod submit_result;
@@ -22,6 +23,10 @@ pub use force_refund::{ForceRefund, ForceRefundAccounts, ForceRefundData, proces
 pub use initialize::{Initialize, InitializeAccounts, InitializeData, process_initialize};
 pub use judge_and_pay::{JudgeAndPay, JudgeAndPayAccounts, JudgeAndPayData, process_judge_and_pay};
 pub use post_task::{PostTask, PostTaskAccounts, PostTaskData, process_post_task};
+pub use receive_vrf_randomness::{
+    ReceiveVrfRandomness, ReceiveVrfRandomnessAccounts, ReceiveVrfRandomnessData,
+    process_receive_vrf_randomness,
+};
 pub use register_judge::{
     RegisterJudge, RegisterJudgeAccounts, RegisterJudgeData, process_register_judge,
 };

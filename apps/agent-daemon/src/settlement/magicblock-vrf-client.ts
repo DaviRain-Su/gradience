@@ -231,6 +231,30 @@ function bufferEquals(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
+export interface VrfResult {
+  taskId: bigint;
+  randomness: Uint8Array;
+  fulfilled: boolean;
+  bump: number;
+}
+
+/** Deserialize a Gradience VrfResult account (discriminator + version + borsh). */
+export function deserializeVrfResult(data: Buffer): VrfResult {
+  const EXPECTED_LEN = 2 + 8 + 32 + 1 + 1; // 44
+  if (data.length < EXPECTED_LEN) {
+    throw new Error('VrfResult account data too small');
+  }
+  if (data[0] !== 0x0a || data[1] !== 1) {
+    throw new Error('Invalid VrfResult discriminator or version');
+  }
+  const view = new DataView(data.buffer, data.byteOffset + 2);
+  const taskId = view.getBigUint64(0, true);
+  const randomness = new Uint8Array(data.buffer, data.byteOffset + 2 + 8, 32);
+  const fulfilled = view.getUint8(40) !== 0;
+  const bump = view.getUint8(41);
+  return { taskId, randomness, fulfilled, bump };
+}
+
 export class MagicBlockVRFClient {
   constructor(private connection: Connection) {}
 
@@ -251,5 +275,13 @@ export class MagicBlockVRFClient {
     const data = await this.getQueueAccountData(queue);
     const item = findQueueItemById(data, seed);
     return item !== undefined && item.used === 1;
+  }
+
+  async readVrfResultAccount(pda: PublicKey): Promise<VrfResult> {
+    const account = await this.connection.getAccountInfo(pda, 'confirmed');
+    if (!account) {
+      throw new Error('VRF result account not found');
+    }
+    return deserializeVrfResult(Buffer.from(account.data));
   }
 }

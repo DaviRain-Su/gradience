@@ -14,6 +14,8 @@ pub enum GradienceInstructionDiscriminators {
     RegisterJudge = 8,
     UnstakeJudge = 9,
     UpgradeConfig = 10,
+    /// Receive VRF randomness from MagicBlock via CPI.
+    ReceiveVrfRandomness = 11,
     /// 228 is the Anchor event instruction discriminator used for CPI-based event emission.
     /// Events are emitted by invoking CPI to this instruction with serialized event data.
     EmitEvent = 228,
@@ -35,6 +37,7 @@ impl TryFrom<u8> for GradienceInstructionDiscriminators {
             8 => Ok(Self::RegisterJudge),
             9 => Ok(Self::UnstakeJudge),
             10 => Ok(Self::UpgradeConfig),
+            11 => Ok(Self::ReceiveVrfRandomness),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }

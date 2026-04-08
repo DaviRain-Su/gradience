@@ -26,6 +26,7 @@ const STAKE_SEED = Buffer.from('stake');
 const TREASURY_SEED = Buffer.from('treasury');
 const EVENT_AUTHORITY_SEED = Buffer.from('event_authority');
 const JUDGE_POOL_SEED = Buffer.from('judge_pool');
+const VRF_RESULT_SEED = Buffer.from('vrf_result');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -127,6 +128,14 @@ export async function findJudgePoolPda(category: number): Promise<[Address, numb
     const [addr, bump] = await getProgramDerivedAddress({
         programAddress: ARENA_PROGRAM_ADDRESS,
         seeds: [JUDGE_POOL_SEED, Buffer.from([category])],
+    });
+    return [addr, bump];
+}
+
+export async function findVrfResultPda(taskId: bigint | number): Promise<[Address, number]> {
+    const [addr, bump] = await getProgramDerivedAddress({
+        programAddress: ARENA_PROGRAM_ADDRESS,
+        seeds: [VRF_RESULT_SEED, u64LeBuffer(taskId)],
     });
     return [addr, bump];
 }

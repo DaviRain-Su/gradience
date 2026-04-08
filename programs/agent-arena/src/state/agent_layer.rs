@@ -275,7 +275,20 @@ pub struct ProgramConfig {
 
 pub const PROGRAM_CONFIG_DATA_LEN: usize = PUBKEY_BYTES_LEN + PUBKEY_BYTES_LEN + 8 + 8 + 1;
 pub const PROGRAM_CONFIG_DISCRIMINATOR: u8 = 0x09;
+pub const VRF_RESULT_DISCRIMINATOR: u8 = 0x0a;
 pub const PROGRAM_CONFIG_LEN: usize = ACCOUNT_HEADER_LEN + PROGRAM_CONFIG_DATA_LEN;
+
+/// Stores a fulfilled MagicBlock VRF randomness result for a task.
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
+pub struct VrfResult {
+    pub task_id: u64,
+    pub randomness: [u8; 32],
+    pub fulfilled: bool,
+    pub bump: u8,
+}
+
+pub const VRF_RESULT_DATA_LEN: usize = 8 + 32 + 1 + 1; // 42
+pub const VRF_RESULT_LEN: usize = ACCOUNT_HEADER_LEN + VRF_RESULT_DATA_LEN; // 44
 
 #[cfg(test)]
 mod tests {
@@ -305,6 +318,8 @@ mod tests {
         assert_eq!(TREASURY_LEN, 3);
         assert_eq!(PROGRAM_CONFIG_DATA_LEN, 81);
         assert_eq!(PROGRAM_CONFIG_LEN, 83);
+        assert_eq!(VRF_RESULT_DATA_LEN, 42);
+        assert_eq!(VRF_RESULT_LEN, 44);
     }
 
     #[test]

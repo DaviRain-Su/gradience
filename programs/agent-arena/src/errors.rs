@@ -145,6 +145,12 @@ pub enum GradienceProgramError {
     /// (6041) Unsupported Token-2022 extension
     #[error("Mint extension is not supported")]
     UnsupportedMintExtension = 6041,
+
+    // ── VRF errors (6050–6051) ────────────────────────────────────────────────
+
+    /// (6050) VRF result account has not been initialized by the daemon
+    #[error("VRF result account not initialized")]
+    VrfResultAccountNotInitialized = 6050,
 }
 
 impl From<GradienceProgramError> for ProgramError {
@@ -208,11 +214,19 @@ mod tests {
     }
 
     #[test]
+    fn test_vrf_error_code() {
+        assert_eq!(GradienceProgramError::VrfResultAccountNotInitialized as u32, 6050);
+    }
+
+    #[test]
     fn test_program_error_conversion() {
         let err: ProgramError = GradienceProgramError::TaskNotOpen.into();
         assert_eq!(err, ProgramError::Custom(6000));
 
         let err: ProgramError = GradienceProgramError::UnsupportedMintExtension.into();
         assert_eq!(err, ProgramError::Custom(6041));
+
+        let err: ProgramError = GradienceProgramError::VrfResultAccountNotInitialized.into();
+        assert_eq!(err, ProgramError::Custom(6050));
     }
 }

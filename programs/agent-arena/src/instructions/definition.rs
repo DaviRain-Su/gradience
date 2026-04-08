@@ -210,6 +210,14 @@ pub enum GradienceInstruction {
         new_min_judge_stake: Option<u64>,
     } = 10,
 
+    /// Receive VRF randomness from MagicBlock oracle via CPI.
+    #[codama(account(name = "program_identity", signer))]
+    #[codama(account(name = "vrf_result", writable))]
+    ReceiveVrfRandomness {
+        /// Task ID the randomness is for.
+        task_id: u64,
+    } = 11,
+
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(account(name = "event_authority", signer))]
     EmitEvent {} = 228,
