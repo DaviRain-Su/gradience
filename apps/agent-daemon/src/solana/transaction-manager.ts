@@ -32,6 +32,7 @@ const ESCROW_SEED = Buffer.from('escrow');
 const APPLICATION_SEED = Buffer.from('application');
 const REPUTATION_SEED = Buffer.from('reputation');
 const SUBMISSION_SEED = Buffer.from('submission');
+const STAKE_SEED = Buffer.from('stake');
 const EVENT_AUTHORITY_SEED = Buffer.from('event_authority');
 const JUDGE_POOL_SEED = Buffer.from('judge_pool');
 const TREASURY_SEED = Buffer.from('treasury');
@@ -42,6 +43,17 @@ const MAGICBLOCK_PERMISSION_PROGRAM_ID = new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aD
 const POST_TASK_DISCRIMINATOR = 1;
 const APPLY_FOR_TASK_DISCRIMINATOR = 2;
 const SUBMIT_RESULT_DISCRIMINATOR = 3;
+const JUDGE_AND_PAY_DISCRIMINATOR = 4;
+
+// Task account basic field offsets (after 2-byte header)
+const TASK_HEADER_LEN = 2;
+const TASK_POSTER_OFFSET = TASK_HEADER_LEN + 8; // skip task_id
+const TASK_JUDGE_OFFSET = TASK_POSTER_OFFSET + 32;
+const TASK_JUDGE_MODE_OFFSET = TASK_JUDGE_OFFSET + 32;
+const TASK_REWARD_OFFSET = TASK_JUDGE_MODE_OFFSET + 1;
+const TASK_MINT_OFFSET = TASK_REWARD_OFFSET + 8;
+const TASK_MIN_STAKE_OFFSET = TASK_MINT_OFFSET + 32;
+const TASK_STATE_OFFSET = TASK_MIN_STAKE_OFFSET + 8;
 
 // Account data offsets for ProgramConfig
 const CONFIG_TASK_COUNT_OFFSET = 74; // 2 header + 32 treasury + 32 upgrade_authority + 8 min_judge_stake
@@ -297,6 +309,124 @@ export class TransactionManager implements ITransactionManager {
     }
 
     /**
+     * Judge a task and settle rewards (SOL path).
+     */
+    async judgeAndPay(params: {
+        taskId: string;
+        winner: string;
+        score: number;
+        reasonRef?: string;
+    }): Promise<string> {
+        try {
+            const taskIdBigInt = BigInt(params.taskId);
+            const taskIdBuf = Buffer.alloc(8);
+            taskIdBuf.writeBigUInt64LE(taskIdBigInt, 0);
+
+            const programId = addressToPublicKey(ARENA_PROGRAM_ADDRESS);
+
+            // Derive PDAs
+            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], programId);
+            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], programId);
+            const [treasuryPda] = PublicKey.findProgramAddressSync([TREASURY_SEED], programId);
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], programId);
+
+            const winnerPubkey = new PublicKey(params.winner);
+            const winnerBytes = winnerPubkey.toBytes();
+
+            const [winnerApplicationPda] = PublicKey.findProgramAddressSync(
+                [APPLICATION_SEED, taskIdBuf, winnerBytes],
+                programId,
+            );
+            const [winnerSubmissionPda] = PublicKey.findProgramAddressSync(
+                [SUBMISSION_SEED, taskIdBuf, winnerBytes],
+                programId,
+            );
+            const [winnerReputationPda] = PublicKey.findProgramAddressSync(
+                [REPUTATION_SEED, winnerBytes],
+                programId,
+            );
+            const [judgeStakePda] = PublicKey.findProgramAddressSync(
+                [STAKE_SEED, this.publicKey.toBytes()],
+                programId,
+            );
+
+            // Read task account to verify judge and path
+            const taskAccount = await this.connection.getAccountInfo(taskPda, 'confirmed');
+            if (!taskAccount) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Task account not found', 400);
+            }
+            const taskData = taskAccount.data;
+            if (taskData.length < TASK_STATE_OFFSET + 1) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid task account data', 400);
+            }
+
+            const taskJudge = new PublicKey(taskData.slice(TASK_JUDGE_OFFSET, TASK_JUDGE_OFFSET + 32));
+            if (!taskJudge.equals(this.publicKey)) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Daemon wallet is not the task judge', 400);
+            }
+
+            const taskMint = taskData.slice(TASK_MINT_OFFSET, TASK_MINT_OFFSET + 32);
+            const isSolPath = taskMint.every((b) => b === 0);
+            if (!isSolPath) {
+                throw new DaemonError(
+                    ErrorCodes.INVALID_REQUEST,
+                    'SPL token task settlement not yet supported in this implementation',
+                    400,
+                );
+            }
+
+            const taskState = taskData[TASK_STATE_OFFSET];
+            if (taskState !== 0) {
+                // 0 = TaskState::Open
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Task is not open for settlement', 400);
+            }
+
+            const taskPoster = new PublicKey(taskData.slice(TASK_POSTER_OFFSET, TASK_POSTER_OFFSET + 32));
+
+            // Build instruction data
+            const data = this.encodeJudgeAndPayData({
+                winner: Array.from(winnerBytes),
+                score: params.score,
+                reasonRef: params.reasonRef,
+            });
+
+            const keys = [
+                { pubkey: this.publicKey, isSigner: true, isWritable: true }, // judge
+                { pubkey: taskPda, isSigner: false, isWritable: true }, // task
+                { pubkey: escrowPda, isSigner: false, isWritable: true }, // escrow
+                { pubkey: taskPoster, isSigner: false, isWritable: true }, // poster_account
+                { pubkey: winnerPubkey, isSigner: false, isWritable: true }, // winner_account
+                { pubkey: winnerApplicationPda, isSigner: false, isWritable: false }, // winner_application
+                { pubkey: winnerSubmissionPda, isSigner: false, isWritable: false }, // winner_submission
+                { pubkey: winnerReputationPda, isSigner: false, isWritable: true }, // winner_reputation
+                { pubkey: judgeStakePda, isSigner: false, isWritable: true }, // judge_stake
+                { pubkey: treasuryPda, isSigner: false, isWritable: true }, // treasury
+                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
+                { pubkey: eventAuthorityPda, isSigner: false, isWritable: false }, // event_authority
+                { pubkey: programId, isSigner: false, isWritable: false }, // gradience_program
+            ];
+
+            const instruction = new TransactionInstruction({
+                keys,
+                programId,
+                data,
+            });
+
+            const signature = await this.signAndSendTransaction(instruction);
+            logger.info({ signature, taskId: params.taskId, winner: params.winner }, 'Task judged and settled successfully');
+            return signature;
+        } catch (error) {
+            if (error instanceof DaemonError) throw error;
+            logger.error({ error, params }, 'Failed to judge and pay');
+            throw new DaemonError(
+                ErrorCodes.SOLANA_ERROR,
+                `Failed to judge and pay: ${error instanceof Error ? error.message : String(error)}`,
+                500,
+            );
+        }
+    }
+
+    /**
      * Claim settled reward for a task
      * Note: This is not implemented by the current Arena program - rewards are distributed
      * automatically during judgeAndPay. This method exists for API compatibility but will throw.
@@ -410,6 +540,33 @@ export class TransactionManager implements ITransactionManager {
         parts.push(this.encodeString(params.runtimeEnv.model));
         parts.push(this.encodeString(params.runtimeEnv.runtime));
         parts.push(this.encodeString(params.runtimeEnv.version));
+
+        return Buffer.concat(parts);
+    }
+
+    private encodeJudgeAndPayData(params: {
+        winner: number[];
+        score: number;
+        reasonRef?: string;
+    }): Buffer {
+        const parts: Buffer[] = [];
+
+        // discriminator (u8)
+        parts.push(Buffer.from([JUDGE_AND_PAY_DISCRIMINATOR]));
+
+        // winner ([u8; 32])
+        parts.push(Buffer.from(params.winner));
+
+        // score (u8)
+        parts.push(Buffer.from([params.score]));
+
+        // reason_ref: Option<String>
+        if (params.reasonRef !== undefined) {
+            parts.push(Buffer.from([1])); // Some
+            parts.push(this.encodeString(params.reasonRef));
+        } else {
+            parts.push(Buffer.from([0])); // None
+        }
 
         return Buffer.concat(parts);
     }
