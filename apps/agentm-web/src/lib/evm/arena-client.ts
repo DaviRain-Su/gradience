@@ -37,6 +37,7 @@ export interface PostTaskEVMParams {
   deadlineOffsetSeconds?: number;
   judgeDeadlineOffsetSeconds?: number;
   judge?: `0x${string}`;
+  requireZkKyc?: boolean;
   chainId?: number;
 }
 
@@ -62,6 +63,7 @@ export async function postTaskEVM(params: PostTaskEVMParams): Promise<{ taskId: 
       params.judge ?? '0x0000000000000000000000000000000000000000',
       params.category,
       minStake,
+      params.requireZkKyc ?? false,
     ],
     account: params.account,
     value: reward,

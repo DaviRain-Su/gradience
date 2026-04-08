@@ -49,7 +49,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0.1 ether
+            0.1 ether,
+            false
         );
 
         (
@@ -68,7 +69,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0
+            0,
+            false
         );
     }
 
@@ -82,7 +84,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0
+            0,
+            false
         );
     }
 
@@ -159,7 +162,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0.1 ether
+            0.1 ether,
+            false
         );
     }
 
@@ -186,7 +190,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0.1 ether
+            0.1 ether,
+            false
         );
 
         (
@@ -225,7 +230,8 @@ contract AgentArenaEVMTest is Test {
                 uint64(block.timestamp + 2 days),
                 judge,
                 1,
-                0.1 ether
+                0.1 ether,
+                false
             );
             // Complete each task without dispute to gain reputation
             uint256 taskId = i + 1;
@@ -251,7 +257,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0.1 ether
+            0.1 ether,
+            false
         );
         (,,,,uint256 minStake,,,,,,,) = arena.tasks(taskId);
         assertEq(minStake, 0.1 ether);
@@ -364,7 +371,8 @@ contract AgentArenaEVMTest is Test {
             uint64(block.timestamp + 2 days),
             judge,
             1,
-            0.1 ether
+            0.1 ether,
+            false
         );
         vm.deal(agent, 10 ether);
         vm.prank(agent);
@@ -394,5 +402,157 @@ contract AgentArenaEVMTest is Test {
 
         (,,, uint256 successfulRefunds,,,,) = arena.posterProfiles(poster);
         assertEq(successfulRefunds, 1);
+    }
+
+    // ----------------------------------------------------------------------
+    // On-chain ZK-KYC gating (GRA-265 implementation)
+    // ----------------------------------------------------------------------
+
+    function test_RegisterZkNullifier() public {
+        bytes32 hash = keccak256("nullifier-1");
+        vm.prank(owner);
+        arena.setZkOracle(owner);
+
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, hash);
+
+        assertEq(arena.zkNullifiers(agent), hash);
+        assertTrue(arena.usedNullifiers(hash));
+    }
+
+    function test_Revert_RegisterDuplicateNullifier() public {
+        bytes32 hash = keccak256("nullifier-2");
+        vm.prank(owner);
+        arena.setZkOracle(owner);
+
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, hash);
+
+        vm.prank(owner);
+        vm.expectRevert(AgentArenaEVM.InvalidRefLength.selector);
+        arena.registerZkNullifier(loser, hash);
+    }
+
+    function test_RebindReleasesOldNullifier() public {
+        bytes32 oldHash = keccak256("old");
+        bytes32 newHash = keccak256("new");
+        vm.prank(owner);
+        arena.setZkOracle(owner);
+
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, oldHash);
+
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, newHash);
+
+        assertFalse(arena.usedNullifiers(oldHash));
+        assertTrue(arena.usedNullifiers(newHash));
+    }
+
+    function test_ApplyForTask_Revert_ZkKycRequired() public {
+        vm.deal(poster, 10 ether);
+        vm.prank(poster);
+        uint256 taskId = arena.postTask{value: 1 ether}(
+            "eval-ref",
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 2 days),
+            judge,
+            1,
+            0.1 ether,
+            true // require ZK-KYC
+        );
+
+        vm.deal(agent, 10 ether);
+        vm.prank(agent);
+        vm.expectRevert(abi.encodeWithSelector(AgentArenaEVM.ZkKycRequired.selector, agent));
+        arena.applyForTask{value: 0.22 ether}(taskId);
+    }
+
+    function test_JudgeAndPay_Success_WithVerifiedJudge() public {
+        vm.prank(owner);
+        arena.setZkOracle(owner);
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, keccak256("agent-nullifier"));
+        vm.prank(owner);
+        arena.registerZkNullifier(judge, keccak256("judge-nullifier"));
+
+        vm.deal(poster, 10 ether);
+        vm.prank(poster);
+        uint256 taskId = arena.postTask{value: 1 ether}(
+            "eval-ref",
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 2 days),
+            judge,
+            1,
+            0.1 ether,
+            true
+        );
+
+        vm.deal(agent, 10 ether);
+        vm.prank(agent);
+        arena.applyForTask{value: 0.22 ether}(taskId);
+        vm.prank(agent);
+        arena.submitResult(taskId, "result", "trace");
+
+        // Verified designated judge succeeds
+        vm.prank(judge);
+        arena.judgeAndPay(taskId, agent, 80);
+
+        (,,,,,,,,,, AgentArenaEVM.TaskState state,) = arena.tasks(taskId);
+        assertEq(uint256(state), uint256(AgentArenaEVM.TaskState.Completed));
+    }
+
+    function test_PostTaskQuorum_Revert_UnverifiedJudge() public {
+        address unverifiedJudge = address(0x9999);
+        address[] memory judges = new address[](1);
+        judges[0] = unverifiedJudge;
+
+        vm.deal(poster, 10 ether);
+        vm.prank(poster);
+        vm.expectRevert(abi.encodeWithSelector(AgentArenaEVM.ZkKycRequired.selector, unverifiedJudge));
+        arena.postTaskQuorum{value: 1 ether}(
+            "eval-ref",
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 2 days),
+            1,
+            0.1 ether,
+            2, // pool mode
+            true,
+            judges
+        );
+    }
+
+    function test_FullZkGatedFlow() public {
+        bytes32 agentHash = keccak256("agent-n");
+        bytes32 judgeHash = keccak256("judge-n");
+        vm.prank(owner);
+        arena.setZkOracle(owner);
+        vm.prank(owner);
+        arena.registerZkNullifier(agent, agentHash);
+        vm.prank(owner);
+        arena.registerZkNullifier(judge, judgeHash);
+
+        vm.deal(poster, 10 ether);
+        vm.prank(poster);
+        uint256 taskId = arena.postTask{value: 1 ether}(
+            "eval-ref",
+            uint64(block.timestamp + 1 days),
+            uint64(block.timestamp + 2 days),
+            judge,
+            1,
+            0.1 ether,
+            true
+        );
+
+        vm.deal(agent, 10 ether);
+        vm.prank(agent);
+        arena.applyForTask{value: 0.22 ether}(taskId);
+        vm.prank(agent);
+        arena.submitResult(taskId, "result", "trace");
+
+        vm.prank(judge);
+        arena.judgeAndPay(taskId, agent, 80);
+
+        assertTrue(arena.requireZkKyc(taskId));
     }
 }

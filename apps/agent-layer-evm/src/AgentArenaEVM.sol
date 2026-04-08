@@ -163,6 +163,8 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     error TaskHasJudged(uint256 taskId);
     error HighValueTaskRequiresDesignatedJudge(uint256 taskId);
     error NotTreasury(address caller);
+    error ZkKycRequired(address wallet);
+    error NotZkOracle(address caller);
 
     event TaskCreated(
         uint256 indexed taskId,
@@ -173,6 +175,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint256 reward,
         uint64 deadline,
         uint64 judgeDeadline,
+        bool requireZkKyc,
         string evalRef
     );
     event TaskApplied(uint256 indexed taskId, address indexed agent, uint256 stake);
@@ -201,12 +204,15 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     event ProtocolFeesWithdrawn(address indexed token, address indexed treasury, uint256 amount);
     event LLMJudgeSet(address indexed previousOracle, address indexed newOracle);
     event TaskJudgedWithProof(uint256 indexed taskId, address indexed winner, uint8 score, bytes32 evaluationHash);
+    event ZkNullifierRegistered(address indexed wallet, bytes32 indexed nullifierHash);
+    event ZkOracleUpdated(address indexed oracle);
 
     address public treasury;
     address public disputeResolver;
     address public judgeRegistry;
     address public reputationFeed;
     address public llmJudgeOracle;
+    address public zkOracle;
     uint256 public taskCount;
 
     mapping(uint256 => Task) public tasks;
@@ -223,9 +229,17 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     mapping(uint256 => mapping(address => Judgement)) public judgements;
     mapping(uint256 => bool) public hasJudged;
     mapping(address => uint256) public protocolFees;
+    mapping(address => bytes32) public zkNullifiers;
+    mapping(bytes32 => bool) public usedNullifiers;
+    mapping(uint256 => bool) public requireZkKyc;
 
     modifier onlyResolver() {
         if (msg.sender != disputeResolver) revert NotDisputeResolver(msg.sender);
+        _;
+    }
+
+    modifier onlyZkOracle() {
+        if (msg.sender != zkOracle) revert NotZkOracle(msg.sender);
         _;
     }
 
@@ -247,6 +261,26 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     function setDisputeResolver(address resolver) external onlyOwner {
         if (resolver == address(0)) revert ZeroAddress();
         disputeResolver = resolver;
+    }
+
+    function setZkOracle(address oracle) external onlyOwner {
+        if (oracle == address(0)) revert ZeroAddress();
+        zkOracle = oracle;
+        emit ZkOracleUpdated(oracle);
+    }
+
+    function registerZkNullifier(address wallet, bytes32 nullifierHash) external onlyZkOracle {
+        if (nullifierHash == bytes32(0)) revert InvalidRefLength();
+        if (usedNullifiers[nullifierHash]) revert InvalidRefLength();
+
+        bytes32 old = zkNullifiers[wallet];
+        if (old != bytes32(0)) {
+            usedNullifiers[old] = false;
+        }
+
+        zkNullifiers[wallet] = nullifierHash;
+        usedNullifiers[nullifierHash] = true;
+        emit ZkNullifierRegistered(wallet, nullifierHash);
     }
 
     function setJudgeRegistry(address registry) external onlyOwner {
@@ -284,7 +318,8 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint64 judge_deadline,
         address judge,
         uint8 category,
-        uint256 min_stake
+        uint256 min_stake,
+        bool require_zk_kyc
     ) external payable returns (uint256 task_id) {
         if (msg.value == 0) revert ZeroReward();
         if (bytes(eval_ref).length == 0 || bytes(eval_ref).length > MAX_REF_LEN) revert InvalidRefLength();
@@ -319,6 +354,8 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         taskEvalRef[task_id] = eval_ref;
         _recordTaskPosted(msg.sender, msg.value);
 
+        requireZkKyc[task_id] = require_zk_kyc;
+
         emit TaskCreated(
             task_id,
             msg.sender,
@@ -328,6 +365,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             msg.value,
             deadline,
             judge_deadline,
+            require_zk_kyc,
             eval_ref
         );
     }
@@ -339,6 +377,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint8 category,
         uint256 min_stake,
         uint8 judge_mode,
+        bool require_zk_kyc,
         address[] calldata judges
     ) external payable returns (uint256 task_id) {
         if (msg.value == 0) revert ZeroReward();
@@ -368,9 +407,13 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         taskEvalRef[task_id] = eval_ref;
 
         for (uint256 i = 0; i < judges.length; i++) {
+            if (require_zk_kyc && zkNullifiers[judges[i]] == bytes32(0)) {
+                revert ZkKycRequired(judges[i]);
+            }
             taskJudgePool[task_id].push(judges[i]);
         }
         _recordTaskPosted(msg.sender, msg.value);
+        requireZkKyc[task_id] = require_zk_kyc;
 
         emit TaskCreated(
             task_id,
@@ -381,6 +424,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             msg.value,
             deadline,
             judge_deadline,
+            require_zk_kyc,
             eval_ref
         );
     }
@@ -393,7 +437,8 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint8 category,
         uint256 min_stake,
         address token,
-        uint256 reward_amount
+        uint256 reward_amount,
+        bool require_zk_kyc
     ) external returns (uint256 task_id) {
         if (token == address(0)) revert ZeroAddress();
         if (reward_amount == 0) revert ZeroReward();
@@ -426,6 +471,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             judgeMode: uint8(JudgeMode.DESIGNATED)
         });
         taskEvalRef[task_id] = eval_ref;
+        requireZkKyc[task_id] = require_zk_kyc;
 
         emit TaskCreated(
             task_id,
@@ -436,6 +482,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             actualReward,
             deadline,
             judge_deadline,
+            require_zk_kyc,
             eval_ref
         );
     }
@@ -449,6 +496,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         address token,
         uint256 reward_amount,
         uint8 judge_mode,
+        bool require_zk_kyc,
         address[] calldata judges
     ) external returns (uint256 task_id) {
         if (token == address(0)) revert ZeroAddress();
@@ -479,8 +527,12 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         taskEvalRef[task_id] = eval_ref;
 
         for (uint256 i = 0; i < judges.length; i++) {
+            if (require_zk_kyc && zkNullifiers[judges[i]] == bytes32(0)) {
+                revert ZkKycRequired(judges[i]);
+            }
             taskJudgePool[task_id].push(judges[i]);
         }
+        requireZkKyc[task_id] = require_zk_kyc;
 
         emit TaskCreated(
             task_id,
@@ -491,6 +543,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             actualReward,
             deadline,
             judge_deadline,
+            require_zk_kyc,
             eval_ref
         );
     }
@@ -515,6 +568,9 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         Task storage task = _loadOpenTask(task_id);
         if (block.timestamp >= task.deadline) revert DeadlinePassed(task_id);
         if (_isJudge(task_id, msg.sender)) revert JudgeCannotApply(task_id, msg.sender);
+        if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
+            revert ZkKycRequired(msg.sender);
+        }
 
         Application storage app = applications[task_id][msg.sender];
         if (app.exists) revert AlreadyApplied(task_id, msg.sender);
@@ -566,11 +622,17 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         if (task.judgeMode != uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
         if (block.timestamp > task.judgeDeadline) revert JudgeDeadlinePassed(task_id);
         if (msg.sender != task.judge) revert NotTaskJudge(task_id, msg.sender, task.judge);
+        if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
+            revert ZkKycRequired(msg.sender);
+        }
         _finalizeJudgement(task_id, winner, score);
     }
 
     function judgeWithProof(uint256 task_id, address winner, uint8 score, bytes32 evaluationHash) external nonReentrant {
         if (msg.sender != llmJudgeOracle) revert NotTaskJudge(task_id, msg.sender, llmJudgeOracle);
+        if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
+            revert ZkKycRequired(msg.sender);
+        }
         _finalizeJudgement(task_id, winner, score);
         emit TaskJudgedWithProof(task_id, winner, score, evaluationHash);
     }
@@ -620,6 +682,9 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         if (task.judgeMode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(task_id);
 
         if (!_isPoolJudge(task_id, msg.sender)) revert NotPoolJudge(task_id, msg.sender);
+        if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
+            revert ZkKycRequired(msg.sender);
+        }
 
         Judgement storage j = judgements[task_id][msg.sender];
         if (j.exists) revert AlreadyJudged(task_id, msg.sender);

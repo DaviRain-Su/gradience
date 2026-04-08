@@ -32,7 +32,7 @@ contract AgentArenaEVMTest is Test {
 
     function test_postTask_with_designated_judge() public {
         vm.prank(poster);
-        uint256 taskId = arena.postTask{value: 1 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), judge, 1, 0.1 ether);
+        uint256 taskId = arena.postTask{value: 1 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), judge, 1, 0.1 ether, false);
 
         (address taskPoster, address taskJudge,,,,,,,,,,) = arena.tasks(taskId);
         assertEq(taskPoster, poster);
@@ -43,7 +43,7 @@ contract AgentArenaEVMTest is Test {
         registry.register(1);
 
         vm.prank(poster);
-        uint256 taskId = arena.postTask{value: 0.5 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), address(0), 1, 0);
+        uint256 taskId = arena.postTask{value: 0.5 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), address(0), 1, 0, false);
 
         (address taskPoster, address taskJudge,,,,,,,,,,) = arena.tasks(taskId);
         assertEq(taskPoster, poster);
@@ -53,12 +53,12 @@ contract AgentArenaEVMTest is Test {
     function test_reverts_high_value_without_designated_judge() public {
         vm.prank(poster);
         vm.expectRevert(abi.encodeWithSelector(AgentArenaEVM.HighValueTaskRequiresDesignatedJudge.selector, 0));
-        arena.postTask{value: 2 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), address(0), 1, 0);
+        arena.postTask{value: 2 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), address(0), 1, 0, false);
     }
 
     function test_judgeAndPay_flow() public {
         vm.prank(poster);
-        uint256 taskId = arena.postTask{value: 1 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), judge, 1, 0);
+        uint256 taskId = arena.postTask{value: 1 ether}("cid", uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours), judge, 1, 0, false);
         
         vm.prank(agent);
         arena.applyForTask{value: 0}(taskId);
