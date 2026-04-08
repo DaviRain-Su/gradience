@@ -43,6 +43,7 @@ import {
     stopGatewayDomain,
     type GatewayDomainServices,
 } from './daemon/gateway-domain.js';
+import { ArenaAutoJudgeService } from './services/arena-auto-judge.js';
 
 const VERSION = '0.1.0';
 
@@ -58,6 +59,7 @@ export class Daemon {
     private settlement: SettlementDomainServices | null = null;
     private evaluation: EvaluationDomainServices | null = null;
     private gateway: GatewayDomainServices | null = null;
+    private arenaAutoJudge: ArenaAutoJudgeService | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -134,6 +136,21 @@ export class Daemon {
             bridgeManager: this.settlement.bridgeManager,
         });
 
+        // 8.5 Arena Auto Judge Service
+        this.arenaAutoJudge = new ArenaAutoJudgeService(
+            this.settlement.bridgeManager,
+            this.evaluation.evaluatorRuntime,
+            this.config.chainHubUrl.replace(/\/ws$/, '').replace(/^wss?:\/\//, 'https://') + '/indexer',
+            {
+                enabled: this.config.arenaAutoJudgeEnabled,
+                intervalMs: this.config.arenaAutoJudgeIntervalMs,
+                minSubmissions: this.config.arenaAutoJudgeMinSubmissions,
+                perEnabled: this.config.arenaAutoJudgePerEnabled,
+            },
+            this.identity.keyManager.getPublicKey(),
+        );
+        this.arenaAutoJudge.start();
+
         // 9. Gateway Domain (EVM-only for now)
         if (this.config.defaultChain === 'evm' && this.transactionManager instanceof EvmTransactionManager) {
             this.gateway = initGatewayDomain(
@@ -195,6 +212,7 @@ export class Daemon {
     async stop(): Promise<void> {
         logger.info('Stopping Agent Daemon');
 
+        if (this.arenaAutoJudge) this.arenaAutoJudge.stop();
         if (this.gateway) await stopGatewayDomain(this.gateway);
         if (this.coordinator) await stopCoordinatorDomain(this.coordinator);
         if (this.settlement) await stopSettlementDomain(this.settlement);

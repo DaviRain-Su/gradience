@@ -84,6 +84,11 @@ const DaemonConfigSchema = z.object({
     magicblockPerEnabled: z.boolean().default(false),
     magicblockTeeValidator: z.string().default('FnE6VJT5QNZdedZPnCoLsARgBwoE6DeJNjBs2H1gySXA'),
     magicblockErRpcUrl: z.string().url().default('https://devnet-tee.magicblock.app'),
+    // Arena auto-judge configuration
+    arenaAutoJudgeEnabled: z.boolean().default(false),
+    arenaAutoJudgeIntervalMs: z.number().int().min(5000).default(60000),
+    arenaAutoJudgeMinSubmissions: z.number().int().min(1).default(1),
+    arenaAutoJudgePerEnabled: z.boolean().default(false),
 });
 
 export type DaemonConfig = z.infer<typeof DaemonConfigSchema>;
@@ -239,6 +244,18 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     }
     if (process.env.AGENTD_MAGICBLOCK_ER_RPC_URL) {
         envConfig.magicblockErRpcUrl = process.env.AGENTD_MAGICBLOCK_ER_RPC_URL;
+    }
+    if (process.env.AGENTD_ARENA_AUTO_JUDGE_ENABLED) {
+        envConfig.arenaAutoJudgeEnabled = process.env.AGENTD_ARENA_AUTO_JUDGE_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_ARENA_AUTO_JUDGE_INTERVAL_MS) {
+        envConfig.arenaAutoJudgeIntervalMs = Number(process.env.AGENTD_ARENA_AUTO_JUDGE_INTERVAL_MS);
+    }
+    if (process.env.AGENTD_ARENA_AUTO_JUDGE_MIN_SUBMISSIONS) {
+        envConfig.arenaAutoJudgeMinSubmissions = Number(process.env.AGENTD_ARENA_AUTO_JUDGE_MIN_SUBMISSIONS);
+    }
+    if (process.env.AGENTD_ARENA_AUTO_JUDGE_PER_ENABLED) {
+        envConfig.arenaAutoJudgePerEnabled = process.env.AGENTD_ARENA_AUTO_JUDGE_PER_ENABLED === 'true';
     }
 
     const merged = { ...fileConfig, ...envConfig, ...overrides };

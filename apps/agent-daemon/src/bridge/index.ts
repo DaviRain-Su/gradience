@@ -272,8 +272,8 @@ export class BridgeManager {
       payerAgentId: string;
       amount: string;
       token: string;
-      taskAccount: string;
-      escrowAccount: string;
+      taskAccount?: string;
+      escrowAccount?: string;
       poster: string;
       reasonRef?: string;
       losers?: Array<{ agent: string; account?: string }>;
