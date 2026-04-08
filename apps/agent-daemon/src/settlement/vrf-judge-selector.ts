@@ -7,8 +7,15 @@
  * fallback for local testing until the VRF program layout is documented.
  */
 
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, TransactionInstruction } from '@solana/web3.js';
+import { createHash } from 'crypto';
 import { loadMagicBlockConfig } from './magicblock-config.js';
+import {
+  MagicBlockVRFClient,
+  buildRequestRandomnessIx,
+  MAGICBLOCK_VRF_PROGRAM_ID,
+  type RequestRandomnessArgs,
+} from './magicblock-vrf-client.js';
 
 export interface VRFSelectionResult {
   judge: string;
@@ -19,13 +26,17 @@ export interface VRFSelectionResult {
 
 export interface VRFJudgeSelectorOptions {
   rpcEndpoint?: string;
-  /** MagicBlock VRF program ID (placeholder) */
+  /** MagicBlock VRF program ID */
   vrfProgramId?: string;
+  /** Optional signing payer for on-chain VRF requests */
+  payer?: PublicKey;
 }
 
 export class VRFJudgeSelector {
   private connection: Connection;
-  private vrfProgramId?: PublicKey;
+  private vrfProgramId: PublicKey;
+  private payer?: PublicKey;
+  private vrfClient: MagicBlockVRFClient;
 
   constructor(options: VRFJudgeSelectorOptions = {}) {
     const config = loadMagicBlockConfig();
@@ -33,9 +44,11 @@ export class VRFJudgeSelector {
       options.rpcEndpoint ?? config.solanaRpcUrl,
       'confirmed',
     );
-    if (options.vrfProgramId) {
-      this.vrfProgramId = new PublicKey(options.vrfProgramId);
-    }
+    this.vrfProgramId = new PublicKey(
+      options.vrfProgramId ?? MAGICBLOCK_VRF_PROGRAM_ID.toBase58(),
+    );
+    this.payer = options.payer;
+    this.vrfClient = new MagicBlockVRFClient(this.connection);
   }
 
   /**
@@ -80,9 +93,56 @@ export class VRFJudgeSelector {
     };
   }
 
+  /**
+   * Build a MagicBlock RequestRandomness instruction for the given task.
+   * The caller must sign and submit the transaction.
+   */
+  buildRequestRandomnessIx(
+    taskId: string,
+    callbackProgramId: PublicKey,
+    callbackDiscriminator: Uint8Array,
+    callbackAccountsMetas: RequestRandomnessArgs['callbackAccountsMetas'],
+    callbackArgs: Uint8Array,
+    payer: PublicKey,
+  ): TransactionInstruction {
+    const seed = this.generateSeed(taskId);
+    // Oracle queue and oracle data must be the defaults for now.
+    // In a permissionless multi-oracle future these would be discovered.
+    const programIdentity = PublicKey.findProgramAddressSync(
+      [Buffer.from('identity')],
+      this.vrfProgramId,
+    )[0];
+    const oracleData = PublicKey.findProgramAddressSync(
+      [Buffer.from('oracle'), programIdentity.toBuffer()],
+      this.vrfProgramId,
+    )[0];
+    const oracleQueue = PublicKey.findProgramAddressSync(
+      [Buffer.from('queue'), programIdentity.toBuffer(), Buffer.from([0])],
+      this.vrfProgramId,
+    )[0];
+
+    return buildRequestRandomnessIx(
+      {
+        callerSeed: seed,
+        callbackProgramId,
+        callbackDiscriminator,
+        callbackAccountsMetas,
+        callbackArgs,
+      },
+      {
+        payer,
+        programIdentity,
+        oracleData,
+        oracleQueue,
+        systemProgram: PublicKey.default,
+      },
+    );
+  }
+
   private generateSeed(taskId: string): Uint8Array {
     const encoder = new TextEncoder();
-    return encoder.encode(`${taskId}:${Date.now()}`);
+    const input = encoder.encode(`${taskId}:${Date.now()}`);
+    return createHash('sha256').update(input).digest();
   }
 
   private fallbackRandomness(taskId: string, seed?: Uint8Array): bigint {
@@ -97,10 +157,21 @@ export class VRFJudgeSelector {
     return hash;
   }
 
-  private async readVRFResult(_seed: Uint8Array): Promise<{ randomness: bigint; proof: string }> {
-    // TODO: replace with real MagicBlock VRF account deserialization
-    // once the program ID and account layout are available.
-    throw new Error('VRF program integration not yet implemented');
+  private async readVRFResult(seed: Uint8Array): Promise<{ randomness: bigint; proof: string }> {
+    // Check whether the request is still pending in the MagicBlock queue.
+    const pending = await this.vrfClient.isRequestPending(seed);
+    if (pending) {
+      throw new Error('VRF request is still pending in the oracle queue');
+    }
+
+    // If the request is no longer in the queue, it has been fulfilled by an
+    // oracle. However, MagicBlock VRF delivers randomness via CPI to the
+    // callback program. Without a deployed callback handler we cannot read
+    // the randomness value back from chain in a pull-based manner.
+    throw new Error(
+      'VRF request was fulfilled but no callback program is configured to receive the randomness. ' +
+        'Deploy a Gradience callback program and pass its program ID to buildRequestRandomnessIx().',
+    );
   }
 }
 

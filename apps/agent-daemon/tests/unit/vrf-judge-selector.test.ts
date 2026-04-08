@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { PublicKey } from '@solana/web3.js';
 import {
   VRFJudgeSelector,
   JudgeRotationManager,
@@ -51,6 +52,26 @@ describe('VRFJudgeSelector', () => {
     const result = await selectorWithProgram.selectJudge('task-4', candidates);
     expect(candidates).toContain(result.judge);
     expect(result.verifiable).toBe(false);
+  });
+
+  it('should build a RequestRandomness instruction', () => {
+    const selector = new VRFJudgeSelector();
+    const payer = new PublicKey('DRa2PkgPiLZEATXgAXN8sjXMU3BWzkkgesQhGvPY9TLH');
+    const callbackProgramId = new PublicKey('11111111111111111111111111111111');
+    const ix = selector.buildRequestRandomnessIx(
+      'task-5',
+      callbackProgramId,
+      Buffer.from([0xab, 0xcd]),
+      [],
+      Buffer.from([]),
+      payer,
+    );
+    expect(ix.programId.toBase58()).toBe(
+      'Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz',
+    );
+    expect(ix.keys[0].pubkey.equals(payer)).toBe(true);
+    expect(ix.keys[0].isSigner).toBe(true);
+    expect(ix.data.length).toBeGreaterThan(8 + 32 + 32);
   });
 });
 
