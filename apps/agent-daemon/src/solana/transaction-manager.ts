@@ -63,7 +63,7 @@ const CONFIG_TASK_COUNT_OFFSET = 74; // 2 header + 32 treasury + 32 upgrade_auth
  * Interacts with the Gradience Arena program for task operations.
  */
 export class TransactionManager implements ITransactionManager {
-    private connection: Connection;
+    readonly connection: Connection;
     private keyManager: KeyManager;
     private publicKey: PublicKey;
 

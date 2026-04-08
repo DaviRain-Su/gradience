@@ -124,6 +124,82 @@ describe('Reputation Oracle Routes', () => {
       const body = JSON.parse(response.body);
       expect(Array.isArray(body.anomalies)).toBe(true);
     });
+
+    it('should include anomalies when requested', async () => {
+      const mockClient = createMockChainHubClient({
+        score: 75,
+        completedTasks: 10,
+        avgRating: 4.2,
+        updatedAt: new Date().toISOString(),
+      });
+      registerReputationOracleRoutes(app, engine, undefined, { chainHubClient: mockClient });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/oracle/reputation/${validSolanaAddress}?includeAnomalies=true`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(Array.isArray(body.anomalies)).toBe(true);
+    });
+
+    it('should aggregate EVM reputation when Solana address has an IdentityBinding', async () => {
+      const mockClient = createMockChainHubClient({
+        score: 80,
+        completedTasks: 10,
+        avgRating: 4.0,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Mock Solana connection with a fake IdentityBinding account
+      const evmAddress = '0x067aBc270C4638869Cd347530Be34cBdD93D0EA1';
+      const bindingData = Buffer.alloc(201);
+      bindingData[0] = 0x0c; // discriminator
+      bindingData[1] = 1;    // version
+      bindingData[183] = 1;  // verified=true
+      const evmBytes = Buffer.from(evmAddress.slice(2), 'hex');
+      evmBytes.copy(bindingData, 34);
+
+      const mockConnection = {
+        getAccountInfo: vi.fn().mockResolvedValue({
+          data: bindingData,
+          lamports: 1000000,
+        }),
+      } as any;
+
+      // Make getReputation return different data for the EVM address
+      mockClient.getReputation = vi.fn().mockImplementation((addr: string) => {
+        if (addr === validSolanaAddress) {
+          return Promise.resolve({ score: 80, completedTasks: 10, avgRating: 4.0, updatedAt: new Date().toISOString() });
+        }
+        if (addr.toLowerCase() === evmAddress.toLowerCase()) {
+          return Promise.resolve({ score: 60, completedTasks: 5, avgRating: 5.0, updatedAt: new Date().toISOString() });
+        }
+        return Promise.resolve(null);
+      });
+
+      registerReputationOracleRoutes(app, engine, undefined, {
+        chainHubClient: mockClient,
+        solanaConnection: mockConnection,
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/oracle/reputation/${validSolanaAddress}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.crossChain.addressType).toBe('solana');
+      expect(body.crossChain.boundIdentity?.evm.toLowerCase()).toBe(evmAddress.toLowerCase());
+      // overallScore should be recalculated after aggregation (exact value depends on engine weights)
+      expect(body.reputation.overallScore).toBeDefined();
+      // completedTasks should be aggregated: 10 + 5 = 15
+      expect(body.metrics.completedTasks).toBe(15);
+      // avgRating weighted: (4.0*10 + 5.0*5) / 15 = 4.333...
+      expect(body.metrics.avgRating).toBeCloseTo(4.33, 1);
+    });
   });
 
   describe('GET /api/v1/oracle/reputation/:agentAddress/verify', () => {

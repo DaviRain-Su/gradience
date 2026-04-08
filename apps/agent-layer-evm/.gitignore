@@ -3,3 +3,5 @@ cache
 artifacts
 typechain-types
 out
+.env.deploy
+.env

@@ -150,7 +150,12 @@ export async function createAPIServer(deps: APIServerDeps) {
 
     // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)
     const reputationEngine = createReputationAggregationEngine();
-    registerReputationOracleRoutes(app, reputationEngine);
+    const txManager = 'connection' in deps.transactionManager
+        ? (deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager)
+        : undefined;
+    registerReputationOracleRoutes(app, reputationEngine, undefined, {
+        solanaConnection: txManager?.connection,
+    });
     logger.info('Reputation Oracle routes registered (query-only mode)');
 
     // Initialize indexer sync service for local caching

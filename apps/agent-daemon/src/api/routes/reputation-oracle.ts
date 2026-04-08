@@ -10,6 +10,7 @@ import { logger } from '../../utils/logger.js';
 import type { ReputationAggregationEngine } from '../../reputation/aggregation-engine.js';
 import type { ReputationPushService } from '../../reputation/push-service.js';
 import { createChainHubReputationClient } from '../../integrations/chain-hub-reputation.js';
+import { ARENA_PROGRAM_ADDRESS } from '../../solana/program-ids.js';
 
 interface ReputationQueryParams {
   includeHistory?: boolean;
@@ -27,13 +28,14 @@ export interface ReputationOracleOptions {
   engine: ReputationAggregationEngine;
   pushService?: ReputationPushService;
   chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient;
+  solanaConnection?: import('@solana/web3.js').Connection;
 }
 
 export function registerReputationOracleRoutes(
   app: FastifyInstance,
   engine: ReputationAggregationEngine,
   pushService?: ReputationPushService,
-  options?: { chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient }
+  options?: ReputationOracleOptions
 ): void {
   const chainHubClient = options?.chainHubClient ?? createChainHubReputationClient({
     baseUrl: process.env.CHAIN_HUB_INDEXER_URL ?? 'http://localhost:8080',
@@ -98,9 +100,41 @@ export function registerReputationOracleRoutes(
       }
 
       // Add cross-chain binding hint (full aggregation requires on-chain PDA lookup)
+      let boundIdentity: { solana?: string; evm?: string } | null = null;
+      if (addressType === 'solana' && options?.solanaConnection) {
+        try {
+          const binding = await fetchIdentityBinding(options.solanaConnection, agentAddress);
+          if (binding?.evmAddress) {
+            boundIdentity = { solana: agentAddress, evm: binding.evmAddress };
+            // Optionally aggregate EVM reputation
+            const evmActivity = await fetchAgentActivity(chainHubClient, binding.evmAddress);
+            if (evmActivity) {
+              const evmScore = engine.calculateReputation(evmActivity);
+              // Simple average aggregation for demonstration
+              response.reputation.overallScore = Math.round(
+                (response.reputation.overallScore + evmScore.overallScore) / 2
+              );
+              response.reputation.confidence = Math.max(
+                response.reputation.confidence,
+                evmScore.confidence
+              );
+              response.metrics.completedTasks += evmScore.completedTasks;
+              if (evmScore.avgRating > 0) {
+                response.metrics.avgRating =
+                  (response.metrics.avgRating * score.completedTasks +
+                    evmScore.avgRating * evmScore.completedTasks) /
+                  Math.max(1, score.completedTasks + evmScore.completedTasks);
+              }
+            }
+          }
+        } catch (err: any) {
+          logger.debug({ err, agentAddress }, 'IdentityBinding lookup failed, skipping cross-chain aggregation');
+        }
+      }
+
       response.crossChain = {
         addressType,
-        boundIdentity: null, // populated when IdentityBinding PDA integration is wired
+        boundIdentity,
       };
 
       // Add sync status
@@ -395,6 +429,34 @@ function generateVerificationProof(agentAddress: string, score: any): string {
   const crypto = require('crypto');
   const data = `${agentAddress}:${score.overallScore}:${score.calculatedAt}`;
   return crypto.createHash('sha256').update(data).digest('hex').slice(0, 16);
+}
+
+async function fetchIdentityBinding(
+  connection: import('@solana/web3.js').Connection,
+  solanaAddress: string,
+): Promise<{ evmAddress: string } | null> {
+  const { PublicKey } = require('@solana/web3.js');
+  const programId = new PublicKey(ARENA_PROGRAM_ADDRESS);
+  const owner = new PublicKey(solanaAddress);
+
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from('identity_binding'), owner.toBytes()],
+    programId,
+  );
+
+  const account = await connection.getAccountInfo(pda, 'confirmed');
+  if (!account || account.data.length < 201) return null;
+
+  const data = account.data;
+  // Verify discriminator
+  if (data[0] !== 0x0c) return null;
+
+  const evmBytes = data.slice(34, 54);
+  const verified = data[183] === 1;
+  if (!verified) return null;
+
+  const evmAddress = '0x' + evmBytes.toString('hex');
+  return { evmAddress };
 }
 
 async function fetchAgentActivity(
