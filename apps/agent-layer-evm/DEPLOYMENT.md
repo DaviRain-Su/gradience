@@ -1,6 +1,19 @@
 # EVM Multi-Chain Deployment Guide
 
-> Target chains: **Base Sepolia**, **Arbitrum Sepolia**
+> Target chains: **Base Sepolia**, **Arbitrum Sepolia**, **X Layer Testnet**
+
+## Deployed Addresses (X Layer Testnet — chainId 1952)
+
+| Contract | Address |
+|----------|---------|
+| `AgentArenaEVM` (proxy) | `0xd9c087c9e8e0253c7ea315811d751b0586ec9179` |
+| `AgentMRegistry` | `0x377acc8a9af86e297fa54af1e148507130dfc040` |
+| `GradienceReputationFeed` (proxy) | `0x13fed43909e99a2caeae9cd8d4bb37d1b47cbf86` |
+| `SocialGraph` (proxy) | `0xeed4f9da0bca5fee9df72510e5f6f58d04b7f16d` |
+| `JudgeRegistry` | `0xbb78f0d62491853e7eb0e722bf0ee957c1b60508` |
+
+*Deployer:* `0x067abc270c4638869cd347530be34cbdd93d0ea1`  
+*Subgraph manifests already updated:* `subgraph/subgraph.yaml`
 
 ## Prerequisites
 

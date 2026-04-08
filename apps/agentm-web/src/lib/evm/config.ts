@@ -15,6 +15,20 @@ export interface EvmChainConfig {
   blockExplorer: string;
 }
 
+export const xlayerTestnet: Chain = {
+  id: 1952,
+  name: 'X Layer Testnet',
+  nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://testrpc.xlayer.tech'] },
+    public: { http: ['https://testrpc.xlayer.tech'] },
+  },
+  blockExplorers: {
+    default: { name: 'OKLink', url: 'https://www.oklink.com/xlayer-test' },
+  },
+  testnet: true,
+} as const;
+
 const defaultChains: Record<number, EvmChainConfig> = {
   [baseSepolia.id]: {
     chain: baseSepolia,
@@ -29,6 +43,13 @@ const defaultChains: Record<number, EvmChainConfig> = {
     agentArenaAddress: '0x0000000000000000000000000000000000000000',
     agentMRegistryAddress: '0x0000000000000000000000000000000000000000',
     blockExplorer: 'https://sepolia.arbiscan.io',
+  },
+  [xlayerTestnet.id]: {
+    chain: xlayerTestnet,
+    rpcEndpoint: 'https://testrpc.xlayer.tech',
+    agentArenaAddress: '0xd9c087c9e8e0253c7ea315811d751b0586ec9179',
+    agentMRegistryAddress: '0x377acc8a9af86e297fa54af1e148507130dfc040',
+    blockExplorer: 'https://www.oklink.com/xlayer-test',
   },
 };
 
@@ -79,4 +100,4 @@ export const AGENT_M_REGISTRY_ADDRESS =
 export const EVM_BLOCK_EXPLORER =
   process.env.NEXT_PUBLIC_EVM_BLOCK_EXPLORER || getChainConfig(getDefaultEvmChainId()).blockExplorer;
 
-export { getChainConfig, baseSepolia, arbitrumSepolia };
+export { getChainConfig, baseSepolia, arbitrumSepolia, xlayerTestnet };
