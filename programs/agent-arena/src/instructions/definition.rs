@@ -228,6 +228,19 @@ pub enum GradienceInstruction {
     #[codama(account(name = "permission_program"))]
     CreateTaskPermission {} = 12,
 
+    /// Bind a Solana owner to an EVM address for cross-chain identity.
+    #[codama(account(name = "owner", signer, writable))]
+    #[codama(account(name = "identity_binding", writable))]
+    #[codama(account(name = "system_program"))]
+    BindIdentity {
+        /// EVM address to bind (20 bytes).
+        evm_address: [u8; 20],
+        /// Solana ed25519 signature over the binding message.
+        sol_signature: [u8; 64],
+        /// EVM secp256k1 signature over the binding message.
+        evm_signature: [u8; 65],
+    } = 13,
+
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(account(name = "event_authority", signer))]
     EmitEvent {} = 228,

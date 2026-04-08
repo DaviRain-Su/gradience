@@ -18,6 +18,8 @@ pub enum GradienceInstructionDiscriminators {
     ReceiveVrfRandomness = 11,
     /// Create a MagicBlock Permission PDA for a task account.
     CreateTaskPermission = 12,
+    /// Bind a Solana owner to an EVM address for cross-chain identity.
+    BindIdentity = 13,
     /// 228 is the Anchor event instruction discriminator used for CPI-based event emission.
     /// Events are emitted by invoking CPI to this instruction with serialized event data.
     EmitEvent = 228,
@@ -41,6 +43,7 @@ impl TryFrom<u8> for GradienceInstructionDiscriminators {
             10 => Ok(Self::UpgradeConfig),
             11 => Ok(Self::ReceiveVrfRandomness),
             12 => Ok(Self::CreateTaskPermission),
+            13 => Ok(Self::BindIdentity),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }

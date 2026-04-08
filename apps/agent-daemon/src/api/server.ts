@@ -21,6 +21,7 @@ import { registerEvaluatorRoutes } from './routes/evaluator.js';
 import { registerCoordinatorRoutes } from './routes/coordinator.js';
 import { registerRiskRoutes } from './routes/risk.js';
 import { registerIdentityRoutes } from './routes/identity.js';
+import { registerCrossChainIdentityRoutes } from './routes/crosschain-identity.js';
 import { registerMagicBlockRoutes } from './routes/magicblock.js';
 import { SessionManager } from '../auth/session-manager.js';
 import { IndexerSyncService } from '../storage/indexer-sync.js';
@@ -142,6 +143,9 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerCoordinatorRoutes(app);
     registerRiskRoutes(app);
     registerIdentityRoutes(app, deps.database);
+    if ('publicKey' in deps.transactionManager) {
+      registerCrossChainIdentityRoutes(app, deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager);
+    }
     registerMagicBlockRoutes(app, deps.bridgeManager);
 
     // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)

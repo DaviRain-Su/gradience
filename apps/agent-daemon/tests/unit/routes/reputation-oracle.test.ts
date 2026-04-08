@@ -81,7 +81,7 @@ describe('Reputation Oracle Routes', () => {
       expect(mockClient.getReputation).toHaveBeenCalledWith(validSolanaAddress);
     });
 
-    it('should return 400 for invalid Solana address', async () => {
+    it('should return 400 for invalid address', async () => {
       registerReputationOracleRoutes(app, engine);
       const response = await app.inject({
         method: 'GET',
@@ -89,7 +89,7 @@ describe('Reputation Oracle Routes', () => {
       });
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.body);
-      expect(body.error).toContain('Invalid Solana address');
+      expect(body.error).toContain('Invalid Solana or EVM address');
     });
 
     it('should return 404 when no reputation data exists', async () => {

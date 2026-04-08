@@ -51,9 +51,10 @@ export function registerReputationOracleRoutes(
       const { agentAddress } = request.params;
       const { includeHistory, includeAnomalies } = request.query;
 
-      // Validate address
-      if (!isValidSolanaAddress(agentAddress)) {
-        return reply.code(400).send({ error: 'Invalid Solana address' });
+      // Validate address (Solana or EVM)
+      const addressType = detectAddressType(agentAddress);
+      if (!addressType) {
+        return reply.code(400).send({ error: 'Invalid Solana or EVM address' });
       }
 
       // Fetch activity (in real implementation, from database)
@@ -95,6 +96,12 @@ export function registerReputationOracleRoutes(
       if (includeAnomalies) {
         response.anomalies = score.anomalyFlags;
       }
+
+      // Add cross-chain binding hint (full aggregation requires on-chain PDA lookup)
+      response.crossChain = {
+        addressType,
+        boundIdentity: null, // populated when IdentityBinding PDA integration is wired
+      };
 
       // Add sync status
       if (pushService) {
@@ -356,6 +363,12 @@ export function registerReputationOracleRoutes(
 // Helpers
 // ============================================================================
 
+function detectAddressType(address: string): 'solana' | 'evm' | null {
+  if (isValidSolanaAddress(address)) return 'solana';
+  if (isValidEvmAddress(address)) return 'evm';
+  return null;
+}
+
 function isValidSolanaAddress(address: string): boolean {
   try {
     const { PublicKey } = require('@solana/web3.js');
@@ -364,6 +377,10 @@ function isValidSolanaAddress(address: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isValidEvmAddress(address: string): boolean {
+  return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
 
 function getTier(score: number): string {

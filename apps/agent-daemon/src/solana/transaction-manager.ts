@@ -427,6 +427,67 @@ export class TransactionManager implements ITransactionManager {
     }
 
     /**
+     * Bind a Solana identity to an EVM address.
+     */
+    async bindIdentity(params: {
+        evmAddress: string;
+        solanaSignature: Uint8Array;
+        evmSignature: Uint8Array;
+    }): Promise<string> {
+        try {
+            const programId = addressToPublicKey(ARENA_PROGRAM_ADDRESS);
+            const [identityBindingPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from('identity_binding'), this.publicKey.toBytes()],
+                programId,
+            );
+
+            if (params.solanaSignature.length !== 64 || params.evmSignature.length !== 65) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid signature length', 400);
+            }
+
+            const evmAddressHex = params.evmAddress.replace(/^0x/, '');
+            if (evmAddressHex.length !== 40) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid EVM address length', 400);
+            }
+            const evmAddress = Buffer.from(evmAddressHex, 'hex');
+            if (evmAddress.length !== 20) {
+                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid EVM address', 400);
+            }
+
+            const data = Buffer.concat([
+                Buffer.from([13]), // BindIdentity discriminator
+                evmAddress,
+                Buffer.from(params.solanaSignature),
+                Buffer.from(params.evmSignature),
+            ]);
+
+            const keys = [
+                { pubkey: this.publicKey, isSigner: true, isWritable: true }, // owner
+                { pubkey: identityBindingPda, isSigner: false, isWritable: true }, // identity_binding
+                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
+            ];
+
+            const instruction = new TransactionInstruction({
+                keys,
+                programId,
+                data,
+            });
+
+            const signature = await this.signAndSendTransaction(instruction);
+            logger.info({ signature, evmAddress: params.evmAddress }, 'Identity binding created successfully');
+            return signature;
+        } catch (error) {
+            if (error instanceof DaemonError) throw error;
+            logger.error({ error, params }, 'Failed to bind identity');
+            throw new DaemonError(
+                ErrorCodes.SOLANA_ERROR,
+                `Failed to bind identity: ${error instanceof Error ? error.message : String(error)}`,
+                500,
+            );
+        }
+    }
+
+    /**
      * Claim settled reward for a task
      * Note: This is not implemented by the current Arena program - rewards are distributed
      * automatically during judgeAndPay. This method exists for API compatibility but will throw.

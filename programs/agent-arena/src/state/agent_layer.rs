@@ -290,6 +290,28 @@ pub struct VrfResult {
 pub const VRF_RESULT_DATA_LEN: usize = 8 + 32 + 1 + 1; // 42
 pub const VRF_RESULT_LEN: usize = ACCOUNT_HEADER_LEN + VRF_RESULT_DATA_LEN; // 44
 
+/// Cross-chain identity binding between a Solana owner and an EVM address.
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq, CodamaAccount)]
+pub struct IdentityBinding {
+    pub owner: PubkeyBytes,
+    pub evm_address: [u8; 20],
+    pub sol_signature: [u8; 64],
+    pub evm_signature: [u8; 65],
+    pub verified: bool,
+    pub updated_at: i64,
+    pub bump: u8,
+}
+
+pub const IDENTITY_BINDING_DATA_LEN: usize = PUBKEY_BYTES_LEN
+    + 20
+    + 64
+    + 65
+    + 1
+    + 8
+    + 1;
+pub const IDENTITY_BINDING_DISCRIMINATOR: u8 = 0x0c;
+pub const IDENTITY_BINDING_LEN: usize = ACCOUNT_HEADER_LEN + IDENTITY_BINDING_DATA_LEN; // 199
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -326,5 +348,11 @@ mod tests {
     fn test_max_category_alignment() {
         assert_eq!(MAX_CATEGORIES, 8);
         assert_eq!(CATEGORY_STATS_DATA_LEN * MAX_CATEGORIES, 56);
+    }
+
+    #[test]
+    fn test_identity_binding_length() {
+        assert_eq!(IDENTITY_BINDING_DATA_LEN, 199);
+        assert_eq!(IDENTITY_BINDING_LEN, 201);
     }
 }

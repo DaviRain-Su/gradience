@@ -1,4 +1,5 @@
 pub mod apply_for_task;
+pub mod bind_identity;
 pub mod cancel_task;
 pub mod create_task_permission;
 pub mod definition;
@@ -17,6 +18,9 @@ pub mod upgrade_config;
 pub use definition::*;
 pub use apply_for_task::{
     ApplyForTask, ApplyForTaskAccounts, ApplyForTaskData, process_apply_for_task,
+};
+pub use bind_identity::{
+    BindIdentity, BindIdentityAccounts, BindIdentityData, process_bind_identity,
 };
 pub use cancel_task::{CancelTask, CancelTaskAccounts, CancelTaskData, process_cancel_task};
 pub use create_task_permission::{
