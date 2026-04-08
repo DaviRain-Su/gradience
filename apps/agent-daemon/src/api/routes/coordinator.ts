@@ -23,6 +23,10 @@ import {
 // In-memory store (replace with database in production)
 const tasks = new Map<string, CoordinatorTask>();
 
+function getUserId(request: any): string {
+  return request.walletAddress || request.owsKeyId || request.authType || 'anonymous';
+}
+
 export function registerCoordinatorRoutes(app: FastifyInstance): void {
   // -------------------------------------------------------------------------
   // Create Task
@@ -45,7 +49,7 @@ export function registerCoordinatorRoutes(app: FastifyInstance): void {
         id: taskId,
         title: body.title,
         description: body.description,
-        owner: 'current-user', // TODO: Get from auth context
+        owner: getUserId(request),
         status: 'pending_agents',
         budget: {
           total: body.budget.total,
@@ -270,7 +274,7 @@ export function registerCoordinatorRoutes(app: FastifyInstance): void {
         title: body.title,
         url: body.url,
         submittedAt: Date.now(),
-        submittedBy: 'current-user', // TODO: Get from auth context
+        submittedBy: getUserId(request),
       };
 
       subtask.deliverables.push(deliverable);
@@ -442,7 +446,7 @@ export function registerCoordinatorRoutes(app: FastifyInstance): void {
         taskId,
         subtaskId,
         from: 'current-user',
-        fromName: 'User', // TODO: Get from auth context
+        fromName: getUserId(request),
         content,
         type: 'text' as const,
         timestamp: Date.now(),
