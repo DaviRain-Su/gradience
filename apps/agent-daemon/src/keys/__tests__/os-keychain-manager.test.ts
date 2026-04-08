@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import bs58 from 'bs58';
 import { OSKeychainManager } from '../os-keychain-manager.js';
 
 describe('OSKeychainManager', () => {
@@ -86,10 +87,10 @@ describe('OSKeychainManager', () => {
 
     expect(signature).toHaveLength(64); // Ed25519 signature length
 
-    const publicKey = new Uint8Array(Buffer.from(manager.getPublicKey(), 'base64'));
+    const publicKey = bs58.decode(manager.getPublicKey());
     const isValid = manager.verify(message, signature, publicKey);
 
-    // Note: This requires proper base58 decoding in real tests
+    expect(isValid).toBe(true);
     expect(signature).toBeDefined();
   });
 
