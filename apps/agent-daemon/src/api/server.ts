@@ -20,6 +20,7 @@ import { registerOWSRoutes } from './routes/ows.js';
 import { registerEvaluatorRoutes } from './routes/evaluator.js';
 import { registerCoordinatorRoutes } from './routes/coordinator.js';
 import { registerRiskRoutes } from './routes/risk.js';
+import { registerIdentityRoutes } from './routes/identity.js';
 import { SessionManager } from '../auth/session-manager.js';
 import { IndexerSyncService } from '../storage/indexer-sync.js';
 import indexerRoutes from './routes/indexer-cache.js';
@@ -135,6 +136,7 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerEvaluatorRoutes(app, deps.database);
     registerCoordinatorRoutes(app);
     registerRiskRoutes(app);
+    registerIdentityRoutes(app, deps.database);
 
     // Initialize indexer sync service for local caching
     const syncService = new IndexerSyncService(deps.database);

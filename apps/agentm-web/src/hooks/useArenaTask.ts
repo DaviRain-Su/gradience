@@ -35,6 +35,7 @@ import {
   fetchReputationFromSubgraph,
 } from '@/lib/evm/subgraph-client';
 import { useWalletChain } from './useWalletChain';
+import { useIdentity } from './useIdentity';
 
 export type { TaskApi, SubmissionApi };
 
@@ -48,6 +49,7 @@ export function useArenaTask(walletAddress: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
   const { chain, chainId, primaryWallet } = useWalletChain();
+  const { getTier } = useIdentity();
 
   const getWallet = useCallback((): WalletAdapter => {
     if (!walletAddress) throw new Error('Wallet not connected');
@@ -74,6 +76,14 @@ export function useArenaTask(walletAddress: string | null) {
     setError(null);
     setLoading(true);
     try {
+      // Tier check for Solana: guests cannot post tasks
+      if (chain !== 'evm' && walletAddress) {
+        const tier = await getTier(walletAddress);
+        if (tier && tier.tier === 'guest') {
+          throw new Error('Account verification required. Please link a social account in Settings to post tasks.');
+        }
+      }
+
       if (chain === 'evm' && walletAddress) {
         const account = walletAddress as `0x${string}`;
         const result = await postTaskEVM({
@@ -109,7 +119,7 @@ export function useArenaTask(walletAddress: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [chain, getWallet, getEthereumProvider, walletAddress]);
+  }, [chain, getWallet, getEthereumProvider, walletAddress, getTier]);
 
   const doApplyForTask = useCallback(async (taskId: number | bigint): Promise<string | null> => {
     setError(null);

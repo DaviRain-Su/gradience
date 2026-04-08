@@ -6,6 +6,7 @@ import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
 import { applyForTaskEVM } from '@/lib/evm/arena-client';
 import { useWalletChain } from './useWalletChain';
 import { useConnection } from '@/lib/connection/ConnectionContext';
+import { useIdentity } from './useIdentity';
 
 export interface UseTaskApplyResult {
   apply: (taskId: number | bigint, stake?: string) => Promise<string | null>;
@@ -20,6 +21,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
   const [lastSignature, setLastSignature] = useState<string | null>(null);
   const { chain, chainId, primaryWallet } = useWalletChain();
   const { fetchApi } = useConnection();
+  const { getTier } = useIdentity();
 
   const getEthereumProvider = useCallback((): unknown => {
     const provider = (primaryWallet?.connector as any)?.getProvider?.();
@@ -38,7 +40,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
       setLoading(true);
       setError(null);
       try {
-        // Pre-check: On-chain risk assessment (non-blocking for EVM in MVP)
+        // Pre-check 1: On-chain risk assessment (non-blocking for EVM in MVP)
         if (chain !== 'evm' && fetchApi) {
           const riskResult = await fetchApi<{
             allowed: boolean;
@@ -54,6 +56,19 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
             throw new Error(
               `Risk assessment failed (${riskResult.overallRisk}, score ${riskResult.score}). ${reasons}`
             );
+          }
+        }
+
+        // Pre-check 2: Verification tier (Solana only for now; binding not yet on EVM)
+        if (chain !== 'evm') {
+          const tier = await getTier(walletAddress);
+          if (tier && !tier.permissions.canPostHighValueTask && !tier.permissions.canBeJudge) {
+            // Guests cannot apply for any task on Solana until they bind OAuth
+            if (tier.tier === 'guest') {
+              throw new Error(
+                'Account verification required. Please link a social account in Settings to apply for tasks.'
+              );
+            }
           }
         }
 
@@ -79,7 +94,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
         setLoading(false);
       }
     },
-    [walletAddress, chain, chainId, getEthereumProvider, fetchApi],
+    [walletAddress, chain, chainId, getEthereumProvider, fetchApi, getTier],
   );
 
   return { apply, loading, error, lastSignature };
