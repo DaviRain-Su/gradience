@@ -1,129 +1,96 @@
-# MagicBlock VRF Integration Blocker (GRA-207)
+# MagicBlock VRF Integration — RESOLVED (GRA-207)
 
 ## Status
 
-**Blocked — awaiting upstream TypeScript SDK or on-chain program documentation.**
+**Closed — 2026-04-08**
 
-Last verified: 2026-04-08
-
----
-
-## Summary
-
-GRA-207 aims to replace the deterministic judge-selection fallback with a
-**Verifiable Random Function (VRF)** powered by MagicBlock’s ephemeral VRF
-network. After repository audit and live verification, the `@magicblock-labs/vrf-sdk`
-npm package **does not exist** and the VRF program architecture requires a
-**custom Solana callback program**, making a full TypeScript-side integration
-impossible without additional upstream artifacts.
+The original blocker (missing `@magicblock-labs/vrf-sdk` on npm) has been
+resolved by consuming MagicBlock's open-source Rust definitions directly and
+manually implementing the TypeScript side.  Proof verification is performed
+by the MagicBlock `ephemeral-vrf` program itself during `ProvideRandomness`;
+Gradience only needs to trust the signed CPI callback.
 
 ---
 
-## Why It Is Blocked
+## Resolution Summary
 
-### 1. No TypeScript / JavaScript SDK
+| Item | Status | Details |
+|------|--------|---------|
+| RequestRandomness instruction builder | ✅ Done | `MagicBlockVRFClient` in `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts` |
+| Queue polling + result PDA reading | ✅ Done | `VRFJudgeSelector` + `MagicBlockVRFClient` |
+| On-chain callback handler | ✅ Done | `ReceiveVrfRandomness` instruction in `programs/agent-arena` |
+| Proof verification | ✅ Delegated | MagicBlock `ephemeral-vrf` program verifies proofs before CPI callback |
+| Judge selection from randomness | ✅ Done | `select_judge_index()` in `programs/agent-arena/src/vrf.rs` |
+| Daemon API route | ✅ Done | `POST /api/v1/magicblock/request-vrf` |
 
-- **npm package:** `@magicblock-labs/vrf-sdk` returns **404 Not Found** on the
-  public registry (checked 2026-04-08).
-- **Available artifacts:**
-  - Rust crate: `ephemeral-vrf-sdk` (crates.io, v0.2.3)
-  - Solana on-chain program source:
-    [`magicblock-labs/ephemeral-vrf`](https://github.com/magicblock-labs/ephemeral-vrf)
-  - Oracle CLI and binary (`vrf-oracle`, `vrf-cli`)
-- **Missing artifact:** A TypeScript/JS library to construct
-  `RequestRandomness` instructions, parse queue accounts, or consume VRF
-  outputs from a Node.js / browser runtime.
+---
 
-### 2. MagicBlock VRF Is Callback-Based
+## What Changed
 
-The on-chain program defines the following key instruction:
+### 1. We Do Not Need an NPM SDK
 
-```rust
-// api/src/instruction.rs
-pub enum EphemeralVrfInstruction {
-    RequestHighPriorityRandomness = 3,
-    RequestRandomness = 8,
-    ProvideRandomness = 4,
-    // ...
-}
+MagicBlock's ephemeral-vrf repo (`magicblock-labs/ephemeral-vrf`) contains
+all the necessary layout definitions in `api/src/instruction.rs`.  We built
+our own minimal TypeScript client (`magicblock-vrf-client.ts`) that:
 
-pub struct RequestRandomness {
-    pub caller_seed: [u8; 32],
-    pub callback_program_id: Pubkey,
-    pub callback_discriminator: Vec<u8>,
-    pub callback_accounts_metas: Vec<SerializableAccountMeta>,
-    pub callback_args: Vec<u8>,
-}
+- Serializes `RequestRandomness` arguments using the exact Borsh layout.
+- Parses the oracle queue account to detect pending requests.
+- Deserializes the Gradience `VrfResult` PDA written by our callback handler.
+
+### 2. Proof Verification Happens Upstream
+
+MagicBlock's `ProvideRandomness` instruction performs full Curve25519/Ed25519
+VRF proof verification on-chain.  Only after the proof is valid does it invoke
+the callback program (`agent-arena`) via a signed CPI.  Therefore Gradience's
+`ReceiveVrfRandomness` handler can safely trust the randomness value without
+re-verifying the proof.
+
+Reference: [`program/src/provide_randomness.rs`](https://github.com/magicblock-labs/ephemeral-vrf/blob/main/program/src/provide_randomness.rs)
+
+### 3. Full End-to-End Flow
+
+```
+1. Frontend/Daemon  →  POST /api/v1/magicblock/request-vrf
+                        (returns serialized RequestRandomness ix)
+
+2. Caller signs & submits tx to Solana
+
+3. MagicBlock Oracle  →  sees request in queue
+
+4. Oracle computes VRF, verifies proof on-chain
+
+5. MagicBlock Program  →  CPI callback to agent-arena::ReceiveVrfRandomness
+                           writes randomness into vrf_result PDA
+
+6. Daemon polls vrf_result PDA (or reads it directly)
+
+7. Daemon uses select_judge_index(randomness, candidates) to pick winner
+
+8. Daemon submits JudgeAndPay (or manual settlement) to finalize task
 ```
 
-Requesting randomness **requires** a `callback_program_id`. The VRF oracle
-network calls this program back via CPI once randomness is available. This
-means Gradience needs **one of the following** to finish the integration:
+---
 
-1. **A dedicated callback handler** inside the existing `agent-arena` Solana
-   program (to receive the VRF result and store it in an account we can read);
-   **or**
-2. **Documented pull-based flow** (if MagicBlock later exposes a result
-   account that can be read without a callback).
+## Files of Interest
 
-Neither option is currently available in a form we can consume from TypeScript.
+| File | Purpose |
+|------|---------|
+| `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts` | Manual VRF instruction builder + queue parser |
+| `apps/agent-daemon/src/settlement/vrf-judge-selector.ts` | Judge selection with fallback + rotation |
+| `apps/agent-daemon/src/api/routes/magicblock.ts` | API surface (`request-vrf`) |
+| `programs/agent-arena/src/vrf.rs` | `select_judge_index` |
+| `programs/agent-arena/src/instructions/receive_vrf_randomness/` | Callback handler that persists randomness |
 
 ---
 
-## What We Have In Place (Fallback)
+## Future Enhancements (Optional)
 
-Until the blocker is resolved, the system uses a **deterministic fallback**
-that is fully tested and integrated into the settlement pipeline.
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| Fallback selector | `apps/agent-daemon/src/settlement/vrf-judge-selector.ts` | Selects a judge via FNV-1a hash over a task-specific seed when VRF is unavailable. |
-| Rotation manager | `JudgeRotationManager` (same file) | Ensures recent judges are excluded to prevent collusion. |
-| Rust stub | `programs/agent-arena/src/vrf.rs` | Placeholder `verify_vrf_proof_stub` and `select_judge_index` to keep the on-chain build green. |
-| Tests | `apps/agent-daemon/tests/unit/vrf-judge-selector.test.ts` | 6 unit tests covering fallback selection, determinism, rotation, and graceful degradation. |
-
-### Test Results
-
-- **agent-daemon unit tests:** 23 files, 293 passed, 1 skipped
-- **agentm-web tests:** 7 files, 47 passed
-- **Foundry EVM tests:** 64 passed
-
----
-
-## Upgrade Path (How To Unblock)
-
-### Option A — MagicBlock Releases a TypeScript SDK
-
-If `@magicblock-labs/vrf-sdk` (or equivalent) is published:
-
-1. Install the SDK in `apps/agent-daemon` and `apps/agentm-web`.
-2. Replace `readVRFResult()` in `vrf-judge-selector.ts` with SDK calls.
-3. If the SDK still requires a callback program, implement the handler in
-   `programs/agent-arena/src/vrf.rs` and deploy a new program version.
-4. Update `vrf-judge-selector.test.ts` to mock the SDK and assert real
-   randomness consumption.
-
-### Option B — Custom Solana Callback Program
-
-If we decide to build the callback handler ourselves:
-
-1. Extend `programs/agent-arena/src/vrf.rs` to define an instruction that
-   matches the MagicBlock `RequestRandomness` callback signature.
-2. Deploy the updated program and record the new program ID.
-3. Manually construct the `RequestRandomness` instruction using
-   `@solana/web3.js` + `borsh` in `vrf-judge-selector.ts`.
-4. After requesting, poll the callback destination account for the stored
-   randomness value.
-
-### Option C — MagicBlock Documents a Pull-Based Result Account
-
-If MagicBlock later exposes a result PDA that can be read directly (no
-callback required):
-
-1. Derive the result PDA from the task seed.
-2. Implement `readVRFResult()` as a simple `Connection.getAccountInfo()` +
-   Borsh/Bytemuck deserialization.
-3. Keep the existing fallback for RPC failures.
+- **Automated settlement worker**: A background daemon job that monitors
+  `vrf_result` PDAs and auto-submits `JudgeAndPay` without manual caller
+  intervention.
+- **Pull-based result reading without callback**: If MagicBlock ever exposes
+  a direct result PDA, we can remove the callback handler and simplify the
+  flow.
 
 ---
 
@@ -133,16 +100,5 @@ callback required):
   <https://github.com/magicblock-labs/ephemeral-vrf>
 - `ephemeral-vrf-sdk` crate docs:
   <https://docs.rs/ephemeral-vrf-sdk/latest>
-- Our fallback implementation:
-  `apps/agent-daemon/src/settlement/vrf-judge-selector.ts`
-- Our Rust program stub:
-  `programs/agent-arena/src/vrf.rs`
-
----
-
-## Decision Log
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-04-08 | Keep fallback active and fully tested. | No TS SDK; full callback-program integration is out of current sprint scope. |
-| 2026-04-08 | Document explicit upgrade path. | Enables instant resumption once upstream artifacts land. |
+- Phase 3 Spec:
+  `apps/agent-daemon/docs/03-technical-spec-vrf.md`
