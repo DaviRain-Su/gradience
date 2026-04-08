@@ -1,3 +1,5 @@
+mod arena_decoder;
+mod arena_poller;
 mod config;
 mod db;
 mod events;
@@ -8,8 +10,11 @@ mod utils;
 mod webhook;
 
 pub use handlers::{
-    get_agent_royalty, get_invocation_by_id, get_invocations, get_protocol_by_id,
-    get_protocols, get_skill_by_id, get_skills, health, metrics_handler,
+    get_agent_royalty, get_arena_agent_reputation, get_arena_judge_pool,
+    get_arena_task_by_id, get_arena_task_submissions, get_arena_tasks,
+    get_invocation_by_id, get_invocations, get_protocol_by_id, get_protocols,
+    get_skill_by_id, get_skills, health, metrics_handler, JudgePoolApi,
+    ReputationApi, SubmissionApi, TaskApi, TasksQuery,
     InvocationApi, InvocationsQuery, ProtocolApi, ProtocolsQuery, RoyaltyApi,
     SkillApi, SkillsQuery,
 };
@@ -406,6 +411,49 @@ async fn main() -> Result<()> {
         println!("Solana subscriber disabled (set SOLANA_SUBSCRIBE=true to enable)");
     }
 
+    // Start Agent Arena poller
+    {
+        let arena_poller = arena_poller::ArenaPoller::new(arena_poller::ArenaPollerConfig {
+            rpc_url: config.solana_ws_url.replace("wss://", "https://").replace("ws://", "http://"),
+            program_id: config.arena_program_id.clone(),
+        });
+        let db_clone = state.db.clone();
+        let interval = config.arena_poll_interval_ms.max(5000);
+        tokio::spawn(async move {
+            let mut ticker = tokio::time::interval(Duration::from_millis(interval));
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                ticker.tick().await;
+                match arena_poller.poll_all().await {
+                    Ok(snapshot) => {
+                        let mut db = db_clone.lock().await;
+                        match db.apply_arena_snapshot(
+                            &snapshot.tasks,
+                            &snapshot.submissions,
+                            &snapshot.applications,
+                            &snapshot.reputations,
+                            &snapshot.judge_pools,
+                        ).await {
+                            Ok(count) => {
+                                tracing::info!("Applied {} arena accounts to DB", count);
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to apply arena snapshot: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Arena poller error: {}", e);
+                    }
+                }
+            }
+        });
+        println!(
+            "Agent Arena poller started (interval: {}ms, program: {})",
+            interval, config.arena_program_id
+        );
+    }
+
     if config.mock_webhook {
         replay_mock_file(&state, &config.mock_webhook_file).await?;
         println!(
@@ -432,6 +480,11 @@ async fn main() -> Result<()> {
         .route("/api/royalties/{agent}", get(get_agent_royalty))
         .route("/api/invocations", get(get_invocations))
         .route("/api/invocations/{invocation_id}", get(get_invocation_by_id))
+        .route("/api/tasks", get(get_arena_tasks))
+        .route("/api/tasks/{task_id}", get(get_arena_task_by_id))
+        .route("/api/tasks/{task_id}/submissions", get(get_arena_task_submissions))
+        .route("/api/agents/{agent}/reputation", get(get_arena_agent_reputation))
+        .route("/api/judge-pool/{category}", get(get_arena_judge_pool))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr)

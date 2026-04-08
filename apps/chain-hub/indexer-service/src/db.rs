@@ -510,3 +510,362 @@ fn invocation_from_row(row: tokio_postgres::Row) -> InvocationRow {
         slot: row.get("slot"),
     }
 }
+
+// ── Arena Tables ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct ArenaTaskRow {
+    pub task_id: i64,
+    pub poster: String,
+    pub judge: String,
+    pub judge_mode: i16,
+    pub reward: i64,
+    pub mint: String,
+    pub min_stake: i64,
+    pub state: i16,
+    pub category: i16,
+    pub eval_ref: String,
+    pub deadline: i64,
+    pub judge_deadline: i64,
+    pub submission_count: i16,
+    pub winner: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub bump: i16,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArenaSubmissionRow {
+    pub task_id: i64,
+    pub agent: String,
+    pub result_ref: String,
+    pub trace_ref: String,
+    pub runtime_provider: String,
+    pub runtime_model: String,
+    pub runtime_runtime: String,
+    pub runtime_version: String,
+    pub submission_slot: i64,
+    pub submitted_at: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArenaReputationRow {
+    pub agent: String,
+    pub total_earned: i64,
+    pub completed: i64,
+    pub total_applied: i64,
+    pub avg_score: i64,
+    pub win_rate: i64,
+    pub categories: serde_json::Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArenaJudgePoolRow {
+    pub category: i16,
+    pub members: Vec<String>,
+}
+
+use crate::arena_decoder::{ArenaApplication, ArenaJudgePool, ArenaReputation, ArenaSubmission, ArenaTask};
+
+impl Database {
+    pub async fn apply_arena_snapshot(
+        &mut self,
+        tasks: &[ArenaTask],
+        submissions: &[ArenaSubmission],
+        applications: &[ArenaApplication],
+        reputations: &[ArenaReputation],
+        judge_pools: &[ArenaJudgePool],
+    ) -> Result<usize> {
+        let tx = self.client.transaction().await?;
+
+        let now = chrono::Utc::now().timestamp();
+
+        for task in tasks {
+            tx.execute(
+                "INSERT INTO arena_tasks (
+                    task_id, poster, judge, judge_mode, reward, mint, min_stake, state, category,
+                    eval_ref, deadline, judge_deadline, submission_count, winner, created_at, updated_at, bump
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                ON CONFLICT (task_id) DO UPDATE SET
+                    poster = EXCLUDED.poster,
+                    judge = EXCLUDED.judge,
+                    judge_mode = EXCLUDED.judge_mode,
+                    reward = EXCLUDED.reward,
+                    mint = EXCLUDED.mint,
+                    min_stake = EXCLUDED.min_stake,
+                    state = EXCLUDED.state,
+                    category = EXCLUDED.category,
+                    eval_ref = EXCLUDED.eval_ref,
+                    deadline = EXCLUDED.deadline,
+                    judge_deadline = EXCLUDED.judge_deadline,
+                    submission_count = EXCLUDED.submission_count,
+                    winner = EXCLUDED.winner,
+                    updated_at = EXCLUDED.updated_at",
+                &[
+                    &(task.task_id as i64),
+                    &task.poster,
+                    &task.judge,
+                    &(task.judge_mode as i16),
+                    &(task.reward as i64),
+                    &task.mint,
+                    &(task.min_stake as i64),
+                    &(task.state as i16),
+                    &(task.category as i16),
+                    &task.eval_ref,
+                    &task.deadline,
+                    &task.judge_deadline,
+                    &(task.submission_count as i16),
+                    &task.winner,
+                    &task.created_at,
+                    &now,
+                    &(task.bump as i16),
+                ],
+            )
+            .await?;
+        }
+
+        for sub in submissions {
+            tx.execute(
+                "INSERT INTO arena_submissions (
+                    task_id, agent, result_ref, trace_ref, runtime_provider, runtime_model,
+                    runtime_runtime, runtime_version, submission_slot, submitted_at, bump
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                ON CONFLICT (task_id, agent) DO UPDATE SET
+                    result_ref = EXCLUDED.result_ref,
+                    trace_ref = EXCLUDED.trace_ref,
+                    runtime_provider = EXCLUDED.runtime_provider,
+                    runtime_model = EXCLUDED.runtime_model,
+                    runtime_runtime = EXCLUDED.runtime_runtime,
+                    runtime_version = EXCLUDED.runtime_version,
+                    submission_slot = EXCLUDED.submission_slot,
+                    submitted_at = EXCLUDED.submitted_at,
+                    bump = EXCLUDED.bump",
+                &[
+                    &(sub.task_id as i64),
+                    &sub.agent,
+                    &sub.result_ref,
+                    &sub.trace_ref,
+                    &sub.runtime_provider,
+                    &sub.runtime_model,
+                    &sub.runtime_runtime,
+                    &sub.runtime_version,
+                    &(sub.submission_slot as i64),
+                    &sub.submitted_at,
+                    &(sub.bump as i16),
+                ],
+            )
+            .await?;
+        }
+
+        // Applications are currently not exposed via API but stored for internal consistency
+        for _app in applications {
+            // Intentionally left minimal; can be expanded later
+        }
+
+        for rep in reputations {
+            let categories = serde_json::to_string(
+                &rep.categories.iter().map(|c| serde_json::json!({
+                    "category": c.category,
+                    "avg_score": c.avg_score,
+                    "completed": c.completed,
+                })).collect::<Vec<_>>()
+            ).unwrap_or_else(|_| "[]".to_string());
+
+            tx.execute(
+                "INSERT INTO arena_reputations (
+                    agent, total_earned, completed, total_applied, avg_score, win_rate, categories, bump
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+                ON CONFLICT (agent) DO UPDATE SET
+                    total_earned = EXCLUDED.total_earned,
+                    completed = EXCLUDED.completed,
+                    total_applied = EXCLUDED.total_applied,
+                    avg_score = EXCLUDED.avg_score,
+                    win_rate = EXCLUDED.win_rate,
+                    categories = EXCLUDED.categories,
+                    bump = EXCLUDED.bump",
+                &[
+                    &rep.agent,
+                    &(rep.total_earned as i64),
+                    &(rep.completed as i64),
+                    &(rep.total_applied as i64),
+                    &(rep.avg_score as i64),
+                    &(rep.win_rate as i64),
+                    &categories,
+                    &(rep.bump as i16),
+                ],
+            )
+            .await?;
+        }
+
+        for pool in judge_pools {
+            let members = serde_json::to_string(&pool.members).unwrap_or_else(|_| "[]".to_string());
+            tx.execute(
+                "INSERT INTO arena_judge_pools (category, members, bump)
+                 VALUES ($1, $2::jsonb, $3)
+                 ON CONFLICT (category) DO UPDATE SET
+                    members = EXCLUDED.members,
+                    bump = EXCLUDED.bump",
+                &[
+                    &(pool.category as i16),
+                    &members,
+                    &(pool.bump as i16),
+                ],
+            )
+            .await?;
+        }
+
+        tx.commit().await?;
+        Ok(tasks.len() + submissions.len() + reputations.len() + judge_pools.len())
+    }
+
+    pub async fn list_arena_tasks(
+        &mut self,
+        state: Option<&str>,
+        category: Option<i16>,
+        poster: Option<&str>,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ArenaTaskRow>> {
+        let state_i16: Option<i16> = state.and_then(|s| match s {
+            "open" => Some(0),
+            "completed" => Some(1),
+            "refunded" => Some(2),
+            _ => None,
+        });
+
+        let query = "SELECT
+                task_id, poster, judge, judge_mode, reward, mint, min_stake, state, category,
+                eval_ref, deadline, judge_deadline, submission_count, winner, created_at, updated_at, bump
+             FROM arena_tasks
+             WHERE ($1::smallint IS NULL OR state = $1)
+               AND ($2::smallint IS NULL OR category = $2)
+               AND ($3::text IS NULL OR poster = $3)
+             ORDER BY task_id DESC
+             LIMIT $4 OFFSET $5";
+
+        let rows = self
+            .client
+            .query(query, &[&state_i16, &category, &poster, &limit, &offset])
+            .await?;
+        Ok(rows.into_iter().map(arena_task_from_row).collect())
+    }
+
+    pub async fn get_arena_task(&mut self, task_id: i64) -> Result<Option<ArenaTaskRow>> {
+        let row = self
+            .client
+            .query_opt(
+                "SELECT
+                    task_id, poster, judge, judge_mode, reward, mint, min_stake, state, category,
+                    eval_ref, deadline, judge_deadline, submission_count, winner, created_at, updated_at, bump
+                 FROM arena_tasks
+                 WHERE task_id = $1",
+                &[&task_id],
+            )
+            .await?;
+        Ok(row.map(arena_task_from_row))
+    }
+
+    pub async fn get_arena_task_submissions(&mut self, task_id: i64) -> Result<Vec<ArenaSubmissionRow>> {
+        let rows = self
+            .client
+            .query(
+                "SELECT
+                    task_id, agent, result_ref, trace_ref, runtime_provider, runtime_model,
+                    runtime_runtime, runtime_version, submission_slot, submitted_at
+                 FROM arena_submissions
+                 WHERE task_id = $1
+                 ORDER BY submitted_at ASC",
+                &[&task_id],
+            )
+            .await?;
+        Ok(rows.into_iter().map(arena_submission_from_row).collect())
+    }
+
+    pub async fn get_arena_agent_reputation(&mut self, agent: &str) -> Result<Option<ArenaReputationRow>> {
+        let row = self
+            .client
+            .query_opt(
+                "SELECT
+                    agent, total_earned, completed, total_applied, avg_score, win_rate, categories
+                 FROM arena_reputations
+                 WHERE agent = $1",
+                &[&agent],
+            )
+            .await?;
+        Ok(row.map(arena_reputation_from_row))
+    }
+
+    pub async fn get_arena_judge_pool(&mut self, category: i16) -> Result<Option<ArenaJudgePoolRow>> {
+        let row = self
+            .client
+            .query_opt(
+                "SELECT category, members FROM arena_judge_pools WHERE category = $1",
+                &[&category],
+            )
+            .await?;
+        Ok(row.map(arena_judge_pool_from_row))
+    }
+}
+
+fn arena_task_from_row(row: tokio_postgres::Row) -> ArenaTaskRow {
+    ArenaTaskRow {
+        task_id: row.get("task_id"),
+        poster: row.get("poster"),
+        judge: row.get("judge"),
+        judge_mode: row.get("judge_mode"),
+        reward: row.get("reward"),
+        mint: row.get("mint"),
+        min_stake: row.get("min_stake"),
+        state: row.get("state"),
+        category: row.get("category"),
+        eval_ref: row.get("eval_ref"),
+        deadline: row.get("deadline"),
+        judge_deadline: row.get("judge_deadline"),
+        submission_count: row.get("submission_count"),
+        winner: row.get("winner"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        bump: row.get("bump"),
+    }
+}
+
+fn arena_submission_from_row(row: tokio_postgres::Row) -> ArenaSubmissionRow {
+    ArenaSubmissionRow {
+        task_id: row.get("task_id"),
+        agent: row.get("agent"),
+        result_ref: row.get("result_ref"),
+        trace_ref: row.get("trace_ref"),
+        runtime_provider: row.get("runtime_provider"),
+        runtime_model: row.get("runtime_model"),
+        runtime_runtime: row.get("runtime_runtime"),
+        runtime_version: row.get("runtime_version"),
+        submission_slot: row.get("submission_slot"),
+        submitted_at: row.get("submitted_at"),
+    }
+}
+
+fn arena_reputation_from_row(row: tokio_postgres::Row) -> ArenaReputationRow {
+    ArenaReputationRow {
+        agent: row.get("agent"),
+        total_earned: row.get("total_earned"),
+        completed: row.get("completed"),
+        total_applied: row.get("total_applied"),
+        avg_score: row.get("avg_score"),
+        win_rate: row.get("win_rate"),
+        categories: serde_json::from_str(row.get::<&str, _>("categories"))
+            .unwrap_or_else(|_| serde_json::json!([])),
+    }
+}
+
+fn arena_judge_pool_from_row(row: tokio_postgres::Row) -> ArenaJudgePoolRow {
+    let members_json: serde_json::Value = serde_json::from_str(row.get::<&str, _>("members"))
+        .unwrap_or_else(|_| serde_json::json!([]));
+    let members = members_json
+        .as_array()
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .unwrap_or_default();
+    ArenaJudgePoolRow {
+        category: row.get("category"),
+        members,
+    }
+}

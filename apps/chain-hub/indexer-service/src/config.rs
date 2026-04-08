@@ -15,6 +15,9 @@ pub struct Config {
     pub solana_program_id: String,
     pub solana_commitment: String,
     pub solana_subscribe: bool,
+    // Agent Arena config
+    pub arena_program_id: String,
+    pub arena_poll_interval_ms: u64,
 }
 
 impl Config {
@@ -40,6 +43,11 @@ impl Config {
         // Default to true for real-time indexing
         let solana_subscribe = parse_bool_env("SOLANA_SUBSCRIBE").unwrap_or(true);
 
+        // Agent Arena config
+        let arena_program_id = env::var("ARENA_PROGRAM_ID")
+            .unwrap_or_else(|_| "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs".to_string());
+        let arena_poll_interval_ms = parse_u64_env("ARENA_POLL_INTERVAL_MS")?.unwrap_or(30000);
+
         Ok(Self {
             bind_addr,
             database_url,
@@ -51,6 +59,8 @@ impl Config {
             solana_program_id,
             solana_commitment,
             solana_subscribe,
+            arena_program_id,
+            arena_poll_interval_ms,
         })
     }
 }
