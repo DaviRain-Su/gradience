@@ -11,57 +11,45 @@ services:
         image: postgres:16-alpine
         restart: unless-stopped
         environment:
-            POSTGRES_DB: gradience_indexer
+            POSTGRES_DB: gradience_chain_hub
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
         volumes:
             - indexer-pgdata:/var/lib/postgresql/data
-            - ../apps/agent-arena/indexer/migrations:/docker-entrypoint-initdb.d
+            - ../apps/chain-hub/indexer-service/migrations:/docker-entrypoint-initdb.d
         networks:
             - backend
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d gradience_indexer']
+            test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d gradience_chain_hub']
             interval: 10s
             timeout: 5s
             retries: 10
             start_period: 20s
 
-    # -- Indexer Redis (cache)
-    indexer-cache:
-        image: redis:7-alpine
-        restart: unless-stopped
-        networks:
-            - backend
-        healthcheck:
-            test: ['CMD', 'redis-cli', 'ping']
-            interval: 5s
-            timeout: 5s
-            retries: 5
-
-    # -- Unified Gradience Indexer (Solana on-chain data)
+    # -- Unified Gradience Indexer (Solana + Agent Arena on-chain data)
     indexer:
         build:
-            context: ../apps/agent-arena/indexer
+            context: ../apps/chain-hub/indexer-service
             dockerfile: Dockerfile
-        image: gradience/indexer:latest
+        image: gradience/chain-hub-indexer:latest
         restart: unless-stopped
         environment:
-            DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@indexer-db:5432/gradience_indexer
-            REDIS_URL: redis://indexer-cache:6379
-            INDEXER_BIND_ADDR: 0.0.0.0:3001
+            DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@indexer-db:5432/gradience_chain_hub
+            INDEXER_BIND_ADDR: 0.0.0.0:8788
             SOLANA_WS_URL: ${SOLANA_WS_URL:-wss://api.devnet.solana.com}
             SOLANA_PROGRAM_ID: ${SOLANA_PROGRAM_ID:-11111111111111111111111111111111}
+            ARENA_PROGRAM_ID: ${ARENA_PROGRAM_ID:-11111111111111111111111111111111}
+            ARENA_POLL_INTERVAL_MS: ${ARENA_POLL_INTERVAL_MS:-30000}
             SOLANA_COMMITMENT: ${SOLANA_COMMITMENT:-confirmed}
             SOLANA_SUBSCRIBE: 'true'
         depends_on:
             indexer-db:
                 condition: service_healthy
-            indexer-cache:
-                condition: service_healthy
         networks:
             - backend
+        # Exposed on localhost for direct debugging; nginx proxies via Docker network
         ports:
-            - '0.0.0.0:3001:3001'
+            - '127.0.0.1:3001:8788'
 
     # -- Nginx (reverse proxy)
     nginx:

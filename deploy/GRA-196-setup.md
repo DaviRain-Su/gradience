@@ -44,6 +44,8 @@ cp .env.prod.example .env.prod
 
 ## Step 4: Deploy Services
 
+> Note: The production indexer is built from `apps/chain-hub/indexer-service` (unified Chain Hub + Agent Arena indexer) and exposes port `8788` internally. Nginx proxies `indexer.gradiences.xyz` to this container.
+
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
