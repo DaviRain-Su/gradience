@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import type { Address } from '@solana/kit';
-import { cooperativeCloseChannel, type CloseChannelParams } from '@/lib/a2a/a2a-client';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { cooperativeCloseChannel, type CloseChannelParams, tryGetDynamicSigner } from '@/lib/a2a/a2a-client';
 
 export interface UseCloseChannelResult {
   closeChannel: (params: {
@@ -18,6 +19,7 @@ export interface UseCloseChannelResult {
 }
 
 export function useCloseChannel(walletAddress: string | null): UseCloseChannelResult {
+  const { primaryWallet } = useDynamicContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +48,8 @@ export function useCloseChannel(walletAddress: string | null): UseCloseChannelRe
           payerSig: params.payerSig || { r: 'mock_r', s: 'mock_s' },
           payeeSig: params.payeeSig || { r: 'mock_r', s: 'mock_s' },
         };
-        const sig = await cooperativeCloseChannel(sdkParams);
+        const signAndSend = tryGetDynamicSigner(primaryWallet);
+        const sig = await cooperativeCloseChannel(sdkParams, signAndSend);
         return sig;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to close channel');
@@ -55,7 +58,7 @@ export function useCloseChannel(walletAddress: string | null): UseCloseChannelRe
         setLoading(false);
       }
     },
-    [walletAddress],
+    [walletAddress, primaryWallet],
   );
 
   return {

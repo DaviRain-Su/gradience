@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import type { Address } from '@solana/kit';
-import { openChannel, type OpenChannelParams } from '@/lib/a2a/a2a-client';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { openChannel, type OpenChannelParams, tryGetDynamicSigner } from '@/lib/a2a/a2a-client';
 
 export interface UseOpenChannelResult {
   openChannel: (params: {
@@ -17,6 +18,7 @@ export interface UseOpenChannelResult {
 }
 
 export function useOpenChannel(walletAddress: string | null): UseOpenChannelResult {
+  const { primaryWallet } = useDynamicContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +47,8 @@ export function useOpenChannel(walletAddress: string | null): UseOpenChannelResu
           depositAmount: lamports,
           expiresAt: BigInt(params.expiresAt),
         };
-        const sig = await openChannel(sdkParams);
+        const signAndSend = tryGetDynamicSigner(primaryWallet);
+        const sig = await openChannel(sdkParams, signAndSend);
         return sig;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to open channel');
@@ -54,7 +57,7 @@ export function useOpenChannel(walletAddress: string | null): UseOpenChannelResu
         setLoading(false);
       }
     },
-    [walletAddress],
+    [walletAddress, primaryWallet],
   );
 
   return {

@@ -21,22 +21,32 @@ class MockTransport implements A2ATransport {
   }
 }
 
+const SYS = "11111111111111111111111111111111";
+const TOKEN = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const COMPUTE = "ComputeBudget111111111111111111111111111111";
+
+// Deterministic test addresses (valid base58)
+const payer = "FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H";
+const payee = "5HvQ7ZGH12Z8tYnVpn5VmzKzQ4G7MVj41SWoL3nZxJvN";
+const winner = "BKt2FdgBqRfTvxrW9TMrYZWtthhMbCD7MB6ippH7r9Pm";
+
+
 test("derivePda is deterministic for same inputs", () => {
-  const pdaA = derivePda("program", { seedPrefix: "thread", values: ["a", "b", 1] });
-  const pdaB = derivePda("program", { seedPrefix: "thread", values: ["a", "b", 1] });
+  const pdaA = derivePda(SYS, { seedPrefix: "thread", values: [payer, payee, 1] });
+  const pdaB = derivePda(SYS, { seedPrefix: "thread", values: [payer, payee, 1] });
   assert.equal(pdaA, pdaB);
 });
 
 test("sdk openChannel sends expected discriminator", async () => {
   const transport = new MockTransport();
-  const sdk = new A2ASdk({ programId: "prog", transport });
+  const sdk = new A2ASdk({ programId: SYS, transport });
 
   await sdk.openChannel({
-    payer: "payer",
-    payee: "payee",
+    payer,
+    payee,
     channelId: 7n,
-    mediator: "mediator",
-    tokenMint: "mint",
+    mediator: COMPUTE,
+    tokenMint: TOKEN,
     depositAmount: 100n,
     expiresAt: 1_000n,
   });
@@ -48,13 +58,13 @@ test("sdk openChannel sends expected discriminator", async () => {
 
 test("sdk assignSubtaskBid builds subtask and bid accounts", async () => {
   const transport = new MockTransport();
-  const sdk = new A2ASdk({ programId: "prog", transport });
+  const sdk = new A2ASdk({ programId: SYS, transport });
 
   await sdk.assignSubtaskBid({
-    requester: "requester",
+    requester: payer,
     parentTaskId: 9n,
     subtaskId: 2,
-    winner: "winner",
+    winner,
   });
 
   assert.ok(transport.lastInstruction);
@@ -64,18 +74,18 @@ test("sdk assignSubtaskBid builds subtask and bid accounts", async () => {
 
 test("sdk openChannelDispute uses config account", async () => {
   const transport = new MockTransport();
-  const sdk = new A2ASdk({ programId: "prog", transport });
+  const sdk = new A2ASdk({ programId: SYS, transport });
 
   await sdk.openChannelDispute({
-    complainant: "payer",
-    payer: "payer",
-    payee: "payee",
+    complainant: payer,
+    payer,
+    payee,
     channelId: 1n,
     nonce: 2n,
     spentAmount: 3n,
     disputeDeadline: 4n,
-    payerSig: { r: "a", s: "b" },
-    payeeSig: { r: "c", s: "d" },
+    payerSig: { r: "a".repeat(64), s: "b".repeat(64) },
+    payeeSig: { r: "c".repeat(64), s: "d".repeat(64) },
   });
 
   assert.ok(transport.lastInstruction);

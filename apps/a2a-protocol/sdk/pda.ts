@@ -1,4 +1,19 @@
+import { PublicKey } from "@solana/web3.js";
 import type { Address } from "./types";
+
+function toBuffer(value: string | number | bigint | Uint8Array): Buffer {
+  if (value instanceof Uint8Array) {
+    return Buffer.from(value);
+  }
+  if (typeof value === "number" || typeof value === "bigint") {
+    const bn = BigInt.asUintN(64, BigInt(value));
+    const buf = Buffer.alloc(8);
+    buf.writeBigUInt64LE(bn, 0);
+    return buf;
+  }
+  // Assume base58 address string
+  return new PublicKey(value).toBuffer();
+}
 
 export interface PdaDerivationInput {
   seedPrefix: string;
@@ -6,18 +21,12 @@ export interface PdaDerivationInput {
 }
 
 export function derivePda(programId: Address, input: PdaDerivationInput): Address {
-  let buffer = `${programId}:${input.seedPrefix}`;
+  const seeds: Buffer[] = [Buffer.from(input.seedPrefix)];
   for (const value of input.values) {
-    buffer += ":";
-    if (value instanceof Uint8Array) {
-      buffer += Array.from(value)
-        .map((item) => item.toString(16).padStart(2, "0"))
-        .join("");
-    } else {
-      buffer += String(value);
-    }
+    seeds.push(toBuffer(value));
   }
-  return `pda_${fnv1a64Hex(buffer).padEnd(44, "0").slice(0, 44)}`;
+  const [pda] = PublicKey.findProgramAddressSync(seeds, new PublicKey(programId));
+  return pda.toBase58();
 }
 
 export function networkConfigPda(programId: Address): Address {
@@ -87,14 +96,4 @@ export function bidPda(
     seedPrefix: "bid",
     values: [parentTaskId, subtaskId, bidder],
   });
-}
-
-function fnv1a64Hex(input: string): string {
-  let hash = 0xcbf29ce484222325n;
-  const prime = 0x100000001b3n;
-  for (const char of input) {
-    hash ^= BigInt(char.codePointAt(0) ?? 0);
-    hash = (hash * prime) & 0xffffffffffffffffn;
-  }
-  return hash.toString(16);
 }
