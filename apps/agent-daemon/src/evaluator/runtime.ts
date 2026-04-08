@@ -15,6 +15,7 @@ import type { APIEndpoint } from './playwright-harness.js';
 import { PlaywrightHarness } from './playwright-harness.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
+import { getLLMClient, isLLMAvailable } from './llm-client.js';
 
 // ============================================================================
 // Types
@@ -683,19 +684,53 @@ export class EvaluatorRuntime extends EventEmitter {
 
   private async evaluateContent(
     task: EvaluationTask,
-    sandbox: Sandbox
+    _sandbox: Sandbox
   ): Promise<Partial<EvaluationResult>> {
-    // TODO: Implement LLM-as-judge content evaluation
+    if (!isLLMAvailable()) {
+      logger.warn({ evaluationId: task.id }, 'LLM not available for content evaluation');
+      return {
+        categoryScores: [],
+        checkResults: [{ name: 'llm_available', passed: false, message: 'LLM client not configured' }],
+        executionLog: {
+          sandboxType: this.config.sandbox.type,
+          steps: [{ name: 'llm_check', status: 'failed', durationMs: 0 }],
+          stdout: '',
+          stderr: 'LLM not available',
+        },
+      };
+    }
 
-    logger.info({ evaluationId: task.id }, 'Content evaluation not yet implemented');
+    const llmClient = getLLMClient()!;
+    const submissionContent = typeof task.submission.source === 'string' ? task.submission.source : '';
+    const requirements = task.criteria.rubric?.map((r) => r.name).join(', ') || task.criteria.requiredChecks.join(', ');
+
+    logger.info({ evaluationId: task.id }, 'Running LLM content evaluation');
+
+    const startTime = Date.now();
+    const scores = await llmClient.evaluateContent(submissionContent, requirements);
+    const durationMs = Date.now() - startTime;
+
+    const categoryScores = Object.entries(scores.scores || {}).map(([category, score]) => ({
+      category,
+      score: Math.max(0, Math.min(100, score)),
+      weight: 1,
+    }));
+
+    const overallScore = Math.max(0, Math.min(100, scores.overallScore));
+    const passed = overallScore >= task.criteria.minScore;
 
     return {
-      categoryScores: [],
-      checkResults: [],
+      overallScore,
+      passed,
+      categoryScores,
+      checkResults: [
+        { name: 'llm_available', passed: true, message: 'LLM evaluation completed' },
+        { name: 'min_score', passed, message: `Score ${overallScore} vs threshold ${task.criteria.minScore}` },
+      ],
       executionLog: {
         sandboxType: this.config.sandbox.type,
-        steps: [],
-        stdout: '',
+        steps: [{ name: 'llm_evaluation', status: 'completed', durationMs }],
+        stdout: scores.feedback || '',
         stderr: '',
       },
     };
