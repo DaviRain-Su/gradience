@@ -5,8 +5,10 @@
  * MVP: in-memory session store. Future: integrate MagicBlockExecutionEngine.
  */
 
+import { PublicKey } from '@solana/web3.js';
 import type { FastifyInstance } from 'fastify';
 import type { BridgeManager } from '../../bridge/index.js';
+import { VRFJudgeSelector } from '../../settlement/vrf-judge-selector.js';
 import { logger } from '../../utils/logger.js';
 
 interface SessionRecord {
@@ -156,5 +158,39 @@ export function registerMagicBlockRoutes(app: FastifyInstance, bridgeManager?: B
     }
   });
 
-  logger.info('MagicBlock API routes registered: /api/v1/magicblock/session/*, /api/v1/magicblock/judge-per');
+  // POST /api/v1/magicblock/request-vrf
+  // Scaffold for GRA-207. Builds a RequestRandomness instruction manually
+  // because @magicblock-labs/vrf-sdk does not exist on npm.
+  app.post<{
+    Body: { taskId: string; numericTaskId: string | number; payer: string };
+  }>('/api/v1/magicblock/request-vrf', async (request, reply) => {
+    try {
+      const { taskId, numericTaskId, payer } = request.body;
+      if (!taskId || numericTaskId === undefined || !payer) {
+        return reply.code(400).send({ error: 'taskId, numericTaskId, and payer are required' });
+      }
+
+      const payerPubkey = new PublicKey(payer);
+      const selector = new VRFJudgeSelector();
+      const ix = selector.buildGradienceRequestRandomnessIx(
+        taskId,
+        Number(numericTaskId),
+        payerPubkey,
+      );
+
+      logger.info({ taskId, numericTaskId, payer }, 'VRF randomness request instruction built');
+      return {
+        success: true,
+        message: 'Instruction built. Caller must sign and submit to Solana.',
+        programId: ix.programId.toBase58(),
+        keys: ix.keys.map((k) => ({ pubkey: k.pubkey.toBase58(), isSigner: k.isSigner, isWritable: k.isWritable })),
+        data: ix.data.toString('base64'),
+      };
+    } catch (err: any) {
+      logger.error({ err }, 'VRF request instruction build failed');
+      return reply.code(500).send({ error: err.message || 'VRF request failed' });
+    }
+  });
+
+  logger.info('MagicBlock API routes registered: /api/v1/magicblock/session/*, /api/v1/magicblock/judge-per, /api/v1/magicblock/request-vrf');
 }
