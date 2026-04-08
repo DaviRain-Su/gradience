@@ -3,8 +3,8 @@
  * 
  * Integration with Solana's official Agent Registry protocol.
  * 
- * Note: Contract addresses are placeholders until officially published by Solana.
- * See: https://solana.com/agent-registry
+ * Note: Uses the official Metaplex MPL Agent Registry program address.
+ * See: https://www.metaplex.com/docs/smart-contracts/mpl-agent
  * 
  * This client implements the expected interface based on:
  * - Solana Agent Registry documentation
@@ -29,15 +29,13 @@ import { logger } from '../utils/logger.js';
 // ============================================================================
 
 const SOLANA_AGENT_REGISTRY_ADDRESSES = {
-  // Mainnet - To be confirmed by Solana Foundation
+  // Metaplex MPL Agent Registry — same address on mainnet and devnet
+  // Source: https://www.metaplex.com/docs/smart-contracts/mpl-agent
   mainnet: {
-    programId: 'AgentXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // Placeholder
-    reputationProgramId: 'ReputXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // Placeholder
+    programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
   },
-  // Devnet - To be confirmed by Solana Foundation  
   devnet: {
-    programId: 'AgentXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // Placeholder
-    reputationProgramId: 'ReputXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', // Placeholder
+    programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
   },
 };
 
@@ -179,7 +177,6 @@ export interface SolanaAgentRegistryConfig {
   rpcUrl: string;
   oracleKeypair: web3.Keypair;
   programId?: string;
-  reputationProgramId?: string;
 }
 
 export interface AgentRegistrationParams {
@@ -274,14 +271,6 @@ export class SolanaAgentRegistryClient {
     const programId = new PublicKey(
       config.programId || addresses.programId
     );
-
-    // Check if using placeholder
-    if (programId.toBase58().includes('XXX') || programId.toBase58().includes('AgentX')) {
-      logger.warn(
-        { programId: programId.toBase58() },
-        'Using placeholder Solana Agent Registry program ID. Real integration pending official address publication.'
-      );
-    }
 
     // Initialize program
     this.program = new Program(
