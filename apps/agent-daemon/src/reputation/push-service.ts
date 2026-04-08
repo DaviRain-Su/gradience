@@ -14,12 +14,14 @@
 import { logger } from '../utils/logger.js';
 import type { SolanaAgentRegistryClient } from '../integrations/solana-agent-registry.js';
 import type { ERC8004Client } from '../integrations/erc8004-client.js';
+import type { ChainHubReputationClient } from '../integrations/chain-hub-reputation.js';
 import type { ReputationAggregationEngine, ReputationScore } from './aggregation-engine.js';
 
 export interface PushServiceConfig {
   solanaClient: SolanaAgentRegistryClient;
   erc8004Client: ERC8004Client;
   engine: ReputationAggregationEngine;
+  chainHubClient?: ChainHubReputationClient;
   enableRealtime: boolean;
   enableBatch: boolean;
   batchIntervalMs: number;
@@ -361,8 +363,27 @@ export class ReputationPushService {
    * Fetch agent activity (placeholder)
    */
   private async fetchActivity(agentAddress: string): Promise<any> {
-    // In real implementation, fetch from database
-    // For now, return placeholder
+    const client = this.config.chainHubClient;
+    if (client) {
+      const record = await client.getReputation(agentAddress);
+      if (record) {
+        return {
+          agentAddress,
+          completedTasks: record.completedTasks,
+          attemptedTasks: record.completedTasks,
+          totalEarned: BigInt(0),
+          totalStaked: BigInt(0),
+          avgRating: record.avgRating,
+          ratingsCount: record.completedTasks,
+          disputeCount: 0,
+          disputeWon: 0,
+          firstActivity: Date.now() - 86400000 * 30,
+          lastActivity: new Date(record.updatedAt).getTime(),
+          dailyActivity: [],
+        };
+      }
+    }
+    // Fallback placeholder
     return {
       agentAddress,
       completedTasks: 10,

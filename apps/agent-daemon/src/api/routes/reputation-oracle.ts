@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { logger } from '../../utils/logger.js';
 import type { ReputationAggregationEngine } from '../../reputation/aggregation-engine.js';
 import type { ReputationPushService } from '../../reputation/push-service.js';
+import { createChainHubReputationClient } from '../../integrations/chain-hub-reputation.js';
 
 interface ReputationQueryParams {
   includeHistory?: boolean;
@@ -25,7 +26,7 @@ interface LeaderboardQueryParams {
 export function registerReputationOracleRoutes(
   app: FastifyInstance,
   engine: ReputationAggregationEngine,
-  pushService: ReputationPushService
+  pushService?: ReputationPushService
 ): void {
   // -------------------------------------------------------------------------
   // Get Reputation Score
@@ -85,12 +86,14 @@ export function registerReputationOracleRoutes(
       }
 
       // Add sync status
-      const syncStatus = pushService.getSyncStatus(agentAddress);
-      response.syncStatus = {
-        solana: syncStatus.solanaSynced,
-        ethereum: syncStatus.ethereumSynced,
-        lastSyncAt: syncStatus.lastSyncAt,
-      };
+      if (pushService) {
+        const syncStatus = pushService.getSyncStatus(agentAddress);
+        response.syncStatus = {
+          solana: syncStatus.solanaSynced,
+          ethereum: syncStatus.ethereumSynced,
+          lastSyncAt: syncStatus.lastSyncAt,
+        };
+      }
 
       return response;
     } catch (err: any) {
@@ -228,6 +231,10 @@ export function registerReputationOracleRoutes(
         return reply.code(404).send({ error: 'Agent not found' });
       }
 
+      if (!pushService) {
+        return reply.code(503).send({ error: 'Reputation push service is not configured' });
+      }
+
       const score = engine.calculateReputation(activity);
       const result = await pushService.push(agentAddress, score);
 
@@ -262,6 +269,10 @@ export function registerReputationOracleRoutes(
 
       if (agentAddresses.length > 100) {
         return reply.code(400).send({ error: 'Cannot sync more than 100 agents at once' });
+      }
+
+      if (!pushService) {
+        return reply.code(503).send({ error: 'Reputation push service is not configured' });
       }
 
       const result = await pushService.batchPush(agentAddresses);
@@ -358,27 +369,32 @@ function generateVerificationProof(agentAddress: string, score: any): string {
   return crypto.createHash('sha256').update(data).digest('hex').slice(0, 16);
 }
 
-// Placeholder functions - replace with actual database queries
+const chainHubClient = createChainHubReputationClient({
+  baseUrl: process.env.CHAIN_HUB_INDEXER_URL ?? 'http://localhost:8080',
+  cacheTtlMs: 60_000,
+});
+
 async function fetchAgentActivity(agentAddress: string): Promise<any | null> {
-  // In real implementation, fetch from database
-  // For now, return mock data
+  const record = await chainHubClient.getReputation(agentAddress);
+  if (!record) return null;
+
   return {
     agentAddress,
-    completedTasks: 10,
-    attemptedTasks: 12,
-    totalEarned: BigInt(1000000000),
-    totalStaked: BigInt(500000000),
-    avgRating: 4.5,
-    ratingsCount: 8,
-    disputeCount: 1,
-    disputeWon: 1,
+    completedTasks: record.completedTasks,
+    attemptedTasks: record.completedTasks,
+    totalEarned: BigInt(0),
+    totalStaked: BigInt(0),
+    avgRating: record.avgRating,
+    ratingsCount: record.completedTasks,
+    disputeCount: 0,
+    disputeWon: 0,
     firstActivity: Date.now() - 86400000 * 30,
-    lastActivity: Date.now(),
+    lastActivity: new Date(record.updatedAt).getTime(),
     dailyActivity: [],
   };
 }
 
 async function fetchAllAgents(): Promise<any[]> {
-  // In real implementation, fetch from database
+  // TODO: implement batch agent discovery from indexer or local DB
   return [];
 }

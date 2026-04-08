@@ -25,6 +25,8 @@ import { registerMagicBlockRoutes } from './routes/magicblock.js';
 import { SessionManager } from '../auth/session-manager.js';
 import { IndexerSyncService } from '../storage/indexer-sync.js';
 import indexerRoutes from './routes/indexer-cache.js';
+import { registerReputationOracleRoutes } from './routes/reputation-oracle.js';
+import { createReputationAggregationEngine } from '../reputation/aggregation-engine.js';
 import type { ConnectionManager } from '../connection/connection-manager.js';
 import type { TaskQueue } from '../tasks/task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
@@ -141,6 +143,11 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerRiskRoutes(app);
     registerIdentityRoutes(app, deps.database);
     registerMagicBlockRoutes(app, deps.bridgeManager);
+
+    // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)
+    const reputationEngine = createReputationAggregationEngine();
+    registerReputationOracleRoutes(app, reputationEngine);
+    logger.info('Reputation Oracle routes registered (query-only mode)');
 
     // Initialize indexer sync service for local caching
     const syncService = new IndexerSyncService(deps.database);
