@@ -11,11 +11,18 @@
  */
 
 import { EventEmitter } from 'node:events';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { APIEndpoint } from './playwright-harness.js';
 import { PlaywrightHarness } from './playwright-harness.js';
 import { logger } from '../utils/logger.js';
 import { DaemonError, ErrorCodes } from '../utils/errors.js';
 import { getLLMClient, isLLMAvailable } from './llm-client.js';
+
+const execFileAsync = promisify(execFile);
 
 // ============================================================================
 // Types
@@ -804,10 +811,11 @@ export class EvaluatorRuntime extends EventEmitter {
   // -------------------------------------------------------------------------
 
   private async createSandbox(task: EvaluationTask): Promise<Sandbox> {
-    // TODO: Implement actual Docker/git-worktree sandbox
-    // For now, return mock sandbox
+    logger.info({ evaluationId: task.id, type: this.config.sandbox.type }, 'Creating sandbox');
 
-    logger.info({ evaluationId: task.id }, 'Creating sandbox');
+    if (this.config.sandbox.type === 'docker') {
+      return new DockerSandbox(task, this.config.sandbox);
+    }
 
     return new MockSandbox(task, this.config.sandbox);
   }
@@ -902,6 +910,72 @@ interface Sandbox {
   id: string;
   execute(name: string, command: string): Promise<ExecutionStep>;
   destroy(): Promise<void>;
+}
+
+class DockerSandbox implements Sandbox {
+  id: string;
+  private tmpDir: string;
+
+  constructor(
+    private task: EvaluationTask,
+    private config: SandboxConfig
+  ) {
+    this.id = `docker-${task.id}`;
+    this.tmpDir = mkdtempSync(join(tmpdir(), `eval-${task.id}-`));
+    if (task.submission.type === 'inline' && typeof task.submission.source === 'string') {
+      writeFileSync(join(this.tmpDir, 'submission.txt'), task.submission.source);
+    }
+  }
+
+  async execute(name: string, command: string): Promise<ExecutionStep> {
+    const startTime = Date.now();
+    logger.info({ sandboxId: this.id, name, command }, 'Executing in Docker sandbox');
+
+    const image = this.config.dockerImage || 'node:20-alpine';
+    const args = [
+      'run', '--rm',
+      '--network', this.config.networkAccess ? 'host' : 'none',
+      '-v', `${this.tmpDir}:/workspace:ro`,
+      '-w', '/workspace',
+      '-m', this.config.resources.memory || '512m',
+      '--cpus', this.config.resources.cpu || '1',
+      image,
+      'sh', '-c', command,
+    ];
+
+    try {
+      await execFileAsync('docker', args, {
+        timeout: this.config.resources.timeout || 300_000,
+        killSignal: 'SIGKILL',
+      });
+      return {
+        name,
+        command,
+        exitCode: 0,
+        durationMs: Date.now() - startTime,
+        timestamp: Date.now(),
+      };
+    } catch (error: any) {
+      return {
+        name,
+        command,
+        exitCode: error.code || 1,
+        durationMs: Date.now() - startTime,
+        timestamp: Date.now(),
+        stdout: error.stdout,
+        stderr: error.stderr,
+      };
+    }
+  }
+
+  async destroy(): Promise<void> {
+    try {
+      rmSync(this.tmpDir, { recursive: true, force: true });
+    } catch (err) {
+      logger.warn({ sandboxId: this.id, err }, 'Failed to clean up Docker sandbox temp dir');
+    }
+    logger.info({ sandboxId: this.id }, 'Docker sandbox destroyed');
+  }
 }
 
 class MockSandbox implements Sandbox {
