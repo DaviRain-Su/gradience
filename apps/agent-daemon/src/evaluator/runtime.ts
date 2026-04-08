@@ -258,6 +258,7 @@ export interface DriftDetectionConfig {
 
 export class EvaluatorRuntime extends EventEmitter {
   private activeEvaluations: Map<string, EvaluationTask> = new Map();
+  private activeSandboxes: Map<string, Sandbox> = new Map();
   private config: EvaluatorConfig;
 
   constructor(config: Partial<EvaluatorConfig> = {}) {
@@ -351,7 +352,15 @@ export class EvaluatorRuntime extends EventEmitter {
     const task = this.activeEvaluations.get(evaluationId);
     if (!task) return false;
 
-    // TODO: Signal sandbox to stop
+    const sandbox = this.activeSandboxes.get(evaluationId);
+    if (sandbox) {
+      try {
+        await sandbox.destroy();
+        this.activeSandboxes.delete(evaluationId);
+      } catch (err) {
+        logger.warn({ evaluationId, err }, 'Failed to destroy sandbox during cancel');
+      }
+    }
     this.activeEvaluations.delete(evaluationId);
 
     logger.info({ evaluationId }, 'Evaluation cancelled');
@@ -381,6 +390,12 @@ export class EvaluatorRuntime extends EventEmitter {
 
       // Create sandbox
       sandbox = await this.createSandbox(task);
+      this.activeSandboxes.set(task.id, sandbox);
+
+      // Guard against cancellation before evaluation begins
+      if (!this.activeEvaluations.has(task.id)) {
+        throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Evaluation was cancelled');
+      }
 
       // Run evaluation based on type
       let result: Partial<EvaluationResult>;
@@ -444,7 +459,7 @@ export class EvaluatorRuntime extends EventEmitter {
       };
 
       // Cleanup
-      await this.destroySandbox(sandbox);
+      await this.destroySandbox(sandbox, task.id);
       this.activeEvaluations.delete(task.id);
 
       // Emit completion
@@ -463,7 +478,7 @@ export class EvaluatorRuntime extends EventEmitter {
       return finalResult;
     } catch (error) {
       // Cleanup on error
-      if (sandbox) await this.destroySandbox(sandbox);
+      if (sandbox) await this.destroySandbox(sandbox, task.id);
       this.activeEvaluations.delete(task.id);
 
       throw error;
@@ -820,8 +835,11 @@ export class EvaluatorRuntime extends EventEmitter {
     return new MockSandbox(task, this.config.sandbox);
   }
 
-  private async destroySandbox(sandbox: Sandbox): Promise<void> {
+  private async destroySandbox(sandbox: Sandbox, taskId?: string): Promise<void> {
     await sandbox.destroy();
+    if (taskId) {
+      this.activeSandboxes.delete(taskId);
+    }
     logger.info({ sandboxId: sandbox.id }, 'Sandbox destroyed');
   }
 
@@ -932,8 +950,10 @@ class DockerSandbox implements Sandbox {
     logger.info({ sandboxId: this.id, name, command }, 'Executing in Docker sandbox');
 
     const image = this.config.dockerImage || 'node:20-alpine';
+    const containerName = `eval-${this.task.id}`;
     const args = [
       'run', '--rm',
+      '--name', containerName,
       '--network', this.config.networkAccess ? 'host' : 'none',
       '-v', `${this.tmpDir}:/workspace:ro`,
       '-w', '/workspace',
@@ -969,6 +989,11 @@ class DockerSandbox implements Sandbox {
   }
 
   async destroy(): Promise<void> {
+    const containerName = `eval-${this.task.id}`;
+    try {
+      await execFileAsync('docker', ['kill', containerName]).catch(() => {});
+      await execFileAsync('docker', ['rm', '-f', containerName]).catch(() => {});
+    } catch {}
     try {
       rmSync(this.tmpDir, { recursive: true, force: true });
     } catch (err) {
@@ -980,6 +1005,7 @@ class DockerSandbox implements Sandbox {
 
 class MockSandbox implements Sandbox {
   id: string;
+  private destroyed = false;
 
   constructor(
     private task: EvaluationTask,
@@ -989,6 +1015,9 @@ class MockSandbox implements Sandbox {
   }
 
   async execute(name: string, command: string): Promise<ExecutionStep> {
+    if (this.destroyed) {
+      throw new Error('Sandbox has been destroyed');
+    }
     const startTime = Date.now();
 
     // Mock execution - in production this would run in actual sandbox
@@ -1010,6 +1039,7 @@ class MockSandbox implements Sandbox {
   }
 
   async destroy(): Promise<void> {
+    this.destroyed = true;
     logger.info({ sandboxId: this.id }, 'Destroying sandbox');
   }
 }
