@@ -134,3 +134,31 @@ type LLMJudgeOracle @entity(immutable: false) {
   newOracle: Bytes
   updatedAt: BigInt!
 }
+
+type JudgeRegistration @entity(immutable: false) {
+  id: ID!
+  judge: User!
+  category: Int!
+  registeredAt: BigInt!
+  unregisteredAt: BigInt
+  isActive: Boolean!
+}
+
+type Channel @entity(immutable: false) {
+  id: ID!
+  channelId: Bytes!
+  participants: [Bytes!]!
+  createdAt: BigInt!
+  lastMessageHash: Bytes
+  lastAnchorAt: BigInt
+  exists: Boolean!
+}
+
+type MessageAnchor @entity(immutable: false) {
+  id: ID!
+  channel: Channel!
+  messageHash: Bytes!
+  previousHash: Bytes!
+  sender: Bytes!
+  anchoredAt: BigInt!
+}

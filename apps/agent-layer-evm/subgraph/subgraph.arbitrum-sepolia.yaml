@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: AgentArenaEVM
-    network: xlayer-testnet
+    network: arbitrum-sepolia
     source:
-      address: "0xd9c087c9e8e0253c7ea315811d751b0586ec9179"
+      address: "0x0000000000000000000000000000000000000000"
       abi: AgentArenaEVM
-      startBlock: 27143120
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -55,11 +55,11 @@ dataSources:
 
   - kind: ethereum
     name: AgentMRegistry
-    network: xlayer-testnet
+    network: arbitrum-sepolia
     source:
-      address: "0x377acc8a9af86e297fa54af1e148507130dfc040"
+      address: "0x0000000000000000000000000000000000000000"
       abi: AgentMRegistry
-      startBlock: 27143120
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -83,11 +83,11 @@ dataSources:
 
   - kind: ethereum
     name: GradienceReputationFeed
-    network: xlayer-testnet
+    network: arbitrum-sepolia
     source:
-      address: "0x13fed43909e99a2caeae9cd8d4bb37d1b47cbf86"
+      address: "0x0000000000000000000000000000000000000000"
       abi: GradienceReputationFeed
-      startBlock: 27143120
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -105,11 +105,11 @@ dataSources:
 
   - kind: ethereum
     name: SocialGraph
-    network: xlayer-testnet
+    network: arbitrum-sepolia
     source:
-      address: "0xeed4f9da0bca5fee9df72510e5f6f58d04b7f16d"
+      address: "0x0000000000000000000000000000000000000000"
       abi: SocialGraph
-      startBlock: 27143120
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -129,11 +129,11 @@ dataSources:
 
   - kind: ethereum
     name: JudgeRegistry
-    network: xlayer-testnet
+    network: arbitrum-sepolia
     source:
-      address: "0xbb78f0d62491853e7eb0e722bf0ee957c1b60508"
+      address: "0x0000000000000000000000000000000000000000"
       abi: JudgeRegistry
-      startBlock: 27143120
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

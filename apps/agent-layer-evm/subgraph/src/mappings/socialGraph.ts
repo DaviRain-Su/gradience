@@ -1,5 +1,6 @@
 import { Followed, Unfollowed } from '../../generated/SocialGraph/SocialGraph';
 import { SocialEdge } from '../../generated/schema';
+import { store } from '@graphprotocol/graph-ts';
 import { getOrCreateUser } from '../utils/helpers';
 
 export function handleFollowed(event: Followed): void {
@@ -15,7 +16,6 @@ export function handleUnfollowed(event: Unfollowed): void {
   let edgeId = event.params.follower.toHex() + '-' + event.params.target.toHex();
   let edge = SocialEdge.load(edgeId);
   if (edge) {
-    // In a more complex schema we might mark as removed; here we just delete for simplicity
-    // store.disposeOf(edgeId) is not available; use store.remove instead if needed
+    store.remove('SocialEdge', edgeId);
   }
 }
