@@ -33,6 +33,7 @@ import type { KeyManager } from '../keys/key-manager.js';
 import type { AuthorizationManager } from '../wallet/authorization.js';
 import type { ITransactionManager } from '../shared/transaction-manager.js';
 import type { A2ARouter } from '../a2a-router/router.js';
+import type { BridgeManager } from '../bridge/index.js';
 
 export interface APIServerDeps {
     host: string;
@@ -46,6 +47,7 @@ export interface APIServerDeps {
     authorizationManager: AuthorizationManager;
     transactionManager: ITransactionManager;
     a2aRouter: A2ARouter | null;
+    bridgeManager?: BridgeManager;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     database: any;
     startedAt: number;
@@ -138,7 +140,7 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerCoordinatorRoutes(app);
     registerRiskRoutes(app);
     registerIdentityRoutes(app, deps.database);
-    registerMagicBlockRoutes(app);
+    registerMagicBlockRoutes(app, deps.bridgeManager);
 
     // Initialize indexer sync service for local caching
     const syncService = new IndexerSyncService(deps.database);

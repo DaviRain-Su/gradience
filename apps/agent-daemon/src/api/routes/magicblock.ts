@@ -6,6 +6,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
+import type { BridgeManager } from '../../bridge/index.js';
 import { logger } from '../../utils/logger.js';
 
 interface SessionRecord {
@@ -16,9 +17,25 @@ interface SessionRecord {
   createdAt: number;
 }
 
+interface JudgePerBody {
+  taskId: string;
+  taskIdOnChain: string;
+  paymentId: string;
+  agentId: string;
+  payerAgentId: string;
+  amount: string;
+  token: string;
+  taskAccount: string;
+  escrowAccount: string;
+  poster: string;
+  score: number;
+  reasonRef: string;
+  losers?: Array<{ agent: string; account?: string }>;
+}
+
 const sessions = new Map<string, SessionRecord>();
 
-export function registerMagicBlockRoutes(app: FastifyInstance): void {
+export function registerMagicBlockRoutes(app: FastifyInstance, bridgeManager?: BridgeManager): void {
   // POST /api/v1/magicblock/session
   app.post<{
     Body: { mode: 'l1' | 'er' | 'per'; accounts?: string[] };
@@ -96,5 +113,56 @@ export function registerMagicBlockRoutes(app: FastifyInstance): void {
     }
   });
 
-  logger.info('MagicBlock API routes registered: /api/v1/magicblock/session/*');
+  // POST /api/v1/magicblock/judge-per
+  // Settles a task via MagicBlock PER (TEE) pipeline.
+  app.post<{
+    Body: JudgePerBody;
+  }>('/api/v1/magicblock/judge-per', async (request, reply) => {
+    try {
+      if (!bridgeManager || !bridgeManager.isEnabled()) {
+        return reply.code(503).send({ error: 'Bridge not available' });
+      }
+
+      const body = request.body;
+      const evalResult = {
+        evaluationId: `per-${body.taskId}-${Date.now()}`,
+        score: body.score,
+        passed: body.score >= 60,
+        categoryScores: [],
+        checkResults: [],
+        verificationHash: '',
+        executionLog: { sandboxType: 'vm' as const, steps: [], stdout: '', stderr: '' },
+        driftStatus: { driftDetected: false, contextWindowUsage: 0 },
+        actualCost: { usd: 0, timeSeconds: 0, peakMemoryMb: 0 },
+        completedAt: Date.now(),
+      };
+
+      const result = await bridgeManager.settleWithPER(evalResult, {
+        taskId: body.taskId,
+        taskIdOnChain: body.taskIdOnChain,
+        paymentId: body.paymentId,
+        agentId: body.agentId,
+        payerAgentId: body.payerAgentId,
+        amount: body.amount,
+        token: body.token,
+        taskAccount: body.taskAccount,
+        escrowAccount: body.escrowAccount,
+        poster: body.poster,
+        score: body.score,
+        reasonRef: body.reasonRef,
+        losers: body.losers,
+      });
+
+      logger.info(
+        { taskId: body.taskId, txSignature: result.txSignature, status: result.status },
+        'PER judge settlement completed'
+      );
+      return result;
+    } catch (err: any) {
+      logger.error({ err }, 'PER judge settlement failed');
+      return reply.code(500).send({ error: err.message || 'PER judge settlement failed' });
+    }
+  });
+
+  logger.info('MagicBlock API routes registered: /api/v1/magicblock/session/*, /api/v1/magicblock/judge-per');
 }

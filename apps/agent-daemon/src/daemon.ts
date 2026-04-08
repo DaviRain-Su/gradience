@@ -159,6 +159,7 @@ export class Daemon {
             authorizationManager: this.identity.authorizationManager,
             transactionManager: this.transactionManager,
             a2aRouter: this.network.a2aRouter,
+            bridgeManager: this.settlement.bridgeManager,
             database: db,
             startedAt: this.startedAt,
             version: VERSION,
