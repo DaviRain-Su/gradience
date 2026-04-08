@@ -5,6 +5,7 @@ import { applyForTask, type WalletAdapter } from '@/lib/solana/arena-client';
 import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
 import { applyForTaskEVM } from '@/lib/evm/arena-client';
 import { useWalletChain } from './useWalletChain';
+import { useConnection } from '@/lib/connection/ConnectionContext';
 
 export interface UseTaskApplyResult {
   apply: (taskId: number | bigint, stake?: string) => Promise<string | null>;
@@ -18,6 +19,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
   const [error, setError] = useState<string | null>(null);
   const [lastSignature, setLastSignature] = useState<string | null>(null);
   const { chain, chainId, primaryWallet } = useWalletChain();
+  const { fetchApi } = useConnection();
 
   const getEthereumProvider = useCallback((): unknown => {
     const provider = (primaryWallet?.connector as any)?.getProvider?.();
@@ -36,6 +38,25 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
       setLoading(true);
       setError(null);
       try {
+        // Pre-check: On-chain risk assessment (non-blocking for EVM in MVP)
+        if (chain !== 'evm' && fetchApi) {
+          const riskResult = await fetchApi<{
+            allowed: boolean;
+            score: number;
+            overallRisk: string;
+            signals: Array<{ category: string; severity: string; evidence: string }>;
+          }>('/api/v1/risk/assess', {
+            method: 'POST',
+            body: JSON.stringify({ wallet: walletAddress, chain: 'solana' }),
+          });
+          if (riskResult && !riskResult.allowed) {
+            const reasons = riskResult.signals.map((s) => s.evidence).join('; ');
+            throw new Error(
+              `Risk assessment failed (${riskResult.overallRisk}, score ${riskResult.score}). ${reasons}`
+            );
+          }
+        }
+
         if (chain === 'evm') {
           const txHash = await applyForTaskEVM({
             ethereumProvider: getEthereumProvider(),
@@ -58,7 +79,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
         setLoading(false);
       }
     },
-    [walletAddress, chain, chainId, getEthereumProvider],
+    [walletAddress, chain, chainId, getEthereumProvider, fetchApi],
   );
 
   return { apply, loading, error, lastSignature };
