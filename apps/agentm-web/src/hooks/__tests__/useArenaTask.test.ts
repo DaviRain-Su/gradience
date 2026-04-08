@@ -60,9 +60,9 @@ vi.mock("@/lib/solana/dynamic-wallet-adapter", () => ({
 }));
 
 const mockUseWalletChain = vi.hoisted(() => ({
-  chain: "solana" as const,
+  chain: "solana" as string,
   chainId: undefined as number | undefined,
-  address: "did:sol:abc",
+  address: "did:sol:abc" as string,
   primaryWallet: null as any,
 }));
 

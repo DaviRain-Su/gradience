@@ -105,6 +105,8 @@ export default function CreateArenaTaskPage() {
         deadlineOffsetSeconds,
         judgeMode,
         judge: judgeMode === 0 ? (judgeAddress as Address | `0x${string}`) : undefined,
+        executionMode,
+        sessionId,
       });
 
       if (!res) {

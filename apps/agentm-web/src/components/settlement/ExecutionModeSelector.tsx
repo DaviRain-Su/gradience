@@ -28,7 +28,7 @@ const EXECUTION_MODES: ExecutionMode[] = [
     id: 'per',
     name: 'Private ER (TEE)',
     description: 'Confidential execution in Intel TDX. For sealed submissions.',
-    available: false,
+    available: process.env.NEXT_PUBLIC_MAGICBLOCK_PER_ENABLED === 'true',
   },
 ];
 

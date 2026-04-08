@@ -72,6 +72,8 @@ export function useArenaTask(walletAddress: string | null) {
     deadlineOffsetSeconds?: number;
     judgeMode?: number;
     judge?: Address | `0x${string}`;
+    executionMode?: 'l1' | 'er' | 'per';
+    sessionId?: string;
   }): Promise<{ taskId: bigint; signature: string } | null> => {
     setError(null);
     setLoading(true);
@@ -97,6 +99,7 @@ export function useArenaTask(walletAddress: string | null) {
           deadlineOffsetSeconds: params.deadlineOffsetSeconds,
           judgeDeadlineOffsetSeconds: params.deadlineOffsetSeconds,
           judge: params.judge as `0x${string}` | undefined,
+          requireZkKyc: params.executionMode === 'per',
         });
         setLastTxSignature(result.txHash);
         return { taskId: result.taskId, signature: result.txHash };

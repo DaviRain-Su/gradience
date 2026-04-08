@@ -98,7 +98,7 @@ describe("useIdentity", () => {
 
       let res: typeof tierInfo | null = null;
       await act(async () => {
-        res = await result.current.getTier("acc1");
+        res = await result.current.getTier("acc1") as typeof tierInfo | null;
       });
 
       expect(mockConnection.fetchApi).toHaveBeenCalledWith(
