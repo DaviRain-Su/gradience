@@ -223,12 +223,40 @@ export class RevenueStore {
   }
 
   /**
+   * Map a raw SQLite row (snake_case) to a RevenueDistributionRecord (camelCase)
+   */
+  private mapRow(row: Record<string, unknown>): RevenueDistributionRecord {
+    return {
+      id: row.id as string,
+      taskId: row.task_id as string,
+      paymentId: row.payment_id as string,
+      agentAddress: row.agent_address as string,
+      judgeAddress: row.judge_address as string,
+      tokenMint: row.token_mint as string,
+      totalAmount: row.total_amount as string,
+      agentAmount: row.agent_amount as string,
+      judgeAmount: row.judge_amount as string,
+      protocolAmount: row.protocol_amount as string,
+      agentPercentage: row.agent_percentage as number,
+      judgePercentage: row.judge_percentage as number,
+      protocolPercentage: row.protocol_percentage as number,
+      escrowAccount: row.escrow_account as string,
+      txSignature: row.tx_signature as string | null,
+      status: row.status as RevenueDistributionRecord['status'],
+      error: row.error as string | undefined,
+      createdAt: row.created_at as number,
+      updatedAt: row.updated_at as number,
+      confirmedAt: row.confirmed_at as number | undefined,
+    };
+  }
+
+  /**
    * Get distribution by ID
    */
   getById(id: string): RevenueDistributionRecord | null {
     const stmt = this.db.prepare('SELECT * FROM revenue_distributions WHERE id = ?');
-    const row = stmt.get(id) as RevenueDistributionRecord | undefined;
-    return row ?? null;
+    const row = stmt.get(id) as Record<string, unknown> | undefined;
+    return row ? this.mapRow(row) : null;
   }
 
   /**
@@ -236,8 +264,8 @@ export class RevenueStore {
    */
   getByTaskId(taskId: string): RevenueDistributionRecord | null {
     const stmt = this.db.prepare('SELECT * FROM revenue_distributions WHERE task_id = ?');
-    const row = stmt.get(taskId) as RevenueDistributionRecord | undefined;
-    return row ?? null;
+    const row = stmt.get(taskId) as Record<string, unknown> | undefined;
+    return row ? this.mapRow(row) : null;
   }
 
   /**
@@ -245,8 +273,8 @@ export class RevenueStore {
    */
   getByTxSignature(txSignature: string): RevenueDistributionRecord | null {
     const stmt = this.db.prepare('SELECT * FROM revenue_distributions WHERE tx_signature = ?');
-    const row = stmt.get(txSignature) as RevenueDistributionRecord | undefined;
-    return row ?? null;
+    const row = stmt.get(txSignature) as Record<string, unknown> | undefined;
+    return row ? this.mapRow(row) : null;
   }
 
   /**
@@ -284,7 +312,8 @@ export class RevenueStore {
     }
 
     const stmt = this.db.prepare(sql);
-    return stmt.all(...params) as RevenueDistributionRecord[];
+    const rows = stmt.all(...params) as Record<string, unknown>[];
+    return rows.map((r) => this.mapRow(r));
   }
 
   /**
@@ -296,7 +325,8 @@ export class RevenueStore {
       WHERE status = 'pending'
       ORDER BY created_at ASC
     `);
-    return stmt.all() as RevenueDistributionRecord[];
+    const rows = stmt.all() as Record<string, unknown>[];
+    return rows.map((r) => this.mapRow(r));
   }
 
   /**
