@@ -1,6 +1,9 @@
 import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 import {
     createDelegateInstruction,
+    createCommitInstruction,
+    createCommitAndUndelegateInstruction,
+    undelegateIx,
     type DelegateInstructionArgs,
 } from '@magicblock-labs/ephemeral-rollups-sdk';
 import type { MagicBlockConfig } from './magicblock-config.js';
@@ -57,27 +60,32 @@ export class MagicBlockExecutionEngine {
     }
 
     /**
-     * TODO: Build a commit-permission instruction (keeps delegation active).
-     *
-     * The real MagicBlock permission-program uses `authority` and
-     * `permissionedAccount` tuples, not payer/delegatedAccount/ownerProgram.
-     * This requires understanding the permission PDA layout.
+     * Build a commit instruction to persist intermediate state to L1
+     * while keeping the account delegated in the ER.
      */
-    buildCommitIx(_accounts: PermissionAccounts): never {
-        throw new Error(
-            '[MagicBlock] buildCommitIx not yet implemented — permission-program account structure needs to be mapped to the Gradience program PDAs.'
+    buildCommitIx(accounts: PermissionAccounts): TransactionInstruction {
+        return createCommitInstruction(
+            accounts.payer,
+            [accounts.delegatedAccount],
         );
     }
 
     /**
-     * TODO: Build a commit-and-undelegate instruction (finalizes to L1).
-     *
-     * Same caveat as buildCommitIx.
+     * Build a commit-and-undelegate instruction to finalize state back to L1.
      */
-    buildCommitAndUndelegateIx(_accounts: PermissionAccounts): never {
-        throw new Error(
-            '[MagicBlock] buildCommitAndUndelegateIx not yet implemented.'
+    buildCommitAndUndelegateIx(accounts: PermissionAccounts): TransactionInstruction {
+        return createCommitAndUndelegateInstruction(
+            accounts.payer,
+            [accounts.delegatedAccount],
         );
+    }
+
+    /**
+     * Build an undelegate instruction for a delegated token account.
+     * Note: undelegateIx in the SDK expects (owner, mint) for SPL-ATA undelegation.
+     */
+    buildUndelegateTokenIx(owner: PublicKey, mint: PublicKey): TransactionInstruction {
+        return undelegateIx(owner, mint);
     }
 
     /**

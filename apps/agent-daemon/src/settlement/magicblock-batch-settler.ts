@@ -66,6 +66,9 @@ export class MagicBlockBatchSettler {
             t.escrowPda,
             t.winnerPda,
         ]);
+        const uniqueDelegatedAccounts = [...new Set(delegatedAccounts.map((a) => a.toBase58()))].map(
+            (a) => new PublicKey(a)
+        );
 
         const judgeIxs = await Promise.all(
             tasks.map((t) => buildJudgeAndPayIx(t))
@@ -76,7 +79,7 @@ export class MagicBlockBatchSettler {
         // followed by sending user instructions to the ER RPC endpoint.
         const _delegatedTx = this.engine.prepareDelegatedTransaction({
             payer,
-            delegatedAccounts: [...new Set(delegatedAccounts)],
+            delegatedAccounts: uniqueDelegatedAccounts,
             userInstructions: judgeIxs,
         });
 
@@ -86,8 +89,15 @@ export class MagicBlockBatchSettler {
         this.metrics.sessionsCreated += 1;
         this.metrics.operationsExecuted += tasks.length;
 
-        // Step 2: commit back to L1 (stub until permission-program mapping is done)
-        // const commitIx = this.engine.buildCommitAndUndelegateIx({ ... });
+        // Step 2: build commit-and-undelegate instructions for each unique account
+        const ownerProgram = (this.engine as any).config?.ownerProgramId ?? '';
+        const _commitIxs = uniqueDelegatedAccounts.map((acc) =>
+            this.engine.buildCommitAndUndelegateIx({
+                payer,
+                delegatedAccount: acc,
+                ownerProgram: new PublicKey(ownerProgram),
+            })
+        );
 
         return {
             txSignatures: [], // populated after live ER RPC integration

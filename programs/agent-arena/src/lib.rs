@@ -20,6 +20,7 @@ pub mod utils;
 pub mod events;
 pub mod instructions;
 pub mod state;
+pub mod vrf;
 
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
