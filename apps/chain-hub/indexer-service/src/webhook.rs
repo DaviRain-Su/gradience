@@ -154,9 +154,9 @@ mod tests {
         encoded.extend_from_slice(&1_u64.to_le_bytes());
         encoded.extend_from_slice(&[1_u8; 32]);
         encoded.push(2);
-        encoded.extend_from_slice(&(10_u32).to_le_bytes());
+        encoded.extend_from_slice(&(9_u32).to_le_bytes());
         encoded.extend_from_slice(b"TestSkill");
-        encoded.extend_from_slice(&(12_u32).to_le_bytes());
+        encoded.extend_from_slice(&(11_u32).to_le_bytes());
         encoded.extend_from_slice(b"ipfs://test");
         
         let line = format!("Program data: {}", STANDARD.encode(encoded));
