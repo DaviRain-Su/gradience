@@ -122,8 +122,8 @@ export interface SettlementRequest {
   evaluationResult: EvaluationResult;
   amount: string;
   token: string;
-  taskAccount: string;
-  escrowAccount: string;
+  taskAccount?: string;
+  escrowAccount?: string;
   /** Task poster address (required for judge_and_pay) */
   poster: string;
   /** Optional reason reference for the judgement */

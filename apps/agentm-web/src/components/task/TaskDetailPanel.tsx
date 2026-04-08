@@ -44,6 +44,7 @@ export function TaskDetailPanel({
   const [judgeScore, setJudgeScore] = useState(85);
   const [judgeReason, setJudgeReason] = useState('');
   const [selectedWinner, setSelectedWinner] = useState<string | null>(null);
+  const [usePER, setUsePER] = useState(false);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
 
   const isMyTask = task.poster.toLowerCase() === walletAddress.toLowerCase();
@@ -80,6 +81,7 @@ export function TaskDetailPanel({
       poster: task.poster as Address,
       score: judgeScore,
       reasonRef: judgeReason.trim() || 'Evaluated by judge',
+      usePER,
     });
     if (sig) setTxSuccess(sig);
   };
@@ -275,12 +277,20 @@ export function TaskDetailPanel({
             placeholder="Evaluation reason"
             style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px', marginBottom: '8px' }}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={usePER}
+              onChange={e => setUsePER(e.target.checked)}
+            />
+            Use MagicBlock PER (TEE)
+          </label>
           <button
             onClick={handleJudge}
             disabled={arena.loading || !selectedWinner}
             style={{ ...btnPrimary, background: selectedWinner ? '#16161A' : '#ccc' }}
           >
-            {arena.loading ? 'Sending...' : `Judge & Settle (${rewardDisplay})`}
+            {arena.loading ? 'Sending...' : usePER ? `Judge & Settle via PER (${rewardDisplay})` : `Judge & Settle (${rewardDisplay})`}
           </button>
         </div>
       )}

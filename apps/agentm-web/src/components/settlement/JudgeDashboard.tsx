@@ -25,15 +25,17 @@ export function JudgeDashboard({ walletAddress }: JudgeDashboardProps) {
     winner: Address | `0x${string}`;
     score: number;
     reasonRef: string;
-  }) => {
+  }, usePER?: boolean) => {
     if (!selectedTask) return;
-    const sig = await judgeTask({
-      taskId: selectedTask.task.task_id,
-      winner: params.winner,
-      poster: selectedTask.task.poster as Address | `0x${string}`,
-      score: params.score,
-      reasonRef: params.reasonRef,
-    });
+    const sig = await judgeTask(
+      selectedTask.task,
+      {
+        winner: params.winner,
+        score: params.score,
+        reasonRef: params.reasonRef,
+      },
+      { usePER },
+    );
     if (sig) {
       setSelectedTask(null);
     }

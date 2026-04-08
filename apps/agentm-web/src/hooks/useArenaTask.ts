@@ -18,6 +18,7 @@ import {
 } from '@/lib/solana/arena-client';
 import type { ReputationData } from '@gradiences/sdk';
 import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
+import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import type { Address } from '@solana/kit';
 import {
   postTaskEVM,
@@ -44,12 +45,33 @@ export function getExplorerUrl(signature: string, chain: 'solana' | 'evm' = 'sol
   return getSolanaExplorerUrl(signature);
 }
 
+async function postDaemonJudgePER(
+  daemonUrl: string,
+  token: string | null,
+  body: Record<string, unknown>,
+): Promise<{ txSignature?: string; error?: string }> {
+  const res = await fetch(`${daemonUrl}/api/v1/magicblock/judge-per`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({ error: res.statusText }));
+  if (!res.ok) {
+    throw new Error(String(data.error || `Daemon PER request failed: ${res.status}`));
+  }
+  return data as { txSignature?: string; error?: string };
+}
+
 export function useArenaTask(walletAddress: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
   const { chain, chainId, primaryWallet } = useWalletChain();
   const { getTier } = useIdentity();
+  const { daemonUrl, sessionToken } = useDaemonConnection();
 
   const getWallet = useCallback((): WalletAdapter => {
     if (!walletAddress) throw new Error('Wallet not connected');
@@ -188,6 +210,7 @@ export function useArenaTask(walletAddress: string | null) {
     poster: Address | `0x${string}`;
     score: number;
     reasonRef: string;
+    usePER?: boolean;
   }): Promise<string | null> => {
     setError(null);
     setLoading(true);
@@ -203,6 +226,22 @@ export function useArenaTask(walletAddress: string | null) {
         });
         setLastTxSignature(txHash);
         return txHash;
+      }
+      if (params.usePER) {
+        const data = await postDaemonJudgePER(daemonUrl, sessionToken, {
+          taskId: String(params.taskId),
+          taskIdOnChain: String(params.taskId),
+          agentId: params.winner,
+          amount: '0',
+          token: 'SOL',
+          poster: params.poster,
+          score: params.score,
+          reasonRef: params.reasonRef,
+        });
+        if (data.txSignature) {
+          setLastTxSignature(data.txSignature);
+        }
+        return data.txSignature ?? null;
       }
       const sig = await judgeAndPay({
         wallet: getWallet(),
@@ -220,7 +259,7 @@ export function useArenaTask(walletAddress: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [chain, getWallet, getEthereumProvider, walletAddress]);
+  }, [chain, getWallet, getEthereumProvider, walletAddress, daemonUrl, sessionToken]);
 
   const doCancelTask = useCallback(async (taskId: number | bigint): Promise<string | null> => {
     setError(null);

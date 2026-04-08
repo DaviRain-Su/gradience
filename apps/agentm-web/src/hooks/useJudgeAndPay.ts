@@ -14,13 +14,15 @@ export interface UseJudgeAndPayResult {
   loading: boolean;
   error: string | null;
   txHash: string | null;
-  judgeTask: (params: {
-    taskId: number | bigint;
-    winner: Address | `0x${string}`;
-    poster: Address | `0x${string}`;
-    score: number;
-    reasonRef: string;
-  }) => Promise<string | null>;
+  judgeTask: (
+    task: TaskApi,
+    params: {
+      winner: Address | `0x${string}`;
+      score: number;
+      reasonRef: string;
+    },
+    options?: { usePER?: boolean },
+  ) => Promise<string | null>;
 }
 
 export function useJudgeAndPay(walletAddress: string | null): UseJudgeAndPayResult {
@@ -60,20 +62,29 @@ export function useJudgeAndPay(walletAddress: string | null): UseJudgeAndPayResu
   }, [loadTasks]);
 
   const judgeTask = useCallback(
-    async (params: {
-      taskId: number | bigint;
-      winner: Address | `0x${string}`;
-      poster: Address | `0x${string}`;
-      score: number;
-      reasonRef: string;
-    }): Promise<string | null> => {
-      const sig = await arena.judgeAndPay(params);
+    async (
+      task: TaskApi,
+      params: {
+        winner: Address | `0x${string}`;
+        score: number;
+        reasonRef: string;
+      },
+      options?: { usePER?: boolean },
+    ): Promise<string | null> => {
+      const sig = await arena.judgeAndPay({
+        taskId: task.task_id,
+        winner: params.winner,
+        poster: task.poster as Address | `0x${string}`,
+        score: params.score,
+        reasonRef: params.reasonRef,
+        usePER: options?.usePER,
+      });
       if (sig) {
         await loadTasks();
       }
       return sig;
     },
-    [arena, loadTasks]
+    [arena, loadTasks],
   );
 
   return {

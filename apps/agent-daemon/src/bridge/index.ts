@@ -224,13 +224,13 @@ export class BridgeManager {
     params: {
       taskId: string;
       taskIdOnChain: string;
-      paymentId: string;
+      paymentId?: string;
       agentId: string;
-      payerAgentId: string;
+      payerAgentId?: string;
       amount: string;
       token: string;
-      taskAccount: string;
-      escrowAccount: string;
+      taskAccount?: string;
+      escrowAccount?: string;
       poster: string;
       score: number;
       reasonRef: string;
@@ -243,9 +243,9 @@ export class BridgeManager {
       evaluationId: evaluationResult.evaluationId,
       taskId: params.taskId,
       taskIdOnChain: params.taskIdOnChain,
-      paymentId: params.paymentId,
+      paymentId: params.paymentId ?? params.taskId,
       agentId: params.agentId,
-      payerAgentId: params.payerAgentId,
+      payerAgentId: params.payerAgentId ?? params.poster,
       evaluationResult,
       amount: params.amount,
       token: params.token,

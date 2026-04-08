@@ -20,13 +20,9 @@ interface SessionRecord {
 interface JudgePerBody {
   taskId: string;
   taskIdOnChain: string;
-  paymentId: string;
   agentId: string;
-  payerAgentId: string;
   amount: string;
   token: string;
-  taskAccount: string;
-  escrowAccount: string;
   poster: string;
   score: number;
   reasonRef: string;
@@ -140,13 +136,9 @@ export function registerMagicBlockRoutes(app: FastifyInstance, bridgeManager?: B
       const result = await bridgeManager.settleWithPER(evalResult, {
         taskId: body.taskId,
         taskIdOnChain: body.taskIdOnChain,
-        paymentId: body.paymentId,
         agentId: body.agentId,
-        payerAgentId: body.payerAgentId,
         amount: body.amount,
         token: body.token,
-        taskAccount: body.taskAccount,
-        escrowAccount: body.escrowAccount,
         poster: body.poster,
         score: body.score,
         reasonRef: body.reasonRef,
