@@ -7,6 +7,7 @@
  */
 
 import { EventEmitter } from 'node:events';
+import WebSocket from 'ws';
 import type { SoulDigest, DiscoverPayload, P2pSoulConfig } from './types.js';
 import { DisclosureLevel } from './types.js';
 
@@ -25,26 +26,101 @@ export class DiscoveryService extends EventEmitter {
   private config: P2pSoulConfig;
   private discovered: Map<string, SoulDigest> = new Map();
   private pendingInvites: Map<string, any> = new Map();
-  
+  private relayConnections = new Map<string, WebSocket>();
+  private subscribed = false;
+
   constructor(config: P2pSoulConfig) {
     super();
     this.config = config;
   }
-  
+
+  /**
+   * Connect to configured Nostr relays
+   */
+  async connectRelays(): Promise<void> {
+    if (this.relayConnections.size > 0) return;
+    const relays = this.config.nostrRelays || [];
+    if (relays.length === 0) return;
+
+    const connectPromises = relays.map((url) =>
+      new Promise<void>((resolve) => {
+        try {
+          const ws = new WebSocket(url);
+          ws.on('open', () => {
+            this.relayConnections.set(url, ws);
+            resolve();
+          });
+          ws.on('error', () => resolve());
+          ws.on('close', () => this.relayConnections.delete(url));
+        } catch {
+          resolve();
+        }
+      })
+    );
+
+    await Promise.all(connectPromises);
+  }
+
+  /**
+   * Disconnect from all relays
+   */
+  disconnectRelays(): void {
+    for (const ws of this.relayConnections.values()) {
+      try {
+        ws.close();
+      } catch {}
+    }
+    this.relayConnections.clear();
+    this.subscribed = false;
+  }
+
   /**
    * Start discovery process
    */
   async discover(options: DiscoveryOptions = {}): Promise<void> {
     this.emit('discovering', { options });
-    
-    // TODO: Connect to Nostr relays and publish DISCOVER message
-    // For now, emit mock behavior
-    
+
+    await this.connectRelays();
+
+    if (this.relayConnections.size === 0) {
+      setTimeout(() => {
+        this.emit('discovering_complete', { count: this.discovered.size });
+      }, 1000);
+      return;
+    }
+
+    // Subscribe to discovery events on all connected relays
+    if (!this.subscribed) {
+      for (const ws of this.relayConnections.values()) {
+        this.attachRelayHandler(ws);
+        ws.send(JSON.stringify(['REQ', 'p2p-soul-discovery', { kinds: [42001] }]));
+      }
+      this.subscribed = true;
+    }
+
     setTimeout(() => {
       this.emit('discovering_complete', { count: this.discovered.size });
-    }, 1000);
+    }, this.config.discoverTimeoutMs || 5000);
   }
-  
+
+  private attachRelayHandler(ws: WebSocket): void {
+    ws.on('message', (data: WebSocket.RawData) => {
+      try {
+        const msg = JSON.parse(data.toString());
+        if (msg[0] === 'EVENT' && msg[2]?.kind === 42001) {
+          const digest: SoulDigest | undefined = msg[2]?.content
+            ? JSON.parse(msg[2].content)
+            : undefined;
+          if (digest && digest.did) {
+            this.handleDiscovery(digest);
+          }
+        }
+      } catch {
+        // ignore malformed relay messages
+      }
+    });
+  }
+
   /**
    * Publish discovery broadcast
    */
@@ -66,8 +142,34 @@ export class DiscoveryService extends EventEmitter {
       maxDisclosureLevel: DisclosureLevel.LEVEL_4_FULL,
       expiresAt: Date.now() + 3600000, // 1 hour
     };
-    
-    // TODO: Publish to Nostr relays
+
+    await this.connectRelays();
+
+    if (this.relayConnections.size > 0) {
+      const event = [
+        'EVENT',
+        {
+          kind: 42001,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [['d', did]],
+          content: JSON.stringify({
+            did,
+            reputationScore,
+            activeCategories: categories,
+            seeking,
+            interestHashes: payload.interestHashes,
+            skillsRoot: '',
+            maxDisclosureLevel: DisclosureLevel.LEVEL_4_FULL,
+          } as SoulDigest),
+        },
+      ];
+      for (const ws of this.relayConnections.values()) {
+        try {
+          ws.send(JSON.stringify(event));
+        } catch {}
+      }
+    }
+
     this.emit('published', { did, payload });
   }
   
@@ -176,6 +278,7 @@ export class DiscoveryService extends EventEmitter {
    * Dispose resources
    */
   dispose(): void {
+    this.disconnectRelays();
     this.clear();
     this.removeAllListeners();
   }
