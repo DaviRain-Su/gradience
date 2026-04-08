@@ -13,6 +13,7 @@
 
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
+import nacl from 'tweetnacl';
 import type {
   X25519KeyPair,
   EncryptedData,
@@ -63,10 +64,7 @@ export function computeSharedSecret(
   privateKey: Uint8Array,
   publicKey: Uint8Array
 ): Uint8Array {
-  // Create ECDH instance for X25519
-  const ecdh = crypto.createECDH('X25519');
-  ecdh.setPrivateKey(Buffer.from(privateKey));
-  return ecdh.computeSecret(Buffer.from(publicKey));
+  return nacl.scalarMult(privateKey, publicKey);
 }
 
 // ============================================================================

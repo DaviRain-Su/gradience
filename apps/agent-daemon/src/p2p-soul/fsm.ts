@@ -138,10 +138,17 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
   HANDSHAKING: {
     DISCLOSE: async (ctx, event) => {
       if (event.type !== 'DISCLOSE') throw new Error('Invalid event');
-      
+
       // Update local verdict
       ctx.localVerdict = event.verdict;
-      
+
+      // Immediate fail if local passes (no need to wait for remote verdict)
+      if (ctx.localVerdict === 'pass') {
+        ctx.session.currentState = 'FAILED';
+        clearFsTimeout(ctx);
+        return 'FAILED';
+      }
+
       // Check if we have both verdicts
       if (ctx.localVerdict && ctx.remoteVerdict) {
         // Both parties have made a decision
@@ -153,18 +160,18 @@ const TRANSITIONS: Record<HandshakeState, Partial<Record<HandshakeEvent['type'],
             clearFsTimeout(ctx);
             return 'MATCHED';
           }
-        } else if (ctx.localVerdict === 'pass' || ctx.remoteVerdict === 'pass') {
+        } else if (ctx.remoteVerdict === 'pass') {
           ctx.session.currentState = 'FAILED';
           clearFsTimeout(ctx);
           return 'FAILED';
         }
         // If either needs more info, stay in HANDSHAKING
       }
-      
+
       ctx.currentLevel = event.level;
       ctx.session.currentLevel = event.level;
       ctx.session.updatedAt = Date.now();
-      
+
       return 'HANDSHAKING';
     },
     CONFIRM_MATCH: async (ctx) => {
@@ -465,10 +472,10 @@ export class HandshakeFSM extends EventEmitter {
   }
   
   /**
-   * Check if the session is active (not terminal)
+   * Check if the session is active (not idle and not terminal)
    */
   isActive(): boolean {
-    return this.state !== 'MATCHED' && this.state !== 'FAILED';
+    return this.state !== 'IDLE' && this.state !== 'MATCHED' && this.state !== 'FAILED';
   }
   
   /**
