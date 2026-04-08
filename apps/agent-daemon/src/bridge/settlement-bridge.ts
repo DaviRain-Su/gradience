@@ -10,9 +10,15 @@
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
 
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { addressToPublicKey } from '../solana/kit-compat.js';
+import { MagicBlockPERClient } from '../settlement/magicblock-per-client.js';
+import {
+  buildCreateTaskPermissionIx,
+  deriveTaskPda,
+  type MembersArgs,
+} from '../settlement/per-program-builder.js';
 import {
   address,
   getAddressEncoder,
@@ -159,6 +165,7 @@ export interface BridgeConfig {
   rpcEndpoint: string;
   cascadeClient?: TritonCascadeClient;
   keyManager: KeyManager;
+  perClient?: MagicBlockPERClient;
   retry: {
     maxAttempts: number;
     baseDelayMs: number;
@@ -199,6 +206,203 @@ export class SettlementBridge extends EventEmitter {
     
     // Use provided cascade client or fallback to standard RPC
     this.cascadeClient = config.cascadeClient || new FallbackCascadeClient(config.rpcEndpoint);
+  }
+
+  /**
+   * Setup MagicBlock PER permissions for a task (create + delegate).
+   */
+  async setupTaskPermission(
+    taskIdOnChain: string,
+    members: MembersArgs = { members: null }
+  ): Promise<string> {
+    if (!this.config.perClient) {
+      throw new Error('PER client not configured');
+    }
+
+    const arenaProgramId = new PublicKey(this.config.chainHubProgramId);
+    const taskId = BigInt(taskIdOnChain);
+    const payer = new PublicKey(this.keyManager.getPublicKey());
+
+    const createIx = buildCreateTaskPermissionIx(arenaProgramId, taskId, payer, members);
+    const taskPda = deriveTaskPda(arenaProgramId, taskId);
+    const delegateIx = this.config.perClient.buildDelegatePermissionIx(taskPda, payer, payer);
+
+    const tx = new Transaction().add(createIx, delegateIx);
+    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = payer;
+
+    const message = tx.serializeMessage();
+    const signature = this.keyManager.sign(message);
+    tx.addSignature(payer, Buffer.from(signature));
+
+    const txid = await this.connection.sendRawTransaction(tx.serialize(), {
+      preflightCommitment: 'confirmed',
+    });
+    await this.connection.confirmTransaction({ signature: txid, blockhash, lastValidBlockHeight });
+    return txid;
+  }
+
+  /**
+   * Teardown MagicBlock PER permissions for a task (update + commit/undelegate).
+   */
+  async teardownTaskPermission(
+    taskIdOnChain: string,
+    revealMembers: MembersArgs = { members: null }
+  ): Promise<string> {
+    if (!this.config.perClient) {
+      throw new Error('PER client not configured');
+    }
+
+    const arenaProgramId = new PublicKey(this.config.chainHubProgramId);
+    const taskId = BigInt(taskIdOnChain);
+    const taskPda = deriveTaskPda(arenaProgramId, taskId);
+    const payer = new PublicKey(this.keyManager.getPublicKey());
+
+    const updateIx = this.config.perClient.buildUpdatePermissionIx(taskPda, payer, revealMembers);
+    const commitIx = this.config.perClient.buildCommitAndUndelegatePermissionIx(taskPda, payer);
+
+    const tx = new Transaction().add(updateIx, commitIx);
+    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = payer;
+
+    const message = tx.serializeMessage();
+    const signature = this.keyManager.sign(message);
+    tx.addSignature(payer, Buffer.from(signature));
+
+    const txid = await this.connection.sendRawTransaction(tx.serialize(), {
+      preflightCommitment: 'confirmed',
+    });
+    await this.connection.confirmTransaction({ signature: txid, blockhash, lastValidBlockHeight });
+    return txid;
+  }
+
+  /**
+   * Settle a VEL/TEE evaluation via MagicBlock PER (TEE RPC).
+   */
+  async settleWithPER(
+    request: SettlementRequest,
+    score: number,
+    reasonRef: string
+  ): Promise<SettlementResult> {
+    const settlementId = `${request.evaluationId}-${Date.now()}`;
+    if (!this.config.perClient) {
+      throw new Error('PER client not configured');
+    }
+
+    logger.info(
+      { settlementId, taskId: request.taskId, agentId: request.agentId, score, reasonRef },
+      'Initiating PER settlement'
+    );
+
+    const status: SettlementStatus = {
+      settlementId,
+      status: 'pending',
+      attempts: 0,
+    };
+    this.pendingSettlements.set(settlementId, status);
+
+    try {
+      // Step 1: verify TEE
+      const teeVerified = await this.config.perClient.verifyTee();
+      if (!teeVerified) {
+        throw new Error('TEE RPC integrity verification failed');
+      }
+
+      // Step 2: setup permission
+      logger.info({ settlementId, taskIdOnChain: request.taskIdOnChain }, 'Setting up PER task permission');
+      await this.setupTaskPermission(request.taskIdOnChain, { members: null });
+
+      // Step 3: fetch auth token
+      const payer = new PublicKey(this.keyManager.getPublicKey());
+      const signMessage = (msg: Uint8Array) => Promise.resolve(this.keyManager.sign(msg));
+      const auth = await this.config.perClient.fetchAuthToken(payer, signMessage);
+      logger.info({ settlementId, expiresAt: auth.expiresAt }, 'PER auth token acquired');
+
+      // Step 4: build proof
+      request.reasonRef = reasonRef;
+      const verificationHash = this.hashProofData({ reasonRef, score, settlementId } as unknown as Omit<EvaluationProof, 'signature'>);
+      const proof: EvaluationProof = {
+        evaluationId: request.evaluationId,
+        taskId: request.taskId,
+        evaluatorId: this.keyManager.getPublicKey(),
+        agentId: request.agentId,
+        score,
+        passed: score >= 60,
+        verificationHash,
+        timestamp: Date.now(),
+        signature: this.signProof(verificationHash),
+      };
+
+      // Step 5: send judge_and_pay via TEE RPC
+      logger.info({ settlementId }, 'Submitting judge_and_pay via TEE RPC');
+      const judgeTxSig = await this.sendJudgeAndPayViaTee(request, proof, auth.token);
+
+      // Step 6: teardown permission
+      logger.info({ settlementId }, 'Tearing down PER task permission');
+      await this.teardownTaskPermission(request.taskIdOnChain, { members: null });
+
+      status.status = 'confirmed';
+      status.txSignature = judgeTxSig;
+
+      this.emit('settled', { settlementId, txSignature: judgeTxSig });
+
+      const totalAmount = BigInt(request.amount);
+      const agentAmount = (totalAmount * BigInt(95)) / BigInt(100);
+      const judgeAmount = (totalAmount * BigInt(3)) / BigInt(100);
+      const protocolAmount = (totalAmount * BigInt(2)) / BigInt(100);
+
+      return {
+        settlementId,
+        txSignature: judgeTxSig,
+        blockTime: Date.now(),
+        slot: 0,
+        amount: request.amount,
+        distribution: {
+          agent: agentAmount.toString(),
+          judge: judgeAmount.toString(),
+          protocol: protocolAmount.toString(),
+        },
+        status: 'confirmed',
+        deliveryPath: 'tee-per',
+      };
+    } catch (error) {
+      status.status = 'failed';
+      status.error = error instanceof Error ? error.message : 'Unknown error';
+      this.emit('failed', { settlementId, error });
+      logger.error({ error, settlementId }, 'PER settlement failed');
+      throw error;
+    } finally {
+      setTimeout(() => this.pendingSettlements.delete(settlementId), 60000);
+    }
+  }
+
+  /**
+   * Send judge_and_pay instruction via MagicBlock TEE RPC.
+   */
+  private async sendJudgeAndPayViaTee(
+    request: SettlementRequest,
+    proof: EvaluationProof,
+    authToken: string
+  ): Promise<string> {
+    const instruction = await this.buildAgentArenaJudgeInstruction(request, proof);
+    const signer = await this.keyManager.getSigner();
+
+    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    const transactionMessage = appendTransactionMessageInstructions(
+      [instruction],
+      setTransactionMessageLifetimeUsingBlockhash(
+        { blockhash: blockhash as Blockhash, lastValidBlockHeight: BigInt(lastValidBlockHeight) },
+        setTransactionMessageFeePayerSigner(signer, createTransactionMessage({ version: 0 }))
+      )
+    );
+
+    const signedTransaction = await signTransactionMessageWithSigners(transactionMessage);
+    const base64Tx = getBase64EncodedWireTransaction(signedTransaction);
+    const serialized = Buffer.from(base64Tx, 'base64');
+
+    return this.config.perClient!.sendToTee(serialized, authToken);
   }
 
   /**
@@ -659,6 +863,7 @@ export interface BridgeOptions {
   keyDir?: string;
   keyPassword?: string;
   maxRetries?: number;
+  perClient?: MagicBlockPERClient;
 }
 
 export async function createSettlementBridge(options: BridgeOptions = {}): Promise<SettlementBridge> {
@@ -697,6 +902,7 @@ export async function createSettlementBridge(options: BridgeOptions = {}): Promi
     rpcEndpoint,
     cascadeClient,
     keyManager,
+    perClient: options.perClient,
     retry: {
       maxAttempts: options.maxRetries || 3,
       baseDelayMs: 1000,

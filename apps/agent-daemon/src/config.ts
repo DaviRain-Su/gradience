@@ -80,6 +80,10 @@ const DaemonConfigSchema = z.object({
     bridgeDistributionAgentBps: z.number().int().min(0).max(10000).default(9500),
     bridgeDistributionJudgeBps: z.number().int().min(0).max(10000).default(300),
     bridgeDistributionProtocolBps: z.number().int().min(0).max(10000).default(200),
+    // MagicBlock PER configuration
+    magicblockPerEnabled: z.boolean().default(false),
+    magicblockTeeValidator: z.string().default('FnE6VJT5QNZdedZPnCoLsARgBwoE6DeJNjBs2H1gySXA'),
+    magicblockErRpcUrl: z.string().url().default('https://devnet-tee.magicblock.app'),
 });
 
 export type DaemonConfig = z.infer<typeof DaemonConfigSchema>;
@@ -226,6 +230,15 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     }
     if (process.env.AGENTD_BRIDGE_DISTRIBUTION_PROTOCOL_BPS) {
         envConfig.bridgeDistributionProtocolBps = Number(process.env.AGENTD_BRIDGE_DISTRIBUTION_PROTOCOL_BPS);
+    }
+    if (process.env.AGENTD_MAGICBLOCK_PER_ENABLED) {
+        envConfig.magicblockPerEnabled = process.env.AGENTD_MAGICBLOCK_PER_ENABLED === 'true';
+    }
+    if (process.env.AGENTD_MAGICBLOCK_TEE_VALIDATOR) {
+        envConfig.magicblockTeeValidator = process.env.AGENTD_MAGICBLOCK_TEE_VALIDATOR;
+    }
+    if (process.env.AGENTD_MAGICBLOCK_ER_RPC_URL) {
+        envConfig.magicblockErRpcUrl = process.env.AGENTD_MAGICBLOCK_ER_RPC_URL;
     }
 
     const merged = { ...fileConfig, ...envConfig, ...overrides };

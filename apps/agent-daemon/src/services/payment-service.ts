@@ -776,8 +776,9 @@ export class PaymentService {
         completedAt: Date.now(),
       };
 
-      // Submit settlement via BridgeManager
-      const settlementResult = await this.bridgeManager.settleEvaluation(evalResultForSettlement, {
+      // Submit settlement via BridgeManager (PER or L1/ER)
+      const isPER = session.request.executionMode === 'per';
+      const settleParams = {
         taskId: session.taskId,
         taskIdOnChain: session.taskId,
         paymentId: session.paymentId,
@@ -790,7 +791,15 @@ export class PaymentService {
         poster: session.request.payer,
         reasonRef: session.request.reasonRef,
         losers: session.request.losers,
-      });
+      };
+
+      const settlementResult = isPER
+        ? await this.bridgeManager.settleWithPER(evalResultForSettlement, {
+            ...settleParams,
+            score,
+            reasonRef: session.request.reasonRef || '',
+          })
+        : await this.bridgeManager.settleEvaluation(evalResultForSettlement, settleParams);
 
       if (settlementResult.status !== 'confirmed') {
         throw new DaemonError(

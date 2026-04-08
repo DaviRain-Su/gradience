@@ -1,7 +1,12 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use pinocchio::{
-    account::AccountView, cpi::Seed, error::ProgramError, sysvars::clock::Clock, sysvars::Sysvar,
+    account::AccountView,
+    cpi::{invoke_signed, Seed, Signer},
+    error::ProgramError,
+    instruction::{InstructionAccount, InstructionView},
+    sysvars::clock::Clock,
     sysvars::slot_hashes::SlotHashes,
+    sysvars::Sysvar,
     Address, ProgramResult,
 };
 use pinocchio_token::instructions::TransferChecked as SplTransferChecked;
@@ -30,6 +35,13 @@ use crate::{
 const CONFIG_SEED: &[u8] = b"config";
 const TASK_SEED: &[u8] = b"task";
 const ESCROW_SEED: &[u8] = b"escrow";
+const PERMISSION_SEED: &[u8] = b"permission:";
+const CREATE_PERMISSION_DISCRIMINATOR: &[u8] = &[0, 0, 0, 0, 0, 0, 0, 0];
+const PERMISSION_PROGRAM_ID: [u8; 32] = [
+    0x88, 0xa1, 0x0a, 0xc4, 0x21, 0x98, 0x01, 0xd6, 0xf6, 0x6a, 0x1d, 0x3c, 0x06, 0x98, 0xc0,
+    0x66, 0xa9, 0xaf, 0xd4, 0xd9, 0xb4, 0xfc, 0xe7, 0x47, 0x97, 0x8d, 0xd1, 0x05, 0xa8, 0xd4,
+    0x67, 0x52,
+];
 
 #[inline(always)]
 fn address_to_bytes(address: &Address) -> [u8; 32] {
@@ -336,6 +348,18 @@ pub fn process_post_task(
             .map_err(|_| ProgramError::InvalidAccountData)?;
     }
 
+    // Create MagicBlock Permission PDA for the task via CPI
+    create_task_permission_cpi(
+        program_id,
+        ix.accounts.task,
+        ix.accounts.permission,
+        ix.accounts.poster,
+        ix.accounts.system_program,
+        ix.accounts.permission_program,
+        task_id,
+        task_bump,
+    )?;
+
     let event = TaskCreatedEvent {
         task_id,
         poster: address_to_bytes(ix.accounts.poster.address()),
@@ -351,4 +375,70 @@ pub fn process_post_task(
         &event.to_bytes(),
     )?;
     Ok(())
+}
+
+#[inline(always)]
+fn verify_permission_pda(
+    permission_account: &AccountView,
+    task_address: &Address,
+) -> Result<(), ProgramError> {
+    let permission_program = Address::new_from_array(PERMISSION_PROGRAM_ID);
+    let (expected, _) = Address::find_program_address(
+        &[PERMISSION_SEED, task_address.as_ref()],
+        &permission_program,
+    );
+    if permission_account.address() != &expected {
+        return Err(ProgramError::InvalidSeeds);
+    }
+    Ok(())
+}
+
+#[inline(always)]
+fn create_task_permission_cpi(
+    _program_id: &Address,
+    task_account: &AccountView,
+    permission_account: &AccountView,
+    payer: &AccountView,
+    system_program: &AccountView,
+    permission_program: &AccountView,
+    task_id: u64,
+    bump: u8,
+) -> ProgramResult {
+    verify_permission_pda(permission_account, task_account.address())?;
+
+    let permission_program_addr = Address::new_from_array(PERMISSION_PROGRAM_ID);
+    if permission_program.address() != &permission_program_addr {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // MembersArgs with members = null (1 byte discriminant = 0)
+    let cpi_data = [CREATE_PERMISSION_DISCRIMINATOR, &[0u8]].concat();
+
+    let cpi_accounts = [
+        InstructionAccount::readonly_signer(task_account.address()),
+        InstructionAccount::writable(permission_account.address()),
+        InstructionAccount::writable_signer(payer.address()),
+        InstructionAccount::readonly(system_program.address()),
+    ];
+
+    let instruction = InstructionView {
+        program_id: &permission_program_addr,
+        accounts: &cpi_accounts,
+        data: &cpi_data,
+    };
+
+    let task_id_bytes = task_id.to_le_bytes();
+    let bump_seed = [bump];
+    let signer_seeds: [Seed; 3] = [
+        Seed::from(TASK_SEED),
+        Seed::from(task_id_bytes.as_ref()),
+        Seed::from(&bump_seed),
+    ];
+    let signer = Signer::from(&signer_seeds);
+
+    invoke_signed(
+        &instruction,
+        &[task_account, permission_account, payer, system_program],
+        &[signer],
+    )
 }

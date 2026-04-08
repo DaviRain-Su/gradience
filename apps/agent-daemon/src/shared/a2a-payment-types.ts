@@ -21,6 +21,8 @@ export interface PaymentRequest {
   reasonRef?: string;
   /** Optional loser stake refund pairs */
   losers?: Array<{ agent: string; account?: string }>;
+  /** Execution mode for settlement (l1 / er / per) */
+  executionMode?: 'l1' | 'er' | 'per';
   evaluation?: {
     evaluatorId?: string;
     score?: number;

@@ -25,6 +25,7 @@ import {
   type SettlementStatus,
   type BridgeOptions,
 } from './settlement-bridge.js';
+import type { MagicBlockPERClient } from '../settlement/magicblock-per-client.js';
 import {
   ExternalEvaluationManager,
   type ExternalEvaluationParams,
@@ -101,6 +102,7 @@ export class BridgeManager {
   // Sub-managers
   private settlementBridge?: SettlementBridge;
   private externalEvaluator?: ExternalEvaluationManager;
+  private perClient?: MagicBlockPERClient;
 
   // Track initialization state
   private initialized = false;
@@ -108,8 +110,10 @@ export class BridgeManager {
   constructor(
     config: Partial<BridgeManagerConfig>,
     keyManager: KeyManager,
-    transactionManager: ITransactionManager
+    transactionManager: ITransactionManager,
+    perClient?: MagicBlockPERClient,
   ) {
+    this.perClient = perClient;
     this.config = {
       rpcEndpoint: config.rpcEndpoint || 'https://api.devnet.solana.com',
       chainHubProgramId: config.chainHubProgramId || '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs',
@@ -161,6 +165,7 @@ export class BridgeManager {
       keyDir: this.config.keyDir,
       keyPassword: this.config.keyPassword,
       maxRetries: this.config.retry.maxAttempts,
+      perClient: this.perClient,
     });
 
     // Initialize external evaluation manager
@@ -209,6 +214,49 @@ export class BridgeManager {
     );
 
     return result;
+  }
+
+  /**
+   * Settle evaluation result via MagicBlock PER (TEE).
+   */
+  async settleWithPER(
+    evaluationResult: EvaluationResult,
+    params: {
+      taskId: string;
+      taskIdOnChain: string;
+      paymentId: string;
+      agentId: string;
+      payerAgentId: string;
+      amount: string;
+      token: string;
+      taskAccount: string;
+      escrowAccount: string;
+      poster: string;
+      score: number;
+      reasonRef: string;
+      losers?: Array<{ agent: string; account?: string }>;
+    }
+  ): Promise<SettlementResult> {
+    this.ensureInitialized();
+
+    const request: SettlementRequest = {
+      evaluationId: evaluationResult.evaluationId,
+      taskId: params.taskId,
+      taskIdOnChain: params.taskIdOnChain,
+      paymentId: params.paymentId,
+      agentId: params.agentId,
+      payerAgentId: params.payerAgentId,
+      evaluationResult,
+      amount: params.amount,
+      token: params.token,
+      taskAccount: params.taskAccount,
+      escrowAccount: params.escrowAccount,
+      poster: params.poster,
+      reasonRef: params.reasonRef,
+      losers: params.losers,
+    };
+
+    return this.settlementBridge!.settleWithPER(request, params.score, params.reasonRef);
   }
 
   /**
@@ -455,7 +503,8 @@ export class BridgeManager {
 export function createBridgeManager(
   config: Partial<BridgeManagerConfig>,
   keyManager: KeyManager,
-  transactionManager: ITransactionManager
+  transactionManager: ITransactionManager,
+  perClient?: MagicBlockPERClient,
 ): BridgeManager {
-  return new BridgeManager(config, keyManager, transactionManager);
+  return new BridgeManager(config, keyManager, transactionManager, perClient);
 }

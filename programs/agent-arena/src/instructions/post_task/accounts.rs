@@ -18,11 +18,13 @@ use crate::{
 /// 5. `[]` system_program
 /// 6. `[]` event_authority PDA
 /// 7. `[]` gradience_program
-/// 8. `[writable, optional]` poster_token_account (required when mint != [0; 32])
-/// 9. `[writable, optional]` escrow_ata (required when mint != [0; 32])
-/// 10. `[optional]` mint account (required when mint != [0; 32])
-/// 11. `[optional]` token_program (required when mint != [0; 32])
-/// 12. `[optional]` associated_token_program (required when mint != [0; 32])
+/// 8. `[writable]` permission — MagicBlock Permission PDA for task
+/// 9. `[]` permission_program — MagicBlock Permission Program
+/// 10. `[writable, optional]` poster_token_account (required when mint != [0; 32])
+/// 11. `[writable, optional]` escrow_ata (required when mint != [0; 32])
+/// 12. `[optional]` mint account (required when mint != [0; 32])
+/// 13. `[optional]` token_program (required when mint != [0; 32])
+/// 14. `[optional]` associated_token_program (required when mint != [0; 32])
 pub struct PostTaskAccounts<'a> {
     pub poster: &'a AccountView,
     pub config: &'a AccountView,
@@ -32,6 +34,8 @@ pub struct PostTaskAccounts<'a> {
     pub system_program: &'a AccountView,
     pub event_authority: &'a AccountView,
     pub program: &'a AccountView,
+    pub permission: &'a AccountView,
+    pub permission_program: &'a AccountView,
     pub poster_token_account: Option<&'a AccountView>,
     pub escrow_ata: Option<&'a AccountView>,
     pub mint: Option<&'a AccountView>,
@@ -75,13 +79,15 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
             system_program,
             event_authority,
             program,
+            permission,
+            permission_program,
             poster_token_account,
             escrow_ata,
             mint,
             token_program,
             associated_token_program,
         ) = match accounts {
-            [poster, config, task, escrow, judge_pool, system_program, event_authority, program] => (
+            [poster, config, task, escrow, judge_pool, system_program, event_authority, program, permission, permission_program] => (
                 poster,
                 config,
                 task,
@@ -90,6 +96,8 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
                 system_program,
                 event_authority,
                 program,
+                permission,
+                permission_program,
                 None,
                 None,
                 None,
@@ -105,6 +113,8 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
                 system_program,
                 event_authority,
                 program,
+                permission,
+                permission_program,
                 poster_token_account,
                 escrow_ata,
                 mint,
@@ -119,6 +129,8 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
                 system_program,
                 event_authority,
                 program,
+                permission,
+                permission_program,
                 Some(poster_token_account),
                 Some(escrow_ata),
                 Some(mint),
@@ -145,6 +157,8 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
         verify_event_authority(event_authority)?;
         verify_current_program(program)?;
 
+        verify_writable(permission)?;
+
         if let Some(poster_token_account) = poster_token_account {
             verify_writable(poster_token_account)?;
         }
@@ -161,6 +175,8 @@ impl<'a> TryFrom<&'a [AccountView]> for PostTaskAccounts<'a> {
             system_program,
             event_authority,
             program,
+            permission,
+            permission_program,
             poster_token_account,
             escrow_ata,
             mint,

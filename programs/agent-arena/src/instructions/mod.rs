@@ -1,5 +1,6 @@
 pub mod apply_for_task;
 pub mod cancel_task;
+pub mod create_task_permission;
 pub mod definition;
 pub mod emit_event;
 pub mod force_refund;
@@ -18,6 +19,10 @@ pub use apply_for_task::{
     ApplyForTask, ApplyForTaskAccounts, ApplyForTaskData, process_apply_for_task,
 };
 pub use cancel_task::{CancelTask, CancelTaskAccounts, CancelTaskData, process_cancel_task};
+pub use create_task_permission::{
+    CreateTaskPermission, CreateTaskPermissionAccounts, CreateTaskPermissionData,
+    process_create_task_permission,
+};
 pub use emit_event::process_emit_event;
 pub use force_refund::{ForceRefund, ForceRefundAccounts, ForceRefundData, process_force_refund};
 pub use initialize::{Initialize, InitializeAccounts, InitializeData, process_initialize};

@@ -35,6 +35,8 @@ const SUBMISSION_SEED = Buffer.from('submission');
 const EVENT_AUTHORITY_SEED = Buffer.from('event_authority');
 const JUDGE_POOL_SEED = Buffer.from('judge_pool');
 const TREASURY_SEED = Buffer.from('treasury');
+const PERMISSION_SEED = Buffer.from('permission:');
+const MAGICBLOCK_PERMISSION_PROGRAM_ID = new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1');
 
 // Instruction discriminators
 const POST_TASK_DISCRIMINATOR = 1;
@@ -98,6 +100,10 @@ export class TransactionManager implements ITransactionManager {
             const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
             const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
             const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [permissionPda] = PublicKey.findProgramAddressSync(
+                [PERMISSION_SEED, taskPda.toBuffer()],
+                MAGICBLOCK_PERMISSION_PROGRAM_ID,
+            );
             const [judgePoolPda] = PublicKey.findProgramAddressSync(
                 [JUDGE_POOL_SEED, Buffer.from([params.category])],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
@@ -118,7 +124,7 @@ export class TransactionManager implements ITransactionManager {
             // Determine if using SPL token path
             const isSplPath = params.mint && params.mint !== SystemProgram.programId.toBase58();
 
-            // Build account metas (SOL path uses first 8 accounts)
+            // Build account metas (SOL path uses first 10 accounts)
             const keys = [
                 { pubkey: this.publicKey, isSigner: true, isWritable: true }, // poster
                 { pubkey: configPda, isSigner: false, isWritable: true }, // config
@@ -128,6 +134,8 @@ export class TransactionManager implements ITransactionManager {
                 { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
                 { pubkey: eventAuthorityPda, isSigner: false, isWritable: false }, // event_authority
                 { pubkey: addressToPublicKey(ARENA_PROGRAM_ADDRESS), isSigner: false, isWritable: false }, // gradience_program
+                { pubkey: permissionPda, isSigner: false, isWritable: true }, // permission
+                { pubkey: MAGICBLOCK_PERMISSION_PROGRAM_ID, isSigner: false, isWritable: false }, // permission_program
             ];
 
             // For SPL tokens, we would add optional accounts here

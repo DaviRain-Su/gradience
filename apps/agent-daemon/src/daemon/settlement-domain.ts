@@ -2,8 +2,10 @@ import type { DaemonConfig } from '../config.js';
 import type { KeyManager } from '../keys/key-manager.js';
 import { PaymentManager } from '../payments/index.js';
 import { BridgeManager, createBridgeManager } from '../bridge/index.js';
+import { MagicBlockPERClient } from '../settlement/magicblock-per-client.js';
 import { logger } from '../utils/logger.js';
 import type { ITransactionManager } from '../shared/transaction-manager.js';
+import { PublicKey } from '@solana/web3.js';
 
 // A2ARouter loaded dynamically to avoid hard dependency on nostr-tools
 type A2ARouterType = import('../a2a-router/router.js').A2ARouter;
@@ -36,6 +38,13 @@ export async function initSettlementDomain(
     await paymentManager.initialize();
     logger.info('PaymentManager initialized (MPP + X402)');
 
+    const perClient = config.magicblockPerEnabled
+        ? new MagicBlockPERClient({
+              teeValidator: new PublicKey(config.magicblockTeeValidator),
+              erRpcUrl: config.magicblockErRpcUrl,
+          })
+        : undefined;
+
     const bridgeManager = createBridgeManager(
         {
             rpcEndpoint: config.solanaRpcUrl,
@@ -62,6 +71,7 @@ export async function initSettlementDomain(
         },
         keyManager,
         transactionManager,
+        perClient,
     );
     await bridgeManager.initialize();
     logger.info('BridgeManager initialized (Settlement Bridge)');

@@ -10,6 +10,8 @@ import {
 } from '../generated/index.js';
 import {
     AccountRole,
+    getAddressEncoder,
+    getProgramDerivedAddress,
     type AccountMeta,
     type Address,
     type Instruction,
@@ -304,6 +306,14 @@ export class TasksResource {
         const [escrow] = await this.findEscrowPda(taskId);
         const [judgePool] = await this.findJudgePoolPda(request.category);
 
+        // Derive MagicBlock Permission PDA for the task
+        const PERMISSION_PROGRAM_ADDRESS = 'ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1' as Address;
+        const addressEncoder = getAddressEncoder();
+        const [permissionPda] = await getProgramDerivedAddress({
+            programAddress: PERMISSION_PROGRAM_ADDRESS,
+            seeds: [new TextEncoder().encode('permission:'), addressEncoder.encode(task)],
+        });
+
         const tokenCtx = await this.resolveTokenContext({
             owner: wallet.signer.address,
             escrow,
@@ -336,9 +346,21 @@ export class TasksResource {
             associatedTokenProgram: tokenCtx.associatedTokenProgram,
         });
 
+        // Patch instruction accounts to include PER permission + permission_program
+        // They are inserted after gradienceProgram (index 7) and before optional SPL accounts.
+        const patchedInstruction: Instruction = {
+            ...instruction,
+            accounts: [
+                ...instruction.accounts.slice(0, 8),
+                { address: permissionPda, role: AccountRole.WRITABLE },
+                { address: PERMISSION_PROGRAM_ADDRESS, role: AccountRole.READONLY },
+                ...instruction.accounts.slice(8),
+            ],
+        };
+
         const normalizedInstruction = tokenCtx.isSpl
-            ? instruction
-            : this.stripOptionalTail(instruction, 5, this.programAddress);
+            ? patchedInstruction
+            : this.stripOptionalTail(patchedInstruction, 5, this.programAddress);
         return wallet.signAndSendTransaction([normalizedInstruction]);
     }
 

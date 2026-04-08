@@ -35,6 +35,8 @@ pub enum GradienceInstruction {
     #[codama(account(name = "system_program"))]
     #[codama(account(name = "event_authority"))]
     #[codama(account(name = "gradience_program"))]
+    #[codama(account(name = "permission", writable))]
+    #[codama(account(name = "permission_program"))]
     #[codama(account(name = "poster_token_account", writable, optional))]
     #[codama(account(name = "escrow_ata", writable, optional))]
     #[codama(account(name = "mint_account", optional))]
@@ -217,6 +219,14 @@ pub enum GradienceInstruction {
         /// Task ID the randomness is for.
         task_id: u64,
     } = 11,
+
+    /// Create a MagicBlock Permission PDA for a task account.
+    #[codama(account(name = "task", signer))]
+    #[codama(account(name = "permission", writable))]
+    #[codama(account(name = "payer", signer, writable))]
+    #[codama(account(name = "system_program"))]
+    #[codama(account(name = "permission_program"))]
+    CreateTaskPermission {} = 12,
 
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(account(name = "event_authority", signer))]
