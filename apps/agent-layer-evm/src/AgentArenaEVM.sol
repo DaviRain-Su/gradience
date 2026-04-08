@@ -23,6 +23,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     uint256 public constant REASSIGN_WINDOW = 1 days;
     uint256 public constant CHALLENGER_BOND_BPS = 1_000; // 10%
     uint256 public constant JUDGE_SLASH_BPS = 2_500; // 25%
+    uint256 public constant POSTER_DISPUTE_PENALTY_BPS = 500; // 5%
     uint256 public constant CHALLENGER_BOUNTY_BPS = 500; // 5% of slashed amount
     uint256 public constant PREVRANDAO_MAX_REWARD = 1 ether;
 
@@ -105,6 +106,17 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint64 submittedAt;
     }
 
+    struct PosterProfile {
+        uint256 tasksPosted;
+        uint256 tasksCompleted;
+        uint256 tasksDisputed;
+        uint256 successfulRefunds;
+        uint256 avgReward;
+        uint64 lastPostedAt;
+        uint8 reputationTier;
+        bool exists;
+    }
+
     error ZeroAddress();
     error InvalidCategory(uint8 category);
     error InvalidDeadline(uint64 deadline);
@@ -185,6 +197,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint8 correctScore
     );
     event JudgeSlashed(uint256 indexed taskId, address indexed judge, uint256 amount, string reason);
+    event PosterPenalized(uint256 indexed taskId, address indexed poster, uint256 amount, address indexed beneficiary);
     event ProtocolFeesWithdrawn(address indexed token, address indexed treasury, uint256 amount);
     event LLMJudgeSet(address indexed previousOracle, address indexed newOracle);
     event TaskJudgedWithProof(uint256 indexed taskId, address indexed winner, uint8 score, bytes32 evaluationHash);
@@ -201,6 +214,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     mapping(uint256 => mapping(address => Submission)) private _submissions;
     mapping(uint256 => address[]) private _taskApplicants;
     mapping(address => Reputation) public reputations;
+    mapping(address => PosterProfile) public posterProfiles;
 
     // Dynamic metadata extracted from Task struct for cleaner storage layout
     mapping(uint256 => string) public taskEvalRef;
@@ -284,13 +298,16 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             if (judgeRegistry == address(0)) revert NoJudgeRegistry();
             taskJudge = IJudgeRegistry(judgeRegistry).selectJudge(category, block.prevrandao);
         }
+
+        uint256 effectiveMinStake = (min_stake * _getPosterTierBoost(msg.sender)) / BPS_DENOMINATOR;
+
         task_id = ++taskCount;
         tasks[task_id] = Task({
             poster: msg.sender,
             judge: taskJudge,
             winner: address(0),
             paymentToken: address(0),
-            minStake: min_stake,
+            minStake: effectiveMinStake,
             reward: msg.value,
             deadline: deadline,
             judgeDeadline: judge_deadline,
@@ -300,13 +317,14 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             judgeMode: uint8(JudgeMode.DESIGNATED)
         });
         taskEvalRef[task_id] = eval_ref;
+        _recordTaskPosted(msg.sender, msg.value);
 
         emit TaskCreated(
             task_id,
             msg.sender,
             taskJudge,
             category,
-            min_stake,
+            effectiveMinStake,
             msg.value,
             deadline,
             judge_deadline,
@@ -331,13 +349,15 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         if (judge_mode == uint8(JudgeMode.DESIGNATED)) revert InvalidJudgeMode(0);
         if (judges.length == 0) revert InvalidJudgeMode(0);
 
+        uint256 effectiveMinStake = (min_stake * _getPosterTierBoost(msg.sender)) / BPS_DENOMINATOR;
+
         task_id = ++taskCount;
         Task storage task = tasks[task_id];
         task.poster = msg.sender;
         task.judge = address(0);
         task.winner = address(0);
         task.paymentToken = address(0);
-        task.minStake = min_stake;
+        task.minStake = effectiveMinStake;
         task.reward = msg.value;
         task.deadline = deadline;
         task.judgeDeadline = judge_deadline;
@@ -350,13 +370,14 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         for (uint256 i = 0; i < judges.length; i++) {
             taskJudgePool[task_id].push(judges[i]);
         }
+        _recordTaskPosted(msg.sender, msg.value);
 
         emit TaskCreated(
             task_id,
             msg.sender,
             address(0),
             category,
-            min_stake,
+            effectiveMinStake,
             msg.value,
             deadline,
             judge_deadline,
@@ -579,10 +600,12 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             protocolFees[task.paymentToken] += protocolFee;
 
             _updateWinnerReputation(winner, winnerPayout, score);
+            _recordTaskOutcome(task.poster, true, false, false);
             emit TaskJudged(task_id, winner, score, winnerPayout, judgeFee, protocolFee);
         } else {
             task.state = TaskState.Refunded;
             _payout(task, task.poster, task.reward);
+            _recordTaskOutcome(task.poster, false, false, true);
             emit TaskRefunded(task_id, task.poster, task.reward, score);
         }
         hasJudged[task_id] = true;
@@ -660,11 +683,13 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             protocolFees[task.paymentToken] += protocolFee;
             _distributeJudgeFee(task_id, task, judgeFee, pool, majorityWinner, majorityScore);
             _updateWinnerReputation(majorityWinner, winnerPayout, majorityScore);
+            _recordTaskOutcome(task.poster, true, false, false);
 
             emit TaskJudged(task_id, majorityWinner, majorityScore, winnerPayout, judgeFee, protocolFee);
         } else {
             task.state = TaskState.Refunded;
             _payout(task, task.poster, task.reward);
+            _recordTaskOutcome(task.poster, false, false, true);
             emit TaskRefunded(task_id, task.poster, task.reward, majorityScore);
         }
 
@@ -690,12 +715,20 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         uint256 windowEnd = task.judgeDeadline + DISPUTE_WINDOW;
         if (block.timestamp > windowEnd) revert DisputeWindowClosed(task_id);
 
+        // Allow task applicants (or the original winner) to challenge the judgement
+        Application storage app = applications[task_id][msg.sender];
+        if (!app.exists && msg.sender != task.winner && msg.sender != task.poster) {
+            revert NotApplied(task_id, msg.sender);
+        }
+
         d.state = DisputeState.Open;
         d.challenger = msg.sender;
         d.reasonHash = reason_hash;
         d.openedAt = uint64(block.timestamp);
         d.bond = bond;
         d.outcome = DisputeOutcome.Unresolved;
+
+        _recordTaskOutcome(task.poster, false, true, false);
 
         emit DisputeOpened(task_id, msg.sender, bond, reason_hash);
     }
@@ -727,6 +760,17 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             if (slashAmount > 0) {
                 _attemptSlash(task.judge, slashAmount);
             }
+            // Poster penalty path: pay correct winner from protocol fees as compensation
+            if (correct_winner != address(0) && correct_winner != task.winner) {
+                uint256 penalty = (task.reward * POSTER_DISPUTE_PENALTY_BPS) / BPS_DENOMINATOR;
+                if (penalty > 0 && protocolFees[task.paymentToken] >= penalty) {
+                    protocolFees[task.paymentToken] -= penalty;
+                    _payout(task, correct_winner, penalty);
+                    emit PosterPenalized(task_id, task.poster, penalty, correct_winner);
+                } else {
+                    emit PosterPenalized(task_id, task.poster, 0, correct_winner);
+                }
+            }
             _payout(task, d.challenger, d.bond);
         } else if (d.outcome == DisputeOutcome.Reject) {
             uint256 toJudge = d.bond / 2;
@@ -744,6 +788,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
         task.state = TaskState.Refunded;
         _payout(task, task.poster, task.reward);
+        _recordTaskOutcome(task.poster, false, false, true);
         emit TaskRefunded(task_id, task.poster, task.reward, 0);
     }
 
@@ -780,7 +825,7 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
             _payout(task, applicant, payout);
             emit AgentCompensated(task_id, applicant, payout);
         }
-
+        _recordTaskOutcome(task.poster, false, false, true);
         emit TaskRefunded(task_id, task.poster, posterRefund, 0);
     }
 
@@ -987,6 +1032,50 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         }
     }
 
+    function _recordTaskPosted(address poster, uint256 reward) internal {
+        PosterProfile storage profile = posterProfiles[poster];
+        if (!profile.exists) {
+            profile.exists = true;
+        }
+        profile.tasksPosted += 1;
+        profile.avgReward = (profile.avgReward * (profile.tasksPosted - 1) + reward) / profile.tasksPosted;
+        profile.lastPostedAt = uint64(block.timestamp);
+    }
+
+    function _recordTaskOutcome(address poster, bool completed, bool disputed, bool refunded) internal {
+        PosterProfile storage profile = posterProfiles[poster];
+        if (!profile.exists) {
+            profile.exists = true;
+        }
+        if (completed) profile.tasksCompleted += 1;
+        if (disputed) profile.tasksDisputed += 1;
+        if (refunded) profile.successfulRefunds += 1;
+
+        uint256 posted = profile.tasksPosted;
+        uint256 disputedCount = profile.tasksDisputed;
+        uint256 disputeRateBps = posted > 0 ? (disputedCount * BPS_DENOMINATOR) / posted : 0;
+
+        uint8 tier = 0;
+        if (posted >= 50 && disputeRateBps < 100) {
+            tier = 3;
+        } else if (posted >= 10 && disputeRateBps < 200) {
+            tier = 2;
+        } else if (posted >= 3 && disputeRateBps < 500) {
+            tier = 1;
+        }
+        profile.reputationTier = tier;
+    }
+
+    function _getPosterTierBoost(address poster) internal view returns (uint256 minStakeMultiplierBps) {
+        PosterProfile storage profile = posterProfiles[poster];
+        if (!profile.exists) return 11_000; // 110% for new posters
+        uint8 tier = profile.reputationTier;
+        if (tier == 3) return 9500; // 95%
+        if (tier == 2) return 10_000; // 100%
+        if (tier == 1) return 10_000; // 100%
+        return 11_000; // 110% for new (tier 0)
+    }
+
     function _attemptSlash(address judge, uint256 amount) internal {
         if (judgeRegistry == address(0)) {
             emit JudgeSlashed(0, judge, 0, "NO_REGISTRY");
@@ -1010,5 +1099,9 @@ contract AgentArenaEVM is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     function _sendToken(address token, address to, uint256 amount) internal {
         if (amount == 0) return;
         IERC20(token).safeTransfer(to, amount);
+    }
+
+    function getPosterProfile(address poster) external view returns (PosterProfile memory) {
+        return posterProfiles[poster];
     }
 }
