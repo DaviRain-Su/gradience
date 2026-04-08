@@ -86,6 +86,30 @@ jobs:
             - name: Run agentm-web unit tests
               run: pnpm --filter @gradiences/agentm-web test -- --run
 
+    # Agent Daemon tests
+    test-agent-daemon:
+        name: Agent Daemon Tests
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Run agent-daemon unit tests
+              working-directory: apps/agent-daemon
+              run: pnpm exec vitest run tests/unit
+              env:
+                  SKIP_E2E_TESTS: 'true'
+
     # Rust: cargo check for Solana programs and Rust packages
     rust-check:
         name: Rust Check

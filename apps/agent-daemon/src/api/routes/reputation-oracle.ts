@@ -23,11 +23,22 @@ interface LeaderboardQueryParams {
   category?: string;
 }
 
+export interface ReputationOracleOptions {
+  engine: ReputationAggregationEngine;
+  pushService?: ReputationPushService;
+  chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient;
+}
+
 export function registerReputationOracleRoutes(
   app: FastifyInstance,
   engine: ReputationAggregationEngine,
-  pushService?: ReputationPushService
+  pushService?: ReputationPushService,
+  options?: { chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient }
 ): void {
+  const chainHubClient = options?.chainHubClient ?? createChainHubReputationClient({
+    baseUrl: process.env.CHAIN_HUB_INDEXER_URL ?? 'http://localhost:8080',
+    cacheTtlMs: 60_000,
+  });
   // -------------------------------------------------------------------------
   // Get Reputation Score
   // -------------------------------------------------------------------------
@@ -46,7 +57,7 @@ export function registerReputationOracleRoutes(
       }
 
       // Fetch activity (in real implementation, from database)
-      const activity = await fetchAgentActivity(agentAddress);
+      const activity = await fetchAgentActivity(chainHubClient, agentAddress);
       
       if (!activity) {
         return reply.code(404).send({ 
@@ -116,7 +127,7 @@ export function registerReputationOracleRoutes(
         return reply.code(400).send({ error: 'Invalid Solana address' });
       }
 
-      const activity = await fetchAgentActivity(agentAddress);
+      const activity = await fetchAgentActivity(chainHubClient, agentAddress);
       
       if (!activity) {
         return reply.code(404).send({ error: 'Agent not found' });
@@ -225,7 +236,7 @@ export function registerReputationOracleRoutes(
         return reply.code(400).send({ error: 'Invalid Solana address' });
       }
 
-      const activity = await fetchAgentActivity(agentAddress);
+      const activity = await fetchAgentActivity(chainHubClient, agentAddress);
       
       if (!activity) {
         return reply.code(404).send({ error: 'Agent not found' });
@@ -369,12 +380,10 @@ function generateVerificationProof(agentAddress: string, score: any): string {
   return crypto.createHash('sha256').update(data).digest('hex').slice(0, 16);
 }
 
-const chainHubClient = createChainHubReputationClient({
-  baseUrl: process.env.CHAIN_HUB_INDEXER_URL ?? 'http://localhost:8080',
-  cacheTtlMs: 60_000,
-});
-
-async function fetchAgentActivity(agentAddress: string): Promise<any | null> {
+async function fetchAgentActivity(
+  chainHubClient: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient,
+  agentAddress: string,
+): Promise<any | null> {
   const record = await chainHubClient.getReputation(agentAddress);
   if (!record) return null;
 
