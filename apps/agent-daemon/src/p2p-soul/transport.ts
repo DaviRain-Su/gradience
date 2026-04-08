@@ -179,6 +179,10 @@ export class MessageTracker extends EventEmitter {
     return this.pending.size;
   }
 
+  getDeliveredCount(): number {
+    return this.delivered.size;
+  }
+
   clear(): void {
     this.pending.clear();
     this.delivered.clear();
@@ -550,7 +554,7 @@ export class P2PTransportManager extends EventEmitter {
   } {
     return {
       pendingMessages: this.tracker.getPendingCount(),
-      deliveredMessages: 0, // TODO: Track delivered count
+      deliveredMessages: this.tracker.getDeliveredCount(),
       connectedAdapters: this.getAvailableAdapters().length,
     };
   }

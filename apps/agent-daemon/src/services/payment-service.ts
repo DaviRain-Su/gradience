@@ -13,6 +13,7 @@
  * @module services/payment-service
  */
 
+import { EventEmitter } from 'node:events';
 import type { A2ARouter } from '../a2a-router/router.js';
 import type { OWSWalletManager } from '../wallet/ows-wallet-manager.js';
 import type { BridgeManager } from '../bridge/index.js';
@@ -84,6 +85,12 @@ export interface PaymentServiceOptions {
   chainHubProgramId: string;
   /** RPC endpoint */
   rpcEndpoint: string;
+  /** Auto-accept payment requests from trusted payers */
+  autoAccept?: boolean;
+  /** List of trusted payer agent IDs for auto-acceptance */
+  trustedPayers?: string[];
+  /** Maximum amount (base units) allowed for auto-accepted payments */
+  autoAcceptMaxAmount?: string;
 }
 
 export const DEFAULT_PAYMENT_OPTIONS: PaymentServiceOptions = {
@@ -91,13 +98,16 @@ export const DEFAULT_PAYMENT_OPTIONS: PaymentServiceOptions = {
   autoApproveThreshold: 80,
   chainHubProgramId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
   rpcEndpoint: 'https://api.devnet.solana.com',
+  autoAccept: false,
+  trustedPayers: [],
+  autoAcceptMaxAmount: '1000000000', // 1000 USDC with 6 decimals
 };
 
 // ============================================================================
 // Payment Service
 // ============================================================================
 
-export class PaymentService {
+export class PaymentService extends EventEmitter {
   private sessions: Map<string, PaymentSession> = new Map();
   private options: PaymentServiceOptions;
 
@@ -108,6 +118,7 @@ export class PaymentService {
     private readonly bridgeManager: BridgeManager,
     options: Partial<PaymentServiceOptions> = {}
   ) {
+    super();
     this.options = { ...DEFAULT_PAYMENT_OPTIONS, ...options };
     this.initializeMessageHandlers();
   }
@@ -447,7 +458,24 @@ export class PaymentService {
 
     this.sessions.set(request.paymentId, session);
 
-    // TODO: Notify UI or auto-accept based on policy
+    // Auto-accept based on policy, otherwise emit event for UI notification
+    const shouldAutoAccept =
+      this.options.autoAccept &&
+      (this.options.trustedPayers ?? []).includes(from) &&
+      BigInt(request.amount) <= BigInt(this.options.autoAcceptMaxAmount || '0');
+
+    if (shouldAutoAccept) {
+      try {
+        await this.acceptPayment(request.paymentId, session.payeeAgentId);
+        logger.info({ paymentId: request.paymentId, from }, 'Auto-accepted payment request');
+        return;
+      } catch (err) {
+        logger.warn({ paymentId: request.paymentId, err }, 'Auto-accept failed, falling back to notification');
+      }
+    }
+
+    // Emit event so upstream UI/notifier can handle it
+    this.emit('incoming_request', session);
   }
 
   private async handlePaymentConfirmation(
