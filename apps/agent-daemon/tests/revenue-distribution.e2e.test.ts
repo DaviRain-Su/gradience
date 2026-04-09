@@ -141,7 +141,7 @@ describe.skipIf(SKIP_E2E)('Revenue Distribution E2E', () => {
       };
 
       expect(() => {
-        new RevenueDistributor(connection, invalidConfig);
+        new RevenueDistributor(invalidConfig);
       }).toThrow(DaemonError);
     });
 

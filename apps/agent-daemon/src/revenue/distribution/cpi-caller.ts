@@ -110,6 +110,15 @@ export async function distribute(
     'Starting native SOL distribution'
   );
 
+  // Input validations
+  if (request.totalAmount <= 0n) {
+    throw new DaemonError(ErrorCodes.INVALID_AMOUNT, 'Distribution amount must be greater than zero');
+  }
+
+  if (request.escrowAccount.equals(SystemProgram.programId)) {
+    throw new DaemonError(ErrorCodes.INVALID_ESCROW, 'Invalid escrow account: system program cannot be used as escrow');
+  }
+
   try {
     // Calculate amounts
     const breakdown = calculateBreakdown(
@@ -172,7 +181,7 @@ export async function distribute(
     );
 
     if (confirmation.value.err) {
-      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+      throw new DaemonError(ErrorCodes.TRANSACTION_FAILED, `Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
     }
 
     // Get block time
@@ -214,20 +223,13 @@ export async function distribute(
     };
   } catch (error) {
     logger.error({ error, distributionId }, 'Native SOL distribution failed');
-
-    return {
-      distributionId,
-      txSignature: '',
-      blockTime: 0,
-      slot: 0,
-      breakdown: {
-        agent: { address: request.agentAddress.toBase58(), amount: 0n },
-        judge: { address: request.judgeAddress.toBase58(), amount: 0n },
-        protocol: { address: config.protocolTreasury.toBase58(), amount: 0n },
-      },
-      status: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    if (error instanceof DaemonError) {
+      throw error;
+    }
+    throw new DaemonError(
+      ErrorCodes.TRANSACTION_FAILED,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 }
 
@@ -256,6 +258,14 @@ export async function distributeTokens(
     },
     'Starting token distribution'
   );
+
+  if (request.totalAmount <= 0n) {
+    throw new DaemonError(ErrorCodes.INVALID_AMOUNT, 'Distribution amount must be greater than zero');
+  }
+
+  if (request.escrowAccount.equals(SystemProgram.programId)) {
+    throw new DaemonError(ErrorCodes.INVALID_ESCROW, 'Invalid escrow account: system program cannot be used as escrow');
+  }
 
   try {
     const breakdown = calculateBreakdown(
@@ -328,7 +338,7 @@ export async function distributeTokens(
     );
 
     if (confirmation.value.err) {
-      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+      throw new DaemonError(ErrorCodes.TRANSACTION_FAILED, `Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
     }
 
     // Get block time
@@ -352,19 +362,12 @@ export async function distributeTokens(
     };
   } catch (error) {
     logger.error({ error, distributionId }, 'Token distribution failed');
-
-    return {
-      distributionId,
-      txSignature: '',
-      blockTime: 0,
-      slot: 0,
-      breakdown: {
-        agent: { address: '', amount: 0n },
-        judge: { address: '', amount: 0n },
-        protocol: { address: '', amount: 0n },
-      },
-      status: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    if (error instanceof DaemonError) {
+      throw error;
+    }
+    throw new DaemonError(
+      ErrorCodes.TRANSACTION_FAILED,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
   }
 }
