@@ -143,12 +143,39 @@ export class MatchEngine {
   
   /**
    * Calculate availability match score (0-100)
-   * Currently simplified - can be enhanced with timezone overlap calculation
+   * Based on timezone overlap and availability commitment.
    */
   private calculateAvailabilityMatch(local: SoulProfile, remote: SoulDigest): number {
-    // For now, return neutral score
-    // TODO: Implement timezone overlap and availability matching
-    return 70;
+    // Timezone overlap score
+    const localOffset = this.parseTimezoneOffset(local.availability.timezone);
+    const remoteOffset = remote.timezoneOffset ?? localOffset;
+    const offsetDiff = Math.abs(localOffset - remoteOffset);
+
+    let timezoneScore: number;
+    if (offsetDiff === 0) timezoneScore = 100;
+    else if (offsetDiff <= 2) timezoneScore = 80;
+    else if (offsetDiff <= 6) timezoneScore = 50;
+    else timezoneScore = 20;
+
+    // Availability commitment score
+    const availabilityMap = { low: 30, medium: 60, high: 100 };
+    const localAvailability = availabilityMap[local.availability.hoursPerWeek < 10 ? 'low' : local.availability.hoursPerWeek < 30 ? 'medium' : 'high'];
+    const remoteAvailability = remote.availabilityRange ? availabilityMap[remote.availabilityRange] : 50;
+    const availabilityScore = Math.round((localAvailability + remoteAvailability) / 2);
+
+    // Weighted: 60% timezone + 40% availability
+    return Math.round(timezoneScore * 0.6 + availabilityScore * 0.4);
+  }
+
+  private parseTimezoneOffset(timezone: string): number {
+    // Accepts formats like "UTC", "UTC+8", "+0530", "-0500"
+    const trimmed = timezone.trim().toUpperCase();
+    if (trimmed === 'UTC') return 0;
+    const match = trimmed.match(/UTC?([+-]\d{1,2}):?(\d{2})?/);
+    if (!match) return 0;
+    const hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) * (hours >= 0 ? 1 : -1) : 0;
+    return hours + minutes / 60;
   }
   
   /**
@@ -368,6 +395,7 @@ export function generateSoulDigest(
   profile: SoulProfile,
   maxDisclosureLevel: DisclosureLevel = DisclosureLevel.LEVEL_4_FULL
 ): SoulDigest {
+  const level1 = generateLevel1Data(profile);
   return {
     did: profile.did,
     reputationScore: 0, // TODO: Fetch from chain
@@ -376,6 +404,8 @@ export function generateSoulDigest(
     interestHashes: profile.interests.map(i => hashInterest(i)),
     skillsRoot: buildMerkleRoot(profile.skills.map(s => JSON.stringify(s))),
     maxDisclosureLevel,
+    timezoneOffset: level1.timezoneOffset,
+    availabilityRange: level1.availabilityRange,
   };
 }
 

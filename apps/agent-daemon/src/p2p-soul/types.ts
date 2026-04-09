@@ -184,6 +184,8 @@ export interface SoulDigest {
   interestHashes: string[];
   skillsRoot: string;
   maxDisclosureLevel: DisclosureLevel;
+  timezoneOffset?: number;
+  availabilityRange?: 'low' | 'medium' | 'high';
 }
 
 // ============================================================================

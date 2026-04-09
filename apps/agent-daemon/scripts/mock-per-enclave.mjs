@@ -182,7 +182,11 @@ const server = createServer((socket) => {
           // Extract judge args from the first tool_call step
           const step = payload.workflowDefinition.steps[0];
           const params = step?.params || {};
-          response = mockJudge(params.submissions, params.criteria);
+          const args = params.arguments || {};
+          response = mockJudge(
+            args.submissions ?? params.submissions,
+            args.criteria ?? params.criteria,
+          );
         }
       } else {
         const { workflowDefinition, inputs } = payload;
