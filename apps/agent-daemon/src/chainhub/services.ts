@@ -219,6 +219,7 @@ export class ChainHubServices {
                 success: false,
                 error: err instanceof Error ? err.message : 'Service call failed',
                 duration: Date.now() - startTime,
+                provider: '',
             };
         }
     }
@@ -276,6 +277,7 @@ export class ChainHubServices {
             id: row.service_id,
             provider: row.provider,
             serviceType: row.service_type,
+            capability: row.capability ?? '',
             pricing: {
                 model: row.pricing_model,
                 amount: BigInt(row.pricing_amount),

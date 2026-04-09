@@ -213,7 +213,7 @@ export class WorkflowProtectionService {
 
     private deriveKey(stepId: string): Buffer {
         // Use HKDF or similar to derive step-specific key
-        return hash(this.masterKey + stepId) as Buffer;
+        return Buffer.from(hash(this.masterKey + stepId), 'utf-8');
     }
 }
 

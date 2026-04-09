@@ -38,9 +38,9 @@ jobs:
               uses: dtolnay/rust-toolchain@stable
 
             - name: Setup Solana CLI
-              uses: solana-developers/solana-setup@v1
+              uses: solana-program/actions/install-solana@v1
               with:
-                  solana-version: '2.2'
+                  version: stable
 
             - name: Cache cargo
               uses: actions/cache@v4
@@ -73,9 +73,9 @@ jobs:
               uses: dtolnay/rust-toolchain@stable
 
             - name: Setup Solana CLI
-              uses: solana-developers/solana-setup@v1
+              uses: solana-program/actions/install-solana@v1
               with:
-                  solana-version: '2.2'
+                  version: stable
 
             - name: Cache cargo
               uses: actions/cache@v4
@@ -109,9 +109,9 @@ jobs:
               uses: dtolnay/rust-toolchain@stable
 
             - name: Setup Solana CLI
-              uses: solana-developers/solana-setup@v1
+              uses: solana-program/actions/install-solana@v1
               with:
-                  solana-version: '2.2'
+                  version: stable
 
             - name: Cache cargo
               uses: actions/cache@v4
@@ -145,9 +145,9 @@ jobs:
               uses: dtolnay/rust-toolchain@stable
 
             - name: Setup Solana CLI
-              uses: solana-developers/solana-setup@v1
+              uses: solana-program/actions/install-solana@v1
               with:
-                  solana-version: '2.2'
+                  version: stable
 
             - name: Cache cargo
               uses: actions/cache@v4

@@ -79,13 +79,17 @@ export async function buildPermitSignatureWithDomain(
     const digest = keccak256(concat(['0x1901', domainSeparatorHash, structHash]));
 
     const account = typeof signer === 'string' ? privateKeyToAccount(signer) : signer;
+    if (!account.sign) {
+        throw new Error('Signer does not support signing');
+    }
     const signature = await account.sign({ hash: digest });
     const sig = hexToSignature(signature);
+    const v = typeof sig.v === 'bigint' ? Number(sig.v) : (sig.v ?? 27);
     return {
-        v: sig.v,
+        v,
         r: sig.r,
         s: sig.s,
-        nonce: request.nonce,
+        nonce: request.nonce ?? 0n,
     };
 }
 

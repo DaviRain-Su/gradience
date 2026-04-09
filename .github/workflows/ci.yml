@@ -167,9 +167,21 @@ jobs:
                   key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
                   restore-keys: cargo-${{ runner.os }}-
 
+            - name: Setup Solana CLI
+              uses: solana-program/actions/install-solana@v1
+              with:
+                  version: stable
+
+            - name: Build SBF programs
+              working-directory: programs
+              run: |
+                  cargo build-sbf --manifest-path agentm-core/Cargo.toml
+                  cargo build-sbf --manifest-path a2a-protocol/Cargo.toml
+                  cargo build-sbf --manifest-path chain-hub/Cargo.toml
+
             - name: Test Solana programs
               working-directory: programs
-              run: cargo test
+              run: cargo test --workspace
 
             - name: Test chain-hub
               working-directory: apps/chain-hub

@@ -7,7 +7,7 @@
  * 3. Revenue distribution
  */
 
-import Database from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 import { WorkflowProtectionService } from './protection.js';
 import type { ProtectedWorkflow, WorkflowStep } from './protection.js';
 
