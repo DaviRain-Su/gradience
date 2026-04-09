@@ -16,6 +16,8 @@ const DaemonConfigSchema = z.object({
     solanaRpcUrl: z.string().url().default('https://api.devnet.solana.com'),
     evmRpcUrl: z.string().url().optional(),
     evmChainId: z.number().int().min(1).optional(),
+    x402EvmSettlementAddress: z.string().startsWith('0x').optional(),
+    x402EvmPrivateKey: z.string().startsWith('0x').optional(),
     agentArenaEvmAddress: z.string().optional(),
     agentMRegistryEvmAddress: z.string().optional(),
     defaultChain: z.enum(['solana', 'evm']).default('solana'),
@@ -124,6 +126,8 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_SOLANA_RPC_URL) envConfig.solanaRpcUrl = process.env.AGENTD_SOLANA_RPC_URL;
     if (process.env.AGENTD_EVM_RPC_URL) envConfig.evmRpcUrl = process.env.AGENTD_EVM_RPC_URL;
     if (process.env.AGENTD_EVM_CHAIN_ID) envConfig.evmChainId = Number(process.env.AGENTD_EVM_CHAIN_ID);
+    if (process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS) envConfig.x402EvmSettlementAddress = process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS;
+    if (process.env.AGENTD_X402_EVM_PRIVATE_KEY) envConfig.x402EvmPrivateKey = process.env.AGENTD_X402_EVM_PRIVATE_KEY;
     if (process.env.AGENTD_ARENA_EVM_ADDRESS) envConfig.agentArenaEvmAddress = process.env.AGENTD_ARENA_EVM_ADDRESS;
     if (process.env.AGENTD_REGISTRY_EVM_ADDRESS) envConfig.agentMRegistryEvmAddress = process.env.AGENTD_REGISTRY_EVM_ADDRESS;
     if (process.env.AGENTD_DEFAULT_CHAIN) envConfig.defaultChain = process.env.AGENTD_DEFAULT_CHAIN as any;

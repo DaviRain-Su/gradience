@@ -12,6 +12,8 @@
 
 import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { createSolanaRpc } from '@solana/kit';
+import { createHash, randomBytes } from 'crypto';
+import type { X402EvmClient } from './x402-evm.js';
 
 export interface PaymentChannel {
   id: string;
@@ -36,14 +38,16 @@ export class X402PaymentManager {
   private rpc: ReturnType<typeof createSolanaRpc>;
   private channels: Map<string, PaymentChannel> = new Map();
   private config: X402Config;
+  private evmClient?: X402EvmClient;
 
-  constructor(config: Partial<X402Config> = {}) {
+  constructor(config: Partial<X402Config> = {}, evmClient?: X402EvmClient) {
     this.config = {
       rpcUrl: config.rpcUrl || 'https://api.devnet.solana.com',
-      minAmount: config.minAmount || 100000n, // 0.0001 SOL
+      minAmount: config.minAmount ?? 100000n, // 0.0001 SOL
       maxLockTime: config.maxLockTime || 3600, // 1 hour
       defaultValidFor: config.defaultValidFor || 300, // 5 minutes
     };
+    this.evmClient = evmClient;
     this.rpc = createSolanaRpc(this.config.rpcUrl);
   }
 
@@ -58,13 +62,15 @@ export class X402PaymentManager {
     recipient: string;
     maxAmount: bigint;
     validFor?: number;
+    chain?: 'solana' | 'evm';
   }): Promise<{ channelId: string; signature: string }> {
     // Validate minimum amount
     if (params.maxAmount < this.config.minAmount) {
       throw new Error(`Amount too small. Minimum: ${this.config.minAmount} lamports`);
     }
 
-    const channelId = this.generateChannelId();
+    const chain = params.chain || 'solana';
+    const channelId = this.generateChannelId(chain);
     const validFor = Math.min(
       params.validFor || this.config.defaultValidFor,
       this.config.maxLockTime
@@ -117,11 +123,16 @@ export class X402PaymentManager {
     }
 
     // Execute settlement transaction
-    const txSignature = await this.executeTransfer(
-      channel.payer,
-      channel.recipient,
-      actualAmount
-    );
+    let txSignature: string;
+    if (this.evmClient && channel.id.startsWith('x402_evm_')) {
+      txSignature = await this.evmClient.settle(channel.id as `0x${string}`, actualAmount);
+    } else {
+      txSignature = await this.executeTransfer(
+        channel.payer,
+        channel.recipient,
+        actualAmount
+      );
+    }
 
     // Update channel
     channel.status = 'settled';
@@ -154,8 +165,10 @@ export class X402PaymentManager {
     }
 
     // Execute rollback (unlock funds)
-    // In real implementation, this would close the escrow
-    
+    if (this.evmClient && channel.id.startsWith('x402_evm_')) {
+      await this.evmClient.rollback(channel.id as `0x${string}`);
+    }
+
     channel.status = 'rolled_back';
     this.channels.set(channelId, channel);
 
@@ -198,8 +211,12 @@ export class X402PaymentManager {
 
   // Private methods
 
-  private generateChannelId(): string {
-    return `x402_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  private generateChannelId(chain: 'solana' | 'evm'): string {
+    if (chain === 'evm') {
+      const random = `${Date.now()}_${randomBytes(8).toString('hex')}`;
+      return `0x${createHash('sha256').update(`x402_evm_${random}`).digest('hex')}`;
+    }
+    return `x402_sol_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private async signAuthorization(channel: PaymentChannel): Promise<string> {
