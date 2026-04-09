@@ -415,7 +415,7 @@ export function generateLevel1Data(profile: SoulProfile): Level1Data {
 export function generateLevel2Data(profile: SoulProfile): Level2Data {
   const hasEmail = !!profile.contact.email;
   const hasSocial = !!(profile.contact.telegram || profile.contact.discord);
-  const communicationPreference = hasEmail && hasSocial ? 'mixed' : hasSocial ? 'informal' : 'formal';
+  const communicationPreference = hasEmail && hasSocial ? 'mixed' : hasSocial ? 'sync' : 'async';
 
   return {
     skillDetails: profile.skills.map(s => ({

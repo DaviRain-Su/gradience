@@ -47,6 +47,8 @@ export interface EvaluationTask {
   createdAt: number;
   /** Timeout timestamp */
   timeoutAt: number;
+  /** Optional metadata for composite evaluations */
+  metadata?: Record<string, unknown>;
 }
 
 export type EvaluationType =
@@ -712,10 +714,10 @@ export class EvaluatorRuntime extends EventEmitter {
       logger.warn({ evaluationId: task.id }, 'LLM not available for content evaluation');
       return {
         categoryScores: [],
-        checkResults: [{ name: 'llm_available', passed: false, message: 'LLM client not configured' }],
+        checkResults: [{ type: 'compiles' as CheckType, passed: false, score: 0, details: 'LLM client not configured', durationMs: 0 }],
         executionLog: {
           sandboxType: this.config.sandbox.type,
-          steps: [{ name: 'llm_check', status: 'failed', durationMs: 0 }],
+          steps: [{ name: 'llm_check', command: 'llm_check', exitCode: 1, durationMs: 0, timestamp: Date.now() }],
           stdout: '',
           stderr: 'LLM not available',
         },
@@ -724,7 +726,7 @@ export class EvaluatorRuntime extends EventEmitter {
 
     const llmClient = getLLMClient()!;
     const submissionContent = typeof task.submission.source === 'string' ? task.submission.source : '';
-    const requirements = task.criteria.rubric?.map((r) => r.name).join(', ') || task.criteria.requiredChecks.join(', ');
+    const requirements = task.criteria.rubric?.categories?.map((r) => r.name).join(', ') || task.criteria.requiredChecks.join(', ');
 
     logger.info({ evaluationId: task.id }, 'Running LLM content evaluation');
 
@@ -732,27 +734,29 @@ export class EvaluatorRuntime extends EventEmitter {
     const scores = await llmClient.evaluateContent(submissionContent, requirements);
     const durationMs = Date.now() - startTime;
 
-    const categoryScores = Object.entries(scores.scores || {}).map(([category, score]) => ({
-      category,
-      score: Math.max(0, Math.min(100, score)),
+    const categoryScores = (scores.scores || []).map((s) => ({
+      name: s.category,
+      score: Math.max(0, Math.min(100, s.score)),
+      maxScore: 100,
       weight: 1,
+      feedback: [s.feedback],
     }));
 
     const overallScore = Math.max(0, Math.min(100, scores.overallScore));
     const passed = overallScore >= task.criteria.minScore;
 
     return {
-      overallScore,
+      score: overallScore,
       passed,
       categoryScores,
       checkResults: [
-        { name: 'llm_available', passed: true, message: 'LLM evaluation completed' },
-        { name: 'min_score', passed, message: `Score ${overallScore} vs threshold ${task.criteria.minScore}` },
+        { type: 'compiles' as CheckType, passed: true, score: 100, details: 'LLM evaluation completed', durationMs },
+        { type: 'tests_pass' as CheckType, passed, score: passed ? 100 : 0, details: `Score ${overallScore} vs threshold ${task.criteria.minScore}`, durationMs },
       ],
       executionLog: {
         sandboxType: this.config.sandbox.type,
-        steps: [{ name: 'llm_evaluation', status: 'completed', durationMs }],
-        stdout: scores.feedback || '',
+        steps: [{ name: 'llm_evaluation', command: 'llm_evaluate', exitCode: 0, durationMs, timestamp: Date.now() }],
+        stdout: scores.summary || '',
         stderr: '',
       },
     };
@@ -766,7 +770,7 @@ export class EvaluatorRuntime extends EventEmitter {
 
     const types = task.metadata?.compositeTypes as Array<EvaluationType> | undefined;
     const evaluations: Partial<EvaluationResult>[] = [];
-    const steps: Array<{ name: string; status: string; durationMs: number }> = [];
+    const steps: ExecutionStep[] = [];
 
     const typesToRun = types?.length ? types : ['code', 'content'] as EvaluationType[];
 
@@ -789,26 +793,26 @@ export class EvaluatorRuntime extends EventEmitter {
           break;
         default:
           result = {
-            categoryScores: [{ category: evalType, score: 0, weight: 1 }],
-            checkResults: [{ name: `eval_${evalType}`, passed: false, message: `Unsupported composite type: ${evalType}` }],
+            categoryScores: [{ name: String(evalType), score: 0, maxScore: 100, weight: 1, feedback: [] }],
+            checkResults: [{ type: 'compiles' as CheckType, passed: false, score: 0, details: `Unsupported composite type: ${evalType}`, durationMs: 0 }],
           };
       }
 
       evaluations.push(result);
-      steps.push({ name: `composite_${evalType}`, status: 'completed', durationMs: Date.now() - stepStart });
+      steps.push({ name: `composite_${evalType}`, command: `evaluate_${evalType}`, exitCode: 0, durationMs: Date.now() - stepStart, timestamp: Date.now() });
     }
 
     // Aggregate scores
     const allCategoryScores = evaluations.flatMap((e) => e.categoryScores || []);
     const allCheckResults = evaluations.flatMap((e) => e.checkResults || []);
-    const overallScores = evaluations.map((e) => e.overallScore ?? 0).filter((s) => s > 0);
+    const overallScores = evaluations.map((e) => e.score ?? 0).filter((s) => s > 0);
     const aggregatedOverall = overallScores.length
       ? Math.round(overallScores.reduce((a, b) => a + b, 0) / overallScores.length)
       : 0;
     const passed = aggregatedOverall >= task.criteria.minScore && allCheckResults.every((c) => c.passed);
 
     return {
-      overallScore: aggregatedOverall,
+      score: aggregatedOverall,
       passed,
       categoryScores: allCategoryScores,
       checkResults: allCheckResults,
@@ -982,8 +986,6 @@ class DockerSandbox implements Sandbox {
         exitCode: error.code || 1,
         durationMs: Date.now() - startTime,
         timestamp: Date.now(),
-        stdout: error.stdout,
-        stderr: error.stderr,
       };
     }
   }

@@ -25,7 +25,7 @@ interface LeaderboardQueryParams {
 }
 
 export interface ReputationOracleOptions {
-  engine: ReputationAggregationEngine;
+  engine?: ReputationAggregationEngine;
   pushService?: ReputationPushService;
   chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient;
   solanaConnection?: import('@solana/web3.js').Connection;

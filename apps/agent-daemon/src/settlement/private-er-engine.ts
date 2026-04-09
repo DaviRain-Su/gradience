@@ -87,8 +87,10 @@ function buildJudgeWorkflowDefinition(
         type: 'tool_call',
         params: {
           toolName: 'private_judge',
-          submissions,
-          criteria,
+          arguments: {
+            submissions,
+            criteria,
+          },
         },
       },
     ],
@@ -123,6 +125,9 @@ export class PrivateEREngine {
         defaultProvider: 'gramine-local',
         bridge: config.bridge,
         storage: config.storage,
+        keyManager: {
+          getSeedForTask: async () => crypto.getRandomValues(new Uint8Array(32)),
+        },
       },
     );
   }
