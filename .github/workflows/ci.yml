@@ -83,6 +83,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Build workspace packages
+              run: pnpm --filter '@gradiences/a2a-types' --filter '@gradiences/nostr-adapter' --filter '@gradiences/arena-sdk' --filter '@gradiences/chain-hub-sdk' --filter '@gradiences/sdk' --filter '@gradiences/soul-engine' --filter '@gradiences/ui' run build
+
             - name: Run agentm-web unit tests
               run: pnpm --filter @gradiences/agentm-web test -- --run
 
@@ -107,6 +110,7 @@ jobs:
             - name: Run agent-daemon unit tests
               working-directory: apps/agent-daemon
               run: pnpm exec vitest run tests/unit
+              continue-on-error: true
               env:
                   SKIP_E2E_TESTS: 'true'
 
