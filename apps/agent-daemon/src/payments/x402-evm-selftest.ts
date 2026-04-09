@@ -8,6 +8,7 @@
 import { xLayerTestnet } from 'viem/chains';
 import {
   createPublicClient,
+  createWalletClient,
   http,
   formatEther,
   parseEther,
@@ -42,6 +43,16 @@ const ERC20_PERMIT_ABI = [
     inputs: [],
     outputs: [{ type: 'string' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ type: 'bool' }],
+    stateMutability: 'nonpayable',
   },
 ] as const;
 
@@ -106,6 +117,12 @@ export async function runX402EvmSelfTest(
     transport: http(rpcUrl),
   });
 
+  const walletClient = createWalletClient({
+    chain: xLayerTestnet,
+    transport: http(rpcUrl),
+    account,
+  });
+
   const evmClient = new X402EvmClient({
     rpcUrl,
     chain: xLayerTestnet,
@@ -164,19 +181,48 @@ export async function runX402EvmSelfTest(
     );
 
     console.log('Locking funds via lockWithPermit...');
-    const lockTx = await evmClient.lockWithPermit({
-      channelId,
-      payer,
-      recipient,
-      token: tokenAddress,
-      maxAmount,
-      deadline,
-      nonce: `0x${nonce.toString(16).padStart(64, '0')}` as Hex,
-      v: sig.v,
-      r: sig.r,
-      s: sig.s,
-    });
-    console.log('Lock tx hash:', lockTx);
+    let lockTx: Hex;
+    try {
+      lockTx = await evmClient.lockWithPermit({
+        channelId,
+        payer,
+        recipient,
+        token: tokenAddress,
+        maxAmount,
+        deadline,
+        nonce: `0x${nonce.toString(16).padStart(64, '0')}` as Hex,
+        v: sig.v,
+        r: sig.r,
+        s: sig.s,
+      });
+      console.log('Lock tx hash:', lockTx);
+    } catch (lockErr: any) {
+      const msg = lockErr instanceof Error ? lockErr.message : String(lockErr);
+      if (msg.includes('PermitFailed') || msg.includes('0xb78cb0dd')) {
+        console.warn('⚠️ lockWithPermit failed (permit rejected). Falling back to approve + lockWithApproval...');
+        const approveHash = await walletClient.writeContract({
+          chain: xLayerTestnet,
+          account,
+          address: tokenAddress,
+          abi: ERC20_PERMIT_ABI,
+          functionName: 'approve',
+          args: [settlementAddr, maxAmount],
+        } as any);
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        console.log('Approve tx hash:', approveHash);
+        lockTx = await evmClient.lockWithApproval({
+          channelId,
+          payer,
+          recipient,
+          token: tokenAddress,
+          maxAmount,
+          nonce: `0x${nonce.toString(16).padStart(64, '0')}` as Hex,
+        });
+        console.log('Lock (approval fallback) tx hash:', lockTx);
+      } else {
+        throw lockErr;
+      }
+    }
 
     await sleep(3000);
 
