@@ -36,6 +36,20 @@ jobs:
                   key: foundry-${{ runner.os }}-${{ hashFiles('apps/agent-layer-evm/foundry.toml', 'apps/agent-layer-evm/remappings.txt') }}
                   restore-keys: foundry-${{ runner.os }}-
 
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+
+            - name: Install dependencies
+              working-directory: apps/agent-layer-evm
+              run: pnpm install
+
             - name: Run forge build
               working-directory: apps/agent-layer-evm
               run: forge build --sizes

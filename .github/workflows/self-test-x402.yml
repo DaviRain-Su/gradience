@@ -11,6 +11,9 @@ on:
     branches: [main]
     paths:
       - 'apps/agent-daemon/src/payments/**'
+      - 'apps/agent-daemon/src/health/**'
+      - 'apps/agent-daemon/src/index.ts'
+      - 'apps/agent-daemon/src/daemon.ts'
       - 'apps/agent-layer-evm/src/X402Settlement.sol'
       - 'apps/agent-layer-evm/src/mocks/TestPermitERC20.sol'
       - '.github/workflows/self-test-x402.yml'
@@ -29,15 +32,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Install dependencies
-        working-directory: apps/agent-daemon
-        run: pnpm install
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run X402 EVM self-test
         working-directory: apps/agent-daemon
@@ -63,15 +66,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Install dependencies
-        working-directory: apps/agent-daemon
-        run: pnpm install
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run X402 Solana self-test
         working-directory: apps/agent-daemon
