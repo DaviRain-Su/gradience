@@ -40,6 +40,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Build workspace packages
+              run: pnpm --filter '@gradiences/a2a-types' --filter '@gradiences/nostr-adapter' --filter '@gradiences/arena-sdk' --filter '@gradiences/chain-hub-sdk' --filter '@gradiences/sdk' --filter '@gradiences/soul-engine' --filter '@gradiences/ui' run build
+
             - name: Install Playwright browsers
               run: pnpm --filter @gradiences/e2e exec playwright install --with-deps chromium
 

@@ -26,5 +26,6 @@ export default defineConfig({
         command: 'cd ../apps/agent-arena/frontend && pnpm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
     },
 });
