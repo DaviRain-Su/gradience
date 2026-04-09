@@ -36,7 +36,9 @@ module.exports = {
         ],
     },
     networks: {
-        hardhat: {},
+        hardhat: {
+            allowUnlimitedContractSize: true,
+        },
         baseSepolia: {
             url: BASE_SEPOLIA_RPC_URL || "",
             chainId: 84532,
