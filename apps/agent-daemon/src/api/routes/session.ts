@@ -39,12 +39,10 @@ export function registerSessionRoutes(app: FastifyInstance, sessionManager: Sess
             const { walletAddress, challenge, signature } = request.body;
 
             if (!walletAddress || !challenge || !signature) {
-                reply
-                    .code(400)
-                    .send({
-                        error: 'INVALID_REQUEST',
-                        message: 'walletAddress, challenge, and signature are required',
-                    });
+                reply.code(400).send({
+                    error: 'INVALID_REQUEST',
+                    message: 'walletAddress, challenge, and signature are required',
+                });
                 return;
             }
 

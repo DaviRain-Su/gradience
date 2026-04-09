@@ -14,3 +14,4 @@ artifacts/
 coverage/
 typechain-types/
 subgraph/generated/
+apps/agent-arena/

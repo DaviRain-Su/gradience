@@ -10,15 +10,13 @@ import { GradienceCodec, buildUnsignedMessage } from '../codec';
 
 // ─── Mock @xmtp/js-sdk ───────────────────────────────────────────────────────
 
-const mockSend = jest
-    .fn()
-    .mockResolvedValue({
-        id: 'xmtp-1',
-        sent: new Date(),
-        senderAddress: '0xsender',
-        conversation: { topic: 't1', peerAddress: '0xpeer' },
-        content: new Uint8Array(),
-    });
+const mockSend = jest.fn().mockResolvedValue({
+    id: 'xmtp-1',
+    sent: new Date(),
+    senderAddress: '0xsender',
+    conversation: { topic: 't1', peerAddress: '0xpeer' },
+    content: new Uint8Array(),
+});
 const mockMessages = jest.fn().mockResolvedValue([]);
 const mockConversation = {
     topic: 't1',

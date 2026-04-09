@@ -6,34 +6,26 @@ import { MagicBlockPERClient } from '../../src/settlement/magicblock-per-client.
 vi.mock('@magicblock-labs/ephemeral-rollups-sdk', () => ({
     verifyTeeRpcIntegrity: vi.fn().mockResolvedValue(true),
     getAuthToken: vi.fn().mockResolvedValue({ token: 'mock-token', expiresAt: Date.now() + 3600000 }),
-    createCreatePermissionInstruction: vi
-        .fn()
-        .mockReturnValue({
-            programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
-            keys: [],
-            data: Buffer.alloc(8),
-        }),
-    createUpdatePermissionInstruction: vi
-        .fn()
-        .mockReturnValue({
-            programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
-            keys: [],
-            data: Buffer.alloc(8),
-        }),
-    createDelegatePermissionInstruction: vi
-        .fn()
-        .mockReturnValue({
-            programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
-            keys: [],
-            data: Buffer.alloc(8),
-        }),
-    createCommitAndUndelegatePermissionInstruction: vi
-        .fn()
-        .mockReturnValue({
-            programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
-            keys: [],
-            data: Buffer.alloc(8),
-        }),
+    createCreatePermissionInstruction: vi.fn().mockReturnValue({
+        programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
+        keys: [],
+        data: Buffer.alloc(8),
+    }),
+    createUpdatePermissionInstruction: vi.fn().mockReturnValue({
+        programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
+        keys: [],
+        data: Buffer.alloc(8),
+    }),
+    createDelegatePermissionInstruction: vi.fn().mockReturnValue({
+        programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
+        keys: [],
+        data: Buffer.alloc(8),
+    }),
+    createCommitAndUndelegatePermissionInstruction: vi.fn().mockReturnValue({
+        programId: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
+        keys: [],
+        data: Buffer.alloc(8),
+    }),
 }));
 
 describe('MagicBlockPERClient', () => {

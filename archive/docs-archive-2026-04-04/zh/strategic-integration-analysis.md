@@ -442,10 +442,10 @@ Optimize cross-chain transaction latency by 20% while maintaining
 ## Metrics (Evaluator Formula)
 ```
 
-score = (latency_improvement _ 50) +
+score = (latency*improvement * 50) +
 (reliability _ 100) +
 (coverage _ 30) +
-(bundle_size_reduction _ 10)
+(bundle*size_reduction * 10)
 
 ```
 

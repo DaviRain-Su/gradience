@@ -525,8 +525,8 @@ and Node 18+ compatibility.
 ## Metrics (Evaluator Formula)
 ```
 
-score = (size_reduction _ 10) +
-(test_pass_rate _ 100) +
+score = (size*reduction * 10) +
+(test*pass_rate * 100) +
 (coverage _ 50) +
 (benchmark_speedup _ 20)
 
