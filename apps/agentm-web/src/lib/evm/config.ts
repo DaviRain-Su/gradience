@@ -100,4 +100,4 @@ export const AGENT_M_REGISTRY_ADDRESS =
 export const EVM_BLOCK_EXPLORER =
   process.env.NEXT_PUBLIC_EVM_BLOCK_EXPLORER || getChainConfig(getDefaultEvmChainId()).blockExplorer;
 
-export { getChainConfig, baseSepolia, arbitrumSepolia, xlayerTestnet };
+export { getChainConfig, baseSepolia, arbitrumSepolia };
