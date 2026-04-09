@@ -28,6 +28,11 @@ describe('BridgeManager', () => {
     const mockKeyManager = {
         getPublicKey: vi.fn().mockReturnValue('mock-pubkey'),
         sign: vi.fn().mockReturnValue(Buffer.from('mock-signature')),
+        signHash: vi.fn().mockReturnValue('aabbcc'),
+        getSigner: vi.fn().mockResolvedValue({
+            address: 'mock-pubkey',
+        }),
+        getAddress: vi.fn().mockReturnValue('mock-pubkey'),
         initialize: vi.fn().mockResolvedValue(undefined),
     };
     const mockTransactionManager = {

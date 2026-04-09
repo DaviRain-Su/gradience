@@ -166,6 +166,7 @@ export class BridgeManager {
             keyPassword: this.config.keyPassword,
             maxRetries: this.config.retry.maxAttempts,
             perClient: this.perClient,
+            keyManager: this.keyManager,
         });
 
         // Initialize external evaluation manager

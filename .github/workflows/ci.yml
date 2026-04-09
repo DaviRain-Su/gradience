@@ -110,7 +110,6 @@ jobs:
             - name: Run agent-daemon unit tests
               working-directory: apps/agent-daemon
               run: pnpm exec vitest run tests/unit
-              continue-on-error: true
               env:
                   SKIP_E2E_TESTS: 'true'
 

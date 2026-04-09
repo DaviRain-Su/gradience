@@ -160,7 +160,7 @@ export interface BridgeConfig {
     chainHubProgramId: string;
     rpcEndpoint: string;
     cascadeClient?: TritonCascadeClient;
-    keyManager: KeyManager;
+    keyManager: any;
     perClient?: MagicBlockPERClient;
     retry: {
         maxAttempts: number;
@@ -192,7 +192,7 @@ export class SettlementBridge extends EventEmitter {
     private config: BridgeConfig;
     private connection: Connection;
     private cascadeClient: TritonCascadeClient;
-    private keyManager: KeyManager;
+    private keyManager: any;
 
     constructor(config: BridgeConfig) {
         super();
@@ -879,21 +879,25 @@ export interface BridgeOptions {
     keyPassword?: string;
     maxRetries?: number;
     perClient?: MagicBlockPERClient;
+    keyManager?: any;
 }
 
 export async function createSettlementBridge(options: BridgeOptions = {}): Promise<SettlementBridge> {
     const programId = options.chainHubProgramId || '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
     const rpcEndpoint = options.rpcEndpoint || 'https://api.devnet.solana.com';
 
-    // Initialize key manager
-    const keyManager = getKeyManager({
-        keyDir: options.keyDir || process.env.DAEMON_KEY_DIR || './keys',
-        keyName: 'evaluator',
-    });
-
-    // Load or create evaluator keypair
-    const keyPassword = options.keyPassword || process.env.DAEMON_KEY_PASSWORD;
-    await keyManager.loadOrCreate(keyPassword);
+    // Initialize key manager (use injected mock for tests when provided)
+    let keyManager: KeyManager;
+    if (options.keyManager) {
+        keyManager = options.keyManager as KeyManager;
+    } else {
+        keyManager = getKeyManager({
+            keyDir: options.keyDir || process.env.DAEMON_KEY_DIR || './keys',
+            keyName: 'evaluator',
+        });
+        const keyPassword = options.keyPassword || process.env.DAEMON_KEY_PASSWORD;
+        await keyManager.loadOrCreate(keyPassword);
+    }
 
     logger.info(
         { evaluatorPubkey: keyManager.getPublicKey(), keyDir: options.keyDir || './keys' },
