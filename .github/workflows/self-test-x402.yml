@@ -47,9 +47,9 @@ jobs:
         env:
           # Testnet deployer wallet — safe to hardcode for CI smoke tests.
           # For production/mainnet workflows, migrate these to GitHub Secrets.
-          PRIVATE_KEY: 0xbebff393a40d6aabe1e7fd66bd7299f094255ed574b4abc08f5329b9629ee4c9
-          AGENTD_X402_EVM_SETTLEMENT_ADDRESS: 0x1Af0E217d434323f428609a42Df36B3D93c2452a
-          AGENTD_X402_EVM_TEST_TOKEN: 0xa8ad936e0489d847a8e4cffd555cacffdc24b092
+          PRIVATE_KEY: "0xbebff393a40d6aabe1e7fd66bd7299f094255ed574b4abc08f5329b9629ee4c9"
+          AGENTD_X402_EVM_SETTLEMENT_ADDRESS: "0x1Af0E217d434323f428609a42Df36B3D93c2452a"
+          AGENTD_X402_EVM_TEST_TOKEN: "0xa8ad936e0489d847a8e4cffd555cacffdc24b092"
           AGENTD_EVM_RPC_URL: https://testrpc.xlayer.tech
         run: npx tsx src/index.ts self-test --x402-evm
 
