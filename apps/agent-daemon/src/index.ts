@@ -10,6 +10,7 @@ import bs58 from 'bs58';
 import { loadConfig } from './config.js';
 import { Daemon } from './daemon.js';
 import { logger } from './utils/logger.js';
+import { runX402EvmSelfTest } from './payments/x402-evm-selftest.js';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -456,6 +457,24 @@ program
             tail.kill();
             process.exit(0);
         });
+    });
+
+// ── self-test ────────────────────────────────────────────────────────────────
+
+program
+    .command('self-test')
+    .description('Run daemon self-test checks')
+    .option('--x402-evm', 'Run X402 EVM smoke test on testnet')
+    .option('--test-token <address>', 'ERC-20 test token address for X402 smoke test')
+    .action(async (opts) => {
+        if (!opts.x402Evm) {
+            console.log(chalk.yellow('Usage: agentd self-test --x402-evm --test-token <address>'));
+            return;
+        }
+
+        const config = loadConfig();
+        const result = await runX402EvmSelfTest(config, opts.testToken);
+        process.exit(result.success ? 0 : 1);
     });
 
 // ─── parse ───────────────────────────────────────────────────────────────────
