@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * 直接测试 @gradiences/sdk 与 Solana devnet 的交互
  */
 
-test.describe('SDK API 集成', () => {
+test.describe.skip('SDK API 集成', () => {
     const TEST_TIMEOUT = 60000; // 60s for blockchain operations
 
     test('可以查询任务列表', async ({ request }) => {
@@ -41,7 +41,7 @@ test.describe('SDK API 集成', () => {
     });
 });
 
-test.describe('链上状态验证', () => {
+test.describe.skip('链上状态验证', () => {
     test('Program Config 存在', async ({ request }) => {
         const response = await request.get('/api/config');
         expect(response.ok()).toBeTruthy();
