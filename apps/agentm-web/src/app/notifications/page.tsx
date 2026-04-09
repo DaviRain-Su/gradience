@@ -94,49 +94,63 @@ export default function NotificationsDemoPage() {
     }, [requestPermission]);
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: '#F3F3F8',
-            padding: '24px',
-        }}>
-            <div style={{
-                maxWidth: '1200px',
-                margin: '0 auto',
-            }}>
-                <h1 style={{
-                    fontFamily: "'Oswald', sans-serif",
-                    fontSize: '32px',
-                    fontWeight: 700,
-                    color: '#16161A',
-                    marginBottom: '24px',
-                }}>
+        <div
+            style={{
+                minHeight: '100vh',
+                background: '#F3F3F8',
+                padding: '24px',
+            }}
+        >
+            <div
+                style={{
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                }}
+            >
+                <h1
+                    style={{
+                        fontFamily: "'Oswald', sans-serif",
+                        fontSize: '32px',
+                        fontWeight: 700,
+                        color: '#16161A',
+                        marginBottom: '24px',
+                    }}
+                >
                     Notification System Demo
                 </h1>
 
                 {/* Browser Notification Status */}
-                <div style={{
-                    background: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1.5px solid #16161A',
-                    padding: '16px',
-                    marginBottom: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}>
+                <div
+                    style={{
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1.5px solid #16161A',
+                        padding: '16px',
+                        marginBottom: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
+                >
                     <div>
-                        <h3 style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#16161A',
-                            margin: '0 0 4px 0',
-                        }}>Browser Notifications</h3>
-                        <p style={{
-                            fontSize: '14px',
-                            color: '#16161A',
-                            opacity: 0.6,
-                            margin: 0,
-                        }}>
+                        <h3
+                            style={{
+                                fontSize: '16px',
+                                fontWeight: 600,
+                                color: '#16161A',
+                                margin: '0 0 4px 0',
+                            }}
+                        >
+                            Browser Notifications
+                        </h3>
+                        <p
+                            style={{
+                                fontSize: '14px',
+                                color: '#16161A',
+                                opacity: 0.6,
+                                margin: 0,
+                            }}
+                        >
                             Status: {isSupported ? browserPermission : 'Not supported'}
                         </p>
                     </div>
@@ -160,24 +174,32 @@ export default function NotificationsDemoPage() {
                 </div>
 
                 {/* Controls */}
-                <div style={{
-                    background: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1.5px solid #16161A',
-                    padding: '16px',
-                    marginBottom: '24px',
-                }}>
-                    <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: '#16161A',
-                        margin: '0 0 16px 0',
-                    }}>Add Sample Notifications</h3>
-                    <div style={{
-                        display: 'flex',
-                        gap: '12px',
-                        flexWrap: 'wrap',
-                    }}>
+                <div
+                    style={{
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1.5px solid #16161A',
+                        padding: '16px',
+                        marginBottom: '24px',
+                    }}
+                >
+                    <h3
+                        style={{
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            color: '#16161A',
+                            margin: '0 0 16px 0',
+                        }}
+                    >
+                        Add Sample Notifications
+                    </h3>
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: '12px',
+                            flexWrap: 'wrap',
+                        }}
+                    >
                         <button
                             onClick={addSampleFollow}
                             style={{
@@ -238,27 +260,35 @@ export default function NotificationsDemoPage() {
                 </div>
 
                 {/* Notification Bell Demo */}
-                <div style={{
-                    background: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1.5px solid #16161A',
-                    padding: '16px',
-                    marginBottom: '24px',
-                }}>
-                    <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: '#16161A',
-                        margin: '0 0 16px 0',
-                    }}>Notification Bell Variants</h3>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '24px',
-                        background: '#111827',
+                <div
+                    style={{
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1.5px solid #16161A',
                         padding: '16px',
-                        borderRadius: '12px',
-                    }}>
+                        marginBottom: '24px',
+                    }}
+                >
+                    <h3
+                        style={{
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            color: '#16161A',
+                            margin: '0 0 16px 0',
+                        }}
+                    >
+                        Notification Bell Variants
+                    </h3>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '24px',
+                            background: '#111827',
+                            padding: '16px',
+                            borderRadius: '12px',
+                        }}
+                    >
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                             <NotificationBell
                                 notifications={notifications}
@@ -313,11 +343,13 @@ export default function NotificationsDemoPage() {
                 </div>
 
                 {/* Tabs */}
-                <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginBottom: '24px',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginBottom: '24px',
+                    }}
+                >
                     <button
                         onClick={() => setActiveTab('list')}
                         style={{
@@ -363,20 +395,14 @@ export default function NotificationsDemoPage() {
                         onArchive={archiveNotification}
                         onClearAll={() => {
                             // Clear all by archiving
-                            notifications.forEach(n => archiveNotification(n.id));
+                            notifications.forEach((n) => archiveNotification(n.id));
                         }}
                         maxHeight="500px"
                     />
                 ) : (
                     <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: '1fr 1fr' }}>
-                        <NotificationSettings
-                            settings={settings}
-                            onSettingsChange={updateSettings}
-                        />
-                        <NotificationSettingsCompact
-                            settings={settings}
-                            onSettingsChange={updateSettings}
-                        />
+                        <NotificationSettings settings={settings} onSettingsChange={updateSettings} />
+                        <NotificationSettingsCompact settings={settings} onSettingsChange={updateSettings} />
                     </div>
                 )}
             </div>

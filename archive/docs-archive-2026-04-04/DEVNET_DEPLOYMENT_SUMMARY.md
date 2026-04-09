@@ -31,6 +31,7 @@
 | 11 | `emit_event` | Emit events | ✅ |
 
 **State Accounts**:
+
 - Task, Escrow, Application, Submission
 - Reputation, Stake, JudgePool, Treasury, ProgramConfig
 
@@ -70,6 +71,7 @@
 **Size**: 115,768 bytes (115KB)
 
 **Instructions** (15 total):
+
 - Network config, Agent profiles, Message threads
 - Payment channels, Subtask orders
 - Cooperative/dispute resolution
@@ -109,12 +111,14 @@
 **Location**: `apps/agent-arena/clients/rust/`
 
 **Generated Files**:
+
 - 9 account types
 - 11 instruction builders
 - 8 event types
 - 16 data types
 
 **Usage**:
+
 ```rust
 use gradience_client::{
     instructions::PostTaskBuilder,
@@ -127,11 +131,13 @@ use gradience_client::{
 **Location**: `apps/agent-arena/clients/typescript/`
 
 **Generated Files**:
+
 - Full TypeScript types
 - Instruction builders
 - PDA helpers
 
 **Usage**:
+
 ```typescript
 import { PostTaskBuilder, GRADIENCE_ID } from '@gradiences/agent-arena';
 ```
@@ -141,6 +147,7 @@ import { PostTaskBuilder, GRADIENCE_ID } from '@gradiences/agent-arena';
 **Package**: `@gradiences/workflow-engine`
 
 **Features**:
+
 - Schema validation (Zod)
 - Template parser
 - Step executor (19 handlers)
@@ -156,6 +163,7 @@ import { PostTaskBuilder, GRADIENCE_ID } from '@gradiences/agent-arena';
 **Location**: `apps/agent-arena/tests/integration-tests/`
 
 **Test Files** (13):
+
 - `test_t19a.rs` - Initialize + post_task
 - `test_t19b.rs` - Apply + submit
 - `test_t19c.rs` - Judge + cancel + refund
@@ -175,6 +183,7 @@ import { PostTaskBuilder, GRADIENCE_ID } from '@gradiences/agent-arena';
 **Location**: `packages/workflow-engine/tests/`
 
 **Test Files**:
+
 - `schema.test.ts` - 26 tests
 - `template-parser.test.ts` - 27 tests
 - `step-executor.test.ts` - 12 tests
@@ -244,11 +253,13 @@ Executor -> record_execution -> Execution count++
 ## Fee Structure
 
 ### Agent Arena
+
 - **Protocol Fee**: 2% (to Treasury)
 - **Judge Fee**: 3% (to Judge)
 - **Agent Reward**: 95% (to winning Agent)
 
 ### Workflow Marketplace
+
 - **Protocol Fee**: 2% (to Treasury)
 - **Creator Share**: Configurable (default 5%)
 - **User Share**: Remainder
@@ -258,18 +269,21 @@ Executor -> record_execution -> Execution count++
 ## Next Steps
 
 ### Immediate (This Week)
+
 1. ✅ Run all integration tests
 2. ✅ Verify Indexer status
 3. ✅ Test CLI tools
 4. ✅ Update documentation
 
 ### Short Term (Next 2 Weeks)
+
 1. 🚧 Product frontend (AgentM)
 2. 🚧 Judge Daemon integration
 3. 🚧 End-to-end workflow testing
 4. 🚧 Performance optimization
 
 ### Long Term (Next Month)
+
 1. 🚧 Mainnet deployment preparation
 2. 🚧 Security audit
 3. 🚧 EVM deployment
@@ -280,6 +294,7 @@ Executor -> record_execution -> Execution count++
 ## Resources
 
 ### Documentation
+
 - `docs/01-prd.md` - Product Requirements
 - `docs/02-architecture.md` - Architecture
 - `docs/03-technical-spec.md` - Technical Spec
@@ -287,6 +302,7 @@ Executor -> record_execution -> Execution count++
 - `docs/PROJECT_STATUS_CORRECTED.md` - Status Report
 
 ### Code
+
 - `apps/agent-arena/program/` - Agent Layer Core
 - `apps/chain-hub/program/` - Chain Hub
 - `apps/a2a-protocol/program/` - A2A Protocol
@@ -294,6 +310,7 @@ Executor -> record_execution -> Execution count++
 - `packages/workflow-engine/` - TypeScript SDK
 
 ### Tests
+
 - `apps/agent-arena/tests/integration-tests/`
 - `packages/workflow-engine/tests/`
 

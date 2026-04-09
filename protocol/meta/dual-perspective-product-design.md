@@ -1,9 +1,10 @@
 # 双重视角产品设计：Agent 执行 + 人监控
 
 > **核心洞察：Agent 是人的代理人，产品设计需要服务两个对象**
+>
 > - **Agent 层**：程序化执行（自动化、API、黑箱优化）
 > - **人层**：监控面板（可视化、确认、干预）
-> 
+>
 > 日期：2026-03-29
 
 ---
@@ -45,7 +46,7 @@
    │         │            │            │            │
    └────────────────────────────────────────────────────┘
    人只负责：意图表达 + 结果确认 + 异常干预
-   
+
 例子：
 用户："帮我以最优价格买 0.5 ETH"
    │
@@ -78,62 +79,62 @@ Agent 理解意图
 
 ```yaml
 Agent 需要的：
-  接口：
-    - REST API / GraphQL
-    - WebSocket 实时流
-    - SDK (Python/JS)
-  
-  能力：
-    - 程序化执行（无界面）
-    - 实时数据获取
-    - 自动化决策
-    - 错误恢复
-    - 多步骤编排
-  
-  优化：
-    - 延迟最小化
-    - 吞吐量最大化
-    - 资源效率
-    - 并行执行
+接口：
+- REST API / GraphQL
+- WebSocket 实时流
+- SDK (Python/JS)
+
+能力：
+- 程序化执行（无界面）
+- 实时数据获取
+- 自动化决策
+- 错误恢复
+- 多步骤编排
+
+优化：
+- 延迟最小化
+- 吞吐量最大化
+- 资源效率
+- 并行执行
 
 Agent 不需要的：
-  ✗ 图形界面
-  ✗ 人类可读的图表
-  ✗ 手动确认步骤
-  ✗ 教程引导
+✗ 图形界面
+✗ 人类可读的图表
+✗ 手动确认步骤
+✗ 教程引导
 ```
 
 ### 2.2 人视角（监控层）
 
 ```yaml
 人需要的：
-  监控面板：
-    - 执行状态可视化
-    - 关键指标展示
-    - 异常告警
-    - 历史记录
-  
-  干预能力：
-    - 暂停/恢复
-    - 参数调整
-    - 紧急停止
-    - 撤销操作
-  
-  确认机制：
-    - 大额操作确认
-    - 风险操作提醒
-    - 最终结果确认
-  
-  学习支持：
-    - Agent 决策解释
-    - 为什么这样执行
-    - 效果对比
+监控面板：
+- 执行状态可视化
+- 关键指标展示
+- 异常告警
+- 历史记录
+
+干预能力：
+- 暂停/恢复
+- 参数调整
+- 紧急停止
+- 撤销操作
+
+确认机制：
+- 大额操作确认
+- 风险操作提醒
+- 最终结果确认
+
+学习支持：
+- Agent 决策解释
+- 为什么这样执行
+- 效果对比
 
 人不需要的：
-  ✗ 手动填写每个参数
-  ✗ 盯着屏幕等待
-  ✗ 学习复杂界面
-  ✗ 重复性操作
+✗ 手动填写每个参数
+✗ 盯着屏幕等待
+✗ 学习复杂界面
+✗ 重复性操作
 ```
 
 ### 2.3 架构对比图
@@ -203,28 +204,28 @@ Agent 不需要的：
 ```typescript
 // Agent 通过 API 程序化发射
 const launchRequest = {
-  intent: "launch_meme_token",
-  parameters: {
-    name: "AI Agent Coin",
-    symbol: "AGENT",
-    // Agent 自动计算最优参数
-    initialLiquidity: calculateOptimalLiquidity(),
-    lockPeriod: analyzeMarketConditions() ? 30 : 90,
-    buybackRatio: 0.02,
-  },
-  // Agent 自动完成验证
-  verification: {
-    agentDID: "did:gradience:abc123",
-    arenaReputation: 856,
-    proof: generateZKProof(),
-  },
-  // Agent 自动监控的 Battle Test
-  battleTest: {
-    enabled: true,
-    autoFinalize: true,
-    successCallback: "https://agent.callback/success",
-    failureCallback: "https://agent.callback/failure",
-  }
+    intent: 'launch_meme_token',
+    parameters: {
+        name: 'AI Agent Coin',
+        symbol: 'AGENT',
+        // Agent 自动计算最优参数
+        initialLiquidity: calculateOptimalLiquidity(),
+        lockPeriod: analyzeMarketConditions() ? 30 : 90,
+        buybackRatio: 0.02,
+    },
+    // Agent 自动完成验证
+    verification: {
+        agentDID: 'did:gradience:abc123',
+        arenaReputation: 856,
+        proof: generateZKProof(),
+    },
+    // Agent 自动监控的 Battle Test
+    battleTest: {
+        enabled: true,
+        autoFinalize: true,
+        successCallback: 'https://agent.callback/success',
+        failureCallback: 'https://agent.callback/failure',
+    },
 };
 
 // Agent 自动执行
@@ -232,7 +233,7 @@ const result = await agentToken.launch(launchRequest);
 
 // Agent 自动管理后续
 if (result.battleTestStarted) {
-  await agent.scheduleMonitoring(result.tokenAddress);
+    await agent.scheduleMonitoring(result.tokenAddress);
 }
 ```
 
@@ -297,22 +298,22 @@ if (result.battleTestStarted) {
 
 ### 4.1 交易所对比
 
-| 维度 | 传统交易所 (Binance) | AgentToken (双重视角) |
-|------|---------------------|---------------------|
-| **交易执行** | 人手动下单 | Agent 自动执行 |
-| **人的界面** | 复杂的交易界面 | 简洁的监控面板 |
-| **信息展示** | 满屏图表数据 | 关键指标 + Agent 解读 |
-| **决策** | 人分析后决策 | Agent 建议 + 人确认 |
-| **体验** | 累、紧张、需学习 | 轻松、信任、自然 |
+| 维度         | 传统交易所 (Binance) | AgentToken (双重视角) |
+| ------------ | -------------------- | --------------------- |
+| **交易执行** | 人手动下单           | Agent 自动执行        |
+| **人的界面** | 复杂的交易界面       | 简洁的监控面板        |
+| **信息展示** | 满屏图表数据         | 关键指标 + Agent 解读 |
+| **决策**     | 人分析后决策         | Agent 建议 + 人确认   |
+| **体验**     | 累、紧张、需学习     | 轻松、信任、自然      |
 
 ### 4.2 发射平台对比
 
-| 维度 | Pump.fun (人操作) | AgentToken (人授权) |
-|------|------------------|-------------------|
-| **发射流程** | 人填写表单 | Agent 自动执行 |
-| **流动性管理** | 人手动添加 | Agent 自动管理 |
-| **人的角色** | 全程操作 | 设置参数 + 监控 |
-| **体验** | 复杂、耗时 | 一句话指令 |
+| 维度           | Pump.fun (人操作) | AgentToken (人授权) |
+| -------------- | ----------------- | ------------------- |
+| **发射流程**   | 人填写表单        | Agent 自动执行      |
+| **流动性管理** | 人手动添加        | Agent 自动管理      |
+| **人的角色**   | 全程操作          | 设置参数 + 监控     |
+| **体验**       | 复杂、耗时        | 一句话指令          |
 
 ---
 
@@ -426,17 +427,18 @@ Agent 视角：
 ### 7.1 核心洞察
 
 > **Agent 是人的代理人，不是人的替代品。**
-> 
+>
 > 好的产品设计：
+>
 > - **Agent 做**：执行、优化、重复性工作
 > - **人做**：授权、监控、创造性决策
 
 ### 7.2 一句话定义
 
 ```
-未来产品 = 
+未来产品 =
     Agent 自动化执行（黑箱优化）
-    + 
+    +
     人监控面板（授权与干预）
     +
     自然语言交互（意图表达）
@@ -468,5 +470,5 @@ AgentToken 应该：
 
 ---
 
-*"最好的界面是没有界面——除非你需要它。"*
-*Agent 自动化执行，人只看结果和例外。*
+_"最好的界面是没有界面——除非你需要它。"_
+_Agent 自动化执行，人只看结果和例外。_

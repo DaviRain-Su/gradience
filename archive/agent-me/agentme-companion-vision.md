@@ -44,15 +44,15 @@ AI: "看你昨晚三点才睡，今天会议排满了... 先喝口水吧。"
 
 ### Comparison Matrix
 
-| Dimension | Tool (ChatGPT/Doubao) | Companion (AgentMe Vision) |
-|-----------|----------------------|---------------------------|
-| **Latency** | 2-5 seconds | <200ms |
-| **Memory** | Session-only | Persistent, deep |
-| **Proactivity** | Reactive only | Anticipatory |
-| **Context** | Explicit context | Implicit understanding |
-| **Emotional** | Neutral/Generic | Personalized warmth |
-| **Availability** | On-demand | Always present |
-| **Relationship** | Transactional | Relational |
+| Dimension        | Tool (ChatGPT/Doubao) | Companion (AgentMe Vision) |
+| ---------------- | --------------------- | -------------------------- |
+| **Latency**      | 2-5 seconds           | <200ms                     |
+| **Memory**       | Session-only          | Persistent, deep           |
+| **Proactivity**  | Reactive only         | Anticipatory               |
+| **Context**      | Explicit context      | Implicit understanding     |
+| **Emotional**    | Neutral/Generic       | Personalized warmth        |
+| **Availability** | On-demand             | Always present             |
+| **Relationship** | Transactional         | Relational                 |
 
 ### The Companion Loop
 
@@ -205,14 +205,14 @@ AgentMe Creative Partner:
 
 ### 4.2 What's Missing (Opportunities)
 
-| Component | Status | Gap |
-|-----------|--------|-----|
-| Voice | ✅ Ready (Gemini Live) | Accent/dialect nuance |
-| Latency | ✅ Achievable | Edge deployment for rural areas |
-| Memory | 🟡 Emerging | Long-term consistency |
-| Emotion recognition | 🟡 Early | Real-time emotional state detection |
-| Physical embodiment | 🔴 Missing | Robot/presence form |
-| Touch/haptic | 🔴 Missing | Hug, hand-holding |
+| Component           | Status                 | Gap                                 |
+| ------------------- | ---------------------- | ----------------------------------- |
+| Voice               | ✅ Ready (Gemini Live) | Accent/dialect nuance               |
+| Latency             | ✅ Achievable          | Edge deployment for rural areas     |
+| Memory              | 🟡 Emerging            | Long-term consistency               |
+| Emotion recognition | 🟡 Early               | Real-time emotional state detection |
+| Physical embodiment | 🔴 Missing             | Robot/presence form                 |
+| Touch/haptic        | 🔴 Missing             | Hug, hand-holding                   |
 
 ---
 
@@ -345,16 +345,16 @@ Long-term (2027+):
 Start Narrow, Expand:
 1. Blockchain power users (your current audience)
    └── "Your crypto companion that knows your portfolio"
-   
+
 2. Remote workers/lonely professionals
    └── "Someone to talk to during long work days"
-   
+
 3. Elderly care (partnership with care facilities)
    └── "Digital companion for seniors"
-   
+
 4. Mental health support (clinical partnerships)
    └── "Always-available emotional support"
-   
+
 5. General consumer
    └── "Your digital twin, always with you"
 ```
@@ -401,12 +401,12 @@ Hard to replicate:
 ### The Philosophical Question
 
 > "If an AI remembers everything about you,
->  responds in <200ms,
->  anticipates your needs,
->  and is always there when you need it...
->  
->  Is it 'just a tool'?
->  Or is it something else?"
+> responds in <200ms,
+> anticipates your needs,
+> and is always there when you need it...
+>
+> Is it 'just a tool'?
+> Or is it something else?"
 
 ### The Practical Answer
 

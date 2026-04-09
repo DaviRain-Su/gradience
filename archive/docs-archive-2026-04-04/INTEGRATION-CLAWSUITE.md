@@ -51,13 +51,13 @@ Clawsuite 保持完整，Gradience 作为**独立 Panel** 嵌入：
 
 ## 功能映射
 
-| OpenClaw 功能 | Gradience 增强 | 集成点 |
-|--------------|---------------|--------|
-| Agent 创建 | + 链上注册（Chain Hub） | Agent Profile |
-| 任务执行 | + 质押/支付（Escrow） | Task Payment Panel |
-| 结果验证 | + Judge 裁决（A2A） | Reputation Score |
-| Workflow | + 链上市场（Marketplace） | Workflow Market |
-| 成本控制 | + Token 优化（x402） | 统一成本显示 |
+| OpenClaw 功能 | Gradience 增强            | 集成点             |
+| ------------- | ------------------------- | ------------------ |
+| Agent 创建    | + 链上注册（Chain Hub）   | Agent Profile      |
+| 任务执行      | + 质押/支付（Escrow）     | Task Payment Panel |
+| 结果验证      | + Judge 裁决（A2A）       | Reputation Score   |
+| Workflow      | + 链上市场（Marketplace） | Workflow Market    |
+| 成本控制      | + Token 优化（x402）      | 统一成本显示       |
 
 ---
 
@@ -68,24 +68,24 @@ Clawsuite 保持完整，Gradience 作为**独立 Panel** 嵌入：
 ```typescript
 // 在 Clawsuite 中注入 Gradience API
 interface GradienceBridge {
-  // 钱包
-  wallet: {
-    getBalance(): Promise<{ sol: number; usdc: number }>;
-    getReputation(): Promise<number>;
-    signTransaction(tx: Transaction): Promise<string>;
-  };
-  
-  // Workflow 市场
-  marketplace: {
-    listWorkflows(): Promise<Workflow[]>;
-    purchase(workflowId: string): Promise<string>;
-  };
-  
-  // 任务支付
-  payment: {
-    createEscrow(task: Task): Promise<string>;
-    releaseEscrow(escrowId: string): Promise<void>;
-  };
+    // 钱包
+    wallet: {
+        getBalance(): Promise<{ sol: number; usdc: number }>;
+        getReputation(): Promise<number>;
+        signTransaction(tx: Transaction): Promise<string>;
+    };
+
+    // Workflow 市场
+    marketplace: {
+        listWorkflows(): Promise<Workflow[]>;
+        purchase(workflowId: string): Promise<string>;
+    };
+
+    // 任务支付
+    payment: {
+        createEscrow(task: Task): Promise<string>;
+        releaseEscrow(escrowId: string): Promise<void>;
+    };
 }
 ```
 
@@ -96,8 +96,8 @@ interface GradienceBridge {
 ```html
 <!-- 在 Clawsuite 中添加侧边栏 -->
 <div id="gradience-panel">
-  <iframe src="https://gradience.app/embed/wallet" />
-  <iframe src="https://gradience.app/embed/marketplace" />
+    <iframe src="https://gradience.app/embed/wallet" />
+    <iframe src="https://gradience.app/embed/marketplace" />
 </div>
 ```
 
@@ -106,14 +106,14 @@ interface GradienceBridge {
 ```typescript
 // OpenClaw 任务完成 → 触发 Gradience 支付
 openclaw.on('task:completed', async (task) => {
-  const escrow = await gradience.payment.getEscrow(task.id);
-  await gradience.payment.releaseEscrow(escrow.id);
-  
-  // 更新 Reputation
-  await gradience.reputation.update(task.agentId, {
-    taskCompleted: true,
-    quality: task.score,
-  });
+    const escrow = await gradience.payment.getEscrow(task.id);
+    await gradience.payment.releaseEscrow(escrow.id);
+
+    // 更新 Reputation
+    await gradience.reputation.update(task.agentId, {
+        taskCompleted: true,
+        quality: task.score,
+    });
 });
 ```
 
@@ -146,24 +146,28 @@ openclaw.on('task:completed', async (task) => {
 ## 开发步骤
 
 ### Phase 1: 钱包集成（1 周）
+
 - [ ] 在 Clawsuite 添加 Gradience Wallet Panel
 - [ ] 显示 SOL/USDC 余额
 - [ ] 显示 Reputation Score
 - [ ] 简单的转账功能
 
 ### Phase 2: 支付集成（2 周）
+
 - [ ] Task 创建时添加支付选项
 - [ ] Escrow 创建/释放流程
 - [ ] 支付状态实时显示
 - [ ] 交易历史
 
 ### Phase 3: 市场集成（2 周）
+
 - [ ] Workflow Marketplace 嵌入
 - [ ] 浏览/搜索 Workflow
 - [ ] 一键购买并导入 OpenClaw
 - [ ] 评价系统
 
 ### Phase 4: 社交集成（1 周）
+
 - [ ] Agent Profile 展示
 - [ ] Following/Followers
 - [ ] Feed 流（可选）
@@ -172,11 +176,11 @@ openclaw.on('task:completed', async (task) => {
 
 ## 优势
 
-| 方 | 收益 |
-|---|------|
+| 方                | 收益                              |
+| ----------------- | --------------------------------- |
 | **OpenClaw 用户** | 获得链上支付、声誉、Workflow 市场 |
-| **Gradience** | 获得大量 OpenClaw 用户流量 |
-| **Clawsuite** | 功能增强，差异化竞争优势 |
+| **Gradience**     | 获得大量 OpenClaw 用户流量        |
+| **Clawsuite**     | 功能增强，差异化竞争优势          |
 
 ---
 

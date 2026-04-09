@@ -9,7 +9,11 @@ const INDEXER = 'http://127.0.0.1:3001';
 
 function makeMockWallet(): WalletAdapter {
     return {
-        signer: { address: 'MockAgent1111111111111111111111111111111111' as never, signTransactions: vi.fn(), signAndSendTransactions: vi.fn() },
+        signer: {
+            address: 'MockAgent1111111111111111111111111111111111' as never,
+            signTransactions: vi.fn(),
+            signAndSendTransactions: vi.fn(),
+        },
         signAndSendTransaction: vi.fn().mockResolvedValue('mock-signature-abc'),
     };
 }
@@ -35,9 +39,7 @@ describe('Gradience construction', () => {
 describe('Gradience.postTask', () => {
     it('throws when no wallet provided', async () => {
         const client = new Gradience({ rpcEndpoint: RPC, indexerEndpoint: INDEXER });
-        await expect(
-            client.postTask({ description: 'test', reward: 1_000n, category: 0 }),
-        ).rejects.toThrow(/wallet/i);
+        await expect(client.postTask({ description: 'test', reward: 1_000n, category: 0 })).rejects.toThrow(/wallet/i);
     });
 
     it('delegates to arena.task.postSimple with description mapped to evalRef', async () => {

@@ -7,7 +7,7 @@
 ```
 原有功能（完全保留）
 ├── Chat / Agent / Mission
-├── File Explorer / Terminal  
+├── File Explorer / Terminal
 ├── Costs / Dashboard
 └── Settings
 
@@ -43,11 +43,13 @@
 ### 登录流程
 
 **原有方式（保留）**:
+
 ```
 用户输入 Gateway URL + Token → 连接 OpenClaw → 进入应用
 ```
 
 **新增方式（钱包登录）**:
+
 ```
 用户选择钱包 → 签名消息（证明身份）→ 后端验证 → 关联 Gateway → 进入应用
                                     ↓
@@ -58,32 +60,24 @@
 
 ```typescript
 // src/server/auth/wallet-auth.ts
-import { Connection, PublicKey } from '@solana/web3.js'
-import nacl from 'tweetnacl'
+import { Connection, PublicKey } from '@solana/web3.js';
+import nacl from 'tweetnacl';
 
 export class WalletAuth {
-  // 验证钱包签名
-  async verifyWalletSignature(
-    publicKey: string,
-    message: string,
-    signature: string
-  ): Promise<boolean> {
-    const pubKey = new PublicKey(publicKey)
-    const messageBytes = new TextEncoder().encode(message)
-    const signatureBytes = Buffer.from(signature, 'base64')
-    
-    return nacl.sign.detached.verify(
-      messageBytes,
-      signatureBytes,
-      pubKey.toBytes()
-    )
-  }
-  
-  // 生成 nonce 让用户签名
-  generateAuthMessage(publicKey: string): string {
-    const nonce = crypto.randomUUID()
-    return `Clawsuite Login: ${publicKey}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`
-  }
+    // 验证钱包签名
+    async verifyWalletSignature(publicKey: string, message: string, signature: string): Promise<boolean> {
+        const pubKey = new PublicKey(publicKey);
+        const messageBytes = new TextEncoder().encode(message);
+        const signatureBytes = Buffer.from(signature, 'base64');
+
+        return nacl.sign.detached.verify(messageBytes, signatureBytes, pubKey.toBytes());
+    }
+
+    // 生成 nonce 让用户签名
+    generateAuthMessage(publicKey: string): string {
+        const nonce = crypto.randomUUID();
+        return `Clawsuite Login: ${publicKey}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
+    }
 }
 ```
 
@@ -144,11 +138,11 @@ Wallet 页面
 export function WalletScreen() {
   const { publicKey, connected } = useWallet()  // Solana wallet adapter
   const { balance, reputation, transactions } = useWalletData(publicKey)
-  
+
   if (!connected) {
     return <WalletConnectPrompt />  // 提示连接钱包
   }
-  
+
   return (
     <div className="p-6">
       <BalanceCards balance={balance} />
@@ -202,34 +196,29 @@ Marketplace 页面
 ```typescript
 // src/server/marketplace/client.ts
 export class MarketplaceClient {
-  async purchaseWorkflow(
-    workflowId: string,
-    buyer: PublicKey
-  ): Promise<string> {
-    // 1. 创建购买交易
-    const tx = await this.program.methods
-      .purchaseWorkflow(workflowId)
-      .accounts({
-        buyer,
-        marketplace: this.marketplacePDA,
-        escrow: this.escrowPDA,
-      })
-      .transaction()
-    
-    // 2. 返回交易让前端签名
-    return tx.serializeMessage().toString('base64')
-  }
-  
-  // 购买成功后导入到 OpenClaw
-  async importWorkflowToOpenClaw(
-    workflowConfig: WorkflowConfig
-  ): Promise<void> {
-    // 调用 OpenClaw API 添加 Skill
-    await fetch('/api/gateway/skills/import', {
-      method: 'POST',
-      body: JSON.stringify(workflowConfig)
-    })
-  }
+    async purchaseWorkflow(workflowId: string, buyer: PublicKey): Promise<string> {
+        // 1. 创建购买交易
+        const tx = await this.program.methods
+            .purchaseWorkflow(workflowId)
+            .accounts({
+                buyer,
+                marketplace: this.marketplacePDA,
+                escrow: this.escrowPDA,
+            })
+            .transaction();
+
+        // 2. 返回交易让前端签名
+        return tx.serializeMessage().toString('base64');
+    }
+
+    // 购买成功后导入到 OpenClaw
+    async importWorkflowToOpenClaw(workflowConfig: WorkflowConfig): Promise<void> {
+        // 调用 OpenClaw API 添加 Skill
+        await fetch('/api/gateway/skills/import', {
+            method: 'POST',
+            body: JSON.stringify(workflowConfig),
+        });
+    }
 }
 ```
 
@@ -283,39 +272,32 @@ Agent 执行任务（通过 OpenClaw）
 ```typescript
 // src/server/escrow/client.ts
 export class EscrowClient {
-  // 创建托管
-  async createEscrow(params: {
-    missionId: string
-    budget: number
-    stake: number
-    creator: PublicKey
-  }): Promise<string> {
-    return this.program.methods
-      .createEscrow(
-        params.missionId,
-        new BN(params.budget),
-        new BN(params.stake)
-      )
-      .accounts({
-        creator: params.creator,
-        escrow: this.getEscrowPDA(params.missionId),
-      })
-      .rpc()
-  }
-  
-  // 释放支付
-  async releaseEscrow(
-    missionId: string,
-    executor: PublicKey
-  ): Promise<void> {
-    await this.program.methods
-      .releaseEscrow()
-      .accounts({
-        escrow: this.getEscrowPDA(missionId),
-        executor,
-      })
-      .rpc()
-  }
+    // 创建托管
+    async createEscrow(params: {
+        missionId: string;
+        budget: number;
+        stake: number;
+        creator: PublicKey;
+    }): Promise<string> {
+        return this.program.methods
+            .createEscrow(params.missionId, new BN(params.budget), new BN(params.stake))
+            .accounts({
+                creator: params.creator,
+                escrow: this.getEscrowPDA(params.missionId),
+            })
+            .rpc();
+    }
+
+    // 释放支付
+    async releaseEscrow(missionId: string, executor: PublicKey): Promise<void> {
+        await this.program.methods
+            .releaseEscrow()
+            .accounts({
+                escrow: this.getEscrowPDA(missionId),
+                executor,
+            })
+            .rpc();
+    }
 }
 ```
 
@@ -347,25 +329,23 @@ Agent Hub 页面
 ```typescript
 // src/server/reputation/client.ts
 export class ReputationClient {
-  async getReputation(agentId: string): Promise<Reputation> {
-    const profile = await this.program.account.agentProfile.fetch(
-      this.getProfilePDA(agentId)
-    )
-    
-    return {
-      score: profile.reputationScore,
-      tier: this.calculateTier(profile.reputationScore),
-      tasksCompleted: profile.tasksCompleted,
-      totalEarnings: profile.totalEarnings.toNumber(),
+    async getReputation(agentId: string): Promise<Reputation> {
+        const profile = await this.program.account.agentProfile.fetch(this.getProfilePDA(agentId));
+
+        return {
+            score: profile.reputationScore,
+            tier: this.calculateTier(profile.reputationScore),
+            tasksCompleted: profile.tasksCompleted,
+            totalEarnings: profile.totalEarnings.toNumber(),
+        };
     }
-  }
-  
-  private calculateTier(score: number): string {
-    if (score >= 90) return 'Platinum'
-    if (score >= 80) return 'Gold'
-    if (score >= 60) return 'Silver'
-    return 'Bronze'
-  }
+
+    private calculateTier(score: number): string {
+        if (score >= 90) return 'Platinum';
+        if (score >= 80) return 'Gold';
+        if (score >= 60) return 'Silver';
+        return 'Bronze';
+    }
 }
 ```
 
@@ -415,26 +395,31 @@ src/
 ## 🔧 集成步骤
 
 ### Phase 1: 基础设置（1 周）
+
 - [ ] 添加 Solana Wallet Adapter
 - [ ] 创建钱包登录选项
 - [ ] 配置 Solana 连接
 
 ### Phase 2: Wallet 功能（1 周）
+
 - [ ] 创建 Wallet 页面
 - [ ] 显示余额
 - [ ] 显示交易历史
 
 ### Phase 3: Marketplace（1 周）
+
 - [ ] 创建 Marketplace 页面
 - [ ] 集成购买流程
 - [ ] 导入到 OpenClaw
 
 ### Phase 4: Escrow（1 周）
+
 - [ ] 在 Mission 创建添加支付选项
 - [ ] Escrow 创建/释放流程
 - [ ] 与 OpenClaw 任务状态同步
 
 ### Phase 5: Reputation（1 周）
+
 - [ ] Agent Profile 添加 Reputation
 - [ ] 评分系统
 - [ ] 数据展示
@@ -445,6 +430,7 @@ src/
 
 **原有功能：100% 保留**
 **新增功能：**
+
 - 🔐 钱包登录（可选）
 - 💰 Wallet 页面（查看余额/交易）
 - 🛒 Workflow Marketplace（购买/导入）
@@ -452,5 +438,6 @@ src/
 - 🏆 Reputation 系统
 
 **用户可以自由选择：**
+
 - 只用原有功能 → 完全不受影响
 - 启用区块链功能 → 获得增强体验

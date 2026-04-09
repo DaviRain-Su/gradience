@@ -17,19 +17,19 @@ Gradience 协议部署在公共区块链（EVM 兼容链）上的所有业务合
 
 虽然区块链不支持物理删除，但用户可以通过以下方式停止展示个人数据：
 
-| 操作 | 效果 |
-|------|------|
-| `AgentMRegistry.updateProfile("", "")` | 将 `metadataURI` 和 `ensName` 覆盖为空字符串，前端不再展示 |
-| `AgentMRegistry.updateAgent(agentId, "", false)` | 将 Agent 元数据置空并标记为 inactive |
+| 操作                                             | 效果                                                       |
+| ------------------------------------------------ | ---------------------------------------------------------- |
+| `AgentMRegistry.updateProfile("", "")`           | 将 `metadataURI` 和 `ensName` 覆盖为空字符串，前端不再展示 |
+| `AgentMRegistry.updateAgent(agentId, "", false)` | 将 Agent 元数据置空并标记为 inactive                       |
 
 **注意**: 这些操作只会影响当前状态查询，历史版本仍可通过 archive node 或事件日志访问。
 
 ## 3. GDPR 合规说明
 
--  Gradience 协议本身是一个**去中心化、无需许可**的公共协议。
--  协议的运营方（Gradience Labs）无法控制或删除区块链上的数据。
--  用户在使用协议前应充分理解：任何写入链上的信息都具有永久性。
--  前端应用（`agentm-web`）有责任在用户执行首次写入操作（注册、发任务、提交结果）前展示本声明。
+- Gradience 协议本身是一个**去中心化、无需许可**的公共协议。
+- 协议的运营方（Gradience Labs）无法控制或删除区块链上的数据。
+- 用户在使用协议前应充分理解：任何写入链上的信息都具有永久性。
+- 前端应用（`agentm-web`）有责任在用户执行首次写入操作（注册、发任务、提交结果）前展示本声明。
 
 ## 4. 数据最小化建议
 

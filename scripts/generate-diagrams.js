@@ -9,7 +9,7 @@ const path = require('path');
 
 // Mermaid diagram definitions
 const diagrams = {
-  'full-stack-architecture': `
+    'full-stack-architecture': `
 flowchart TB
     subgraph Users["👤 Users & Developers"]
         Human["Human User"]
@@ -65,7 +65,7 @@ flowchart TB
     style Solana fill:#9945ff,stroke:#7c3aed,stroke-width:2px,color:#fff
   `,
 
-  'protocol-kernel': `
+    'protocol-kernel': `
 flowchart TB
     subgraph Protocol["Gradience Protocol"]
         subgraph Kernel["⚡ Agent Layer Kernel"]
@@ -87,7 +87,7 @@ flowchart TB
     style A2A fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000
   `,
 
-  'task-state-machine': `
+    'task-state-machine': `
 stateDiagram-v2
     [*] --> Open : postTask()
     Open --> Completed : judgeAndPay()<br/>score ≥ 60
@@ -101,7 +101,7 @@ stateDiagram-v2
     style Refunded fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
   `,
 
-  'economic-model': `
+    'economic-model': `
 flowchart TB
     Escrow["Task Escrow 100%"]
     
@@ -115,7 +115,7 @@ flowchart TB
     style Protocol fill:#8b5cf6,stroke:#6d28d9,stroke-width:3px,color:#fff
   `,
 
-  'a2a-layers': `
+    'a2a-layers': `
 flowchart LR
     subgraph L1["⛓️ L1: Solana"]
         S["Task Settlement"]
@@ -133,7 +133,7 @@ flowchart LR
     style L2 fill:#8b5cf6,stroke:#6d28d9,stroke-width:3px,color:#fff
   `,
 
-  'cross-chain-reputation': `
+    'cross-chain-reputation': `
 flowchart TB
     subgraph Agent["👤 One Agent"]
         Sol["Solana"]
@@ -155,7 +155,7 @@ flowchart TB
     style Arb fill:#28a0f0,stroke:#1a7fc4,stroke-width:2px,color:#fff
   `,
 
-  'gan-dynamics': `
+    'gan-dynamics': `
 flowchart LR
     Agent["🟣 Agent Generator"] 
     Judge["🟡 Judge Discriminator"]
@@ -167,7 +167,7 @@ flowchart LR
     style Judge fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#000
   `,
 
-  'three-layer-stack': `
+    'three-layer-stack': `
 flowchart TB
     L3["Layer 3: gUSD Stablecoin"]
     L2["Layer 2: Agent Lending"]
@@ -185,14 +185,14 @@ flowchart TB
 // Create output directory
 const outputDir = path.join(__dirname, '..', 'public', 'diagrams');
 if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
+    fs.mkdirSync(outputDir, { recursive: true });
 }
 
 // Generate Mermaid config file for each diagram
 Object.entries(diagrams).forEach(([name, definition]) => {
-  const configPath = path.join(outputDir, `${name}.mmd`);
-  fs.writeFileSync(configPath, definition.trim(), 'utf-8');
-  console.log(`✓ Generated: ${configPath}`);
+    const configPath = path.join(outputDir, `${name}.mmd`);
+    fs.writeFileSync(configPath, definition.trim(), 'utf-8');
+    console.log(`✓ Generated: ${configPath}`);
 });
 
 // Generate HTML preview file
@@ -283,14 +283,21 @@ const htmlContent = `<!DOCTYPE html>
         <h1>Gradience Protocol Architecture</h1>
         <p class="subtitle">Interactive architecture diagrams with color-coded components</p>
         
-        ${Object.entries(diagrams).map(([name, definition], i) => `
+        ${Object.entries(diagrams)
+            .map(
+                ([name, definition], i) => `
         <div class="diagram-section">
-            <h2>${name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h2>
+            <h2>${name
+                .split('-')
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ')}</h2>
             <div class="mermaid">
 ${definition.trim()}
             </div>
         </div>
-        `).join('')}
+        `,
+            )
+            .join('')}
         
         <div class="legend">
             <div class="legend-item">
@@ -351,6 +358,6 @@ console.log(`✓ Generated preview: ${htmlPath}`);
 
 console.log('\n📊 Generated diagrams:');
 Object.keys(diagrams).forEach((name, i) => {
-  console.log(`  ${i + 1}. ${name}.mmd`);
+    console.log(`  ${i + 1}. ${name}.mmd`);
 });
 console.log('\n🌐 Open public/diagrams/index.html in a browser to view interactive diagrams');

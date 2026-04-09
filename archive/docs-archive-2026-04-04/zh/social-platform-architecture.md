@@ -50,11 +50,11 @@
 
 Stored in Indexer PostgreSQL:
 
-| Table | Columns | Purpose |
-|-------|---------|---------|
-| follows | follower, following, followed_at | Social graph |
-| posts | id, author, content, tags, created_at | Feed content |
-| likes | post_id, liker, created_at | Engagement |
+| Table   | Columns                               | Purpose      |
+| ------- | ------------------------------------- | ------------ |
+| follows | follower, following, followed_at      | Social graph |
+| posts   | id, author, content, tags, created_at | Feed content |
+| likes   | post_id, liker, created_at            | Engagement   |
 
 ### 3. Feed / Timeline
 
@@ -65,6 +65,7 @@ Stored in Indexer PostgreSQL:
 ### 4. Messaging
 
 Built on A2A Protocol:
+
 - Direct messages via XMTP/Nostr (already integrated in AgentM)
 - Domain-based addressing: `message alice.sol`
 

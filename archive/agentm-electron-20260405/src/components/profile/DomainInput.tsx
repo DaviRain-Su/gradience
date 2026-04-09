@@ -57,9 +57,7 @@ function defaultValidator(value: string): DomainValidationResult {
     }
 
     // Check for valid domain format
-    const hasValidExtension = Object.keys(TYPE_PATTERNS).some((type) =>
-        trimmed.endsWith(`.${type}`),
-    );
+    const hasValidExtension = Object.keys(TYPE_PATTERNS).some((type) => trimmed.endsWith(`.${type}`));
 
     if (!hasValidExtension) {
         return {
@@ -132,9 +130,7 @@ export function DomainInput({
     const value = controlledValue ?? internalValue;
 
     // Update placeholder based on detected type
-    const dynamicPlaceholder = detectedType
-        ? TYPE_PLACEHOLDERS[detectedType]
-        : placeholder;
+    const dynamicPlaceholder = detectedType ? TYPE_PLACEHOLDERS[detectedType] : placeholder;
 
     // Validate on change
     useEffect(() => {
@@ -230,9 +226,10 @@ export function DomainInput({
                         }}
                         className={`
                             px-3 py-1 text-xs font-medium rounded capitalize transition
-                            ${detectedType === type
-                                ? typeColors[type]
-                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                            ${
+                                detectedType === type
+                                    ? typeColors[type]
+                                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                             }
                         `}
                     >
@@ -254,11 +251,12 @@ export function DomainInput({
                         w-full bg-gray-900 border rounded-lg px-4 py-3 text-sm
                         focus:outline-none focus:ring-2 focus:ring-blue-500/50
                         transition-colors
-                        ${displayError
-                            ? 'border-red-500/50 focus:border-red-500'
-                            : isValid
-                                ? 'border-green-500/50 focus:border-green-500'
-                                : 'border-gray-700 focus:border-blue-500'
+                        ${
+                            displayError
+                                ? 'border-red-500/50 focus:border-red-500'
+                                : isValid
+                                  ? 'border-green-500/50 focus:border-green-500'
+                                  : 'border-gray-700 focus:border-blue-500'
                         }
                         ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                     `}
@@ -269,25 +267,17 @@ export function DomainInput({
                     {isLoading && (
                         <span className="w-4 h-4 border-2 border-gray-600 border-t-blue-500 rounded-full animate-spin" />
                     )}
-                    {!isLoading && isValid && (
-                        <span className="text-green-500 text-lg">✓</span>
-                    )}
-                    {!isLoading && displayError && (
-                        <span className="text-red-500 text-lg">✗</span>
-                    )}
+                    {!isLoading && isValid && <span className="text-green-500 text-lg">✓</span>}
+                    {!isLoading && displayError && <span className="text-red-500 text-lg">✗</span>}
                 </div>
             </div>
 
             {/* Error message */}
-            {displayError && (
-                <p className="text-xs text-red-400">{displayError}</p>
-            )}
+            {displayError && <p className="text-xs text-red-400">{displayError}</p>}
 
             {/* Help text */}
             {!displayError && !isValid && (
-                <p className="text-xs text-gray-500">
-                    Enter your blockchain domain name to link it to your profile
-                </p>
+                <p className="text-xs text-gray-500">Enter your blockchain domain name to link it to your profile</p>
             )}
 
             {/* Submit button */}
@@ -298,9 +288,10 @@ export function DomainInput({
                     disabled={!isValid || isLoading}
                     className={`
                         w-full px-4 py-2 rounded-lg text-sm font-medium transition
-                        ${isValid && !isLoading
-                            ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                        ${
+                            isValid && !isLoading
+                                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                         }
                     `}
                 >
@@ -402,9 +393,10 @@ export function DomainInputCompact({
                 disabled={!isValid}
                 className={`
                     px-4 py-2 rounded-lg text-sm font-medium transition
-                    ${isValid
-                        ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                    ${
+                        isValid
+                            ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                     }
                 `}
             >

@@ -13,31 +13,31 @@
 ```typescript
 // Explore Feed 数据结构
 interface ExploreFeed {
-  recommendations: ContentCard[];
-  currentMode: 'privacy' | 'precise' | 'random';
-  userIntent: 'passive' | 'active' | 'learning';
+    recommendations: ContentCard[];
+    currentMode: 'privacy' | 'precise' | 'random';
+    userIntent: 'passive' | 'active' | 'learning';
 }
 
 interface ContentCard {
-  id: string;
-  format: 'short_video' | 'article' | 'code_demo' | 'podcast' | 'interactive';
-  content: MediaContent;
-  
-  // 推荐解释（透明度）
-  whyRecommended: {
-    reason: string;           // "因为你关注过 DeFi"
-    confidence: number;       // 0-1
-    factors: string[];        // ["文件分析", "对话历史", "相似用户"]
-  };
-  
-  // 交互
-  actions: {
-    onLike: () => void;       // 正反馈，训练模型
-    onSkip: () => void;       // 负反馈
-    onSave: () => void;       // 添加到知识库
-    onShare: () => void;      // 社交分享
-    onDiscuss: () => void;    // 与 Agent 讨论此内容
-  };
+    id: string;
+    format: 'short_video' | 'article' | 'code_demo' | 'podcast' | 'interactive';
+    content: MediaContent;
+
+    // 推荐解释（透明度）
+    whyRecommended: {
+        reason: string; // "因为你关注过 DeFi"
+        confidence: number; // 0-1
+        factors: string[]; // ["文件分析", "对话历史", "相似用户"]
+    };
+
+    // 交互
+    actions: {
+        onLike: () => void; // 正反馈，训练模型
+        onSkip: () => void; // 负反馈
+        onSave: () => void; // 添加到知识库
+        onShare: () => void; // 社交分享
+        onDiscuss: () => void; // 与 Agent 讨论此内容
+    };
 }
 ```
 
@@ -67,24 +67,9 @@ interface ContentCard {
 
 ```tsx
 <ModeSwitcher>
-  <ModeOption 
-    icon="🔒" 
-    label="隐私模式"
-    description="不读取文件，仅执行任务"
-    warning="推荐内容可能不够精准"
-  />
-  <ModeOption 
-    icon="🎯" 
-    label="精准模式"
-    description="基于你的文件和对话推荐"
-    highlight="当前最懂你"
-  />
-  <ModeOption 
-    icon="🎲" 
-    label="随机模式"
-    description="意外发现新内容"
-    tag="10% 随机注入"
-  />
+    <ModeOption icon="🔒" label="隐私模式" description="不读取文件，仅执行任务" warning="推荐内容可能不够精准" />
+    <ModeOption icon="🎯" label="精准模式" description="基于你的文件和对话推荐" highlight="当前最懂你" />
+    <ModeOption icon="🎲" label="随机模式" description="意外发现新内容" tag="10% 随机注入" />
 </ModeSwitcher>
 ```
 
@@ -119,61 +104,61 @@ interface ContentCard {
 ```typescript
 // 备份配置
 interface BackupConfig {
-  // 频率
-  frequency: 'realtime' | 'hourly' | 'daily' | 'weekly' | 'manual';
-  
-  // 加密
-  encryption: {
-    type: 'password' | 'hardware_key' | 'social_recovery';
-    keyDerivation: 'argon2' | 'pbkdf2';
-    algorithm: 'aes-256-gcm';
-  };
-  
-  // 存储
-  storage: {
-    local: boolean;           // 本地副本
-    cloud: {
-      provider: 'gradience' | 'ipfs' | 'user_s3';
-      region: string;
+    // 频率
+    frequency: 'realtime' | 'hourly' | 'daily' | 'weekly' | 'manual';
+
+    // 加密
+    encryption: {
+        type: 'password' | 'hardware_key' | 'social_recovery';
+        keyDerivation: 'argon2' | 'pbkdf2';
+        algorithm: 'aes-256-gcm';
     };
-    decentralized: boolean;   // Arweave 永久存储
-  };
-  
-  // 保留策略
-  retention: {
-    versions: number;         // 保留版本数
-    autoCleanup: boolean;     // 自动清理旧版本
-  };
+
+    // 存储
+    storage: {
+        local: boolean; // 本地副本
+        cloud: {
+            provider: 'gradience' | 'ipfs' | 'user_s3';
+            region: string;
+        };
+        decentralized: boolean; // Arweave 永久存储
+    };
+
+    // 保留策略
+    retention: {
+        versions: number; // 保留版本数
+        autoCleanup: boolean; // 自动清理旧版本
+    };
 }
 
 // 迁移流程
 interface MigrationFlow {
-  export: {
-    format: 'standard_json' | 'encrypted_blob' | 'mnemonic';
-    include: ['conversations', 'preferences', 'knowledge_graph'];
-    compression: 'zstd' | 'gzip';
-  };
-  
-  import: {
-    validation: boolean;      // 验证完整性
-    conflictResolution: 'newest' | 'merge' | 'manual';
-    progressCallback: (pct: number) => void;
-  };
+    export: {
+        format: 'standard_json' | 'encrypted_blob' | 'mnemonic';
+        include: ['conversations', 'preferences', 'knowledge_graph'];
+        compression: 'zstd' | 'gzip';
+    };
+
+    import: {
+        validation: boolean; // 验证完整性
+        conflictResolution: 'newest' | 'merge' | 'manual';
+        progressCallback: (pct: number) => void;
+    };
 }
 ```
 
 ### 2.3 商业模式
 
-| 功能 | 免费版 | 专业版 ￥39/月 | 团队版 ￥99/月 |
-|------|--------|---------------|---------------|
-| 本地备份 | ✅ | ✅ | ✅ |
-| 云备份 | ❌ | ✅ 100GB | ✅ 1TB |
-| 设备数 | 1 | 3 | 无限 |
-| 版本历史 | ❌ | 30天 | 无限 |
-| 跨平台同步 | ❌ | ✅ | ✅ |
-| 团队协作 | ❌ | ❌ | ✅ |
-| API 访问 | ❌ | ❌ | ✅ |
-| 优先支持 | ❌ | ✅ | ✅ |
+| 功能       | 免费版 | 专业版 ￥39/月 | 团队版 ￥99/月 |
+| ---------- | ------ | -------------- | -------------- |
+| 本地备份   | ✅     | ✅             | ✅             |
+| 云备份     | ❌     | ✅ 100GB       | ✅ 1TB         |
+| 设备数     | 1      | 3              | 无限           |
+| 版本历史   | ❌     | 30天           | 无限           |
+| 跨平台同步 | ❌     | ✅             | ✅             |
+| 团队协作   | ❌     | ❌             | ✅             |
+| API 访问   | ❌     | ❌             | ✅             |
+| 优先支持   | ❌     | ✅             | ✅             |
 
 ---
 
@@ -183,73 +168,73 @@ interface MigrationFlow {
 
 **传统电子书 vs Agent 原生图书:**
 
-| 维度 | 传统 | Agent 原生 |
-|------|------|-----------|
+| 维度     | 传统     | Agent 原生             |
+| -------- | -------- | ---------------------- |
 | 阅读方式 | 线性阅读 | 非线性（跳转相关概念） |
-| 互动 | 批注 | 实时讨论、Agent 答疑 |
-| 创造 | 被动消费 | 你的笔记成为"分支版本" |
-| 社交 | 书评 | 共读、思想碰撞 |
+| 互动     | 批注     | 实时讨论、Agent 答疑   |
+| 创造     | 被动消费 | 你的笔记成为"分支版本" |
+| 社交     | 书评     | 共读、思想碰撞         |
 
 ### 3.2 产品形态
 
 ```typescript
 interface AgentBook {
-  // 基础信息
-  metadata: {
-    title: string;
-    author: string;
-    authorAgent: AgentConfig;    // 作者 Agent 配置
-  };
-  
-  // 内容结构
-  content: {
-    chapters: Chapter[];
-    knowledgeGraph: Graph;       // 概念关联图
-    difficultyCurve: number[];   // 难度曲线
-  };
-  
-  // Agent 陪伴
-  companion: {
-    readingStyle: 'socratic' | 'guide' | 'silent';  // 苏格拉底式/引导式/静默
-    discussionDepth: 'surface' | 'deep' | 'expert';
-    quizFrequency: 'never' | 'chapter_end' | 'adaptive';
-  };
-  
-  // 社交功能
-  social: {
-    readingGroups: Group[];      // 共读小组
-    annotations: Annotation[];   // 公开批注
-    forks: BookFork[];           // 分支版本
-  };
+    // 基础信息
+    metadata: {
+        title: string;
+        author: string;
+        authorAgent: AgentConfig; // 作者 Agent 配置
+    };
+
+    // 内容结构
+    content: {
+        chapters: Chapter[];
+        knowledgeGraph: Graph; // 概念关联图
+        difficultyCurve: number[]; // 难度曲线
+    };
+
+    // Agent 陪伴
+    companion: {
+        readingStyle: 'socratic' | 'guide' | 'silent'; // 苏格拉底式/引导式/静默
+        discussionDepth: 'surface' | 'deep' | 'expert';
+        quizFrequency: 'never' | 'chapter_end' | 'adaptive';
+    };
+
+    // 社交功能
+    social: {
+        readingGroups: Group[]; // 共读小组
+        annotations: Annotation[]; // 公开批注
+        forks: BookFork[]; // 分支版本
+    };
 }
 
 // 阅读会话
 interface ReadingSession {
-  bookId: string;
-  currentPosition: Location;
-  
-  // Agent 对话
-  discussions: {
-    userQuestion: string;
-    agentResponse: string;
-    context: string[];           // 引用的书内容
-    timestamp: Date;
-  }[];
-  
-  // 笔记
-  notes: {
-    location: Location;
-    content: string;
-    tags: string[];
-    isPublic: boolean;
-  }[];
-  
-  // 进度
-  progress: {
-    percentComplete: number;
-    estimatedTimeRemaining: number;
-    comprehensionScore: number;  // Agent 评估的理解度
-  };
+    bookId: string;
+    currentPosition: Location;
+
+    // Agent 对话
+    discussions: {
+        userQuestion: string;
+        agentResponse: string;
+        context: string[]; // 引用的书内容
+        timestamp: Date;
+    }[];
+
+    // 笔记
+    notes: {
+        location: Location;
+        content: string;
+        tags: string[];
+        isPublic: boolean;
+    }[];
+
+    // 进度
+    progress: {
+        percentComplete: number;
+        estimatedTimeRemaining: number;
+        comprehensionScore: number; // Agent 评估的理解度
+    };
 }
 ```
 
@@ -281,36 +266,36 @@ interface ReadingSession {
 
 **传统电商 vs Agent 原生购物:**
 
-| 维度 | 传统 | Agent 原生 |
-|------|------|-----------|
-| 触发 | 浏览/广告 | Agent 识别真实需求 |
-| 决策 | 人比较 | Agent 比价、等折扣 |
-| 验证 | 看评价 | Agent 验证评价真实性 |
-| 时机 | 冲动消费 | 理性消费（基于需求） |
+| 维度 | 传统      | Agent 原生           |
+| ---- | --------- | -------------------- |
+| 触发 | 浏览/广告 | Agent 识别真实需求   |
+| 决策 | 人比较    | Agent 比价、等折扣   |
+| 验证 | 看评价    | Agent 验证评价真实性 |
+| 时机 | 冲动消费  | 理性消费（基于需求） |
 
 ### 4.2 需求发现示例
 
 ```typescript
 // Agent 被动发现需求
 interface ShoppingTrigger {
-  type: 'wear' | 'upgrade' | 'project' | 'health' | 'seasonal';
-  
-  // 触发示例
-  examples: {
-    wear: "你的耳机用了 2 年，电池衰减到 60%，建议升级";
-    upgrade: "你最近在学 Rust，这本书评分很高，适合你当前水平";
-    project: "你要开始视频制作项目，需要麦克风，我筛选了几款";
-    health: "你久坐时间长，这个站立办公桌在促销";
-    seasonal: "冬天到了，你所在的地区需要保暖设备";
-  };
-  
-  // 决策支持
-  decision: {
-    priceTracking: boolean;      // 价格追踪
-    reviewAnalysis: boolean;     // 评价分析（识别虚假评价）
-    alternativeComparison: boolean; // 替代品比较
-    purchaseTiming: 'now' | 'wait_discount' | 'wait_new_version';
-  };
+    type: 'wear' | 'upgrade' | 'project' | 'health' | 'seasonal';
+
+    // 触发示例
+    examples: {
+        wear: '你的耳机用了 2 年，电池衰减到 60%，建议升级';
+        upgrade: '你最近在学 Rust，这本书评分很高，适合你当前水平';
+        project: '你要开始视频制作项目，需要麦克风，我筛选了几款';
+        health: '你久坐时间长，这个站立办公桌在促销';
+        seasonal: '冬天到了，你所在的地区需要保暖设备';
+    };
+
+    // 决策支持
+    decision: {
+        priceTracking: boolean; // 价格追踪
+        reviewAnalysis: boolean; // 评价分析（识别虚假评价）
+        alternativeComparison: boolean; // 替代品比较
+        purchaseTiming: 'now' | 'wait_discount' | 'wait_new_version';
+    };
 }
 ```
 
@@ -403,18 +388,18 @@ Agent:
 ```tsx
 // "我的画像"页面
 <MyProfile>
-  <PersonalityRadar data={personalityProfile} />
-  <InterestGraph data={interestGraph} />
-  <RecentInsights 
-    insights={recentDiscoveries}
-    // "根据你最近的代码，你对 Rust 的兴趣在上升"
-  />
-  <DataControl>
-    <Button onClick={downloadMyData}>下载我的数据</Button>
-    <Button onClick={deleteAnalysis}>删除分析</Button>
-    <Button onClick={exportProfile}>导出画像</Button>
-    <Button onClick={pauseAnalysis}>暂停分析 7 天</Button>
-  </DataControl>
+    <PersonalityRadar data={personalityProfile} />
+    <InterestGraph data={interestGraph} />
+    <RecentInsights
+        insights={recentDiscoveries}
+        // "根据你最近的代码，你对 Rust 的兴趣在上升"
+    />
+    <DataControl>
+        <Button onClick={downloadMyData}>下载我的数据</Button>
+        <Button onClick={deleteAnalysis}>删除分析</Button>
+        <Button onClick={exportProfile}>导出画像</Button>
+        <Button onClick={pauseAnalysis}>暂停分析 7 天</Button>
+    </DataControl>
 </MyProfile>
 ```
 
@@ -467,4 +452,4 @@ Agent:
 
 ---
 
-*文档状态: 草案 v0.1 | 最后更新: 2026-04-03*
+_文档状态: 草案 v0.1 | 最后更新: 2026-04-03_

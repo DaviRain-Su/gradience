@@ -12,21 +12,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
     if (!mounted) {
         return (
-            <div style={{
-                minHeight: '100vh',
-                background: '#F3F3F8',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}>
+            <div
+                style={{
+                    minHeight: '100vh',
+                    background: '#F3F3F8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
                 <div style={{ color: '#16161A', opacity: 0.6 }}>Loading AgentM...</div>
             </div>
         );
     }
 
-    return (
-        <ErrorBoundary>
-            {children}
-        </ErrorBoundary>
-    );
+    return <ErrorBoundary>{children}</ErrorBoundary>;
 }

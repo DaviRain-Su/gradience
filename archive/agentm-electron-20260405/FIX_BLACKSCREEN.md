@@ -29,7 +29,7 @@ load: () => {
         storage.removeItem(DEFAULT_PERSIST_KEY); // 清除损坏数据
         return null;
     }
-}
+};
 ```
 
 ### 2. 错误边界组件 (ErrorBoundary.tsx)
@@ -37,12 +37,11 @@ load: () => {
 添加 React 错误边界，捕获渲染错误：
 
 ```tsx
-<ErrorBoundary>
-    {privyAppId ? <PrivyApp /> : <DemoApp />}
-</ErrorBoundary>
+<ErrorBoundary>{privyAppId ? <PrivyApp /> : <DemoApp />}</ErrorBoundary>
 ```
 
 当发生错误时显示：
+
 - 错误信息
 - "Reset and Reload" 按钮
 - 自动清除 localStorage 并重载
@@ -50,6 +49,7 @@ load: () => {
 ### 3. OWS Adapter 方法补全
 
 添加缺失的方法：
+
 - `getIdentity()`
 - `signTransaction()`
 - `credentials` 字段

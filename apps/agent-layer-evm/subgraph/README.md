@@ -54,23 +54,23 @@ pnpm run deploy
 
 Before deployment you **must** update these fields in `subgraph.yaml`:
 
-| Field | Description |
-|-------|-------------|
-| `dataSources[].network` | Target network (`base-sepolia`, `xlayer`, `arbitrum-one`, etc.) |
-| `dataSources[].source.address` | Deployed contract address for that network |
-| `dataSources[].source.startBlock` | Block number of the contract creation tx |
+| Field                             | Description                                                     |
+| --------------------------------- | --------------------------------------------------------------- |
+| `dataSources[].network`           | Target network (`base-sepolia`, `xlayer`, `arbitrum-one`, etc.) |
+| `dataSources[].source.address`    | Deployed contract address for that network                      |
+| `dataSources[].source.startBlock` | Block number of the contract creation tx                        |
 
 ## Schema Highlights
 
-| Entity | Purpose |
-|--------|---------|
-| `Task` | Full task state machine (Open → Completed/Refunded) |
-| `Application` | Agent stake + application timestamp |
-| `Submission` | Result/trace refs + submission timestamp |
-| `Dispute` | Dispute bond, reason hash, resolution outcome |
-| `User` | Aggregated on-chain identity across all contracts |
-| `Reputation` | Oracle-fed global & category scores |
-| `ProtocolMetric` | Singleton entity tracking aggregate protocol stats |
+| Entity           | Purpose                                             |
+| ---------------- | --------------------------------------------------- |
+| `Task`           | Full task state machine (Open → Completed/Refunded) |
+| `Application`    | Agent stake + application timestamp                 |
+| `Submission`     | Result/trace refs + submission timestamp            |
+| `Dispute`        | Dispute bond, reason hash, resolution outcome       |
+| `User`           | Aggregated on-chain identity across all contracts   |
+| `Reputation`     | Oracle-fed global & category scores                 |
+| `ProtocolMetric` | Singleton entity tracking aggregate protocol stats  |
 
 ## Multi-chain Deployment
 

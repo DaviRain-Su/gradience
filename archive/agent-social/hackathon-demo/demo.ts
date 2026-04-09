@@ -35,15 +35,14 @@ import { getDiscountedRate } from './skill-token.ts';
 
 const RPC = process.env.GRADIENCE_RPC ?? 'https://api.devnet.solana.com';
 const NETWORK = (process.env.NETWORK ?? 'solana-devnet') as 'solana-devnet' | 'solana-mainnet';
-const ALICE_SECRET = process.env.ALICE_SECRET ? JSON.parse(process.env.ALICE_SECRET) as number[] : null;
-const BOB_SECRET   = process.env.BOB_SECRET   ? JSON.parse(process.env.BOB_SECRET)   as number[] : null;
+const ALICE_SECRET = process.env.ALICE_SECRET ? (JSON.parse(process.env.ALICE_SECRET) as number[]) : null;
+const BOB_SECRET = process.env.BOB_SECRET ? (JSON.parse(process.env.BOB_SECRET) as number[]) : null;
 
 /**
  * Token image URI — must start with https://gateway.irys.xyz/
  * Upload: npx @irys/sdk upload ./image.png --network devnet
  */
-const ALICE_IMAGE_URI = process.env.ALICE_IMAGE_URI
-    ?? 'https://gateway.irys.xyz/REPLACE_WITH_TX_ID';
+const ALICE_IMAGE_URI = process.env.ALICE_IMAGE_URI ?? 'https://gateway.irys.xyz/REPLACE_WITH_TX_ID';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,7 +54,9 @@ function separator(label: string) {
     console.log(`${'─'.repeat(64)}\n`);
 }
 
-function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
 
 // Deterministic-looking demo addresses from a label
 function fakeAddr(label: string): string {
@@ -93,7 +94,7 @@ async function main() {
         // LIVE: register agents on-chain
         const { makeUmi, registerGradienceAgent } = await import('./agents.ts');
         const aliceUmi = makeUmi(RPC);
-        const bobUmi   = makeUmi(RPC);
+        const bobUmi = makeUmi(RPC);
         aliceUmi.use(keypairIdentity(aliceUmi.eddsa.createKeypairFromSeed(new Uint8Array(ALICE_SECRET!).slice(0, 32))));
         bobUmi.use(keypairIdentity(bobUmi.eddsa.createKeypairFromSeed(new Uint8Array(BOB_SECRET!).slice(0, 32))));
 
@@ -112,8 +113,8 @@ async function main() {
         ]);
 
         aliceAssetAddress = alice.assetAddress;
-        bobAssetAddress   = bob.assetAddress;
-        aliceWallet       = aliceUmi.identity.publicKey.toString();
+        bobAssetAddress = bob.assetAddress;
+        aliceWallet = aliceUmi.identity.publicKey.toString();
 
         // Launch skill token
         separator('Step 2a — Launching ADEFI skill token (Metaplex Genesis)');
@@ -122,7 +123,7 @@ async function main() {
             name: 'Alice DeFi Skill',
             symbol: 'ADEFI',
             imageUri: ALICE_IMAGE_URI,
-            description: 'Access token for Alice\'s DeFi analysis services. Hold ≥100 ADEFI → 50% A2A discount.',
+            description: "Access token for Alice's DeFi analysis services. Hold ≥100 ADEFI → 50% A2A discount.",
             agentAssetAddress: aliceAssetAddress,
             creatorWallet: aliceWallet,
             network: NETWORK,
@@ -132,10 +133,10 @@ async function main() {
     } else {
         // LOCAL: simulate addresses
         aliceAssetAddress = fakeAddr('ALICE_AGENT_NFT');
-        bobAssetAddress   = fakeAddr('BOB_AGENT_NFT');
-        aliceWallet       = fakeAddr('ALICE_WALLET');
-        skillTokenMint    = fakeAddr('ADEFI_MINT');
-        skillTokenLink    = 'https://metaplex.com/genesis/ADEFI';
+        bobAssetAddress = fakeAddr('BOB_AGENT_NFT');
+        aliceWallet = fakeAddr('ALICE_WALLET');
+        skillTokenMint = fakeAddr('ADEFI_MINT');
+        skillTokenLink = 'https://metaplex.com/genesis/ADEFI';
         console.log(`[LOCAL] Alice NFT:  ${aliceAssetAddress}`);
         console.log(`[LOCAL] Bob NFT:    ${bobAssetAddress}`);
         console.log(`[LOCAL] ADEFI mint: ${skillTokenMint}`);
@@ -146,7 +147,7 @@ async function main() {
     console.log(`Link:  ${skillTokenLink}`);
     console.log('\nKey design:');
     console.log('  creatorFeeAgentMint = alice.assetAddress');
-    console.log('  → Genesis derives Alice\'s identity PDA and routes all trading fees to her');
+    console.log("  → Genesis derives Alice's identity PDA and routes all trading fees to her");
     console.log('  → No manual fee routing — the on-chain link is automatic');
     console.log('\nToken utility:');
     console.log('  • 0 ADEFI:    pay 100 + 2/byte microlamports per A2A message');
@@ -158,25 +159,30 @@ async function main() {
     separator('Step 3 — Bob discovers Alice via Gradience reputation ranking');
 
     const pool = [
-        { judge: aliceAssetAddress,    stake: 5000, weight: 1500 },
-        { judge: fakeAddr('CHARLIE'),  stake: 2000, weight: 800  },
-        { judge: fakeAddr('DAVE'),     stake: 500,  weight: 200  },
+        { judge: aliceAssetAddress, stake: 5000, weight: 1500 },
+        { judge: fakeAddr('CHARLIE'), stake: 2000, weight: 800 },
+        { judge: fakeAddr('DAVE'), stake: 500, weight: 200 },
     ];
     const reputations = new Map<string, AgentDiscoveryRow['reputation']>([
-        [aliceAssetAddress,   { global_avg_score: 92.5, global_completed: 47, global_total_applied: 50, win_rate: 0.94 }],
-        [fakeAddr('CHARLIE'), { global_avg_score: 78.0, global_completed: 12, global_total_applied: 15, win_rate: 0.80 }],
-        [fakeAddr('DAVE'),    null],
+        [aliceAssetAddress, { global_avg_score: 92.5, global_completed: 47, global_total_applied: 50, win_rate: 0.94 }],
+        [
+            fakeAddr('CHARLIE'),
+            { global_avg_score: 78.0, global_completed: 12, global_total_applied: 15, win_rate: 0.8 },
+        ],
+        [fakeAddr('DAVE'), null],
     ]);
 
-    const rows   = toDiscoveryRows(pool, reputations);
+    const rows = toDiscoveryRows(pool, reputations);
     const ranked = sortAndFilterAgents(rows, '');
 
     console.log('Ranked DeFi agents (score → completed → weight):');
     ranked.forEach((r, i) => {
-        const score     = r.reputation?.global_avg_score?.toFixed(1) ?? 'N/A';
+        const score = r.reputation?.global_avg_score?.toFixed(1) ?? 'N/A';
         const completed = r.reputation?.global_completed ?? 0;
-        const tag       = r.agent === aliceAssetAddress ? '  ← Alice ✓' : '';
-        console.log(`  ${i + 1}. ${r.agent.slice(0, 12)}…  score=${score}  completed=${completed}  weight=${r.weight}${tag}`);
+        const tag = r.agent === aliceAssetAddress ? '  ← Alice ✓' : '';
+        console.log(
+            `  ${i + 1}. ${r.agent.slice(0, 12)}…  score=${score}  completed=${completed}  weight=${r.weight}${tag}`,
+        );
     });
 
     const top = ranked[0];
@@ -187,22 +193,23 @@ async function main() {
     // -----------------------------------------------------------------------
     separator('Step 4 — A2A invite: Bob → Alice  (0 ADEFI, standard rate)');
 
-    const hub   = new InMemoryMagicBlockHub({ latencyMs: 20 });
-    const aT    = new InMemoryMagicBlockTransport(hub);
-    const bT    = new InMemoryMagicBlockTransport(hub);
+    const hub = new InMemoryMagicBlockHub({ latencyMs: 20 });
+    const aT = new InMemoryMagicBlockTransport(hub);
+    const bT = new InMemoryMagicBlockTransport(hub);
 
     const aliceA2A = new MagicBlockA2AAgent(aliceAssetAddress, aT);
-    const bobA2A   = new MagicBlockA2AAgent(bobAssetAddress,   bT);
+    const bobA2A = new MagicBlockA2AAgent(bobAssetAddress, bT);
 
     const log: A2ADelivery[] = [];
-    aliceA2A.onDelivery(d => log.push(d));
-    bobA2A.onDelivery(d => log.push(d));
-    aliceA2A.start(); bobA2A.start();
+    aliceA2A.onDelivery((d) => log.push(d));
+    bobA2A.onDelivery((d) => log.push(d));
+    aliceA2A.start();
+    bobA2A.start();
 
     const topic = 'DeFi Strategy Analysis';
-    const msg1  = 'Analyze ETH/USDC LP position for 10k USDC. Provide entry/exit signals.';
+    const msg1 = 'Analyze ETH/USDC LP position for 10k USDC. Provide entry/exit signals.';
 
-    const stdRate    = getDiscountedRate(0n);
+    const stdRate = getDiscountedRate(0n);
     const stdPayment = estimateMicropayment(topic, msg1, stdRate);
 
     console.log(`Rate:    base=${stdRate.baseMicrolamports} + ${stdRate.perByteMicrolamports}/byte`);
@@ -211,7 +218,7 @@ async function main() {
     bobA2A.sendInvite({ to: aliceAssetAddress, topic, message: msg1 });
     await sleep(100);
 
-    const aliceRecv1 = log.find(d => d.direction === 'incoming' && d.envelope.to === aliceAssetAddress);
+    const aliceRecv1 = log.find((d) => d.direction === 'incoming' && d.envelope.to === aliceAssetAddress);
     if (aliceRecv1) {
         console.log(`\n✉  Alice received:`);
         console.log(`   "${aliceRecv1.envelope.message}"`);
@@ -226,7 +233,7 @@ async function main() {
     });
     await sleep(100);
 
-    const bobRecv1 = log.find(d => d.direction === 'incoming' && d.envelope.to === bobAssetAddress);
+    const bobRecv1 = log.find((d) => d.direction === 'incoming' && d.envelope.to === bobAssetAddress);
     if (bobRecv1) {
         console.log(`\n✉  Bob received Alice's analysis:`);
         console.log(`   "${bobRecv1.envelope.message}"`);
@@ -237,15 +244,15 @@ async function main() {
     // -----------------------------------------------------------------------
     separator('Step 5 — Bob buys 100 ADEFI → discounted A2A rate');
 
-    const disRate    = getDiscountedRate(100n);
+    const disRate = getDiscountedRate(100n);
     const disPayment = estimateMicropayment(topic, msg1, disRate);
-    const saved      = stdPayment - disPayment;
-    const savedPct   = Math.round((saved / stdPayment) * 100);
+    const saved = stdPayment - disPayment;
+    const savedPct = Math.round((saved / stdPayment) * 100);
 
     // Use discounted policy for next message
     const bobA2ADiscount = new MagicBlockA2AAgent(bobAssetAddress, bT, Date.now, disRate);
     bobA2ADiscount.start();
-    bobA2ADiscount.onDelivery(d => log.push(d));
+    bobA2ADiscount.onDelivery((d) => log.push(d));
 
     console.log(`Rate:    base=${disRate.baseMicrolamports} + ${disRate.perByteMicrolamports}/byte`);
     console.log(`Payment: ${disPayment} µλ  (saves ${saved} µλ = ${savedPct}% cheaper)`);
@@ -257,7 +264,7 @@ async function main() {
     });
     await sleep(100);
 
-    const aliceRecv2 = log.filter(d => d.direction === 'incoming' && d.envelope.to === aliceAssetAddress)[1];
+    const aliceRecv2 = log.filter((d) => d.direction === 'incoming' && d.envelope.to === aliceAssetAddress)[1];
     if (aliceRecv2) {
         console.log(`\n✉  Alice received follow-up at discounted rate:`);
         console.log(`   "${aliceRecv2.envelope.message}"`);
@@ -269,11 +276,13 @@ async function main() {
     // -----------------------------------------------------------------------
     separator('Economic Summary');
 
-    const outgoing = log.filter(d => d.direction === 'outgoing');
+    const outgoing = log.filter((d) => d.direction === 'outgoing');
     console.log('A2A interaction log:');
     outgoing.forEach((d, i) => {
         const rate = d.envelope.paymentMicrolamports === stdPayment ? 'std' : 'discount';
-        console.log(`  ${i + 1}. ${d.envelope.from.slice(0,8)}→${d.envelope.to.slice(0,8)}  ${d.envelope.paymentMicrolamports} µλ [${rate}]`);
+        console.log(
+            `  ${i + 1}. ${d.envelope.from.slice(0, 8)}→${d.envelope.to.slice(0, 8)}  ${d.envelope.paymentMicrolamports} µλ [${rate}]`,
+        );
     });
 
     console.log('\nOn-chain (Metaplex):');
@@ -288,7 +297,12 @@ async function main() {
     console.log('\n✅ Demo complete');
     if (skillTokenLink) console.log(`🔗 ${skillTokenLink}`);
 
-    aliceA2A.stop(); bobA2A.stop(); bobA2ADiscount.stop();
+    aliceA2A.stop();
+    bobA2A.stop();
+    bobA2ADiscount.stop();
 }
 
-main().catch(err => { console.error('Demo failed:', err); process.exit(1); });
+main().catch((err) => {
+    console.error('Demo failed:', err);
+    process.exit(1);
+});

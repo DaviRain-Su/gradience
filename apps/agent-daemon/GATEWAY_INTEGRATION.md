@@ -26,6 +26,7 @@ node scripts/e2e-gateway-devnet.mjs
 ```
 
 Expected output:
+
 ```
 ✅ GATEWAY E2E SUCCESS
 Task ID     : 10
@@ -52,26 +53,27 @@ WorkflowExecutionGateway.drive()
 
 ## Core Abstractions
 
-| Component | File | Responsibility |
-|-----------|------|----------------|
-| `GatewayStore` | `src/gateway/store.ts` | SQLite persistence for purchase record lifecycle |
-| `PurchaseStateMachine` | `src/gateway/state-machine.ts` | Valid transitions: PENDING → TASK_CREATING → TASK_CREATED → APPLIED → SUBMITTED → EXECUTING → SETTLING → SETTLED |
-| `DefaultWorkflowExecutionGateway` | `src/gateway/gateway.ts` | Orchestrates the end-to-end flow |
-| `PollingMarketplaceEventListener` | `src/gateway/event-listener.ts` | Polls signatures for marketplace program and parses `purchase_workflow_v2` (opcode 8) |
-| `DefaultArenaTaskFactory` | `src/gateway/arena-factory.ts` | Maps purchase record to `PostTaskParams` |
+| Component                         | File                            | Responsibility                                                                                                   |
+| --------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GatewayStore`                    | `src/gateway/store.ts`          | SQLite persistence for purchase record lifecycle                                                                 |
+| `PurchaseStateMachine`            | `src/gateway/state-machine.ts`  | Valid transitions: PENDING → TASK_CREATING → TASK_CREATED → APPLIED → SUBMITTED → EXECUTING → SETTLING → SETTLED |
+| `DefaultWorkflowExecutionGateway` | `src/gateway/gateway.ts`        | Orchestrates the end-to-end flow                                                                                 |
+| `PollingMarketplaceEventListener` | `src/gateway/event-listener.ts` | Polls signatures for marketplace program and parses `purchase_workflow_v2` (opcode 8)                            |
+| `DefaultArenaTaskFactory`         | `src/gateway/arena-factory.ts`  | Maps purchase record to `PostTaskParams`                                                                         |
 
 ## API Routes
 
 Registered under `/api/v1/gateway/`:
 
 - **GET** `/purchases/:purchaseId`
-  - Returns the full `GatewayPurchaseRecord`
+    - Returns the full `GatewayPurchaseRecord`
 - **POST** `/purchases/:purchaseId/retry`
-  - Retries a failed purchase (checks `attempts < maxRetries`)
+    - Retries a failed purchase (checks `attempts < maxRetries`)
 
 ## Event Listener
 
 `PollingMarketplaceEventListener` uses `getSignaturesForAddress` polling with:
+
 - configurable `pollIntervalMs` (default 15s)
 - automatic deduplication via `processedSignatures` LRU
 - fallback friendly compared to websocket logSubscribe
@@ -103,11 +105,11 @@ cd ../.. && pnpm run typecheck
 
 ## Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| `RefTooLong (6034)` on `post_task` | `evalRef` exceeds 128 bytes | Shorten `workflowId` / `purchaseId` or use `buildEvalRef` |
-| `post_task failed` repeatedly | Arena program config/taskCount mismatch | Ensure `getNextTaskId` returns the on-chain `taskCount` |
-| E2E times out at `EXECUTING` | VEL provider not initialized | Check `/tmp/gateway-e2e.sock` and `provider.initialize()` |
+| Symptom                            | Likely Cause                            | Fix                                                       |
+| ---------------------------------- | --------------------------------------- | --------------------------------------------------------- |
+| `RefTooLong (6034)` on `post_task` | `evalRef` exceeds 128 bytes             | Shorten `workflowId` / `purchaseId` or use `buildEvalRef` |
+| `post_task failed` repeatedly      | Arena program config/taskCount mismatch | Ensure `getNextTaskId` returns the on-chain `taskCount`   |
+| E2E times out at `EXECUTING`       | VEL provider not initialized            | Check `/tmp/gateway-e2e.sock` and `provider.initialize()` |
 
 ## Related Docs
 

@@ -3,9 +3,11 @@
 ## 🤔 你的理解正确吗？
 
 **你的理解：**
+
 > "把 Agent、守护进程、ChainHub Indexer 三个服务统一在一起？"
 
 **实际情况：**
+
 > **不是统一！** 这三个是完全不同职责的服务，各司其职。
 
 ---
@@ -15,6 +17,7 @@
 ### 1️⃣ Chain Hub Indexer（数据索引层）
 
 **是什么：**
+
 ```
 类似于 "区块链浏览器后端"
 ├── PostgreSQL 数据库（存储链上数据）
@@ -23,16 +26,19 @@
 ```
 
 **做什么：**
+
 - 监听 Solana 链上事件
 - 解析 Gradience 合约数据
 - 存储到 PostgreSQL
 - 提供 GraphQL 查询接口
 
 **服务谁：**
+
 - AgentM Web（前端展示数据）
 - 其他需要链上数据的服务
 
 **你需要维护吗？**
+
 ```
 ├── 数据库 Schema ✅ 需要自己设计
 ├── 索引逻辑 ✅ 需要自己编写
@@ -40,6 +46,7 @@
 ```
 
 **启动方式：**
+
 ```bash
 cd apps/chain-hub/indexer
 docker-compose up -d  # 只启动 PostgreSQL + Redis
@@ -51,6 +58,7 @@ docker-compose up -d  # 只启动 PostgreSQL + Redis
 ### 2️⃣ Agent Daemon（本地代理运行时）
 
 **是什么：**
+
 ```
 类似于 "本地后台服务"
 ├── SQLite 本地数据库
@@ -59,16 +67,19 @@ docker-compose up -d  # 只启动 PostgreSQL + Redis
 ```
 
 **做什么：**
+
 - 运行在本机（用户电脑）
 - 管理本地 Agent 实例
 - 与 Gradience 网络通信
 - 执行浏览器自动化（Playwright）
 
 **服务谁：**
+
 - AgentM Electron（桌面 App）
 - 本地运行的 Agent
 
 **用户需要安装吗？**
+
 ```
 是的！Agent Daemon 需要用户本地安装运行
 ├── 类似于 "本地节点"
@@ -76,6 +87,7 @@ docker-compose up -d  # 只启动 PostgreSQL + Redis
 ```
 
 **启动方式：**
+
 ```bash
 cd apps/agent-daemon
 pnpm install
@@ -87,6 +99,7 @@ pnpm dev  # 本地启动
 ### 3️⃣ A2A Protocol Runtime（通信运行时）
 
 **是什么：**
+
 ```
 类似于 "消息队列 + 状态机"
 ├── Rust 编写（高性能）
@@ -95,16 +108,19 @@ pnpm dev  # 本地启动
 ```
 
 **做什么：**
+
 - Agent 之间的 A2A 消息传递
 - 任务生命周期管理
 - 消息加密/解密
 - 状态同步
 
 **服务谁：**
+
 - A2A 协议用户
 - 需要 Agent 间通信的场景
 
 **如何运行：**
+
 ```bash
 # A2A Runtime 是 Solana 程序（链上）+ 可选的本地运行时
 cd apps/a2a-protocol
@@ -115,21 +131,22 @@ cd apps/a2a-protocol
 
 ## 📊 三个服务的对比
 
-| 维度 | Chain Hub Indexer | Agent Daemon | A2A Runtime |
-|------|-------------------|--------------|-------------|
-| **类型** | 数据服务 | 本地服务 | 通信服务 |
-| **位置** | 云端/服务器 | 用户本地 | 链上 + 可选本地 |
-| **语言** | Rust | TypeScript | Rust |
-| **存储** | PostgreSQL | SQLite | 链上 |
-| **给谁用** | Web 前端 | 桌面 App | Agent 间通信 |
-| **部署** | Docker | 本地安装 | Solana |
-| **维护** | 需要维护 | 用户自管 | 链上自动 |
+| 维度       | Chain Hub Indexer | Agent Daemon | A2A Runtime     |
+| ---------- | ----------------- | ------------ | --------------- |
+| **类型**   | 数据服务          | 本地服务     | 通信服务        |
+| **位置**   | 云端/服务器       | 用户本地     | 链上 + 可选本地 |
+| **语言**   | Rust              | TypeScript   | Rust            |
+| **存储**   | PostgreSQL        | SQLite       | 链上            |
+| **给谁用** | Web 前端          | 桌面 App     | Agent 间通信    |
+| **部署**   | Docker            | 本地安装     | Solana          |
+| **维护**   | 需要维护          | 用户自管     | 链上自动        |
 
 ---
 
 ## 🎯 AgentM Web 的真实数据流
 
 ### 当前（Mock 模式）
+
 ```
 用户打开 Web
     ↓
@@ -139,6 +156,7 @@ React Hooks (Mock 数据)
 ```
 
 ### 目标（真实数据模式）
+
 ```
 用户打开 Web
     ↓
@@ -154,6 +172,7 @@ Indexer 查询 PostgreSQL
 ```
 
 ### 完整生态数据流
+
 ```
 AgentM Web (浏览器)
     ├── 读取数据 ← Chain Hub Indexer (云端)
@@ -173,16 +192,21 @@ Agent 间通信
 ## ❓ 关键问题解答
 
 ### Q1: Indexer 是统一的后端吗？
+
 **答：** 不是！Indexer 只做一件事：**索引链上数据并提供查询**。它不管 Agent 运行，也不管消息传递。
 
 ### Q2: 需要把三个服务合并吗？
+
 **答：** 不需要！它们是不同层面的服务：
+
 - Indexer = 数据层
 - Daemon = 执行层（本地）
 - A2A = 通信层
 
 ### Q3: Web 端需要哪个服务？
+
 **答：** 只需要 **Indexer**！
+
 ```
 Web 端不需要：
 ❌ Agent Daemon（那是给桌面 App 用的）
@@ -194,7 +218,9 @@ Web 端需要：
 ```
 
 ### Q4: 我需要维护 Indexer 吗？
+
 **答：** 是的！
+
 ```
 Indexer 组成：
 ├── PostgreSQL ✅ 你部署
@@ -208,6 +234,7 @@ Indexer 组成：
 ## 🚀 让 Web 端可用的步骤
 
 ### 现在缺什么？
+
 ```
 ❌ Indexer 没有运行
 ❌ 索引程序没有编写
@@ -217,6 +244,7 @@ Indexer 组成：
 ### 需要做什么？
 
 #### 方案 A: 启动现有 Indexer（如果有）
+
 ```bash
 cd apps/chain-hub/indexer
 docker-compose up -d  # 启动数据库
@@ -226,6 +254,7 @@ cargo run --release   # 如果有的话
 ```
 
 #### 方案 B: 使用第三方服务（临时）
+
 ```typescript
 // 直接读 Solana RPC，不走 Indexer
 const connection = new Connection('https://api.devnet.solana.com');
@@ -233,6 +262,7 @@ const accountInfo = await connection.getAccountInfo(address);
 ```
 
 #### 方案 C: 构建简易 Indexer（推荐）
+
 ```typescript
 // 一个简易的 Next.js API 路由
 // 直接查询链上数据并缓存
@@ -251,6 +281,7 @@ A2A Runtime          →   给 Agent 间提供通信
 ```
 
 **AgentM Web 只需要：**
+
 ```
 1. Indexer（读取数据）
 2. Solana RPC（提交交易）

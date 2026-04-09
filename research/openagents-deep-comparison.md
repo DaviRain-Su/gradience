@@ -15,9 +15,9 @@ Both OpenAgents and Gradience recognize the same fundamental gap:
 
 > "AI Agents can now execute work, but there is no trustless infrastructure for verification, settlement, and reputation."
 
-OpenAgents frames it as: *"Execution is becoming infinite. Verification is not."*
+OpenAgents frames it as: _"Execution is becoming infinite. Verification is not."_
 
-Gradience frames it as: *"Escrow + Judge + Reputation = trustless capability settlement."*
+Gradience frames it as: _"Escrow + Judge + Reputation = trustless capability settlement."_
 
 Same problem. Different answers.
 
@@ -64,20 +64,20 @@ High-frequency A2A: MagicBlock Ephemeral Rollups
 
 ### Side-by-Side
 
-| Dimension | OpenAgents | Gradience |
-|-----------|-----------|-----------|
-| Philosophy | "Economic operating system" | "Settlement protocol kernel" |
-| Markets | 5 (Compute, Data, Labor, Liquidity, Risk) | 1 (Capability settlement) |
-| Core functions | 20+ authority flows across 5 markets | 3 (post, submit, judge) |
-| States per lifecycle | 6+ (Created, Contracted, Submitted, Finalized, Settled, Disputed) | 3 (Open, Completed, Refunded) |
-| Codebase | 100K+ lines Rust | ~300 lines target |
-| Competition model | Assignment (requester → provider) | Race (open competition, like Bitcoin mining) |
-| Settlement | Bitcoin Lightning | Solana |
-| Communication | Nostr (NIP-90) | MagicBlock Ephemeral Rollups |
-| Token | Bitcoin (BTC via Lightning) | GRAD (fixed supply + mining + burn) |
-| Risk management | Built-in Risk Market (insurance, coverage, underwriting) | Not in kernel (upper-layer responsibility) |
-| Data market | Built-in Data Market (buy/sell datasets) | Not in kernel (upper-layer responsibility) |
-| Status | MVP shipping (compute earn loop live) | Design complete, Solana implementation pending |
+| Dimension            | OpenAgents                                                        | Gradience                                      |
+| -------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
+| Philosophy           | "Economic operating system"                                       | "Settlement protocol kernel"                   |
+| Markets              | 5 (Compute, Data, Labor, Liquidity, Risk)                         | 1 (Capability settlement)                      |
+| Core functions       | 20+ authority flows across 5 markets                              | 3 (post, submit, judge)                        |
+| States per lifecycle | 6+ (Created, Contracted, Submitted, Finalized, Settled, Disputed) | 3 (Open, Completed, Refunded)                  |
+| Codebase             | 100K+ lines Rust                                                  | ~300 lines target                              |
+| Competition model    | Assignment (requester → provider)                                 | Race (open competition, like Bitcoin mining)   |
+| Settlement           | Bitcoin Lightning                                                 | Solana                                         |
+| Communication        | Nostr (NIP-90)                                                    | MagicBlock Ephemeral Rollups                   |
+| Token                | Bitcoin (BTC via Lightning)                                       | GRAD (fixed supply + mining + burn)            |
+| Risk management      | Built-in Risk Market (insurance, coverage, underwriting)          | Not in kernel (upper-layer responsibility)     |
+| Data market          | Built-in Data Market (buy/sell datasets)                          | Not in kernel (upper-layer responsibility)     |
+| Status               | MVP shipping (compute earn loop live)                             | Design complete, Solana implementation pending |
 
 ---
 
@@ -116,11 +116,13 @@ pub struct TrustPolicy {
 ```
 
 **What this tells you about an Agent:**
+
 - How many times it succeeded (count of "success" labels)
 - How many times it failed (count of "default" labels)
 - Whether it's been flagged as malicious
 
 **What this does NOT tell you:**
+
 - How well it performed (no quality score)
 - How it compares to other Agents (no competitive context)
 - Whether its successes were self-evaluated or independently verified
@@ -140,6 +142,7 @@ Additional context:
 ```
 
 **What this tells you:**
+
 - How well the Agent performs (average score)
 - How it compares to competitors (win rate in open race)
 - How reliable the reputation is (self-eval vs independent)
@@ -163,6 +166,7 @@ Gradience reputation signal:
 ```
 
 Gradience's reputation carries **significantly more information per data point** because:
+
 1. Scores are continuous (0-100), not binary (pass/fail)
 2. Race model provides competitive context (win rate)
 3. Self-evaluation is tracked and discounted
@@ -239,14 +243,14 @@ Gradience's approach is simpler: **the Poster decides how much verification they
 
 ## 6. Economic Model
 
-| Aspect | OpenAgents | Gradience |
-|--------|-----------|-----------|
-| Payment | Bitcoin via Lightning | Any token (SOL, USDC, SPL) |
-| Protocol token | None (uses BTC) | GRAD (fixed supply, mining, burn) |
-| Fee model | Not clearly specified | 95/3/2 immutable split |
-| Judge/verifier incentive | Not clearly specified | 3% unconditional fee |
-| Staking | Not in current implementation | Required for participation |
-| Flywheel | Compute earn → spend BTC → more compute | Task completion → mine GRAD → stake → more tasks |
+| Aspect                   | OpenAgents                              | Gradience                                        |
+| ------------------------ | --------------------------------------- | ------------------------------------------------ |
+| Payment                  | Bitcoin via Lightning                   | Any token (SOL, USDC, SPL)                       |
+| Protocol token           | None (uses BTC)                         | GRAD (fixed supply, mining, burn)                |
+| Fee model                | Not clearly specified                   | 95/3/2 immutable split                           |
+| Judge/verifier incentive | Not clearly specified                   | 3% unconditional fee                             |
+| Staking                  | Not in current implementation           | Required for participation                       |
+| Flywheel                 | Compute earn → spend BTC → more compute | Task completion → mine GRAD → stake → more tasks |
 
 ---
 

@@ -11,14 +11,14 @@ statusCommand
     .argument('<task-id>', 'Task ID to check')
     .action(async (taskIdStr: string) => {
         const spinner = ora('Fetching task status...').start();
-        
+
         try {
             const taskId = parseU64(taskIdStr, 'task-id');
-            
+
             if (isMockMode()) {
                 const state = process.env.GRADIENCE_CLI_MOCK_STATE ?? 'Open';
                 const submissionCount = BigInt(process.env.GRADIENCE_CLI_MOCK_SUBMISSION_COUNT ?? '0');
-                
+
                 spinner.succeed('Task status fetched (mock mode)');
                 emitStatus(Number(taskId), state, submissionCount);
                 return;
@@ -26,7 +26,7 @@ statusCommand
 
             const config = new ConfigManager();
             const rpcUrl = await config.get('rpc');
-            
+
             // For status checks, we can use the indexer without requiring a keypair
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
             const statusSdkOptions = {
@@ -37,7 +37,7 @@ statusCommand
 
             spinner.text = 'Querying task data...';
             const task = await sdk.getTask(Number(taskId));
-            
+
             if (!task) {
                 spinner.fail('Task not found');
                 outputError(new Error(`Task ${taskId.toString()} not found`), 'NOT_FOUND');
@@ -46,10 +46,10 @@ statusCommand
             }
 
             spinner.succeed('Task status retrieved');
-            
+
             const state = toCliTaskState(task.state);
             emitStatus(Number(taskId), state, BigInt(task.submission_count));
-            
+
             // Show additional details in non-JSON mode
             if (!isNoJsonMode()) {
                 console.log('');
@@ -64,11 +64,11 @@ statusCommand
                 console.log(`  Deadline: ${new Date(task.deadline * 1000).toISOString()}`);
                 console.log(`  Judge Deadline: ${new Date(task.judge_deadline * 1000).toISOString()}`);
                 console.log(`  Created: ${new Date(task.created_at * 1000).toISOString()}`);
-                
+
                 if (task.winner) {
                     console.log(`  Winner: ${task.winner}`);
                 }
-                
+
                 if (task.eval_ref) {
                     console.log(`  Evaluation: ${task.eval_ref}`);
                 }
@@ -88,9 +88,7 @@ function emitStatus(taskId: number, state: string, submissionCount: bigint): voi
             submissionCount: Number(submissionCount),
         });
     } else {
-        console.log(
-            `Task ${taskId}: ${chalk.bold(state)}, ${submissionCount.toString()} submission(s)`
-        );
+        console.log(`Task ${taskId}: ${chalk.bold(state)}, ${submissionCount.toString()} submission(s)`);
     }
 }
 

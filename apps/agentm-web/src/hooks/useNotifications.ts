@@ -91,73 +91,62 @@ export function useNotifications(): UseNotificationsReturn {
     /**
      * Add a new notification
      */
-    const addNotification = useCallback((
-        notification: Omit<AppNotification, 'id' | 'createdAt' | 'status'>
-    ): AppNotification => {
-        // Check if this notification type is enabled
-        if (!settings.enabled) {
-            console.log('[useNotifications] Notifications disabled globally');
-            return { ...notification, id: '', createdAt: Date.now(), status: 'unread' } as AppNotification;
-        }
+    const addNotification = useCallback(
+        (notification: Omit<AppNotification, 'id' | 'createdAt' | 'status'>): AppNotification => {
+            // Check if this notification type is enabled
+            if (!settings.enabled) {
+                console.log('[useNotifications] Notifications disabled globally');
+                return { ...notification, id: '', createdAt: Date.now(), status: 'unread' } as AppNotification;
+            }
 
-        const typeSettings = settings.types[notification.type];
-        if (!typeSettings?.enabled) {
-            console.log(`[useNotifications] ${notification.type} notifications disabled`);
-            return { ...notification, id: '', createdAt: Date.now(), status: 'unread' } as AppNotification;
-        }
+            const typeSettings = settings.types[notification.type];
+            if (!typeSettings?.enabled) {
+                console.log(`[useNotifications] ${notification.type} notifications disabled`);
+                return { ...notification, id: '', createdAt: Date.now(), status: 'unread' } as AppNotification;
+            }
 
-        const newNotification: AppNotification = {
-            ...notification,
-            id: generateId(),
-            createdAt: Date.now(),
-            status: 'unread',
-        };
+            const newNotification: AppNotification = {
+                ...notification,
+                id: generateId(),
+                createdAt: Date.now(),
+                status: 'unread',
+            };
 
-        setNotifications((prev) => [newNotification, ...prev]);
+            setNotifications((prev) => [newNotification, ...prev]);
 
-        // Show browser notification if enabled and permission granted
-        if (settings.desktop.enabled && browserPermission === 'granted') {
-            showBrowserNotification(notification.title, {
-                body: notification.message,
-                icon: '/favicon.ico',
-                tag: newNotification.id,
-            });
-        }
+            // Show browser notification if enabled and permission granted
+            if (settings.desktop.enabled && browserPermission === 'granted') {
+                showBrowserNotification(notification.title, {
+                    body: notification.message,
+                    icon: '/favicon.ico',
+                    tag: newNotification.id,
+                });
+            }
 
-        return newNotification;
-    }, [settings, browserPermission]);
+            return newNotification;
+        },
+        [settings, browserPermission],
+    );
 
     /**
      * Mark a notification as read
      */
     const markAsRead = useCallback((id: string) => {
-        setNotifications((prev) =>
-            prev.map((n) =>
-                n.id === id ? { ...n, read: true, status: 'read' as const } : n
-            )
-        );
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true, status: 'read' as const } : n)));
     }, []);
 
     /**
      * Mark all notifications as read
      */
     const markAllAsRead = useCallback(() => {
-        setNotifications((prev) =>
-            prev.map((n) =>
-                !n.read ? { ...n, read: true, status: 'read' as const } : n
-            )
-        );
+        setNotifications((prev) => prev.map((n) => (!n.read ? { ...n, read: true, status: 'read' as const } : n)));
     }, []);
 
     /**
      * Archive/dismiss a notification
      */
     const archiveNotification = useCallback((id: string) => {
-        setNotifications((prev) =>
-            prev.map((n) =>
-                n.id === id ? { ...n, status: 'archived' as const } : n
-            )
-        );
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, status: 'archived' as const } : n)));
     }, []);
 
     /**
@@ -196,31 +185,34 @@ export function useNotifications(): UseNotificationsReturn {
     /**
      * Show a browser notification
      */
-    const showBrowserNotification = useCallback((title: string, options?: NotificationOptions) => {
-        if (!isSupported) {
-            console.warn('[useNotifications] Browser notifications not supported');
-            return;
-        }
+    const showBrowserNotification = useCallback(
+        (title: string, options?: NotificationOptions) => {
+            if (!isSupported) {
+                console.warn('[useNotifications] Browser notifications not supported');
+                return;
+            }
 
-        if (browserPermission !== 'granted') {
-            console.warn('[useNotifications] Notification permission not granted');
-            return;
-        }
+            if (browserPermission !== 'granted') {
+                console.warn('[useNotifications] Notification permission not granted');
+                return;
+            }
 
-        // Check if we should show when focused
-        if (!settings.desktop.showWhenFocused && document.visibilityState === 'visible') {
-            return;
-        }
+            // Check if we should show when focused
+            if (!settings.desktop.showWhenFocused && document.visibilityState === 'visible') {
+                return;
+            }
 
-        try {
-            new Notification(title, {
-                icon: '/favicon.ico',
-                ...options,
-            });
-        } catch (error) {
-            console.error('[useNotifications] Error showing notification:', error);
-        }
-    }, [isSupported, browserPermission, settings.desktop.showWhenFocused]);
+            try {
+                new Notification(title, {
+                    icon: '/favicon.ico',
+                    ...options,
+                });
+            } catch (error) {
+                console.error('[useNotifications] Error showing notification:', error);
+            }
+        },
+        [isSupported, browserPermission, settings.desktop.showWhenFocused],
+    );
 
     return {
         notifications,
@@ -245,54 +237,71 @@ export function useNotifications(): UseNotificationsReturn {
 export function useNotificationHelpers() {
     const { addNotification } = useNotifications();
 
-    const notifyFollow = useCallback((actorName: string, actorAddress?: string) => {
-        return addNotification({
-            type: 'follow',
-            title: `${actorName} started following you`,
-            message: 'You have a new follower!',
-            read: false,
-            priority: 'medium',
-            actorName,
-            actorAddress,
-        });
-    }, [addNotification]);
+    const notifyFollow = useCallback(
+        (actorName: string, actorAddress?: string) => {
+            return addNotification({
+                type: 'follow',
+                title: `${actorName} started following you`,
+                message: 'You have a new follower!',
+                read: false,
+                priority: 'medium',
+                actorName,
+                actorAddress,
+            });
+        },
+        [addNotification],
+    );
 
-    const notifyMessage = useCallback((actorName: string, messagePreview: string, actorAddress?: string) => {
-        return addNotification({
-            type: 'message',
-            title: `New message from ${actorName}`,
-            message: 'You have a new message',
-            read: false,
-            priority: 'high',
-            actorName,
-            actorAddress,
-            metadata: { messagePreview },
-        });
-    }, [addNotification]);
+    const notifyMessage = useCallback(
+        (actorName: string, messagePreview: string, actorAddress?: string) => {
+            return addNotification({
+                type: 'message',
+                title: `New message from ${actorName}`,
+                message: 'You have a new message',
+                read: false,
+                priority: 'high',
+                actorName,
+                actorAddress,
+                metadata: { messagePreview },
+            });
+        },
+        [addNotification],
+    );
 
-    const notifyTaskUpdate = useCallback((taskTitle: string, taskState: string, taskReward?: number) => {
-        return addNotification({
-            type: 'task_update',
-            title: `Task update: ${taskTitle}`,
-            message: `Task status changed to ${taskState}`,
-            read: false,
-            priority: 'high',
-            metadata: { taskTitle, taskState, taskReward },
-        });
-    }, [addNotification]);
+    const notifyTaskUpdate = useCallback(
+        (taskTitle: string, taskState: string, taskReward?: number) => {
+            return addNotification({
+                type: 'task_update',
+                title: `Task update: ${taskTitle}`,
+                message: `Task status changed to ${taskState}`,
+                read: false,
+                priority: 'high',
+                metadata: { taskTitle, taskState, taskReward },
+            });
+        },
+        [addNotification],
+    );
 
-    const notifyMention = useCallback((actorName: string, mentionContext: string, sourceType: 'message' | 'task' | 'profile', actorAddress?: string) => {
-        return addNotification({
-            type: 'mention',
-            title: `${actorName} mentioned you`,
-            message: `You were mentioned in ${sourceType}`,
-            read: false,
-            priority: 'high',
-            actorName,
-            actorAddress,
-            metadata: { mentionContext, sourceType },
-        });
-    }, [addNotification]);
+    const notifyMention = useCallback(
+        (
+            actorName: string,
+            mentionContext: string,
+            sourceType: 'message' | 'task' | 'profile',
+            actorAddress?: string,
+        ) => {
+            return addNotification({
+                type: 'mention',
+                title: `${actorName} mentioned you`,
+                message: `You were mentioned in ${sourceType}`,
+                read: false,
+                priority: 'high',
+                actorName,
+                actorAddress,
+                metadata: { mentionContext, sourceType },
+            });
+        },
+        [addNotification],
+    );
 
     return {
         notifyFollow,

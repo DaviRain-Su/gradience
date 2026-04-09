@@ -35,12 +35,15 @@ export function useSocial(currentUserAddress: string | null) {
     const { daemonUrl, sessionToken } = useDaemonConnection();
 
     // Helper to build headers with auth
-    const headers = useCallback((contentType = false): Record<string, string> => {
-        const h: Record<string, string> = {};
-        if (sessionToken) h['Authorization'] = `Bearer ${sessionToken}`;
-        if (contentType) h['Content-Type'] = 'application/json';
-        return h;
-    }, [sessionToken]);
+    const headers = useCallback(
+        (contentType = false): Record<string, string> => {
+            const h: Record<string, string> = {};
+            if (sessionToken) h['Authorization'] = `Bearer ${sessionToken}`;
+            if (contentType) h['Content-Type'] = 'application/json';
+            return h;
+        },
+        [sessionToken],
+    );
 
     const ensureDaemon = useCallback((): string => {
         if (!daemonUrl) throw new Error('Daemon not connected');
@@ -86,7 +89,7 @@ export function useSocial(currentUserAddress: string | null) {
                 const base = ensureDaemon();
                 const res = await fetch(
                     `${base}/api/is-following?follower=${currentUserAddress}&following=${targetAddress}`,
-                    { headers: headers(), signal: AbortSignal.timeout(3000) }
+                    { headers: headers(), signal: AbortSignal.timeout(3000) },
                 );
                 if (res.ok) {
                     const data = await res.json();
@@ -106,7 +109,7 @@ export function useSocial(currentUserAddress: string | null) {
         async (content: string, tags: string[] = []): Promise<SocialPost | null> => {
             if (!currentUserAddress) return null;
             const base = ensureDaemon();
-            const body = { content, media: tags.map(t => ({ type: 'tag', url: t })) };
+            const body = { content, media: tags.map((t) => ({ type: 'tag', url: t })) };
             const res = await fetch(`${base}/api/posts`, {
                 method: 'POST',
                 headers: headers(true),
@@ -140,10 +143,10 @@ export function useSocial(currentUserAddress: string | null) {
             if (!currentUserAddress) return [];
             try {
                 const base = ensureDaemon();
-                const res = await fetch(
-                    `${base}/api/feed?limit=${limit}&offset=${offset}`,
-                    { headers: headers(), signal: AbortSignal.timeout(5000) }
-                );
+                const res = await fetch(`${base}/api/feed?limit=${limit}&offset=${offset}`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return (data.posts || []).map((p: any) => ({
@@ -169,10 +172,10 @@ export function useSocial(currentUserAddress: string | null) {
         async (limit = 20, offset = 0): Promise<SocialPost[]> => {
             try {
                 const base = ensureDaemon();
-                const res = await fetch(
-                    `${base}/api/feed?limit=${limit}&offset=${offset}`,
-                    { headers: headers(), signal: AbortSignal.timeout(5000) }
-                );
+                const res = await fetch(`${base}/api/feed?limit=${limit}&offset=${offset}`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return (data.posts || []).map((p: any) => ({
@@ -216,10 +219,10 @@ export function useSocial(currentUserAddress: string | null) {
             if (!target) return [];
             try {
                 const base = ensureDaemon();
-                const res = await fetch(
-                    `${base}/api/followers/${target}`,
-                    { headers: headers(), signal: AbortSignal.timeout(5000) }
-                );
+                const res = await fetch(`${base}/api/followers/${target}`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return (data.followers || []).map((r: any) => ({
@@ -242,10 +245,10 @@ export function useSocial(currentUserAddress: string | null) {
             if (!target) return [];
             try {
                 const base = ensureDaemon();
-                const res = await fetch(
-                    `${base}/api/following/${target}`,
-                    { headers: headers(), signal: AbortSignal.timeout(5000) }
-                );
+                const res = await fetch(`${base}/api/following/${target}`, {
+                    headers: headers(),
+                    signal: AbortSignal.timeout(5000),
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return (data.following || []).map((r: any) => ({

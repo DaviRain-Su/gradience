@@ -26,13 +26,7 @@ export interface DomainBadgeProps {
 /**
  * Domain Badge - Display SNS (.sol) or ENS (.eth) domain
  */
-export function DomainBadge({
-    domain,
-    address,
-    size = 'md',
-    showCopy = false,
-    onClick,
-}: DomainBadgeProps) {
+export function DomainBadge({ domain, address, size = 'md', showCopy = false, onClick }: DomainBadgeProps) {
     const [resolvedDomain, setResolvedDomain] = useState<string | null>(domain || null);
     const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -77,7 +71,11 @@ export function DomainBadge({
         }
     };
 
-    const sizePx = { sm: { fontSize: '11px', padding: '2px 8px' }, md: { fontSize: '13px', padding: '4px 12px' }, lg: { fontSize: '15px', padding: '6px 16px' } };
+    const sizePx = {
+        sm: { fontSize: '11px', padding: '2px 8px' },
+        md: { fontSize: '13px', padding: '4px 12px' },
+        lg: { fontSize: '15px', padding: '6px 16px' },
+    };
     const sp = sizePx[size];
 
     // Icon based on domain type
@@ -94,16 +92,31 @@ export function DomainBadge({
     };
 
     const baseStyle: React.CSSProperties = {
-        display: 'inline-flex', alignItems: 'center', gap: '6px',
-        borderRadius: '999px', fontWeight: 600, cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        borderRadius: '999px',
+        fontWeight: 600,
+        cursor: 'pointer',
         ...sp,
     };
 
-    const copyBtn = (e: React.MouseEvent) => { e.stopPropagation(); handleCopy(); };
+    const copyBtn = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        handleCopy();
+    };
 
     if (loading) {
         return (
-            <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A', opacity: 0.5, border: '1.5px solid #16161A' }}>
+            <span
+                style={{
+                    ...baseStyle,
+                    background: '#F3F3F8',
+                    color: '#16161A',
+                    opacity: 0.5,
+                    border: '1.5px solid #16161A',
+                }}
+            >
                 Resolving...
             </span>
         );
@@ -113,12 +126,18 @@ export function DomainBadge({
         const displayAddress = address
             ? `${address.slice(0, 6)}...${address.slice(-4)}`
             : resolvedAddress
-                ? `${resolvedAddress.slice(0, 6)}...${resolvedAddress.slice(-4)}`
-                : 'Unknown';
+              ? `${resolvedAddress.slice(0, 6)}...${resolvedAddress.slice(-4)}`
+              : 'Unknown';
 
         return (
             <span
-                style={{ ...baseStyle, fontFamily: 'monospace', background: '#F3F3F8', color: '#16161A', border: '1.5px solid #16161A' }}
+                style={{
+                    ...baseStyle,
+                    fontFamily: 'monospace',
+                    background: '#F3F3F8',
+                    color: '#16161A',
+                    border: '1.5px solid #16161A',
+                }}
                 onClick={onClick}
                 title={address || resolvedAddress || undefined}
             >
@@ -126,7 +145,13 @@ export function DomainBadge({
                 {showCopy && (
                     <button
                         onClick={copyBtn}
-                        style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: sp.fontSize }}
+                        style={{
+                            marginLeft: '4px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: sp.fontSize,
+                        }}
                     >
                         {copied ? '✓' : '📋'}
                     </button>
@@ -146,7 +171,14 @@ export function DomainBadge({
             {showCopy && (
                 <button
                     onClick={copyBtn}
-                    style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: sp.fontSize }}
+                    style={{
+                        marginLeft: '4px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        opacity: 0.7,
+                        fontSize: sp.fontSize,
+                    }}
                 >
                     {copied ? '✓' : '📋'}
                 </button>
@@ -158,19 +190,15 @@ export function DomainBadge({
 /**
  * Domain Badge with Link - Clickable domain that opens in explorer
  */
-export function DomainBadgeLink({
-    domain,
-    address,
-    size = 'md',
-}: Omit<DomainBadgeProps, 'onClick' | 'showCopy'>) {
+export function DomainBadgeLink({ domain, address, size = 'md' }: Omit<DomainBadgeProps, 'onClick' | 'showCopy'>) {
     const handleClick = () => {
         const url = domain?.endsWith('.eth')
             ? `https://app.ens.domains/${domain}`
             : domain?.endsWith('.sol')
-                ? `https://sns.id/domain/${domain}`
-                : address
-                    ? `https://solscan.io/account/${address}`
-                    : null;
+              ? `https://sns.id/domain/${domain}`
+              : address
+                ? `https://solscan.io/account/${address}`
+                : null;
 
         if (url) {
             window.open(url, '_blank');

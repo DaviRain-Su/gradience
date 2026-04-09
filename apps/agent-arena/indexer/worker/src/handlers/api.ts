@@ -1,15 +1,6 @@
-import type {
-    Env,
-    TaskRow,
-    SubmissionRow,
-    ReputationRow,
-    JudgePoolRow,
-} from '../types';
+import type { Env, TaskRow, SubmissionRow, ReputationRow, JudgePoolRow } from '../types';
 
-import {
-    queryAll,
-    queryFirst,
-} from '../db/operations';
+import { queryAll, queryFirst } from '../db/operations';
 
 import {
     jsonResponse,

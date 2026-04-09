@@ -6,66 +6,60 @@ import { Provider, ENSProviderConfig, ProviderError } from '../types';
  * when ENS resolution is needed for the Gradience protocol.
  */
 export class ENSProvider implements Provider {
-  public readonly name = 'ENS';
-  private providerUrl?: string;
-  private timeout: number;
+    public readonly name = 'ENS';
+    private providerUrl?: string;
+    private timeout: number;
 
-  constructor(config: ENSProviderConfig = {}) {
-    this.providerUrl = typeof config.provider === 'string' 
-      ? config.provider 
-      : undefined;
-    this.timeout = config.timeout || 30000;
-  }
-
-  supports(domain: string): boolean {
-    return domain.endsWith('.eth');
-  }
-
-  async resolve(domain: string): Promise<string | null> {
-    if (!this.supports(domain)) {
-      throw new ProviderError(
-        `Domain ${domain} is not supported by ENS provider`,
-        this.name,
-        domain
-      );
+    constructor(config: ENSProviderConfig = {}) {
+        this.providerUrl = typeof config.provider === 'string' ? config.provider : undefined;
+        this.timeout = config.timeout || 30000;
     }
 
-    // TODO: Implement ENS resolution when cross-chain support is needed
-    throw new ProviderError(
-      'ENS resolution not implemented yet - this is a placeholder for future cross-chain support',
-      this.name,
-      domain
-    );
-  }
-
-  async reverse(_address: string): Promise<string | null> {
-    // TODO: Implement ENS reverse lookup when cross-chain support is needed
-    throw new ProviderError(
-      'ENS reverse lookup not implemented yet - this is a placeholder for future cross-chain support',
-      this.name
-    );
-  }
-
-  private isValidEthDomain(domain: string): boolean {
-    // Basic validation for .eth domains
-    if (!domain || domain.length === 0) {
-      return false;
+    supports(domain: string): boolean {
+        return domain.endsWith('.eth');
     }
-    
-    // Remove .eth suffix for validation
-    const name = domain.replace('.eth', '');
-    
-    // ENS names must be at least 3 characters (after normalization)
-    if (name.length < 3) {
-      return false;
+
+    async resolve(domain: string): Promise<string | null> {
+        if (!this.supports(domain)) {
+            throw new ProviderError(`Domain ${domain} is not supported by ENS provider`, this.name, domain);
+        }
+
+        // TODO: Implement ENS resolution when cross-chain support is needed
+        throw new ProviderError(
+            'ENS resolution not implemented yet - this is a placeholder for future cross-chain support',
+            this.name,
+            domain,
+        );
     }
-    
-    // Check for valid characters (ENS supports Unicode, but we'll do basic check)
-    // Full ENS normalization would require additional libraries
-    const basicValidPattern = /^[a-zA-Z0-9-]+$/;
-    
-    return basicValidPattern.test(name);
-  }
+
+    async reverse(_address: string): Promise<string | null> {
+        // TODO: Implement ENS reverse lookup when cross-chain support is needed
+        throw new ProviderError(
+            'ENS reverse lookup not implemented yet - this is a placeholder for future cross-chain support',
+            this.name,
+        );
+    }
+
+    private isValidEthDomain(domain: string): boolean {
+        // Basic validation for .eth domains
+        if (!domain || domain.length === 0) {
+            return false;
+        }
+
+        // Remove .eth suffix for validation
+        const name = domain.replace('.eth', '');
+
+        // ENS names must be at least 3 characters (after normalization)
+        if (name.length < 3) {
+            return false;
+        }
+
+        // Check for valid characters (ENS supports Unicode, but we'll do basic check)
+        // Full ENS normalization would require additional libraries
+        const basicValidPattern = /^[a-zA-Z0-9-]+$/;
+
+        return basicValidPattern.test(name);
+    }
 }
 
 // Export for future implementation reference

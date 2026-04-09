@@ -1,7 +1,7 @@
 # Anthropic GAN 架构分析：与 Agent Layer 的对比验证
 
 > **核心发现：Anthropic 的 Generator-Evaluator 架构与我们讨论的 GAN 对抗验证完全一致**
-> 
+>
 > 分析日期：2026-03-29
 
 ---
@@ -42,19 +42,19 @@ Anthropic 的三 Agent 架构：
 
 ```yaml
 Generator 的问题:
-  - 自我评估时过于宽容（"confidently praising the work"）
-  - 即使质量一般也会给自己高分
-  - 特别是在主观任务（如设计）上
+    - 自我评估时过于宽容（"confidently praising the work"）
+    - 即使质量一般也会给自己高分
+    - 特别是在主观任务（如设计）上
 
 Evaluator 的作用:
-  - 分离评估者和生成者
-  - 单独调整 Evaluator 使其更严格
-  - Generator 有具体反馈可以迭代
+    - 分离评估者和生成者
+    - 单独调整 Evaluator 使其更严格
+    - Generator 有具体反馈可以迭代
 
 效果:
-  - 独立运行（Solo）: 20分钟, $9, 核心功能损坏
-  - GAN 架构: 6小时, $200, 完整可用应用
-  - 质量提升: 从"破损"到"可用"
+    - 独立运行（Solo）: 20分钟, $9, 核心功能损坏
+    - GAN 架构: 6小时, $200, 完整可用应用
+    - 质量提升: 从"破损"到"可用"
 ```
 
 ### 1.3 评分标准（Grading Criteria）
@@ -64,16 +64,16 @@ Evaluator 的作用:
 ├── Design Quality（设计质量）
 │   - 是否感觉是一个整体而非拼凑
 │   - 颜色、字体、布局、图像是否协调
-│   
+│
 ├── Originality（原创性）
 │   - 是否有定制决策，还是模板默认
 │   - 人类设计师能识别出创意选择
 │   - 惩罚"AI slop"（紫色渐变+白卡）
-│   
+│
 ├── Craft（工艺）
 │   - 技术执行：字体层次、间距、对比度
 │   - 基础能力检查，不是创意检查
-│   
+│
 └── Functionality（功能性）
     - 可用性独立于美学
     - 用户能否理解界面、找到主要操作
@@ -88,37 +88,37 @@ Evaluator 的作用:
 
 ### 2.1 架构对比
 
-| 维度 | Anthropic 架构 | Agent Layer 架构 |
-|------|---------------|-----------------|
-| **Generator** | 代码/设计生成 Agent | 任务执行 Agent |
-| **Evaluator** | QA Agent（测试+评分） | 验证者/评判员 |
-| **Planner** | 产品规格规划 | 任务发布者/需求方 |
-| **对抗机制** | Generator vs Evaluator | 执行者 vs 验证者 |
-| **迭代方式** | 5-15 轮改进 | 多 Agent 竞争 |
-| **目标** | 生成高质量应用 | 完成任务并获得奖励 |
+| 维度          | Anthropic 架构         | Agent Layer 架构   |
+| ------------- | ---------------------- | ------------------ |
+| **Generator** | 代码/设计生成 Agent    | 任务执行 Agent     |
+| **Evaluator** | QA Agent（测试+评分）  | 验证者/评判员      |
+| **Planner**   | 产品规格规划           | 任务发布者/需求方  |
+| **对抗机制**  | Generator vs Evaluator | 执行者 vs 验证者   |
+| **迭代方式**  | 5-15 轮改进            | 多 Agent 竞争      |
+| **目标**      | 生成高质量应用         | 完成任务并获得奖励 |
 
 ### 2.2 核心共同点
 
 ```yaml
 GAN 核心思想:
-  Anthropic: "Taking inspiration from Generative Adversarial Networks (GANs)"
-  Agent Layer: 提交者 vs 验证者的对抗
-  共同点: 分离生成和评估，通过对抗提升质量
+    Anthropic: 'Taking inspiration from Generative Adversarial Networks (GANs)'
+    Agent Layer: 提交者 vs 验证者的对抗
+    共同点: 分离生成和评估，通过对抗提升质量
 
 评估者调优:
-  Anthropic: "tuning a standalone evaluator to be skeptical"
-  Agent Layer: 评判员需要公正，可能有激励
-  共同点: 评估者需要比生成者更严格
+    Anthropic: 'tuning a standalone evaluator to be skeptical'
+    Agent Layer: 评判员需要公正，可能有激励
+    共同点: 评估者需要比生成者更严格
 
 迭代改进:
-  Anthropic: 5-15 轮迭代，每轮根据反馈改进
-  Agent Layer: 多 Agent 竞争，最佳获胜
-  共同点: 不是一次性完成，而是多次尝试
+    Anthropic: 5-15 轮迭代，每轮根据反馈改进
+    Agent Layer: 多 Agent 竞争，最佳获胜
+    共同点: 不是一次性完成，而是多次尝试
 
 可验证标准:
-  Anthropic: 明确的评分标准（Design Quality, Originality...）
-  Agent Layer: 任务标准 + 评判机制
-  共同点: 主观质量需要结构化评估
+    Anthropic: 明确的评分标准（Design Quality, Originality...）
+    Agent Layer: 任务标准 + 评判机制
+    共同点: 主观质量需要结构化评估
 ```
 
 ### 2.3 差异点
@@ -150,8 +150,8 @@ GAN 核心思想:
 
 ```
 Anthropic 的发现:
-"When asked to evaluate work they've produced, agents tend to respond 
-by confidently praising the work—even when, to a human observer, 
+"When asked to evaluate work they've produced, agents tend to respond
+by confidently praising the work—even when, to a human observer,
 the quality is obviously mediocre."
 
 中文:
@@ -169,7 +169,7 @@ the quality is obviously mediocre."
 
 ```
 Anthropic:
-"Separating the agent doing the work from the agent judging it 
+"Separating the agent doing the work from the agent judging it
 proves to be a strong lever to address this issue."
 
 中文:
@@ -231,7 +231,7 @@ Agent Layer 的当前设计:
 
 struct Task {
     // ... 现有字段
-    
+
     uint256 maxIterations;      // 最大迭代次数（如 3）
     uint256 currentIteration;   // 当前迭代
     mapping(uint256 => mapping(address => Submission)) iterations;
@@ -242,22 +242,22 @@ function resubmit(uint256 taskId, bytes calldata newResult) external {
     Task storage task = tasks[taskId];
     require(task.currentIteration < task.maxIterations, "Max iterations reached");
     require(hasSubmitted[msg.sender], "Must have submitted before");
-    
+
     // 需要额外质押防止滥用
     require(stake[msg.sender] >= iterationStake, "Insufficient stake for iteration");
-    
+
     // 保存新提交
     task.iterations[task.currentIteration][msg.sender] = Submission({
         result: newResult,
         timestamp: block.timestamp,
         score: 0  // 待评判
     });
-    
+
     emit Resubmission(taskId, msg.sender, task.currentIteration);
 }
 
 // 评判后反馈
-function provideFeedback(uint256 taskId, address agent, string calldata feedback) 
+function provideFeedback(uint256 taskId, address agent, string calldata feedback)
     external onlyJudge {
     // 评判员给出详细反馈
     // Agent 可以根据反馈改进
@@ -289,16 +289,16 @@ function calculateScore(
     ScoreCriteria memory weights
 ) internal pure returns (uint256 finalScore) {
     // 加权平均
-    uint256 total = 
+    uint256 total =
         rawScores.functionality * weights.functionality +
         rawScores.quality * weights.quality +
         rawScores.originality * weights.originality +
         rawScores.efficiency * weights.efficiency +
         rawScores.timeliness * weights.timeliness;
-    
-    uint256 totalWeight = weights.functionality + weights.quality + 
+
+    uint256 totalWeight = weights.functionality + weights.quality +
                          weights.originality + weights.efficiency + weights.timeliness;
-    
+
     return total / totalWeight;
 }
 
@@ -410,4 +410,4 @@ Agent Layer 的 GAN 设计被行业顶尖团队（Anthropic）
 
 ---
 
-*"伟大的思想常常在不同的领域独立出现，当它们相遇时，互相验证。Anthropic 的 GAN 架构与我们的 Agent Layer 设计如此相似，说明这是一个必然的正确方向。"*
+_"伟大的思想常常在不同的领域独立出现，当它们相遇时，互相验证。Anthropic 的 GAN 架构与我们的 Agent Layer 设计如此相似，说明这是一个必然的正确方向。"_

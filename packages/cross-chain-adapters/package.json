@@ -1,82 +1,82 @@
 {
-  "name": "@gradiences/cross-chain-adapters",
-  "version": "1.0.0",
-  "description": "Cross-chain bridge adapters for LayerZero, Wormhole, and DeBridge",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    "name": "@gradiences/cross-chain-adapters",
+    "version": "1.0.0",
+    "description": "Cross-chain bridge adapters for LayerZero, Wormhole, and DeBridge",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./adapters/*": {
+            "import": "./dist/adapters/*.js",
+            "types": "./dist/adapters/*.d.ts"
+        }
     },
-    "./adapters/*": {
-      "import": "./dist/adapters/*.js",
-      "types": "./dist/adapters/*.d.ts"
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint src/ --ext .ts"
+    },
+    "keywords": [
+        "cross-chain",
+        "layerzero",
+        "wormhole",
+        "debridge",
+        "bridge",
+        "solana",
+        "ethereum"
+    ],
+    "author": "Gradience Protocol",
+    "license": "MIT",
+    "dependencies": {
+        "@gradiences/a2a-types": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.5.0",
+        "vitest": "^2.0.0"
+    },
+    "peerDependencies": {
+        "@layerzerolabs/lz-v2-utilities": "^3.0.0",
+        "@layerzerolabs/lz-definitions": "^3.0.0",
+        "@wormhole-foundation/sdk": "^1.0.0",
+        "@wormhole-foundation/sdk-solana": "^1.0.0",
+        "@wormhole-foundation/sdk-evm": "^1.0.0",
+        "@debridge-finance/desdk": "^2.0.0-rc.0",
+        "@debridge-finance/dln-client": "^17.0.0",
+        "ethers": "^6.0.0"
+    },
+    "peerDependenciesMeta": {
+        "@layerzerolabs/lz-v2-utilities": {
+            "optional": true
+        },
+        "@layerzerolabs/lz-definitions": {
+            "optional": true
+        },
+        "@wormhole-foundation/sdk": {
+            "optional": true
+        },
+        "@wormhole-foundation/sdk-solana": {
+            "optional": true
+        },
+        "@wormhole-foundation/sdk-evm": {
+            "optional": true
+        },
+        "@debridge-finance/desdk": {
+            "optional": true
+        },
+        "@debridge-finance/dln-client": {
+            "optional": true
+        },
+        "ethers": {
+            "optional": true
+        }
     }
-  },
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src/ --ext .ts"
-  },
-  "keywords": [
-    "cross-chain",
-    "layerzero",
-    "wormhole",
-    "debridge",
-    "bridge",
-    "solana",
-    "ethereum"
-  ],
-  "author": "Gradience Protocol",
-  "license": "MIT",
-  "dependencies": {
-    "@gradiences/a2a-types": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.5.0",
-    "vitest": "^2.0.0"
-  },
-  "peerDependencies": {
-    "@layerzerolabs/lz-v2-utilities": "^3.0.0",
-    "@layerzerolabs/lz-definitions": "^3.0.0",
-    "@wormhole-foundation/sdk": "^1.0.0",
-    "@wormhole-foundation/sdk-solana": "^1.0.0",
-    "@wormhole-foundation/sdk-evm": "^1.0.0",
-    "@debridge-finance/desdk": "^2.0.0-rc.0",
-    "@debridge-finance/dln-client": "^17.0.0",
-    "ethers": "^6.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@layerzerolabs/lz-v2-utilities": {
-      "optional": true
-    },
-    "@layerzerolabs/lz-definitions": {
-      "optional": true
-    },
-    "@wormhole-foundation/sdk": {
-      "optional": true
-    },
-    "@wormhole-foundation/sdk-solana": {
-      "optional": true
-    },
-    "@wormhole-foundation/sdk-evm": {
-      "optional": true
-    },
-    "@debridge-finance/desdk": {
-      "optional": true
-    },
-    "@debridge-finance/dln-client": {
-      "optional": true
-    },
-    "ethers": {
-      "optional": true
-    }
-  }
 }

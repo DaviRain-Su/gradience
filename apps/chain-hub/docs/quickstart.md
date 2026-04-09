@@ -21,8 +21,8 @@ npm install @gradiences/chain-hub
 import { ChainHub } from '@gradiences/chain-hub';
 
 const hub = new ChainHub({
-  network: 'devnet',
-  rpcUrl: 'https://api.devnet.solana.com'
+    network: 'devnet',
+    rpcUrl: 'https://api.devnet.solana.com',
 });
 
 await hub.connect(wallet);
@@ -33,10 +33,10 @@ await hub.connect(wallet);
 ```typescript
 // Register your protocol
 const protocol = await hub.registerProtocol({
-  name: 'My DeFi Protocol',
-  description: 'Automated yield farming',
-  endpoint: 'https://api.myprotocol.com',
-  chain: 'solana'
+    name: 'My DeFi Protocol',
+    description: 'Automated yield farming',
+    endpoint: 'https://api.myprotocol.com',
+    chain: 'solana',
 });
 
 console.log('Protocol ID:', protocol.id);
@@ -47,13 +47,13 @@ console.log('Protocol ID:', protocol.id);
 ```typescript
 // Register a skill that Agents can use
 const skill = await hub.registerSkill({
-  name: 'yield_farm',
-  description: 'Deposit tokens into yield farm',
-  protocol: protocol.id,
-  parameters: [
-    { name: 'token', type: 'string' },
-    { name: 'amount', type: 'number' }
-  ]
+    name: 'yield_farm',
+    description: 'Deposit tokens into yield farm',
+    protocol: protocol.id,
+    parameters: [
+        { name: 'token', type: 'string' },
+        { name: 'amount', type: 'number' },
+    ],
 });
 ```
 
@@ -62,8 +62,8 @@ const skill = await hub.registerSkill({
 ```typescript
 // Discover available skills
 const skills = await hub.querySkills({
-  category: 'defi',
-  chain: 'solana'
+    category: 'defi',
+    chain: 'solana',
 });
 
 console.log(`Found ${skills.length} skills`);
@@ -74,11 +74,11 @@ console.log(`Found ${skills.length} skills`);
 ```typescript
 // Execute a skill through Chain Hub
 const result = await hub.executeSkill({
-  skillId: skill.id,
-  parameters: {
-    token: 'USDC',
-    amount: 1000
-  }
+    skillId: skill.id,
+    parameters: {
+        token: 'USDC',
+        amount: 1000,
+    },
 });
 
 console.log('Transaction:', result.signature);

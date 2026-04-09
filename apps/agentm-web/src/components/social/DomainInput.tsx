@@ -71,28 +71,31 @@ export function DomainInput({
     }, []);
 
     // Resolve domain to address
-    const resolveDomain = useCallback(async (domain: string) => {
-        if (!isValidDomain(domain)) return;
+    const resolveDomain = useCallback(
+        async (domain: string) => {
+            if (!isValidDomain(domain)) return;
 
-        setIsResolving(true);
-        setError(null);
+            setIsResolving(true);
+            setError(null);
 
-        try {
-            const address = await resolve(domain);
-            setResolvedAddress(address);
+            try {
+                const address = await resolve(domain);
+                setResolvedAddress(address);
 
-            if (!address) {
-                setError('Domain not registered');
+                if (!address) {
+                    setError('Domain not registered');
+                }
+
+                onResolve?.(domain, address);
+            } catch (err) {
+                setError('Failed to resolve domain');
+                console.error('Domain resolution error:', err);
+            } finally {
+                setIsResolving(false);
             }
-
-            onResolve?.(domain, address);
-        } catch (err) {
-            setError('Failed to resolve domain');
-            console.error('Domain resolution error:', err);
-        } finally {
-            setIsResolving(false);
-        }
-    }, [onResolve]);
+        },
+        [onResolve],
+    );
 
     // Handle input change
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,11 +154,7 @@ export function DomainInput({
         };
 
         const badge = badges[domainType];
-        return (
-            <span className={`text-xs px-2 py-0.5 rounded ${badge.color}`}>
-                {badge.text}
-            </span>
-        );
+        return <span className={`text-xs px-2 py-0.5 rounded ${badge.color}`}>{badge.text}</span>;
     };
 
     return (
@@ -179,22 +178,16 @@ export function DomainInput({
                 />
 
                 {/* Domain type badge */}
-                <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                    {getDomainTypeBadge()}
-                </div>
+                <div className="absolute right-10 top-1/2 -translate-y-1/2">{getDomainTypeBadge()}</div>
 
                 {/* Validation icon */}
                 {showValidation && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {getValidationIcon()}
-                    </div>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">{getValidationIcon()}</div>
                 )}
             </div>
 
             {/* Status messages */}
-            {error && (
-                <p className="mt-1 text-sm text-red-400">{error}</p>
-            )}
+            {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
 
             {resolvedAddress && (
                 <p className="mt-1 text-sm text-green-400">
@@ -203,9 +196,7 @@ export function DomainInput({
             )}
 
             {isValid && !resolvedAddress && !isResolving && !error && (
-                <p className="mt-1 text-sm text-yellow-400">
-                    Valid format, checking registration...
-                </p>
+                <p className="mt-1 text-sm text-yellow-400">Valid format, checking registration...</p>
             )}
         </div>
     );
@@ -276,7 +267,8 @@ export function DomainLinkForm({
             <div>
                 <p className="text-sm text-gray-400 mb-2">Link Domain</p>
                 <p className="text-xs text-gray-500 mb-3">
-                    Enter your .sol or .eth domain. The domain must resolve to your wallet address ({walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}).
+                    Enter your .sol or .eth domain. The domain must resolve to your wallet address (
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}).
                 </p>
             </div>
 

@@ -11,6 +11,7 @@ This project enforces a strict 7-phase development lifecycle.
 ### The Rule
 
 If someone asks you to write code and there is no Technical Spec (Phase 3):
+
 1. Stop.
 2. Check if Phase 1-2 docs exist. If not, create them.
 3. Create the Technical Spec (Phase 3).

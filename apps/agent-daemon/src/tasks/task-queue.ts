@@ -51,7 +51,10 @@ const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>(['completed',
 export class TaskQueue {
     private readonly stmtInsert: TypedStatement<[string, string, string, number, number, number, number], RunResult>;
     private readonly stmtDequeue: TypedStatement<[number], TaskRow | undefined>;
-    private readonly stmtUpdate: TypedStatement<[TaskState, string | null, string | null, string | null, number, number | null, string], RunResult>;
+    private readonly stmtUpdate: TypedStatement<
+        [TaskState, string | null, string | null, string | null, number, number | null, string],
+        RunResult
+    >;
     private readonly stmtGet: TypedStatement<[string], TaskRow | undefined>;
     private readonly stmtList: TypedStatement<[string | null, string | null, number, number], TaskRow>;
     private readonly stmtCount: TypedStatement<[], TaskCountRow>;
@@ -132,7 +135,11 @@ export class TaskQueue {
         return this.stmtCount.get() ?? { queued: 0, running: 0, completed: 0, failed: 0, total: 0 };
     }
 
-    updateState(id: string, state: TaskState, extra?: { result?: unknown; error?: string; assignedAgent?: string }): void {
+    updateState(
+        id: string,
+        state: TaskState,
+        extra?: { result?: unknown; error?: string; assignedAgent?: string },
+    ): void {
         const task = this.get(id);
         if (!task) throw new DaemonError(ErrorCodes.TASK_NOT_FOUND, 'Task not found', 404);
 
@@ -163,10 +170,14 @@ export class TaskQueue {
     }
 
     recoverOnStartup(): number {
-        const result = this.db.prepare(`
+        const result = this.db
+            .prepare(
+                `
             UPDATE tasks SET state = 'queued', updated_at = ?
             WHERE state IN ('assigned', 'running')
-        `).run(Date.now());
+        `,
+            )
+            .run(Date.now());
         if (result.changes > 0) {
             logger.info({ count: result.changes }, 'Recovered interrupted tasks');
         }

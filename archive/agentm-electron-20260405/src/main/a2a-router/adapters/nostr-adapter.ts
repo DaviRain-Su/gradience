@@ -96,9 +96,7 @@ export class NostrAdapter implements ProtocolAdapter {
         };
     }
 
-    async subscribe(
-        _handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription> {
+    async subscribe(_handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription> {
         // Nostr adapter is discovery-only; return a no-op subscription
         return {
             protocol: 'nostr',
@@ -121,7 +119,7 @@ export class NostrAdapter implements ProtocolAdapter {
                 minReputation: filter?.minReputation,
                 capabilities: filter?.capabilities,
             },
-            filter?.limit ?? 100
+            filter?.limit ?? 100,
         );
 
         const agents: AgentInfo[] = [];
@@ -134,27 +132,25 @@ export class NostrAdapter implements ProtocolAdapter {
                 if (filter?.minReputation && content.reputation_score < filter.minReputation) {
                     continue;
                 }
-                if (filter?.capabilities && !filter.capabilities.some(c => content.capabilities.includes(c))) {
+                if (filter?.capabilities && !filter.capabilities.some((c) => content.capabilities.includes(c))) {
                     continue;
                 }
-                
+
                 // Apply Soul Profile filters (if present)
                 if (content.soul) {
                     // Filter by soul type
                     if (filter?.soulType && content.soul.type !== filter.soulType) {
                         continue;
                     }
-                    
+
                     // Filter by interest tags (must have at least one matching tag)
                     if (filter?.interestTags && filter.interestTags.length > 0) {
-                        const hasMatchingTag = filter.interestTags.some(tag =>
-                            content.soul!.tags.includes(tag)
-                        );
+                        const hasMatchingTag = filter.interestTags.some((tag) => content.soul!.tags.includes(tag));
                         if (!hasMatchingTag) {
                             continue;
                         }
                     }
-                    
+
                     // Filter by visibility level
                     if (filter?.soulVisibility && content.soul.visibility !== filter.soulVisibility) {
                         continue;
@@ -202,10 +198,10 @@ export class NostrAdapter implements ProtocolAdapter {
 
         await this.client.publishPresence(content);
     }
-    
+
     /**
      * Broadcast Soul Profile for social matching
-     * 
+     *
      * @param agentInfo - Basic agent information
      * @param soulProfile - Soul Profile metadata (CID, tags, etc.)
      */
@@ -217,7 +213,7 @@ export class NostrAdapter implements ProtocolAdapter {
             embeddingHash: string;
             visibility: 'public' | 'zk-selective' | 'private';
             tags: string[];
-        }
+        },
     ): Promise<void> {
         // Skip if no relays configured
         if (!this.options.relays || this.options.relays.length === 0) {
@@ -240,7 +236,7 @@ export class NostrAdapter implements ProtocolAdapter {
         };
 
         await this.client.publishPresence(content);
-        
+
         console.log(`[NostrAdapter] Broadcasted Soul Profile: ${soulProfile.cid} (${soulProfile.tags.join(', ')})`);
     }
 
@@ -261,28 +257,25 @@ export class NostrAdapter implements ProtocolAdapter {
 
     private async startDiscovery(): Promise<void> {
         // Subscribe to presence events
-        this.presenceSubscription = await this.client.subscribePresence(
-            {},
-            (event) => {
-                try {
-                    const content: AgentPresenceContent = JSON.parse(event.content);
-                    const agent: AgentInfo = {
-                        address: content.agent,
-                        displayName: content.display_name,
-                        capabilities: content.capabilities,
-                        reputationScore: content.reputation_score,
-                        available: content.available,
-                        discoveredVia: 'nostr',
-                        nostrPubkey: event.pubkey,
-                        multiaddrs: [],
-                        lastSeenAt: event.created_at * 1000,
-                    };
+        this.presenceSubscription = await this.client.subscribePresence({}, (event) => {
+            try {
+                const content: AgentPresenceContent = JSON.parse(event.content);
+                const agent: AgentInfo = {
+                    address: content.agent,
+                    displayName: content.display_name,
+                    capabilities: content.capabilities,
+                    reputationScore: content.reputation_score,
+                    available: content.available,
+                    discoveredVia: 'nostr',
+                    nostrPubkey: event.pubkey,
+                    multiaddrs: [],
+                    lastSeenAt: event.created_at * 1000,
+                };
 
-                    this.discoveredAgents.set(agent.address, agent);
-                } catch (error) {
-                    console.error('[NostrAdapter] Failed to process presence:', error);
-                }
+                this.discoveredAgents.set(agent.address, agent);
+            } catch (error) {
+                console.error('[NostrAdapter] Failed to process presence:', error);
             }
-        );
+        });
     }
 }

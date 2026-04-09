@@ -5,9 +5,7 @@ let engineInstance: VoiceEngine | null = null;
 
 function getEngine(): VoiceEngine {
     if (!engineInstance) {
-        const voiceEngine = (
-            import.meta as unknown as { env?: { VITE_VOICE_ENGINE?: string } }
-        ).env?.VITE_VOICE_ENGINE;
+        const voiceEngine = (import.meta as unknown as { env?: { VITE_VOICE_ENGINE?: string } }).env?.VITE_VOICE_ENGINE;
         engineInstance = createVoiceEngine({
             preferWhisper: voiceEngine === 'whisper',
         });
@@ -31,14 +29,17 @@ export function useVoice() {
         return engine.stopAndTranscribe();
     }, [engine]);
 
-    const speak = useCallback(async (text: string) => {
-        setSpeaking(true);
-        try {
-            await engine.speak(text);
-        } finally {
-            setSpeaking(false);
-        }
-    }, [engine]);
+    const speak = useCallback(
+        async (text: string) => {
+            setSpeaking(true);
+            try {
+                await engine.speak(text);
+            } finally {
+                setSpeaking(false);
+            }
+        },
+        [engine],
+    );
 
     const stopSpeaking = useCallback(() => {
         engine.stopSpeaking();

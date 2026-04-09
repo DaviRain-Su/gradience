@@ -72,7 +72,7 @@ export function useProfile(owner: string | null): UseProfileResult {
                 setLoading(false);
             }
         },
-        [refreshProfiles, stableOwner]
+        [refreshProfiles, stableOwner],
     );
 
     const updateProfile = useCallback(
@@ -107,7 +107,7 @@ export function useProfile(owner: string | null): UseProfileResult {
                 setLoading(false);
             }
         },
-        [refreshProfiles, stableOwner]
+        [refreshProfiles, stableOwner],
     );
 
     const updateProfileStatus = useCallback(
@@ -137,7 +137,7 @@ export function useProfile(owner: string | null): UseProfileResult {
             }
             return updated;
         },
-        [refreshProfiles, stableOwner]
+        [refreshProfiles, stableOwner],
     );
 
     const deleteProfile = useCallback(
@@ -157,7 +157,7 @@ export function useProfile(owner: string | null): UseProfileResult {
                 setLoading(false);
             }
         },
-        [refreshProfiles, stableOwner]
+        [refreshProfiles, stableOwner],
     );
 
     return {

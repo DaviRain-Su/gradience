@@ -19,7 +19,7 @@
         "access": "public"
     },
     "scripts": {
-        "build": "tsup \u0026\u0026 tsc --declaration --emitDeclarationOnly --outDir dist",
+        "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist",
         "docs": "typedoc --out docs/api src/index.ts --plugin typedoc-plugin-markdown"
     },
     "devDependencies": {

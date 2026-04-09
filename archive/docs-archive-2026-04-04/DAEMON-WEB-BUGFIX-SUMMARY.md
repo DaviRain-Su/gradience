@@ -3,6 +3,7 @@
 ## 🐛 修复的 Bug
 
 ### Bug 1: 端口配置不一致 ✅ 已修复
+
 **问题**: Daemon 使用 7420，Web 使用 3939
 **文件**: 4 个文件
 **修复**: 统一为 7420
@@ -13,6 +14,7 @@
 ```
 
 **修改文件**:
+
 - `ConnectionPanel.tsx`
 - `ConnectionContext.tsx`
 - `use-web-entry.ts`
@@ -21,10 +23,12 @@
 ---
 
 ### Bug 2: Daemon 缺少 Social API ✅ 已修复
+
 **问题**: 没有 Profile/Following/Feed 的 API 端点
 **文件**: 新建 1 个，修改 2 个
 
 **新增 API 路由** (`apps/agent-daemon/src/api/routes/social.ts`):
+
 ```typescript
 GET    /api/profile/:address       # 获取 Profile
 POST   /api/profile                # 更新 Profile
@@ -38,16 +42,19 @@ POST   /api/posts/:id/like         # 点赞
 ```
 
 **修改文件**:
+
 - `server.ts` - 注册 social 路由
 - `daemon.ts` - 传入 database 参数
 
 ---
 
 ### Bug 3: Web hooks 使用 Mock 数据 ✅ 已修复
+
 **问题**: useProfile/useFollowing/useFeed 都是假数据
 **文件**: 3 个 hooks
 
 **修改后数据流**:
+
 ```
 Web Frontend
     ↓ HTTP fetch
@@ -57,6 +64,7 @@ SQLite Database
 ```
 
 **Fallback 机制**:
+
 - Daemon 可用 → 调用真实 API
 - Daemon 不可用 → 使用 Mock 数据（保证页面能显示）
 
@@ -88,6 +96,7 @@ SQLite Database
 ## 📊 测试结果
 
 ### 构建状态
+
 ```
 ✅ Build successful
 ✅ All routes working
@@ -101,6 +110,7 @@ Routes:
 ```
 
 ### 提交记录
+
 ```
 f507542 fix(agentm-web): unify daemon port to 7420
 61df9dd feat(agent-daemon): add Social API routes
@@ -112,6 +122,7 @@ a24f748 feat(agentm-web): update hooks to call Daemon API
 ## 🎯 下一步（可选）
 
 ### 1. 启动 Daemon 测试真实数据
+
 ```bash
 cd apps/agent-daemon
 pnpm install
@@ -122,11 +133,14 @@ pnpm dev
 ```
 
 ### 2. 给 Daemon 添加真实数据库逻辑
+
 当前 Social API 返回的是 Mock 数据，需要：
+
 - 创建 profiles/following/posts 表
 - 实现真实的数据库查询
 
 ### 3. 部署 Web
+
 ```bash
 cd apps/agentm-web
 pnpm build
@@ -138,6 +152,7 @@ pnpm build
 ## ✅ Bug 修复完成！
 
 现在 Web 端可以：
+
 1. ✅ 正确连接到本地 Daemon（端口 7420）
 2. ✅ 通过 Daemon API 获取真实数据
 3. ✅ 如果 Daemon 未运行，优雅降级到 Mock 数据

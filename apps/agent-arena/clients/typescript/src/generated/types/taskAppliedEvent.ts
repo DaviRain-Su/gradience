@@ -7,58 +7,52 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type TaskAppliedEvent = {
-  taskId: bigint;
-  agent: Array<number>;
-  stake: bigint;
-  slot: bigint;
+    taskId: bigint;
+    agent: Array<number>;
+    stake: bigint;
+    slot: bigint;
 };
 
 export type TaskAppliedEventArgs = {
-  taskId: number | bigint;
-  agent: Array<number>;
-  stake: number | bigint;
-  slot: number | bigint;
+    taskId: number | bigint;
+    agent: Array<number>;
+    stake: number | bigint;
+    slot: number | bigint;
 };
 
 export function getTaskAppliedEventEncoder(): FixedSizeEncoder<TaskAppliedEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["agent", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["stake", getU64Encoder()],
-    ["slot", getU64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['agent', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['stake', getU64Encoder()],
+        ['slot', getU64Encoder()],
+    ]);
 }
 
 export function getTaskAppliedEventDecoder(): FixedSizeDecoder<TaskAppliedEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["agent", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["stake", getU64Decoder()],
-    ["slot", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['agent', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['stake', getU64Decoder()],
+        ['slot', getU64Decoder()],
+    ]);
 }
 
-export function getTaskAppliedEventCodec(): FixedSizeCodec<
-  TaskAppliedEventArgs,
-  TaskAppliedEvent
-> {
-  return combineCodec(
-    getTaskAppliedEventEncoder(),
-    getTaskAppliedEventDecoder(),
-  );
+export function getTaskAppliedEventCodec(): FixedSizeCodec<TaskAppliedEventArgs, TaskAppliedEvent> {
+    return combineCodec(getTaskAppliedEventEncoder(), getTaskAppliedEventDecoder());
 }

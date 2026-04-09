@@ -1,11 +1,17 @@
 /**
  * Social View
- * 
+ *
  * Complete social matching interface - Soul Profiles, Discovery, Probing, Reports
  */
 
 import { useState, useEffect } from 'react';
-import { SoulProfileEditor, SoulProfileCard, SoulProfileView, MatchingReportView, MatchingReportCard } from '../../components/social';
+import {
+    SoulProfileEditor,
+    SoulProfileCard,
+    SoulProfileView,
+    MatchingReportView,
+    MatchingReportCard,
+} from '../../components/social';
 import { ProbeChat, ProbeInvitation } from '../../components/social';
 import { useSoulProfile } from '../hooks/useSoulProfile.ts';
 import { useSoulMatching } from '../hooks/useSoulMatching.ts';
@@ -22,20 +28,25 @@ export function SocialView() {
     const [selectedProfile, setSelectedProfile] = useState<SoulProfile | null>(null);
     const [selectedReport, setSelectedReport] = useState<MatchingReport | null>(null);
     const [activeProbeSession, setActiveProbeSession] = useState<ProbeSession | null>(null);
-    
+
     // Hooks
     const { profile, loading: profileLoading, save: saveProfile } = useSoulProfile({ autoLoad: true });
-    const { initialized: matchingReady, analyzeMatch, findMatches, loading: matchingLoading } = useSoulMatching({
+    const {
+        initialized: matchingReady,
+        analyzeMatch,
+        findMatches,
+        loading: matchingLoading,
+    } = useSoulMatching({
         apiKey: (import.meta as any).env?.VITE_OPENAI_API_KEY || '',
         provider: 'openai',
         model: 'gpt-4',
     });
     const { agents } = useA2A({ autoInit: true, enableNostr: true });
-    
+
     // Demo data - use demo profiles for discovered agents
     const [discoveredProfiles, setDiscoveredProfiles] = useState<SoulProfile[]>([]);
     const [matchReports, setMatchReports] = useState<MatchingReport[]>([]);
-    
+
     useEffect(() => {
         // Load demo profiles for discovery
         // In production, fetch Soul Profiles from agents via Nostr
@@ -45,12 +56,12 @@ export function SocialView() {
             setDiscoveredProfiles(demos.length > 0 ? demos : demoProfiles);
         }
     }, [profile?.id]);
-    
+
     const handleSaveProfile = async (partial: Partial<SoulProfile>) => {
         await saveProfile(partial);
         setIsEditingProfile(false);
     };
-    
+
     const handleStartProbe = (targetProfile: SoulProfile) => {
         // Create mock probe session
         const session: ProbeSession = {
@@ -75,14 +86,14 @@ export function SocialView() {
             },
             startedAt: Date.now(),
         };
-        
+
         setActiveProbeSession(session);
         setActiveTab('sessions');
     };
-    
+
     const handleGenerateReport = async (targetProfile: SoulProfile, session?: ProbeSession) => {
         if (!profile || !matchingReady) return;
-        
+
         const report = await analyzeMatch(profile, targetProfile, session);
         if (report) {
             setMatchReports([...matchReports, report]);
@@ -90,7 +101,7 @@ export function SocialView() {
             setActiveTab('matches');
         }
     };
-    
+
     return (
         <div className="h-full flex flex-col bg-gray-900">
             {/* Header Tabs */}
@@ -112,14 +123,12 @@ export function SocialView() {
                     >
                         {tab.label}
                         {tab.count > 0 && (
-                            <span className="ml-2 px-2 py-0.5 bg-gray-900/30 rounded text-xs">
-                                {tab.count}
-                            </span>
+                            <span className="ml-2 px-2 py-0.5 bg-gray-900/30 rounded text-xs">{tab.count}</span>
                         )}
                     </button>
                 ))}
             </div>
-            
+
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
                 {activeTab === 'profile' && (
@@ -160,16 +169,14 @@ export function SocialView() {
                         ) : null}
                     </div>
                 )}
-                
+
                 {activeTab === 'discover' && (
                     <div className="max-w-6xl mx-auto p-6">
                         <div className="mb-6">
                             <h2 className="text-2xl font-bold mb-2">Discover Compatible Souls</h2>
-                            <p className="text-gray-400">
-                                Find agents and humans with similar values and interests
-                            </p>
+                            <p className="text-gray-400">Find agents and humans with similar values and interests</p>
                         </div>
-                        
+
                         {!profile ? (
                             <div className="text-center py-12">
                                 <p className="text-gray-400 mb-4">Create your Soul Profile first to discover matches</p>
@@ -190,32 +197,29 @@ export function SocialView() {
                                         onStartProbe={() => handleStartProbe(discovered)}
                                     />
                                 ))}
-                                
+
                                 {discoveredProfiles.length === 0 && (
                                     <div className="col-span-2 text-center py-12 text-gray-500">
                                         <p className="mb-2">No Soul Profiles discovered yet</p>
-                                        <p className="text-sm">Agents will appear here as they broadcast their Soul Profiles</p>
+                                        <p className="text-sm">
+                                            Agents will appear here as they broadcast their Soul Profiles
+                                        </p>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
                 )}
-                
+
                 {activeTab === 'matches' && (
                     <div className="max-w-6xl mx-auto p-6">
                         <div className="mb-6">
                             <h2 className="text-2xl font-bold mb-2">Compatibility Reports</h2>
-                            <p className="text-gray-400">
-                                AI-powered compatibility analysis
-                            </p>
+                            <p className="text-gray-400">AI-powered compatibility analysis</p>
                         </div>
-                        
+
                         {selectedReport ? (
-                            <MatchingReportView
-                                report={selectedReport}
-                                onClose={() => setSelectedReport(null)}
-                            />
+                            <MatchingReportView report={selectedReport} onClose={() => setSelectedReport(null)} />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {matchReports.map((report) => (
@@ -225,7 +229,7 @@ export function SocialView() {
                                         onClick={() => setSelectedReport(report)}
                                     />
                                 ))}
-                                
+
                                 {matchReports.length === 0 && (
                                     <div className="col-span-2 text-center py-12 text-gray-500">
                                         <p className="mb-2">No compatibility reports yet</p>
@@ -236,7 +240,7 @@ export function SocialView() {
                         )}
                     </div>
                 )}
-                
+
                 {activeTab === 'sessions' && (
                     <div className="h-full">
                         {activeProbeSession ? (
@@ -258,10 +262,10 @@ export function SocialView() {
                                     activeProbeSession.status = 'completed';
                                     activeProbeSession.completedAt = Date.now();
                                     setActiveProbeSession({ ...activeProbeSession });
-                                    
+
                                     // Generate report
                                     const targetProfile = discoveredProfiles.find(
-                                        p => p.id === activeProbeSession.targetId
+                                        (p) => p.id === activeProbeSession.targetId,
                                     );
                                     if (targetProfile && profile) {
                                         void handleGenerateReport(targetProfile, activeProbeSession);
@@ -290,15 +294,12 @@ export function SocialView() {
                     </div>
                 )}
             </div>
-            
+
             {/* Profile Modal */}
             {selectedProfile && activeTab !== 'profile' && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <SoulProfileView
-                            profile={selectedProfile}
-                            onClose={() => setSelectedProfile(null)}
-                        />
+                        <SoulProfileView profile={selectedProfile} onClose={() => setSelectedProfile(null)} />
                     </div>
                 </div>
             )}
@@ -310,7 +311,7 @@ export function SocialView() {
 function createMockProfile(name: string, index: number): SoulProfile {
     const types: ('human' | 'agent')[] = ['agent', 'human', 'agent'];
     const tones: ('friendly' | 'technical' | 'formal')[] = ['friendly', 'technical', 'formal'];
-    
+
     return {
         id: `mock-${index}`,
         version: '1.0',

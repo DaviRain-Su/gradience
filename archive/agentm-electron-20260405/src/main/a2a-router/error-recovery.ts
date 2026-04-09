@@ -66,10 +66,7 @@ const ERROR_PATTERNS: Array<{
     },
     // Protocol errors (retryable with different protocol)
     {
-        codes: [
-            A2A_ERROR_CODES.NOSTR_RELAY_UNAVAILABLE,
-            A2A_ERROR_CODES.NOSTR_PUBLISH_FAILED,
-        ],
+        codes: [A2A_ERROR_CODES.NOSTR_RELAY_UNAVAILABLE, A2A_ERROR_CODES.NOSTR_PUBLISH_FAILED],
         pattern: /relay|publish failed/i,
         severity: 'degraded',
         retryable: true,
@@ -110,9 +107,7 @@ export function classifyError(error: Error, errorCode?: string): ClassifiedError
         }
 
         // Check by message pattern
-        const regex = pattern.pattern instanceof RegExp
-            ? pattern.pattern
-            : new RegExp(pattern.pattern, 'i');
+        const regex = pattern.pattern instanceof RegExp ? pattern.pattern : new RegExp(pattern.pattern, 'i');
 
         if (regex.test(errorMessage)) {
             return {
@@ -190,10 +185,7 @@ export const CONSERVATIVE_RETRY_POLICY: RetryPolicy = {
 /**
  * Calculate delay with exponential backoff and jitter
  */
-export function calculateBackoffDelay(
-    attempt: number,
-    policy: RetryPolicy
-): number {
+export function calculateBackoffDelay(attempt: number, policy: RetryPolicy): number {
     // Exponential backoff: baseDelay * (multiplier ^ attempt)
     const exponentialDelay = policy.baseDelayMs * Math.pow(policy.backoffMultiplier, attempt);
 
@@ -252,7 +244,7 @@ export interface RetryResult<T> {
 export async function withRetry<T>(
     operation: (context: RetryContext) => Promise<T>,
     policy: RetryPolicy = DEFAULT_RETRY_POLICY,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
 ): Promise<RetryResult<T>> {
     const startTime = Date.now();
     const errors: Error[] = [];
@@ -286,7 +278,7 @@ export async function withRetry<T>(
                     new Promise<never>((_, reject) => {
                         setTimeout(
                             () => reject(new Error(`Operation timeout after ${policy.operationTimeoutMs}ms`)),
-                            policy.operationTimeoutMs
+                            policy.operationTimeoutMs,
                         );
                     }),
                 ]);
@@ -386,11 +378,7 @@ export class RecoveryManager {
      *
      * @returns true if recovery was attempted
      */
-    async attemptRecovery(
-        error: Error,
-        errorCode?: string,
-        context?: unknown
-    ): Promise<boolean> {
+    async attemptRecovery(error: Error, errorCode?: string, context?: unknown): Promise<boolean> {
         const classified = classifyError(error, errorCode);
         const errorKey = `${classified.code ?? error.message}`;
 
@@ -418,7 +406,7 @@ export class RecoveryManager {
                     logger.error(
                         `Recovery strategy ${strategy.name} failed`,
                         { error: (recoveryError as Error).message },
-                        recoveryError as Error
+                        recoveryError as Error,
                     );
                     this.recoveryAttempts.set(errorKey, attempts + 1);
                 }
@@ -457,7 +445,7 @@ export async function withRecovery<T>(
         policy?: RetryPolicy;
         recoveryContext?: unknown;
         abortSignal?: AbortSignal;
-    } = {}
+    } = {},
 ): Promise<RetryResult<T>> {
     const policy = options.policy ?? DEFAULT_RETRY_POLICY;
     const recoveryManager = getRecoveryManager();
@@ -478,7 +466,7 @@ export async function withRecovery<T>(
             }
         },
         policy,
-        options.abortSignal
+        options.abortSignal,
     );
 }
 

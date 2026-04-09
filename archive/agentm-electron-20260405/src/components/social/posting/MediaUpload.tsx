@@ -225,11 +225,7 @@ export function MediaUpload({
                 onClick={handleBrowseClick}
                 className={`
                     relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition
-                    ${
-                        isDragging
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-gray-700 hover:border-gray-600'
-                    }
+                    ${isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 hover:border-gray-600'}
                     ${disabled || !canAddMore ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
             >
@@ -272,32 +268,19 @@ export function MediaUpload({
             </div>
 
             {/* Error message */}
-            {error && (
-                <p className="mt-2 text-sm text-red-400">{error}</p>
-            )}
+            {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
             {/* File previews */}
             {files.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2">
                     {files.map((file) => (
-                        <div
-                            key={file.id}
-                            className="relative group rounded-lg overflow-hidden bg-gray-800"
-                        >
+                        <div key={file.id} className="relative group rounded-lg overflow-hidden bg-gray-800">
                             {/* Preview */}
                             {file.type === 'image' ? (
-                                <img
-                                    src={file.previewUrl}
-                                    alt={file.name}
-                                    className="w-full h-32 object-cover"
-                                />
+                                <img src={file.previewUrl} alt={file.name} className="w-full h-32 object-cover" />
                             ) : (
                                 <div className="relative w-full h-32">
-                                    <video
-                                        src={file.previewUrl}
-                                        className="w-full h-full object-cover"
-                                        muted
-                                    />
+                                    <video src={file.previewUrl} className="w-full h-full object-cover" muted />
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                         <svg
                                             className="w-10 h-10 text-white/80"

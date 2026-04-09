@@ -1,4 +1,17 @@
-import { getApplyForTaskInstruction, getCancelTaskInstruction, getForceRefundInstruction, getInitializeInstruction, getJudgeAndPayInstruction, getPostTaskInstruction, getRefundExpiredInstruction, getRegisterJudgeInstruction, getSubmitResultInstruction, getUnstakeJudgeInstruction, getUpgradeConfigInstruction, type RuntimeEnvInputArgs } from './generated/index.js';
+import {
+    getApplyForTaskInstruction,
+    getCancelTaskInstruction,
+    getForceRefundInstruction,
+    getInitializeInstruction,
+    getJudgeAndPayInstruction,
+    getPostTaskInstruction,
+    getRefundExpiredInstruction,
+    getRegisterJudgeInstruction,
+    getSubmitResultInstruction,
+    getUnstakeJudgeInstruction,
+    getUpgradeConfigInstruction,
+    type RuntimeEnvInputArgs,
+} from './generated/index.js';
 import { fetchEncodedAccount, type Address, type Instruction, type TransactionSigner } from '@solana/kit';
 export interface GradienceSdkOptions {
     indexerEndpoint?: string;
@@ -244,17 +257,186 @@ export declare class GradienceSDK {
     setAttestationEndpoint(endpoint: string): void;
     setRpc(rpc: Parameters<typeof fetchEncodedAccount>[0]): void;
     readonly instructions: {
-        readonly initialize: (input: Parameters<typeof getInitializeInstruction>[0], config?: Parameters<typeof getInitializeInstruction>[1]) => import("./generated/index.js").InitializeInstruction<Address, string, string, string, string, []>;
-        readonly postTask: (input: Parameters<typeof getPostTaskInstruction>[0], config?: Parameters<typeof getPostTaskInstruction>[1]) => import("./generated/index.js").PostTaskInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly applyForTask: (input: Parameters<typeof getApplyForTaskInstruction>[0], config?: Parameters<typeof getApplyForTaskInstruction>[1]) => import("./generated/index.js").ApplyForTaskInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly submitResult: (input: Parameters<typeof getSubmitResultInstruction>[0], config?: Parameters<typeof getSubmitResultInstruction>[1]) => import("./generated/index.js").SubmitResultInstruction<Address, string, string, string, string, string, string, string, []>;
-        readonly judgeAndPay: (input: Parameters<typeof getJudgeAndPayInstruction>[0], config?: Parameters<typeof getJudgeAndPayInstruction>[1]) => import("./generated/index.js").JudgeAndPayInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly cancelTask: (input: Parameters<typeof getCancelTaskInstruction>[0], config?: Parameters<typeof getCancelTaskInstruction>[1]) => import("./generated/index.js").CancelTaskInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly refundExpired: (input: Parameters<typeof getRefundExpiredInstruction>[0], config?: Parameters<typeof getRefundExpiredInstruction>[1]) => import("./generated/index.js").RefundExpiredInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly forceRefund: (input: Parameters<typeof getForceRefundInstruction>[0], config?: Parameters<typeof getForceRefundInstruction>[1]) => import("./generated/index.js").ForceRefundInstruction<Address, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, []>;
-        readonly registerJudge: (input: Parameters<typeof getRegisterJudgeInstruction>[0], config?: Parameters<typeof getRegisterJudgeInstruction>[1]) => import("./generated/index.js").RegisterJudgeInstruction<Address, string, string, string, string, string, string, string, []>;
-        readonly unstakeJudge: (input: Parameters<typeof getUnstakeJudgeInstruction>[0], config?: Parameters<typeof getUnstakeJudgeInstruction>[1]) => import("./generated/index.js").UnstakeJudgeInstruction<Address, string, string, string, string, string, []>;
-        readonly upgradeConfig: (input: Parameters<typeof getUpgradeConfigInstruction>[0], config?: Parameters<typeof getUpgradeConfigInstruction>[1]) => import("./generated/index.js").UpgradeConfigInstruction<Address, string, string, []>;
+        readonly initialize: (
+            input: Parameters<typeof getInitializeInstruction>[0],
+            config?: Parameters<typeof getInitializeInstruction>[1],
+        ) => import('./generated/index.js').InitializeInstruction<Address, string, string, string, string, []>;
+        readonly postTask: (
+            input: Parameters<typeof getPostTaskInstruction>[0],
+            config?: Parameters<typeof getPostTaskInstruction>[1],
+        ) => import('./generated/index.js').PostTaskInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly applyForTask: (
+            input: Parameters<typeof getApplyForTaskInstruction>[0],
+            config?: Parameters<typeof getApplyForTaskInstruction>[1],
+        ) => import('./generated/index.js').ApplyForTaskInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly submitResult: (
+            input: Parameters<typeof getSubmitResultInstruction>[0],
+            config?: Parameters<typeof getSubmitResultInstruction>[1],
+        ) => import('./generated/index.js').SubmitResultInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly judgeAndPay: (
+            input: Parameters<typeof getJudgeAndPayInstruction>[0],
+            config?: Parameters<typeof getJudgeAndPayInstruction>[1],
+        ) => import('./generated/index.js').JudgeAndPayInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly cancelTask: (
+            input: Parameters<typeof getCancelTaskInstruction>[0],
+            config?: Parameters<typeof getCancelTaskInstruction>[1],
+        ) => import('./generated/index.js').CancelTaskInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly refundExpired: (
+            input: Parameters<typeof getRefundExpiredInstruction>[0],
+            config?: Parameters<typeof getRefundExpiredInstruction>[1],
+        ) => import('./generated/index.js').RefundExpiredInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly forceRefund: (
+            input: Parameters<typeof getForceRefundInstruction>[0],
+            config?: Parameters<typeof getForceRefundInstruction>[1],
+        ) => import('./generated/index.js').ForceRefundInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly registerJudge: (
+            input: Parameters<typeof getRegisterJudgeInstruction>[0],
+            config?: Parameters<typeof getRegisterJudgeInstruction>[1],
+        ) => import('./generated/index.js').RegisterJudgeInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly unstakeJudge: (
+            input: Parameters<typeof getUnstakeJudgeInstruction>[0],
+            config?: Parameters<typeof getUnstakeJudgeInstruction>[1],
+        ) => import('./generated/index.js').UnstakeJudgeInstruction<
+            Address,
+            string,
+            string,
+            string,
+            string,
+            string,
+            []
+        >;
+        readonly upgradeConfig: (
+            input: Parameters<typeof getUpgradeConfigInstruction>[0],
+            config?: Parameters<typeof getUpgradeConfigInstruction>[1],
+        ) => import('./generated/index.js').UpgradeConfigInstruction<Address, string, string, []>;
     };
     readonly task: {
         /** Post a new task on-chain. */
@@ -280,9 +462,12 @@ export declare class GradienceSDK {
          * Fetch submissions for a task from indexer.
          * Returns `null` when the task is not found.
          */
-        readonly submissions: (taskId: number, params?: {
-            sort?: "score" | "slot";
-        }) => Promise<SubmissionApi[] | null>;
+        readonly submissions: (
+            taskId: number,
+            params?: {
+                sort?: 'score' | 'slot';
+            },
+        ) => Promise<SubmissionApi[] | null>;
     };
     readonly reputation: {
         /**
@@ -309,7 +494,10 @@ export declare class GradienceSDK {
         /** Fetch agent profile from Indexer. Returns `null` when not found. */
         readonly get: (agent: string) => Promise<AgentProfileApi | null>;
         /** Update agent profile via Indexer. */
-        readonly update: (agent: string, data: AgentProfileUpdate) => Promise<{
+        readonly update: (
+            agent: string,
+            data: AgentProfileUpdate,
+        ) => Promise<{
             ok: boolean;
         }>;
     };
@@ -347,15 +535,21 @@ export declare class GradienceSDK {
         offset?: number;
     }): Promise<TaskApi[]>;
     getTask(taskId: number): Promise<TaskApi | null>;
-    getTaskSubmissions(taskId: number, params?: {
-        sort?: 'score' | 'slot';
-    }): Promise<SubmissionApi[] | null>;
+    getTaskSubmissions(
+        taskId: number,
+        params?: {
+            sort?: 'score' | 'slot';
+        },
+    ): Promise<SubmissionApi[] | null>;
     getReputation(agent: string): Promise<ReputationApi | null>;
     getJudgePool(category: number): Promise<JudgePoolEntryApi[] | null>;
     getAgentAttestations(agent: string): Promise<TaskCompletionAttestationApi[] | null>;
     getDecodedAgentAttestations(agent: string): Promise<TaskCompletionAttestationRecord[] | null>;
     getAgentProfile(agent: string): Promise<AgentProfileApi | null>;
-    updateAgentProfile(agent: string, data: AgentProfileUpdate): Promise<{
+    updateAgentProfile(
+        agent: string,
+        data: AgentProfileUpdate,
+    ): Promise<{
         ok: boolean;
     }>;
     getReputationOnChain(agent: Address): Promise<ReputationOnChain | null>;
@@ -370,6 +564,8 @@ export declare class GradienceSDK {
     private resolveRefundPairs;
     private resolveSendOptions;
 }
-export declare const SAS_PROGRAM_ID: Address<"22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq">;
-export declare function normalizeTaskCompletionAttestation(attestation: TaskCompletionAttestationApi): TaskCompletionAttestationRecord;
+export declare const SAS_PROGRAM_ID: Address<'22zoJMtdu4rFKKrUQT8cNdqKouMXGMnqxdLY8nzaVmXq'>;
+export declare function normalizeTaskCompletionAttestation(
+    attestation: TaskCompletionAttestationApi,
+): TaskCompletionAttestationRecord;
 export declare function decodeTaskCompletionAttestation(raw: Uint8Array): TaskCompletionAttestationData;

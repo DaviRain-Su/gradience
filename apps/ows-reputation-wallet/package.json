@@ -1,35 +1,35 @@
 {
-  "name": "@gradiences/ows-reputation-wallet",
-  "version": "0.1.0",
-  "description": "Reputation-powered wallet MVP for OWS Hackathon",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "test": "jest"
-  },
-  "keywords": [
-    "ows",
-    "reputation",
-    "wallet",
-    "gradience",
-    "hackathon"
-  ],
-  "author": "Gradience Team",
-  "license": "MIT",
-  "dependencies": {
-    "@gradiences/ows-adapter": "workspace:*",
-    "@gradiences/sdk": "workspace:*",
-    "@solana/web3.js": "^1.91.0"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "ts-node": "^10.9.0",
-    "typescript": "^5.3.0"
-  }
+    "name": "@gradiences/ows-reputation-wallet",
+    "version": "0.1.0",
+    "description": "Reputation-powered wallet MVP for OWS Hackathon",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "ts-node src/index.ts",
+        "test": "jest"
+    },
+    "keywords": [
+        "ows",
+        "reputation",
+        "wallet",
+        "gradience",
+        "hackathon"
+    ],
+    "author": "Gradience Team",
+    "license": "MIT",
+    "dependencies": {
+        "@gradiences/ows-adapter": "workspace:*",
+        "@gradiences/sdk": "workspace:*",
+        "@solana/web3.js": "^1.91.0"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.0",
+        "@types/node": "^20.0.0",
+        "jest": "^29.5.0",
+        "ts-jest": "^29.1.0",
+        "ts-node": "^10.9.0",
+        "typescript": "^5.3.0"
+    }
 }

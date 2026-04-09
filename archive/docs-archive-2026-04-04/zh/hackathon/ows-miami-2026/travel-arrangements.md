@@ -6,31 +6,35 @@
 
 ## Event Details
 
-| Item | Detail |
-|------|--------|
-| **Event** | OWS Hackathon Miami 2026 |
-| **Date** | April 3, 2026 |
-| **Location** | Miami, FL |
-| **Website** | https://hackathon.openwallet.sh/ |
+| Item         | Detail                           |
+| ------------ | -------------------------------- |
+| **Event**    | OWS Hackathon Miami 2026         |
+| **Date**     | April 3, 2026                    |
+| **Location** | Miami, FL                        |
+| **Website**  | https://hackathon.openwallet.sh/ |
 
 ## Travel Checklist
 
 ### Flights
+
 - [ ] Book flights to Miami
 - [ ] Check-in online
 - [ ] Download boarding passes
 
 ### Accommodation
+
 - [ ] Book hotel near venue
 - [ ] Confirm reservation
 - [ ] Check cancellation policy
 
 ### Event Registration
+
 - [x] Register for hackathon (GRA-60)
 - [ ] Confirm team members
 - [ ] Prepare demo materials
 
 ### Materials to Bring
+
 - [ ] Laptop + charger
 - [ ] Demo script printed
 - [ ] Pitch deck on USB

@@ -23,7 +23,11 @@ export function registerMessageRoutes(app: FastifyInstance, messageRouter: Messa
         '/api/v1/messages',
         async (request) => {
             const dir = request.query.direction as 'inbound' | 'outbound' | undefined;
-            const messages = messageRouter.listMessages(dir, Number(request.query.limit) || 50, Number(request.query.offset) || 0);
+            const messages = messageRouter.listMessages(
+                dir,
+                Number(request.query.limit) || 50,
+                Number(request.query.offset) || 0,
+            );
             return { messages, total: messages.length };
         },
     );

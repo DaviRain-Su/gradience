@@ -14,6 +14,7 @@
 通常需要添加以下记录：
 
 #### SPF 记录 (TXT)
+
 ```
 Type:  TXT
 Name:  gradiences.xyz 或 @
@@ -21,6 +22,7 @@ Value: v=spf1 include:spf.resend.com ~all
 ```
 
 #### DKIM 记录 (TXT)
+
 ```
 Type:  TXT
 Name:  resend._domainkey.gradiences.xyz
@@ -28,6 +30,7 @@ Value: [Resend 提供的 DKIM 值]
 ```
 
 #### DMARC 记录 (TXT) - 可选但推荐
+
 ```
 Type:  TXT
 Name:  _dmarc.gradiences.xyz
@@ -50,6 +53,7 @@ Value: v=DMARC1; p=quarantine; rua=mailto:dmarc@gradiences.xyz
 ### 5. 更新环境变量
 
 验证成功后，在 Vercel 添加：
+
 ```
 FROM_EMAIL = hello@gradiences.xyz
 ```
@@ -58,19 +62,20 @@ FROM_EMAIL = hello@gradiences.xyz
 
 ## 常见域名提供商
 
-| 提供商 | 控制面板 |
-|--------|----------|
-| Cloudflare | DNS → Records |
-| GoDaddy | My Products → DNS |
-| Namecheap | Domain List → Advanced DNS |
-| 阿里云 | 域名 → 解析设置 |
-| 腾讯云 | 域名注册 → 解析 |
+| 提供商     | 控制面板                   |
+| ---------- | -------------------------- |
+| Cloudflare | DNS → Records              |
+| GoDaddy    | My Products → DNS          |
+| Namecheap  | Domain List → Advanced DNS |
+| 阿里云     | 域名 → 解析设置            |
+| 腾讯云     | 域名注册 → 解析            |
 
 ---
 
 ## 验证成功后
 
 邮件会显示为：
+
 ```
 From: Gradience <hello@gradiences.xyz>
 ```

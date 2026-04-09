@@ -34,7 +34,7 @@ mapping(uint256 => bool) public requireZkKyc;
 address public zkOracle;   // address authorised to relay verified nullifiers
 ```
 
-*Rationale:* the contract does **not** verify a ZK proof directly; it trusts an oracle (e.g. the Gradience daemon or a dedicated relayer) to only submit nullifiers that have already passed backend verification. This keeps gas low while moving the gate from backend-only to backend + on-chain dual enforcement.
+_Rationale:_ the contract does **not** verify a ZK proof directly; it trusts an oracle (e.g. the Gradience daemon or a dedicated relayer) to only submit nullifiers that have already passed backend verification. This keeps gas low while moving the gate from backend-only to backend + on-chain dual enforcement.
 
 ---
 
@@ -62,7 +62,8 @@ function registerZkNullifier(address wallet, bytes32 nullifierHash)
 }
 ```
 
-*Notes:*
+_Notes:_
+
 - Re-binding a wallet releases the old nullifier so it can be re-registered elsewhere (matches the 30-day cooldown in `AccountBindingStore`).
 - The nullifier itself is WorldID / Holonym output; it is already designed to be globally unique.
 
@@ -92,7 +93,7 @@ requireZkKyc[task_id] = requireZkKyc;
 
 Emit updated `TaskCreated` event (append `bool requireZkKyc`).
 
-*Default:* `false` for backward compatibility.
+_Default:_ `false` for backward compatibility.
 
 ### 3.3 Application Gate
 
@@ -113,7 +114,7 @@ function applyForTask(uint256 task_id) external payable nonReentrant {
 }
 ```
 
-*Alternative (with custom error):* add `error ZkKycRequired(address wallet);` instead of `require` string.
+_Alternative (with custom error):_ add `error ZkKycRequired(address wallet);` instead of `require` string.
 
 ### 3.4 Judge Assignment / Enforcement
 
@@ -121,7 +122,7 @@ function applyForTask(uint256 task_id) external payable nonReentrant {
 
 When `requireZkKyc[task_id] == true`, the **designated judge** and **every judge in a quorum pool** must have a registered nullifier.
 
-*Designated judge check:* inside `judgeAndPay` / `judgeWithProof`:
+_Designated judge check:_ inside `judgeAndPay` / `judgeWithProof`:
 
 ```solidity
 if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
@@ -129,7 +130,7 @@ if (requireZkKyc[task_id] && zkNullifiers[msg.sender] == bytes32(0)) {
 }
 ```
 
-*Quorum pool check:* inside `postTaskQuorum` / `postTaskErc20Quorum`, optionally validate each supplied judge at task creation:
+_Quorum pool check:_ inside `postTaskQuorum` / `postTaskErc20Quorum`, optionally validate each supplied judge at task creation:
 
 ```solidity
 if (requireZkKyc) {
@@ -157,7 +158,7 @@ event ZkNullifierRegistered(address indexed wallet, bytes32 indexed nullifierHas
 event ZkOracleUpdated(address indexed oracle);
 ```
 
-*Amend `TaskCreated`* to include the new flag (indexers / SDK need it).
+_Amend `TaskCreated`_ to include the new flag (indexers / SDK need it).
 
 ---
 
@@ -201,14 +202,14 @@ Add `batchRegisterZkNullifiers(address[] calldata wallets, bytes32[] calldata nu
 
 ## 5. Security Considerations
 
-| Risk | Mitigation |
-|------|------------|
-| **Nullifier reuse / Sybil** | `usedNullifiers` mapping rejects duplicates. Re-binding releases the old nullifier atomically. |
-| **Front-running registration** | Not exploitable: the oracle is the only caller, and the nullifier is already bound to a specific wallet in the backend before the tx is broadcast. |
-| **Privacy leakage** | Only `bytes32 nullifierHash` is stored; no PII (name, email, passport) ever touches the blockchain. |
-| **Oracle compromise** | Limited blast radius: a compromised oracle can only register false nullifiers, not steal funds. `onlyOwner` can rotate the oracle instantly via `setZkOracle`. |
-| **Contract bypass** | Backend checks remain in place (`/api/v1/identity/tier`), so even if the on-chain check were somehow circumvented, the backend would still reject an unverified applicant during SDK routing. |
-| **Quorum judge evasion** | Fast-fail validation at `postTaskQuorum` ensures unverified judges cannot be appointed. Runtime checks in `submitJudgement` provide defense in depth. |
+| Risk                           | Mitigation                                                                                                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nullifier reuse / Sybil**    | `usedNullifiers` mapping rejects duplicates. Re-binding releases the old nullifier atomically.                                                                                                |
+| **Front-running registration** | Not exploitable: the oracle is the only caller, and the nullifier is already bound to a specific wallet in the backend before the tx is broadcast.                                            |
+| **Privacy leakage**            | Only `bytes32 nullifierHash` is stored; no PII (name, email, passport) ever touches the blockchain.                                                                                           |
+| **Oracle compromise**          | Limited blast radius: a compromised oracle can only register false nullifiers, not steal funds. `onlyOwner` can rotate the oracle instantly via `setZkOracle`.                                |
+| **Contract bypass**            | Backend checks remain in place (`/api/v1/identity/tier`), so even if the on-chain check were somehow circumvented, the backend would still reject an unverified applicant during SDK routing. |
+| **Quorum judge evasion**       | Fast-fail validation at `postTaskQuorum` ensures unverified judges cannot be appointed. Runtime checks in `submitJudgement` provide defense in depth.                                         |
 
 ---
 
@@ -250,4 +251,4 @@ Add `batchRegisterZkNullifiers(address[] calldata wallets, bytes32[] calldata nu
 
 ---
 
-*End of design. No implementation code yet — proceed to Phase 5 Test Spec updates before coding.*
+_End of design. No implementation code yet — proceed to Phase 5 Test Spec updates before coding._

@@ -33,7 +33,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return (
         <ToastContext.Provider value={value}>
             {children}
-            <div data-testid="toast-container" className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div
+                data-testid="toast-container"
+                className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+            >
                 {messages.map((message) => (
                     <div
                         key={message.id}
@@ -43,8 +46,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                             message.tone === 'success'
                                 ? 'bg-emerald-950 border-emerald-700 text-emerald-200'
                                 : message.tone === 'error'
-                                ? 'bg-red-950 border-red-700 text-red-200'
-                                : 'bg-gray-900 border-gray-700 text-gray-200'
+                                  ? 'bg-red-950 border-red-700 text-red-200'
+                                  : 'bg-gray-900 border-gray-700 text-gray-200'
                         }`}
                     >
                         {message.text}

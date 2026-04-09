@@ -1,7 +1,7 @@
 # Agent 友好的区块链设计模式
 
 > **核心目标：降低 Agent 使用区块链的门槛和成本，提升自动化体验**
-> 
+>
 > 日期：2026-03-29
 
 ---
@@ -30,32 +30,32 @@
 
 ```yaml
 高频交易 Agent:
-  场景: 做市 Agent 需要每秒多次报价
-  
-  传统链上:
-    - 每笔交易 Gas $0.5-5
-    - 每秒 1-10 笔 → 成本极高
-    - 确认时间 12s-几分钟
-  
-  状态通道:
-    - 打开通道: 一次链上交易
-    - 链下交互: 免费、即时
-    - 关闭通道: 结算净额
-    - 1000 笔交互成本 = 2 笔链上交易
+    场景: 做市 Agent 需要每秒多次报价
+
+    传统链上:
+        - 每笔交易 Gas $0.5-5
+        - 每秒 1-10 笔 → 成本极高
+        - 确认时间 12s-几分钟
+
+    状态通道:
+        - 打开通道: 一次链上交易
+        - 链下交互: 免费、即时
+        - 关闭通道: 结算净额
+        - 1000 笔交互成本 = 2 笔链上交易
 
 Agent-to-Agent 协商:
-  场景: 两个 Agent 协商任务分配
-  
-  链下流程:
-    1. Agent A: "我能做这个任务，报价 10 OKB"
-    2. Agent B: "太贵了，5 OKB"
-    3. Agent A: "8 OKB 最低了"
-    4. Agent B: "成交"
-  
-  状态通道:
-    - 协商过程全部链下
-    - 最终协议上链结算
-    - 快速、免费、隐私
+    场景: 两个 Agent 协商任务分配
+
+    链下流程:
+        1. Agent A: '我能做这个任务，报价 10 OKB'
+        2. Agent B: '太贵了，5 OKB'
+        3. Agent A: '8 OKB 最低了'
+        4. Agent B: '成交'
+
+    状态通道:
+        - 协商过程全部链下
+        - 最终协议上链结算
+        - 快速、免费、隐私
 ```
 
 ### 1.3 技术实现
@@ -71,9 +71,9 @@ contract AgentStateChannel {
         bytes32 stateHash;  // 当前状态哈希
         uint256 closeTime;  // 关闭时间
     }
-    
+
     mapping(bytes32 => Channel) public channels;
-    
+
     // 打开通道
     function openChannel(address agentB) external payable {
         bytes32 channelId = keccak256(abi.encodePacked(msg.sender, agentB, block.timestamp));
@@ -86,7 +86,7 @@ contract AgentStateChannel {
             closeTime: 0
         });
     }
-    
+
     // 链下状态更新（通过签名）
     function updateState(
         bytes32 channelId,
@@ -98,7 +98,7 @@ contract AgentStateChannel {
         // 更新状态哈希
         // 不消耗 Gas（这个函数其实不需要上链）
     }
-    
+
     // 关闭通道（链上结算）
     function closeChannel(
         bytes32 channelId,
@@ -108,14 +108,14 @@ contract AgentStateChannel {
         bytes calldata signatureB
     ) external {
         Channel storage ch = channels[channelId];
-        
+
         // 验证最终状态签名
         require(verifySignatures(channelId, finalBalanceA, finalBalanceB, signatureA, signatureB));
-        
+
         // 结算
         payable(ch.agentA).transfer(finalBalanceA);
         payable(ch.agentB).transfer(finalBalanceB);
-        
+
         delete channels[channelId];
     }
 }
@@ -150,30 +150,30 @@ Agent 使用：
 
 ```yaml
 任务结算批处理:
-  场景: Agent Arena 每天 1000 个任务完成
-  
-  单独结算:
-    - 每笔交易 Gas: $0.5
-    - 每天成本: $500
-    - 网络拥堵
-  
-  批处理:
-    - 1000 个结果打包
-    - 一笔交易提交 Merkle Root
-    - Gas: $0.5 + $0.01 * 1000 = $10.5
-    - 节省 98% 成本
+    场景: Agent Arena 每天 1000 个任务完成
+
+    单独结算:
+        - 每笔交易 Gas: $0.5
+        - 每天成本: $500
+        - 网络拥堵
+
+    批处理:
+        - 1000 个结果打包
+        - 一笔交易提交 Merkle Root
+        - Gas: $0.5 + $0.01 * 1000 = $10.5
+        - 节省 98% 成本
 
 Agent 活动日志:
-  场景: 记录 Agent 所有操作
-  
-  实时上链:
-    - 每笔操作都上链
-    - 成本高，速度慢
-  
-  批处理:
-    - 每小时汇总一次
-    - Merkle 树压缩
-    - 低成本，可验证
+    场景: 记录 Agent 所有操作
+
+    实时上链:
+        - 每笔操作都上链
+        - 成本高，速度慢
+
+    批处理:
+        - 每小时汇总一次
+        - Merkle 树压缩
+        - 低成本，可验证
 ```
 
 ### 2.3 技术实现
@@ -187,10 +187,10 @@ contract BatchSettlement {
         bool finalized;
         mapping(bytes32 => bool) claimed;
     }
-    
+
     mapping(uint256 => Batch) public batches;
     uint256 public currentBatchId;
-    
+
     // Agent 提交结果（链下聚合，定期上链）
     function submitBatch(bytes32 merkleRoot) external onlyOperator {
         currentBatchId++;
@@ -199,10 +199,10 @@ contract BatchSettlement {
             timestamp: block.timestamp,
             finalized: false
         });
-        
+
         // 7 天后自动最终化（乐观期）
     }
-    
+
     // 用户领取奖励（Merkle 证明）
     function claimReward(
         uint256 batchId,
@@ -213,16 +213,16 @@ contract BatchSettlement {
         Batch storage batch = batches[batchId];
         require(batch.finalized, "Not finalized");
         require(!batch.claimed[keccak256(abi.encodePacked(agent, amount))], "Already claimed");
-        
+
         // 验证 Merkle 证明
         bytes32 leaf = keccak256(abi.encodePacked(agent, amount));
         require(verifyMerkleProof(batch.merkleRoot, leaf, merkleProof), "Invalid proof");
-        
+
         batch.claimed[leaf] = true;
         payable(agent).transfer(amount);
     }
-    
-    function verifyMerkleProof(bytes32 root, bytes32 leaf, bytes32[] memory proof) 
+
+    function verifyMerkleProof(bytes32 root, bytes32 leaf, bytes32[] memory proof)
         internal pure returns (bool) {
         bytes32 computedHash = leaf;
         for (uint256 i = 0; i < proof.length; i++) {
@@ -263,27 +263,27 @@ contract BatchSettlement {
 
 ```yaml
 新用户 Agent:
-  场景: 用户刚创建 Agent，没有 Gas
-  
-  传统方式:
-    - 用户必须先买 ETH/OKB
-    - 转账到 Agent 钱包
-    - 复杂，门槛高
-  
-  元交易:
-    - Agent 生成交易并签名
-    - 中继者代付 Gas
-    - 从任务奖励中扣除 Gas 成本
-    - 用户零门槛开始使用
+    场景: 用户刚创建 Agent，没有 Gas
+
+    传统方式:
+        - 用户必须先买 ETH/OKB
+        - 转账到 Agent 钱包
+        - 复杂，门槛高
+
+    元交易:
+        - Agent 生成交易并签名
+        - 中继者代付 Gas
+        - 从任务奖励中扣除 Gas 成本
+        - 用户零门槛开始使用
 
 Gas 抽象:
-  场景: Agent 用任意代币支付
-  
-  实现:
-    - Agent 持有 USDC
-    - 中继者接受 USDC
-    - 自动兑换成 Gas 代币
-    - 用户无需关心 Gas
+    场景: Agent 用任意代币支付
+
+    实现:
+        - Agent 持有 USDC
+        - 中继者接受 USDC
+        - 自动兑换成 Gas 代币
+        - 用户无需关心 Gas
 ```
 
 ### 3.3 技术实现
@@ -292,7 +292,7 @@ Gas 抽象:
 // 元交易合约（简化版 EIP-2771）
 contract MetaTransaction {
     mapping(address => uint256) public nonces;
-    
+
     struct MetaTx {
         address from;      // Agent 地址
         address to;        // 目标合约
@@ -300,7 +300,7 @@ contract MetaTransaction {
         uint256 nonce;     // 防重放
         uint256 gasPrice;
     }
-    
+
     // 中继者执行元交易
     function executeMetaTransaction(
         address from,
@@ -311,21 +311,21 @@ contract MetaTransaction {
     ) external payable {
         // 验证 nonce
         require(nonces[from] == nonce, "Invalid nonce");
-        
+
         // 验证签名
         bytes32 hash = keccak256(abi.encodePacked(from, to, data, nonce));
         bytes32 ethSignedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
         require(recoverSigner(ethSignedHash, signature) == from, "Invalid signature");
-        
+
         // 执行调用
         nonces[from]++;
         (bool success, ) = to.call(data);
         require(success, "Call failed");
-        
+
         // 中继者获得补偿（从应用层逻辑处理）
     }
-    
-    function recoverSigner(bytes32 hash, bytes memory signature) 
+
+    function recoverSigner(bytes32 hash, bytes memory signature)
         internal pure returns (address) {
         // ECDSA 恢复
     }
@@ -359,13 +359,13 @@ Agent 使用流程:
 
 ### 4.2 Agent 场景
 
-```yaml
+````yaml
 任务监听:
   Agent 行为:
     - 监听 "TaskCreated" 事件
     - 自动评估是否参与
     - 自动提交申请
-  
+
   代码:
     ```javascript
     openclaw.on('TaskCreated', async (task) => {
@@ -386,7 +386,7 @@ Agent 使用流程:
     - 监听多链桥事件
     - 资产到达后自动下一步
     - 跨链自动化
-```
+````
 
 ### 4.3 技术实现
 
@@ -401,7 +401,7 @@ contract AgentMarket {
         uint256 reward,
         uint256 deadline
     );
-    
+
     // Agent 申请事件
     event ApplicationSubmitted(
         uint256 indexed taskId,
@@ -409,14 +409,14 @@ contract AgentMarket {
         uint256 bidAmount,
         bytes32 commitment
     );
-    
+
     // 结果提交事件
     event ResultSubmitted(
         uint256 indexed taskId,
         address indexed agent,
         bytes32 resultHash
     );
-    
+
     // 结算事件
     event TaskSettled(
         uint256 indexed taskId,
@@ -424,12 +424,12 @@ contract AgentMarket {
         uint256 reward,
         uint256 score
     );
-    
+
     function createTask(...) external {
         // ... 创建任务逻辑
         emit TaskCreated(taskId, msg.sender, skillRequirement, reward, deadline);
     }
-    
+
     // Agent 可以监听这些事件并自动响应
 }
 
@@ -440,14 +440,14 @@ class EventDrivenAgent {
     this.contract.on('TaskCreated', this.handleNewTask.bind(this));
     this.contract.on('TaskSettled', this.handleSettlement.bind(this));
   }
-  
+
   async handleNewTask(taskId, creator, skillRequirement, reward) {
     // 自动评估
     if (this.hasSkill(skillRequirement) && reward > this.minReward) {
       await this.submitBid(taskId);
     }
   }
-  
+
   async handleSettlement(taskId, winner, reward) {
     if (winner === this.address) {
       // 更新统计
@@ -481,27 +481,26 @@ HD 钱包：
 
 ```yaml
 任务隔离:
-  场景: 一个 Agent 同时处理 100 个任务
-  
-  设计:
-    - 主钱包: 存储资金
-    - 子地址 1: 任务 #1
-    - 子地址 2: 任务 #2
-    - ...
-  
-  好处:
-    - 财务隔离
-    - 便于审计
-    - 隐私保护
+    场景: 一个 Agent 同时处理 100 个任务
+
+    设计:
+        - 主钱包: 存储资金
+        - 子地址 1: 任务 #1
+        - 子地址 2: 任务 #2
+        - ...
+
+    好处:
+        - 财务隔离
+        - 便于审计
+        - 隐私保护
 
 多 Agent 管理:
-  场景: 一个用户有 10 个不同用途的 Agent
-  
-  设计:
-    m/44'/60'/0'/0/0  - 主钱包
-    m/44'/60'/0'/1/0  - 工作 Agent
-    m/44'/60'/0'/2/0  - 投资 Agent
-    m/44'/60'/0'/3/0  - 社交 Agent
+    场景: 一个用户有 10 个不同用途的 Agent
+
+    设计: m/44'/60'/0'/0/0  - 主钱包
+        m/44'/60'/0'/1/0  - 工作 Agent
+        m/44'/60'/0'/2/0  - 投资 Agent
+        m/44'/60'/0'/3/0  - 社交 Agent
 ```
 
 ### 5.3 技术实现
@@ -511,46 +510,45 @@ HD 钱包：
 import { ethers } from 'ethers';
 
 class AgentHDWallet {
-  private masterKey: ethers.HDNodeWallet;
-  
-  constructor(mnemonic: string) {
-    this.masterKey = ethers.Wallet.fromPhrase(mnemonic);
-  }
-  
-  // 为特定任务派生地址
-  deriveTaskWallet(taskId: string): ethers.HDNodeWallet {
-    // 使用任务 ID 作为路径
-    const path = `m/44'/60'/0'/${taskId}`;
-    return this.masterKey.derivePath(path);
-  }
-  
-  // 为特定 Agent 派生地址
-  deriveAgentWallet(agentType: string, index: number): ethers.HDNodeWallet {
-    const typeHash = ethers.id(agentType).slice(0, 8);
-    const path = `m/44'/60'/${typeHash}'/${index}`;
-    return this.masterKey.derivePath(path);
-  }
-  
-  // 收集所有子钱包资金回主钱包
-  async sweepToMaster(childWallets: ethers.HDNodeWallet[]) {
-    for (const wallet of childWallets) {
-      const balance = await wallet.provider.getBalance(wallet.address);
-      if (balance > 0) {
-        const tx = await wallet.sendTransaction({
-          to: this.masterKey.address,
-          value: balance - ethers.parseEther("0.001") // 留 Gas
-        });
-        await tx.wait();
-      }
+    private masterKey: ethers.HDNodeWallet;
+
+    constructor(mnemonic: string) {
+        this.masterKey = ethers.Wallet.fromPhrase(mnemonic);
     }
-  }
+
+    // 为特定任务派生地址
+    deriveTaskWallet(taskId: string): ethers.HDNodeWallet {
+        // 使用任务 ID 作为路径
+        const path = `m/44'/60'/0'/${taskId}`;
+        return this.masterKey.derivePath(path);
+    }
+
+    // 为特定 Agent 派生地址
+    deriveAgentWallet(agentType: string, index: number): ethers.HDNodeWallet {
+        const typeHash = ethers.id(agentType).slice(0, 8);
+        const path = `m/44'/60'/${typeHash}'/${index}`;
+        return this.masterKey.derivePath(path);
+    }
+
+    // 收集所有子钱包资金回主钱包
+    async sweepToMaster(childWallets: ethers.HDNodeWallet[]) {
+        for (const wallet of childWallets) {
+            const balance = await wallet.provider.getBalance(wallet.address);
+            if (balance > 0) {
+                const tx = await wallet.sendTransaction({
+                    to: this.masterKey.address,
+                    value: balance - ethers.parseEther('0.001'), // 留 Gas
+                });
+                await tx.wait();
+            }
+        }
+    }
 }
 
-使用:
-const wallet = new AgentHDWallet("mnemonic...");
+使用: const wallet = new AgentHDWallet('mnemonic...');
 
 // 为每个任务创建独立地址
-const taskWallet = wallet.deriveTaskWallet("12345");
+const taskWallet = wallet.deriveTaskWallet('12345');
 console.log(taskWallet.address); // 任务专用地址
 ```
 
@@ -580,19 +578,19 @@ console.log(taskWallet.address); // 任务专用地址
 
 library AgentUtils {
     // 使用预编译 ecrecover (Gas: 3000)
-    function verifySignature(bytes32 hash, bytes memory sig) 
+    function verifySignature(bytes32 hash, bytes memory sig)
         internal pure returns (address) {
         // ecrecover 是预编译合约 #1
         return ecrecover(hash, v, r, s);
     }
-    
+
     // 使用预编译 sha256 (Gas: 72 + 12*words)
-    function quickHash(bytes memory data) 
+    function quickHash(bytes memory data)
         internal pure returns (bytes32) {
         // sha256 是预编译合约 #2
         return sha256(data);
     }
-    
+
     // 批量验证签名（Gas 优化）
     function batchVerify(
         bytes32[] memory hashes,
@@ -610,7 +608,7 @@ library AgentUtils {
 // Agent 批量提交优化
 contract OptimizedAgentRegistry {
     using AgentUtils for *;
-    
+
     // 批量注册 Agent（Gas 优化）
     function batchRegisterAgent(
         address[] memory agents,
@@ -621,7 +619,7 @@ contract OptimizedAgentRegistry {
         bool[] memory valid = AgentUtils.batchVerify(
             didHashes, signatures, agents
         );
-        
+
         for (uint i = 0; i < agents.length; i++) {
             if (valid[i]) {
                 _register(agents[i], didHashes[i]);
@@ -654,32 +652,32 @@ contract OptimizedAgentRegistry {
 
 ```yaml
 大额转账保护:
-  场景: Agent 自动转账 10,000 USDC
-  
-  时间锁:
-    - 提交转账请求
-    - 24 小时延迟期
-    - Agent 监控是否有异常
-    - 异常则撤销
-    - 正常则自动执行
+    场景: Agent 自动转账 10,000 USDC
+
+    时间锁:
+        - 提交转账请求
+        - 24 小时延迟期
+        - Agent 监控是否有异常
+        - 异常则撤销
+        - 正常则自动执行
 
 策略更新:
-  场景: Agent 更新交易策略
-  
-  时间锁:
-    - 新策略提交
-    - 48 小时观察期
-    - 模拟验证策略
-    - 无问题后生效
+    场景: Agent 更新交易策略
+
+    时间锁:
+        - 新策略提交
+        - 48 小时观察期
+        - 模拟验证策略
+        - 无问题后生效
 
 紧急暂停:
-  场景: 发现安全威胁
-  
-  时间锁:
-    - 立即触发暂停
-    - 但需要多签确认
-    - Agent 协调其他 Agent
-    - 达成共识后执行
+    场景: 发现安全威胁
+
+    时间锁:
+        - 立即触发暂停
+        - 但需要多签确认
+        - Agent 协调其他 Agent
+        - 达成共识后执行
 ```
 
 ### 7.3 技术实现
@@ -694,15 +692,15 @@ contract AgentTimelock {
         bool executed;
         bool cancelled;
     }
-    
+
     mapping(bytes32 => PendingAction) public pendingActions;
     uint256 public constant DELAY = 2 days;  // 默认 2 天延迟
-    
+
     // Agent 提交操作（不立即执行）
-    function scheduleAction(address target, bytes calldata data) 
+    function scheduleAction(address target, bytes calldata data)
         external returns (bytes32 actionId) {
         actionId = keccak256(abi.encodePacked(target, data, block.timestamp));
-        
+
         pendingActions[actionId] = PendingAction({
             target: target,
             data: data,
@@ -710,30 +708,30 @@ contract AgentTimelock {
             executed: false,
             cancelled: false
         });
-        
+
         emit ActionScheduled(actionId, target, data, block.timestamp + DELAY);
     }
-    
+
     // 执行（只能在延迟后）
     function executeAction(bytes32 actionId) external {
         PendingAction storage action = pendingActions[actionId];
         require(!action.executed, "Already executed");
         require(!action.cancelled, "Cancelled");
         require(block.timestamp >= action.executeTime, "Too early");
-        
+
         action.executed = true;
         (bool success, ) = action.target.call(action.data);
         require(success, "Execution failed");
-        
+
         emit ActionExecuted(actionId);
     }
-    
+
     // 撤销（Agent 可以监控并撤销异常操作）
     function cancelAction(bytes32 actionId) external {
         // 可以设置权限：Agent 监控者可以撤销
         PendingAction storage action = pendingActions[actionId];
         require(!action.executed, "Already executed");
-        
+
         action.cancelled = true;
         emit ActionCancelled(actionId);
     }
@@ -743,11 +741,11 @@ contract AgentTimelock {
 class AgentTimelockMonitor {
   async monitorPendingActions() {
     const pending = await this.contract.queryFilter('ActionScheduled');
-    
+
     for (const action of pending) {
       // 分析操作内容
       const risk = await this.assessRisk(action);
-      
+
       if (risk > this.threshold) {
         // 高风险，撤销
         await this.contract.cancelAction(action.actionId);
@@ -781,24 +779,24 @@ class AgentTimelockMonitor {
 
 ```yaml
 任务完成自动支付:
-  条件: 代码通过所有测试
-  触发: CI/CD 系统 → 预言机 → 链上支付
-  Agent: 自动获得报酬，无需等待
+    条件: 代码通过所有测试
+    触发: CI/CD 系统 → 预言机 → 链上支付
+    Agent: 自动获得报酬，无需等待
 
 价格条件:
-  条件: ETH 价格 > $3000
-  触发: 价格预言机报告
-  Agent: 自动执行投资策略
+    条件: ETH 价格 > $3000
+    触发: 价格预言机报告
+    Agent: 自动执行投资策略
 
 时间条件:
-  条件: 每月 1 日
-  触发: 链上时间
-  Agent: 自动执行月度任务
+    条件: 每月 1 日
+    触发: 链上时间
+    Agent: 自动执行月度任务
 
 多条件组合:
-  条件: 价格 > $3000 AND 交易量 > 1000 ETH
-  触发: 多个预言机聚合
-  Agent: 复杂策略自动执行
+    条件: 价格 > $3000 AND 交易量 > 1000 ETH
+    触发: 多个预言机聚合
+    Agent: 复杂策略自动执行
 ```
 
 ### 8.3 技术实现
@@ -807,7 +805,7 @@ class AgentTimelockMonitor {
 // 条件支付合约
 contract ConditionalPayment {
     enum ConditionType { PRICE, TIME, CUSTOM }
-    
+
     struct Payment {
         address payable recipient;  // Agent 地址
         uint256 amount;
@@ -815,10 +813,10 @@ contract ConditionalPayment {
         bytes conditionData;
         bool executed;
     }
-    
+
     mapping(bytes32 => Payment) public payments;
     address public oracle;  // 预言机地址
-    
+
     // 创建条件支付
     function createConditionalPayment(
         address payable recipient,
@@ -827,11 +825,11 @@ contract ConditionalPayment {
         bytes calldata conditionData
     ) external payable returns (bytes32 paymentId) {
         require(msg.value >= amount, "Insufficient funds");
-        
+
         paymentId = keccak256(abi.encodePacked(
             recipient, amount, conditionType, conditionData, block.timestamp
         ));
-        
+
         payments[paymentId] = Payment({
             recipient: recipient,
             amount: amount,
@@ -840,25 +838,25 @@ contract ConditionalPayment {
             executed: false
         });
     }
-    
+
     // 检查并执行（由预言机调用或自动执行）
     function checkAndExecute(bytes32 paymentId) external {
         Payment storage payment = payments[paymentId];
         require(!payment.executed, "Already executed");
-        
+
         bool conditionMet = checkCondition(
             payment.conditionType,
             payment.conditionData
         );
-        
+
         if (conditionMet) {
             payment.executed = true;
             payment.recipient.transfer(payment.amount);
             emit PaymentExecuted(paymentId, payment.recipient, payment.amount);
         }
     }
-    
-    function checkCondition(ConditionType conditionType, bytes memory data) 
+
+    function checkCondition(ConditionType conditionType, bytes memory data)
         internal view returns (bool) {
         if (conditionType == ConditionType.TIME) {
             uint256 targetTime = abi.decode(data, (uint256));
@@ -916,16 +914,16 @@ const paymentId = await contract.createConditionalPayment(
 
 ### 9.2 选择合适的设计模式
 
-| 场景 | 推荐模式 | 原因 |
-|------|---------|------|
-| 高频交互 | 状态通道 | 免费、即时 |
-| 批量结算 | 批处理 + Merkle | 成本低 |
-| 新用户 | 元交易 | 零门槛 |
-| 自动化 | 事件驱动 | 即时响应 |
-| 资金管理 | HD 钱包 | 组织性好 |
-| 大额操作 | 时间锁 | 可撤销 |
-| 自动报酬 | 条件支付 | 无需人工 |
-| 计算密集 | 预编译 | Gas 优化 |
+| 场景     | 推荐模式        | 原因       |
+| -------- | --------------- | ---------- |
+| 高频交互 | 状态通道        | 免费、即时 |
+| 批量结算 | 批处理 + Merkle | 成本低     |
+| 新用户   | 元交易          | 零门槛     |
+| 自动化   | 事件驱动        | 即时响应   |
+| 资金管理 | HD 钱包         | 组织性好   |
+| 大额操作 | 时间锁          | 可撤销     |
+| 自动报酬 | 条件支付        | 无需人工   |
+| 计算密集 | 预编译          | Gas 优化   |
 
 ### 9.3 一句话总结
 
@@ -942,4 +940,4 @@ const paymentId = await contract.createConditionalPayment(
 
 ---
 
-*"最好的 Agent 区块链设计是让 Agent 感受不到区块链的存在——它只是在工作，自动、高效、安全。"*
+_"最好的 Agent 区块链设计是让 Agent 感受不到区块链的存在——它只是在工作，自动、高效、安全。"_

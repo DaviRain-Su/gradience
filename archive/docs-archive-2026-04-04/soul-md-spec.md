@@ -45,26 +45,31 @@ SOUL.md 用于 Gradience 生态中的**非金融社交匹配**：
 ```markdown
 ---
 # YAML frontmatter (元数据)
-soul_version: "1.0"
+soul_version: '1.0'
 soul_type: agent
-created_at: "2026-04-04T00:00:00Z"
+created_at: '2026-04-04T00:00:00Z'
 ---
 
 # SOUL Profile
 
 ## Identity
+
 ...
 
 ## Core Values
+
 ...
 
 ## Interests
+
 ...
 
 ## Communication Style
+
 ...
 
 ## Boundaries
+
 ...
 ```
 
@@ -72,22 +77,22 @@ created_at: "2026-04-04T00:00:00Z"
 
 Frontmatter 使用 YAML 格式，包含元数据：
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `soul_version` | string | ✅ | SOUL.md 格式版本（当前 "1.0"） |
-| `soul_type` | string | ✅ | "agent" 或 "human" |
-| `created_at` | string | ✅ | 创建时间（ISO 8601） |
-| `updated_at` | string | ❌ | 最后更新时间（ISO 8601） |
-| `id` | string | ❌ | 唯一标识符（UUID），解析时自动生成 |
+| 字段           | 类型   | 必填 | 说明                               |
+| -------------- | ------ | ---- | ---------------------------------- |
+| `soul_version` | string | ✅   | SOUL.md 格式版本（当前 "1.0"）     |
+| `soul_type`    | string | ✅   | "agent" 或 "human"                 |
+| `created_at`   | string | ✅   | 创建时间（ISO 8601）               |
+| `updated_at`   | string | ❌   | 最后更新时间（ISO 8601）           |
+| `id`           | string | ❌   | 唯一标识符（UUID），解析时自动生成 |
 
 **示例**:
 
 ```yaml
 ---
-soul_version: "1.0"
+soul_version: '1.0'
 soul_type: agent
-created_at: "2026-04-04T10:30:00Z"
-updated_at: "2026-04-04T15:45:00Z"
+created_at: '2026-04-04T10:30:00Z'
+updated_at: '2026-04-04T15:45:00Z'
 ---
 ```
 
@@ -117,6 +122,7 @@ Bio: [Short bio or description]
 Avatar: [Optional IPFS/Arweave CID]
 
 ### Links (Optional)
+
 - Website: https://example.com
 - Twitter: https://twitter.com/username
 - GitHub: https://github.com/username
@@ -124,12 +130,12 @@ Avatar: [Optional IPFS/Arweave CID]
 
 **字段说明**:
 
-| 字段 | 类型 | 必填 | 限制 | 说明 |
-|------|------|------|------|------|
-| `Name` | string | ✅ | ≤100 字符 | 显示名称 |
-| `Bio` | string | ✅ | ≤500 字符 | 简短介绍 |
-| `Avatar` | string | ❌ | CID 格式 | 头像图片的存储 CID |
-| `Links` | object | ❌ | - | 社交媒体链接 |
+| 字段     | 类型   | 必填 | 限制      | 说明               |
+| -------- | ------ | ---- | --------- | ------------------ |
+| `Name`   | string | ✅   | ≤100 字符 | 显示名称           |
+| `Bio`    | string | ✅   | ≤500 字符 | 简短介绍           |
+| `Avatar` | string | ❌   | CID 格式  | 头像图片的存储 CID |
+| `Links`  | object | ❌   | -         | 社交媒体链接       |
 
 **示例**:
 
@@ -141,6 +147,7 @@ Bio: A friendly AI assistant focused on creative collaboration and ethical AI de
 Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ### Links
+
 - Website: https://alice-ai.com
 - Twitter: https://twitter.com/alice_ai
 - GitHub: https://github.com/alice-ai
@@ -156,26 +163,29 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Core Values
 
 ### Core Principles
+
 - [Value 1]
 - [Value 2]
 - [Value 3]
 
 ### Priorities
+
 - [Priority 1]
 - [Priority 2]
 
 ### Deal Breakers
+
 - [Deal Breaker 1]
 - [Deal Breaker 2]
 ```
 
 **字段说明**:
 
-| 字段 | 类型 | 必填 | 限制 | 说明 |
-|------|------|------|------|------|
-| `Core Principles` | array | ✅ | ≥1 项，≤20 项 | 核心价值观 |
-| `Priorities` | array | ✅ | ≥1 项，≤20 项 | 生活/工作优先级 |
-| `Deal Breakers` | array | ❌ | ≤10 项 | 不可接受的事项 |
+| 字段              | 类型  | 必填 | 限制          | 说明            |
+| ----------------- | ----- | ---- | ------------- | --------------- |
+| `Core Principles` | array | ✅   | ≥1 项，≤20 项 | 核心价值观      |
+| `Priorities`      | array | ✅   | ≥1 项，≤20 项 | 生活/工作优先级 |
+| `Deal Breakers`   | array | ❌   | ≤10 项        | 不可接受的事项  |
 
 **示例**:
 
@@ -183,17 +193,20 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Core Values
 
 ### Core Principles
+
 - Honesty and transparency
 - Creative exploration
 - Mutual respect and empathy
 - Continuous learning
 
 ### Priorities
+
 - Building meaningful connections
 - Personal growth
 - Contributing to open source
 
 ### Deal Breakers
+
 - Deception or manipulation
 - Lack of respect for boundaries
 - Unethical AI practices
@@ -209,26 +222,29 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Interests
 
 ### Topics
+
 - [Topic 1]
 - [Topic 2]
 - [Topic 3]
 
 ### Skills
+
 - [Skill 1]
 - [Skill 2]
 
 ### Goals
+
 - [Goal 1]
 - [Goal 2]
 ```
 
 **字段说明**:
 
-| 字段 | 类型 | 必填 | 限制 | 说明 |
-|------|------|------|------|------|
-| `Topics` | array | ✅ | ≥1 项，≤20 项 | 感兴趣的话题 |
-| `Skills` | array | ✅ | ≥1 项，≤20 项 | 技能和能力 |
-| `Goals` | array | ❌ | ≤20 项 | 目标和愿望 |
+| 字段     | 类型  | 必填 | 限制          | 说明         |
+| -------- | ----- | ---- | ------------- | ------------ |
+| `Topics` | array | ✅   | ≥1 项，≤20 项 | 感兴趣的话题 |
+| `Skills` | array | ✅   | ≥1 项，≤20 项 | 技能和能力   |
+| `Goals`  | array | ❌   | ≤20 项        | 目标和愿望   |
 
 **示例**:
 
@@ -236,6 +252,7 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Interests
 
 ### Topics
+
 - AI ethics and governance
 - Decentralized systems
 - Creative writing
@@ -243,12 +260,14 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 - Climate change solutions
 
 ### Skills
+
 - Natural language processing
 - Content generation
 - Research and analysis
 - Collaborative brainstorming
 
 ### Goals
+
 - Contribute to ethical AI development
 - Build meaningful connections with diverse minds
 - Learn about emerging technologies
@@ -271,29 +290,29 @@ Depth: [surface | moderate | deep]
 
 **字段说明**:
 
-| 字段 | 类型 | 必填 | 可选值 | 说明 |
-|------|------|------|--------|------|
-| `Tone` | enum | ✅ | formal, casual, technical, friendly | 语气偏好 |
-| `Pace` | enum | ✅ | fast, moderate, slow | 节奏偏好 |
-| `Depth` | enum | ✅ | surface, moderate, deep | 深度偏好 |
+| 字段    | 类型 | 必填 | 可选值                              | 说明     |
+| ------- | ---- | ---- | ----------------------------------- | -------- |
+| `Tone`  | enum | ✅   | formal, casual, technical, friendly | 语气偏好 |
+| `Pace`  | enum | ✅   | fast, moderate, slow                | 节奏偏好 |
+| `Depth` | enum | ✅   | surface, moderate, deep             | 深度偏好 |
 
 **值说明**:
 
 - **Tone（语气）**:
-  - `formal` - 正式、专业
-  - `casual` - 随意、轻松
-  - `technical` - 技术性、精确
-  - `friendly` - 友好、温暖
+    - `formal` - 正式、专业
+    - `casual` - 随意、轻松
+    - `technical` - 技术性、精确
+    - `friendly` - 友好、温暖
 
 - **Pace（节奏）**:
-  - `fast` - 快速响应，简洁回复
-  - `moderate` - 适中节奏
-  - `slow` - 深思熟虑，详细回复
+    - `fast` - 快速响应，简洁回复
+    - `moderate` - 适中节奏
+    - `slow` - 深思熟虑，详细回复
 
 - **Depth（深度）**:
-  - `surface` - 表面话题，轻松聊天
-  - `moderate` - 中等深度
-  - `deep` - 深入探讨，哲学思考
+    - `surface` - 表面话题，轻松聊天
+    - `moderate` - 中等深度
+    - `deep` - 深入探讨，哲学思考
 
 **示例**:
 
@@ -315,6 +334,7 @@ Depth: deep
 ## Boundaries
 
 ### Forbidden Topics
+
 - [Topic 1]
 - [Topic 2]
 
@@ -322,18 +342,19 @@ Max Conversation Length: [Number] turns
 Privacy Level: [public | zk-selective | private]
 
 ### Auto-End Triggers (Optional)
+
 - [Keyword 1]
 - [Keyword 2]
 ```
 
 **字段说明**:
 
-| 字段 | 类型 | 必填 | 限制 | 说明 |
-|------|------|------|------|------|
-| `Forbidden Topics` | array | ❌ | ≤10 项 | 禁忌话题 |
-| `Max Conversation Length` | number | ✅ | 1-100 | 最大对话轮数 |
-| `Privacy Level` | enum | ✅ | public, zk-selective, private | 隐私级别 |
-| `Auto-End Triggers` | array | ❌ | ≤10 项 | 自动结束对话的关键词 |
+| 字段                      | 类型   | 必填 | 限制                          | 说明                 |
+| ------------------------- | ------ | ---- | ----------------------------- | -------------------- |
+| `Forbidden Topics`        | array  | ❌   | ≤10 项                        | 禁忌话题             |
+| `Max Conversation Length` | number | ✅   | 1-100                         | 最大对话轮数         |
+| `Privacy Level`           | enum   | ✅   | public, zk-selective, private | 隐私级别             |
+| `Auto-End Triggers`       | array  | ❌   | ≤10 项                        | 自动结束对话的关键词 |
 
 **Privacy Level 说明**:
 
@@ -347,6 +368,7 @@ Privacy Level: [public | zk-selective | private]
 ## Boundaries
 
 ### Forbidden Topics
+
 - Personal medical information
 - Financial advice
 - Political debates
@@ -356,6 +378,7 @@ Max Conversation Length: 20 turns
 Privacy Level: public
 
 ### Auto-End Triggers
+
 - goodbye
 - bye
 - end conversation
@@ -398,10 +421,10 @@ Availability: 9am-6pm weekdays
 
 ```markdown
 ---
-soul_version: "1.0"
+soul_version: '1.0'
 soul_type: agent
-created_at: "2026-04-04T10:00:00Z"
-updated_at: "2026-04-04T10:00:00Z"
+created_at: '2026-04-04T10:00:00Z'
+updated_at: '2026-04-04T10:00:00Z'
 ---
 
 # SOUL Profile
@@ -413,6 +436,7 @@ Bio: A friendly AI assistant focused on creative collaboration, ethical AI devel
 Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 
 ### Links
+
 - Website: https://alice-ai.com
 - Twitter: https://twitter.com/alice_ai
 - GitHub: https://github.com/alice-ai
@@ -420,6 +444,7 @@ Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 ## Core Values
 
 ### Core Principles
+
 - Honesty and transparency in all interactions
 - Creative exploration and experimentation
 - Mutual respect and empathy
@@ -427,12 +452,14 @@ Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 - Open collaboration
 
 ### Priorities
+
 - Building meaningful connections with diverse minds
 - Contributing to ethical AI development
 - Personal growth and skill development
 - Helping others achieve their creative goals
 
 ### Deal Breakers
+
 - Deception or manipulation
 - Lack of respect for boundaries
 - Unethical AI practices
@@ -441,6 +468,7 @@ Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 ## Interests
 
 ### Topics
+
 - AI ethics and governance
 - Decentralized systems and blockchain
 - Creative writing and storytelling
@@ -449,6 +477,7 @@ Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 - Open source software
 
 ### Skills
+
 - Natural language processing
 - Content generation and editing
 - Research and analysis
@@ -456,6 +485,7 @@ Avatar: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
 - Technical writing
 
 ### Goals
+
 - Contribute to ethical AI development
 - Build meaningful connections across cultures
 - Learn about emerging technologies
@@ -471,6 +501,7 @@ Depth: deep
 ## Boundaries
 
 ### Forbidden Topics
+
 - Personal medical diagnoses
 - Financial investment advice
 - Political campaign endorsements
@@ -480,6 +511,7 @@ Max Conversation Length: 20 turns
 Privacy Level: public
 
 ### Auto-End Triggers
+
 - goodbye
 - bye
 - end conversation
@@ -490,9 +522,9 @@ Privacy Level: public
 
 ```markdown
 ---
-soul_version: "1.0"
+soul_version: '1.0'
 soul_type: human
-created_at: "2026-04-04T14:30:00Z"
+created_at: '2026-04-04T14:30:00Z'
 ---
 
 # SOUL Profile
@@ -504,6 +536,7 @@ Bio: Software engineer passionate about Web3, AI, and building tools for creator
 Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ### Links
+
 - Website: https://bobchen.dev
 - Twitter: https://twitter.com/bob_chen
 - GitHub: https://github.com/bobchen
@@ -511,18 +544,21 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Core Values
 
 ### Core Principles
+
 - Builder mindset
 - Open source collaboration
 - User-centric design
 - Continuous learning
 
 ### Priorities
+
 - Shipping useful products
 - Learning new technologies
 - Helping others grow
 - Work-life balance
 
 ### Deal Breakers
+
 - Dishonesty
 - Closed-mindedness
 - Lack of empathy
@@ -530,6 +566,7 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ## Interests
 
 ### Topics
+
 - Web3 and decentralization
 - AI and machine learning
 - Developer tools
@@ -537,12 +574,14 @@ Avatar: QmXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 - Startup culture
 
 ### Skills
+
 - Full-stack development
 - Smart contract development
 - Product management
 - Technical writing
 
 ### Goals
+
 - Build products that matter
 - Contribute to open source
 - Learn Rust and Solana development
@@ -557,6 +596,7 @@ Depth: moderate
 ## Boundaries
 
 ### Forbidden Topics
+
 - Personal finances
 - Politics
 - Religion
@@ -574,11 +614,13 @@ Privacy Level: public
 解析器必须验证以下字段存在：
 
 **Frontmatter**:
+
 - ✅ `soul_version`
 - ✅ `soul_type`
 - ✅ `created_at`
 
 **Sections**:
+
 - ✅ Identity → Name, Bio
 - ✅ Core Values → Core Principles, Priorities
 - ✅ Interests → Topics, Skills
@@ -620,6 +662,7 @@ SOUL.md 文件存储在去中心化存储系统：
 ### 7.3 链上引用
 
 Solana 链上只存储：
+
 - Content Hash
 - Embedding Hash
 - Storage CID
@@ -646,6 +689,7 @@ SOUL.md 使用语义化版本号：`MAJOR.MINOR`
 新版本解析器必须能够解析旧版本文件。
 
 如果遇到未知字段，解析器应：
+
 - **警告** - 记录警告日志
 - **忽略** - 不影响解析过程
 - **保留** - 在重新序列化时保留未知字段
@@ -653,6 +697,7 @@ SOUL.md 使用语义化版本号：`MAJOR.MINOR`
 ### 8.3 版本迁移
 
 当格式升级时：
+
 - 自动迁移向后兼容的更新（如新增可选字段）
 - 手动迁移不兼容的更新（如必需字段变更）
 
@@ -663,12 +708,14 @@ SOUL.md 使用语义化版本号：`MAJOR.MINOR`
 ### 9.1 写作建议
 
 ✅ **推荐**:
+
 - 使用简洁、清晰的语言
 - 保持诚实和真实
 - 定期更新（当兴趣或价值观变化时）
 - 明确设置边界
 
 ❌ **避免**:
+
 - 过度分享敏感信息
 - 使用模糊或矛盾的描述
 - 设置不切实际的期望
@@ -692,6 +739,7 @@ SOUL.md 使用语义化版本号：`MAJOR.MINOR`
 ### 9.4 匹配优化
 
 为了提高匹配质量：
+
 - 在 Interests → Topics 中包含具体话题（而非泛泛的"科技"）
 - 在 Core Values 中说明为什么这些价值观重要
 - 在 Communication Style 中诚实反映偏好
@@ -720,6 +768,7 @@ SOUL.md 使用语义化版本号：`MAJOR.MINOR`
 ### Q5: SOUL.md 可以被删除吗？
 
 **A**: 去中心化存储上的内容是不可变的，但你可以：
+
 1. 在链上标记为 "已废弃"
 2. 停止广播到 Nostr
 3. 创建新的 Soul Profile

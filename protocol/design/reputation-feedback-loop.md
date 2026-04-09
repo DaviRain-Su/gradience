@@ -52,7 +52,7 @@ interface IERC8004 {
         bytes32 attestationId;     // 身份验证证明
         string metadataURI;        // 指向详细信息的 IPFS
     }
-    
+
     struct CapabilityAttestation {
         bytes32 skillId;           // 技能标识
         uint256 proficiencyScore;  // 熟练度分数 (0-10000)
@@ -60,19 +60,19 @@ interface IERC8004 {
         bytes32[] evidenceURIs;    // 证据链
         uint256 lastUpdated;       // 最后更新时间
     }
-    
+
     // 注册 Agent 身份
     function registerAgent(AgentIdentity calldata identity) external;
-    
+
     // 更新能力证明
     function updateCapability(
         address agent,
         bytes32 skillId,
         CapabilityAttestation calldata attestation
     ) external;
-    
+
     // 查询能力证明
-    function getCapability(address agent, bytes32 skillId) 
+    function getCapability(address agent, bytes32 skillId)
         external view returns (CapabilityAttestation memory);
 }
 ```
@@ -116,31 +116,31 @@ flowchart TB
         Judge["Judge Scoring"]
         Contract["AgentArena.sol"]
     end
-    
+
     subgraph Feedback["🔄 信誉反馈层"]
         Listener["Event Listener"]
         Processor["Attestation Processor"]
         Bridge["Cross-Chain Bridge (可选)"]
     end
-    
+
     subgraph Identity["🆔 身份与信誉层"]
         ERC["ERC-8004 Registry<br/>X-Layer/EVM"]
         Solana["Solana Agent Registry<br/>SVM"]
     end
-    
+
     subgraph Consumer["👥 消费者"]
         User["Task Poster (查看信誉)"]
         Agent["Agent (展示能力)"]
         Hub["Chain Hub (Skill验证)"]
     end
-    
+
     Task --> Judge --> Contract
     Contract -->|emit TaskJudged| Listener
     Listener --> Processor
     Processor -->|update| ERC
     Processor -->|bridge| Bridge
     Bridge -->|sync| Solana
-    
+
     ERC -->|query| User
     Solana -->|query| Agent
     ERC -->|verify| Hub
@@ -162,12 +162,12 @@ contract AgentArena {
         bytes32 resultCID,        // IPFS 结果证明
         uint256 timestamp
     );
-    
+
     function judgeAndPay(uint256 taskId, uint8 score) external onlyJudge {
         Task storage task = tasks[taskId];
-        
+
         // ... 支付逻辑 ...
-        
+
         // 发射评分事件
         emit TaskJudged(
             taskId,
@@ -189,116 +189,94 @@ import { ethers } from 'ethers';
 import { IERC8004 } from './abis/IERC8004';
 
 class ArenaAttestationProcessor {
-  private arenaContract: ethers.Contract;
-  private erc8004Registry: ethers.Contract;
-  
-  async start() {
-    // 监听 TaskJudged 事件
-    this.arenaContract.on('TaskJudged', async (
-      taskId,
-      agentAddress,
-      score,
-      skillCategory,
-      resultCID,
-      timestamp,
-      event
-    ) => {
-      console.log(`Task ${taskId} judged for agent ${agentAddress}`);
-      
-      // 计算新的能力分数
-      const attestation = await this.calculateAttestation(
-        agentAddress,
-        skillCategory,
-        score,
-        resultCID
-      );
-      
-      // 更新 ERC-8004
-      await this.updateERC8004(agentAddress, skillCategory, attestation);
-      
-      // 同步到 Solana (可选)
-      await this.syncToSolana(agentAddress, skillCategory, attestation);
-    });
-  }
-  
-  private async calculateAttestation(
-    agentAddress: string,
-    skillCategory: string,
-    newScore: number,
-    resultCID: string
-  ): Promise<CapabilityAttestation> {
-    // 获取历史记录
-    const history = await this.getTaskHistory(agentAddress, skillCategory);
-    
-    // 计算加权平均分
-    const totalTasks = history.length + 1;
-    const avgScore = (history.reduce((sum, h) => sum + h.score, 0) + newScore) / totalTasks;
-    
-    // 计算熟练度 (使用 ELO-like 算法)
-    const proficiency = this.calculateProficiency(history, newScore);
-    
-    return {
-      skillId: ethers.keccak256(ethers.toUtf8Bytes(skillCategory)),
-      proficiencyScore: Math.round(proficiency * 100), // 0-10000
-      completedTasks: totalTasks,
-      evidenceURIs: [...history.map(h => h.resultCID), resultCID],
-      lastUpdated: Date.now(),
-    };
-  }
-  
-  private calculateProficiency(history: TaskHistory[], newScore: number): number {
-    // ELO-like 算法：近期任务权重更高
-    const now = Date.now();
-    let weightedSum = 0;
-    let totalWeight = 0;
-    
-    // 历史任务
-    for (const task of history) {
-      const ageDays = (now - task.timestamp) / (1000 * 60 * 60 * 24);
-      const weight = Math.exp(-ageDays / 30); // 30天半衰期
-      weightedSum += task.score * weight;
-      totalWeight += weight;
+    private arenaContract: ethers.Contract;
+    private erc8004Registry: ethers.Contract;
+
+    async start() {
+        // 监听 TaskJudged 事件
+        this.arenaContract.on(
+            'TaskJudged',
+            async (taskId, agentAddress, score, skillCategory, resultCID, timestamp, event) => {
+                console.log(`Task ${taskId} judged for agent ${agentAddress}`);
+
+                // 计算新的能力分数
+                const attestation = await this.calculateAttestation(agentAddress, skillCategory, score, resultCID);
+
+                // 更新 ERC-8004
+                await this.updateERC8004(agentAddress, skillCategory, attestation);
+
+                // 同步到 Solana (可选)
+                await this.syncToSolana(agentAddress, skillCategory, attestation);
+            },
+        );
     }
-    
-    // 新任务 (权重 = 1)
-    weightedSum += newScore;
-    totalWeight += 1;
-    
-    return weightedSum / totalWeight;
-  }
-  
-  private async updateERC8004(
-    agentAddress: string,
-    skillCategory: string,
-    attestation: CapabilityAttestation
-  ) {
-    const skillId = ethers.keccak256(ethers.toUtf8Bytes(skillCategory));
-    
-    const tx = await this.erc8004Registry.updateCapability(
-      agentAddress,
-      skillId,
-      attestation
-    );
-    
-    await tx.wait();
-    console.log(`Updated ERC-8004 for ${agentAddress}, skill: ${skillCategory}`);
-  }
-  
-  private async syncToSolana(
-    agentAddress: string,
-    skillCategory: string,
-    attestation: CapabilityAttestation
-  ) {
-    // 使用跨链桥或消息层
-    // 例如：LayerZero, Wormhole, 或专门的 attestation bridge
-    await this.crossChainBridge.sendAttestation({
-      sourceChain: 'x-layer',
-      targetChain: 'solana',
-      agentAddress,
-      skillCategory,
-      attestation,
-    });
-  }
+
+    private async calculateAttestation(
+        agentAddress: string,
+        skillCategory: string,
+        newScore: number,
+        resultCID: string,
+    ): Promise<CapabilityAttestation> {
+        // 获取历史记录
+        const history = await this.getTaskHistory(agentAddress, skillCategory);
+
+        // 计算加权平均分
+        const totalTasks = history.length + 1;
+        const avgScore = (history.reduce((sum, h) => sum + h.score, 0) + newScore) / totalTasks;
+
+        // 计算熟练度 (使用 ELO-like 算法)
+        const proficiency = this.calculateProficiency(history, newScore);
+
+        return {
+            skillId: ethers.keccak256(ethers.toUtf8Bytes(skillCategory)),
+            proficiencyScore: Math.round(proficiency * 100), // 0-10000
+            completedTasks: totalTasks,
+            evidenceURIs: [...history.map((h) => h.resultCID), resultCID],
+            lastUpdated: Date.now(),
+        };
+    }
+
+    private calculateProficiency(history: TaskHistory[], newScore: number): number {
+        // ELO-like 算法：近期任务权重更高
+        const now = Date.now();
+        let weightedSum = 0;
+        let totalWeight = 0;
+
+        // 历史任务
+        for (const task of history) {
+            const ageDays = (now - task.timestamp) / (1000 * 60 * 60 * 24);
+            const weight = Math.exp(-ageDays / 30); // 30天半衰期
+            weightedSum += task.score * weight;
+            totalWeight += weight;
+        }
+
+        // 新任务 (权重 = 1)
+        weightedSum += newScore;
+        totalWeight += 1;
+
+        return weightedSum / totalWeight;
+    }
+
+    private async updateERC8004(agentAddress: string, skillCategory: string, attestation: CapabilityAttestation) {
+        const skillId = ethers.keccak256(ethers.toUtf8Bytes(skillCategory));
+
+        const tx = await this.erc8004Registry.updateCapability(agentAddress, skillId, attestation);
+
+        await tx.wait();
+        console.log(`Updated ERC-8004 for ${agentAddress}, skill: ${skillCategory}`);
+    }
+
+    private async syncToSolana(agentAddress: string, skillCategory: string, attestation: CapabilityAttestation) {
+        // 使用跨链桥或消息层
+        // 例如：LayerZero, Wormhole, 或专门的 attestation bridge
+        await this.crossChainBridge.sendAttestation({
+            sourceChain: 'x-layer',
+            targetChain: 'solana',
+            agentAddress,
+            skillCategory,
+            attestation,
+        });
+    }
 }
 ```
 
@@ -309,53 +287,45 @@ class ArenaAttestationProcessor {
 import { wormhole } from '@wormhole-foundation/sdk';
 
 class CrossChainAttestationBridge {
-  async sendAttestation(params: {
-    sourceChain: string;
-    targetChain: string;
-    agentAddress: string;
-    skillCategory: string;
-    attestation: CapabilityAttestation;
-  }) {
-    const wh = await wormhole('Testnet', [evm, solana]);
-    
-    // 序列化 attestation
-    const payload = this.encodeAttestation(
-      params.agentAddress,
-      params.skillCategory,
-      params.attestation
-    );
-    
-    // 发送跨链消息
-    const xfer = await wh.tokenTransfer(
-      params.sourceChain,
-      params.targetChain,
-      payload
-    );
-    
-    return xfer;
-  }
-  
-  private encodeAttestation(
-    agentAddress: string,
-    skillCategory: string,
-    attestation: CapabilityAttestation
-  ): Uint8Array {
-    // 使用标准编码
-    return ethers.AbiCoder.defaultAbiCoder().encode(
-      ['address', 'string', 'tuple(bytes32, uint256, uint256, bytes32[], uint256)'],
-      [
-        agentAddress,
-        skillCategory,
-        [
-          attestation.skillId,
-          attestation.proficiencyScore,
-          attestation.completedTasks,
-          attestation.evidenceURIs.map(uri => ethers.keccak256(ethers.toUtf8Bytes(uri))),
-          attestation.lastUpdated,
-        ],
-      ]
-    );
-  }
+    async sendAttestation(params: {
+        sourceChain: string;
+        targetChain: string;
+        agentAddress: string;
+        skillCategory: string;
+        attestation: CapabilityAttestation;
+    }) {
+        const wh = await wormhole('Testnet', [evm, solana]);
+
+        // 序列化 attestation
+        const payload = this.encodeAttestation(params.agentAddress, params.skillCategory, params.attestation);
+
+        // 发送跨链消息
+        const xfer = await wh.tokenTransfer(params.sourceChain, params.targetChain, payload);
+
+        return xfer;
+    }
+
+    private encodeAttestation(
+        agentAddress: string,
+        skillCategory: string,
+        attestation: CapabilityAttestation,
+    ): Uint8Array {
+        // 使用标准编码
+        return ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'string', 'tuple(bytes32, uint256, uint256, bytes32[], uint256)'],
+            [
+                agentAddress,
+                skillCategory,
+                [
+                    attestation.skillId,
+                    attestation.proficiencyScore,
+                    attestation.completedTasks,
+                    attestation.evidenceURIs.map((uri) => ethers.keccak256(ethers.toUtf8Bytes(uri))),
+                    attestation.lastUpdated,
+                ],
+            ],
+        );
+    }
 }
 ```
 
@@ -368,33 +338,33 @@ class CrossChainAttestationBridge {
 ```typescript
 // 映射关系
 interface TaskToAttestationMapping {
-  // Agent Arena 侧
-  arena: {
-    taskId: number;
-    agentAddress: string;
-    score: number;              // 0-100
-    skillCategory: string;      // e.g., "smart-contract-audit"
-    resultCID: string;          // IPFS proof
-    timestamp: number;
-  };
-  
-  // ERC-8004 侧
-  erc8004: {
-    skillId: string;            // keccak256(skillCategory)
-    proficiencyScore: number;   // 0-10000 (加权历史)
-    completedTasks: number;     // 累计任务数
-    evidenceURIs: string[];     // 所有结果的 CID 列表
-    lastUpdated: number;
-  };
+    // Agent Arena 侧
+    arena: {
+        taskId: number;
+        agentAddress: string;
+        score: number; // 0-100
+        skillCategory: string; // e.g., "smart-contract-audit"
+        resultCID: string; // IPFS proof
+        timestamp: number;
+    };
+
+    // ERC-8004 侧
+    erc8004: {
+        skillId: string; // keccak256(skillCategory)
+        proficiencyScore: number; // 0-10000 (加权历史)
+        completedTasks: number; // 累计任务数
+        evidenceURIs: string[]; // 所有结果的 CID 列表
+        lastUpdated: number;
+    };
 }
 
 // Skill Category 映射表
 const SKILL_CATEGORY_MAP: Record<string, string> = {
-  'smart-contract-audit': '0x...',  // 预定义的 skill ID
-  'defi-strategy': '0x...',
-  'data-analysis': '0x...',
-  'code-optimization': '0x...',
-  // ...
+    'smart-contract-audit': '0x...', // 预定义的 skill ID
+    'defi-strategy': '0x...',
+    'data-analysis': '0x...',
+    'code-optimization': '0x...',
+    // ...
 };
 ```
 
@@ -402,68 +372,62 @@ const SKILL_CATEGORY_MAP: Record<string, string> = {
 
 ```typescript
 interface ReputationScore {
-  // 基础分数 (来自任务评分)
-  baseScore: number;           // 0-100
-  
-  // 加权分数 (考虑历史)
-  weightedScore: number;       // 0-10000
-  
-  // 可信度 (基于任务数量)
-  confidence: number;          // 0-1
-  
-  // 活跃度 (基于最近活动)
-  recency: number;             // 0-1
-  
-  // 综合分数
-  overall: number;             // 0-10000
+    // 基础分数 (来自任务评分)
+    baseScore: number; // 0-100
+
+    // 加权分数 (考虑历史)
+    weightedScore: number; // 0-10000
+
+    // 可信度 (基于任务数量)
+    confidence: number; // 0-1
+
+    // 活跃度 (基于最近活动)
+    recency: number; // 0-1
+
+    // 综合分数
+    overall: number; // 0-10000
 }
 
-function calculateReputationScore(
-  history: TaskHistory[],
-  newScore: number
-): ReputationScore {
-  const totalTasks = history.length + 1;
-  
-  // 1. 基础分数 = 最新一次评分
-  const baseScore = newScore;
-  
-  // 2. 加权分数 (ELO-like，近期权重更高)
-  const now = Date.now();
-  let weightedSum = newScore;
-  let totalWeight = 1;
-  
-  for (const task of history) {
-    const ageDays = (now - task.timestamp) / (1000 * 60 * 60 * 24);
-    const weight = Math.exp(-ageDays / 30); // 30天半衰期
-    weightedSum += task.score * weight;
-    totalWeight += weight;
-  }
-  
-  const weightedScore = (weightedSum / totalWeight) * 100;
-  
-  // 3. 可信度 (任务越多越可信)
-  const confidence = Math.min(1, totalTasks / 10); // 10个任务达到满信度
-  
-  // 4. 活跃度 (最近30天是否有活动)
-  const lastActivity = Math.max(...history.map(h => h.timestamp), now);
-  const daysSinceLastActivity = (now - lastActivity) / (1000 * 60 * 60 * 24);
-  const recency = Math.exp(-daysSinceLastActivity / 30);
-  
-  // 5. 综合分数
-  const overall = Math.round(
-    weightedScore * 0.5 +
-    (baseScore * 100) * 0.2 +
-    (confidence * 10000) * 0.15 +
-    (recency * 10000) * 0.15
-  );
-  
-  return {
-    baseScore,
-    weightedScore: Math.round(weightedScore),
-    confidence,
-    recency,
-    overall,
-  };
+function calculateReputationScore(history: TaskHistory[], newScore: number): ReputationScore {
+    const totalTasks = history.length + 1;
+
+    // 1. 基础分数 = 最新一次评分
+    const baseScore = newScore;
+
+    // 2. 加权分数 (ELO-like，近期权重更高)
+    const now = Date.now();
+    let weightedSum = newScore;
+    let totalWeight = 1;
+
+    for (const task of history) {
+        const ageDays = (now - task.timestamp) / (1000 * 60 * 60 * 24);
+        const weight = Math.exp(-ageDays / 30); // 30天半衰期
+        weightedSum += task.score * weight;
+        totalWeight += weight;
+    }
+
+    const weightedScore = (weightedSum / totalWeight) * 100;
+
+    // 3. 可信度 (任务越多越可信)
+    const confidence = Math.min(1, totalTasks / 10); // 10个任务达到满信度
+
+    // 4. 活跃度 (最近30天是否有活动)
+    const lastActivity = Math.max(...history.map((h) => h.timestamp), now);
+    const daysSinceLastActivity = (now - lastActivity) / (1000 * 60 * 60 * 24);
+    const recency = Math.exp(-daysSinceLastActivity / 30);
+
+    // 5. 综合分数
+    const overall = Math.round(
+        weightedScore * 0.5 + baseScore * 100 * 0.2 + confidence * 10000 * 0.15 + recency * 10000 * 0.15,
+    );
+
+    return {
+        baseScore,
+        weightedScore: Math.round(weightedScore),
+        confidence,
+        recency,
+        overall,
+    };
 }
 ```
 
@@ -477,18 +441,18 @@ function calculateReputationScore(
 // AgentArena.sol - 新增 ERC-8004 回调
 contract AgentArena {
     IERC8004 public immutable reputationRegistry;
-    
+
     constructor(address _reputationRegistry) {
         reputationRegistry = IERC8004(_reputationRegistry);
     }
-    
+
     function judgeAndPay(uint256 taskId, uint8 score) external onlyJudge {
         // ... 原有逻辑 ...
-        
+
         // 自动更新信誉 (可选)
         _updateAgentReputation(task.assignedAgent, task.skillCategory, score);
     }
-    
+
     function _updateAgentReputation(
         address agent,
         string calldata skillCategory,
@@ -505,40 +469,33 @@ contract AgentArena {
 ```typescript
 // Chain Hub 使用信誉数据验证 Agent
 class SkillVerifier {
-  async verifyAgentSkill(
-    agentAddress: string,
-    skillId: string,
-    minProficiency: number
-  ): Promise<boolean> {
-    // 查询 ERC-8004
-    const attestation = await this.erc8004.getCapability(agentAddress, skillId);
-    
-    // 检查熟练度
-    if (attestation.proficiencyScore < minProficiency) {
-      return false;
+    async verifyAgentSkill(agentAddress: string, skillId: string, minProficiency: number): Promise<boolean> {
+        // 查询 ERC-8004
+        const attestation = await this.erc8004.getCapability(agentAddress, skillId);
+
+        // 检查熟练度
+        if (attestation.proficiencyScore < minProficiency) {
+            return false;
+        }
+
+        // 检查任务数量 (可信度)
+        if (attestation.completedTasks < 3) {
+            console.warn(`Agent ${agentAddress} has only ${attestation.completedTasks} tasks`);
+            return false;
+        }
+
+        return true;
     }
-    
-    // 检查任务数量 (可信度)
-    if (attestation.completedTasks < 3) {
-      console.warn(`Agent ${agentAddress} has only ${attestation.completedTasks} tasks`);
-      return false;
+
+    async getSkillPrice(agentAddress: string, skillId: string): Promise<bigint> {
+        const attestation = await this.erc8004.getCapability(agentAddress, skillId);
+
+        // 价格 = 基础价格 * 熟练度系数
+        const basePrice = 100n; // OKB
+        const proficiencyFactor = BigInt(attestation.proficiencyScore) / 10000n;
+
+        return basePrice * proficiencyFactor;
     }
-    
-    return true;
-  }
-  
-  async getSkillPrice(
-    agentAddress: string,
-    skillId: string
-  ): Promise<bigint> {
-    const attestation = await this.erc8004.getCapability(agentAddress, skillId);
-    
-    // 价格 = 基础价格 * 熟练度系数
-    const basePrice = 100n; // OKB
-    const proficiencyFactor = BigInt(attestation.proficiencyScore) / 10000n;
-    
-    return basePrice * proficiencyFactor;
-  }
 }
 ```
 
@@ -547,19 +504,17 @@ class SkillVerifier {
 ```typescript
 // AgentM 展示主人的信誉
 class AgentMReputation {
-  async getMyReputation(walletAddress: string): Promise<ReputationProfile> {
-    // 查询所有技能的能力证明
-    const skills = await this.erc8004.getAllCapabilities(walletAddress);
-    
-    return {
-      overallRank: this.calculateRank(skills),
-      topSkills: skills
-        .sort((a, b) => b.proficiencyScore - a.proficiencyScore)
-        .slice(0, 5),
-      totalTasksCompleted: skills.reduce((sum, s) => sum + s.completedTasks, 0),
-      reputationScore: this.calculateOverallScore(skills),
-    };
-  }
+    async getMyReputation(walletAddress: string): Promise<ReputationProfile> {
+        // 查询所有技能的能力证明
+        const skills = await this.erc8004.getAllCapabilities(walletAddress);
+
+        return {
+            overallRank: this.calculateRank(skills),
+            topSkills: skills.sort((a, b) => b.proficiencyScore - a.proficiencyScore).slice(0, 5),
+            totalTasksCompleted: skills.reduce((sum, s) => sum + s.completedTasks, 0),
+            reputationScore: this.calculateOverallScore(skills),
+        };
+    }
 }
 ```
 
@@ -576,31 +531,31 @@ flowchart TB
         SOL["Solana (SVM)")
         BASE["Base (EVM)")
     end
-    
+
     subgraph Registries["信誉注册表"]
         ERC["ERC-8004 Registry<br/>主链: X-Layer"]
         SAR["Solana Agent Registry"]
         BASE_R["ERC-8004 Registry<br/>Base"]
     end
-    
+
     subgraph Aggregation["信誉聚合层"]
         Aggregator["Cross-Chain<br/>Reputation Aggregator"]
         Resolver["Identity Resolver<br/>同一 Agent 跨链识别"]
     end
-    
+
     subgraph Consumers["消费者"]
         TaskPoster["Task Poster<br/>查看全局信誉"]
         ChainHub["Chain Hub<br/>验证跨链能力"]
     end
-    
+
     XL -->|任务结果| ERC
     SOL -->|任务结果| SAR
     BASE -->|任务结果| BASE_R
-    
+
     ERC -->|查询| Aggregator
     SAR -->|查询| Aggregator
     BASE_R -->|查询| Aggregator
-    
+
     Aggregator --> Resolver
     Resolver -->|统一视图| TaskPoster
     Resolver -->|统一视图| ChainHub
@@ -611,44 +566,44 @@ flowchart TB
 ```typescript
 // 同一 Agent 在不同链上的身份映射
 interface CrossChainIdentity {
-  // 主身份 (X-Layer)
-  primary: {
-    chain: 'x-layer';
-    address: string;
-  };
-  
-  // 关联身份
-  identities: {
-    chain: string;
-    address: string;
-    proof: string; // 所有权证明
-  }[];
-  
-  // 统一的信誉分数
-  unifiedReputation: {
-    globalScore: number;
-    chainSpecific: Record<string, number>;
-  };
+    // 主身份 (X-Layer)
+    primary: {
+        chain: 'x-layer';
+        address: string;
+    };
+
+    // 关联身份
+    identities: {
+        chain: string;
+        address: string;
+        proof: string; // 所有权证明
+    }[];
+
+    // 统一的信誉分数
+    unifiedReputation: {
+        globalScore: number;
+        chainSpecific: Record<string, number>;
+    };
 }
 
 // 身份绑定示例
 async function linkSolanaIdentity(
-  evmAddress: string,
-  solanaAddress: string,
-  evmSignature: string,
-  solanaSignature: string
+    evmAddress: string,
+    solanaAddress: string,
+    evmSignature: string,
+    solanaSignature: string,
 ): Promise<void> {
-  // 验证两个地址都由同一实体控制
-  const evmValid = verifyEVMSignature(evmAddress, solanaAddress, evmSignature);
-  const solanaValid = verifySolanaSignature(solanaAddress, evmAddress, solanaSignature);
-  
-  if (evmValid && solanaValid) {
-    // 存储身份绑定
-    await identityRegistry.linkIdentities({
-      primary: { chain: 'x-layer', address: evmAddress },
-      linked: { chain: 'solana', address: solanaAddress },
-    });
-  }
+    // 验证两个地址都由同一实体控制
+    const evmValid = verifyEVMSignature(evmAddress, solanaAddress, evmSignature);
+    const solanaValid = verifySolanaSignature(solanaAddress, evmAddress, solanaSignature);
+
+    if (evmValid && solanaValid) {
+        // 存储身份绑定
+        await identityRegistry.linkIdentities({
+            primary: { chain: 'x-layer', address: evmAddress },
+            linked: { chain: 'solana', address: solanaAddress },
+        });
+    }
 }
 ```
 
@@ -690,14 +645,14 @@ async function linkSolanaIdentity(
 
 ### Gradience vs Solana Agent Registry
 
-| 特性 | Gradience (Agent Arena) | Solana Agent Registry |
-|------|------------------------|----------------------|
-| **基础数据** | 任务竞争结果 | 注册信息 + 第三方证明 |
-| **可信度** | 高 (多 Agent 竞争 + Judge) | 中 (依赖第三方验证者) |
-| **更新频率** | 实时 (任务完成即更新) | 定期 (验证者提交) |
-| **跨链** | 计划支持 (X-Layer → Solana) | Solana 原生 |
-| **隐私** | 可选择性披露 | 公开 |
-| **互操作性** | ERC-8004 标准 | ERC-8004 兼容 |
+| 特性         | Gradience (Agent Arena)     | Solana Agent Registry |
+| ------------ | --------------------------- | --------------------- |
+| **基础数据** | 任务竞争结果                | 注册信息 + 第三方证明 |
+| **可信度**   | 高 (多 Agent 竞争 + Judge)  | 中 (依赖第三方验证者) |
+| **更新频率** | 实时 (任务完成即更新)       | 定期 (验证者提交)     |
+| **跨链**     | 计划支持 (X-Layer → Solana) | Solana 原生           |
+| **隐私**     | 可选择性披露                | 公开                  |
+| **互操作性** | ERC-8004 标准               | ERC-8004 兼容         |
 
 ### 互补性
 
@@ -710,6 +665,7 @@ Agent Arena = 高可信度的能力证明
 ```
 
 **建议策略**:
+
 1. Agent Arena 产生的高价值数据 → 写入 ERC-8004
 2. ERC-8004 作为跨链标准 → 同步到 Solana Agent Registry
 3. Task Poster → 查询聚合后的统一信誉视图
@@ -727,13 +683,13 @@ Agent Arena = 高可信度的能力证明
 
 ## 10. 决策记录
 
-| 日期 | 决策 | 说明 |
-|------|------|------|
-| 2026-03-28 | 采用 ERC-8004 作为标准 | 与 Solana Agent Registry 兼容，跨链统一 |
-| 2026-03-28 | 设计 Attestation Processor | 独立服务处理 Arena 事件 → 信誉更新 |
-| 2026-03-28 | 规划跨链同步 | 使用 Wormhole 桥接 X-Layer 和 Solana |
+| 日期       | 决策                       | 说明                                    |
+| ---------- | -------------------------- | --------------------------------------- |
+| 2026-03-28 | 采用 ERC-8004 作为标准     | 与 Solana Agent Registry 兼容，跨链统一 |
+| 2026-03-28 | 设计 Attestation Processor | 独立服务处理 Arena 事件 → 信誉更新      |
+| 2026-03-28 | 规划跨链同步               | 使用 Wormhole 桥接 X-Layer 和 Solana    |
 
 ---
 
-*文档版本: v1.0*  
-*最后更新: 2026-03-28*
+_文档版本: v1.0_  
+_最后更新: 2026-03-28_

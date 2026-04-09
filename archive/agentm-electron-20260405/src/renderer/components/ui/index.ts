@@ -1,6 +1,6 @@
 /**
  * UI Components
- * 
+ *
  * Modern minimal UI components
  */
 

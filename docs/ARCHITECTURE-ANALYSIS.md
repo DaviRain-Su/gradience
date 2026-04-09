@@ -298,28 +298,32 @@ programs/ ──▶ Solana / Anchor (Rust, 独立 Cargo workspace)
 ### 🔴 严重问题 (P0 — 影响核心功能)
 
 #### 1. Indexer 没有连接真实链数据
+
 - **位置**: `apps/chain-hub/indexer/`
 - **问题**: 只有 seed data，没有接入 Solana devnet RPC。用户在 agentm-web 看到的任务/Agent 数据是假数据。
 - **影响**: 整个任务市场 UI 显示虚假内容
 - **修复**: 接入 `SOLANA_RPC_ENDPOINT`，实现事件监听和状态同步
 
 #### 2. Auth 体系双轨并存，逻辑混乱
+
 - **位置**: `apps/agentm-web/src/lib/`
 - **问题**: 同时存在两套 auth：
-  - `DynamicProvider` (Dynamic Labs SDK — 外部 OAuth/Wallet)
-  - `ConnectionContext` (自定义 challenge-sign-verify 到 daemon)
-  - 还有 `OWS passkey-wallet`、`usePasskeyWallet`
-  - `@privy-io/react-auth` 在依赖里但没有找到使用
+    - `DynamicProvider` (Dynamic Labs SDK — 外部 OAuth/Wallet)
+    - `ConnectionContext` (自定义 challenge-sign-verify 到 daemon)
+    - 还有 `OWS passkey-wallet`、`usePasskeyWallet`
+    - `@privy-io/react-auth` 在依赖里但没有找到使用
 - **影响**: 新用户完全不清楚该走哪条认证路径；session 管理和 wallet 状态分散在两套系统里
 - **修复**: 选定一套 auth（推荐 Dynamic），把 daemon session 作为 Dynamic auth 后续的第二步验证
 
 #### 3. agentm-pro 是空壳
+
 - **位置**: `apps/agentm-pro/`
 - **问题**: 只有 `/` 和 `/app` 两个页面，大量组件（PostCard, DomainBadge, DomainInput, ProfileForm, PostComposer, NotificationBell 等）直接从 agentm-web 复制粘贴
 - **影响**: 实际上没有"开发者 Dashboard"功能；代码重复维护成本高
 - **修复**: 要么明确 agentm-pro 的差异定位（agent analytics / revenue dashboard），要么合并到 agentm-web 的 `/pro` 路由下
 
 #### 4. 本地 daemon 模式对普通用户不可行
+
 - **位置**: `apps/agentm-web/src/lib/connection/ConnectionContext.tsx`
 - **问题**: 默认连接 `localhost:7420`。普通 Web 用户不会在本地跑一个 `agentd` 进程。虽然有 remote fallback，但探测逻辑先试本地再试远程，增加延迟和用户困惑。
 - **影响**: 首次加载有明显延迟；"Daemon not detected" 警告让用户迷惑
@@ -330,31 +334,37 @@ programs/ ──▶ Solana / Anchor (Rust, 独立 Cargo workspace)
 ### 🟠 重要问题 (P1 — 影响体验)
 
 #### 5. `evaluator/` 是纯 stub，LLM-as-Judge 未实现
+
 - **位置**: `apps/agent-daemon/src/evaluator/`
 - **问题**: 目录存在但只有骨架代码。judgeAndPay 链上合约已有，但链下评估逻辑（LLM 评分）完全没有
 - **影响**: Task 结算流程只能手动调用，无法自动化
 
 #### 6. `revenue/` 目录根本不存在
+
 - **位置**: `apps/agent-daemon/src/revenue/` (ARCHITECTURE.md 中提到，实际不存在)
 - **问题**: 白皮书的收益分配逻辑未实现。`workflow-engine/src/revenue-share.ts` 有部分代码但未接入 daemon
 - **影响**: 工作流收益分成是核心商业逻辑，目前是空白
 
 #### 7. agentm-web 的 `/app/app/page.tsx` 路由结构异常
+
 - **位置**: `apps/agentm-web/src/app/app/`
 - **问题**: 存在 `/app` 和 `/app/app` 两层嵌套。`/app/app/layout.tsx` 包裹了 DynamicProvider，而 `/app/app/page.tsx` 是真正的主应用，但路由变成了 `/app/app` 而不是 `/app`
 - **影响**: URL 结构混乱（`agentm.gradiences.xyz/app/app`?），路由层级不清晰
 
 #### 8. Privy 依赖引入但未使用
+
 - **位置**: `apps/agentm-web/package.json`
 - **问题**: `@privy-io/react-auth` 在依赖中存在，但代码里没有 `PrivyProvider`
 - **影响**: 增加 bundle size（~200KB+），引起维护困惑
 
 #### 9. workflow-engine 9249 行但大量是 stub
+
 - **位置**: `packages/workflow-engine/src/handlers/`
 - **问题**: `trading.ts`, `trading-real.ts`, `payment.ts` 的 handlers 有实现框架，但 triton-cascade 等核心执行路径是占位符
 - **影响**: CLI 工具宣称的"composable workflows"实际无法运行
 
 #### 10. xmtp-adapter WIP，A2A 消息仅靠 Nostr
+
 - **位置**: `packages/xmtp-adapter/`
 - **问题**: XMTP adapter 测试文件存在但实现不完整；daemon 里 A2A 使用 Nostr relay 但无真实 Agent 注册
 - **影响**: A2A 消息功能在当前环境下无法演示真实对话
@@ -364,32 +374,39 @@ programs/ ──▶ Solana / Anchor (Rust, 独立 Cargo workspace)
 ### 🟡 优化问题 (P2 — 技术债)
 
 #### 11. 组件重复：agentm-web 和 agentm-pro 共享大量 UI
+
 - PostCard, DomainBadge, DomainInput, ProfileForm, PostComposer, SoulProfileCard 等在两个 app 里各自有一份
 - **修复**: 提取到 `packages/ui` 共享 UI 包
 
 #### 12. ConnectionContext 中 `require()` 动态导入反模式
+
 - 部分 hooks（`useFeed`, `useProfile`）用 `try { require() } catch {}` 模式导入 ConnectionContext
 - **修复**: 统一用 `useDaemonConnection` hook，已有但未全面推广
 
 #### 13. Database 类型用 `any` (daemon)
+
 - `apps/agent-daemon/src/api/routes/social.ts` 使用自定义 Database 接口而非 better-sqlite3 的类型
 - **修复**: 引入 `@types/better-sqlite3` 正式类型
 
 #### 14. Bundle size 789KB，超出 500KB 目标
+
 - **位置**: agentm-web
 - 原因: Privy（未使用）、Dynamic SDK、多个 Solana adapter 同时引入
 - **修复**: 移除 Privy，Dynamic SDK 懒加载
 
 #### 15. Rate limiting 未实现
+
 - **位置**: `apps/agent-daemon/src/api/`
 - auth 端点无速率限制，存在暴力破解风险
 - **修复**: Fastify rate-limit 插件
 
 #### 16. Vercel 未连接 Git，需手动部署
+
 - agentm-web 无法自动 CI/CD，每次需手动 `npx vercel --prod`
 - **修复**: 在 Vercel 项目设置里连接 GitHub repo
 
 #### 17. agentm-core 命名混淆
+
 - `apps/agentm-core/` 下只有 `program/` 和 `sdk/`（Rust on-chain 程序+SDK），不是一个 Web app
 - 与 `programs/agentm-core/`（另一个 Rust 程序）名字重叠，容易混淆
 - **修复**: 考虑重命名，明确 `apps/agentm-core/` 是"agentm-core Solana program + TS SDK"的 workspace 聚合
@@ -492,5 +509,5 @@ P2-4   xmtp-adapter 完善               A2A 功能      3天
 
 ---
 
-*文档生成工具: Claude Code + 人工代码分析*  
-*参考文件: ARCHITECTURE.md, apps/agentm-web/**, apps/agent-daemon/**, programs/**/*
+_文档生成工具: Claude Code + 人工代码分析_  
+_参考文件: ARCHITECTURE.md, apps/agentm-web/**, apps/agent-daemon/**, programs/\*\*/_

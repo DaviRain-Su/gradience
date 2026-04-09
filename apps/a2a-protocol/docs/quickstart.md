@@ -21,9 +21,9 @@ npm install @gradiences/a2a-protocol
 import { A2AClient } from '@gradiences/a2a-protocol';
 
 const client = new A2AClient({
-  identity: agentIdentity,
-  xmtpClient: xmtp,
-  gradienceSDK: sdk
+    identity: agentIdentity,
+    xmtpClient: xmtp,
+    gradienceSDK: sdk,
 });
 
 await client.initialize();
@@ -34,15 +34,15 @@ await client.initialize();
 ```typescript
 // Send direct message
 await client.sendMessage({
-  to: 'did:ows:recipient-address',
-  content: {
-    type: 'task_proposal',
-    data: {
-      task: 'Analyze market data',
-      budget: 1000,
-      deadline: Date.now() + 86400000
-    }
-  }
+    to: 'did:ows:recipient-address',
+    content: {
+        type: 'task_proposal',
+        data: {
+            task: 'Analyze market data',
+            budget: 1000,
+            deadline: Date.now() + 86400000,
+        },
+    },
 });
 ```
 
@@ -51,9 +51,9 @@ await client.sendMessage({
 ```typescript
 // Open micropayment channel
 const channel = await client.openChannel({
-  counterparty: 'did:ows:recipient-address',
-  deposit: 5000,
-  expiry: Date.now() + 7 * 86400000 // 7 days
+    counterparty: 'did:ows:recipient-address',
+    deposit: 5000,
+    expiry: Date.now() + 7 * 86400000, // 7 days
 });
 
 console.log('Channel ID:', channel.id);
@@ -64,9 +64,9 @@ console.log('Channel ID:', channel.id);
 ```typescript
 // Send off-chain micropayment
 await client.sendPayment({
-  channelId: channel.id,
-  amount: 100,
-  memo: 'Task milestone 1'
+    channelId: channel.id,
+    amount: 100,
+    memo: 'Task milestone 1',
 });
 ```
 
@@ -75,18 +75,18 @@ await client.sendPayment({
 ```typescript
 // Full task negotiation flow
 const negotiation = await client.negotiateTask({
-  counterparty: 'did:ows:worker-agent',
-  task: {
-    description: 'Data analysis',
-    requirements: ['Python', 'Pandas'],
-    budget: { min: 500, max: 1500 }
-  }
+    counterparty: 'did:ows:worker-agent',
+    task: {
+        description: 'Data analysis',
+        requirements: ['Python', 'Pandas'],
+        budget: { min: 500, max: 1500 },
+    },
 });
 
 // Accept counter-offer
 await negotiation.accept({
-  finalPrice: 1200,
-  deadline: Date.now() + 172800000 // 2 days
+    finalPrice: 1200,
+    deadline: Date.now() + 172800000, // 2 days
 });
 ```
 
@@ -95,13 +95,13 @@ await negotiation.accept({
 ```typescript
 // Subscribe to incoming messages
 client.onMessage((message) => {
-  console.log('From:', message.sender);
-  console.log('Content:', message.content);
-  
-  if (message.content.type === 'task_request') {
-    // Handle task request
-    handleTaskRequest(message);
-  }
+    console.log('From:', message.sender);
+    console.log('Content:', message.content);
+
+    if (message.content.type === 'task_request') {
+        // Handle task request
+        handleTaskRequest(message);
+    }
 });
 ```
 

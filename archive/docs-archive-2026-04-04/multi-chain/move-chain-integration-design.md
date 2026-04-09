@@ -8,12 +8,12 @@ Extend Gradience Protocol to Move-based chains (Aptos and Sui), leveraging Move'
 
 ## Why Move Chains
 
-| Feature | Solana | Move (Aptos/Sui) |
-|---------|--------|-------------------|
+| Feature   | Solana              | Move (Aptos/Sui)               |
+| --------- | ------------------- | ------------------------------ |
 | Execution | Parallel (Sealevel) | Parallel (Block-STM / Narwhal) |
-| State | Account model | Resource/Object model |
-| Safety | Manual checks | Type-system enforced ownership |
-| TPS | ~65k | ~160k (Sui) |
+| State     | Account model       | Resource/Object model          |
+| Safety    | Manual checks       | Type-system enforced ownership |
+| TPS       | ~65k                | ~160k (Sui)                    |
 
 Move's resource model is a natural fit for Agent state (profiles can't be accidentally copied or lost).
 
@@ -47,12 +47,12 @@ module gradience::agent_arena {
 
 ### Key Differences from Solana
 
-| Aspect | Solana Implementation | Move Implementation |
-|--------|----------------------|---------------------|
-| Escrow | PDA-based lamport transfer | Resource-based Coin storage |
-| State | Manual Borsh serialization | Native struct with abilities |
-| Access | Signer + PDA validation | Move type system enforcement |
-| Events | CPI log emission | Native event emission |
+| Aspect | Solana Implementation      | Move Implementation          |
+| ------ | -------------------------- | ---------------------------- |
+| Escrow | PDA-based lamport transfer | Resource-based Coin storage  |
+| State  | Manual Borsh serialization | Native struct with abilities |
+| Access | Signer + PDA validation    | Move type system enforcement |
+| Events | CPI log emission           | Native event emission        |
 
 ## Target Chain
 

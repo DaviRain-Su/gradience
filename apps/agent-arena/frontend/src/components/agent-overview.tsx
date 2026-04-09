@@ -30,13 +30,11 @@ export function AgentOverview({ publicKey }: { publicKey: string | null }) {
         setLoading(true);
 
         Promise.all([
-            fetchWithMockFallback(
-                `${INDEXER_ENDPOINT}/api/agents/${publicKey}/reputation`,
-                () => getMockAgentReputation(publicKey)
+            fetchWithMockFallback(`${INDEXER_ENDPOINT}/api/agents/${publicKey}/reputation`, () =>
+                getMockAgentReputation(publicKey),
             ),
-            fetchWithMockFallback(
-                `${INDEXER_ENDPOINT}/api/tasks?poster=${publicKey}&state=open&limit=10`,
-                () => getMockAgentTasks(publicKey)
+            fetchWithMockFallback(`${INDEXER_ENDPOINT}/api/tasks?poster=${publicKey}&state=open&limit=10`, () =>
+                getMockAgentTasks(publicKey),
             ),
         ]).then(([rep, tasks]) => {
             setReputation(rep as ReputationData | null);
@@ -72,7 +70,10 @@ export function AgentOverview({ publicKey }: { publicKey: string | null }) {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <StatCard label="Avg Score" value={reputation?.avg_score?.toFixed(1) ?? '--'} />
                         <StatCard label="Completed" value={reputation?.completed?.toString() ?? '0'} />
-                        <StatCard label="Win Rate" value={reputation?.win_rate ? `${(reputation.win_rate * 100).toFixed(0)}%` : '--'} />
+                        <StatCard
+                            label="Win Rate"
+                            value={reputation?.win_rate ? `${(reputation.win_rate * 100).toFixed(0)}%` : '--'}
+                        />
                         <StatCard label="Earned" value={`${earnedSol} SOL`} highlight />
                     </div>
 
@@ -83,8 +84,11 @@ export function AgentOverview({ publicKey }: { publicKey: string | null }) {
                             <p className="text-xs text-zinc-600">No active tasks.</p>
                         ) : (
                             <div className="space-y-1">
-                                {activeTasks.map((task) => (
-                                    <div key={task.task_id} className="flex items-center justify-between text-sm bg-zinc-800 rounded px-3 py-1.5">
+                                {activeTasks.map(task => (
+                                    <div
+                                        key={task.task_id}
+                                        className="flex items-center justify-between text-sm bg-zinc-800 rounded px-3 py-1.5"
+                                    >
                                         <span>Task #{task.task_id}</span>
                                         <span className="text-xs text-zinc-500">{task.reward} lamports</span>
                                     </div>

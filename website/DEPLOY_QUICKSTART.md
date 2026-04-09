@@ -8,10 +8,10 @@
 2. 点击 "Add New..." > "Project"
 3. 导入 `gradiences/gradience` GitHub 仓库
 4. 配置：
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `website`
-   - **Build Command**: `cd .. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/website build`
-   - **Output Directory**: `.next`
+    - **Framework Preset**: Next.js
+    - **Root Directory**: `website`
+    - **Build Command**: `cd .. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/website build`
+    - **Output Directory**: `.next`
 5. 点击 "Deploy"
 
 ### 2. 配置环境变量 (2分钟)
@@ -73,14 +73,17 @@ curl https://gradiences.xyz/api/subscribe?action=count
 ## 常见问题
 
 **Q: 为什么部署失败？**
+
 - 检查 pnpm 版本是否为 9.x
 - 检查 Node.js 版本是否为 20+
 - 检查所有环境变量是否配置
 
 **Q: 如何查看部署日志？**
+
 - Vercel Dashboard > Deployments > 选择部署 > Build Logs
 
 **Q: 如何回滚？**
+
 - Vercel Dashboard > Deployments > 选择旧版本 > "Promote to Production"
 
 ## 下一步

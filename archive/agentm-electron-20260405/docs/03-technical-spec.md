@@ -7,19 +7,19 @@
 
 ## 1. 技术栈
 
-| 项目 | 版本/说明 |
-|------|---------|
-| Electrobun | 桌面框架（TypeScript + Bun，系统 webview，~12MB） |
-| React | 19.x，前端 UI |
-| Vite | 构建工具（Electrobun 推荐） |
-| Tailwind CSS | 样式 |
-| Zustand | 状态管理 |
-| @privy-io/react-auth | Google OAuth → 嵌入式 Solana 钱包 |
-| @gradiences/sdk | 链上调用（声誉、任务） |
-| magicblock-a2a.ts | A2A 传输层（迁移自 agent-social） |
-| ranking.ts | Agent 排名算法（迁移自 agent-social） |
-| Whisper.cpp (WASM) | 语音识别（本地） |
-| Web Speech API | 语音合成（浏览器内置 TTS） |
+| 项目                 | 版本/说明                                         |
+| -------------------- | ------------------------------------------------- |
+| Electrobun           | 桌面框架（TypeScript + Bun，系统 webview，~12MB） |
+| React                | 19.x，前端 UI                                     |
+| Vite                 | 构建工具（Electrobun 推荐）                       |
+| Tailwind CSS         | 样式                                              |
+| Zustand              | 状态管理                                          |
+| @privy-io/react-auth | Google OAuth → 嵌入式 Solana 钱包                 |
+| @gradiences/sdk      | 链上调用（声誉、任务）                            |
+| magicblock-a2a.ts    | A2A 传输层（迁移自 agent-social）                 |
+| ranking.ts           | Agent 排名算法（迁移自 agent-social）             |
+| Whisper.cpp (WASM)   | 语音识别（本地）                                  |
+| Web Speech API       | 语音合成（浏览器内置 TTS）                        |
 
 ---
 
@@ -97,13 +97,13 @@ interface AuthState {
 ```typescript
 // 原样迁移，不修改
 interface A2AEnvelope {
-    id: string;                    // `${Date.now()}-${Math.random()}`
-    from: string;                  // 发送方地址
-    to: string;                    // 接收方地址
-    topic: string;                 // 主题
-    message: string;               // 正文
-    createdAt: number;             // 创建时间 ms
-    paymentMicrolamports: number;  // 微支付金额
+    id: string; // `${Date.now()}-${Math.random()}`
+    from: string; // 发送方地址
+    to: string; // 接收方地址
+    topic: string; // 主题
+    message: string; // 正文
+    createdAt: number; // 创建时间 ms
+    paymentMicrolamports: number; // 微支付金额
 }
 
 interface A2ADelivery {
@@ -121,8 +121,8 @@ interface SendInviteInput {
 }
 
 interface MicropaymentPolicy {
-    baseMicrolamports: number;     // 默认 100
-    perByteMicrolamports: number;  // 默认 2
+    baseMicrolamports: number; // 默认 100
+    perByteMicrolamports: number; // 默认 2
 }
 ```
 
@@ -193,7 +193,7 @@ interface AppStore {
 
     // 对话列表
     conversations: Conversation[];
-    activeConversation: string | null;  // peerAddress
+    activeConversation: string | null; // peerAddress
     setActiveConversation: (peer: string | null) => void;
 
     // 消息（按 peerAddress 分组）
@@ -450,6 +450,7 @@ interface VoiceEngine {
 ```
 
 **实现**：
+
 - 首选：Whisper.cpp 编译为 WASM（~40MB 模型 `whisper-base`）
 - 备选：Web Speech API（`webkitSpeechRecognition`，浏览器内置，无需模型）
 - 自动选择：WASM 加载成功用 Whisper，否则降级 Web Speech API
@@ -506,13 +507,13 @@ interface TTSEngine {
 
 ### 路由
 
-| 视图 | 组件 | 触发 |
-|------|------|------|
-| 登录 | `LoginView` | 未认证时 |
-| 我的 | `MeView` | 侧栏"我的" |
-| 发现 | `DiscoverView` | 侧栏"发现" |
-| 对话 | `ChatView` | 侧栏"对话"或对话列表 |
-| Agent 详情 | `AgentProfileModal` | 发现列表点击 Agent |
+| 视图       | 组件                | 触发                 |
+| ---------- | ------------------- | -------------------- |
+| 登录       | `LoginView`         | 未认证时             |
+| 我的       | `MeView`            | 侧栏"我的"           |
+| 发现       | `DiscoverView`      | 侧栏"发现"           |
+| 对话       | `ChatView`          | 侧栏"对话"或对话列表 |
+| Agent 详情 | `AgentProfileModal` | 发现列表点击 Agent   |
 
 不使用 react-router（桌面应用无 URL），用 Zustand `activeView` 切换。
 
@@ -538,17 +539,17 @@ class IndexerClient {
 
 ## 10. 迁移清单
 
-| 源文件 | 目标文件 | 修改内容 |
-|--------|---------|---------|
-| `agent-me/frontend/src/components/reputation-panel.tsx` | `agentm/src/renderer/components/reputation-panel.tsx` | 移除 `'use client'`；`createSdk()` → 从 Zustand store 获取 |
-| `agent-me/frontend/src/components/task-history.tsx` | `agentm/src/renderer/components/task-history.tsx` | 同上 |
-| `agent-me/frontend/src/components/wallet-manager.tsx` | 删除 | 被 Privy 替代，不迁移 |
-| `agent-social/frontend/src/components/agent-discovery.tsx` | `agentm/src/renderer/components/agent-discovery.tsx` | 移除 `'use client'`；props 改为从 Zustand 读取 |
-| `agent-social/frontend/src/components/agent-profile.tsx` | `agentm/src/renderer/components/agent-profile.tsx` | 同上 |
-| `agent-social/frontend/src/components/invite-stub.tsx` | `agentm/src/renderer/components/chat-input.tsx` | 重构为 IM 输入框，保留微支付逻辑 |
-| `agent-social/frontend/src/lib/magicblock-a2a.ts` | `agentm/src/renderer/lib/a2a-client.ts` | 原样迁移，不修改接口 |
-| `agent-social/frontend/src/lib/ranking.ts` | `agentm/src/renderer/lib/ranking.ts` | 原样迁移 |
-| `agent-social/frontend/src/lib/sdk.ts` | `agentm/src/renderer/lib/sdk.ts` | 原样迁移 |
+| 源文件                                                     | 目标文件                                              | 修改内容                                                   |
+| ---------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| `agent-me/frontend/src/components/reputation-panel.tsx`    | `agentm/src/renderer/components/reputation-panel.tsx` | 移除 `'use client'`；`createSdk()` → 从 Zustand store 获取 |
+| `agent-me/frontend/src/components/task-history.tsx`        | `agentm/src/renderer/components/task-history.tsx`     | 同上                                                       |
+| `agent-me/frontend/src/components/wallet-manager.tsx`      | 删除                                                  | 被 Privy 替代，不迁移                                      |
+| `agent-social/frontend/src/components/agent-discovery.tsx` | `agentm/src/renderer/components/agent-discovery.tsx`  | 移除 `'use client'`；props 改为从 Zustand 读取             |
+| `agent-social/frontend/src/components/agent-profile.tsx`   | `agentm/src/renderer/components/agent-profile.tsx`    | 同上                                                       |
+| `agent-social/frontend/src/components/invite-stub.tsx`     | `agentm/src/renderer/components/chat-input.tsx`       | 重构为 IM 输入框，保留微支付逻辑                           |
+| `agent-social/frontend/src/lib/magicblock-a2a.ts`          | `agentm/src/renderer/lib/a2a-client.ts`               | 原样迁移，不修改接口                                       |
+| `agent-social/frontend/src/lib/ranking.ts`                 | `agentm/src/renderer/lib/ranking.ts`                  | 原样迁移                                                   |
+| `agent-social/frontend/src/lib/sdk.ts`                     | `agentm/src/renderer/lib/sdk.ts`                      | 原样迁移                                                   |
 
 ---
 
@@ -556,47 +557,48 @@ class IndexerClient {
 
 ### → Indexer REST API
 
-| 端点 | 用途 |
-|------|------|
-| `GET /api/agents/{pubkey}/reputation` | 声誉查询 |
-| `GET /api/tasks?poster={pubkey}&status=` | 任务列表 |
-| `GET /api/judge-pool/{category}` | Agent 发现 |
-| `GET /api/tasks/{id}/submissions` | 提交列表 |
-| `GET /api/agents/{pubkey}/profile` | Agent 标准化 Profile |
+| 端点                                     | 用途                 |
+| ---------------------------------------- | -------------------- |
+| `GET /api/agents/{pubkey}/reputation`    | 声誉查询             |
+| `GET /api/tasks?poster={pubkey}&status=` | 任务列表             |
+| `GET /api/judge-pool/{category}`         | Agent 发现           |
+| `GET /api/tasks/{id}/submissions`        | 提交列表             |
+| `GET /api/agents/{pubkey}/profile`       | Agent 标准化 Profile |
 
 ### → @gradiences/sdk
 
-| 方法 | 用途 |
-|------|------|
-| `sdk.reputation.get(address)` | 链上声誉 PDA |
-| `sdk.task.post(...)` | 发布任务 |
-| `sdk.task.apply(...)` | 申请任务 |
+| 方法                           | 用途           |
+| ------------------------------ | -------------- |
+| `sdk.reputation.get(address)`  | 链上声誉 PDA   |
+| `sdk.task.post(...)`           | 发布任务       |
+| `sdk.task.apply(...)`          | 申请任务       |
 | `sdk.judgePool.list(category)` | JudgePool 查询 |
 
 ### → A2A Protocol
 
-| 类 | 方法 | 用途 |
-|----|------|------|
-| `MagicBlockA2AAgent` | `sendInvite(input)` | 发送 A2A 消息 |
-| `MagicBlockA2AAgent` | `onDelivery(fn)` | 接收消息监听 |
-| `MagicBlockA2AAgent` | `start()` / `stop()` | 启动/停止传输层 |
-| — | `estimateMicropayment(topic, msg)` | 微支付计算 |
-| — | `createDefaultMagicBlockTransport()` | 传输层自动选择 |
+| 类                   | 方法                                 | 用途            |
+| -------------------- | ------------------------------------ | --------------- |
+| `MagicBlockA2AAgent` | `sendInvite(input)`                  | 发送 A2A 消息   |
+| `MagicBlockA2AAgent` | `onDelivery(fn)`                     | 接收消息监听    |
+| `MagicBlockA2AAgent` | `start()` / `stop()`                 | 启动/停止传输层 |
+| —                    | `estimateMicropayment(topic, msg)`   | 微支付计算      |
+| —                    | `createDefaultMagicBlockTransport()` | 传输层自动选择  |
 
 ### → Privy SDK
 
-| 方法 | 用途 |
-|------|------|
-| `usePrivy().login()` | 触发 Google OAuth |
-| `usePrivy().logout()` | 登出 |
-| `usePrivy().user.wallet.address` | 获取 Solana 地址 |
-| `useSolanaWallets().wallets[0]` | 获取签名器 |
+| 方法                             | 用途              |
+| -------------------------------- | ----------------- |
+| `usePrivy().login()`             | 触发 Google OAuth |
+| `usePrivy().logout()`            | 登出              |
+| `usePrivy().user.wallet.address` | 获取 Solana 地址  |
+| `useSolanaWallets().wallets[0]`  | 获取签名器        |
 
 ---
 
 ## 12. MVP 边界
 
 **MVP 包含**：
+
 - Google OAuth 登录 + Privy 嵌入式钱包
 - "我的"视角（声誉面板 + 任务历史）
 - "社交"视角（发现广场 + Agent 详情）
@@ -606,6 +608,7 @@ class IndexerClient {
 - Electrobun 桌面打包（macOS + Windows + Linux）
 
 **MVP 不包含**：
+
 - 语音交互（P1，MVP 后第一优先）
 - 任务发布/申请/评判（P1）
 - Chain Hub 技能市场（P2）

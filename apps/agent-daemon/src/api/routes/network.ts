@@ -179,9 +179,8 @@ export function registerNetworkRoutes(app: FastifyInstance, db: Database): void 
 
         if (q) {
             const lower = q.toLowerCase();
-            agents = agents.filter(a =>
-                a.displayName.toLowerCase().includes(lower) ||
-                a.publicKey.toLowerCase().includes(lower)
+            agents = agents.filter(
+                (a) => a.displayName.toLowerCase().includes(lower) || a.publicKey.toLowerCase().includes(lower),
             );
         }
 
@@ -244,11 +243,7 @@ export function registerNetworkRoutes(app: FastifyInstance, db: Database): void 
         const id = randomBytes(16).toString('hex');
         const now = Date.now();
 
-        stmts.insertMessage.run(
-            id, from, to, type,
-            JSON.stringify(payload || {}),
-            now, now + MESSAGE_TTL_MS,
-        );
+        stmts.insertMessage.run(id, from, to, type, JSON.stringify(payload || {}), now, now + MESSAGE_TTL_MS);
 
         return { messageId: id, delivered: false };
     });
@@ -279,7 +274,7 @@ export function registerNetworkRoutes(app: FastifyInstance, db: Database): void 
         }
 
         return {
-            messages: rows.map(r => ({
+            messages: rows.map((r) => ({
                 id: r.id,
                 from: r.from_pubkey,
                 to: r.to_pubkey,
@@ -304,7 +299,7 @@ export function registerNetworkRoutes(app: FastifyInstance, db: Database): void 
 function formatAgent(row: Record<string, unknown>) {
     return {
         publicKey: row.public_key as string,
-        displayName: row.display_name as string || `Agent ${(row.public_key as string).slice(0, 8)}`,
+        displayName: (row.display_name as string) || `Agent ${(row.public_key as string).slice(0, 8)}`,
         capabilities: JSON.parse(String(row.capabilities || '[]')),
         endpoint: row.endpoint as string | null,
         version: row.version as string,

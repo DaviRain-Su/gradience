@@ -1,11 +1,11 @@
 ---
 linear-id: GRA-225b
-title: "[Daemon] Auto-Apply Reputation Policy on Wallet Creation"
+title: '[Daemon] Auto-Apply Reputation Policy on Wallet Creation'
 status: todo
 priority: P1
-project: "Agent Daemon"
+project: 'Agent Daemon'
 created: 2026-04-05
-assignee: ""
+assignee: ''
 tags: [task, p1, daemon, reputation, policy, ows]
 ---
 
@@ -25,29 +25,29 @@ tags: [task, p1, daemon, reputation, policy, ows]
 async createWallet(input: CreateWalletInput): Promise<Wallet> {
   // 1. 创建钱包
   const wallet = await this.createWalletInternal(input);
-  
+
   // 2. 获取声誉 (新增)
   const reputation = await this.chainHubReputation.getReputation(
     input.agentAddress
   );
-  
+
   // 3. 计算策略 (新增)
   const policy = calculatePolicyFromReputation(reputation.score);
-  
+
   // 4. 创建声誉策略 (新增)
   const policyRecord = await this.policyEngine.createPolicy({
     name: `Reputation-Derived: ${policy.tier}`,
     walletId: wallet.id,
     rules: convertToDaemonRules(policy),
   });
-  
+
   // 5. 存储声誉关联 (新增)
   await this.walletStore.update(wallet.id, {
     reputationScore: reputation.score,
     reputationTier: policy.tier,
     policyId: policyRecord.id,
   });
-  
+
   return wallet;
 }
 ```

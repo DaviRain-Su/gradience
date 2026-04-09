@@ -11,24 +11,26 @@ This document describes the unified LLM configuration system that provides a sin
 **New file: `packages/soul-engine/src/llm-config.ts`**
 
 Exports:
+
 - `LLMProvider` - Type for supported providers ('openai' | 'claude' | 'moonshot')
 - `LLMConfig` - Unified configuration interface
 - `LLMProviderConfig` - Provider-specific configuration
 - Constants:
-  - `LLM_DEFAULT_BASE_URLS` - Default API endpoints
-  - `LLM_DEFAULT_MODELS` - Default model names
-  - `LLM_API_KEY_ENV` - Environment variable names
-  - `LLM_DEFAULTS` - Default configuration values
+    - `LLM_DEFAULT_BASE_URLS` - Default API endpoints
+    - `LLM_DEFAULT_MODELS` - Default model names
+    - `LLM_API_KEY_ENV` - Environment variable names
+    - `LLM_DEFAULTS` - Default configuration values
 - Functions:
-  - `buildLLMConfig()` - Build config from environment variables
-  - `getLLMProviderConfig()` - Get provider-specific config
-  - `getLLMApiKey()` - Get API key for provider
-  - `isLLMConfigured()` - Check if LLM is configured
-  - `detectProviderFromApiKey()` - Auto-detect provider from API key
-  - `validateLLMConfig()` - Validate configuration
-  - `createLLMHeaders()` - Create API headers
+    - `buildLLMConfig()` - Build config from environment variables
+    - `getLLMProviderConfig()` - Get provider-specific config
+    - `getLLMApiKey()` - Get API key for provider
+    - `isLLMConfigured()` - Check if LLM is configured
+    - `detectProviderFromApiKey()` - Auto-detect provider from API key
+    - `validateLLMConfig()` - Validate configuration
+    - `createLLMHeaders()` - Create API headers
 
 **Updated files:**
+
 - `packages/soul-engine/src/index.ts` - Exports llm-config
 - `packages/soul-engine/src/matching/llm-analyzer.ts` - Uses unified config
 - `packages/soul-engine/src/matching/index.ts` - Re-exports types
@@ -40,6 +42,7 @@ Exports:
 **Updated file: `apps/agent-daemon/src/config.ts`**
 
 Added new config fields:
+
 - `llmProvider` - Provider type ('openai' | 'claude' | 'moonshot')
 - `llmModel` - Model name
 - `llmApiKey` - API key
@@ -49,15 +52,18 @@ Added new config fields:
 - `llmTimeout` - Request timeout
 
 Updated fields (now optional, fallback to unified config):
+
 - `judgeProvider` - Falls back to llmProvider
 - `judgeModel` - Falls back to llmModel
 
 New functions:
+
 - `getUnifiedLLMConfig()` - Extract unified config from daemon config
 - `getEvaluatorLLMConfig()` - Get evaluator-specific config with fallback
 - `isLLMConfigured()` - Check if LLM is configured
 
 Environment variable support:
+
 - `LLM_PROVIDER` - Set provider
 - `LLM_MODEL` - Set model
 - `LLM_API_KEY` - Set API key (unified)
@@ -111,14 +117,14 @@ const config = buildLLMConfig();
 
 // Or with explicit values
 const customConfig = buildLLMConfig({
-  provider: 'claude',
-  model: 'claude-3-opus',
-  apiKey: 'your-api-key',
+    provider: 'claude',
+    model: 'claude-3-opus',
+    apiKey: 'your-api-key',
 });
 
 // Check if configured
 if (isLLMConfigured(config)) {
-  // Use LLM
+    // Use LLM
 }
 ```
 
@@ -131,7 +137,7 @@ const daemonConfig = loadConfig();
 const llmConfig = getUnifiedLLMConfig(daemonConfig);
 
 if (isLLMConfigured(daemonConfig)) {
-  // Use unified LLM config
+    // Use unified LLM config
 }
 ```
 
@@ -160,9 +166,11 @@ The system maintains backward compatibility:
 ## Testing
 
 Tests added in:
+
 - `packages/soul-engine/src/llm-config.test.ts` - 16 tests covering all config functions
 
 Run tests:
+
 ```bash
 cd packages/soul-engine && npm test
 ```
@@ -176,12 +184,14 @@ No changes required. The system automatically uses new unified config while main
 ### For Developers
 
 **Old way (still works):**
+
 ```typescript
 const config = loadConfig();
 const llmConfig = getLLMProviderConfig(config.judgeProvider);
 ```
 
 **New way (recommended):**
+
 ```typescript
 const config = loadConfig();
 const llmConfig = getUnifiedLLMConfig(config);
@@ -190,6 +200,7 @@ const llmConfig = getUnifiedLLMConfig(config);
 ## Files Modified
 
 ### soul-engine
+
 - `packages/soul-engine/src/llm-config.ts` (new)
 - `packages/soul-engine/src/llm-config.test.ts` (new)
 - `packages/soul-engine/src/index.ts`
@@ -199,6 +210,7 @@ const llmConfig = getUnifiedLLMConfig(config);
 - `packages/soul-engine/package.json`
 
 ### agent-daemon
+
 - `apps/agent-daemon/src/config.ts`
 - `apps/agent-daemon/src/evaluator/llm-client.ts`
 - `apps/agent-daemon/src/evaluator/index.ts`

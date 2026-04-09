@@ -7,506 +7,396 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getI64Decoder,
-  getI64Encoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getI64Decoder,
+    getI64Encoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type Codec,
+    type Decoder,
+    type Encoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const POST_TASK_DISCRIMINATOR = 1;
 
 export function getPostTaskDiscriminatorBytes() {
-  return getU8Encoder().encode(POST_TASK_DISCRIMINATOR);
+    return getU8Encoder().encode(POST_TASK_DISCRIMINATOR);
 }
 
 export type PostTaskInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountPoster extends string | AccountMeta<string> = string,
-  TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountTask extends string | AccountMeta<string> = string,
-  TAccountEscrow extends string | AccountMeta<string> = string,
-  TAccountJudgePool extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
-  TAccountEscrowAta extends string | AccountMeta<string> = string,
-  TAccountMintAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountPoster extends string | AccountMeta<string> = string,
+    TAccountConfig extends string | AccountMeta<string> = string,
+    TAccountTask extends string | AccountMeta<string> = string,
+    TAccountEscrow extends string | AccountMeta<string> = string,
+    TAccountJudgePool extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
+    TAccountEscrowAta extends string | AccountMeta<string> = string,
+    TAccountMintAccount extends string | AccountMeta<string> = string,
+    TAccountTokenProgram extends string | AccountMeta<string> = string,
+    TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountPoster extends string
-        ? WritableSignerAccount<TAccountPoster> &
-            AccountSignerMeta<TAccountPoster>
-        : TAccountPoster,
-      TAccountConfig extends string
-        ? WritableAccount<TAccountConfig>
-        : TAccountConfig,
-      TAccountTask extends string
-        ? WritableAccount<TAccountTask>
-        : TAccountTask,
-      TAccountEscrow extends string
-        ? WritableAccount<TAccountEscrow>
-        : TAccountEscrow,
-      TAccountJudgePool extends string
-        ? ReadonlyAccount<TAccountJudgePool>
-        : TAccountJudgePool,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      TAccountPosterTokenAccount extends string
-        ? WritableAccount<TAccountPosterTokenAccount>
-        : TAccountPosterTokenAccount,
-      TAccountEscrowAta extends string
-        ? WritableAccount<TAccountEscrowAta>
-        : TAccountEscrowAta,
-      TAccountMintAccount extends string
-        ? ReadonlyAccount<TAccountMintAccount>
-        : TAccountMintAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountPoster extends string
+                ? WritableSignerAccount<TAccountPoster> & AccountSignerMeta<TAccountPoster>
+                : TAccountPoster,
+            TAccountConfig extends string ? WritableAccount<TAccountConfig> : TAccountConfig,
+            TAccountTask extends string ? WritableAccount<TAccountTask> : TAccountTask,
+            TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow,
+            TAccountJudgePool extends string ? ReadonlyAccount<TAccountJudgePool> : TAccountJudgePool,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            TAccountPosterTokenAccount extends string
+                ? WritableAccount<TAccountPosterTokenAccount>
+                : TAccountPosterTokenAccount,
+            TAccountEscrowAta extends string ? WritableAccount<TAccountEscrowAta> : TAccountEscrowAta,
+            TAccountMintAccount extends string ? ReadonlyAccount<TAccountMintAccount> : TAccountMintAccount,
+            TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram,
+            TAccountAssociatedTokenProgram extends string
+                ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+                : TAccountAssociatedTokenProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type PostTaskInstructionData = {
-  discriminator: number;
-  evalRef: string;
-  deadline: bigint;
-  judgeDeadline: bigint;
-  judgeMode: number;
-  judge: Array<number>;
-  category: number;
-  mint: Array<number>;
-  minStake: bigint;
-  reward: bigint;
+    discriminator: number;
+    evalRef: string;
+    deadline: bigint;
+    judgeDeadline: bigint;
+    judgeMode: number;
+    judge: Array<number>;
+    category: number;
+    mint: Array<number>;
+    minStake: bigint;
+    reward: bigint;
 };
 
 export type PostTaskInstructionDataArgs = {
-  evalRef: string;
-  deadline: number | bigint;
-  judgeDeadline: number | bigint;
-  judgeMode: number;
-  judge: Array<number>;
-  category: number;
-  mint: Array<number>;
-  minStake: number | bigint;
-  reward: number | bigint;
+    evalRef: string;
+    deadline: number | bigint;
+    judgeDeadline: number | bigint;
+    judgeMode: number;
+    judge: Array<number>;
+    category: number;
+    mint: Array<number>;
+    minStake: number | bigint;
+    reward: number | bigint;
 };
 
 export function getPostTaskInstructionDataEncoder(): Encoder<PostTaskInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ["discriminator", getU8Encoder()],
-      ["evalRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ["deadline", getI64Encoder()],
-      ["judgeDeadline", getI64Encoder()],
-      ["judgeMode", getU8Encoder()],
-      ["judge", getArrayEncoder(getU8Encoder(), { size: 32 })],
-      ["category", getU8Encoder()],
-      ["mint", getArrayEncoder(getU8Encoder(), { size: 32 })],
-      ["minStake", getU64Encoder()],
-      ["reward", getU64Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: POST_TASK_DISCRIMINATOR }),
-  );
+    return transformEncoder(
+        getStructEncoder([
+            ['discriminator', getU8Encoder()],
+            ['evalRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+            ['deadline', getI64Encoder()],
+            ['judgeDeadline', getI64Encoder()],
+            ['judgeMode', getU8Encoder()],
+            ['judge', getArrayEncoder(getU8Encoder(), { size: 32 })],
+            ['category', getU8Encoder()],
+            ['mint', getArrayEncoder(getU8Encoder(), { size: 32 })],
+            ['minStake', getU64Encoder()],
+            ['reward', getU64Encoder()],
+        ]),
+        value => ({ ...value, discriminator: POST_TASK_DISCRIMINATOR }),
+    );
 }
 
 export function getPostTaskInstructionDataDecoder(): Decoder<PostTaskInstructionData> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["evalRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["deadline", getI64Decoder()],
-    ["judgeDeadline", getI64Decoder()],
-    ["judgeMode", getU8Decoder()],
-    ["judge", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["category", getU8Decoder()],
-    ["mint", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["minStake", getU64Decoder()],
-    ["reward", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['evalRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['deadline', getI64Decoder()],
+        ['judgeDeadline', getI64Decoder()],
+        ['judgeMode', getU8Decoder()],
+        ['judge', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['category', getU8Decoder()],
+        ['mint', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['minStake', getU64Decoder()],
+        ['reward', getU64Decoder()],
+    ]);
 }
 
-export function getPostTaskInstructionDataCodec(): Codec<
-  PostTaskInstructionDataArgs,
-  PostTaskInstructionData
-> {
-  return combineCodec(
-    getPostTaskInstructionDataEncoder(),
-    getPostTaskInstructionDataDecoder(),
-  );
+export function getPostTaskInstructionDataCodec(): Codec<PostTaskInstructionDataArgs, PostTaskInstructionData> {
+    return combineCodec(getPostTaskInstructionDataEncoder(), getPostTaskInstructionDataDecoder());
 }
 
 export type PostTaskAsyncInput<
-  TAccountPoster extends string = string,
-  TAccountConfig extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountJudgePool extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
+    TAccountPoster extends string = string,
+    TAccountConfig extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountJudgePool extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
+    TAccountAssociatedTokenProgram extends string = string,
 > = {
-  poster: TransactionSigner<TAccountPoster>;
-  config: Address<TAccountConfig>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  judgePool: Address<TAccountJudgePool>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  evalRef: PostTaskInstructionDataArgs["evalRef"];
-  deadline: PostTaskInstructionDataArgs["deadline"];
-  judgeDeadline: PostTaskInstructionDataArgs["judgeDeadline"];
-  judgeMode: PostTaskInstructionDataArgs["judgeMode"];
-  judge: PostTaskInstructionDataArgs["judge"];
-  category: PostTaskInstructionDataArgs["category"];
-  mint: PostTaskInstructionDataArgs["mint"];
-  minStake: PostTaskInstructionDataArgs["minStake"];
-  reward: PostTaskInstructionDataArgs["reward"];
+    poster: TransactionSigner<TAccountPoster>;
+    config: Address<TAccountConfig>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    judgePool: Address<TAccountJudgePool>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
+    associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+    evalRef: PostTaskInstructionDataArgs['evalRef'];
+    deadline: PostTaskInstructionDataArgs['deadline'];
+    judgeDeadline: PostTaskInstructionDataArgs['judgeDeadline'];
+    judgeMode: PostTaskInstructionDataArgs['judgeMode'];
+    judge: PostTaskInstructionDataArgs['judge'];
+    category: PostTaskInstructionDataArgs['category'];
+    mint: PostTaskInstructionDataArgs['mint'];
+    minStake: PostTaskInstructionDataArgs['minStake'];
+    reward: PostTaskInstructionDataArgs['reward'];
 };
 
 export async function getPostTaskInstructionAsync<
-  TAccountPoster extends string,
-  TAccountConfig extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountJudgePool extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountPoster extends string,
+    TAccountConfig extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountJudgePool extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TAccountAssociatedTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: PostTaskAsyncInput<
-    TAccountPoster,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgePool,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: PostTaskAsyncInput<
+        TAccountPoster,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgePool,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  PostTaskInstruction<
-    TProgramAddress,
-    TAccountPoster,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgePool,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >
+    PostTaskInstruction<
+        TProgramAddress,
+        TAccountPoster,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgePool,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    poster: { value: input.poster ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    judgePool: { value: input.judgePool ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        poster: { value: input.poster ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        judgePool: { value: input.judgePool ?? null, isWritable: false },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+        associatedTokenProgram: {
+            value: input.associatedTokenProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Original args.
-  const args = { ...input };
+    // Original args.
+    const args = { ...input };
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.poster),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.judgePool),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-    ],
-    data: getPostTaskInstructionDataEncoder().encode(
-      args as PostTaskInstructionDataArgs,
-    ),
-    programAddress,
-  } as PostTaskInstruction<
-    TProgramAddress,
-    TAccountPoster,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgePool,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.poster),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.judgePool),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+            getAccountMeta(accounts.associatedTokenProgram),
+        ],
+        data: getPostTaskInstructionDataEncoder().encode(args as PostTaskInstructionDataArgs),
+        programAddress,
+    } as PostTaskInstruction<
+        TProgramAddress,
+        TAccountPoster,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgePool,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >);
 }
 
 export type PostTaskInput<
-  TAccountPoster extends string = string,
-  TAccountConfig extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountJudgePool extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
+    TAccountPoster extends string = string,
+    TAccountConfig extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountJudgePool extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
+    TAccountAssociatedTokenProgram extends string = string,
 > = {
-  poster: TransactionSigner<TAccountPoster>;
-  config: Address<TAccountConfig>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  judgePool: Address<TAccountJudgePool>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  evalRef: PostTaskInstructionDataArgs["evalRef"];
-  deadline: PostTaskInstructionDataArgs["deadline"];
-  judgeDeadline: PostTaskInstructionDataArgs["judgeDeadline"];
-  judgeMode: PostTaskInstructionDataArgs["judgeMode"];
-  judge: PostTaskInstructionDataArgs["judge"];
-  category: PostTaskInstructionDataArgs["category"];
-  mint: PostTaskInstructionDataArgs["mint"];
-  minStake: PostTaskInstructionDataArgs["minStake"];
-  reward: PostTaskInstructionDataArgs["reward"];
+    poster: TransactionSigner<TAccountPoster>;
+    config: Address<TAccountConfig>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    judgePool: Address<TAccountJudgePool>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
+    associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+    evalRef: PostTaskInstructionDataArgs['evalRef'];
+    deadline: PostTaskInstructionDataArgs['deadline'];
+    judgeDeadline: PostTaskInstructionDataArgs['judgeDeadline'];
+    judgeMode: PostTaskInstructionDataArgs['judgeMode'];
+    judge: PostTaskInstructionDataArgs['judge'];
+    category: PostTaskInstructionDataArgs['category'];
+    mint: PostTaskInstructionDataArgs['mint'];
+    minStake: PostTaskInstructionDataArgs['minStake'];
+    reward: PostTaskInstructionDataArgs['reward'];
 };
 
 export function getPostTaskInstruction<
-  TAccountPoster extends string,
-  TAccountConfig extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountJudgePool extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountPoster extends string,
+    TAccountConfig extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountJudgePool extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TAccountAssociatedTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: PostTaskInput<
-    TAccountPoster,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgePool,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: PostTaskInput<
+        TAccountPoster,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgePool,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): PostTaskInstruction<
-  TProgramAddress,
-  TAccountPoster,
-  TAccountConfig,
-  TAccountTask,
-  TAccountEscrow,
-  TAccountJudgePool,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram,
-  TAccountPosterTokenAccount,
-  TAccountEscrowAta,
-  TAccountMintAccount,
-  TAccountTokenProgram,
-  TAccountAssociatedTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    poster: { value: input.poster ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    judgePool: { value: input.judgePool ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Original args.
-  const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.poster),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.judgePool),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-    ],
-    data: getPostTaskInstructionDataEncoder().encode(
-      args as PostTaskInstructionDataArgs,
-    ),
-    programAddress,
-  } as PostTaskInstruction<
     TProgramAddress,
     TAccountPoster,
     TAccountConfig,
@@ -521,73 +411,142 @@ export function getPostTaskInstruction<
     TAccountMintAccount,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        poster: { value: input.poster ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        judgePool: { value: input.judgePool ?? null, isWritable: false },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+        associatedTokenProgram: {
+            value: input.associatedTokenProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Original args.
+    const args = { ...input };
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.poster),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.judgePool),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+            getAccountMeta(accounts.associatedTokenProgram),
+        ],
+        data: getPostTaskInstructionDataEncoder().encode(args as PostTaskInstructionDataArgs),
+        programAddress,
+    } as PostTaskInstruction<
+        TProgramAddress,
+        TAccountPoster,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgePool,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >);
 }
 
 export type ParsedPostTaskInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    poster: TAccountMetas[0];
-    config: TAccountMetas[1];
-    task: TAccountMetas[2];
-    escrow: TAccountMetas[3];
-    judgePool: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
-    eventAuthority: TAccountMetas[6];
-    gradienceProgram: TAccountMetas[7];
-    posterTokenAccount?: TAccountMetas[8] | undefined;
-    escrowAta?: TAccountMetas[9] | undefined;
-    mintAccount?: TAccountMetas[10] | undefined;
-    tokenProgram?: TAccountMetas[11] | undefined;
-    associatedTokenProgram?: TAccountMetas[12] | undefined;
-  };
-  data: PostTaskInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        poster: TAccountMetas[0];
+        config: TAccountMetas[1];
+        task: TAccountMetas[2];
+        escrow: TAccountMetas[3];
+        judgePool: TAccountMetas[4];
+        systemProgram: TAccountMetas[5];
+        eventAuthority: TAccountMetas[6];
+        gradienceProgram: TAccountMetas[7];
+        posterTokenAccount?: TAccountMetas[8] | undefined;
+        escrowAta?: TAccountMetas[9] | undefined;
+        mintAccount?: TAccountMetas[10] | undefined;
+        tokenProgram?: TAccountMetas[11] | undefined;
+        associatedTokenProgram?: TAccountMetas[12] | undefined;
+    };
+    data: PostTaskInstructionData;
 };
 
-export function parsePostTaskInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parsePostTaskInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPostTaskInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 13) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  const getNextOptionalAccount = () => {
-    const accountMeta = getNextAccount();
-    return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS
-      ? undefined
-      : accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      poster: getNextAccount(),
-      config: getNextAccount(),
-      task: getNextAccount(),
-      escrow: getNextAccount(),
-      judgePool: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-      posterTokenAccount: getNextOptionalAccount(),
-      escrowAta: getNextOptionalAccount(),
-      mintAccount: getNextOptionalAccount(),
-      tokenProgram: getNextOptionalAccount(),
-      associatedTokenProgram: getNextOptionalAccount(),
-    },
-    data: getPostTaskInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 13) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    const getNextOptionalAccount = () => {
+        const accountMeta = getNextAccount();
+        return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS ? undefined : accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            poster: getNextAccount(),
+            config: getNextAccount(),
+            task: getNextAccount(),
+            escrow: getNextAccount(),
+            judgePool: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+            posterTokenAccount: getNextOptionalAccount(),
+            escrowAta: getNextOptionalAccount(),
+            mintAccount: getNextOptionalAccount(),
+            tokenProgram: getNextOptionalAccount(),
+            associatedTokenProgram: getNextOptionalAccount(),
+        },
+        data: getPostTaskInstructionDataDecoder().decode(instruction.data),
+    };
 }

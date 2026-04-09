@@ -1,11 +1,21 @@
 import { AccountRole, type AccountMeta, type Address } from '@solana/kit';
-import {
-    GRADIENCE_PROGRAM_ADDRESS,
-    type GradienceSDK,
-    findEventAuthorityPda,
-} from '@gradiences/arena-sdk';
+import { GRADIENCE_PROGRAM_ADDRESS, type GradienceSDK, findEventAuthorityPda } from '@gradiences/arena-sdk';
 import type { KeypairAdapter } from '@gradiences/arena-sdk';
-import { CliError, isMockTaskMode, parseFlags, requiredFlag, parseU64, parseCategories, appendRemainingAccounts, findConfigPda, findStakePda, findReputationPda, findJudgePoolPda, fetchMinJudgeStake, fetchStakeCategories } from '../types.js';
+import {
+    CliError,
+    isMockTaskMode,
+    parseFlags,
+    requiredFlag,
+    parseU64,
+    parseCategories,
+    appendRemainingAccounts,
+    findConfigPda,
+    findStakePda,
+    findReputationPda,
+    findJudgePoolPda,
+    fetchMinJudgeStake,
+    fetchStakeCategories,
+} from '../types.js';
 import { loadConfig, createSdk } from '../utils/index.js';
 import { printJson } from '../utils/output.js';
 import { createKeypairAdapter } from '../utils/sdk.js';
@@ -16,11 +26,7 @@ export function isJudgeCommand(value: string): value is JudgeCommand {
     return value === 'register' || value === 'unstake';
 }
 
-export async function handleJudgeCommand(
-    judgeArgs: string[],
-    env: NodeJS.ProcessEnv,
-    noDna: boolean,
-): Promise<void> {
+export async function handleJudgeCommand(judgeArgs: string[], env: NodeJS.ProcessEnv, noDna: boolean): Promise<void> {
     const command = judgeArgs[0];
     if (!command || !isJudgeCommand(command)) {
         throw new CliError('INVALID_ARGUMENT', 'Usage: gradience judge <register|unstake> ...');
@@ -80,7 +86,7 @@ export async function handleJudgeCommand(
         );
 
         const poolMetas = await Promise.all(
-            categories.map(async (category) => {
+            categories.map(async category => {
                 const [pool] = await findJudgePoolPda(category);
                 return { address: pool, role: AccountRole.WRITABLE } as AccountMeta;
             }),
@@ -108,7 +114,7 @@ export async function handleJudgeCommand(
         { programAddress: GRADIENCE_PROGRAM_ADDRESS },
     );
     const poolMetas = await Promise.all(
-        categories.map(async (category) => {
+        categories.map(async category => {
             const [pool] = await findJudgePoolPda(category);
             return { address: pool, role: AccountRole.WRITABLE } as AccountMeta;
         }),

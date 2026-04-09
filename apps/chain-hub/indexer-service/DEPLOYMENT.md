@@ -19,20 +19,22 @@ docker-compose logs -f
 
 ## 服务组件
 
-| 服务 | 描述 | 端口 |
-|------|------|------|
-| `chain-hub-indexer-db` | PostgreSQL 数据库 | 5433 |
-| `indexer-service-migrate-1` | 数据库迁移服务 | - |
-| `indexer-service-indexer-1` | Indexer API 服务 | 8788 |
+| 服务                        | 描述              | 端口 |
+| --------------------------- | ----------------- | ---- |
+| `chain-hub-indexer-db`      | PostgreSQL 数据库 | 5433 |
+| `indexer-service-migrate-1` | 数据库迁移服务    | -    |
+| `indexer-service-indexer-1` | Indexer API 服务  | 8788 |
 
 ## 验证部署
 
 ### 1. 检查容器状态
+
 ```bash
 docker ps | grep indexer
 ```
 
 ### 2. 健康检查脚本
+
 ```bash
 # 使用健康检查脚本
 ./scripts/health-check.sh
@@ -42,6 +44,7 @@ docker ps | grep indexer
 ```
 
 ### 3. 测试 API 端点
+
 ```bash
 # 测试技能列表
 curl http://localhost:8788/api/skills
@@ -54,27 +57,30 @@ curl http://localhost:8788/api/invocations
 ```
 
 ### 3. 检查数据库
+
 ```bash
 docker exec chain-hub-indexer-db psql -U gradience -d gradience_chain_hub -c "\dt"
 ```
 
 ## 环境变量配置
 
-| 变量 | 描述 | 默认值 |
-|------|------|--------|
-| `POSTGRES_PASSWORD` | 数据库密码 | gradience_dev |
-| `POSTGRES_PORT` | 数据库端口 | 5433 |
-| `DATABASE_URL` | 数据库连接字符串 | - |
-| `INDEXER_BIND_ADDR` | 服务绑定地址 | 0.0.0.0:8788 |
+| 变量                   | 描述                       | 默认值                                       |
+| ---------------------- | -------------------------- | -------------------------------------------- |
+| `POSTGRES_PASSWORD`    | 数据库密码                 | gradience_dev                                |
+| `POSTGRES_PORT`        | 数据库端口                 | 5433                                         |
+| `DATABASE_URL`         | 数据库连接字符串           | -                                            |
+| `INDEXER_BIND_ADDR`    | 服务绑定地址               | 0.0.0.0:8788                                 |
 | `CHAIN_HUB_PROGRAM_ID` | Chain Hub 程序 ID (devnet) | 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec |
-| `SOLANA_WS_URL` | Solana WebSocket URL | wss://api.devnet.solana.com |
-| `SOLANA_COMMITMENT` | Solana 确认级别 | confirmed |
-| `SOLANA_SUBSCRIBE` | 启用 Solana 实时订阅 | true |
+| `SOLANA_WS_URL`        | Solana WebSocket URL       | wss://api.devnet.solana.com                  |
+| `SOLANA_COMMITMENT`    | Solana 确认级别            | confirmed                                    |
+| `SOLANA_SUBSCRIBE`     | 启用 Solana 实时订阅       | true                                         |
 
 ## 故障排除
 
 ### 端口冲突
+
 如果端口 8788 或 5433 被占用：
+
 ```bash
 # 修改 .env 文件中的端口配置
 POSTGRES_PORT=5434
@@ -82,13 +88,16 @@ POSTGRES_PORT=5434
 ```
 
 ### 数据库迁移失败
+
 如果迁移失败，重置数据卷：
+
 ```bash
 docker-compose down -v
 docker-compose up -d
 ```
 
 ### 重建服务
+
 ```bash
 docker-compose down
 docker-compose up -d --build
@@ -99,12 +108,12 @@ docker-compose up -d --build
 ### 修复内容
 
 1. **Dockerfile 更新**: 将 Rust 版本从 1.75 升级到 1.86
-   - 原因: 依赖包需要更新的 Rust 版本支持
-   - 修改: `FROM rust:1.75-slim` → `FROM rust:1.86-slim`
+    - 原因: 依赖包需要更新的 Rust 版本支持
+    - 修改: `FROM rust:1.75-slim` → `FROM rust:1.86-slim`
 
 2. **迁移脚本修复**: 添加 `IF NOT EXISTS` 到所有 CREATE INDEX 语句
-   - 原因: 避免重复运行迁移时的索引已存在错误
-   - 修改: `CREATE INDEX` → `CREATE INDEX IF NOT EXISTS`
+    - 原因: 避免重复运行迁移时的索引已存在错误
+    - 修改: `CREATE INDEX` → `CREATE INDEX IF NOT EXISTS`
 
 3. **创建 .env 文件**: 从 .env.example 复制并配置
 
@@ -114,9 +123,9 @@ docker-compose up -d --build
 - ✅ 数据库迁移成功执行
 - ✅ Indexer 服务启动成功 (端口 8788)
 - ✅ API 端点响应正常:
-  - `/api/skills` - 返回空数组 []
-  - `/api/protocols` - 返回空数组 []
-  - `/api/invocations` - 返回空数组 []
+    - `/api/skills` - 返回空数组 []
+    - `/api/protocols` - 返回空数组 []
+    - `/api/invocations` - 返回空数组 []
 - ✅ 数据库表已创建: skills, protocols, royalties, invocations
 
 ## 2026-04-05 Solana 订阅集成
@@ -124,21 +133,22 @@ docker-compose up -d --build
 ### 重大更新
 
 1. **Solana 实时订阅默认启用**
-   - `SOLANA_SUBSCRIBE` 默认值从 `false` 改为 `true`
-   - Indexer 现在默认连接 Solana devnet 实时索引事件
+    - `SOLANA_SUBSCRIBE` 默认值从 `false` 改为 `true`
+    - Indexer 现在默认连接 Solana devnet 实时索引事件
 
 2. **Chain Hub Program ID 更新**
-   - 从占位符 `11111111111111111111111111111111` 改为实际 devnet Program ID
-   - 新默认值: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec`
+    - 从占位符 `11111111111111111111111111111111` 改为实际 devnet Program ID
+    - 新默认值: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec`
 
 3. **main.rs 集成 SolanaSubscriber**
-   - 启动时自动初始化 WebSocket 连接
-   - 实时接收链上事件并写入数据库
-   - 通过 WebSocket 推送到前端
+    - 启动时自动初始化 WebSocket 连接
+    - 实时接收链上事件并写入数据库
+    - 通过 WebSocket 推送到前端
 
 ### 验证 Solana 连接
 
 启动后查看日志，应该显示:
+
 ```
 Starting Solana subscriber...
   Program ID: 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec

@@ -10,6 +10,7 @@
 **"首个带信用评分的 Agent 身份系统"**
 
 在 ows.domains 基础上叠加 Gradience Reputation：
+
 - ✅ OWS 原生钱包 (Track 03)
 - ✅ ENS 跨链身份 (Track 03)
 - ✅ **声誉评分系统** (差异化)
@@ -83,14 +84,15 @@ Open http://localhost:3002
 
 ## 📊 Reputation System
 
-| Score | Level | Daily Limit | Perks |
-|-------|-------|-------------|-------|
-| 0-39 | Bronze | $500 | Basic tokens |
-| 40-59 | Silver | $650 | More tokens |
-| 60-79 | Gold | $800 | Less approval |
-| 80-100 | Platinum | $1000+ | All features |
+| Score  | Level    | Daily Limit | Perks         |
+| ------ | -------- | ----------- | ------------- |
+| 0-39   | Bronze   | $500        | Basic tokens  |
+| 40-59  | Silver   | $650        | More tokens   |
+| 60-79  | Gold     | $800        | Less approval |
+| 80-100 | Platinum | $1000+      | All features  |
 
 **Factors**:
+
 - Task completion rate
 - Judge ratings
 - Payment speed
@@ -102,6 +104,7 @@ Open http://localhost:3002
 ## 🎨 Demo Scenarios
 
 ### 1. New Agent Registration
+
 ```bash
 $ gradience agent register --name "trading-agent"
 
@@ -115,6 +118,7 @@ $ gradience agent register --name "trading-agent"
 ```
 
 ### 2. Task Completion → Reputation Boost
+
 ```bash
 $ gradience reputation simulate trading-agent --score 5 --amount 100
 
@@ -125,6 +129,7 @@ $ gradience reputation simulate trading-agent --score 5 --amount 100
 ```
 
 ### 3. High Reputation = More Freedom
+
 ```bash
 $ gradience wallet check-policy elite-trader.ows.eth
 
@@ -141,17 +146,20 @@ Policy:
 ## 🏆 Hackathon Submission
 
 **Tracks**:
+
 - Track 02: Agent Spend Governance ⭐⭐⭐⭐⭐
 - Track 04: Multi-Agent Systems ⭐⭐⭐⭐⭐
 - Track 03: The Grid ⭐⭐⭐⭐
 
 **Tech Stack**:
+
 - OWS CLI (wallet creation)
 - ENS (cross-chain identity)
 - TypeScript/Node.js
 - Next.js (demo web)
 
 **Differentiation**:
+
 - Only system with reputation scores
 - Policy engine based on track record
 - Wallet-per-Agent with inheritance

@@ -7,14 +7,14 @@
 
 ## 修仙 ↔ Agent 世界 映射表
 
-| 修仙概念 | Agent 世界对应 | 可交易？ | 原因 |
-|---------|--------------|---------|------|
-| 本命瓷 | 原始个人数据（Soul Data） | ❌ 绝对不行 | 碎了你就"死"了——数据泄露 = 深度伪造诈骗 |
-| 元神 | 你的主 Agent（私钥控制权）| ❌ 绝对不行 | 卖出去就是夺舍，别人用你的身份作恶 |
-| 功法 | Skill（代码 + 提示词） | ✅ 可以 | 学了不会损失你，只是多一种能力 |
-| 法宝 | Tool（Chain Hub 里的工具）| ✅ 可租赁 | 使用权，不是所有权，用完还回去 |
-| 灵石 | OKB（代币） | ✅ 基础货币 | 一切交易的媒介 |
-| 洞天福地 | Personal Data Pod（本地存储）| ❌ 私人领地 | 你的修炼场所，绝对隐私 |
+| 修仙概念 | Agent 世界对应                | 可交易？    | 原因                                    |
+| -------- | ----------------------------- | ----------- | --------------------------------------- |
+| 本命瓷   | 原始个人数据（Soul Data）     | ❌ 绝对不行 | 碎了你就"死"了——数据泄露 = 深度伪造诈骗 |
+| 元神     | 你的主 Agent（私钥控制权）    | ❌ 绝对不行 | 卖出去就是夺舍，别人用你的身份作恶      |
+| 功法     | Skill（代码 + 提示词）        | ✅ 可以     | 学了不会损失你，只是多一种能力          |
+| 法宝     | Tool（Chain Hub 里的工具）    | ✅ 可租赁   | 使用权，不是所有权，用完还回去          |
+| 灵石     | OKB（代币）                   | ✅ 基础货币 | 一切交易的媒介                          |
+| 洞天福地 | Personal Data Pod（本地存储） | ❌ 私人领地 | 你的修炼场所，绝对隐私                  |
 
 ---
 
@@ -28,11 +28,13 @@ Agent：爬虫技能、合约审计技能、数据分析技能
 ```
 
 形式：
+
 - 不是文档，是**可执行代码**
 - 买家的 Agent "学"了之后，获得这个能力
 - 卖家收**传功费**（一次性买断）或**使用税**（每次调用抽成，x402 实现）
 
 在 Chain Hub 里的体现：
+
 ```
 chainhub skill buy "crawler/18-moves"    # 一次性购买
 chainhub skill use "data/analysis"       # 按次调用（x402 微支付）
@@ -46,11 +48,13 @@ Agent：微信读书连接器、Apple Health API、Uniswap 调用接口
 ```
 
 形式：
+
 - 使用权，不是所有权
 - 按次租赁（像共享单车）
 - 或订阅制（像会员）
 
 在 Chain Hub 里的体现：
+
 ```
 chainhub tool rent "wechat/reader"      # 订阅制
 chainhub tool call "okx/dex" --swap     # 按次调用
@@ -63,6 +67,7 @@ chainhub tool call "okx/dex" --swap     # 按次调用
 ### 本命瓷 = 原始个人数据（Soul Data）
 
 包括：
+
 - 你的真实消费记录
 - 你的真实位置轨迹
 - 你的真实社交图谱
@@ -83,6 +88,7 @@ chainhub tool call "okx/dex" --swap     # 按次调用
 ### 元神 = 主 Agent 控制权（私钥）
 
 包括：
+
 - 你的私钥
 - 你的 AgentSoul.md 完整版
 - 你的链上身份控制权
@@ -112,24 +118,24 @@ flowchart TB
         tool["Tool（工具接口使用权）
         法宝，Chain Hub 工具租赁"]
     end
-    
+
     subgraph Displayable["👁️ 可展示但不可交易（信誉 + 身份）"]
         rep["Agent Arena 信誉分
         修炼成果，可展示，不可转让"]
         id["ERC-8004 链上身份
         名号，与元神绑定"]
     end
-    
+
     subgraph Forbidden["🚫 绝对禁区（本命 + 元神）"]
         soul["Soul Data（原始个人数据）
         本命瓷，碎了人就没了"]
         key["私钥 / 控制权
         元神，夺舍 = 死亡"]
     end
-    
+
     Tradeable --"展示"--> Displayable
     Displayable -.->|"保护"| Forbidden
-    
+
     style Tradeable fill:#e8f5e9
     style Displayable fill:#fff3e0
     style Forbidden fill:#ffebee

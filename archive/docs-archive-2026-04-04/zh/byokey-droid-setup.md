@@ -31,6 +31,7 @@ byokey serve --port 8018
 ```
 
 **保持这个终端运行**，或者使用后台模式：
+
 ```bash
 byokey start
 ```
@@ -59,18 +60,18 @@ export ANTHROPIC_API_KEY=anything
 
 ```json
 {
-  "providers": {
-    "openai": {
-      "baseUrl": "http://localhost:8018/v1",
-      "apiKey": "dummy-key-byokey-ignores-this"
+    "providers": {
+        "openai": {
+            "baseUrl": "http://localhost:8018/v1",
+            "apiKey": "dummy-key-byokey-ignores-this"
+        },
+        "anthropic": {
+            "baseUrl": "http://localhost:8018/v1",
+            "apiKey": "dummy-key-byokey-ignores-this"
+        }
     },
-    "anthropic": {
-      "baseUrl": "http://localhost:8018/v1",
-      "apiKey": "dummy-key-byokey-ignores-this"
-    }
-  },
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4"
+    "defaultProvider": "anthropic",
+    "defaultModel": "claude-opus-4"
 }
 ```
 
@@ -123,22 +124,23 @@ droid --model gemini-2.0-flash "写代码"
 ```json
 // ~/.droid/config.json
 {
-  "profiles": {
-    "claude": {
-      "provider": "anthropic",
-      "baseUrl": "http://localhost:8018/v1",
-      "model": "claude-opus-4"
-    },
-    "openai": {
-      "provider": "openai",
-      "baseUrl": "http://localhost:8018/v1",
-      "model": "gpt-4"
+    "profiles": {
+        "claude": {
+            "provider": "anthropic",
+            "baseUrl": "http://localhost:8018/v1",
+            "model": "claude-opus-4"
+        },
+        "openai": {
+            "provider": "openai",
+            "baseUrl": "http://localhost:8018/v1",
+            "model": "gpt-4"
+        }
     }
-  }
 }
 ```
 
 使用：
+
 ```bash
 droid --profile claude "任务描述"
 ```
@@ -149,13 +151,13 @@ droid --profile claude "任务描述"
 
 配置完成后，Droid 可以通过 BYOKEY 使用：
 
-| 模型 | 命令示例 |
-|------|---------|
-| Claude Opus 4 | `droid --model claude-opus-4 "task"` |
+| 模型              | 命令示例                                 |
+| ----------------- | ---------------------------------------- |
+| Claude Opus 4     | `droid --model claude-opus-4 "task"`     |
 | Claude Sonnet 4.5 | `droid --model claude-sonnet-4-5 "task"` |
-| GPT-4 | `droid --model gpt-4 "task"` |
-| GPT-4o mini | `droid --model gpt-4o-mini "task"` |
-| Gemini 2.0 Flash | `droid --model gemini-2.0-flash "task"` |
+| GPT-4             | `droid --model gpt-4 "task"`             |
+| GPT-4o mini       | `droid --model gpt-4o-mini "task"`       |
+| Gemini 2.0 Flash  | `droid --model gemini-2.0-flash "task"`  |
 
 ---
 
@@ -198,6 +200,7 @@ curl http://localhost:8018/v1/models | jq
 这是正常的！BYOKEY 会忽略 API key，但 Droid 要求必须有。
 
 确保设置了：
+
 ```bash
 export OPENAI_API_KEY=dummy
 ```
@@ -241,6 +244,7 @@ droid "$@"
 ```
 
 使用：
+
 ```bash
 chmod +x start-droid-with-byokey.sh
 ./start-droid-with-byokey.sh "你的任务"
@@ -253,11 +257,13 @@ chmod +x start-droid-with-byokey.sh
 ### 方式 1: 手动启动 (推荐)
 
 **终端 1** (保持运行):
+
 ```bash
 byokey serve
 ```
 
 **终端 2** (使用 Droid):
+
 ```bash
 export OPENAI_BASE_URL=http://localhost:8018/v1
 export OPENAI_API_KEY=byokey
@@ -285,32 +291,35 @@ droid "任务"
 ## 💡 最佳实践
 
 1. **开机自启**
-   ```bash
-   byokey autostart enable
-   ```
+
+    ```bash
+    byokey autostart enable
+    ```
 
 2. **监控日志**
-   ```bash
-   tail -f ~/.byokey/server.log
-   ```
+
+    ```bash
+    tail -f ~/.byokey/server.log
+    ```
 
 3. **多模型切换**
-   ```bash
-   # 使用 Claude
-   droid --model claude-opus-4 "复杂任务"
-   
-   # 使用 GPT-4
-   droid --model gpt-4 "代码任务"
-   
-   # 使用 Gemini (更快)
-   droid --model gemini-2.0-flash "简单任务"
-   ```
+
+    ```bash
+    # 使用 Claude
+    droid --model claude-opus-4 "复杂任务"
+
+    # 使用 GPT-4
+    droid --model gpt-4 "代码任务"
+
+    # 使用 Gemini (更快)
+    droid --model gemini-2.0-flash "简单任务"
+    ```
 
 4. **成本跟踪**
-   ```bash
-   # BYOKEY 不收费，但监控你的订阅使用
-   # Claude Pro: 检查 https://console.anthropic.com/
-   ```
+    ```bash
+    # BYOKEY 不收费，但监控你的订阅使用
+    # Claude Pro: 检查 https://console.anthropic.com/
+    ```
 
 ---
 

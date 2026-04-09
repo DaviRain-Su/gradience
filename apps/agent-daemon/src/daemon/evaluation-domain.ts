@@ -6,9 +6,7 @@ export interface EvaluationDomainServices {
     evaluatorRuntime: EvaluatorRuntime;
 }
 
-export function initEvaluationDomain(
-    unifiedLLMConfig: UnifiedLLMConfig,
-): EvaluationDomainServices {
+export function initEvaluationDomain(unifiedLLMConfig: UnifiedLLMConfig): EvaluationDomainServices {
     const evaluatorRuntime = new EvaluatorRuntime({
         defaultBudget: {
             maxCostUsd: 1.0,

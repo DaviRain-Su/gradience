@@ -15,43 +15,43 @@ export const PROOF_PAYLOAD_VERSION = 1;
 // ------------------------------------------------------------------
 
 export interface WorkflowDefinition {
-  version: '1.0';
-  name: string;
-  steps: WorkflowStep[];
+    version: '1.0';
+    name: string;
+    steps: WorkflowStep[];
 }
 
 export type WorkflowStep =
-  | { type: 'swap'; params: SwapParams }
-  | { type: 'transfer'; params: TransferParams }
-  | { type: 'stake'; params: StakeParams }
-  | { type: 'unstake'; params: UnstakeParams }
-  | { type: 'tool_call'; params: ToolCallParams };
+    | { type: 'swap'; params: SwapParams }
+    | { type: 'transfer'; params: TransferParams }
+    | { type: 'stake'; params: StakeParams }
+    | { type: 'unstake'; params: UnstakeParams }
+    | { type: 'tool_call'; params: ToolCallParams };
 
 export interface SwapParams {
-  inputMint: string;
-  outputMint: string;
-  amount: bigint;
-  slippageBps?: number;
+    inputMint: string;
+    outputMint: string;
+    amount: bigint;
+    slippageBps?: number;
 }
 
 export interface TransferParams {
-  recipient: string;
-  amount: bigint;
-  mint?: string;
+    recipient: string;
+    amount: bigint;
+    mint?: string;
 }
 
 export interface StakeParams {
-  validatorVoteAccount?: string;
-  amount: bigint;
+    validatorVoteAccount?: string;
+    amount: bigint;
 }
 
 export interface UnstakeParams {
-  stakeAccount: string;
+    stakeAccount: string;
 }
 
 export interface ToolCallParams {
-  toolName: string;
-  arguments: Record<string, unknown>;
+    toolName: string;
+    arguments: Record<string, unknown>;
 }
 
 // ------------------------------------------------------------------
@@ -59,36 +59,36 @@ export interface ToolCallParams {
 // ------------------------------------------------------------------
 
 export interface TeeExecutionRequest {
-  workflowId: string;
-  workflowDefinition: WorkflowDefinition;
-  inputs: Record<string, unknown>;
-  taskId: number;
-  executorAddress: string;
-  timeoutMs: number;
+    workflowId: string;
+    workflowDefinition: WorkflowDefinition;
+    inputs: Record<string, unknown>;
+    taskId: number;
+    executorAddress: string;
+    timeoutMs: number;
 }
 
 export interface TeeExecutionResult {
-  success: boolean;
-  stepResults: StepResult[];
-  summary: string;
-  logHash: string;
-  resultHash: string;
-  attestationReport: string; // base64
-  executedAt: number;
+    success: boolean;
+    stepResults: StepResult[];
+    summary: string;
+    logHash: string;
+    resultHash: string;
+    attestationReport: string; // base64
+    executedAt: number;
 }
 
 export interface TeeExecutionEngine {
-  execute(request: TeeExecutionRequest): Promise<TeeExecutionResult>;
-  verifyAttestation(bundle: AttestationBundle): Promise<VerificationReport>;
+    execute(request: TeeExecutionRequest): Promise<TeeExecutionResult>;
+    verifyAttestation(bundle: AttestationBundle): Promise<VerificationReport>;
 }
 
 export interface StepResult {
-  stepIndex: number;
-  stepType: string;
-  success: boolean;
-  output: unknown;
-  error?: string;
-  durationMs: number;
+    stepIndex: number;
+    stepType: string;
+    success: boolean;
+    output: unknown;
+    error?: string;
+    durationMs: number;
 }
 
 // ------------------------------------------------------------------
@@ -96,22 +96,22 @@ export interface StepResult {
 // ------------------------------------------------------------------
 
 export interface AttestationBundle {
-  version: typeof VEL_VERSION;
-  taskId: number;
-  executorAddress: string;
-  resultHash: string;
-  logHash: string;
-  attestationReport: string; // base64
-  providerName: 'gramine-local' | 'nitro-local' | string;
-  pcrValues: Record<string, string>;
-  timestamp: number;
+    version: typeof VEL_VERSION;
+    taskId: number;
+    executorAddress: string;
+    resultHash: string;
+    logHash: string;
+    attestationReport: string; // base64
+    providerName: 'gramine-local' | 'nitro-local' | string;
+    pcrValues: Record<string, string>;
+    timestamp: number;
 }
 
 export interface VerificationReport {
-  valid: boolean;
-  reason?: string;
-  pcrValues?: Record<string, string>;
-  signerIdentity?: string;
+    valid: boolean;
+    reason?: string;
+    pcrValues?: Record<string, string>;
+    signerIdentity?: string;
 }
 
 // ------------------------------------------------------------------
@@ -119,36 +119,36 @@ export interface VerificationReport {
 // ------------------------------------------------------------------
 
 export interface TeeProviderConfig {
-  providerName: string;
-  /** Gramine manifest path (local simulation) */
-  manifestPath?: string;
-  /** Unix socket / vsock path for enclave communication */
-  socketPath: string;
-  /** Allowed PCR / measurement values. Must contain at least 1 entry. */
-  allowedPcrValues: string[];
-  /** Optional: command override for gramine execution */
-  commandOverride?: string;
-  /** Optional: working directory for enclave process */
-  workingDir?: string;
-  /** Optional: startup timeout for enclave process (ms). Default 10000. */
-  startupTimeoutMs?: number;
+    providerName: string;
+    /** Gramine manifest path (local simulation) */
+    manifestPath?: string;
+    /** Unix socket / vsock path for enclave communication */
+    socketPath: string;
+    /** Allowed PCR / measurement values. Must contain at least 1 entry. */
+    allowedPcrValues: string[];
+    /** Optional: command override for gramine execution */
+    commandOverride?: string;
+    /** Optional: working directory for enclave process */
+    workingDir?: string;
+    /** Optional: startup timeout for enclave process (ms). Default 10000. */
+    startupTimeoutMs?: number;
 }
 
 export interface EnclavePayload {
-  workflowDefinition: WorkflowDefinition;
-  inputs: Record<string, unknown>;
-  seed: Uint8Array;
-  taskId: number;
+    workflowDefinition: WorkflowDefinition;
+    inputs: Record<string, unknown>;
+    seed: Uint8Array;
+    taskId: number;
 }
 
 export interface EnclaveResponse {
-  success: boolean;
-  stepResults: StepResult[];
-  summary: string;
-  logHash: string;
-  resultHash: string;
-  attestationReport: string; // base64
-  error?: string;
+    success: boolean;
+    stepResults: StepResult[];
+    summary: string;
+    logHash: string;
+    resultHash: string;
+    attestationReport: string; // base64
+    error?: string;
 }
 
 // ------------------------------------------------------------------
@@ -156,19 +156,14 @@ export interface EnclaveResponse {
 // ------------------------------------------------------------------
 
 export interface VelOrchestratorConfig {
-  bridge: {
-    judgeAndPay(args: {
-      taskId: number;
-      winner: string;
-      score: number;
-      reasonRef: string;
-    }): Promise<string>;
-  };
-  keyManager: {
-    getSeedForTask(taskId: number): Promise<Uint8Array>;
-  };
-  storage: {
-    upload(bundle: AttestationBundle): Promise<string>; // returns URI
-  };
-  defaultProvider: string;
+    bridge: {
+        judgeAndPay(args: { taskId: number; winner: string; score: number; reasonRef: string }): Promise<string>;
+    };
+    keyManager: {
+        getSeedForTask(taskId: number): Promise<Uint8Array>;
+    };
+    storage: {
+        upload(bundle: AttestationBundle): Promise<string>; // returns URI
+    };
+    defaultProvider: string;
 }

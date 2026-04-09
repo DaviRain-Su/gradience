@@ -177,9 +177,7 @@ export function NotificationSettings({
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-800">
                 <h2 className="text-lg font-semibold text-gray-100">Notification Settings</h2>
-                <p className="text-sm text-gray-400 mt-1">
-                    Customize how and when you receive notifications
-                </p>
+                <p className="text-sm text-gray-400 mt-1">Customize how and when you receive notifications</p>
             </div>
 
             {/* Global toggle */}
@@ -265,14 +263,10 @@ export function NotificationSettings({
                                         min={0}
                                         max={100}
                                         value={settings.sound.volume}
-                                        onChange={(e) =>
-                                            handleSoundVolume(parseInt(e.target.value, 10))
-                                        }
+                                        onChange={(e) => handleSoundVolume(parseInt(e.target.value, 10))}
                                         className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                                     />
-                                    <span className="text-sm text-gray-400 w-10">
-                                        {settings.sound.volume}%
-                                    </span>
+                                    <span className="text-sm text-gray-400 w-10">{settings.sound.volume}%</span>
                                 </div>
                             )}
                         </div>
@@ -290,13 +284,12 @@ export function NotificationSettings({
                         <div className="space-y-3">
                             <p className="text-sm text-gray-400">Email digest frequency:</p>
                             <div className="flex flex-wrap gap-2">
-                                {(['never', 'instant', 'daily', 'weekly'] as const).map(
-                                    (option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => handleEmailDigest(option)}
-                                            className={`
+                                {(['never', 'instant', 'daily', 'weekly'] as const).map((option) => (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => handleEmailDigest(option)}
+                                        className={`
                                                 px-3 py-1.5 text-sm rounded-lg transition-colors
                                                 ${
                                                     settings.email.digest === option
@@ -304,11 +297,10 @@ export function NotificationSettings({
                                                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                                 }
                                             `}
-                                        >
-                                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                                        </button>
-                                    ),
-                                )}
+                                    >
+                                        {option.charAt(0).toUpperCase() + option.slice(1)}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </SettingsSection>
@@ -357,19 +349,12 @@ function SettingsSection({
                     <p className="text-xs text-gray-500 mt-0.5">{description}</p>
                 </div>
                 <svg
-                    className={`w-5 h-5 text-gray-500 transition-transform ${
-                        expanded ? 'rotate-180' : ''
-                    }`}
+                    className={`w-5 h-5 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
             {expanded && <div className="px-4 pb-4">{children}</div>}
@@ -405,13 +390,7 @@ function ToggleRow({
 /**
  * Toggle switch component
  */
-function Toggle({
-    enabled,
-    onChange,
-}: {
-    enabled: boolean;
-    onChange: (enabled: boolean) => void;
-}) {
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) {
     return (
         <button
             type="button"

@@ -7,54 +7,48 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type Codec,
-  type Decoder,
-  type Encoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type Codec,
+    type Decoder,
+    type Encoder,
+} from '@solana/kit';
 
 export type JudgeUnstakedEvent = {
-  judge: Array<number>;
-  returnedStake: bigint;
-  categories: Array<number>;
+    judge: Array<number>;
+    returnedStake: bigint;
+    categories: Array<number>;
 };
 
 export type JudgeUnstakedEventArgs = {
-  judge: Array<number>;
-  returnedStake: number | bigint;
-  categories: Array<number>;
+    judge: Array<number>;
+    returnedStake: number | bigint;
+    categories: Array<number>;
 };
 
 export function getJudgeUnstakedEventEncoder(): Encoder<JudgeUnstakedEventArgs> {
-  return getStructEncoder([
-    ["judge", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["returnedStake", getU64Encoder()],
-    ["categories", getArrayEncoder(getU8Encoder())],
-  ]);
+    return getStructEncoder([
+        ['judge', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['returnedStake', getU64Encoder()],
+        ['categories', getArrayEncoder(getU8Encoder())],
+    ]);
 }
 
 export function getJudgeUnstakedEventDecoder(): Decoder<JudgeUnstakedEvent> {
-  return getStructDecoder([
-    ["judge", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["returnedStake", getU64Decoder()],
-    ["categories", getArrayDecoder(getU8Decoder())],
-  ]);
+    return getStructDecoder([
+        ['judge', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['returnedStake', getU64Decoder()],
+        ['categories', getArrayDecoder(getU8Decoder())],
+    ]);
 }
 
-export function getJudgeUnstakedEventCodec(): Codec<
-  JudgeUnstakedEventArgs,
-  JudgeUnstakedEvent
-> {
-  return combineCodec(
-    getJudgeUnstakedEventEncoder(),
-    getJudgeUnstakedEventDecoder(),
-  );
+export function getJudgeUnstakedEventCodec(): Codec<JudgeUnstakedEventArgs, JudgeUnstakedEvent> {
+    return combineCodec(getJudgeUnstakedEventEncoder(), getJudgeUnstakedEventDecoder());
 }

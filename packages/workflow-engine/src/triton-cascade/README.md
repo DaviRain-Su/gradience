@@ -24,16 +24,16 @@ import { TritonCascadeClient } from '@gradience/triton-cascade';
 
 // Create client
 const client = new TritonCascadeClient({
-  rpcEndpoint: 'https://api.triton.one/rpc',
-  apiToken: process.env.TRITON_API_TOKEN,
-  network: 'mainnet',
-  enableJitoBundle: true,
+    rpcEndpoint: 'https://api.triton.one/rpc',
+    apiToken: process.env.TRITON_API_TOKEN,
+    network: 'mainnet',
+    enableJitoBundle: true,
 });
 
 // Send transaction
 const response = await client.sendTransaction(transactionBase64, {
-  transactionType: 'swap',
-  useJitoBundle: true,
+    transactionType: 'swap',
+    useJitoBundle: true,
 });
 
 console.log('Transaction confirmed:', response.signature);
@@ -47,14 +47,14 @@ await client.close();
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TRITON_RPC_ENDPOINT` | Triton RPC endpoint | `https://api.triton.one/rpc` |
-| `TRITON_API_TOKEN` | API token for authentication | - |
-| `SOLANA_NETWORK` | Network type (`mainnet` or `devnet`) | `devnet` |
-| `ENABLE_JITO_BUNDLE` | Enable Jito Bundle support | `false` |
-| `JITO_BLOCK_ENGINE_URL` | Custom Jito block engine URL | - |
-| `TRITON_PRIORITY_FEE_STRATEGY` | Fee strategy (`auto`, `fixed`, `none`) | `auto` |
+| Variable                       | Description                            | Default                      |
+| ------------------------------ | -------------------------------------- | ---------------------------- |
+| `TRITON_RPC_ENDPOINT`          | Triton RPC endpoint                    | `https://api.triton.one/rpc` |
+| `TRITON_API_TOKEN`             | API token for authentication           | -                            |
+| `SOLANA_NETWORK`               | Network type (`mainnet` or `devnet`)   | `devnet`                     |
+| `ENABLE_JITO_BUNDLE`           | Enable Jito Bundle support             | `false`                      |
+| `JITO_BLOCK_ENGINE_URL`        | Custom Jito block engine URL           | -                            |
+| `TRITON_PRIORITY_FEE_STRATEGY` | Fee strategy (`auto`, `fixed`, `none`) | `auto`                       |
 
 ### Programmatic Configuration
 
@@ -64,11 +64,11 @@ import { TritonCascadeClient, createDefaultConfig } from '@gradience/triton-casc
 const config = createDefaultConfig('mainnet');
 
 const client = new TritonCascadeClient({
-  ...config,
-  apiToken: 'your-api-token',
-  enableJitoBundle: true,
-  priorityFeeStrategy: 'auto',
-  maxRetries: 5,
+    ...config,
+    apiToken: 'your-api-token',
+    enableJitoBundle: true,
+    priorityFeeStrategy: 'auto',
+    maxRetries: 5,
 });
 ```
 
@@ -78,13 +78,13 @@ const client = new TritonCascadeClient({
 
 ```typescript
 const response = await client.sendTransaction(swapTransactionBase64, {
-  transactionType: 'swap',
-  useJitoBundle: true,
-  commitment: 'confirmed',
-  metadata: {
-    route: ['Orca', 'Raydium'],
-    expectedOutput: '1000000',
-  },
+    transactionType: 'swap',
+    useJitoBundle: true,
+    commitment: 'confirmed',
+    metadata: {
+        route: ['Orca', 'Raydium'],
+        expectedOutput: '1000000',
+    },
 });
 ```
 
@@ -92,9 +92,9 @@ const response = await client.sendTransaction(swapTransactionBase64, {
 
 ```typescript
 const response = await client.sendTransaction(transferTransactionBase64, {
-  transactionType: 'transfer',
-  priorityFee: 20000, // microLamports
-  commitment: 'confirmed',
+    transactionType: 'transfer',
+    priorityFee: 20000, // microLamports
+    commitment: 'confirmed',
 });
 ```
 
@@ -134,13 +134,13 @@ console.log('Average latency:', metrics.averageLatencyMs, 'ms');
 import { CascadeError, isRetryableError } from '@gradience/triton-cascade';
 
 try {
-  const response = await client.sendTransaction(transaction);
+    const response = await client.sendTransaction(transaction);
 } catch (error) {
-  if (error instanceof CascadeError) {
-    console.log('Error code:', error.code);
-    console.log('Retryable:', error.retryable);
-    console.log('Message:', error.message);
-  }
+    if (error instanceof CascadeError) {
+        console.log('Error code:', error.code);
+        console.log('Retryable:', error.retryable);
+        console.log('Message:', error.message);
+    }
 }
 ```
 

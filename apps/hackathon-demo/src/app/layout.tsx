@@ -6,22 +6,16 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Gradience OWS + Privy Demo',
-  description: 'Open Wallet Standard adapter with Privy authentication',
+    title: 'Gradience OWS + Privy Demo',
+    description: 'Open Wallet Standard adapter with Privy authentication',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>
-        <PrivyProvider>
-          {children}
-        </PrivyProvider>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <html lang="en">
+            <body className={inter.className}>
+                <PrivyProvider>{children}</PrivyProvider>
+            </body>
+        </html>
+    );
 }

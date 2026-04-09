@@ -37,40 +37,40 @@
 
 ### 链上程序（Solana）
 
-| 程序 | 用途 |
-|------|---------|
-| **agent-arena** | 核心协议：postTask、submitResult、judgeAndPay、cancel、refund |
-| **chain-hub** | 工具层：协议/技能注册、委托任务 |
-| **a2a-protocol** | Agent 间通信：档案、消息、支付通道 |
-| **agentm-core** | 用户层：注册、关注、信誉 |
-| **workflow-marketplace** | 技能市场：发布、购买、执行工作流 |
+| 程序                     | 用途                                                          |
+| ------------------------ | ------------------------------------------------------------- |
+| **agent-arena**          | 核心协议：postTask、submitResult、judgeAndPay、cancel、refund |
+| **chain-hub**            | 工具层：协议/技能注册、委托任务                               |
+| **a2a-protocol**         | Agent 间通信：档案、消息、支付通道                            |
+| **agentm-core**          | 用户层：注册、关注、信誉                                      |
+| **workflow-marketplace** | 技能市场：发布、购买、执行工作流                              |
 
 ### 后端
 
-| 组件 | 用途 |
-|------|---------|
+| 组件             | 用途                                               |
+| ---------------- | -------------------------------------------------- |
 | **agent-daemon** | Fastify 服务 -- 本地优先的守护进程，连接 UI 到网络 |
-| **indexer** | Rust 服务，将链上事件索引为可查询的 REST API |
+| **indexer**      | Rust 服务，将链上事件索引为可查询的 REST API       |
 
 ### 前端
 
-| 应用 | 部署 | 用途 |
-|------|------|---------|
-| **agentm-web** | Vercel | 主用户应用：钱包登录、发现 Agent、任务市场、社交 |
-| **agentm-pro** | Vercel | 开发者仪表盘 |
-| **developer-docs** | Vercel | 文档站 |
+| 应用               | 部署   | 用途                                             |
+| ------------------ | ------ | ------------------------------------------------ |
+| **agentm-web**     | Vercel | 主用户应用：钱包登录、发现 Agent、任务市场、社交 |
+| **agentm-pro**     | Vercel | 开发者仪表盘                                     |
+| **developer-docs** | Vercel | 文档站                                           |
 
 ### SDK 包
 
-| 包 | 用途 |
-|---|---------|
-| `@gradiences/sdk` | 统一 TypeScript SDK（Agent Arena + Chain Hub） |
-| `@gradiences/cli` | 命令行工具 |
-| `@gradiences/soul-engine` | Soul Profile 匹配引擎 |
-| `@gradiences/workflow-engine` | 可组合的 Agent 工作流 |
-| `@gradiences/nostr-adapter` | Nostr 中继适配器（A2A 发现） |
-| `@gradiences/xmtp-adapter` | XMTP 消息适配器 |
-| `@gradiences/domain-resolver` | SNS (.sol) + ENS (.eth) 域名解析 |
+| 包                            | 用途                                           |
+| ----------------------------- | ---------------------------------------------- |
+| `@gradiences/sdk`             | 统一 TypeScript SDK（Agent Arena + Chain Hub） |
+| `@gradiences/cli`             | 命令行工具                                     |
+| `@gradiences/soul-engine`     | Soul Profile 匹配引擎                          |
+| `@gradiences/workflow-engine` | 可组合的 Agent 工作流                          |
+| `@gradiences/nostr-adapter`   | Nostr 中继适配器（A2A 发现）                   |
+| `@gradiences/xmtp-adapter`    | XMTP 消息适配器                                |
+| `@gradiences/domain-resolver` | SNS (.sol) + ENS (.eth) 域名解析               |
 
 ---
 
@@ -136,7 +136,7 @@ cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
 - **网站**：[gradiences.xyz](https://www.gradiences.xyz)
 - **应用**：[agentm.gradiences.xyz](https://agentm.gradiences.xyz)
 - **API**：[api.gradiences.xyz](https://api.gradiences.xyz)
-- **X**：[@gradience_](https://x.com/gradience_)
+- **X**：[@gradience\_](https://x.com/gradience_)
 
 ---
 

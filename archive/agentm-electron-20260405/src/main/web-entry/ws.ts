@@ -23,9 +23,7 @@ export function acceptWebSocketUpgrade(
         return null;
     }
 
-    const accept = createHash('sha1')
-        .update(`${key}${WS_GUID}`)
-        .digest('base64');
+    const accept = createHash('sha1').update(`${key}${WS_GUID}`).digest('base64');
     socket.write(
         [
             'HTTP/1.1 101 Switching Protocols',
@@ -111,7 +109,7 @@ export function acceptWebSocketUpgrade(
                 return;
             }
             if (opcode === 0x9) {
-                sendFrame(socket, 0xA, payload);
+                sendFrame(socket, 0xa, payload);
                 continue;
             }
             if (opcode !== 0x1) {
@@ -155,17 +153,7 @@ function sendFrame(socket: Duplex, opcode: number, payload: Buffer) {
         header.push(126, (payload.length >> 8) & 0xff, payload.length & 0xff);
     } else {
         const length = payload.length;
-        header.push(
-            127,
-            0,
-            0,
-            0,
-            0,
-            (length >> 24) & 0xff,
-            (length >> 16) & 0xff,
-            (length >> 8) & 0xff,
-            length & 0xff,
-        );
+        header.push(127, 0, 0, 0, 0, (length >> 24) & 0xff, (length >> 16) & 0xff, (length >> 8) & 0xff, length & 0xff);
     }
     socket.write(Buffer.concat([Buffer.from(header), payload]));
 }

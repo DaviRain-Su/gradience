@@ -32,7 +32,7 @@ export class ConfigManager {
     async set(key: ConfigKey, rawValue: string): Promise<void> {
         const value = key === 'rpc' ? validateRpcUrl(rawValue) : normalizePath(rawValue);
         const existing = await this.load();
-        
+
         const next: GradienceConfig = {
             ...existing,
             [key]: value,

@@ -5,6 +5,7 @@ This directory contains example workflows demonstrating various capabilities of 
 ## Examples
 
 ### 1. Hello World (`hello-world.ts`)
+
 The simplest possible workflow - just logs a message.
 
 ```bash
@@ -12,6 +13,7 @@ npx tsx examples/hello-world.ts
 ```
 
 ### 2. Cross-Chain Arbitrage (`arbitrage.ts`)
+
 Demonstrates multi-chain operations for USDC arbitrage between Solana and Arbitrum.
 
 ```bash
@@ -19,6 +21,7 @@ npx tsx examples/arbitrage.ts
 ```
 
 ### 3. Privacy Payment (`privacy-payment.ts`)
+
 Shows privacy-preserving payment using ZK proofs and TEE.
 
 ```bash

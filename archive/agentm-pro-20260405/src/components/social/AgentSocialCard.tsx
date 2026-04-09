@@ -2,17 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useDomain } from '@/hooks/useDomain';
-import {
-    checkSolDomainOwnership,
-    isValidSolDomain,
-    normalizeSolDomain,
-    resolveSolDomain,
-} from '@/lib/sns';
-import {
-    getLinkedDomain,
-    removeLinkedDomain,
-    setLinkedDomain,
-} from '@/lib/social/domain-linking';
+import { checkSolDomainOwnership, isValidSolDomain, normalizeSolDomain, resolveSolDomain } from '@/lib/sns';
+import { getLinkedDomain, removeLinkedDomain, setLinkedDomain } from '@/lib/social/domain-linking';
 import { ProfileHeader } from './ProfileHeader';
 import type { ReputationData } from '@/types';
 
@@ -142,7 +133,10 @@ export function AgentSocialCard({
             )}
 
             {verifiedBadge && (
-                <span data-testid="agent-social-verified" className="inline-block text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-300">
+                <span
+                    data-testid="agent-social-verified"
+                    className="inline-block text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-300"
+                >
                     Verified High-Reputation Agent
                 </span>
             )}

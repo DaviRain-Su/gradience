@@ -185,9 +185,7 @@ export class XMTPAdapter implements ProtocolAdapter {
         }
     }
 
-    async subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription> {
+    async subscribe(handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription> {
         const subscription: ProtocolSubscription = {
             protocol: 'xmtp',
             unsubscribe: async () => {
@@ -326,9 +324,7 @@ export class XMTPAdapter implements ProtocolAdapter {
         })();
     }
 
-    private async pollMessages(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<void> {
+    private async pollMessages(handler: (message: A2AMessage) => void | Promise<void>): Promise<void> {
         if (!this.agent) return;
 
         const poll = async () => {

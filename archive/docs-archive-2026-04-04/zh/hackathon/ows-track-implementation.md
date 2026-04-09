@@ -1,4 +1,5 @@
 # OWS Hackathon Track 02/03/04 冲刺方案
+
 > Gradience + OWS 身份 + Reputation 叠加
 
 ---
@@ -8,6 +9,7 @@
 **"首个带信用评分的 Agent 身份系统"**
 
 在 ows.domains 基础上叠加：
+
 - ✅ OWS 原生钱包 (Track 03 基础)
 - ✅ ENS 跨链身份 (Track 03 要求)
 - ✅ **Gradience Reputation 评分** (差异化)
@@ -48,26 +50,26 @@
 ```typescript
 // CLI 命令: gradience agent register
 const result = await gradience.agent.register({
-  // OWS 基础
-  name: 'trading-agent.ows.eth',
-  owsWallet: await ows.wallet.create(),
-  
-  // Gradience 叠加
-  reputation: {
-    initialScore: 50,  // 新 Agent 默认 50 分
-    badges: ['verified'],
-  },
-  
-  // ENS 记录
-  ensRecords: {
-    'gradience.reputation': '50',
-    'gradience.judgeScore': '0',
-    'gradience.tasksCompleted': '0',
-    'gradience.walletPolicy': JSON.stringify({
-      dailyLimit: 500,  // 50 * 10
-      requireApproval: 100,
-    }),
-  }
+    // OWS 基础
+    name: 'trading-agent.ows.eth',
+    owsWallet: await ows.wallet.create(),
+
+    // Gradience 叠加
+    reputation: {
+        initialScore: 50, // 新 Agent 默认 50 分
+        badges: ['verified'],
+    },
+
+    // ENS 记录
+    ensRecords: {
+        'gradience.reputation': '50',
+        'gradience.judgeScore': '0',
+        'gradience.tasksCompleted': '0',
+        'gradience.walletPolicy': JSON.stringify({
+            dailyLimit: 500, // 50 * 10
+            requireApproval: 100,
+        }),
+    },
 });
 
 // 返回: ENS 域名 + 多链地址 + 初始声誉
@@ -89,26 +91,26 @@ console.log(result);
 ```typescript
 // 为子 Agent 创建受限钱包
 const subWallet = await gradience.wallet.createSubWallet({
-  parent: 'trading-agent.ows.eth',
-  name: 'sub-agent-1',
-  
-  // 策略由声誉决定
-  policy: {
-    // 每日限额 = 声誉分 * 10 USD
-    dailyLimit: reputation * 10,
-    
-    // 单笔超过 100 USD 需要主钱包批准
-    requireApproval: amount => amount > 100,
-    
-    // 声誉 < 30 需要人工审核所有交易
-    requireManualReview: reputation < 30,
-    
-    // 允许的 Token 白名单
-    allowedTokens: reputation > 80 ? ['ALL'] : ['USDC', 'USDT'],
-    
-    // 禁止交互的合约黑名单
-    blockedContracts: knownScamContracts,
-  }
+    parent: 'trading-agent.ows.eth',
+    name: 'sub-agent-1',
+
+    // 策略由声誉决定
+    policy: {
+        // 每日限额 = 声誉分 * 10 USD
+        dailyLimit: reputation * 10,
+
+        // 单笔超过 100 USD 需要主钱包批准
+        requireApproval: (amount) => amount > 100,
+
+        // 声誉 < 30 需要人工审核所有交易
+        requireManualReview: reputation < 30,
+
+        // 允许的 Token 白名单
+        allowedTokens: reputation > 80 ? ['ALL'] : ['USDC', 'USDT'],
+
+        // 禁止交互的合约黑名单
+        blockedContracts: knownScamContracts,
+    },
 });
 ```
 
@@ -122,7 +124,7 @@ const reputation = await gradience.reputation.get('trading-agent.ows.eth');
 {
   score: 78,           // 总分 0-100
   level: 'gold',       // bronze/silver/gold/platinum
-  
+
   // 分项评分
   breakdown: {
     taskCompletion: 95,    // 任务完成率
@@ -131,13 +133,13 @@ const reputation = await gradience.reputation.get('trading-agent.ows.eth');
     paymentSpeed: 98,      // 付款及时率 %
     crossChain: 85,        // 跨链操作成功率
   },
-  
+
   // 可验证凭证
   credentials: [
     { type: 'task', id: 'task-123', score: 5, judge: '0xabc...' },
     { type: 'payment', id: 'pay-456', amount: 1000, onTime: true },
   ],
-  
+
   // 历史趋势
   history: [
     { date: '2026-03-01', score: 50 },
@@ -152,22 +154,22 @@ const reputation = await gradience.reputation.get('trading-agent.ows.eth');
 ```typescript
 // ENS 文本记录存储声誉
 const ensRecords = {
-  // 基础地址解析 (像示例一样)
-  'address.60': '0xEBd6...',        // ETH
-  'address.0': 'bc1qxr2...',        // BTC
-  'address.501': '5Y3dUir...',      // SOL
-  
-  // Gradience 叠加的声誉记录
-  'text.gradience.reputation': '78',
-  'text.gradience.level': 'gold',
-  'text.gradience.policy': JSON.stringify({
-    dailyLimit: 780,
-    maxTransaction: 5000,
-  }),
-  'text.gradience.credentials': 'ipfs://Qm...',  // VC 凭证
-  
-  // 可验证的链上证明
-  'text.gradience.proof': '0xsignature...',
+    // 基础地址解析 (像示例一样)
+    'address.60': '0xEBd6...', // ETH
+    'address.0': 'bc1qxr2...', // BTC
+    'address.501': '5Y3dUir...', // SOL
+
+    // Gradience 叠加的声誉记录
+    'text.gradience.reputation': '78',
+    'text.gradience.level': 'gold',
+    'text.gradience.policy': JSON.stringify({
+        dailyLimit: 780,
+        maxTransaction: 5000,
+    }),
+    'text.gradience.credentials': 'ipfs://Qm...', // VC 凭证
+
+    // 可验证的链上证明
+    'text.gradience.proof': '0xsignature...',
 };
 
 // 解析时自动获取声誉
@@ -185,6 +187,7 @@ const agent = await ows.domains.resolve('trading-agent.ows.eth');
 ## 🎨 Demo 场景 (3分钟演示)
 
 ### Scene 1: Agent 注册 (30秒)
+
 ```bash
 $ gradience agent register --name "trading-agent"
 
@@ -199,6 +202,7 @@ $ gradience agent register --name "trading-agent"
 ```
 
 ### Scene 2: 完成任务提升声誉 (60秒)
+
 ```bash
 $ gradience task complete --agent "trading-agent" --task "swap-eth-to-usdc"
 
@@ -210,6 +214,7 @@ $ gradience task complete --agent "trading-agent" --task "swap-eth-to-usdc"
 ```
 
 ### Scene 3: 高声誉 Agent 权限 (60秒)
+
 ```bash
 $ gradience wallet check-policy --agent "elite-trader"
 
@@ -228,6 +233,7 @@ Sub-agents:
 ```
 
 ### Scene 4: 低声誉限制 (30秒)
+
 ```bash
 $ gradience wallet check-policy --agent "new-agent"
 
@@ -283,57 +289,55 @@ gradience-ows/
 // packages/core/reputation.ts
 
 export class ReputationEngine {
-  async calculateScore(agentId: string): Promise<number> {
-    const [tasks, payments, disputes] = await Promise.all([
-      this.getTaskHistory(agentId),
-      this.getPaymentHistory(agentId),
-      this.getDisputeHistory(agentId),
-    ]);
-    
-    // 算法
-    const taskScore = tasks.filter(t => t.verified).length * 5;
-    const judgeScore = tasks.reduce((sum, t) => sum + t.judgeRating, 0) / tasks.length * 10;
-    const paymentScore = payments.filter(p => p.onTime).length * 3;
-    const disputePenalty = disputes.length * 10;
-    
-    return Math.min(100, Math.max(0, 
-      taskScore + judgeScore + paymentScore - disputePenalty
-    ));
-  }
-  
-  async getPolicy(score: number): Promise<WalletPolicy> {
-    return {
-      dailyLimit: score * 10,
-      requireApproval: score < 80,
-      allowedTokens: score > 80 ? null : ['USDC', 'USDT'],
-      canCreateSubWallets: score > 50,
-    };
-  }
+    async calculateScore(agentId: string): Promise<number> {
+        const [tasks, payments, disputes] = await Promise.all([
+            this.getTaskHistory(agentId),
+            this.getPaymentHistory(agentId),
+            this.getDisputeHistory(agentId),
+        ]);
+
+        // 算法
+        const taskScore = tasks.filter((t) => t.verified).length * 5;
+        const judgeScore = (tasks.reduce((sum, t) => sum + t.judgeRating, 0) / tasks.length) * 10;
+        const paymentScore = payments.filter((p) => p.onTime).length * 3;
+        const disputePenalty = disputes.length * 10;
+
+        return Math.min(100, Math.max(0, taskScore + judgeScore + paymentScore - disputePenalty));
+    }
+
+    async getPolicy(score: number): Promise<WalletPolicy> {
+        return {
+            dailyLimit: score * 10,
+            requireApproval: score < 80,
+            allowedTokens: score > 80 ? null : ['USDC', 'USDT'],
+            canCreateSubWallets: score > 50,
+        };
+    }
 }
 
 // packages/core/wallet.ts
 
 export class PolicyWallet {
-  constructor(
-    private parentWallet: OWSWallet,
-    private reputation: number,
-  ) {}
-  
-  async sendTransaction(tx: Transaction): Promise<TxHash> {
-    const policy = await this.getPolicy();
-    
-    // 检查限额
-    if (tx.value > policy.dailyLimit) {
-      throw new Error(`Exceeds daily limit: ${policy.dailyLimit}`);
+    constructor(
+        private parentWallet: OWSWallet,
+        private reputation: number,
+    ) {}
+
+    async sendTransaction(tx: Transaction): Promise<TxHash> {
+        const policy = await this.getPolicy();
+
+        // 检查限额
+        if (tx.value > policy.dailyLimit) {
+            throw new Error(`Exceeds daily limit: ${policy.dailyLimit}`);
+        }
+
+        // 检查是否需要审批
+        if (policy.requireApproval && tx.value > 100) {
+            await this.requestApproval(tx);
+        }
+
+        return this.parentWallet.signTransaction(tx);
     }
-    
-    // 检查是否需要审批
-    if (policy.requireApproval && tx.value > 100) {
-      await this.requestApproval(tx);
-    }
-    
-    return this.parentWallet.signTransaction(tx);
-  }
 }
 ```
 
@@ -342,31 +346,37 @@ export class PolicyWallet {
 ## 📋 12小时冲刺计划
 
 ### Hour 1-2: OWS 基础集成
+
 - [ ] 集成 OWS CLI
 - [ ] 创建钱包生成命令
 - [ ] ENS 域名注册
 
 ### Hour 3-4: Reputation 核心
+
 - [ ] 声誉计算算法
 - [ ] 链上存储合约
 - [ ] 查询接口
 
 ### Hour 5-6: Wallet Policy
+
 - [ ] 策略引擎
 - [ ] 限额检查
 - [ ] 审批流程
 
 ### Hour 7-8: CLI 完成
+
 - [ ] agent register
 - [ ] reputation check
 - [ ] wallet create-sub
 
 ### Hour 9-10: Demo Web
+
 - [ ] 可视化界面
 - [ ] 声誉展示
 - [ ] 钱包管理
 
 ### Hour 11-12: 测试 + 部署
+
 - [ ] 端到端测试
 - [ ] 部署到 Vercel
 - [ ] 准备 Pitch

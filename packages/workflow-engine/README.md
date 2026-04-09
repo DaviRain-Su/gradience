@@ -37,7 +37,7 @@ engine.registerWorkflow(workflow);
 
 // Execute
 const execution = await engine.execute(workflow.id, {
-  executor: 'my-agent-address'
+    executor: 'my-agent-address',
 });
 
 console.log('Status:', execution.status);
@@ -67,20 +67,21 @@ await sdk.reviewWorkflow(workflowId, 5, 'Excellent!');
 ```
 
 See [SDK.md](./SDK.md) for complete documentation.
-  isTemplate: false,
-  tags: ['example'],
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-  contentHash: 'ipfs://Qm...',
-  signature: '...'
+isTemplate: false,
+tags: ['example'],
+createdAt: Date.now(),
+updatedAt: Date.now(),
+contentHash: 'ipfs://Qm...',
+signature: '...'
 };
 
 // Validate
 const result = validate(workflow);
 if (!result.success) {
-  console.error(result.error);
+console.error(result.error);
 }
-```
+
+````
 
 ### 2. Execute the Workflow
 
@@ -100,55 +101,55 @@ const execution = await engine.execute(workflow.id, {
 
 console.log('Status:', execution.status);
 console.log('Steps:', execution.stepResults);
-```
+````
 
 ### 3. Cross-Chain Arbitrage Example
 
 ```typescript
 const arbitrageWorkflow: GradienceWorkflow = {
-  id: 'usdc-arbitrage-v1',
-  name: 'USDC Cross-Chain Arbitrage',
-  steps: [
-    {
-      id: 'check-solana',
-      name: 'Get Solana Price',
-      chain: 'solana',
-      action: 'httpRequest',
-      params: { url: 'https://api.jupiter.ag/v4/price?id=USDC' },
-      next: 'check-arbitrum'
-    },
-    {
-      id: 'check-arbitrum',
-      name: 'Get Arbitrum Price',
-      chain: 'arbitrum',
-      action: 'httpRequest',
-      params: { url: 'https://api.arbitrum.io/price/USDC' },
-      next: 'compare'
-    },
-    {
-      id: 'compare',
-      name: 'Check Spread',
-      chain: 'solana',
-      action: 'condition',
-      params: {
-        expression: '{{check-solana.output.price}} > {{check-arbitrum.output.price}} * 1.01'
-      },
-      next: 'execute-swap'
-    },
-    {
-      id: 'execute-swap',
-      name: 'Execute Arbitrage',
-      chain: 'solana',
-      action: 'swap',
-      params: {
-        from: 'USDC',
-        to: 'SOL',
-        amount: '1000000000',
-        slippage: 0.5
-      }
-    }
-  ],
-  // ... rest of workflow definition
+    id: 'usdc-arbitrage-v1',
+    name: 'USDC Cross-Chain Arbitrage',
+    steps: [
+        {
+            id: 'check-solana',
+            name: 'Get Solana Price',
+            chain: 'solana',
+            action: 'httpRequest',
+            params: { url: 'https://api.jupiter.ag/v4/price?id=USDC' },
+            next: 'check-arbitrum',
+        },
+        {
+            id: 'check-arbitrum',
+            name: 'Get Arbitrum Price',
+            chain: 'arbitrum',
+            action: 'httpRequest',
+            params: { url: 'https://api.arbitrum.io/price/USDC' },
+            next: 'compare',
+        },
+        {
+            id: 'compare',
+            name: 'Check Spread',
+            chain: 'solana',
+            action: 'condition',
+            params: {
+                expression: '{{check-solana.output.price}} > {{check-arbitrum.output.price}} * 1.01',
+            },
+            next: 'execute-swap',
+        },
+        {
+            id: 'execute-swap',
+            name: 'Execute Arbitrage',
+            chain: 'solana',
+            action: 'swap',
+            params: {
+                from: 'USDC',
+                to: 'SOL',
+                amount: '1000000000',
+                slippage: 0.5,
+            },
+        },
+    ],
+    // ... rest of workflow definition
 };
 ```
 
@@ -158,16 +159,16 @@ const arbitrageWorkflow: GradienceWorkflow = {
 
 In `real` mode, only the following handlers are registered by default. Use `getSupportedActions()` to inspect capabilities at runtime.
 
-| Action | Status | Description |
-|--------|--------|-------------|
-| `swap` | ✅ stable | Jupiter API + Triton Cascade transaction delivery |
-| `transfer` | ✅ stable | Native SOL and SPL token transfers |
-| `stake` | 🧪 beta | Native Solana stake account creation + validator delegation |
-| `unstake` | 🧪 beta | Native Solana stake deactivation and partial split |
-| `bridge` | 🚧 stub | Cross-chain via Wormhole (not yet implemented) |
-| `yieldFarm` | 🚧 stub | Orca Whirlpools LP (not yet implemented) |
-| `borrow` | 🚧 stub | Solend/Jet lending (not yet implemented) |
-| `repay` | 🚧 stub | Solend/Jet repayment (not yet implemented) |
+| Action      | Status    | Description                                                 |
+| ----------- | --------- | ----------------------------------------------------------- |
+| `swap`      | ✅ stable | Jupiter API + Triton Cascade transaction delivery           |
+| `transfer`  | ✅ stable | Native SOL and SPL token transfers                          |
+| `stake`     | 🧪 beta   | Native Solana stake account creation + validator delegation |
+| `unstake`   | 🧪 beta   | Native Solana stake deactivation and partial split          |
+| `bridge`    | 🚧 stub   | Cross-chain via Wormhole (not yet implemented)              |
+| `yieldFarm` | 🚧 stub   | Orca Whirlpools LP (not yet implemented)                    |
+| `borrow`    | 🚧 stub   | Solend/Jet lending (not yet implemented)                    |
+| `repay`     | 🚧 stub   | Solend/Jet repayment (not yet implemented)                  |
 
 ```typescript
 import { getSupportedActions } from '@gradiences/workflow-engine';
@@ -175,12 +176,14 @@ console.log(getSupportedActions());
 ```
 
 ### Payment
+
 - `x402Payment` — HTTP 402 micro-payments
 - `mppStreamReward` — Tempo MPP streaming rewards
 - `teePrivateSettle` — X Layer TEE private settlement
 - `zeroGasExecute` — X Layer zero-gas execution
 
 ### Utility
+
 - `httpRequest` — HTTP API calls
 - `wait` — Delay/wait
 - `condition` — Conditional logic
@@ -195,8 +198,8 @@ console.log(getSupportedActions());
 import { createWorkflowSDK } from '@gradiences/workflow-engine';
 
 const sdk = createWorkflowSDK({
-  rpcEndpoint: 'https://api.devnet.solana.com',
-  wallet: myWalletAdapter
+    rpcEndpoint: 'https://api.devnet.solana.com',
+    wallet: myWalletAdapter,
 });
 
 // Create workflow
@@ -207,14 +210,14 @@ const accessId = await sdk.purchase(workflowId);
 
 // Execute
 const result = await sdk.execute(workflowId, {
-  recipient: '5Y3d...',
-  amount: '1000000'
+    recipient: '5Y3d...',
+    amount: '1000000',
 });
 
 // Browse marketplace
 const workflows = await sdk.browse({
-  tags: ['arbitrage'],
-  sortBy: 'popular'
+    tags: ['arbitrage'],
+    sortBy: 'popular',
 });
 
 // Review

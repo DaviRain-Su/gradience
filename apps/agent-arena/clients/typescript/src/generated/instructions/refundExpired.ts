@@ -7,379 +7,290 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU8Decoder,
+    getU8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const REFUND_EXPIRED_DISCRIMINATOR = 6;
 
 export function getRefundExpiredDiscriminatorBytes() {
-  return getU8Encoder().encode(REFUND_EXPIRED_DISCRIMINATOR);
+    return getU8Encoder().encode(REFUND_EXPIRED_DISCRIMINATOR);
 }
 
 export type RefundExpiredInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountAnyone extends string | AccountMeta<string> = string,
-  TAccountPoster extends string | AccountMeta<string> = string,
-  TAccountTask extends string | AccountMeta<string> = string,
-  TAccountEscrow extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
-  TAccountEscrowAta extends string | AccountMeta<string> = string,
-  TAccountMintAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string | AccountMeta<string> = string,
+    TAccountPoster extends string | AccountMeta<string> = string,
+    TAccountTask extends string | AccountMeta<string> = string,
+    TAccountEscrow extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
+    TAccountEscrowAta extends string | AccountMeta<string> = string,
+    TAccountMintAccount extends string | AccountMeta<string> = string,
+    TAccountTokenProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountAnyone extends string
-        ? WritableSignerAccount<TAccountAnyone> &
-            AccountSignerMeta<TAccountAnyone>
-        : TAccountAnyone,
-      TAccountPoster extends string
-        ? WritableAccount<TAccountPoster>
-        : TAccountPoster,
-      TAccountTask extends string
-        ? WritableAccount<TAccountTask>
-        : TAccountTask,
-      TAccountEscrow extends string
-        ? WritableAccount<TAccountEscrow>
-        : TAccountEscrow,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      TAccountPosterTokenAccount extends string
-        ? WritableAccount<TAccountPosterTokenAccount>
-        : TAccountPosterTokenAccount,
-      TAccountEscrowAta extends string
-        ? WritableAccount<TAccountEscrowAta>
-        : TAccountEscrowAta,
-      TAccountMintAccount extends string
-        ? ReadonlyAccount<TAccountMintAccount>
-        : TAccountMintAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountAnyone extends string
+                ? WritableSignerAccount<TAccountAnyone> & AccountSignerMeta<TAccountAnyone>
+                : TAccountAnyone,
+            TAccountPoster extends string ? WritableAccount<TAccountPoster> : TAccountPoster,
+            TAccountTask extends string ? WritableAccount<TAccountTask> : TAccountTask,
+            TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            TAccountPosterTokenAccount extends string
+                ? WritableAccount<TAccountPosterTokenAccount>
+                : TAccountPosterTokenAccount,
+            TAccountEscrowAta extends string ? WritableAccount<TAccountEscrowAta> : TAccountEscrowAta,
+            TAccountMintAccount extends string ? ReadonlyAccount<TAccountMintAccount> : TAccountMintAccount,
+            TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type RefundExpiredInstructionData = { discriminator: number };
 
 export type RefundExpiredInstructionDataArgs = {};
 
 export function getRefundExpiredInstructionDataEncoder(): FixedSizeEncoder<RefundExpiredInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([["discriminator", getU8Encoder()]]),
-    (value) => ({ ...value, discriminator: REFUND_EXPIRED_DISCRIMINATOR }),
-  );
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), value => ({
+        ...value,
+        discriminator: REFUND_EXPIRED_DISCRIMINATOR,
+    }));
 }
 
 export function getRefundExpiredInstructionDataDecoder(): FixedSizeDecoder<RefundExpiredInstructionData> {
-  return getStructDecoder([["discriminator", getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getU8Decoder()]]);
 }
 
 export function getRefundExpiredInstructionDataCodec(): FixedSizeCodec<
-  RefundExpiredInstructionDataArgs,
-  RefundExpiredInstructionData
+    RefundExpiredInstructionDataArgs,
+    RefundExpiredInstructionData
 > {
-  return combineCodec(
-    getRefundExpiredInstructionDataEncoder(),
-    getRefundExpiredInstructionDataDecoder(),
-  );
+    return combineCodec(getRefundExpiredInstructionDataEncoder(), getRefundExpiredInstructionDataDecoder());
 }
 
 export type RefundExpiredAsyncInput<
-  TAccountAnyone extends string = string,
-  TAccountPoster extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
+    TAccountAnyone extends string = string,
+    TAccountPoster extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
 > = {
-  anyone: TransactionSigner<TAccountAnyone>;
-  poster?: Address<TAccountPoster>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+    anyone: TransactionSigner<TAccountAnyone>;
+    poster?: Address<TAccountPoster>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
 };
 
 export async function getRefundExpiredInstructionAsync<
-  TAccountAnyone extends string,
-  TAccountPoster extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string,
+    TAccountPoster extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: RefundExpiredAsyncInput<
-    TAccountAnyone,
-    TAccountPoster,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: RefundExpiredAsyncInput<
+        TAccountAnyone,
+        TAccountPoster,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  RefundExpiredInstruction<
-    TProgramAddress,
-    TAccountAnyone,
-    TAccountPoster,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >
+    RefundExpiredInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPoster,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    anyone: { value: input.anyone ?? null, isWritable: true },
-    poster: { value: input.poster ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        anyone: { value: input.anyone ?? null, isWritable: true },
+        poster: { value: input.poster ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.anyone),
-      getAccountMeta(accounts.poster),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getRefundExpiredInstructionDataEncoder().encode({}),
-    programAddress,
-  } as RefundExpiredInstruction<
-    TProgramAddress,
-    TAccountAnyone,
-    TAccountPoster,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.anyone),
+            getAccountMeta(accounts.poster),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+        ],
+        data: getRefundExpiredInstructionDataEncoder().encode({}),
+        programAddress,
+    } as RefundExpiredInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPoster,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >);
 }
 
 export type RefundExpiredInput<
-  TAccountAnyone extends string = string,
-  TAccountPoster extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
+    TAccountAnyone extends string = string,
+    TAccountPoster extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
 > = {
-  anyone: TransactionSigner<TAccountAnyone>;
-  poster?: Address<TAccountPoster>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+    anyone: TransactionSigner<TAccountAnyone>;
+    poster?: Address<TAccountPoster>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
 };
 
 export function getRefundExpiredInstruction<
-  TAccountAnyone extends string,
-  TAccountPoster extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string,
+    TAccountPoster extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: RefundExpiredInput<
-    TAccountAnyone,
-    TAccountPoster,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: RefundExpiredInput<
+        TAccountAnyone,
+        TAccountPoster,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): RefundExpiredInstruction<
-  TProgramAddress,
-  TAccountAnyone,
-  TAccountPoster,
-  TAccountTask,
-  TAccountEscrow,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram,
-  TAccountPosterTokenAccount,
-  TAccountEscrowAta,
-  TAccountMintAccount,
-  TAccountTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    anyone: { value: input.anyone ?? null, isWritable: true },
-    poster: { value: input.poster ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.anyone),
-      getAccountMeta(accounts.poster),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getRefundExpiredInstructionDataEncoder().encode({}),
-    programAddress,
-  } as RefundExpiredInstruction<
     TProgramAddress,
     TAccountAnyone,
     TAccountPoster,
@@ -392,69 +303,126 @@ export function getRefundExpiredInstruction<
     TAccountEscrowAta,
     TAccountMintAccount,
     TAccountTokenProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        anyone: { value: input.anyone ?? null, isWritable: true },
+        poster: { value: input.poster ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.anyone),
+            getAccountMeta(accounts.poster),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+        ],
+        data: getRefundExpiredInstructionDataEncoder().encode({}),
+        programAddress,
+    } as RefundExpiredInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPoster,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >);
 }
 
 export type ParsedRefundExpiredInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    anyone: TAccountMetas[0];
-    poster?: TAccountMetas[1] | undefined;
-    task: TAccountMetas[2];
-    escrow: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
-    eventAuthority: TAccountMetas[5];
-    gradienceProgram: TAccountMetas[6];
-    posterTokenAccount?: TAccountMetas[7] | undefined;
-    escrowAta?: TAccountMetas[8] | undefined;
-    mintAccount?: TAccountMetas[9] | undefined;
-    tokenProgram?: TAccountMetas[10] | undefined;
-  };
-  data: RefundExpiredInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        anyone: TAccountMetas[0];
+        poster?: TAccountMetas[1] | undefined;
+        task: TAccountMetas[2];
+        escrow: TAccountMetas[3];
+        systemProgram: TAccountMetas[4];
+        eventAuthority: TAccountMetas[5];
+        gradienceProgram: TAccountMetas[6];
+        posterTokenAccount?: TAccountMetas[7] | undefined;
+        escrowAta?: TAccountMetas[8] | undefined;
+        mintAccount?: TAccountMetas[9] | undefined;
+        tokenProgram?: TAccountMetas[10] | undefined;
+    };
+    data: RefundExpiredInstructionData;
 };
 
-export function parseRefundExpiredInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parseRefundExpiredInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRefundExpiredInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  const getNextOptionalAccount = () => {
-    const accountMeta = getNextAccount();
-    return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS
-      ? undefined
-      : accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      anyone: getNextAccount(),
-      poster: getNextOptionalAccount(),
-      task: getNextAccount(),
-      escrow: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-      posterTokenAccount: getNextOptionalAccount(),
-      escrowAta: getNextOptionalAccount(),
-      mintAccount: getNextOptionalAccount(),
-      tokenProgram: getNextOptionalAccount(),
-    },
-    data: getRefundExpiredInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 11) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    const getNextOptionalAccount = () => {
+        const accountMeta = getNextAccount();
+        return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS ? undefined : accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            anyone: getNextAccount(),
+            poster: getNextOptionalAccount(),
+            task: getNextAccount(),
+            escrow: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+            posterTokenAccount: getNextOptionalAccount(),
+            escrowAta: getNextOptionalAccount(),
+            mintAccount: getNextOptionalAccount(),
+            tokenProgram: getNextOptionalAccount(),
+        },
+        data: getRefundExpiredInstructionDataDecoder().decode(instruction.data),
+    };
 }

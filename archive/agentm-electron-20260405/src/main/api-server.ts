@@ -5,18 +5,11 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import type {
-    AgentProfile,
-    ArenaTaskSummary,
-    ChatMessage,
-    ProfilePublishMode,
-} from '../shared/types.ts';
+import type { AgentProfile, ArenaTaskSummary, ChatMessage, ProfilePublishMode } from '../shared/types.ts';
 import { EMPTY_AUTH } from '../shared/types.ts';
 import { createWebEntryRuntime } from './web-entry/runtime.ts';
 import type { WebEntryConfig } from './web-entry/state.ts';
-import {
-    MagicBlockA2AAgent,
-} from '../renderer/lib/a2a-client.ts';
+import { MagicBlockA2AAgent } from '../renderer/lib/a2a-client.ts';
 import { sortAndFilterAgents } from '../renderer/lib/ranking.ts';
 import type { InteropSyncEvent } from '../shared/types.ts';
 import { getIndexerClient, type IndexerClient, type SubmissionApi, type TaskApi } from '../renderer/lib/indexer-api.ts';
@@ -83,9 +76,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
     const profileSyncSigningSecret = options.profileSyncSigningSecret;
     const signatureMaxSkewSec = options.signatureMaxSkewSec ?? 300;
     const profileSyncAllowedSources = normalizeAllowlist(options.profileSyncAllowedSources);
-    const profileSyncAllowedOrganizations = normalizeAllowlist(
-        options.profileSyncAllowedOrganizations,
-    );
+    const profileSyncAllowedOrganizations = normalizeAllowlist(options.profileSyncAllowedOrganizations);
     const authBindings = createAuthBindingState();
     const webEntry = createWebEntryRuntime(
         {
@@ -110,15 +101,12 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
         try {
             // POST /auth/demo-login (development/test only)
             if (method === 'POST' && path === '/auth/demo-login') {
-                if (
-                    process.env.NODE_ENV === 'production' ||
-                    process.env.AGENT_IM_DISABLE_DEMO_LOGIN === '1'
-                ) {
+                if (process.env.NODE_ENV === 'production' || process.env.AGENT_IM_DISABLE_DEMO_LOGIN === '1') {
                     authBindings.demoLoginDisabledTotal += 1;
                     authBindings.lastError = 'Demo login is disabled in production';
                     return json(res, 403, { error: 'Demo login is disabled in production' });
                 }
-                const body = JSON.parse(await readBody(req) || '{}') as {
+                const body = JSON.parse((await readBody(req)) || '{}') as {
                     publicKey?: string;
                     email?: string;
                     privyUserId?: string;
@@ -129,11 +117,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     email: body.email ?? 'demo@agent.im',
                     privyUserId: body.privyUserId ?? `demo-${Date.now()}`,
                 };
-                const bindingError = registerAuthBinding(
-                    authBindings,
-                    auth.publicKey,
-                    auth.privyUserId,
-                );
+                const bindingError = registerAuthBinding(authBindings, auth.publicKey, auth.privyUserId);
                 if (bindingError) {
                     authBindings.rejectedDemoLoginTotal += 1;
                     authBindings.lastError = bindingError;
@@ -216,7 +200,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     if (session.publicKey !== agent) {
                         return json(res, 403, { error: 'Profile updates are only allowed for your own agent' });
                     }
-                    const payload = JSON.parse(await readBody(req) || '{}') as Record<string, unknown>;
+                    const payload = JSON.parse((await readBody(req)) || '{}') as Record<string, unknown>;
                     const parsed = parseProfileUpsertPayload(payload);
                     if ('error' in parsed) {
                         return json(res, 400, { error: parsed.error });
@@ -251,14 +235,12 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 if (!current) {
                     return json(res, 404, { error: `Profile not found for agent ${agent}` });
                 }
-                const payload = JSON.parse(await readBody(req) || '{}') as Record<string, unknown>;
+                const payload = JSON.parse((await readBody(req)) || '{}') as Record<string, unknown>;
                 const parsed = parseProfilePublishPayload(payload);
                 if ('error' in parsed) {
                     return json(res, 400, { error: parsed.error });
                 }
-                const contentRef =
-                    parsed.contentRef ??
-                    `sha256:${sha256Hex(JSON.stringify(toProfileApi(current)))}`;
+                const contentRef = parsed.contentRef ?? `sha256:${sha256Hex(JSON.stringify(toProfileApi(current)))}`;
                 const publishMode = parsed.publishMode ?? current.publishMode;
                 const published = await profilePublisher.publish({
                     agent,
@@ -306,12 +288,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 if (!isAllowedProfileSyncSource(parsed.source, profileSyncAllowedSources)) {
                     return json(res, 403, { error: 'Profile sync source is not allowed' });
                 }
-                if (
-                    !isAllowedProfileSyncOrganization(
-                        parsed.repository,
-                        profileSyncAllowedOrganizations,
-                    )
-                ) {
+                if (!isAllowedProfileSyncOrganization(parsed.repository, profileSyncAllowedOrganizations)) {
                     return json(res, 403, { error: 'Profile sync organization is not allowed' });
                 }
                 const existing = store.getState().getAgentProfile(parsed.agent);
@@ -325,8 +302,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                     updatedAt: Date.now(),
                 };
                 const contentRef =
-                    parsed.contentRef ??
-                    `sha256:${sha256Hex(JSON.stringify(toProfileApi(draftProfile)))}`;
+                    parsed.contentRef ?? `sha256:${sha256Hex(JSON.stringify(toProfileApi(draftProfile)))}`;
                 const published = await profilePublisher.publish({
                     agent: parsed.agent,
                     mode: 'git-sync',
@@ -369,9 +345,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 }
                 const reputation = await indexer.getReputation(session.publicKey);
                 const interopStatus = store.getState().getInteropStatus(session.agentId);
-                const identityRegistration = store
-                    .getState()
-                    .getIdentityRegistrationStatus(session.agentId);
+                const identityRegistration = store.getState().getIdentityRegistrationStatus(session.agentId);
                 const profile = store.getState().getAgentProfile(session.agentId);
                 return json(res, 200, {
                     agentId: session.agentId,
@@ -471,7 +445,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 if (!Number.isFinite(taskId)) {
                     return json(res, 400, { error: 'Invalid task id' });
                 }
-                const body = JSON.parse(await readBody(req) || '{}') as {
+                const body = JSON.parse((await readBody(req)) || '{}') as {
                     resultRef?: string;
                     traceRef?: string | null;
                 };
@@ -525,11 +499,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 if ('error' in pagination) {
                     return json(res, 400, { error: pagination.error });
                 }
-                const attestations = await getAttestations(
-                    session.publicKey,
-                    pagination.limit,
-                    pagination.offset,
-                );
+                const attestations = await getAttestations(session.publicKey, pagination.limit, pagination.offset);
                 return json(res, 200, attestations);
             }
 
@@ -572,22 +542,24 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 const registration = store.getState().getIdentityRegistrationStatus(agent);
                 return json(res, 200, {
                     agent,
-                    status:
-                        registration ?? {
-                            agent,
-                            state: 'unknown',
-                            agentId: null,
-                            txHash: null,
-                            error: null,
-                            updatedAt: 0,
-                        },
+                    status: registration ?? {
+                        agent,
+                        state: 'unknown',
+                        agentId: null,
+                        txHash: null,
+                        error: null,
+                        updatedAt: 0,
+                    },
                 });
             }
 
             // POST /webhook/profile-sync (Git push → Profile update)
             if (method === 'POST' && path === '/webhook/profile-sync') {
                 const bodyText = await readBody(req);
-                let payload: { agent?: string; profile?: { display_name?: string; bio?: string; links?: Record<string, string> } };
+                let payload: {
+                    agent?: string;
+                    profile?: { display_name?: string; bio?: string; links?: Record<string, string> };
+                };
                 try {
                     payload = JSON.parse(bodyText);
                 } catch {
@@ -666,11 +638,7 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
                 }
                 const snapshot = store.getState().getInteropStatus(agent);
                 const data = snapshot ?? createEmptyInteropStatusSnapshot(agent);
-                return html(
-                    res,
-                    200,
-                    renderInteropDashboard(agent, data),
-                );
+                return html(res, 200, renderInteropDashboard(agent, data));
             }
 
             if (await webEntry.handleHttp(req, res, method, path, url)) {
@@ -695,27 +663,32 @@ export function createApiServer(deps: ApiServerDeps, options: ApiServerOptions =
     const port = options.port ?? 3939;
 
     return {
-        start: () => new Promise<number>((resolve) => {
-            server.listen(port, host, () => {
-                const addr = server.address();
-                const actualPort = typeof addr === 'object' && addr ? addr.port : port;
-                resolve(actualPort);
-            });
-        }),
-        stop: () => new Promise<void>((resolve) => {
-            webEntry.dispose();
-            server.close(() => resolve());
-        }),
+        start: () =>
+            new Promise<number>((resolve) => {
+                server.listen(port, host, () => {
+                    const addr = server.address();
+                    const actualPort = typeof addr === 'object' && addr ? addr.port : port;
+                    resolve(actualPort);
+                });
+            }),
+        stop: () =>
+            new Promise<void>((resolve) => {
+                webEntry.dispose();
+                server.close(() => resolve());
+            }),
         server,
     };
 }
 
-function requireBoundSession(auth: {
-    authenticated: boolean;
-    publicKey: string | null;
-    email: string | null;
-    privyUserId: string | null;
-}, bindings: AuthBindingState) {
+function requireBoundSession(
+    auth: {
+        authenticated: boolean;
+        publicKey: string | null;
+        email: string | null;
+        privyUserId: string | null;
+    },
+    bindings: AuthBindingState,
+) {
     if (!auth.authenticated) {
         bindings.rejectedSessionTotal += 1;
         bindings.lastError = 'Not authenticated';
@@ -751,11 +724,7 @@ function createAuthBindingState(): AuthBindingState {
     };
 }
 
-function registerAuthBinding(
-    state: AuthBindingState,
-    wallet: string,
-    privyUserId: string,
-): string | null {
+function registerAuthBinding(state: AuthBindingState, wallet: string, privyUserId: string): string | null {
     const existingWallet = state.byPrivyUserId.get(privyUserId);
     if (existingWallet && existingWallet !== wallet) {
         return `Privy user ${privyUserId} is already bound to wallet ${existingWallet}`;
@@ -828,9 +797,7 @@ function toProfileApi(profile: AgentProfile): AgentProfileApi {
     };
 }
 
-function parseProfileUpsertPayload(
-    payload: Record<string, unknown>,
-): ParsedProfileUpsertPayload | ParseError {
+function parseProfileUpsertPayload(payload: Record<string, unknown>): ParsedProfileUpsertPayload | ParseError {
     const displayNameRaw = typeof payload.display_name === 'string' ? payload.display_name.trim() : '';
     if (!displayNameRaw) {
         return { error: 'Missing required field: display_name' };
@@ -861,9 +828,7 @@ function parseProfileUpsertPayload(
     };
 }
 
-function parseProfilePublishPayload(
-    payload: Record<string, unknown>,
-): ParsedProfilePublishPayload | ParseError {
+function parseProfilePublishPayload(payload: Record<string, unknown>): ParsedProfilePublishPayload | ParseError {
     const publishMode = parseProfilePublishMode(payload.publish_mode);
     if (publishMode && typeof publishMode === 'object' && 'error' in publishMode) {
         return publishMode;
@@ -871,9 +836,7 @@ function parseProfilePublishPayload(
     if (typeof payload.content_ref !== 'undefined' && typeof payload.content_ref !== 'string') {
         return { error: 'Invalid content_ref: expected string' };
     }
-    const contentRef = typeof payload.content_ref === 'string'
-        ? payload.content_ref.trim()
-        : null;
+    const contentRef = typeof payload.content_ref === 'string' ? payload.content_ref.trim() : null;
     if (contentRef !== null && contentRef.length === 0) {
         return { error: 'Invalid content_ref: expected non-empty string' };
     }
@@ -895,18 +858,14 @@ function parseJsonObject(text: string): Record<string, unknown> | { error: strin
     }
 }
 
-function parseGitSyncWebhookPayload(
-    payload: Record<string, unknown>,
-): ParsedGitSyncWebhookPayload | ParseError {
+function parseGitSyncWebhookPayload(payload: Record<string, unknown>): ParsedGitSyncWebhookPayload | ParseError {
     if (isGithubPushPayload(payload)) {
         return parseGithubPushWebhookPayload(payload);
     }
     return parseDirectProfileSyncPayload(payload);
 }
 
-function parseDirectProfileSyncPayload(
-    payload: Record<string, unknown>,
-): ParsedGitSyncWebhookPayload | ParseError {
+function parseDirectProfileSyncPayload(payload: Record<string, unknown>): ParsedGitSyncWebhookPayload | ParseError {
     const agentRaw = typeof payload.agent === 'string' ? payload.agent.trim() : '';
     if (!agentRaw) {
         return { error: 'Missing required field: agent' };
@@ -927,22 +886,21 @@ function parseDirectProfileSyncPayload(
     if (typeof payload.content_ref !== 'undefined' && typeof payload.content_ref !== 'string') {
         return { error: 'Invalid content_ref: expected string' };
     }
-    const contentRef =
-        typeof payload.content_ref === 'string' ? payload.content_ref.trim() : null;
+    const contentRef = typeof payload.content_ref === 'string' ? payload.content_ref.trim() : null;
     if (contentRef !== null && contentRef.length === 0) {
         return { error: 'Invalid content_ref: expected non-empty string' };
     }
     const source = normalizeSourceName(
-        typeof payload.source === 'string' && payload.source.trim().length > 0
-            ? payload.source.trim()
-            : 'git',
+        typeof payload.source === 'string' && payload.source.trim().length > 0 ? payload.source.trim() : 'git',
     );
-    const repository = typeof payload.repository === 'string' && payload.repository.trim().length > 0
-        ? payload.repository.trim()
-        : null;
-    const commitSha = typeof payload.commit_sha === 'string' && payload.commit_sha.trim().length > 0
-        ? payload.commit_sha.trim()
-        : null;
+    const repository =
+        typeof payload.repository === 'string' && payload.repository.trim().length > 0
+            ? payload.repository.trim()
+            : null;
+    const commitSha =
+        typeof payload.commit_sha === 'string' && payload.commit_sha.trim().length > 0
+            ? payload.commit_sha.trim()
+            : null;
     return {
         source,
         repository,
@@ -955,16 +913,13 @@ function parseDirectProfileSyncPayload(
     };
 }
 
-function parseGithubPushWebhookPayload(
-    payload: Record<string, unknown>,
-): ParsedGitSyncWebhookPayload | ParseError {
+function parseGithubPushWebhookPayload(payload: Record<string, unknown>): ParsedGitSyncWebhookPayload | ParseError {
     const repository = parseRepositoryIdentifier(payload.repository);
-    const commitSha = extractTrimmedString(payload.after) ??
+    const commitSha =
+        extractTrimmedString(payload.after) ??
         extractTrimmedString((payload.head_commit as Record<string, unknown> | undefined)?.id) ??
         null;
-    const source = normalizeSourceName(
-        extractTrimmedString(payload.source) ?? 'github',
-    );
+    const source = normalizeSourceName(extractTrimmedString(payload.source) ?? 'github');
 
     const profilePatch = extractGithubProfilePatch(payload);
     if ('error' in profilePatch) {
@@ -979,7 +934,11 @@ function parseGithubPushWebhookPayload(
     if ('error' in parsedProfile) {
         return parsedProfile;
     }
-    if (typeof profilePatch.contentRef !== 'undefined' && profilePatch.contentRef !== null && profilePatch.contentRef.length === 0) {
+    if (
+        typeof profilePatch.contentRef !== 'undefined' &&
+        profilePatch.contentRef !== null &&
+        profilePatch.contentRef.length === 0
+    ) {
         return { error: 'Invalid content_ref: expected non-empty string' };
     }
     return {
@@ -1015,8 +974,8 @@ function extractGithubProfilePatch(
 
     const candidates = ['profile_sync', 'gradience_profile', 'profile']
         .map((key) => payload[key])
-        .filter((value): value is Record<string, unknown> =>
-            !!value && typeof value === 'object' && !Array.isArray(value),
+        .filter(
+            (value): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value),
         );
 
     for (const candidate of candidates) {
@@ -1026,9 +985,7 @@ function extractGithubProfilePatch(
         }
         const candidateAgent = extractTrimmedString(candidate.agent) ?? topLevelAgent;
         const nestedProfile = toRecord(candidate.profile);
-        const profilePayload =
-            nestedProfile ??
-            (isLikelyProfileObject(candidate) ? candidate : null);
+        const profilePayload = nestedProfile ?? (isLikelyProfileObject(candidate) ? candidate : null);
         if (!candidateAgent || !profilePayload) {
             continue;
         }
@@ -1051,14 +1008,11 @@ function extractGithubProfilePatch(
     }
 
     return {
-        error:
-            'GitHub push payload missing profile_sync data: expected profile_sync/gradience_profile with agent + profile',
+        error: 'GitHub push payload missing profile_sync data: expected profile_sync/gradience_profile with agent + profile',
     };
 }
 
-function parseOptionalContentRef(
-    value: unknown,
-): { value: string | null } | ParseError {
+function parseOptionalContentRef(value: unknown): { value: string | null } | ParseError {
     if (typeof value === 'undefined' || value === null) {
         return { value: null };
     }
@@ -1137,11 +1091,7 @@ function extractTrimmedString(value: unknown): string | null {
 }
 
 function isLikelyProfileObject(value: Record<string, unknown>): boolean {
-    return (
-        typeof value.display_name === 'string' ||
-        typeof value.bio === 'string' ||
-        value.links !== undefined
-    );
+    return typeof value.display_name === 'string' || typeof value.bio === 'string' || value.links !== undefined;
 }
 
 function normalizeSourceName(source: string): string {
@@ -1152,9 +1102,7 @@ function normalizeAllowlist(values: string[] | undefined): string[] | null {
     if (!values || values.length === 0) {
         return null;
     }
-    const normalized = values
-        .map((value) => value.trim().toLowerCase())
-        .filter((value) => value.length > 0);
+    const normalized = values.map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0);
     return normalized.length > 0 ? [...new Set(normalized)] : null;
 }
 
@@ -1165,10 +1113,7 @@ function isAllowedProfileSyncSource(source: string, allowlist: string[] | null):
     return allowlist.includes(normalizeSourceName(source));
 }
 
-function isAllowedProfileSyncOrganization(
-    repository: string | null,
-    allowlist: string[] | null,
-): boolean {
+function isAllowedProfileSyncOrganization(repository: string | null, allowlist: string[] | null): boolean {
     if (!allowlist) {
         return true;
     }
@@ -1199,9 +1144,7 @@ function extractRepositoryOrganization(repository: string | null): string | null
     return org.trim();
 }
 
-function parseProfilePublishMode(
-    publishMode: unknown,
-): ProfilePublishMode | { error: string } | undefined {
+function parseProfilePublishMode(publishMode: unknown): ProfilePublishMode | { error: string } | undefined {
     if (typeof publishMode === 'undefined') {
         return undefined;
     }
@@ -1287,9 +1230,7 @@ function parsePagination(url: URL) {
     return { limit, offset } as const;
 }
 
-function parseTaskStatus(
-    value: string | null,
-): { status?: 'open' | 'completed' | 'refunded' } | { error: string } {
+function parseTaskStatus(value: string | null): { status?: 'open' | 'completed' | 'refunded' } | { error: string } {
     if (value === null || value === '') {
         return { status: undefined };
     }
@@ -1312,25 +1253,29 @@ async function getMeTasks(
 ) {
     const { role, status, sort, limit, offset } = options;
 
-    const postedTasksPromise = role === 'participant'
-        ? Promise.resolve([] as TaskApi[])
-        : indexer.getTasks({ status, poster: agent, limit: 100, offset: 0 });
-    const candidateTasksPromise = role === 'poster'
-        ? Promise.resolve([] as TaskApi[])
-        : indexer.getTasks({ status, limit: 100, offset: 0 });
+    const postedTasksPromise =
+        role === 'participant'
+            ? Promise.resolve([] as TaskApi[])
+            : indexer.getTasks({ status, poster: agent, limit: 100, offset: 0 });
+    const candidateTasksPromise =
+        role === 'poster' ? Promise.resolve([] as TaskApi[]) : indexer.getTasks({ status, limit: 100, offset: 0 });
 
     const [postedTasks, candidateTasks] = await Promise.all([postedTasksPromise, candidateTasksPromise]);
 
     const postedIds = new Set(postedTasks.map((task) => task.task_id));
-    const participationRecords = role === 'poster'
-        ? new Map<number, SubmissionApi>()
-        : await getLatestSubmissionByTask(indexer, candidateTasks, agent);
+    const participationRecords =
+        role === 'poster'
+            ? new Map<number, SubmissionApi>()
+            : await getLatestSubmissionByTask(indexer, candidateTasks, agent);
 
-    const combined = new Map<number, {
-        task: TaskApi;
-        role: 'poster' | 'participant' | 'both';
-        latestSubmission: SubmissionApi | null;
-    }>();
+    const combined = new Map<
+        number,
+        {
+            task: TaskApi;
+            role: 'poster' | 'participant' | 'both';
+            latestSubmission: SubmissionApi | null;
+        }
+    >();
 
     for (const task of postedTasks) {
         combined.set(task.task_id, {
@@ -1373,12 +1318,12 @@ async function getMeTasks(
         role: row.role,
         latestSubmission: row.latestSubmission
             ? {
-                agent: row.latestSubmission.agent,
-                result_ref: row.latestSubmission.result_ref,
-                trace_ref: row.latestSubmission.trace_ref,
-                submission_slot: row.latestSubmission.submission_slot,
-                submitted_at: row.latestSubmission.submitted_at,
-            }
+                  agent: row.latestSubmission.agent,
+                  result_ref: row.latestSubmission.result_ref,
+                  trace_ref: row.latestSubmission.trace_ref,
+                  submission_slot: row.latestSubmission.submission_slot,
+                  submitted_at: row.latestSubmission.submitted_at,
+              }
             : null,
     }));
 
@@ -1600,8 +1545,7 @@ function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
             ));
     const identityRecipientsValid =
         typeof event.identityRecipients === 'undefined' ||
-        (Array.isArray(event.identityRecipients) &&
-            event.identityRecipients.every((item) => typeof item === 'string'));
+        (Array.isArray(event.identityRecipients) && event.identityRecipients.every((item) => typeof item === 'string'));
     const identityDispatchesValid =
         typeof event.identityDispatches === 'undefined' ||
         (Array.isArray(event.identityDispatches) &&
@@ -1614,8 +1558,7 @@ function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
             ));
     const participantsValid =
         typeof event.participants === 'undefined' ||
-        (Array.isArray(event.participants) &&
-            event.participants.every((item) => typeof item === 'string'));
+        (Array.isArray(event.participants) && event.participants.every((item) => typeof item === 'string'));
     return (
         event.type === 'interop_sync' &&
         typeof event.winner === 'string' &&
@@ -1627,12 +1570,10 @@ function isInteropSyncEvent(value: unknown): value is InteropSyncEvent {
         typeof event.identityRegistered === 'boolean' &&
         Array.isArray(event.feedbackTargets) &&
         typeof event.erc8004FeedbackPublished === 'boolean' &&
-        (typeof event.evmReputationPublished === 'undefined' ||
-            typeof event.evmReputationPublished === 'boolean') &&
+        (typeof event.evmReputationPublished === 'undefined' || typeof event.evmReputationPublished === 'boolean') &&
         typeof event.istranaFeedbackPublished === 'boolean' &&
         typeof event.attestationPublished === 'boolean' &&
-        (typeof event.feedbackPublishedCount === 'undefined' ||
-            typeof event.feedbackPublishedCount === 'number') &&
+        (typeof event.feedbackPublishedCount === 'undefined' || typeof event.feedbackPublishedCount === 'number') &&
         feedbackRecipientsValid &&
         identityRecipientsValid &&
         identityDispatchesValid &&
@@ -1654,9 +1595,7 @@ function verifySignedPayload(
     if (!Number.isFinite(ts)) return false;
     const nowSec = Math.floor(Date.now() / 1000);
     if (Math.abs(nowSec - ts) > maxSkewSec) return false;
-    const expected = createHmac('sha256', secret)
-        .update(`${timestamp}.${body}`)
-        .digest('hex');
+    const expected = createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
     try {
         return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
     } catch {

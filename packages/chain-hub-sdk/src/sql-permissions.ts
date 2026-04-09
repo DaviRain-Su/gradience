@@ -10,7 +10,7 @@ export interface SqlPermissions {
     /** Max rows per query */
     maxRowLimit: number;
     /** Allowed operations (SELECT only by default) */
-    allowedOperations: ("SELECT" | "INSERT" | "UPDATE" | "DELETE")[];
+    allowedOperations: ('SELECT' | 'INSERT' | 'UPDATE' | 'DELETE')[];
     /** Max query execution time in ms */
     queryTimeoutMs: number;
     /** Row-level security filters (appended as WHERE clauses) */
@@ -18,15 +18,9 @@ export interface SqlPermissions {
 }
 
 const DEFAULT_PERMISSIONS: SqlPermissions = {
-    allowedTables: [
-        "tasks",
-        "submissions",
-        "reputations",
-        "agent_profiles",
-        "judge_pools",
-    ],
+    allowedTables: ['tasks', 'submissions', 'reputations', 'agent_profiles', 'judge_pools'],
     maxRowLimit: 1000,
-    allowedOperations: ["SELECT"],
+    allowedOperations: ['SELECT'],
     queryTimeoutMs: 10_000,
 };
 
@@ -45,15 +39,17 @@ export class SqlPermissionGuard {
         // Check operation type
         const operation = normalized.split(/\s+/)[0] as string;
         if (!this.permissions.allowedOperations.includes(operation as never)) {
-            errors.push(`Operation '${operation}' is not allowed. Allowed: ${this.permissions.allowedOperations.join(", ")}`);
+            errors.push(
+                `Operation '${operation}' is not allowed. Allowed: ${this.permissions.allowedOperations.join(', ')}`,
+            );
         }
 
         // Check for dangerous patterns
         if (/;\s*(DROP|TRUNCATE|ALTER|CREATE)\s/i.test(sql)) {
-            errors.push("DDL statements are not allowed");
+            errors.push('DDL statements are not allowed');
         }
         if (/--/.test(sql) || /\/\*/.test(sql)) {
-            errors.push("SQL comments are not allowed");
+            errors.push('SQL comments are not allowed');
         }
 
         // Check table access
@@ -62,7 +58,9 @@ export class SqlPermissionGuard {
         while ((match = tablePattern.exec(sql)) !== null) {
             const table = match[1].toLowerCase();
             if (!this.permissions.allowedTables.includes(table)) {
-                errors.push(`Table '${table}' is not accessible. Allowed: ${this.permissions.allowedTables.join(", ")}`);
+                errors.push(
+                    `Table '${table}' is not accessible. Allowed: ${this.permissions.allowedTables.join(', ')}`,
+                );
             }
         }
 
@@ -87,7 +85,7 @@ export class SqlPermissionGuard {
 
         let filtered = sql;
         for (const [table, filter] of Object.entries(this.permissions.rowFilters)) {
-            const pattern = new RegExp(`FROM\\s+${table}(?=\\s|$|;)`, "gi");
+            const pattern = new RegExp(`FROM\\s+${table}(?=\\s|$|;)`, 'gi');
             if (pattern.test(filtered)) {
                 if (/WHERE/i.test(filtered)) {
                     filtered = filtered.replace(/WHERE/i, `WHERE (${filter}) AND`);
@@ -102,7 +100,7 @@ export class SqlPermissionGuard {
     /** Ensure LIMIT is present and within bounds */
     enforceLimit(sql: string): string {
         if (/LIMIT\s+\d+/i.test(sql)) return sql;
-        return `${sql.replace(/;\s*$/, "")} LIMIT ${this.permissions.maxRowLimit}`;
+        return `${sql.replace(/;\s*$/, '')} LIMIT ${this.permissions.maxRowLimit}`;
     }
 }
 

@@ -47,10 +47,7 @@ describe('A2ARouter', () => {
 
         it('should throw if initialized twice', async () => {
             await router.initialize();
-            await assert.rejects(
-                async () => await router.initialize(),
-                /Already initialized/
-            );
+            await assert.rejects(async () => await router.initialize(), /Already initialized/);
         });
 
         it('should allow shutdown when not initialized', async () => {
@@ -80,12 +77,13 @@ describe('A2ARouter', () => {
     describe('Messaging', () => {
         it('should throw when sending without initialization', async () => {
             await assert.rejects(
-                async () => await router.send({
-                    to: 'recipient',
-                    type: 'direct_message',
-                    payload: { content: 'test' },
-                }),
-                /Not initialized/
+                async () =>
+                    await router.send({
+                        to: 'recipient',
+                        type: 'direct_message',
+                        payload: { content: 'test' },
+                    }),
+                /Not initialized/,
             );
         });
 
@@ -111,10 +109,7 @@ describe('A2ARouter', () => {
 
     describe('Subscribe', () => {
         it('should throw when subscribing without initialization', async () => {
-            await assert.rejects(
-                async () => await router.subscribe(() => {}),
-                /Not initialized/
-            );
+            await assert.rejects(async () => await router.subscribe(() => {}), /Not initialized/);
         });
 
         it('should subscribe successfully when initialized', async () => {
@@ -133,10 +128,7 @@ describe('A2ARouter', () => {
 
     describe('Discovery', () => {
         it('should throw when discovering without initialization', async () => {
-            await assert.rejects(
-                async () => await router.discoverAgents(),
-                /Not initialized/
-            );
+            await assert.rejects(async () => await router.discoverAgents(), /Not initialized/);
         });
 
         it('should return empty array when initialized', async () => {
@@ -149,16 +141,17 @@ describe('A2ARouter', () => {
     describe('Broadcast', () => {
         it('should throw when broadcasting without initialization', async () => {
             await assert.rejects(
-                async () => await router.broadcastCapabilities({
-                    address: 'test',
-                    displayName: 'Test',
-                    capabilities: [],
-                    reputationScore: 0,
-                    available: true,
-                    discoveredVia: 'nostr',
-                    lastSeenAt: Date.now(),
-                }),
-                /Not initialized/
+                async () =>
+                    await router.broadcastCapabilities({
+                        address: 'test',
+                        displayName: 'Test',
+                        capabilities: [],
+                        reputationScore: 0,
+                        available: true,
+                        discoveredVia: 'nostr',
+                        lastSeenAt: Date.now(),
+                    }),
+                /Not initialized/,
             );
         });
 

@@ -27,10 +27,7 @@ export function ProfileHeader({
 }) {
     const [showDomainInput, setShowDomainInput] = useState(false);
     const [copied, setCopied] = useState(false);
-    const shareUrl = useMemo(
-        () => buildSocialShareUrl(linkedDomain || address),
-        [address, linkedDomain]
-    );
+    const shareUrl = useMemo(() => buildSocialShareUrl(linkedDomain || address), [address, linkedDomain]);
 
     async function handleCopy() {
         if (!shareUrl || typeof navigator === 'undefined' || !navigator.clipboard) return;
@@ -47,9 +44,7 @@ export function ProfileHeader({
                     <div className="mt-1">
                         <DomainBadge address={address} linkedDomain={linkedDomain} />
                     </div>
-                    <p className="text-xs text-gray-500 font-mono mt-1 truncate max-w-[260px]">
-                        {address}
-                    </p>
+                    <p className="text-xs text-gray-500 font-mono mt-1 truncate max-w-[260px]">{address}</p>
                 </div>
                 {rightSlot}
             </div>

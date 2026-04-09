@@ -43,8 +43,8 @@ export async function loadKeypairSigner(keypairPath: string) {
     } catch {
         throw new Error(`Invalid keypair json: ${keypairPath}`);
     }
-    
-    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some(value => !isByte(value))) {
+
+    if (!Array.isArray(parsed) || parsed.length !== 64 || parsed.some((value) => !isByte(value))) {
         throw new Error('Keypair file must be a 64-element array of byte values');
     }
 
@@ -99,13 +99,15 @@ export function outputResult(result: unknown): void {
 
 export function outputError(error: unknown, code: string = 'UNKNOWN_ERROR'): void {
     const message = error instanceof Error ? error.message : String(error);
-    
+
     if (isNoJsonMode()) {
-        console.error(JSON.stringify({
-            ok: false,
-            timestamp: new Date().toISOString(),
-            error: { code, message },
-        }));
+        console.error(
+            JSON.stringify({
+                ok: false,
+                timestamp: new Date().toISOString(),
+                error: { code, message },
+            }),
+        );
     } else {
         console.error(chalk.red('Error:'), message);
     }
@@ -117,24 +119,24 @@ export interface ParsedFlags {
 
 export function parseFlags(args: string[]): ParsedFlags {
     const flags = new Map<string, string>();
-    
+
     for (let i = 0; i < args.length; i += 1) {
         const arg = args[i];
         if (!arg || !arg.startsWith('--')) {
             continue;
         }
-        
+
         const key = arg.slice(2);
         const value = args[i + 1];
-        
+
         if (!value || value.startsWith('--')) {
             throw new Error(`Missing value for --${key}`);
         }
-        
+
         flags.set(key, value);
         i += 1; // Skip the value
     }
-    
+
     return {
         get: (key: string) => flags.get(key),
     };

@@ -1,6 +1,6 @@
 packages:
     - 'packages/*'
-    - '!packages/workflow-engine'  # excluded: heavy type errors in unfinished triton-cascade / trading modules
+    - '!packages/workflow-engine' # excluded: heavy type errors in unfinished triton-cascade / trading modules
     - 'e2e'
     - 'apps/agentm'
     - 'apps/agent-arena/frontend'

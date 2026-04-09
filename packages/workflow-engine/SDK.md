@@ -23,17 +23,17 @@ import { createWorkflowEngine, createAllHandlers } from '@gradiences/workflow-en
 const engine = createWorkflowEngine();
 
 const workflow = {
-  id: 'my-workflow',
-  name: 'Simple Swap',
-  steps: [
-    {
-      id: 'swap',
-      action: 'swap',
-      chain: 'solana',
-      params: { from: 'SOL', to: 'USDC', amount: '1000000000' }
-    }
-  ],
-  // ... other required fields
+    id: 'my-workflow',
+    name: 'Simple Swap',
+    steps: [
+        {
+            id: 'swap',
+            action: 'swap',
+            chain: 'solana',
+            params: { from: 'SOL', to: 'USDC', amount: '1000000000' },
+        },
+    ],
+    // ... other required fields
 };
 
 const result = await engine.execute(workflow.id, {});
@@ -83,8 +83,8 @@ Initialize the program (one-time setup).
 
 ```typescript
 await sdk.initialize(
-  new PublicKey('...'), // treasury
-  payer.publicKey       // upgrade authority
+    new PublicKey('...'), // treasury
+    payer.publicKey, // upgrade authority
 );
 ```
 
@@ -181,14 +181,14 @@ For advanced use cases, you can build instructions manually:
 
 ```typescript
 import {
-  createInitializeInstruction,
-  createCreateWorkflowInstruction,
-  createPurchaseWorkflowInstruction,
-  createReviewWorkflowInstruction,
-  createUpdateWorkflowInstruction,
-  createDeactivateWorkflowInstruction,
-  createActivateWorkflowInstruction,
-  createDeleteWorkflowInstruction,
+    createInitializeInstruction,
+    createCreateWorkflowInstruction,
+    createPurchaseWorkflowInstruction,
+    createReviewWorkflowInstruction,
+    createUpdateWorkflowInstruction,
+    createDeactivateWorkflowInstruction,
+    createActivateWorkflowInstruction,
+    createDeleteWorkflowInstruction,
 } from '@gradiences/workflow-engine';
 
 const instruction = createCreateWorkflowInstruction(author, params);
@@ -201,21 +201,21 @@ const transaction = new Transaction().add(instruction);
 
 ```typescript
 interface OnChainWorkflowMetadata {
-  workflowId: PublicKey;
-  author: PublicKey;
-  contentHash: string;
-  version: string;
-  pricingModel: number;      // 0-4 (free, oneTime, subscription, perUse, revenueShare)
-  priceMint: PublicKey;
-  priceAmount: bigint;
-  creatorShare: number;      // bps (0-10000)
-  totalPurchases: number;
-  totalExecutions: number;
-  avgRating: number;         // 0-10000 (10000 = 5 stars)
-  isPublic: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+    workflowId: PublicKey;
+    author: PublicKey;
+    contentHash: string;
+    version: string;
+    pricingModel: number; // 0-4 (free, oneTime, subscription, perUse, revenueShare)
+    priceMint: PublicKey;
+    priceAmount: bigint;
+    creatorShare: number; // bps (0-10000)
+    totalPurchases: number;
+    totalExecutions: number;
+    avgRating: number; // 0-10000 (10000 = 5 stars)
+    isPublic: boolean;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
 }
 ```
 
@@ -223,14 +223,14 @@ interface OnChainWorkflowMetadata {
 
 ```typescript
 interface CreateWorkflowParams {
-  workflowId: PublicKey;
-  contentHash: Buffer;       // 64 bytes
-  version: string;           // max 16 bytes
-  pricingModel: number;      // 0-4
-  priceMint: PublicKey;
-  priceAmount: bigint;
-  creatorShare: number;      // bps (0-10000)
-  isPublic: boolean;
+    workflowId: PublicKey;
+    contentHash: Buffer; // 64 bytes
+    version: string; // max 16 bytes
+    pricingModel: number; // 0-4
+    priceMint: PublicKey;
+    priceAmount: bigint;
+    creatorShare: number; // bps (0-10000)
+    isPublic: boolean;
 }
 ```
 
@@ -277,12 +277,12 @@ await sdk.activateWorkflow(workflowId);
 const workflowId = new PublicKey('...');
 
 if (await sdk.hasAccess(workflowId)) {
-  // Execute workflow off-chain
-  const engine = createWorkflowEngine();
-  const result = await engine.execute(workflow.id, params);
+    // Execute workflow off-chain
+    const engine = createWorkflowEngine();
+    const result = await engine.execute(workflow.id, params);
 } else {
-  // Purchase first
-  await sdk.purchaseWorkflow(workflowId);
+    // Purchase first
+    await sdk.purchaseWorkflow(workflowId);
 }
 ```
 
@@ -290,13 +290,15 @@ if (await sdk.hasAccess(workflowId)) {
 
 ```typescript
 // Get all workflow PDAs
-const workflowIds = [/* ... your workflow IDs ... */];
+const workflowIds = [
+    /* ... your workflow IDs ... */
+];
 
 for (const id of workflowIds) {
-  const metadata = await sdk.getWorkflow(id);
-  if (metadata && metadata.isActive && metadata.isPublic) {
-    console.log(`${metadata.version}: ${metadata.totalPurchases} purchases`);
-  }
+    const metadata = await sdk.getWorkflow(id);
+    if (metadata && metadata.isActive && metadata.isPublic) {
+        console.log(`${metadata.version}: ${metadata.totalPurchases} purchases`);
+    }
 }
 ```
 
@@ -304,13 +306,13 @@ for (const id of workflowIds) {
 
 ```typescript
 try {
-  await sdk.deleteWorkflow(workflowId);
+    await sdk.deleteWorkflow(workflowId);
 } catch (error) {
-  if (error.message.includes('0x1778')) {
-    console.error('Cannot delete: workflow has purchases');
-  } else {
-    console.error('Failed:', error);
-  }
+    if (error.message.includes('0x1778')) {
+        console.error('Cannot delete: workflow has purchases');
+    } else {
+        console.error('Failed:', error);
+    }
 }
 ```
 
@@ -322,13 +324,13 @@ try {
 
 ## PDA Seeds
 
-| PDA Type | Seeds |
-|----------|-------|
-| Config | `["config"]` |
-| Treasury | `["treasury"]` |
-| Workflow | `["workflow", workflow_id]` |
-| Access | `["access", workflow_id, user]` |
-| Review | `["review", workflow_id, reviewer]` |
+| PDA Type | Seeds                               |
+| -------- | ----------------------------------- |
+| Config   | `["config"]`                        |
+| Treasury | `["treasury"]`                      |
+| Workflow | `["workflow", workflow_id]`         |
+| Access   | `["access", workflow_id, user]`     |
+| Review   | `["review", workflow_id, reviewer]` |
 
 ## Next Steps
 

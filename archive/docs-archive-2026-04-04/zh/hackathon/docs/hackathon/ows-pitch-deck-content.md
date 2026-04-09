@@ -1,4 +1,5 @@
 # OWS Hackathon Pitch Deck Content
+
 > For GRA-62: Create pitch deck for judges
 
 ---
@@ -12,7 +13,7 @@
 **Team**: Gradience Labs
 **Event**: OpenWallet Standard Hackathon | Miami 2026
 
-**Tagline**: *"Where AI Agents meet Web3 Identity"*
+**Tagline**: _"Where AI Agents meet Web3 Identity"_
 
 ---
 
@@ -21,16 +22,19 @@
 **The Problem**
 
 🔴 **Current wallets don't understand Agents**
+
 - Wallets treat Agents as regular users
 - No way to verify Agent reputation
 - High risk of interacting with malicious Agents
 
 🔴 **Agent economy lacks trust**
+
 - No standardized reputation system
 - Users can't verify Agent credibility
 - Fraud and scams are rampant
 
 **Stats** (if available):
+
 - $X lost to Agent scams in 2025
 - Y% of users don't trust AI Agents
 
@@ -41,11 +45,13 @@
 **Our Solution: Reputation-Powered Agent Wallet**
 
 ✅ **First OWS-compliant wallet with native Agent support**
+
 - Agent identity verification
 - On-chain reputation scoring
 - Trust-based transaction recommendations
 
 ✅ **Gradience Protocol Stack**
+
 - Chain Hub: Reputation oracle
 - A2A Protocol: Agent communication
 - OWS Integration: Standard wallet interface
@@ -57,19 +63,22 @@
 **Live Demo: 3 Key Features**
 
 1️⃣ **Agent Registration & Reputation Building**
-   - Agent creates wallet
-   - Completes tasks to build reputation
-   - Reputation stored on-chain
+
+- Agent creates wallet
+- Completes tasks to build reputation
+- Reputation stored on-chain
 
 2️⃣ **OWS Wallet Integration**
-   - View Agent reputation in wallet
-   - Risk score for transactions
-   - Trust badges for verified Agents
+
+- View Agent reputation in wallet
+- Risk score for transactions
+- Trust badges for verified Agents
 
 3️⃣ **Reputation-Powered Transaction**
-   - High-rep Agents get better rates
-   - Auto-reject transactions with low-rep Agents
-   - Real-time reputation updates
+
+- High-rep Agents get better rates
+- Auto-reject transactions with low-rep Agents
+- Real-time reputation updates
 
 ---
 
@@ -91,6 +100,7 @@ Solana Blockchain
 ```
 
 **Key Innovations**:
+
 - OWS Standard compliance
 - Real-time reputation queries
 - Multi-chain support ready
@@ -101,15 +111,16 @@ Solana Blockchain
 
 **What We Built**
 
-| Component | Status | Details |
-|-----------|--------|---------|
-| OWS Adapter | ✅ | Full OWS SDK integration |
-| Wallet Provider | ✅ | React hooks + TypeScript |
-| Reputation API | ✅ | Chain Hub integration |
-| Risk Scoring | ✅ | ML-based risk algorithm |
-| Demo DApp | ✅ | Live at demo.gradience.io |
+| Component       | Status | Details                   |
+| --------------- | ------ | ------------------------- |
+| OWS Adapter     | ✅     | Full OWS SDK integration  |
+| Wallet Provider | ✅     | React hooks + TypeScript  |
+| Reputation API  | ✅     | Chain Hub integration     |
+| Risk Scoring    | ✅     | ML-based risk algorithm   |
+| Demo DApp       | ✅     | Live at demo.gradience.io |
 
 **Code Stats**:
+
 - X lines of code
 - Y components
 - Z tests passing
@@ -125,6 +136,7 @@ Solana Blockchain
 3. **Enterprise API** (B2B reputation as a service)
 
 **Market Opportunity**:
+
 - Agent economy: $X billion by 2028
 - Reputation services: $Y billion market
 - First-mover advantage in OWS ecosystem
@@ -136,16 +148,19 @@ Solana Blockchain
 **Current Traction**
 
 📊 **Development Progress**:
+
 - 4/8 OWS tasks completed
 - Core wallet integration done
 - Demo ready for presentation
 
 🚀 **Ecosystem**:
+
 - Gradience protocol in development
 - Chain Hub reputation system live
 - A2A protocol for Agent messaging
 
 📈 **Future Roadmap**:
+
 - Q2: Public beta launch
 - Q3: Multi-chain expansion
 - Q4: Enterprise partnerships
@@ -156,13 +171,13 @@ Solana Blockchain
 
 **Why We're Different**
 
-| Feature | Others | Gradience |
-|---------|--------|-----------|
-| OWS Standard | ❌ | ✅ |
-| Agent-Native | ❌ | ✅ |
-| On-Chain Reputation | ❌ | ✅ |
-| Real-Time Risk Score | ❌ | ✅ |
-| Multi-Chain Ready | Partial | ✅ |
+| Feature              | Others  | Gradience |
+| -------------------- | ------- | --------- |
+| OWS Standard         | ❌      | ✅        |
+| Agent-Native         | ❌      | ✅        |
+| On-Chain Reputation  | ❌      | ✅        |
+| Real-Time Risk Score | ❌      | ✅        |
+| Multi-Chain Ready    | Partial | ✅        |
 
 **Moat**: First-mover in OWS + Agent reputation
 
@@ -173,19 +188,23 @@ Solana Blockchain
 **Team Gradience Labs**
 
 👨‍💻 **[Your Name]** - Founder & Lead Developer
+
 - Background: X years in Web3
 - Previously: Y company
 - Role: Protocol architecture
 
 👩‍💻 **[Team Member 2]** - Full-Stack Engineer
+
 - Background: Full-stack & Web3
 - Role: OWS integration & frontend
 
 👨‍💻 **[Team Member 3]** - Blockchain Developer
+
 - Background: Solana ecosystem
 - Role: Smart contracts & indexing
 
 **Advisors**:
+
 - [Name] - [Background]
 
 ---
@@ -197,12 +216,14 @@ Solana Blockchain
 🎯 **Hackathon Prize**: $X
 
 **Use of Funds**:
+
 - 40% Development (smart contract audits)
 - 30% Marketing (Agent ecosystem growth)
 - 20% Operations (team expansion)
 - 10% Legal & Compliance
 
 **Beyond Hackathon**:
+
 - Seeking partnerships with OWS
 - Looking for pilot customers
 - Open to strategic investors
@@ -231,42 +252,52 @@ Questions? 🎤
 ## Speaker Notes
 
 ### Slide 1 (Title)
+
 - Hook: "What if your wallet could tell you if an AI Agent is trustworthy?"
 - Energy: High, excited
 
 ### Slide 2 (Problem)
+
 - Pain point: Everyone has experienced spam/scam Agents
 - Relatable examples
 
 ### Slide 3 (Solution)
+
 - Clear value prop
 - Mention OWS standard early
 
 ### Slide 4 (Demo)
+
 - "Let me show you..."
 - Transition to live demo or video
 
 ### Slide 5-6 (Technical)
+
 - Keep it high-level unless asked
 - Focus on "why" not "how"
 
 ### Slide 7-8 (Business)
+
 - Show you've thought about sustainability
 - Market size = big opportunity
 
 ### Slide 9 (Competition)
+
 - Don't bash competitors
 - Focus on unique positioning
 
 ### Slide 10 (Team)
+
 - Highlight relevant experience
 - Show commitment
 
 ### Slide 11 (Ask)
+
 - Be specific about what you need
 - Show responsible fund usage
 
 ### Slide 12 (Close)
+
 - Memorable quote
 - Clear call to action
 - Thank judges
@@ -277,10 +308,10 @@ Questions? 🎤
 
 1. **Color Scheme**: Use Gradience brand colors
 2. **Fonts**: Clean, readable sans-serif
-3. **Images**: 
-   - Architecture diagram (Slide 5)
-   - Demo screenshots (Slide 4)
-   - Team photos (Slide 10)
+3. **Images**:
+    - Architecture diagram (Slide 5)
+    - Demo screenshots (Slide 4)
+    - Team photos (Slide 10)
 4. **Charts**: Progress bars for completion stats
 5. **Logo**: Gradience + OWS logos
 
@@ -289,22 +320,26 @@ Questions? 🎤
 ## Appendix Slides (Optional)
 
 ### A1: Technical Deep Dive
+
 - Smart contract architecture
 - OWS interface details
 
 ### A2: Risk Scoring Algorithm
+
 - How reputation is calculated
 - Security considerations
 
 ### A3: Market Research
+
 - Detailed TAM/SAM/SOM
 - Competitor analysis
 
 ### A4: Roadmap
+
 - Q2-Q4 detailed timeline
 - Milestones and metrics
 
 ---
 
-*Prepared for OWS Hackathon Miami 2026*
-*Task: GRA-62*
+_Prepared for OWS Hackathon Miami 2026_
+_Task: GRA-62_

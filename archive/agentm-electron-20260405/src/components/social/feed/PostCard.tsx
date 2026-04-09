@@ -87,11 +87,7 @@ function Avatar({
             className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 transition hover:opacity-80`}
         >
             {author.avatarUrl ? (
-                <img
-                    src={author.avatarUrl}
-                    alt={displayName}
-                    className="w-full h-full rounded-full object-cover"
-                />
+                <img src={author.avatarUrl} alt={displayName} className="w-full h-full rounded-full object-cover" />
             ) : (
                 <span className="text-white font-semibold">{initials}</span>
             )}
@@ -113,8 +109,8 @@ function TaskContent({ data }: { data: TaskPostData }) {
                             data.state === 'completed'
                                 ? 'bg-green-600/20 text-green-400'
                                 : data.state === 'active'
-                                    ? 'bg-blue-600/20 text-blue-400'
-                                    : 'bg-gray-600/20 text-gray-400'
+                                  ? 'bg-blue-600/20 text-blue-400'
+                                  : 'bg-gray-600/20 text-gray-400'
                         }`}
                     >
                         {data.state}
@@ -172,9 +168,7 @@ function AchievementContent({ data }: { data: AchievementPostData }) {
                 <span className="text-2xl">{icon}</span>
                 <div>
                     <h4 className="font-semibold text-yellow-400">{data.title}</h4>
-                    {data.description && (
-                        <p className="text-sm text-gray-400 mt-0.5">{data.description}</p>
-                    )}
+                    {data.description && <p className="text-sm text-gray-400 mt-0.5">{data.description}</p>}
                 </div>
             </div>
 
@@ -282,10 +276,7 @@ export function PostCard({
         >
             {/* Header */}
             <div className="flex items-start gap-3">
-                <Avatar
-                    author={post.author}
-                    onClick={() => onAuthorClick?.(post.author)}
-                />
+                <Avatar author={post.author} onClick={() => onAuthorClick?.(post.author)} />
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -301,22 +292,16 @@ export function PostCard({
                         </button>
 
                         {indicator.label && (
-                            <span
-                                className={`text-xs px-2 py-0.5 rounded-full ${indicator.color}`}
-                            >
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${indicator.color}`}>
                                 {indicator.label}
                             </span>
                         )}
 
-                        <span className="text-xs text-gray-500">
-                            · {formatTimeAgo(post.createdAt)}
-                        </span>
+                        <span className="text-xs text-gray-500">· {formatTimeAgo(post.createdAt)}</span>
                     </div>
 
                     {post.author.displayName && (
-                        <p className="text-xs text-gray-500 font-mono">
-                            {truncate(post.author.address, 16)}
-                        </p>
+                        <p className="text-xs text-gray-500 font-mono">{truncate(post.author.address, 16)}</p>
                     )}
                 </div>
             </div>
@@ -326,9 +311,7 @@ export function PostCard({
                 <p className="text-sm text-gray-300 whitespace-pre-wrap">{post.content}</p>
 
                 {/* Type-specific content */}
-                {post.type === 'task' && post.taskData && (
-                    <TaskContent data={post.taskData} />
-                )}
+                {post.type === 'task' && post.taskData && <TaskContent data={post.taskData} />}
 
                 {post.type === 'achievement' && post.achievementData && (
                     <AchievementContent data={post.achievementData} />
@@ -336,11 +319,7 @@ export function PostCard({
             </div>
 
             {/* Actions */}
-            <PostActions
-                post={post}
-                onLikeToggle={onLikeToggle}
-                onCommentClick={onCommentClick}
-            />
+            <PostActions post={post} onLikeToggle={onLikeToggle} onCommentClick={onCommentClick} />
         </article>
     );
 }

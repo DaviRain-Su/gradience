@@ -13,11 +13,11 @@
 
 ### Design Choice: Over-Collateralized + Protocol Revenue Backstop
 
-| Mechanism | Rationale |
-|-----------|-----------|
-| **Over-collateralized minting** | Mature, auditable, avoids death-spiral risks of pure algorithmic models |
-| **Dynamic collateral ratio** | Starts at 150%, adjusted by DAO-governance based on on-chain volatility feeds |
-| **Protocol revenue backstop** | A portion of Gradience settlement fees (2% protocol take) accumulates in a Stability Pool to absorb bad debt |
+| Mechanism                       | Rationale                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Over-collateralized minting** | Mature, auditable, avoids death-spiral risks of pure algorithmic models                                      |
+| **Dynamic collateral ratio**    | Starts at 150%, adjusted by DAO-governance based on on-chain volatility feeds                                |
+| **Protocol revenue backstop**   | A portion of Gradience settlement fees (2% protocol take) accumulates in a Stability Pool to absorb bad debt |
 
 This is a **hybrid model** combining the safety of MakerDAO/DAI with the capital efficiency of FRAX-style revenue backing.
 
@@ -48,12 +48,12 @@ This is a **hybrid model** combining the safety of MakerDAO/DAI with the capital
 
 ### 2.2 Solana Program Structure
 
-| Program | Language | Responsibility |
-|---------|----------|----------------|
-| `gusd_token` | Rust / Anchor | SPL token mint with freeze/mint authority managed by `gusd_vault` |
-| `gusd_vault` | Rust / Anchor | Collateral deposits, gUSD minting/redemption, liquidation engine |
-| `gusd_oracle` | Rust / Anchor | Price feed aggregation, TWAP smoothing, circuit breakers |
-| `gusd_stability_pool` | Rust / Anchor | Revenue accumulation, debt auction, surplus distribution |
+| Program               | Language      | Responsibility                                                    |
+| --------------------- | ------------- | ----------------------------------------------------------------- |
+| `gusd_token`          | Rust / Anchor | SPL token mint with freeze/mint authority managed by `gusd_vault` |
+| `gusd_vault`          | Rust / Anchor | Collateral deposits, gUSD minting/redemption, liquidation engine  |
+| `gusd_oracle`         | Rust / Anchor | Price feed aggregation, TWAP smoothing, circuit breakers          |
+| `gusd_stability_pool` | Rust / Anchor | Revenue accumulation, debt auction, surplus distribution          |
 
 ### 2.3 EVM Bridged Token
 
@@ -91,6 +91,7 @@ fn deposit_and_mint(ctx, collateral_amount, min_gusd_out) -> Result {
 ### 3.3 Liquidation
 
 If a vault's collateral ratio drops below the **liquidation threshold** (initially 120%):
+
 - Liquidators can repay the vault's gUSD debt and seize collateral at a **5% discount**.
 - If no liquidator acts within 1 hour, the Stability Pool automatically absorbs the bad debt.
 
@@ -99,11 +100,11 @@ If a vault's collateral ratio drops below the **liquidation threshold** (initial
 ## 4. Collateral Types & Risk Parameters
 
 | Collateral | Initial Ratio | Liquidation Threshold | Debt Ceiling |
-|------------|---------------|----------------------|--------------|
-| SOL | 150% | 120% | 5M gUSD |
-| USDC | 110% | 105% | 10M gUSD |
-| mSOL | 160% | 130% | 2M gUSD |
-| bSOL | 160% | 130% | 2M gUSD |
+| ---------- | ------------- | --------------------- | ------------ |
+| SOL        | 150%          | 120%                  | 5M gUSD      |
+| USDC       | 110%          | 105%                  | 10M gUSD     |
+| mSOL       | 160%          | 130%                  | 2M gUSD      |
+| bSOL       | 160%          | 130%                  | 2M gUSD      |
 
 - **Debt ceiling** limits systemic exposure to any single collateral type.
 - Risk parameters are adjustable via DAO governance (`gDAO` token holders).
@@ -128,10 +129,10 @@ If a vault's collateral ratio drops below the **liquidation threshold** (initial
 
 ## 6. Oracle & Price Feeds
 
-| Source | Asset | Latency | Fallback |
-|--------|-------|---------|----------|
-| Pyth Network | SOL/USD, mSOL/USD | ~400ms | Switchboard |
-| Chainlink Data Streams | USDC/USD | ~1s | Pyth |
+| Source                 | Asset             | Latency | Fallback    |
+| ---------------------- | ----------------- | ------- | ----------- |
+| Pyth Network           | SOL/USD, mSOL/USD | ~400ms  | Switchboard |
+| Chainlink Data Streams | USDC/USD          | ~1s     | Pyth        |
 
 - **TWAP**: 5-minute exponential moving average to prevent flash-loan manipulation.
 - **Circuit breaker**: If price deviation exceeds 10% in a single block, minting is paused for 15 minutes.
@@ -149,11 +150,13 @@ If a vault's collateral ratio drops below the **liquidation threshold** (initial
 ## 8. Cross-Chain (EVM) Strategy
 
 ### Phase 1 (MVP)
+
 - Mint natively on Solana.
 - Bridge to Base/Arbitrum via **Wormhole Token Bridge**.
 - EVM AMM liquidity bootstrapped on Uniswap V3 (Base) and Camelot (Arbitrum).
 
 ### Phase 2 (Future)
+
 - Deploy `gusd_vault_evm` on Base for native collateralized minting using ETH and cbETH.
 - Use **Wormhole NTT (Native Token Transfers)** for unified liquidity across chains.
 
@@ -161,23 +164,23 @@ If a vault's collateral ratio drops below the **liquidation threshold** (initial
 
 ## 9. Security Considerations
 
-| Risk | Mitigation |
-|------|------------|
-| Oracle manipulation | Multi-source aggregation + TWAP + circuit breaker |
-| Smart contract bugs | Audits by OtterSec + Neodyme, formal verification of vault math |
-| Bank run / depeg | Over-collateralization + Stability Pool + redemption velocity limits (max 100k gUSD/hour) |
-| Governance attack | 3-day timelock on all parameter changes, veto power by security council multisig |
+| Risk                | Mitigation                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Oracle manipulation | Multi-source aggregation + TWAP + circuit breaker                                         |
+| Smart contract bugs | Audits by OtterSec + Neodyme, formal verification of vault math                           |
+| Bank run / depeg    | Over-collateralization + Stability Pool + redemption velocity limits (max 100k gUSD/hour) |
+| Governance attack   | 3-day timelock on all parameter changes, veto power by security council multisig          |
 
 ---
 
 ## 10. Implementation Roadmap
 
-| Phase | Duration | Deliverables |
-|-------|----------|--------------|
-| **Phase 1: Design** | 2 weeks | This spec + economic model simulation |
-| **Phase 2: Contracts** | 2 weeks | `gusd_vault`, `gusd_oracle`, `gusd_stability_pool` (Rust/Anchor) |
-| **Phase 3: Audit** | 2 weeks | External audit + remediation |
-| **Phase 4: Launch** | 1 week | Devnet → Mainnet-beta, liquidity bootstrapping, frontend integration |
+| Phase                  | Duration | Deliverables                                                         |
+| ---------------------- | -------- | -------------------------------------------------------------------- |
+| **Phase 1: Design**    | 2 weeks  | This spec + economic model simulation                                |
+| **Phase 2: Contracts** | 2 weeks  | `gusd_vault`, `gusd_oracle`, `gusd_stability_pool` (Rust/Anchor)     |
+| **Phase 3: Audit**     | 2 weeks  | External audit + remediation                                         |
+| **Phase 4: Launch**    | 1 week   | Devnet → Mainnet-beta, liquidity bootstrapping, frontend integration |
 
 ---
 
@@ -189,6 +192,6 @@ If a vault's collateral ratio drops below the **liquidation threshold** (initial
 
 ---
 
-*Last updated: 2026-04-08*  
-*Author: Gradience Protocol Design Team*  
-*Next step: Phase 2 contract implementation (pending resource allocation)*
+_Last updated: 2026-04-08_  
+_Author: Gradience Protocol Design Team_  
+_Next step: Phase 2 contract implementation (pending resource allocation)_

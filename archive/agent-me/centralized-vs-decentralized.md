@@ -2,7 +2,7 @@
 
 > **核心矛盾：技术便利性需要中心化，但理念要求去中心化**
 > **解决方案：渐进式去中心化，核心本地，边缘可选**
-> 
+>
 > 日期：2026-03-29
 
 ---
@@ -15,29 +15,29 @@
 技术挑战需要中心化的原因:
 
 语音处理:
-  - VibeVoice ASR-7B: 7B 参数，需要 GPU
-  - 普通手机无法流畅运行
-  - 需要低延迟推理服务
-  
+    - VibeVoice ASR-7B: 7B 参数，需要 GPU
+    - 普通手机无法流畅运行
+    - 需要低延迟推理服务
+
 连接稳定性:
-  - P2P 连接成功率 ~60-70%
-  - NAT 穿透困难
-  - 需要中继服务器
-  
+    - P2P 连接成功率 ~60-70%
+    - NAT 穿透困难
+    - 需要中继服务器
+
 发现服务:
-  - Agent 如何找到其他 Agent？
-  - 需要 DHT 或中心化索引
-  - 初期用户少，P2P 网络不稳定
+    - Agent 如何找到其他 Agent？
+    - 需要 DHT 或中心化索引
+    - 初期用户少，P2P 网络不稳定
 
 可靠性:
-  - 用户设备离线时如何接收消息？
-  - 需要消息队列和存储
-  - 需要高可用基础设施
+    - 用户设备离线时如何接收消息？
+    - 需要消息队列和存储
+    - 需要高可用基础设施
 
 成本和复杂性:
-  - 让每个用户部署全套服务？
-  - 99% 的用户不会/不能
-  - 需要"开箱即用"的体验
+    - 让每个用户部署全套服务？
+    - 99% 的用户不会/不能
+    - 需要"开箱即用"的体验
 ```
 
 ### 1.2 完全中心化的风险
@@ -171,40 +171,39 @@ P2P 网络 (长期目标)
 ```typescript
 // 语音引擎配置
 interface VoiceConfig {
-  stt: {
-    mode: 'local' | 'cloud' | 'auto';
-    localModel: 'whisper-tiny' | 'whisper-base';
-    cloudProvider: 'vibevoice' | 'google' | 'azure';
-  };
-  tts: {
-    mode: 'local' | 'cloud' | 'auto';
-    localModel: 'vibevoice-0.5b' | 'edge-tts';
-    cloudProvider: 'vibevoice' | 'google' | 'azure';
-  };
+    stt: {
+        mode: 'local' | 'cloud' | 'auto';
+        localModel: 'whisper-tiny' | 'whisper-base';
+        cloudProvider: 'vibevoice' | 'google' | 'azure';
+    };
+    tts: {
+        mode: 'local' | 'cloud' | 'auto';
+        localModel: 'vibevoice-0.5b' | 'edge-tts';
+        cloudProvider: 'vibevoice' | 'google' | 'azure';
+    };
 }
 
 // 智能切换逻辑
 class VoiceEngine {
-  async processVoice(audio: AudioBuffer): Promise<string> {
-    // 1. 尝试本地处理
-    if (this.config.stt.mode === 'local' || 
-        (this.config.stt.mode === 'auto' && this.localModelLoaded)) {
-      try {
-        return await this.localSTT(audio);
-      } catch (e) {
-        console.log('Local STT failed, fallback to cloud');
-      }
+    async processVoice(audio: AudioBuffer): Promise<string> {
+        // 1. 尝试本地处理
+        if (this.config.stt.mode === 'local' || (this.config.stt.mode === 'auto' && this.localModelLoaded)) {
+            try {
+                return await this.localSTT(audio);
+            } catch (e) {
+                console.log('Local STT failed, fallback to cloud');
+            }
+        }
+
+        // 2. 本地失败或配置为云端，使用云端
+        if (this.config.stt.mode === 'cloud' || this.config.stt.mode === 'auto') {
+            // 加密传输
+            const encrypted = await this.encrypt(audio);
+            return await this.cloudSTT(encrypted);
+        }
+
+        throw new Error('STT unavailable');
     }
-    
-    // 2. 本地失败或配置为云端，使用云端
-    if (this.config.stt.mode === 'cloud' || this.config.stt.mode === 'auto') {
-      // 加密传输
-      const encrypted = await this.encrypt(audio);
-      return await this.cloudSTT(encrypted);
-    }
-    
-    throw new Error('STT unavailable');
-  }
 }
 ```
 
@@ -233,7 +232,7 @@ class VoiceEngine {
 
 自动选择:
   - 尝试直连 → 失败
-  - 尝试 P2P → 失败  
+  - 尝试 P2P → 失败
   - 使用中继 → 成功
   - 后台持续尝试升级连接
 ```
@@ -295,22 +294,22 @@ class VoiceEngine {
 
 ```yaml
 Free 版 (基础):
-  - 本地 OpenClaw 完全免费
-  - 直连/P2P 连接免费
-  - 本地语音处理免费
-  - 基础功能无限制
+    - 本地 OpenClaw 完全免费
+    - 直连/P2P 连接免费
+    - 本地语音处理免费
+    - 基础功能无限制
 
 Pro 版 ($9.99/月):
-  - 云端语音 API (高质量)
-  - 中继服务保障连接
-  - 优先发现服务
-  - 云备份 (加密)
+    - 云端语音 API (高质量)
+    - 中继服务保障连接
+    - 优先发现服务
+    - 云备份 (加密)
 
 Self-Hosted 版 (免费):
-  - 自己部署中继服务器
-  - 自己提供语音 API
-  - 完全去中心化
-  - 适合技术用户
+    - 自己部署中继服务器
+    - 自己提供语音 API
+    - 完全去中心化
+    - 适合技术用户
 ```
 
 ---
@@ -448,4 +447,4 @@ Self-Hosted 版 (免费):
 
 ---
 
-*"完全去中心化是目标，不是起点。在通往目标的路上，不牺牲用户体验。"*
+_"完全去中心化是目标，不是起点。在通往目标的路上，不牺牲用户体验。"_

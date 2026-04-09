@@ -11,10 +11,10 @@ applyCommand
     .option('--mint <address>', 'Token mint address (defaults to SOL)')
     .action(async (options) => {
         const spinner = ora('Applying for task...').start();
-        
+
         try {
             const taskId = parseU64(options.taskId, 'task-id');
-            
+
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-apply-signature`;
                 spinner.succeed('Applied for task (mock mode)');
@@ -44,9 +44,7 @@ applyCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting application...';
-            const applyRequest = mint !== undefined
-                ? { taskId, mint }
-                : { taskId };
+            const applyRequest = mint !== undefined ? { taskId, mint } : { taskId };
             const signature = await sdk.task.apply(wallet, applyRequest);
 
             spinner.succeed('Successfully applied for task');

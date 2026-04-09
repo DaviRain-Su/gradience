@@ -1,18 +1,19 @@
 ---
 linear-id: GRA-56
-title: "[OWS] Research OWS SDK and integration docs"
+title: '[OWS] Research OWS SDK and integration docs'
 status: done
 priority: P1
-project: "🏆 OWS Hackathon (Miami)"
+project: '🏆 OWS Hackathon (Miami)'
 created: 2026-04-03
-migrated-from: "Linear"
-assignee: "Code Agent"
+migrated-from: 'Linear'
+assignee: 'Code Agent'
 tags: [task, p1, -ows-hackathon-miami]
 ---
 
 # GRA-56: [OWS] Research OWS SDK and integration docs
 
 ## Description
+
 研究 OpenWallet Standard SDK 和集成文档
 
 ## 任务
@@ -24,26 +25,29 @@ tags: [task, p1, -ows-hackathon-miami]
 
 ## 输出
 
-* 技术调研报告
-* 集成方案文档
-* 风险点识别
+- 技术调研报告
+- 集成方案文档
+- 风险点识别
 
 ## 参考
 
-* [https://openwallet.standard/](<https://openwallet.standard/>)
-* docs/integrations/ows/
+- [https://openwallet.standard/](https://openwallet.standard/)
+- docs/integrations/ows/
 
 ## Original Linear Info
+
 - **State**: Done
 - **Project**: 🏆 OWS Hackathon (Miami)
 - **Priority**: P1
 
 ## Acceptance Criteria
-- [ ] 
+
+- [ ]
 
 ## Related
 
 ## Notes
 
 ## Log
+
 - 2026-04-03: Migrated from Linear

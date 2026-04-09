@@ -7,21 +7,10 @@ export { SNSProvider } from './providers/sns';
 export { ENSProvider } from './providers/ens';
 
 // Type exports
-export type {
-  DomainRecord,
-  ResolverConfig,
-  SNSProviderConfig,
-  ENSProviderConfig,
-  Provider,
-  CacheEntry
-} from './types';
+export type { DomainRecord, ResolverConfig, SNSProviderConfig, ENSProviderConfig, Provider, CacheEntry } from './types';
 
 // Error exports
-export {
-  DomainResolverError,
-  ProviderError,
-  ValidationError
-} from './types';
+export { DomainResolverError, ProviderError, ValidationError } from './types';
 
 // Convenience function for quick resolution
 import { DomainResolver } from './resolver';
@@ -36,18 +25,18 @@ let defaultResolver: DomainResolver | null = null;
  * @returns Resolved address or null
  */
 export async function resolve(domain: string, config?: ResolverConfig): Promise<string | null> {
-  if (config) {
-    // Create temporary resolver with custom config
-    const resolver = new DomainResolver(config);
-    return resolver.resolve(domain);
-  }
+    if (config) {
+        // Create temporary resolver with custom config
+        const resolver = new DomainResolver(config);
+        return resolver.resolve(domain);
+    }
 
-  // Use default resolver instance
-  if (!defaultResolver) {
-    defaultResolver = new DomainResolver();
-  }
-  
-  return defaultResolver.resolve(domain);
+    // Use default resolver instance
+    if (!defaultResolver) {
+        defaultResolver = new DomainResolver();
+    }
+
+    return defaultResolver.resolve(domain);
 }
 
 /**
@@ -57,18 +46,18 @@ export async function resolve(domain: string, config?: ResolverConfig): Promise<
  * @returns Domain name or null
  */
 export async function reverse(address: string, config?: ResolverConfig): Promise<string | null> {
-  if (config) {
-    // Create temporary resolver with custom config
-    const resolver = new DomainResolver(config);
-    return resolver.reverse(address);
-  }
+    if (config) {
+        // Create temporary resolver with custom config
+        const resolver = new DomainResolver(config);
+        return resolver.reverse(address);
+    }
 
-  // Use default resolver instance
-  if (!defaultResolver) {
-    defaultResolver = new DomainResolver();
-  }
-  
-  return defaultResolver.reverse(address);
+    // Use default resolver instance
+    if (!defaultResolver) {
+        defaultResolver = new DomainResolver();
+    }
+
+    return defaultResolver.reverse(address);
 }
 
 /**
@@ -77,9 +66,9 @@ export async function reverse(address: string, config?: ResolverConfig): Promise
  * @returns true if valid format
  */
 export function isValidDomain(domain: string): boolean {
-  // Create a temporary resolver for validation
-  const resolver = new DomainResolver();
-  return resolver.isValid(domain);
+    // Create a temporary resolver for validation
+    const resolver = new DomainResolver();
+    return resolver.isValid(domain);
 }
 
 /**
@@ -87,10 +76,10 @@ export function isValidDomain(domain: string): boolean {
  * @returns Default resolver instance
  */
 export function getDefaultResolver(): DomainResolver {
-  if (!defaultResolver) {
-    defaultResolver = new DomainResolver();
-  }
-  return defaultResolver;
+    if (!defaultResolver) {
+        defaultResolver = new DomainResolver();
+    }
+    return defaultResolver;
 }
 
 /**
@@ -98,14 +87,14 @@ export function getDefaultResolver(): DomainResolver {
  * @param resolver Custom resolver instance
  */
 export function setDefaultResolver(resolver: DomainResolver): void {
-  defaultResolver = resolver;
+    defaultResolver = resolver;
 }
 
 /**
  * Reset the default resolver
  */
 export function resetDefaultResolver(): void {
-  defaultResolver = null;
+    defaultResolver = null;
 }
 
 // Re-export constants for convenience

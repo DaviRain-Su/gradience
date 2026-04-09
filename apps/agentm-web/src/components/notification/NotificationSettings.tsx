@@ -7,11 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type {
-    NotificationSettings as NotificationSettingsType,
-    NotificationType,
-    NotificationPriority,
-} from './types';
+import type { NotificationSettings as NotificationSettingsType, NotificationType, NotificationPriority } from './types';
 import { DEFAULT_NOTIFICATION_SETTINGS } from './types';
 
 export interface NotificationSettingsProps {
@@ -180,21 +176,29 @@ export function NotificationSettings({
     return (
         <div className={className} style={containerStyle}>
             {/* Header */}
-            <div style={{
-                padding: '12px 16px',
-                borderBottom: '1px solid #1F2937',
-            }}>
-                <h2 style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#F3F4F6',
-                    margin: 0,
-                }}>Notification Settings</h2>
-                <p style={{
-                    fontSize: '14px',
-                    color: '#9CA3AF',
-                    margin: '4px 0 0 0',
-                }}>
+            <div
+                style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #1F2937',
+                }}
+            >
+                <h2
+                    style={{
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: '#F3F4F6',
+                        margin: 0,
+                    }}
+                >
+                    Notification Settings
+                </h2>
+                <p
+                    style={{
+                        fontSize: '14px',
+                        color: '#9CA3AF',
+                        margin: '4px 0 0 0',
+                    }}
+                >
                     Customize how and when you receive notifications
                 </p>
             </div>
@@ -282,9 +286,7 @@ export function NotificationSettings({
                                         min={0}
                                         max={100}
                                         value={settings.sound.volume}
-                                        onChange={(e) =>
-                                            handleSoundVolume(parseInt(e.target.value, 10))
-                                        }
+                                        onChange={(e) => handleSoundVolume(parseInt(e.target.value, 10))}
                                         style={{
                                             flex: 1,
                                             height: '8px',
@@ -314,37 +316,35 @@ export function NotificationSettings({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0 }}>Email digest frequency:</p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {(['never', 'instant', 'daily', 'weekly'] as const).map(
-                                    (option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => handleEmailDigest(option)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                fontSize: '14px',
-                                                borderRadius: '8px',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                backgroundColor: settings.email.digest === option ? '#2563EB' : '#1F2937',
-                                                color: settings.email.digest === option ? '#FFFFFF' : '#9CA3AF',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (settings.email.digest !== option) {
-                                                    e.currentTarget.style.backgroundColor = '#374151';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (settings.email.digest !== option) {
-                                                    e.currentTarget.style.backgroundColor = '#1F2937';
-                                                }
-                                            }}
-                                        >
-                                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                                        </button>
-                                    ),
-                                )}
+                                {(['never', 'instant', 'daily', 'weekly'] as const).map((option) => (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => handleEmailDigest(option)}
+                                        style={{
+                                            padding: '6px 12px',
+                                            fontSize: '14px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            backgroundColor: settings.email.digest === option ? '#2563EB' : '#1F2937',
+                                            color: settings.email.digest === option ? '#FFFFFF' : '#9CA3AF',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (settings.email.digest !== option) {
+                                                e.currentTarget.style.backgroundColor = '#374151';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (settings.email.digest !== option) {
+                                                e.currentTarget.style.backgroundColor = '#1F2937';
+                                            }
+                                        }}
+                                    >
+                                        {option.charAt(0).toUpperCase() + option.slice(1)}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </SettingsSection>
@@ -418,17 +418,25 @@ function SettingsSection({
                 }}
             >
                 <div style={{ textAlign: 'left' }}>
-                    <h3 style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#E5E7EB',
-                        margin: 0,
-                    }}>{title}</h3>
-                    <p style={{
-                        fontSize: '12px',
-                        color: '#6B7280',
-                        margin: '2px 0 0 0',
-                    }}>{description}</p>
+                    <h3
+                        style={{
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#E5E7EB',
+                            margin: 0,
+                        }}
+                    >
+                        {title}
+                    </h3>
+                    <p
+                        style={{
+                            fontSize: '12px',
+                            color: '#6B7280',
+                            margin: '2px 0 0 0',
+                        }}
+                    >
+                        {description}
+                    </p>
                 </div>
                 <svg
                     style={{
@@ -442,12 +450,7 @@ function SettingsSection({
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
             {expanded && <div style={{ padding: '0 16px 16px' }}>{children}</div>}
@@ -472,16 +475,24 @@ function ToggleRow({
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-                <span style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#E5E7EB',
-                }}>{label}</span>
-                <p style={{
-                    fontSize: '12px',
-                    color: '#6B7280',
-                    margin: '2px 0 0 0',
-                }}>{description}</p>
+                <span
+                    style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#E5E7EB',
+                    }}
+                >
+                    {label}
+                </span>
+                <p
+                    style={{
+                        fontSize: '12px',
+                        color: '#6B7280',
+                        margin: '2px 0 0 0',
+                    }}
+                >
+                    {description}
+                </p>
             </div>
             <Toggle enabled={enabled} onChange={onChange} />
         </div>
@@ -491,13 +502,7 @@ function ToggleRow({
 /**
  * Toggle switch component
  */
-function Toggle({
-    enabled,
-    onChange,
-}: {
-    enabled: boolean;
-    onChange: (enabled: boolean) => void;
-}) {
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) {
     return (
         <button
             type="button"
@@ -550,40 +555,52 @@ function TypeSettingRow({
     onPriorityChange: (priority: NotificationPriority) => void;
 }) {
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            padding: '12px',
-            backgroundColor: 'rgba(31, 41, 55, 0.3)',
-            borderRadius: '8px',
-        }}>
-            <div style={{
-                width: '32px',
-                height: '32px',
+        <div
+            style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#374151',
-                borderRadius: '50%',
-                fontSize: '18px',
-            }}>
+                alignItems: 'flex-start',
+                gap: '12px',
+                padding: '12px',
+                backgroundColor: 'rgba(31, 41, 55, 0.3)',
+                borderRadius: '8px',
+            }}
+        >
+            <div
+                style={{
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#374151',
+                    borderRadius: '50%',
+                    fontSize: '18px',
+                }}
+            >
                 {typeConfig.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#E5E7EB',
-                    }}>{typeConfig.label}</span>
+                    <span
+                        style={{
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#E5E7EB',
+                        }}
+                    >
+                        {typeConfig.label}
+                    </span>
                     <Toggle enabled={settings.enabled} onChange={onToggle} />
                 </div>
-                <p style={{
-                    fontSize: '12px',
-                    color: '#6B7280',
-                    margin: '2px 0 0 0',
-                }}>{typeConfig.description}</p>
+                <p
+                    style={{
+                        fontSize: '12px',
+                        color: '#6B7280',
+                        margin: '2px 0 0 0',
+                    }}
+                >
+                    {typeConfig.description}
+                </p>
                 {settings.enabled && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                         <span style={{ fontSize: '12px', color: '#6B7280' }}>Priority:</span>
@@ -655,17 +672,22 @@ export function NotificationSettingsCompact({
     );
 
     return (
-        <div className={className} style={{
-            backgroundColor: '#111827',
-            borderRadius: '8px',
-            padding: '16px',
-        }}>
-            <h3 style={{
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#E5E7EB',
-                margin: '0 0 12px 0',
-            }}>
+        <div
+            className={className}
+            style={{
+                backgroundColor: '#111827',
+                borderRadius: '8px',
+                padding: '16px',
+            }}
+        >
+            <h3
+                style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#E5E7EB',
+                    margin: '0 0 12px 0',
+                }}
+            >
                 Quick Settings
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

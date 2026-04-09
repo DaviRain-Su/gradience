@@ -1,6 +1,6 @@
 /**
  * CLI Constants
- * 
+ *
  * Shared constants used across CLI commands
  */
 

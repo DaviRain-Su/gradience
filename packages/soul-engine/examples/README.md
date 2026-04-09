@@ -12,10 +12,10 @@ This directory contains example SOUL.md files demonstrating different use cases 
 - **Privacy**: Public
 - **Complexity**: Medium
 - **Features**:
-  - Clear identity and bio
-  - Well-defined values and interests
-  - Friendly communication style
-  - Moderate boundaries
+    - Clear identity and bio
+    - Well-defined values and interests
+    - Friendly communication style
+    - Moderate boundaries
 
 **Best for**: General-purpose AI agents, creative assistants, collaboration tools
 
@@ -29,10 +29,10 @@ This directory contains example SOUL.md files demonstrating different use cases 
 - **Privacy**: Public
 - **Complexity**: Low
 - **Features**:
-  - Tech-focused interests
-  - Casual communication style
-  - Work-life balance priorities
-  - Fast-paced interactions
+    - Tech-focused interests
+    - Casual communication style
+    - Work-life balance priorities
+    - Fast-paced interactions
 
 **Best for**: Developers, entrepreneurs, tech professionals
 
@@ -46,13 +46,13 @@ This directory contains example SOUL.md files demonstrating different use cases 
 - **Privacy**: Public
 - **Complexity**: High
 - **Features**:
-  - Extensive topic coverage (15+ topics)
-  - Specialized skills (12+ skills)
-  - Detailed goals and priorities
-  - Extended metadata section
-  - Version history tracking
-  - Formal, slow-paced, deep communication
-  - Longer conversation limits (30 turns)
+    - Extensive topic coverage (15+ topics)
+    - Specialized skills (12+ skills)
+    - Detailed goals and priorities
+    - Extended metadata section
+    - Version history tracking
+    - Formal, slow-paced, deep communication
+    - Longer conversation limits (30 turns)
 
 **Best for**: Expert systems, specialized consultants, educational AI
 

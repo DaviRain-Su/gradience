@@ -42,10 +42,10 @@ npx tsx src/main/a2a-router/test-cross-chain.ts debridge
 
 ## 网络配置
 
-| 网络 | RPC URL | Chain ID |
-|------|---------|----------|
-| Ethereum Sepolia | https://rpc.sepolia.org | 11155111 |
-| Solana Devnet | https://api.devnet.solana.com | - |
+| 网络             | RPC URL                       | Chain ID |
+| ---------------- | ----------------------------- | -------- |
+| Ethereum Sepolia | https://rpc.sepolia.org       | 11155111 |
+| Solana Devnet    | https://api.devnet.solana.com | -        |
 
 ---
 
@@ -109,30 +109,33 @@ export DEBRIDGE_API_KEY="your-api-key"
 
 ## 三桥对比测试
 
-| 测试项 | LayerZero | Wormhole | Debridge |
-|--------|-----------|----------|----------|
-| 部署时间 | ~2 min | ~15 min | ~5 min |
-| Gas 费用 | ~$10 | ~$2 | ~$3 |
-| 成功率 | 测试 | 测试 | 测试 |
-| 易用性 | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ |
+| 测试项   | LayerZero | Wormhole | Debridge |
+| -------- | --------- | -------- | -------- |
+| 部署时间 | ~2 min    | ~15 min  | ~5 min   |
+| Gas 费用 | ~$10      | ~$2      | ~$3      |
+| 成功率   | 测试      | 测试     | 测试     |
+| 易用性   | ⭐⭐⭐    | ⭐⭐     | ⭐⭐⭐   |
 
 ---
 
 ## 故障排除
 
 ### 问题：Solana CLI 未找到
+
 ```bash
 # 安装 Solana CLI
 sh -c "$(curl -sSfL https://release.solana.com/v1.17.0/install)"
 ```
 
 ### 问题：余额不足
+
 ```bash
 # 请求更多空投
 solana airdrop 2
 ```
 
 ### 问题：RPC 连接失败
+
 ```bash
 # 检查网络连接
 solana config get

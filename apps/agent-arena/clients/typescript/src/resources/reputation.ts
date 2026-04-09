@@ -47,13 +47,17 @@ export class ReputationResource {
      * Returns `null` when the account does not exist.
      */
     async getReputationOnChain(agent: Address): Promise<ReputationOnChain | null> {
-        const { getProgramDerivedAddress, fetchEncodedAccount, getAddressEncoder, getAddressDecoder } = await import('@solana/kit');
-        
+        const { getProgramDerivedAddress, fetchEncodedAccount, getAddressEncoder, getAddressDecoder } =
+            await import('@solana/kit');
+
         const TEXT_ENCODER = new TextEncoder();
         const REPUTATION_DISCRIMINATOR = 0x05;
         const MAX_CATEGORIES = 8;
 
-        async function findReputationPda(programAddress: Address, agentAddress: Address): Promise<readonly [Address, number]> {
+        async function findReputationPda(
+            programAddress: Address,
+            agentAddress: Address,
+        ): Promise<readonly [Address, number]> {
             return getProgramDerivedAddress({
                 programAddress,
                 seeds: [TEXT_ENCODER.encode('reputation'), getAddressEncoder().encode(agentAddress)],

@@ -15,24 +15,18 @@ import { DaemonError, ErrorCodes } from '../utils/errors.js';
 
 // Import modular components
 import {
-  type DistributionConfig,
-  type DistributionRequest,
-  type DistributionResult,
-  type TokenAccountInfo,
-  type DistributorOptions,
+    type DistributionConfig,
+    type DistributionRequest,
+    type DistributionResult,
+    type TokenAccountInfo,
+    type DistributorOptions,
 } from './distribution/types.js';
 import { DistributionBuilder } from './distribution/builder.js';
 import { CPICaller, distribute, distributeTokens } from './distribution/cpi-caller.js';
 import { DistributionValidator } from './distribution/validator.js';
 
 // Re-export types for backward compatibility
-export type {
-  DistributionConfig,
-  DistributionRequest,
-  DistributionResult,
-  TokenAccountInfo,
-  DistributorOptions,
-};
+export type { DistributionConfig, DistributionRequest, DistributionResult, TokenAccountInfo, DistributorOptions };
 
 /**
  * Revenue Distributor
@@ -40,87 +34,85 @@ export type {
  * @deprecated Use DistributionBuilder, CPICaller, DistributionValidator from ./distribution/ instead
  */
 export class RevenueDistributor {
-  private connection: Connection;
-  private config: DistributionConfig;
-  private builder: DistributionBuilder;
-  private validator: DistributionValidator;
+    private connection: Connection;
+    private config: DistributionConfig;
+    private builder: DistributionBuilder;
+    private validator: DistributionValidator;
 
-  constructor(config: DistributionConfig & { rpcEndpoint?: string }) {
-    // Validate percentages sum to 100%
-    const total = config.percentages.agent + config.percentages.judge + config.percentages.protocol;
-    if (total !== 10000) {
-      throw new DaemonError(
-        ErrorCodes.INVALID_CONFIG,
-        `Distribution percentages must sum to 10000 (100%), got ${total}`
-      );
+    constructor(config: DistributionConfig & { rpcEndpoint?: string }) {
+        // Validate percentages sum to 100%
+        const total = config.percentages.agent + config.percentages.judge + config.percentages.protocol;
+        if (total !== 10000) {
+            throw new DaemonError(
+                ErrorCodes.INVALID_CONFIG,
+                `Distribution percentages must sum to 10000 (100%), got ${total}`,
+            );
+        }
+
+        this.connection = new Connection((config as any).rpcEndpoint ?? 'https://api.devnet.solana.com');
+        this.config = config;
+        this.builder = new DistributionBuilder({ config });
+        this.validator = new DistributionValidator(this.connection);
+
+        logger.info(
+            {
+                agent: `${config.percentages.agent / 100}%`,
+                judge: `${config.percentages.judge / 100}%`,
+                protocol: `${config.percentages.protocol / 100}%`,
+            },
+            'RevenueDistributor initialized',
+        );
     }
 
-    this.connection = new Connection((config as any).rpcEndpoint ?? 'https://api.devnet.solana.com');
-    this.config = config;
-    this.builder = new DistributionBuilder({ config });
-    this.validator = new DistributionValidator(this.connection);
-
-    logger.info(
-      { agent: `${config.percentages.agent / 100}%`,
-        judge: `${config.percentages.judge / 100}%`,
-        protocol: `${config.percentages.protocol / 100}%`,
-      },
-      'RevenueDistributor initialized'
-    );
-  }
-
-  /**
-   * Distribute native SOL from escrow
-   */
-  async distribute(request: DistributionRequest, signer: Signer): Promise<DistributionResult> {
-    return distribute(this.connection, this.config, request, signer);
-  }
-
-  /**
-   * Distribute SPL tokens from escrow
-   */
-  async distributeTokens(
-    request: DistributionRequest,
-    signer: Signer
-  ): Promise<DistributionResult> {
-    return distributeTokens(this.connection, this.config, request, signer);
-  }
-
-  /**
-   * Calculate distribution breakdown
-   */
-  calculateBreakdown(
-    totalAmount: bigint,
-    agentAddress: PublicKey,
-    judgeAddress: PublicKey
-  ): {
-    agent: { address: PublicKey; amount: bigint };
-    judge: { address: PublicKey; amount: bigint };
-    protocol: { address: PublicKey; amount: bigint };
-  } {
-    return this.builder.calculateBreakdown(totalAmount, agentAddress, judgeAddress);
-  }
-
-  /**
-   * Verify a distribution transaction
-   */
-  async verifyDistribution(
-    txSignature: string,
-    expectedBreakdown: {
-      agent: { address: string; amount: bigint };
-      judge: { address: string; amount: bigint };
-      protocol: { address: string; amount: bigint };
+    /**
+     * Distribute native SOL from escrow
+     */
+    async distribute(request: DistributionRequest, signer: Signer): Promise<DistributionResult> {
+        return distribute(this.connection, this.config, request, signer);
     }
-  ): Promise<{ valid: boolean; error?: string }> {
-    return this.validator.verifyDistribution(txSignature, expectedBreakdown);
-  }
 
-  /**
-   * Get token balance
-   */
-  async getTokenBalance(tokenAccount: PublicKey): Promise<bigint> {
-    return this.validator.getTokenBalance(tokenAccount);
-  }
+    /**
+     * Distribute SPL tokens from escrow
+     */
+    async distributeTokens(request: DistributionRequest, signer: Signer): Promise<DistributionResult> {
+        return distributeTokens(this.connection, this.config, request, signer);
+    }
+
+    /**
+     * Calculate distribution breakdown
+     */
+    calculateBreakdown(
+        totalAmount: bigint,
+        agentAddress: PublicKey,
+        judgeAddress: PublicKey,
+    ): {
+        agent: { address: PublicKey; amount: bigint };
+        judge: { address: PublicKey; amount: bigint };
+        protocol: { address: PublicKey; amount: bigint };
+    } {
+        return this.builder.calculateBreakdown(totalAmount, agentAddress, judgeAddress);
+    }
+
+    /**
+     * Verify a distribution transaction
+     */
+    async verifyDistribution(
+        txSignature: string,
+        expectedBreakdown: {
+            agent: { address: string; amount: bigint };
+            judge: { address: string; amount: bigint };
+            protocol: { address: string; amount: bigint };
+        },
+    ): Promise<{ valid: boolean; error?: string }> {
+        return this.validator.verifyDistribution(txSignature, expectedBreakdown);
+    }
+
+    /**
+     * Get token balance
+     */
+    async getTokenBalance(tokenAccount: PublicKey): Promise<bigint> {
+        return this.validator.getTokenBalance(tokenAccount);
+    }
 }
 
 /**
@@ -128,20 +120,20 @@ export class RevenueDistributor {
  * @deprecated Use individual modules from ./distribution/ instead
  */
 export function createRevenueDistributor(options: DistributorOptions = {}): RevenueDistributor {
-  // Use valid Solana public keys for defaults (System Program as placeholder)
-  const defaultPubkey = new PublicKey('11111111111111111111111111111111');
-  
-  const config: DistributionConfig & { rpcEndpoint?: string } = {
-    chainHubProgramId: options.chainHubProgramId ?? defaultPubkey,
-    protocolTreasury: options.protocolTreasury ?? defaultPubkey,
-    judgePool: options.judgePool ?? defaultPubkey,
-    percentages: {
-      agent: options.percentages?.agent ?? 9500,
-      judge: options.percentages?.judge ?? 300,
-      protocol: options.percentages?.protocol ?? 200,
-    },
-    rpcEndpoint: options.rpcEndpoint ?? 'https://api.devnet.solana.com',
-  };
+    // Use valid Solana public keys for defaults (System Program as placeholder)
+    const defaultPubkey = new PublicKey('11111111111111111111111111111111');
 
-  return new RevenueDistributor(config);
+    const config: DistributionConfig & { rpcEndpoint?: string } = {
+        chainHubProgramId: options.chainHubProgramId ?? defaultPubkey,
+        protocolTreasury: options.protocolTreasury ?? defaultPubkey,
+        judgePool: options.judgePool ?? defaultPubkey,
+        percentages: {
+            agent: options.percentages?.agent ?? 9500,
+            judge: options.percentages?.judge ?? 300,
+            protocol: options.percentages?.protocol ?? 200,
+        },
+        rpcEndpoint: options.rpcEndpoint ?? 'https://api.devnet.solana.com',
+    };
+
+    return new RevenueDistributor(config);
 }

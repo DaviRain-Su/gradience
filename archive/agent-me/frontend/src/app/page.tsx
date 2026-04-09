@@ -12,9 +12,7 @@ export default function AgentMePage() {
     return (
         <main className="container">
             <h1>Agent Me MVP</h1>
-            <p className="muted">
-                OpenWallet wallet management, on-chain Reputation PDA display, and task history.
-            </p>
+            <p className="muted">OpenWallet wallet management, on-chain Reputation PDA display, and task history.</p>
 
             <div className="grid grid-2" style={{ marginTop: 16 }}>
                 <WalletManager onActiveAddressChange={setActiveAddress} />

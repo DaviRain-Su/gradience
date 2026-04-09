@@ -1,6 +1,6 @@
 /**
  * A2A Router Constants
- * 
+ *
  * @module a2a-router/constants
  */
 

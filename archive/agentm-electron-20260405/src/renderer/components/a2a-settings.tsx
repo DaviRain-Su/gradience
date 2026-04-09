@@ -20,14 +20,7 @@ export function A2ASettings({ agentAddress, displayName, capabilities }: A2ASett
     const [broadcastEnabled, setBroadcastEnabled] = useState(true);
     const [preferredProtocol, setPreferredProtocol] = useState<'nostr' | 'libp2p'>('nostr');
 
-    const {
-        isInitialized,
-        isLoading,
-        health,
-        agents,
-        refreshAgents,
-        broadcastCapabilities,
-    } = useA2A({
+    const { isInitialized, isLoading, health, agents, refreshAgents, broadcastCapabilities } = useA2A({
         autoInit: broadcastEnabled,
         enableNostr: true,
         enableXMTP: true,
@@ -73,9 +66,7 @@ export function A2ASettings({ agentAddress, displayName, capabilities }: A2ASett
                 <span className="text-sm">Broadcast Presence</span>
                 <button
                     onClick={() => setBroadcastEnabled(!broadcastEnabled)}
-                    className={`w-12 h-6 rounded-full transition ${
-                        broadcastEnabled ? 'bg-blue-600' : 'bg-gray-700'
-                    }`}
+                    className={`w-12 h-6 rounded-full transition ${broadcastEnabled ? 'bg-blue-600' : 'bg-gray-700'}`}
                 >
                     <span
                         className={`block w-5 h-5 bg-white rounded-full transition-transform ${
@@ -102,9 +93,7 @@ export function A2ASettings({ agentAddress, displayName, capabilities }: A2ASett
             {isInitialized && (
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">
-                            Discovered Agents: {agents.length}
-                        </span>
+                        <span className="text-sm text-gray-500">Discovered Agents: {agents.length}</span>
                         <button
                             onClick={() => void refreshAgents()}
                             className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded"

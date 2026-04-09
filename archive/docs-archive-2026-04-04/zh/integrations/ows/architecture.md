@@ -8,22 +8,22 @@ flowchart TB
         Agent["Agent Layer\nEscrow + Judge + Reputation"]
         SDK["Gradience SDK"]
     end
-    
+
     subgraph OWS["Open Wallet Standard"]
         Wallet["OWS Wallet\nMulti-chain Identity"]
         Credentials["Verifiable Credentials"]
         AgentKit["OWS Agent Kit"]
     end
-    
+
     subgraph Messaging["Messaging Layer"]
         XMTP["XMTP Protocol"]
     end
-    
+
     subgraph External["External Services"]
         MoonPay["MoonPay\nFiat On/Off Ramp"]
         PayPal["PayPal\nPayments"]
     end
-    
+
     SDK --> Wallet
     SDK --> Agent
     AgentKit --> XMTP
@@ -48,7 +48,7 @@ sequenceDiagram
     participant X as XMTP
     participant B as Agent B (Working)
     participant G as Gradience Protocol
-    
+
     A->>X: Send Task Request
     X->>B: Deliver Request
     B->>X: Send Response

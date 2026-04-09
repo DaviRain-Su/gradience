@@ -9,6 +9,7 @@
 5. 查看是否有错误信息
 
 常见错误：
+
 - `Invalid API Key` - API Key 错误
 - `Domain not verified` - 域名未验证
 - `Rate limited` - 发送频率限制
@@ -31,6 +32,7 @@
 在 Vercel Dashboard → Settings → Environment Variables：
 
 必须有的变量：
+
 ```
 RESEND_API_KEY = re_xxxxxxxxxxxxxxxx
 FROM_EMAIL = hello@gradiences.xyz
@@ -44,6 +46,7 @@ ADMIN_EMAIL = your-email@example.com
 ## 🔍 第四步：检查域名验证状态
 
 在 Resend → Domains：
+
 - `gradiences.xyz` 应该显示 **Verified** (绿色)
 - 如果显示 **Pending**，说明 DNS 还没生效
 
@@ -55,7 +58,7 @@ ADMIN_EMAIL = your-email@example.com
 
 ```typescript
 // 当前代码用的发件人
-from: `Gradience <${fromEmail}>`
+from: `Gradience <${fromEmail}>`;
 // fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 ```
 
@@ -68,19 +71,20 @@ from: `Gradience <${fromEmail}>`
 ### 方案 1: 直接在代码里写死发件人（测试用）
 
 修改 `route.ts`：
+
 ```typescript
 await resend.emails.send({
-  from: 'Gradience <hello@gradiences.xyz>',  // 直接写死
-  to: email,
-  subject: "You're on the Gradience waitlist!",
-  html: `...`,
+    from: 'Gradience <hello@gradiences.xyz>', // 直接写死
+    to: email,
+    subject: "You're on the Gradience waitlist!",
+    html: `...`,
 });
 ```
 
 ### 方案 2: 使用 Resend 测试邮箱（100%可用）
 
 ```typescript
-from: 'Gradience <onboarding@resend.dev>'
+from: 'Gradience <onboarding@resend.dev>';
 ```
 
 先测试这个能不能收到。
@@ -98,6 +102,7 @@ from: 'Gradience <onboarding@resend.dev>'
 ## 🧪 测试 API 直接
 
 用 curl 测试：
+
 ```bash
 curl -X POST https://your-site.com/api/subscribe \
   -H "Content-Type: application/json" \
@@ -105,6 +110,7 @@ curl -X POST https://your-site.com/api/subscribe \
 ```
 
 看返回什么：
+
 - `{"success":true}` - API 正常
 - 错误信息 - 看具体问题
 

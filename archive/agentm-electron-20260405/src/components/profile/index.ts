@@ -8,12 +8,12 @@
 
 // Types
 export type {
-  DomainInfo,
-  DomainType,
-  DomainStatus,
-  DomainValidationResult,
-  DomainInputState,
-  ProfileWithDomains,
+    DomainInfo,
+    DomainType,
+    DomainStatus,
+    DomainValidationResult,
+    DomainInputState,
+    ProfileWithDomains,
 } from './types.ts';
 
 // Components

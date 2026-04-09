@@ -51,34 +51,17 @@ export type {
     SoundSettings,
 } from './types';
 
-export {
-    DEFAULT_NOTIFICATION_SETTINGS,
-    NOTIFICATION_ICONS,
-    NOTIFICATION_COLORS,
-} from './types';
+export { DEFAULT_NOTIFICATION_SETTINGS, NOTIFICATION_ICONS, NOTIFICATION_COLORS } from './types';
 
 // Components
-export {
-    NotificationBell,
-    CompactNotificationBell,
-    HeaderNotificationBell,
-} from './NotificationBell';
+export { NotificationBell, CompactNotificationBell, HeaderNotificationBell } from './NotificationBell';
 export type { NotificationBellProps } from './NotificationBell';
 
-export {
-    NotificationItem,
-    FollowNotificationItem,
-} from './NotificationItem';
+export { NotificationItem, FollowNotificationItem } from './NotificationItem';
 export type { NotificationItemProps } from './NotificationItem';
 
-export {
-    NotificationList,
-    NotificationDropdown,
-} from './NotificationList';
+export { NotificationList, NotificationDropdown } from './NotificationList';
 export type { NotificationListProps } from './NotificationList';
 
-export {
-    NotificationSettings,
-    NotificationSettingsCompact,
-} from './NotificationSettings';
+export { NotificationSettings, NotificationSettingsCompact } from './NotificationSettings';
 export type { NotificationSettingsProps } from './NotificationSettings';

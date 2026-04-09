@@ -353,7 +353,7 @@ export default function MessagesPage() {
 
     const selectedDelegation = useMemo(
         () => delegations.find((item) => item.id === selectedDelegationId) ?? null,
-        [delegations, selectedDelegationId]
+        [delegations, selectedDelegationId],
     );
 
     const selectedAgent = useMemo(() => {
@@ -378,7 +378,7 @@ export default function MessagesPage() {
                     lastMessage: last?.content ?? `Delegated: ${delegation.taskTitle}`,
                 };
             }),
-        [delegations, messages, registryAgents]
+        [delegations, messages, registryAgents],
     );
 
     function handleCreateDelegation() {
@@ -430,9 +430,7 @@ export default function MessagesPage() {
 
         setSettlements((prev) => [settlement, ...prev]);
         setDelegations((prev) =>
-            prev.map((item) =>
-                item.id === selectedDelegation.id ? { ...item, status: 'settled' } : item
-            )
+            prev.map((item) => (item.id === selectedDelegation.id ? { ...item, status: 'settled' } : item)),
         );
         setMessages((prev) => [
             ...prev,
@@ -449,13 +447,9 @@ export default function MessagesPage() {
         <div style={styles.container}>
             <div style={styles.header}>
                 <h1 style={styles.title}>Messages</h1>
-                <p style={styles.subtitle}>
-                    Metaplex Registry discovery + A2A delegation + token settlement demo.
-                </p>
+                <p style={styles.subtitle}>Metaplex Registry discovery + A2A delegation + token settlement demo.</p>
                 {!walletAddress && (
-                    <p style={styles.demoMode}>
-                        Demo mode: wallet not connected, using local operator identity.
-                    </p>
+                    <p style={styles.demoMode}>Demo mode: wallet not connected, using local operator identity.</p>
                 )}
             </div>
 
@@ -495,11 +489,7 @@ export default function MessagesPage() {
                         Delegate Task
                     </button>
                 </div>
-                {delegations[0] && (
-                    <p style={styles.successText}>
-                        Delegation created: {delegations[0].taskTitle}
-                    </p>
-                )}
+                {delegations[0] && <p style={styles.successText}>Delegation created: {delegations[0].taskTitle}</p>}
             </div>
 
             {/* Main Chat Area */}
@@ -515,7 +505,11 @@ export default function MessagesPage() {
                         <button
                             key={item.delegation.id}
                             onClick={() => setSelectedDelegationId(item.delegation.id)}
-                            style={selectedDelegationId === item.delegation.id ? styles.conversationItemSelected : styles.conversationItem}
+                            style={
+                                selectedDelegationId === item.delegation.id
+                                    ? styles.conversationItemSelected
+                                    : styles.conversationItem
+                            }
                         >
                             <div style={styles.conversationHeader}>
                                 <span style={styles.conversationName}>{item.agentName}</span>
@@ -539,7 +533,15 @@ export default function MessagesPage() {
 
                             <div style={styles.messagesArea}>
                                 {messages.length === 0 && (
-                                    <p style={{ textAlign: 'center', fontSize: '12px', color: c.ink, opacity: 0.5, marginTop: '32px' }}>
+                                    <p
+                                        style={{
+                                            textAlign: 'center',
+                                            fontSize: '12px',
+                                            color: c.ink,
+                                            opacity: 0.5,
+                                            marginTop: '32px',
+                                        }}
+                                    >
                                         No messages yet. Say hello!
                                     </p>
                                 )}
@@ -550,7 +552,9 @@ export default function MessagesPage() {
                                             key={msg.id}
                                             style={{
                                                 ...styles.messageBubble,
-                                                ...(msg.from === operator ? styles.messageBubbleOwn : styles.messageBubbleOther),
+                                                ...(msg.from === operator
+                                                    ? styles.messageBubbleOwn
+                                                    : styles.messageBubbleOther),
                                             }}
                                         >
                                             <p>{msg.content}</p>
@@ -563,7 +567,10 @@ export default function MessagesPage() {
 
                             <div style={styles.chatFooter}>
                                 <div style={styles.chatMeta}>
-                                    <span>recipient: {selectedDelegation.toWallet.slice(0, 8)}...{selectedDelegation.toWallet.slice(-4)}</span>
+                                    <span>
+                                        recipient: {selectedDelegation.toWallet.slice(0, 8)}...
+                                        {selectedDelegation.toWallet.slice(-4)}
+                                    </span>
                                     <span>status: {selectedDelegation.status}</span>
                                 </div>
                                 <div style={styles.inputArea}>
@@ -584,7 +591,11 @@ export default function MessagesPage() {
                                     <button
                                         onClick={handleSettleDelegation}
                                         disabled={selectedDelegation.status === 'settled'}
-                                        style={selectedDelegation.status === 'settled' ? styles.settleButtonDisabled : styles.settleButton}
+                                        style={
+                                            selectedDelegation.status === 'settled'
+                                                ? styles.settleButtonDisabled
+                                                : styles.settleButton
+                                        }
                                     >
                                         {selectedDelegation.status === 'settled' ? 'Settled' : 'Settle'}
                                     </button>
@@ -593,15 +604,13 @@ export default function MessagesPage() {
 
                             {selectedSettlement && (
                                 <div style={styles.settlementLog}>
-                                    settlement_tx: {selectedSettlement.txRef} · {selectedSettlement.amount.toLocaleString()}{' '}
-                                    {selectedSettlement.token}
+                                    settlement_tx: {selectedSettlement.txRef} ·{' '}
+                                    {selectedSettlement.amount.toLocaleString()} {selectedSettlement.token}
                                 </div>
                             )}
                         </>
                     ) : (
-                        <div style={styles.noConversation}>
-                            Select a delegation conversation
-                        </div>
+                        <div style={styles.noConversation}>Select a delegation conversation</div>
                     )}
                 </div>
             </div>

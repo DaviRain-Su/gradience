@@ -49,10 +49,7 @@ test.describe('AgentM Pro profile flow', () => {
     });
 });
 
-async function createProfile(
-    page: Page,
-    input: { name: string; description: string; version: string }
-) {
+async function createProfile(page: Page, input: { name: string; description: string; version: string }) {
     await page.getByTestId('create-profile-button').click();
     await page.getByTestId('profile-name-input').fill(input.name);
     await page.getByTestId('profile-description-input').fill(input.description);

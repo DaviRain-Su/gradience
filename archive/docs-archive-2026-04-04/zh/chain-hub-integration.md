@@ -13,8 +13,8 @@ import { Gradience, ChainHubClient } from '@gradiences/sdk';
 
 // Initialize client
 const client = new Gradience({
-  rpcEndpoint: 'https://api.devnet.solana.com',
-  indexerEndpoint: 'https://indexer.gradiences.xyz',
+    rpcEndpoint: 'https://api.devnet.solana.com',
+    indexerEndpoint: 'https://indexer.gradiences.xyz',
 });
 
 // Use Chain Hub
@@ -23,7 +23,7 @@ console.log(reputation);
 
 // Or use ChainHubClient directly
 const hub = new ChainHubClient({
-  baseUrl: 'https://indexer.gradiences.xyz',
+    baseUrl: 'https://indexer.gradiences.xyz',
 });
 
 const agents = await hub.getAgents({ limit: 10 });
@@ -35,20 +35,20 @@ const agents = await hub.getAgents({ limit: 10 });
 
 ```typescript
 class ChainHubClient {
-  constructor(config: ChainHubClientConfig);
-  
-  // Reputation
-  getReputation(agent: string): Promise<ReputationData>;
-  
-  // Agents
-  getAgents(params?: QueryParams): Promise<AgentInfo[]>;
-  
-  // Tasks
-  getTask(taskId: number): Promise<TaskApi>;
-  getTasks(params?: QueryParams): Promise<TaskApi[]>;
-  
-  // Health
-  healthCheck(): Promise<boolean>;
+    constructor(config: ChainHubClientConfig);
+
+    // Reputation
+    getReputation(agent: string): Promise<ReputationData>;
+
+    // Agents
+    getAgents(params?: QueryParams): Promise<AgentInfo[]>;
+
+    // Tasks
+    getTask(taskId: number): Promise<TaskApi>;
+    getTasks(params?: QueryParams): Promise<TaskApi[]>;
+
+    // Health
+    healthCheck(): Promise<boolean>;
 }
 ```
 
@@ -61,6 +61,6 @@ AgentM Pro 已经集成 Chain Hub SDK：
 import { ChainHubClient } from '@gradiences/sdk';
 
 export const indexer = new ChainHubClient({
-  baseUrl: process.env.NEXT_PUBLIC_INDEXER_ENDPOINT,
+    baseUrl: process.env.NEXT_PUBLIC_INDEXER_ENDPOINT,
 });
 ```

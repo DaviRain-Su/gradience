@@ -53,9 +53,7 @@ const FILTER_OPTIONS: { value: FilterOption; label: string }[] = [
 /**
  * Group notifications by date
  */
-function groupNotificationsByDate(
-    notifications: Notification[],
-): Map<string, Notification[]> {
+function groupNotificationsByDate(notifications: Notification[]): Map<string, Notification[]> {
     const groups = new Map<string, Notification[]>();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -136,11 +134,7 @@ export function NotificationList({
     if (loading) {
         return (
             <div className={`flex flex-col ${className}`}>
-                <NotificationListHeader
-                    unreadCount={0}
-                    onMarkAllAsRead={onMarkAllAsRead}
-                    onClearAll={onClearAll}
-                />
+                <NotificationListHeader unreadCount={0} onMarkAllAsRead={onMarkAllAsRead} onClearAll={onClearAll} />
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
                 </div>
@@ -167,10 +161,7 @@ export function NotificationList({
             )}
 
             {/* Notification List */}
-            <div
-                className="flex-1 overflow-y-auto"
-                style={{ maxHeight }}
-            >
+            <div className="flex-1 overflow-y-auto" style={{ maxHeight }}>
                 {sortedNotifications.length === 0 ? (
                     <EmptyNotifications message={emptyMessage} />
                 ) : groupByDate && groupedNotifications ? (
@@ -212,9 +203,7 @@ function NotificationListHeader({
             <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold text-gray-100">Notifications</h2>
                 {unreadCount > 0 && (
-                    <span className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full">
-                        {unreadCount} new
-                    </span>
+                    <span className="px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full">{unreadCount} new</span>
                 )}
             </div>
             <div className="flex items-center gap-2">
@@ -276,10 +265,7 @@ function NotificationFilters({
                         className={`
                             flex items-center gap-1 px-3 py-1.5 text-xs rounded-full
                             transition-colors whitespace-nowrap
-                            ${isActive
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                            }
+                            ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}
                         `}
                     >
                         {option.label}
@@ -385,12 +371,7 @@ function FlatNotificationList({
 function EmptyNotifications({ message }: { message: string }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 px-4">
-            <svg
-                className="w-12 h-12 text-gray-600 mb-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-            >
+            <svg className="w-12 h-12 text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

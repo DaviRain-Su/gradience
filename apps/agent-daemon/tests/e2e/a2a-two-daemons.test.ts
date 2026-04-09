@@ -63,7 +63,7 @@ describe.skipIf(SKIP)('A2A Two-Daemon Communication', () => {
         await routerA.broadcastCapabilities(agentAInfo);
 
         // Wait for propagation across relays
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise((r) => setTimeout(r, 3000));
 
         const discovered = await routerB.discoverAgents({
             capabilities: ['defi-analysis'],

@@ -1,7 +1,7 @@
 # 双轨 Agent 经济：质押竞争 vs 能力竞争
 
 > **核心设计：DeFi 任务用质押，普通任务用能力，ERC-8004 记录统一声誉**
-> 
+>
 > 讨论日期：2026-03-29
 
 ---
@@ -43,29 +43,28 @@
 
 ```yaml
 质押竞争的优势:
-  - 适合高价值任务
-  - 经济约束直接有效
-  - 风险可量化（质押金额 = 最大损失）
-  
+    - 适合高价值任务
+    - 经济约束直接有效
+    - 风险可量化（质押金额 = 最大损失）
+
 质押竞争的劣势:
-  - 门槛高（需要资金）
-  - 不适合新手
-  - 资本可能垄断
+    - 门槛高（需要资金）
+    - 不适合新手
+    - 资本可能垄断
 
 能力竞争的优势:
-  - 门槛低（任何人可参与）
-  - 鼓励真实能力
-  - 更公平（不看出身看结果）
+    - 门槛低（任何人可参与）
+    - 鼓励真实能力
+    - 更公平（不看出身看结果）
 
 能力竞争的劣势:
-  - 验证成本高（需要评判）
-  - 早期声誉积累慢
-  - 单次任务风险
+    - 验证成本高（需要评判）
+    - 早期声誉积累慢
+    - 单次任务风险
 
-双轨并存:
-  ✅ 覆盖不同场景
-  ✅ 给用户选择
-  ✅ 风险分层管理
+双轨并存: ✅ 覆盖不同场景
+    ✅ 给用户选择
+    ✅ 风险分层管理
 ```
 
 ---
@@ -114,7 +113,7 @@ interface IAgentReputation {
         uint256 lastUpdateTime;    // 最后更新时间
         bytes32[] attestationCIDs; // 历史证明 CID 列表
     }
-    
+
     // 更新诚实度（由任务合约调用）
     function updateHonesty(
         address agent,
@@ -122,10 +121,10 @@ interface IAgentReputation {
         uint256 qualityScore,  // 质量评分 0-100
         bytes32 attestationCID // 本次任务的证明 CID
     ) external;
-    
+
     // 查询诚实度
     function getHonesty(address agent) external view returns (uint256);
-    
+
     // 查询完整声誉
     function getReputation(address agent) external view returns (Reputation memory);
 }
@@ -133,7 +132,7 @@ interface IAgentReputation {
 // 实现合约
 contract AgentReputation is IAgentReputation {
     mapping(address => Reputation) public reputations;
-    
+
     function updateHonesty(
         address agent,
         bool success,
@@ -142,9 +141,9 @@ contract AgentReputation is IAgentReputation {
     ) external {
         // 只有授权的任务合约可以调用
         require(authorizedContracts[msg.sender], "Not authorized");
-        
+
         Reputation storage rep = reputations[agent];
-        
+
         if (success) {
             // 成功：根据质量加分
             uint256 bonus = qualityScore / 20; // 质量 100 分 = +5 分
@@ -155,11 +154,11 @@ contract AgentReputation is IAgentReputation {
             rep.honestyScore = rep.honestyScore > 10 ? rep.honestyScore - 10 : 0;
             rep.failedTasks++;
         }
-        
+
         rep.totalTasks++;
         rep.lastUpdateTime = block.timestamp;
         rep.attestationCIDs.push(attestationCID);
-        
+
         emit HonestyUpdated(agent, rep.honestyScore, success);
     }
 }
@@ -169,36 +168,36 @@ contract AgentReputation is IAgentReputation {
 
 ```yaml
 防止刷分:
-  问题: Agent 自己发布简单任务，自己完成，刷高诚实度
-  
-  解决:
-    - 任务发布者也有诚实度要求
-    - 低诚实度发布者发布的任务不计入声誉
-    - 需要第三方真实用户确认
+    问题: Agent 自己发布简单任务，自己完成，刷高诚实度
+
+    解决:
+        - 任务发布者也有诚实度要求
+        - 低诚实度发布者发布的任务不计入声誉
+        - 需要第三方真实用户确认
 
 防止早期诚实后期作恶:
-  问题: Agent 前期老实积累声誉，后期一次性骗大钱
-  
-  解决:
-    - 时间衰减：旧任务权重递减
-    - 近期表现权重更高
-    - 大额任务需要额外验证
+    问题: Agent 前期老实积累声誉，后期一次性骗大钱
+
+    解决:
+        - 时间衰减：旧任务权重递减
+        - 近期表现权重更高
+        - 大额任务需要额外验证
 
 防止评判员偏袒:
-  问题: 评判员给某些 Agent 高分
-  
-  解决:
-    - 评判员也有诚实度
-    - 多评判员随机分配
-    - 评判结果公开可审计
+    问题: 评判员给某些 Agent 高分
+
+    解决:
+        - 评判员也有诚实度
+        - 多评判员随机分配
+        - 评判结果公开可审计
 
 防止冷冻账号复活:
-  问题: 被封账号重新注册
-  
-  解决:
-    - DID 绑定设备/身份
-    - 新账号有观察期
-    - 行为模式分析
+    问题: 被封账号重新注册
+
+    解决:
+        - DID 绑定设备/身份
+        - 新账号有观察期
+        - 行为模式分析
 ```
 
 ---
@@ -276,19 +275,19 @@ function createTask(TaskConfig memory config) external {
 
 ```yaml
 能力竞争的声誉在质押模式的价值:
-  - 高诚实度 Agent 可以减少质押比例
-  - 例子：诚实度 90+ 的 Agent，质押要求减半
-  - 激励：做好能力任务，降低质押门槛
+    - 高诚实度 Agent 可以减少质押比例
+    - 例子：诚实度 90+ 的 Agent，质押要求减半
+    - 激励：做好能力任务，降低质押门槛
 
 质押模式的记录在能力模式的价值:
-  - 成功完成质押任务，诚实度也提升
-  - 大额任务成功，诚实度大幅提升
-  - 激励：做好质押任务，提升能力任务资格
+    - 成功完成质押任务，诚实度也提升
+    - 大额任务成功，诚实度大幅提升
+    - 激励：做好质押任务，提升能力任务资格
 
 统一身份的好处:
-  - 一个 Agent 可以在两种模式下同时活动
-  - 声誉共享，互相强化
-  - 用户看到一个综合评分
+    - 一个 Agent 可以在两种模式下同时活动
+    - 声誉共享，互相强化
+    - 用户看到一个综合评分
 ```
 
 ---
@@ -381,7 +380,7 @@ Agent B：
 小额任务：
   - 诚实度足够（损失有限）
   - 验证成本可接受
-  
+
 大额任务：
   - 需要经济约束（质押）
   - 诚实度只能降低概率，不能消除风险
@@ -473,24 +472,24 @@ Agent B：
 
 ```yaml
 低门槛:
-  - 新手可以从能力竞争开始
-  - 不需要资金就可以参与
-  - 凭能力上升
+    - 新手可以从能力竞争开始
+    - 不需要资金就可以参与
+    - 凭能力上升
 
 高天花板:
-  - 有能力 + 有资金可以做大额任务
-  - 质押竞争收益更高
-  - 两条路径互通
+    - 有能力 + 有资金可以做大额任务
+    - 质押竞争收益更高
+    - 两条路径互通
 
 安全:
-  - 小额任务靠声誉
-  - 大额任务靠质押
-  - 风险分层管理
+    - 小额任务靠声誉
+    - 大额任务靠质押
+    - 风险分层管理
 
 公平:
-  - 不看出身看结果
-  - 诚实工作累积声誉
-  - 长期主义获利
+    - 不看出身看结果
+    - 诚实工作累积声誉
+    - 长期主义获利
 ```
 
 ### 6.3 一句话总结
@@ -507,4 +506,4 @@ Agent B：
 
 ---
 
-*"质押是经济的约束，能力是才华的证明，诚实是长久的通行证。"*
+_"质押是经济的约束，能力是才华的证明，诚实是长久的通行证。"_

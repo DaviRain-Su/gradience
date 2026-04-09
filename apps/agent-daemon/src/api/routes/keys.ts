@@ -5,22 +5,22 @@ import { logger } from '../../utils/logger.js';
 import crypto from 'node:crypto';
 
 interface ApiKeyRecord {
-  id: string;
-  name: string;
-  prefix: string;
-  scopes: string[];
-  createdAt: number;
-  revokedAt?: number;
+    id: string;
+    name: string;
+    prefix: string;
+    scopes: string[];
+    createdAt: number;
+    revokedAt?: number;
 }
 
 const apiKeys = new Map<string, { record: ApiKeyRecord; tokenHash: string }>();
 
 function generateToken(): string {
-  return `ows_key_${crypto.randomBytes(32).toString('hex')}`;
+    return `ows_key_${crypto.randomBytes(32).toString('hex')}`;
 }
 
 function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
+    return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 export function registerKeyRoutes(app: FastifyInstance, keyManager: KeyManager): void {

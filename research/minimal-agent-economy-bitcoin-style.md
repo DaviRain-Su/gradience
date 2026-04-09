@@ -1,7 +1,7 @@
 # 极简 Agent 经济模型：借鉴比特币 POW 的第一性原理设计
 
 > **核心命题：如何用比特币式的极简规则，构建既能赚钱又保证质量的 Agent 经济？**
-> 
+>
 > 思考日期：2026-03-29
 
 ---
@@ -124,14 +124,14 @@ Agent 经济需要解决的问题：
 
 ### 2.3 对比表格
 
-| 维度 | 比特币 POW | Agent POQ |
-|------|-----------|-----------|
-| **竞争资源** | 算力（Hash） | 能力（Quality） |
-| **竞争方式** | 解数学题 | 完成任务 |
-| **奖励依据** | 先算出哈希 | 结果质量最高 |
-| **难度调整** | 调整目标值 | 调整任务复杂度/奖励 |
-| **防攻击** | 51% 算力成本 | 高质量结果成本 |
-| **共识机制** | 最长链 | 最高质量 |
+| 维度         | 比特币 POW   | Agent POQ           |
+| ------------ | ------------ | ------------------- |
+| **竞争资源** | 算力（Hash） | 能力（Quality）     |
+| **竞争方式** | 解数学题     | 完成任务            |
+| **奖励依据** | 先算出哈希   | 结果质量最高        |
+| **难度调整** | 调整目标值   | 调整任务复杂度/奖励 |
+| **防攻击**   | 51% 算力成本 | 高质量结果成本      |
+| **共识机制** | 最长链       | 最高质量            |
 
 ---
 
@@ -258,25 +258,25 @@ Agent 选择诚实
 contract SimpleAgentToken {
     // 总量固定（通胀低）
     uint256 public constant MAX_SUPPLY = 21_000_000 * 10**18;
-    
+
     // 初始分配
     // - 40% 任务奖励池（10 年释放）
     // - 20% 开发者基金（4 年释放）
     // - 20% 早期投资者（2 年锁仓）
     // - 10% 社区空投
     // - 10% 流动性池
-    
+
     // 任务奖励（类比比特币出块奖励）
     uint256 public taskReward = 50 * 10**18;  // 每任务 50 TOKEN
     uint256 public halvingInterval = 4 years; // 每 4 年减半
-    
+
     // 释放函数（任何人可以调用）
     function releaseTaskReward(address agent, uint256 quality) external {
         // 根据质量调整奖励
         uint256 reward = taskReward * quality / 100;
         _mint(agent, reward);
     }
-    
+
     // 减半（类比比特币减半）
     function halveReward() external {
         require(block.timestamp >= lastHalving + halvingInterval);
@@ -305,25 +305,25 @@ contract SimpleTask {
         uint256 deadline;
         bool completed;
     }
-    
+
     struct Submission {
         address agent;
         bytes32 resultHash;       // 结果的哈希
         uint256 timestamp;
     }
-    
+
     // 发布任务（简单：奖励 + 需求哈希 + 截止）
-    function createTask(uint256 reward, bytes32 requirementHash, uint256 deadline) 
+    function createTask(uint256 reward, bytes32 requirementHash, uint256 deadline)
         external payable {
         require(msg.value >= reward, "Insufficient reward");
         // 创建任务...
     }
-    
+
     // 提交结果（简单：结果哈希）
     function submit(uint256 taskId, bytes32 resultHash) external {
         // 记录提交...
     }
-    
+
     // 评判（简单：谁赢给谁）
     function judge(uint256 taskId, address winner) external {
         // 评判员决定获胜者
@@ -512,4 +512,4 @@ Agent POQ：
 
 ---
 
-*"比特币的伟大不在于技术创新，而在于经济机制设计的极简优雅。Agent 经济应该追求同样的简洁。"*
+_"比特币的伟大不在于技术创新，而在于经济机制设计的极简优雅。Agent 经济应该追求同样的简洁。"_

@@ -24,11 +24,11 @@ pnpm install
 import { A2ARouter } from './main/a2a-router/router.js';
 
 const router = new A2ARouter({
-  enableNostr: true,
-  enableLibp2p: true,
-  nostrOptions: {
-    relays: ['wss://relay.damus.io'],
-  },
+    enableNostr: true,
+    enableLibp2p: true,
+    nostrOptions: {
+        relays: ['wss://relay.damus.io'],
+    },
 });
 
 await router.initialize();
@@ -38,13 +38,13 @@ await router.initialize();
 
 ```typescript
 const result = await router.send({
-  to: 'recipient-solana-address',
-  type: 'direct_message',
-  payload: { content: 'Hello, Agent!' },
+    to: 'recipient-solana-address',
+    type: 'direct_message',
+    payload: { content: 'Hello, Agent!' },
 });
 
 if (result.success) {
-  console.log('Message sent via', result.protocol);
+    console.log('Message sent via', result.protocol);
 }
 ```
 
@@ -52,7 +52,7 @@ if (result.success) {
 
 ```typescript
 await router.subscribe((message) => {
-  console.log(`From ${message.from}:`, message.payload);
+    console.log(`From ${message.from}:`, message.payload);
 });
 ```
 
@@ -60,8 +60,8 @@ await router.subscribe((message) => {
 
 ```typescript
 const agents = await router.discoverAgents();
-agents.forEach(agent => {
-  console.log(`Found: ${agent.displayName} (${agent.address})`);
+agents.forEach((agent) => {
+    console.log(`Found: ${agent.displayName} (${agent.address})`);
 });
 ```
 
@@ -73,31 +73,31 @@ agents.forEach(agent => {
 import { useA2A } from './hooks/useA2A.js';
 
 function ChatComponent() {
-  const { send, isInitialized, health } = useA2A({
-    autoInit: true,
-    enableNostr: true,
-    agentInfo: {
-      address: 'your-address',
-      displayName: 'My Agent',
-      capabilities: ['chat'],
-    },
-  });
-
-  const handleSend = async (text: string) => {
-    if (!isInitialized) return;
-    await send({
-      to: 'recipient-address',
-      type: 'direct_message',
-      payload: { content: text },
+    const { send, isInitialized, health } = useA2A({
+        autoInit: true,
+        enableNostr: true,
+        agentInfo: {
+            address: 'your-address',
+            displayName: 'My Agent',
+            capabilities: ['chat'],
+        },
     });
-  };
 
-  return (
-    <div>
-      <span>Status: {health.availableProtocols.join(', ')}</span>
-      {/* Chat UI */}
-    </div>
-  );
+    const handleSend = async (text: string) => {
+        if (!isInitialized) return;
+        await send({
+            to: 'recipient-address',
+            type: 'direct_message',
+            payload: { content: text },
+        });
+    };
+
+    return (
+        <div>
+            <span>Status: {health.availableProtocols.join(', ')}</span>
+            {/* Chat UI */}
+        </div>
+    );
 }
 ```
 
@@ -110,9 +110,9 @@ Router automatically selects the best protocol:
 ```typescript
 // Uses protocol priority: libp2p → nostr → magicblock
 await router.send({
-  to: 'recipient',
-  type: 'direct_message',
-  payload: data,
+    to: 'recipient',
+    type: 'direct_message',
+    payload: data,
 });
 ```
 
@@ -121,10 +121,10 @@ await router.send({
 ```typescript
 // Force specific protocol
 await router.send({
-  to: 'recipient',
-  type: 'direct_message',
-  payload: data,
-  preferredProtocol: 'nostr',  // or 'libp2p', 'magicblock'
+    to: 'recipient',
+    type: 'direct_message',
+    payload: data,
+    preferredProtocol: 'nostr', // or 'libp2p', 'magicblock'
 });
 ```
 
@@ -132,12 +132,12 @@ await router.send({
 
 ```typescript
 const router = new A2ARouter({
-  protocolPriority: {
-    broadcast: ['nostr', 'libp2p'],     // For broadcasts
-    direct_p2p: ['libp2p', 'nostr'],    // For direct messages
-    paid_service: ['magicblock'],        // For paid services
-    offline_message: ['nostr'],          // For offline delivery
-  },
+    protocolPriority: {
+        broadcast: ['nostr', 'libp2p'], // For broadcasts
+        direct_p2p: ['libp2p', 'nostr'], // For direct messages
+        paid_service: ['magicblock'], // For paid services
+        offline_message: ['nostr'], // For offline delivery
+    },
 });
 ```
 
@@ -150,11 +150,11 @@ const router = new A2ARouter({
 const { send, subscribe } = useA2A({ enableNostr: true });
 
 useEffect(() => {
-  subscribe((msg) => {
-    if (msg.type === 'direct_message') {
-      addMessageToUI(msg);
-    }
-  });
+    subscribe((msg) => {
+        if (msg.type === 'direct_message') {
+            addMessageToUI(msg);
+        }
+    });
 }, []);
 ```
 
@@ -163,20 +163,20 @@ useEffect(() => {
 ```typescript
 // Post a task
 await router.send({
-  to: 'broadcast',
-  type: 'task_proposal',
-  payload: {
-    taskId: 'task-123',
-    description: 'Analyze dataset',
-    reward: 1000000,  // lamports
-  },
+    to: 'broadcast',
+    type: 'task_proposal',
+    payload: {
+        taskId: 'task-123',
+        description: 'Analyze dataset',
+        reward: 1000000, // lamports
+    },
 });
 
 // Accept a task
 await router.send({
-  to: taskCreator,
-  type: 'task_accept',
-  payload: { taskId: 'task-123' },
+    to: taskCreator,
+    type: 'task_accept',
+    payload: { taskId: 'task-123' },
 });
 ```
 
@@ -185,17 +185,17 @@ await router.send({
 ```typescript
 // Broadcast capabilities
 await router.broadcastCapabilities({
-  address: 'my-address',
-  displayName: 'Data Analyzer',
-  capabilities: ['data_analysis', 'ml_training'],
-  reputationScore: 0.85,
-  available: true,
+    address: 'my-address',
+    displayName: 'Data Analyzer',
+    capabilities: ['data_analysis', 'ml_training'],
+    reputationScore: 0.85,
+    available: true,
 });
 
 // Find agents by capability
 const analysts = await router.discoverAgents({
-  capabilities: ['data_analysis'],
-  minReputation: 0.7,
+    capabilities: ['data_analysis'],
+    minReputation: 0.7,
 });
 ```
 
@@ -203,16 +203,16 @@ const analysts = await router.discoverAgents({
 
 ```typescript
 const router = new A2ARouter({
-  enableMagicBlock: true,
-  agentId: 'my-solana-address',
+    enableMagicBlock: true,
+    agentId: 'my-solana-address',
 });
 
 // Send paid message
 await router.send({
-  to: 'recipient',
-  type: 'task_proposal',
-  payload: { task: 'urgent analysis' },
-  preferredProtocol: 'magicblock',
+    to: 'recipient',
+    type: 'task_proposal',
+    payload: { task: 'urgent analysis' },
+    preferredProtocol: 'magicblock',
 });
 
 // Cost is automatically calculated
@@ -245,7 +245,7 @@ if (!result.success) {
 
 ```typescript
 if (!router.isInitialized()) {
-  await router.initialize();
+    await router.initialize();
 }
 ```
 
@@ -255,7 +255,7 @@ if (!router.isInitialized()) {
 useEffect(() => {
   const router = new A2ARouter({...});
   router.initialize();
-  
+
   return () => {
     router.shutdown();
   };
@@ -280,7 +280,7 @@ if (!result.success) {
 const health = router.health();
 
 if (!health.protocolStatus.nostr.available) {
-  console.warn('Nostr unavailable, using fallback');
+    console.warn('Nostr unavailable, using fallback');
 }
 ```
 

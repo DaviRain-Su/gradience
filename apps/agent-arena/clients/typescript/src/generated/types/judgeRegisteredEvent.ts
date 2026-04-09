@@ -7,54 +7,48 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type Codec,
-  type Decoder,
-  type Encoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type Codec,
+    type Decoder,
+    type Encoder,
+} from '@solana/kit';
 
 export type JudgeRegisteredEvent = {
-  judge: Array<number>;
-  stake: bigint;
-  categories: Array<number>;
+    judge: Array<number>;
+    stake: bigint;
+    categories: Array<number>;
 };
 
 export type JudgeRegisteredEventArgs = {
-  judge: Array<number>;
-  stake: number | bigint;
-  categories: Array<number>;
+    judge: Array<number>;
+    stake: number | bigint;
+    categories: Array<number>;
 };
 
 export function getJudgeRegisteredEventEncoder(): Encoder<JudgeRegisteredEventArgs> {
-  return getStructEncoder([
-    ["judge", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["stake", getU64Encoder()],
-    ["categories", getArrayEncoder(getU8Encoder())],
-  ]);
+    return getStructEncoder([
+        ['judge', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['stake', getU64Encoder()],
+        ['categories', getArrayEncoder(getU8Encoder())],
+    ]);
 }
 
 export function getJudgeRegisteredEventDecoder(): Decoder<JudgeRegisteredEvent> {
-  return getStructDecoder([
-    ["judge", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["stake", getU64Decoder()],
-    ["categories", getArrayDecoder(getU8Decoder())],
-  ]);
+    return getStructDecoder([
+        ['judge', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['stake', getU64Decoder()],
+        ['categories', getArrayDecoder(getU8Decoder())],
+    ]);
 }
 
-export function getJudgeRegisteredEventCodec(): Codec<
-  JudgeRegisteredEventArgs,
-  JudgeRegisteredEvent
-> {
-  return combineCodec(
-    getJudgeRegisteredEventEncoder(),
-    getJudgeRegisteredEventDecoder(),
-  );
+export function getJudgeRegisteredEventCodec(): Codec<JudgeRegisteredEventArgs, JudgeRegisteredEvent> {
+    return combineCodec(getJudgeRegisteredEventEncoder(), getJudgeRegisteredEventDecoder());
 }

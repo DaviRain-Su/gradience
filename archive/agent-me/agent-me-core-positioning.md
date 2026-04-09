@@ -1,7 +1,7 @@
 # Agent Me 核心定位：你的 OpenClaw 的专属连接
 
 > **一句话价值主张：Agent Me 是连接你本地 OpenClaw 的移动端专线，让私人 AI 随时在线**
-> 
+>
 > 分析日期：2026-03-29
 
 ---
@@ -58,7 +58,7 @@ Agent Me (本地 AI 助手):
     ├── 在电脑上可以使用
     ├── 功能强大但只能在桌面端
     └── 移动端没有好的入口
-    
+
 结果：
 - 70% 的时间在手机上，无法使用
 - 想用手机时，只能远程连接电脑 (麻烦)
@@ -175,29 +175,29 @@ Agent Me 收费 ≠ OpenClaw 收费
 
 ```yaml
 WebSocket 常连接:
-  - 心跳机制 (每 30 秒 ping/pong)
-  - 自动重连 (断线后指数退避重试)
-  - 连接状态管理 (在线/离线/连接中)
-  
+    - 心跳机制 (每 30 秒 ping/pong)
+    - 自动重连 (断线后指数退避重试)
+    - 连接状态管理 (在线/离线/连接中)
+
 后台保活:
-  Android:
-    - 前台服务 (Foreground Service)
-    - 通知栏常驻
-    - Doze 模式处理
-  iOS:
-    - Background Mode (Audio/Voice)
-    - PushKit (VoIP 推送)
-    - 后台任务有限
+    Android:
+        - 前台服务 (Foreground Service)
+        - 通知栏常驻
+        - Doze 模式处理
+    iOS:
+        - Background Mode (Audio/Voice)
+        - PushKit (VoIP 推送)
+        - 后台任务有限
 
 状态同步:
-  - 对话历史本地缓存 + 云端备份 (可选)
-  - 任务状态实时同步
-  - 配置双向同步
-  
+    - 对话历史本地缓存 + 云端备份 (可选)
+    - 任务状态实时同步
+    - 配置双向同步
+
 省电优化:
-  - 连接空闲时降低心跳频率
-  - 语音检测 (只在说话时激活)
-  - 屏幕关闭时降低资源占用
+    - 连接空闲时降低心跳频率
+    - 语音检测 (只在说话时激活)
+    - 屏幕关闭时降低资源占用
 ```
 
 ### 4.2 与 OpenClaw 的协议
@@ -205,67 +205,64 @@ WebSocket 常连接:
 ```typescript
 // WebSocket 协议设计
 interface AgentMeProtocol {
-  // 连接握手
-  handshake: {
-    clientVersion: string;
-    deviceId: string;
-    authToken: string;  // 可选的 Pro 版认证
-  };
-  
-  // 上行：手机 → OpenClaw
-  request: {
-    type: 'voice' | 'text' | 'command';
-    payload: string | AudioBuffer;
-    timestamp: number;
-    context?: string;  // 上下文ID
-  };
-  
-  // 下行：OpenClaw → 手机
-  response: {
-    type: 'text' | 'voice' | 'action' | 'status';
-    payload: string | AudioBuffer | ActionPayload;
-    timestamp: number;
-    latency: number;  // 处理耗时
-  };
-  
-  // 状态推送
-  status: {
-    type: 'task_started' | 'task_completed' | 'notification';
-    data: any;
-  };
+    // 连接握手
+    handshake: {
+        clientVersion: string;
+        deviceId: string;
+        authToken: string; // 可选的 Pro 版认证
+    };
+
+    // 上行：手机 → OpenClaw
+    request: {
+        type: 'voice' | 'text' | 'command';
+        payload: string | AudioBuffer;
+        timestamp: number;
+        context?: string; // 上下文ID
+    };
+
+    // 下行：OpenClaw → 手机
+    response: {
+        type: 'text' | 'voice' | 'action' | 'status';
+        payload: string | AudioBuffer | ActionPayload;
+        timestamp: number;
+        latency: number; // 处理耗时
+    };
+
+    // 状态推送
+    status: {
+        type: 'task_started' | 'task_completed' | 'notification';
+        data: any;
+    };
 }
 
 // 连接管理
 class ConnectionManager {
-  private ws: WebSocket;
-  private reconnectAttempts = 0;
-  private maxReconnectDelay = 30000; // 30s
-  
-  connect() {
-    this.ws = new WebSocket('wss://user-openclaw.local:18789/ws');
-    
-    this.ws.onopen = () => {
-      this.reconnectAttempts = 0;
-      this.startHeartbeat();
-    };
-    
-    this.ws.onclose = () => {
-      this.scheduleReconnect();
-    };
-    
-    this.ws.onmessage = (event) => {
-      this.handleMessage(JSON.parse(event.data));
-    };
-  }
-  
-  private scheduleReconnect() {
-    const delay = Math.min(
-      1000 * Math.pow(2, this.reconnectAttempts),
-      this.maxReconnectDelay
-    );
-    setTimeout(() => this.connect(), delay);
-    this.reconnectAttempts++;
-  }
+    private ws: WebSocket;
+    private reconnectAttempts = 0;
+    private maxReconnectDelay = 30000; // 30s
+
+    connect() {
+        this.ws = new WebSocket('wss://user-openclaw.local:18789/ws');
+
+        this.ws.onopen = () => {
+            this.reconnectAttempts = 0;
+            this.startHeartbeat();
+        };
+
+        this.ws.onclose = () => {
+            this.scheduleReconnect();
+        };
+
+        this.ws.onmessage = (event) => {
+            this.handleMessage(JSON.parse(event.data));
+        };
+    }
+
+    private scheduleReconnect() {
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), this.maxReconnectDelay);
+        setTimeout(() => this.connect(), delay);
+        this.reconnectAttempts++;
+    }
 }
 ```
 
@@ -275,12 +272,12 @@ class ConnectionManager {
 
 ### 5.1 与现有方案对比
 
-| 方案 | 连接方式 | 体验 | 隐私 | 成本 |
-|------|---------|------|------|------|
-| **远程桌面** (Parsec/TeamViewer) | 视频流 | 差 (延迟高) | 中 | 免费/付费 |
-| **SSH + CLI** | 命令行 | 差 (不友好) | 好 | 免费 |
-| **自建 Web 界面** | HTTP | 中 | 好 | 免费 |
-| **Agent Me** | WebSocket 专线 | **好** | **好** | 订阅费 |
+| 方案                             | 连接方式       | 体验        | 隐私   | 成本      |
+| -------------------------------- | -------------- | ----------- | ------ | --------- |
+| **远程桌面** (Parsec/TeamViewer) | 视频流         | 差 (延迟高) | 中     | 免费/付费 |
+| **SSH + CLI**                    | 命令行         | 差 (不友好) | 好     | 免费      |
+| **自建 Web 界面**                | HTTP           | 中          | 好     | 免费      |
+| **Agent Me**                     | WebSocket 专线 | **好**      | **好** | 订阅费    |
 
 ### 5.2 差异化优势
 
@@ -349,13 +346,13 @@ Agent Me vs Web 界面:
 ```yaml
 Phase 1: 基础连接验证 (2 周)
   目标: 证明"长期连接"有价值
-  
+
   功能:
     - WebSocket 连接 OpenClaw
     - 文字对话
     - 基础语音
     - 10 个种子用户测试
-  
+
   指标:
     - 日活跃用户 > 5
     - 平均对话次数 > 3 次/天
@@ -363,24 +360,24 @@ Phase 1: 基础连接验证 (2 周)
 
 Phase 2: 体验优化 (2 周)
   目标: 打磨核心体验
-  
+
   功能:
     - 集成 VibeVoice (高质量语音)
     - 后台保活
     - 通知推送
-  
+
   指标:
     - 7 日留存 > 50%
     - 语音使用率 > 70%
 
 Phase 3: 商业化验证 (2 周)
   目标: 证明付费意愿
-  
+
   功能:
     - Pro 版功能
     - 支付集成
     - 定价测试
-  
+
   指标:
     - 付费转化率 > 5%
 ```
@@ -446,4 +443,4 @@ Phase 3: 商业化验证 (2 周)
 
 ---
 
-*"连接的价值在于让强大的东西变得触手可及。"*
+_"连接的价值在于让强大的东西变得触手可及。"_

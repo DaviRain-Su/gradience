@@ -20,41 +20,49 @@
 ### Implemented Instructions (Phase 1 & 2) ✅
 
 **Instruction 0: Initialize**
+
 - Creates program config PDA
 - Creates treasury PDA
 - Sets protocol fees (2%) and judge fees (3%)
 
 **Instruction 1: Create Workflow** ✅
+
 - Creates workflow metadata PDA
 - Stores content hash, version, pricing model
 - Validates creator share (max 100%)
 
 **Instruction 2: Purchase Workflow** ✅
+
 - Creates access PDA for buyer
 - Increments total_purchases counter
 - Validates workflow is active
 
 **Instruction 3: Review Workflow** ✅
+
 - Creates review PDA (requires purchase)
 - Updates workflow average rating
 - Validates rating (1-5 stars)
 
 **Instruction 4: Update Workflow** ✅
+
 - Updates content hash
 - Only author can update
 - Updates timestamp
 
 **Instruction 5: Deactivate Workflow** ✅
+
 - Sets workflow to inactive
 - Only author can deactivate
 - Prevents new purchases
 
 **Instruction 6: Activate Workflow** ✅
+
 - Sets workflow to active
 - Only author can activate
 - Allows purchases again
 
 **Instruction 7: Delete Workflow** ✅
+
 - Closes workflow PDA
 - Only if total_purchases == 0
 - Returns rent to author
@@ -62,6 +70,7 @@
 ### Account Structures
 
 **ProgramConfig** (Discriminator: 0x00)
+
 - Treasury address
 - Upgrade authority
 - Protocol fee (200 bps = 2%)
@@ -69,19 +78,23 @@
 - PDA bump
 
 **Treasury** (Discriminator: 0x01)
+
 - PDA bump
 
 **WorkflowMetadata** (Discriminator: 0x02) - Planned
+
 - Workflow ID, author, content hash
 - Pricing model, price amount
 - Statistics (purchases, executions, ratings)
 - Status flags (public, active)
 
 **WorkflowAccess** (Discriminator: 0x03) - Planned
+
 - Purchase/subscription records
 - Access type, expiration, execution limits
 
 **WorkflowReview** (Discriminator: 0x04) - Planned
+
 - Rating, comment hash
 - Verified purchase flag
 
@@ -128,6 +141,7 @@ pnpm test
 ```
 
 The test script will:
+
 1. ✅ Initialize the program (if not already)
 2. ✅ Create a test workflow
 3. ✅ Purchase the workflow
@@ -157,6 +171,7 @@ solana program show 3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW
 ## Phase 2 Completion Status
 
 ✅ **All 8 instructions implemented and deployed**
+
 - Instruction 0: Initialize ✅
 - Instruction 1: Create Workflow ✅
 - Instruction 2: Purchase Workflow ✅
@@ -169,25 +184,25 @@ solana program show 3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW
 ## Next Steps
 
 1. **Phase 3: Run Integration Tests ✅**
-   - Test script created in `scripts/test-instructions.ts`
-   - Run with `pnpm test`
-   - Tests all 8 instructions end-to-end
+    - Test script created in `scripts/test-instructions.ts`
+    - Run with `pnpm test`
+    - Tests all 8 instructions end-to-end
 
 2. **Phase 4: SDK Integration**
-   - Update TypeScript SDK to use deployed program
-   - Add instruction builders for all 8 instructions
-   - Create example workflows
+    - Update TypeScript SDK to use deployed program
+    - Add instruction builders for all 8 instructions
+    - Create example workflows
 
 3. **Phase 5: Advanced Features**
-   - Payment transfers (SOL/SPL tokens)
-   - Revenue sharing implementation
-   - Subscription/rental models
-   - Execution tracking
+    - Payment transfers (SOL/SPL tokens)
+    - Revenue sharing implementation
+    - Subscription/rental models
+    - Execution tracking
 
 4. **Phase 6: Mainnet Preparation**
-   - Security audit
-   - Load testing
-   - Mainnet deployment
+    - Security audit
+    - Load testing
+    - Mainnet deployment
 
 ## Architecture
 

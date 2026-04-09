@@ -79,15 +79,10 @@ function MessageBubble({ message, isOwn }: { message: ChatMessage; isOwn: boolea
     const publicKey = useAppStore((s) => s.auth.publicKey);
 
     return (
-        <div
-            className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}
-            data-message-id={message.id}
-        >
+        <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`} data-message-id={message.id}>
             <div
                 className={`max-w-[70%] px-4 py-2.5 rounded-2xl ${
-                    isOwn
-                        ? 'bg-blue-600 text-white rounded-br-sm'
-                        : 'bg-gray-800 text-gray-200 rounded-bl-sm'
+                    isOwn ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-800 text-gray-200 rounded-bl-sm'
                 }`}
             >
                 {/* Message content */}
@@ -105,9 +100,7 @@ function MessageBubble({ message, isOwn }: { message: ChatMessage; isOwn: boolea
                     {/* Payment indicator */}
                     {message.paymentMicrolamports > 0 && (
                         <span
-                            className={`text-xs flex items-center gap-1 ${
-                                isOwn ? 'text-blue-200' : 'text-gray-500'
-                            }`}
+                            className={`text-xs flex items-center gap-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}
                             title={`Paid ${message.paymentMicrolamports} microlamports`}
                         >
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -145,9 +138,7 @@ export function MessageThread({
 }: MessageThreadProps) {
     const messages = useAppStore((s) => s.messages);
     const publicKey = useAppStore((s) => s.auth.publicKey);
-    const peerName = useAppStore((s) =>
-        s.conversations.find((c) => c.peerAddress === peerAddress)?.peerName
-    );
+    const peerName = useAppStore((s) => s.conversations.find((c) => c.peerAddress === peerAddress)?.peerName);
     const setActiveConversation = useAppStore((s) => s.setActiveConversation);
     const threadRef = useRef<HTMLDivElement>(null);
     const scrollPositionRef = useRef<number>(0);
@@ -208,9 +199,7 @@ export function MessageThread({
         return (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4">
-                    <span className="text-white text-2xl font-bold">
-                        {displayName.charAt(0).toUpperCase()}
-                    </span>
+                    <span className="text-white text-2xl font-bold">{displayName.charAt(0).toUpperCase()}</span>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-200 mb-1">{displayName}</h3>
                 <p className="text-sm text-gray-500">{emptyMessage}</p>
@@ -219,20 +208,12 @@ export function MessageThread({
     }
 
     return (
-        <div
-            ref={threadRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-2"
-        >
+        <div ref={threadRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-2">
             {groupedMessages.map((group) => (
                 <div key={group.date}>
                     <DateSeparator date={group.date} />
                     {group.messages.map((message) => (
-                        <MessageBubble
-                            key={message.id}
-                            message={message}
-                            isOwn={message.direction === 'outgoing'}
-                        />
+                        <MessageBubble key={message.id} message={message} isOwn={message.direction === 'outgoing'} />
                     ))}
                 </div>
             ))}

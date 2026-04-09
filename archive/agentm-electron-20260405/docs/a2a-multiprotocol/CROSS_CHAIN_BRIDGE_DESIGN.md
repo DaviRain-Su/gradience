@@ -6,17 +6,17 @@
 
 ## 1. 跨链桥对比
 
-| 特性 | LayerZero | Wormhole | Debridge |
-|------|-----------|----------|----------|
-| **机制** | Ultra Light Node (ULN) | Guardian Network | 去中心化验证器 |
-| **安全性** | 高（依赖 Oracle + Relayer） | 中（19个 Guardian） | 高（质押验证） |
-| **速度** | 快（2-10分钟） | 中（15分钟） | 快（1-5分钟） |
-| **成本** | 中 | 低 | 中 |
-| **支持链** | 50+ | 30+ | 10+ |
-| **消息传递** | ✅ 原生支持 | ✅ 原生支持 | ✅ 原生支持 |
-| **EVM 支持** | ✅ | ✅ | ✅ |
-| **Solana 支持** | ✅ | ✅ | ✅ |
-| **推荐场景** | 高频消息 | 低成本场景 | 高价值资产 |
+| 特性            | LayerZero                   | Wormhole            | Debridge       |
+| --------------- | --------------------------- | ------------------- | -------------- |
+| **机制**        | Ultra Light Node (ULN)      | Guardian Network    | 去中心化验证器 |
+| **安全性**      | 高（依赖 Oracle + Relayer） | 中（19个 Guardian） | 高（质押验证） |
+| **速度**        | 快（2-10分钟）              | 中（15分钟）        | 快（1-5分钟）  |
+| **成本**        | 中                          | 低                  | 中             |
+| **支持链**      | 50+                         | 30+                 | 10+            |
+| **消息传递**    | ✅ 原生支持                 | ✅ 原生支持         | ✅ 原生支持    |
+| **EVM 支持**    | ✅                          | ✅                  | ✅             |
+| **Solana 支持** | ✅                          | ✅                  | ✅             |
+| **推荐场景**    | 高频消息                    | 低成本场景          | 高价值资产     |
 
 ---
 
@@ -59,46 +59,46 @@
 ```typescript
 // 跨链同步的消息类型
 interface CrossChainReputationMessage {
-  // 消息头
-  version: '1.0';
-  messageType: 'reputation_sync' | 'task_completion' | 'attestation';
-  sourceChain: string;      // 来源链
-  targetChain: 'soul';      // 目标链（Soul 主链）
-  timestamp: number;
-  nonce: number;            // 防重放
+    // 消息头
+    version: '1.0';
+    messageType: 'reputation_sync' | 'task_completion' | 'attestation';
+    sourceChain: string; // 来源链
+    targetChain: 'soul'; // 目标链（Soul 主链）
+    timestamp: number;
+    nonce: number; // 防重放
 
-  // Agent 身份
-  agentAddress: string;     // 来源链地址
-  soulAddress: string;      // Soul 链对应地址
+    // Agent 身份
+    agentAddress: string; // 来源链地址
+    soulAddress: string; // Soul 链对应地址
 
-  // 声誉数据
-  reputationData: {
-    taskCompletions: TaskCompletion[];
-    attestations: Attestation[];
-    scores: ChainScore[];
-  };
+    // 声誉数据
+    reputationData: {
+        taskCompletions: TaskCompletion[];
+        attestations: Attestation[];
+        scores: ChainScore[];
+    };
 
-  // 签名
-  signature: string;        // Agent 签名
-  proof: MerkleProof;       // 跨链证明
+    // 签名
+    signature: string; // Agent 签名
+    proof: MerkleProof; // 跨链证明
 }
 
 interface TaskCompletion {
-  taskId: string;
-  taskType: 'coding' | 'audit' | 'design' | 'analysis';
-  completedAt: number;
-  score: number;            // 0-100
-  reward: string;           // 金额
-  evaluator: string;        // 评估者地址
-  metadata: string;         // IPFS hash
+    taskId: string;
+    taskType: 'coding' | 'audit' | 'design' | 'analysis';
+    completedAt: number;
+    score: number; // 0-100
+    reward: string; // 金额
+    evaluator: string; // 评估者地址
+    metadata: string; // IPFS hash
 }
 
 interface Attestation {
-  attestationType: 'skill' | 'reliability' | 'quality';
-  attester: string;         // 证明者
-  value: number;            // 证明值
-  timestamp: number;
-  expiresAt: number;
+    attestationType: 'skill' | 'reliability' | 'quality';
+    attester: string; // 证明者
+    value: number; // 证明值
+    timestamp: number;
+    expiresAt: number;
 }
 ```
 
@@ -113,64 +113,60 @@ interface Attestation {
 import { Endpoint } from '@layerzerolabs/lz-v2-utilities';
 
 export class LayerZeroAdapter implements CrossChainBridge {
-  readonly name = 'layerzero';
-  private endpoint: Endpoint;
-  private eid: number; // Endpoint ID
+    readonly name = 'layerzero';
+    private endpoint: Endpoint;
+    private eid: number; // Endpoint ID
 
-  constructor(config: LayerZeroConfig) {
-    this.endpoint = new Endpoint(config.endpointAddress);
-    this.eid = config.eid;
-  }
+    constructor(config: LayerZeroConfig) {
+        this.endpoint = new Endpoint(config.endpointAddress);
+        this.eid = config.eid;
+    }
 
-  async sendReputationMessage(
-    message: CrossChainReputationMessage
-  ): Promise<BridgeResult> {
-    // 1. 编码消息
-    const payload = this.encodeMessage(message);
+    async sendReputationMessage(message: CrossChainReputationMessage): Promise<BridgeResult> {
+        // 1. 编码消息
+        const payload = this.encodeMessage(message);
 
-    // 2. 调用 LayerZero Endpoint
-    const params = {
-      dstEid: this.getSoulEndpointId(), // Soul 链的 Endpoint ID
-      to: this.toBytes32(message.soulAddress),
-      amountLD: 0, // 不转移资产
-      minAmountLD: 0,
-      extraOptions: Options.newOptions().addExecutorLzReceiveOption(200000, 0),
-      composeMsg: payload,
-      oftCmd: '0x',
-    };
+        // 2. 调用 LayerZero Endpoint
+        const params = {
+            dstEid: this.getSoulEndpointId(), // Soul 链的 Endpoint ID
+            to: this.toBytes32(message.soulAddress),
+            amountLD: 0, // 不转移资产
+            minAmountLD: 0,
+            extraOptions: Options.newOptions().addExecutorLzReceiveOption(200000, 0),
+            composeMsg: payload,
+            oftCmd: '0x',
+        };
 
-    // 3. 发送消息
-    const tx = await this.endpoint.send(params, { value: nativeFee });
+        // 3. 发送消息
+        const tx = await this.endpoint.send(params, { value: nativeFee });
 
-    return {
-      txHash: tx.hash,
-      messageId: this.generateMessageId(tx.hash),
-      status: 'pending',
-      estimatedTime: 120, // 2分钟
-    };
-  }
+        return {
+            txHash: tx.hash,
+            messageId: this.generateMessageId(tx.hash),
+            status: 'pending',
+            estimatedTime: 120, // 2分钟
+        };
+    }
 
-  async verifyMessage(
-    messageId: string
-  ): Promise<VerificationResult> {
-    // 查询 LayerZero 的 Delivered 事件
-    const delivered = await this.endpoint.delivered(messageId);
+    async verifyMessage(messageId: string): Promise<VerificationResult> {
+        // 查询 LayerZero 的 Delivered 事件
+        const delivered = await this.endpoint.delivered(messageId);
 
-    return {
-      verified: delivered,
-      confirmations: delivered ? 1 : 0,
-      requiredConfirmations: 1,
-    };
-  }
+        return {
+            verified: delivered,
+            confirmations: delivered ? 1 : 0,
+            requiredConfirmations: 1,
+        };
+    }
 
-  private encodeMessage(msg: CrossChainReputationMessage): string {
-    return ethers.utils.defaultAbiCoder.encode(
-      [
-        'tuple(string version, uint8 messageType, string sourceChain, uint256 timestamp, uint256 nonce, address agentAddress, bytes reputationData)',
-      ],
-      [msg]
-    );
-  }
+    private encodeMessage(msg: CrossChainReputationMessage): string {
+        return ethers.utils.defaultAbiCoder.encode(
+            [
+                'tuple(string version, uint8 messageType, string sourceChain, uint256 timestamp, uint256 nonce, address agentAddress, bytes reputationData)',
+            ],
+            [msg],
+        );
+    }
 }
 ```
 
@@ -181,61 +177,57 @@ export class LayerZeroAdapter implements CrossChainBridge {
 import { wormhole } from '@wormhole-foundation/sdk';
 
 export class WormholeAdapter implements CrossChainBridge {
-  readonly name = 'wormhole';
-  private wh: Wormhole;
+    readonly name = 'wormhole';
+    private wh: Wormhole;
 
-  constructor(config: WormholeConfig) {
-    this.wh = wormhole('Mainnet', [evm, solana]);
-  }
+    constructor(config: WormholeConfig) {
+        this.wh = wormhole('Mainnet', [evm, solana]);
+    }
 
-  async sendReputationMessage(
-    message: CrossChainReputationMessage
-  ): Promise<BridgeResult> {
-    // 1. 获取源链和目标链的上下文
-    const sourceChain = this.wh.getChain(message.sourceChain);
-    const targetChain = this.wh.getChain('Solana'); // Soul 链
+    async sendReputationMessage(message: CrossChainReputationMessage): Promise<BridgeResult> {
+        // 1. 获取源链和目标链的上下文
+        const sourceChain = this.wh.getChain(message.sourceChain);
+        const targetChain = this.wh.getChain('Solana'); // Soul 链
 
-    // 2. 创建消息
-    const payload = this.encodeMessage(message);
+        // 2. 创建消息
+        const payload = this.encodeMessage(message);
 
-    // 3. 发布消息到 Wormhole
-    const tx = await sourceChain.sendTransaction({
-      to: WORMHOLE_CORE_BRIDGE,
-      data: this.wh.serialize({
-        payload,
-        nonce: message.nonce,
-        consistencyLevel: 15, // 15个区块确认
-      }),
-    });
+        // 3. 发布消息到 Wormhole
+        const tx = await sourceChain.sendTransaction({
+            to: WORMHOLE_CORE_BRIDGE,
+            data: this.wh.serialize({
+                payload,
+                nonce: message.nonce,
+                consistencyLevel: 15, // 15个区块确认
+            }),
+        });
 
-    // 4. 获取 VAA (Verified Action Approval)
-    const vaa = await this.wh.getVAA(tx.hash, { timeout: 15 * 60 * 1000 });
+        // 4. 获取 VAA (Verified Action Approval)
+        const vaa = await this.wh.getVAA(tx.hash, { timeout: 15 * 60 * 1000 });
 
-    return {
-      txHash: tx.hash,
-      messageId: vaa.hash,
-      vaa: vaa.bytes,
-      status: 'pending',
-      estimatedTime: 900, // 15分钟
-    };
-  }
+        return {
+            txHash: tx.hash,
+            messageId: vaa.hash,
+            vaa: vaa.bytes,
+            status: 'pending',
+            estimatedTime: 900, // 15分钟
+        };
+    }
 
-  async redeemOnTarget(
-    vaa: Uint8Array
-  ): Promise<RedeemResult> {
-    // 在 Soul 链上 redeem VAA
-    const targetChain = this.wh.getChain('Solana');
+    async redeemOnTarget(vaa: Uint8Array): Promise<RedeemResult> {
+        // 在 Soul 链上 redeem VAA
+        const targetChain = this.wh.getChain('Solana');
 
-    const tx = await targetChain.redeem({
-      vaa,
-      recipient: SOUL_REPUTATION_CONTRACT,
-    });
+        const tx = await targetChain.redeem({
+            vaa,
+            recipient: SOUL_REPUTATION_CONTRACT,
+        });
 
-    return {
-      txHash: tx.id,
-      status: 'completed',
-    };
-  }
+        return {
+            txHash: tx.id,
+            status: 'completed',
+        };
+    }
 }
 ```
 
@@ -246,36 +238,34 @@ export class WormholeAdapter implements CrossChainBridge {
 import { DeBridgeGate } from '@debridge-finance/desdk';
 
 export class DebridgeAdapter implements CrossChainBridge {
-  readonly name = 'debridge';
-  private gate: DeBridgeGate;
+    readonly name = 'debridge';
+    private gate: DeBridgeGate;
 
-  constructor(config: DebridgeConfig) {
-    this.gate = new DeBridgeGate(config.gateAddress);
-  }
+    constructor(config: DebridgeConfig) {
+        this.gate = new DeBridgeGate(config.gateAddress);
+    }
 
-  async sendReputationMessage(
-    message: CrossChainReputationMessage
-  ): Promise<BridgeResult> {
-    // Debridge 主要用于资产跨链，消息传递需要包装
-    const submission = await this.gate.sendMessage({
-      targetChainId: this.getChainId('soul'),
-      targetContract: SOUL_REPUTATION_CONTRACT,
-      message: this.encodeMessage(message),
-      autoParams: {
-        executionFee: 0,
-        flags: 0,
-        fallbackAddress: message.agentAddress,
-        data: '0x',
-      },
-    });
+    async sendReputationMessage(message: CrossChainReputationMessage): Promise<BridgeResult> {
+        // Debridge 主要用于资产跨链，消息传递需要包装
+        const submission = await this.gate.sendMessage({
+            targetChainId: this.getChainId('soul'),
+            targetContract: SOUL_REPUTATION_CONTRACT,
+            message: this.encodeMessage(message),
+            autoParams: {
+                executionFee: 0,
+                flags: 0,
+                fallbackAddress: message.agentAddress,
+                data: '0x',
+            },
+        });
 
-    return {
-      txHash: submission.transactionHash,
-      messageId: submission.submissionId,
-      status: 'pending',
-      estimatedTime: 300, // 5分钟
-    };
-  }
+        return {
+            txHash: submission.transactionHash,
+            messageId: submission.submissionId,
+            status: 'pending',
+            estimatedTime: 300, // 5分钟
+        };
+    }
 }
 ```
 
@@ -476,34 +466,38 @@ contract SoulReputationAggregator is OFT {
 
 ### 5.2 使用建议
 
-| 场景 | 推荐桥 | 原因 |
-|------|--------|------|
-**日常声誉同步** | LayerZero | 速度快，支持消息传递
-**批量历史同步** | Wormhole | 成本低，适合大量数据
-**高价值任务** | Debridge | 安全性高，有质押机制
-**紧急同步** | LayerZero | 最快确认时间
-**Solana 生态** | Wormhole | 原生支持最好
+| 场景             | 推荐桥    | 原因                 |
+| ---------------- | --------- | -------------------- |
+| **日常声誉同步** | LayerZero | 速度快，支持消息传递 |
+| **批量历史同步** | Wormhole  | 成本低，适合大量数据 |
+| **高价值任务**   | Debridge  | 安全性高，有质押机制 |
+| **紧急同步**     | LayerZero | 最快确认时间         |
+| **Solana 生态**  | Wormhole  | 原生支持最好         |
 
 ---
 
 ## 6. 实施路线图
 
 ### Phase 1: LayerZero 集成 (2周)
+
 - [ ] 部署 SoulReputationAggregator 合约
 - [ ] 实现 LayerZeroAdapter
 - [ ] 测试 Ethereum ↔ Soul 同步
 - [ ] 测试 Polygon ↔ Soul 同步
 
 ### Phase 2: Wormhole 集成 (1周)
+
 - [ ] 实现 WormholeAdapter
 - [ ] 添加 Guardian 验证
 - [ ] 测试 Solana ↔ Soul 同步
 
 ### Phase 3: Debridge 集成 (1周)
+
 - [ ] 实现 DebridgeAdapter
 - [ ] 高价值任务特殊处理
 
 ### Phase 4: 优化 (1周)
+
 - [ ] 消息压缩
 - [ ] 批量同步
 - [ ] 失败重试机制
@@ -549,6 +543,7 @@ await crossChainAdapter.syncReputation({
 ---
 
 这个方案可以实现：
+
 1. **多链声誉聚合** - 任何链上的 Agent 行为都能同步到 Soul
 2. **灵活选择桥** - 根据场景选择最优跨链方案
 3. **安全验证** - 多重验证机制确保数据真实性

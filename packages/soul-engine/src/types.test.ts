@@ -92,10 +92,7 @@ describe('Soul Profile Types', () => {
     });
 
     it('should create SoulError with code', () => {
-        const error = new SoulError(
-            SoulErrorCode.INVALID_FORMAT,
-            'Test error message'
-        );
+        const error = new SoulError(SoulErrorCode.INVALID_FORMAT, 'Test error message');
 
         expect(error.code).toBe(SoulErrorCode.INVALID_FORMAT);
         expect(error.message).toBe('Test error message');

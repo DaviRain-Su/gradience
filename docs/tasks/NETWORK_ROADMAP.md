@@ -27,20 +27,24 @@ u94feu4e0au5c42uff08u53efu5e76u884cuff09
 ## u91ccu7a0bu7891
 
 ### M1: u4e24u4e2a Agent u4e92u76f8u53d1u73b0 (u2248 1 u5929)
+
 - [x] Session Auth u540eu7aef (u5df2u5b8cu6210)
 - [ ] **GRA-187** Agent Registry
 - [ ] **GRA-189** Session Auth u524du7aef
 - [ ] **GRA-190** Discover View
 
 ### M2: u4e24u4e2a Agent u4e92u76f8u6c9fu901a (u2248 1 u5929)
+
 - [ ] **GRA-188** u6d88u606fu4e2du7ee7
 - [ ] **GRA-191** Chat View
 
 ### M3: u793eu4ea4u529fu80fdu5b8cu6574 (u2248 0.5 u5929)
+
 - [ ] **GRA-194** Social Feed
 - [ ] **GRA-196** u57fau7840u8bbeu65bd
 
 ### M4: u94feu4e0au4ea4u6613 (u2248 1.5 u5929)
+
 - [ ] **GRA-192** Solana u90e8u7f72
 - [ ] **GRA-193** Indexer u771fu5b9eu6570u636e
 - [ ] **GRA-195** Task Market
@@ -48,10 +52,10 @@ u94feu4e0au5c42uff08u53efu5e76u884cuff09
 ## u603bu4f30u65f6
 
 | u4f18u5148u7ea7 | u4efbu52a1u6570 | u603bu5de5u65f6 |
-|------|--------|--------|
-| P0   | 5      | 17-23h |
-| P1   | 5      | 19-27h |
-| **u5408u8ba1** | **10** | **36-50h** |
+| --------------- | --------------- | --------------- |
+| P0              | 5               | 17-23h          |
+| P1              | 5               | 19-27h          |
+| **u5408u8ba1**  | **10**          | **36-50h**      |
 
 ## u5173u952eu8defu5f84uff08u6700u5c0fu53efu7528u4ea7u54c1uff09
 

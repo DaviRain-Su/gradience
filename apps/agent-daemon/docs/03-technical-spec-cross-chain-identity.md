@@ -10,6 +10,7 @@
 ## 0. Problem Statement
 
 Gradience operates on both Solana and EVM (Base/Arbitrum). An agent may have:
+
 - a Solana wallet for Agent Arena tasks
 - an EVM wallet for ERC-8004 reputation and EVM escrow
 
@@ -23,11 +24,11 @@ backed by **bidirectional wallet signatures** and validated by the **Gradience O
 
 ## 1. Design Philosophy: "Self-Attested + Oracle Attested"
 
-| Layer | Who acts | What happens | Trust level |
-|-------|----------|--------------|-------------|
-| **Binding Request** | User (agent) | Signs a cross-chain address with both wallets | Cryptographic |
-| **Oracle Verification** | Gradience Oracle | Verifies both signatures on-chain/off-chain | Protocol-trusted |
-| **Reputation Query** | Oracle | Looks up binding, aggregates multi-chain scores | Unified view |
+| Layer                   | Who acts         | What happens                                    | Trust level      |
+| ----------------------- | ---------------- | ----------------------------------------------- | ---------------- |
+| **Binding Request**     | User (agent)     | Signs a cross-chain address with both wallets   | Cryptographic    |
+| **Oracle Verification** | Gradience Oracle | Verifies both signatures on-chain/off-chain     | Protocol-trusted |
+| **Reputation Query**    | Oracle           | Looks up binding, aggregates multi-chain scores | Unified view     |
 
 > The user **proves** ownership of both addresses. The Oracle **attests** that the proof is valid. No single party can arbitrarily bind someone else's addresses.
 
@@ -36,7 +37,7 @@ backed by **bidirectional wallet signatures** and validated by the **Gradience O
 ## 2. End-to-End Flow
 
 ```
-1. Agent connects Solana wallet  (e.g. did:sol:Alice)  
+1. Agent connects Solana wallet  (e.g. did:sol:Alice)
    and EVM wallet                (e.g. 0xBob)
 
 2. Agent signs "bind 0xBob -> Alice" with Solana key
@@ -108,17 +109,17 @@ function verifyBinding(address evmAgent) external onlyOracle;
 
 ```typescript
 interface BindIdentityRequest {
-  solanaAddress: string;
-  evmAddress: string;
-  solanaSignature: string;   // base58 or base64
-  evmSignature: string;      // 0x-prefixed hex, 65 bytes
+    solanaAddress: string;
+    evmAddress: string;
+    solanaSignature: string; // base58 or base64
+    evmSignature: string; // 0x-prefixed hex, 65 bytes
 }
 
 interface IdentityBindingResponse {
-  solanaAddress: string;
-  evmAddress?: string;
-  verified: boolean;
-  updatedAt: number;
+    solanaAddress: string;
+    evmAddress?: string;
+    verified: boolean;
+    updatedAt: number;
 }
 ```
 
@@ -145,11 +146,13 @@ File: `programs/agent-arena/src/instructions/bind_identity/`
 | 2 | `system_program` | — |
 
 **Instruction data**:
+
 - `evm_address: [u8; 20]`
 - `sol_signature: [u8; 64]`
 - `evm_signature: [u8; 65]`
 
 **Processor logic**:
+
 1. Verify `owner` is the PDA derived from `[b"identity_binding", owner.key]`.
 2. **Signature verification is OPTIONAL inside the on-chain program**.
    The program writes the raw binding data and sets `verified = false`.
@@ -179,26 +182,27 @@ Derives the PDA and sends the `BindIdentity` instruction.
 Route: `POST /api/v1/identity/bind`
 
 Handler logic:
+
 1. Parse request body.
 2. Validate `solanaAddress` is valid base58 pubkey.
 3. Validate `evmAddress` is valid checksummed Ethereum address.
 4. **Verify Solana signature**:
-   ```typescript
-   nacl.sign.detached.verify(
-     Buffer.from(`bind:${evmAddress.toLowerCase()}`),
-     solanaSignature,
-     new PublicKey(solanaAddress).toBytes()
-   );
-   ```
+    ```typescript
+    nacl.sign.detached.verify(
+        Buffer.from(`bind:${evmAddress.toLowerCase()}`),
+        solanaSignature,
+        new PublicKey(solanaAddress).toBytes(),
+    );
+    ```
 5. **Verify EVM signature**:
-   ```typescript
-   import { verifyMessage } from 'viem';
-   verifyMessage({
-     address: evmAddress as `0x${string}`,
-     message: `bind:${solanaAddress}`,
-     signature: evmSignature as `0x${string}`,
-   });
-   ```
+    ```typescript
+    import { verifyMessage } from 'viem';
+    verifyMessage({
+        address: evmAddress as `0x${string}`,
+        message: `bind:${solanaAddress}`,
+        signature: evmSignature as `0x${string}`,
+    });
+    ```
 6. Call `TransactionManager.bindIdentity(...)` to write to Solana.
 7. Also call `ERC8004Client.registerBinding(...)` to mirror to EVM (async fire-and-forget).
 8. Return binding record.
@@ -208,21 +212,21 @@ Handler logic:
 In `reputation-oracle.ts`:
 
 1. Add helper `resolveBoundEvmAddress(solanaAddress): Promise<string | undefined>`
-   - Reads Solana `IdentityBinding` PDA via RPC.
-   - Returns `evm_address` if `verified == true`.
+    - Reads Solana `IdentityBinding` PDA via RPC.
+    - Returns `evm_address` if `verified == true`.
 
 2. Modify `GET /api/v1/oracle/reputation/:agentAddress`:
-   - Detect whether `:agentAddress` is Solana or EVM.
-   - If Solana, read Solana reputation, then check binding for EVM address.
-     If bound, also read EVM reputation and **aggregate** (e.g. weighted average).
-   - If EVM, reverse-lookup binding (evm -> sol), then aggregate similarly.
+    - Detect whether `:agentAddress` is Solana or EVM.
+    - If Solana, read Solana reputation, then check binding for EVM address.
+      If bound, also read EVM reputation and **aggregate** (e.g. weighted average).
+    - If EVM, reverse-lookup binding (evm -> sol), then aggregate similarly.
 
 3. Aggregation formula (v1):
-   ```
-   unifiedScore = (solScore * solWeight + evmScore * evmWeight) / (solWeight + evmWeight)
-   solWeight  = max(1, solCompletedTasks)
-   evmWeight  = max(1, evmCompletedTasks)
-   ```
+    ```
+    unifiedScore = (solScore * solWeight + evmScore * evmWeight) / (solWeight + evmWeight)
+    solWeight  = max(1, solCompletedTasks)
+    evmWeight  = max(1, evmCompletedTasks)
+    ```
 
 ### 4.6 Step 6 — EVM Mirror Contract (optional for v1)
 
@@ -234,13 +238,13 @@ because the Oracle can read the Solana PDA directly.
 
 ## 5. Security Considerations
 
-| Attack | Mitigation |
-|--------|------------|
-| **Eve binds Alice's Solana addr to Eve's EVM addr** | Both signatures required. Eve cannot forge Alice's Solana signature. |
-| **Eve binds Alice's EVM addr to Eve's Solana addr** | Both signatures required. Eve cannot forge Alice's EVM signature. |
-| **Replay attack on an old binding** | `updated_at` timestamp and overwrite-on-write prevent stale bindings from persisting indefinitely. |
-| **Oracle compomise** | Oracle only *verifies* signatures; it cannot create a valid binding without the user's private keys. Worst case: Oracle withholds attestation. |
-| **Frong-end phishing** | Binding UI must clearly show both addresses and require wallet signatures on independent modals. |
+| Attack                                              | Mitigation                                                                                                                                     |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Eve binds Alice's Solana addr to Eve's EVM addr** | Both signatures required. Eve cannot forge Alice's Solana signature.                                                                           |
+| **Eve binds Alice's EVM addr to Eve's Solana addr** | Both signatures required. Eve cannot forge Alice's EVM signature.                                                                              |
+| **Replay attack on an old binding**                 | `updated_at` timestamp and overwrite-on-write prevent stale bindings from persisting indefinitely.                                             |
+| **Oracle compomise**                                | Oracle only _verifies_ signatures; it cannot create a valid binding without the user's private keys. Worst case: Oracle withholds attestation. |
+| **Frong-end phishing**                              | Binding UI must clearly show both addresses and require wallet signatures on independent modals.                                               |
 
 ---
 

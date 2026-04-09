@@ -4,33 +4,33 @@
 
 ## 代码量统计
 
-| 类型 | 文件数 | 行数 |
-|------|--------|------|
-| Solidity 合约 | 4 | ~700 |
-| JavaScript 测试 | 3 | ~778 |
-| 脚本（部署/工具） | 3 | ~200 |
-| Relay Server | 1 | ~879 |
-| **合计** | **11** | **~2,557** |
+| 类型              | 文件数 | 行数       |
+| ----------------- | ------ | ---------- |
+| Solidity 合约     | 4      | ~700       |
+| JavaScript 测试   | 3      | ~778       |
+| 脚本（部署/工具） | 3      | ~200       |
+| Relay Server      | 1      | ~879       |
+| **合计**          | **11** | **~2,557** |
 
 ## 测试覆盖
 
-| 测试套件 | 测试数 | 状态 |
-|----------|--------|------|
-| AgentLayerRaceTask.test.js | — | ✅ |
-| ReputationVerifier.test.js | — | ✅ |
-| reputation-relay-server.test.js | — | ✅ |
+| 测试套件                        | 测试数 | 状态 |
+| ------------------------------- | ------ | ---- |
+| AgentLayerRaceTask.test.js      | —      | ✅   |
+| ReputationVerifier.test.js      | —      | ✅   |
+| reputation-relay-server.test.js | —      | ✅   |
 
 ## 与 Technical Spec 对齐度
 
-| Spec 项 | 实现状态 | 备注 |
-|---------|---------|------|
-| 任务生命周期 (post/apply/submit/judge) | ✅ | 完全对齐 |
-| 费用分配 95/3/2 | ✅ | 与 Solana 一致 |
-| Ed25519 声誉验证 | ✅ | 纯 Solidity 实现 |
-| 防重放机制 | ✅ | 时间戳单调递增 |
-| claim_expired | ✅ | 过期退款 |
-| claim_stake | ✅ | Stake 取回 |
-| ERC20 支持 | ❌ 未实现 | P2 待补 |
+| Spec 项                                | 实现状态  | 备注             |
+| -------------------------------------- | --------- | ---------------- |
+| 任务生命周期 (post/apply/submit/judge) | ✅        | 完全对齐         |
+| 费用分配 95/3/2                        | ✅        | 与 Solana 一致   |
+| Ed25519 声誉验证                       | ✅        | 纯 Solidity 实现 |
+| 防重放机制                             | ✅        | 时间戳单调递增   |
+| claim_expired                          | ✅        | 过期退款         |
+| claim_stake                            | ✅        | Stake 取回       |
+| ERC20 支持                             | ❌ 未实现 | P2 待补          |
 
 ## 已知问题
 

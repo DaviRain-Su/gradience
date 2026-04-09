@@ -7,569 +7,429 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU8Decoder,
+    getU8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const FORCE_REFUND_DISCRIMINATOR = 7;
 
 export function getForceRefundDiscriminatorBytes() {
-  return getU8Encoder().encode(FORCE_REFUND_DISCRIMINATOR);
+    return getU8Encoder().encode(FORCE_REFUND_DISCRIMINATOR);
 }
 
 export type ForceRefundInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountAnyone extends string | AccountMeta<string> = string,
-  TAccountPosterAccount extends string | AccountMeta<string> = string,
-  TAccountMostActiveAgent extends string | AccountMeta<string> = string,
-  TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountTask extends string | AccountMeta<string> = string,
-  TAccountEscrow extends string | AccountMeta<string> = string,
-  TAccountJudgeStake extends string | AccountMeta<string> = string,
-  TAccountJudgeAccount extends string | AccountMeta<string> = string,
-  TAccountJudgeReputation extends string | AccountMeta<string> = string,
-  TAccountTreasury extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
-  TAccountMostActiveAgentTokenAccount extends string | AccountMeta<string> =
-    string,
-  TAccountEscrowAta extends string | AccountMeta<string> = string,
-  TAccountTreasuryAta extends string | AccountMeta<string> = string,
-  TAccountMintAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string | AccountMeta<string> = string,
+    TAccountPosterAccount extends string | AccountMeta<string> = string,
+    TAccountMostActiveAgent extends string | AccountMeta<string> = string,
+    TAccountConfig extends string | AccountMeta<string> = string,
+    TAccountTask extends string | AccountMeta<string> = string,
+    TAccountEscrow extends string | AccountMeta<string> = string,
+    TAccountJudgeStake extends string | AccountMeta<string> = string,
+    TAccountJudgeAccount extends string | AccountMeta<string> = string,
+    TAccountJudgeReputation extends string | AccountMeta<string> = string,
+    TAccountTreasury extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TAccountPosterTokenAccount extends string | AccountMeta<string> = string,
+    TAccountMostActiveAgentTokenAccount extends string | AccountMeta<string> = string,
+    TAccountEscrowAta extends string | AccountMeta<string> = string,
+    TAccountTreasuryAta extends string | AccountMeta<string> = string,
+    TAccountMintAccount extends string | AccountMeta<string> = string,
+    TAccountTokenProgram extends string | AccountMeta<string> = string,
+    TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountAnyone extends string
-        ? WritableSignerAccount<TAccountAnyone> &
-            AccountSignerMeta<TAccountAnyone>
-        : TAccountAnyone,
-      TAccountPosterAccount extends string
-        ? WritableAccount<TAccountPosterAccount>
-        : TAccountPosterAccount,
-      TAccountMostActiveAgent extends string
-        ? WritableAccount<TAccountMostActiveAgent>
-        : TAccountMostActiveAgent,
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
-      TAccountTask extends string
-        ? WritableAccount<TAccountTask>
-        : TAccountTask,
-      TAccountEscrow extends string
-        ? WritableAccount<TAccountEscrow>
-        : TAccountEscrow,
-      TAccountJudgeStake extends string
-        ? WritableAccount<TAccountJudgeStake>
-        : TAccountJudgeStake,
-      TAccountJudgeAccount extends string
-        ? WritableAccount<TAccountJudgeAccount>
-        : TAccountJudgeAccount,
-      TAccountJudgeReputation extends string
-        ? ReadonlyAccount<TAccountJudgeReputation>
-        : TAccountJudgeReputation,
-      TAccountTreasury extends string
-        ? WritableAccount<TAccountTreasury>
-        : TAccountTreasury,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      TAccountPosterTokenAccount extends string
-        ? WritableAccount<TAccountPosterTokenAccount>
-        : TAccountPosterTokenAccount,
-      TAccountMostActiveAgentTokenAccount extends string
-        ? WritableAccount<TAccountMostActiveAgentTokenAccount>
-        : TAccountMostActiveAgentTokenAccount,
-      TAccountEscrowAta extends string
-        ? WritableAccount<TAccountEscrowAta>
-        : TAccountEscrowAta,
-      TAccountTreasuryAta extends string
-        ? WritableAccount<TAccountTreasuryAta>
-        : TAccountTreasuryAta,
-      TAccountMintAccount extends string
-        ? ReadonlyAccount<TAccountMintAccount>
-        : TAccountMintAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountAnyone extends string
+                ? WritableSignerAccount<TAccountAnyone> & AccountSignerMeta<TAccountAnyone>
+                : TAccountAnyone,
+            TAccountPosterAccount extends string ? WritableAccount<TAccountPosterAccount> : TAccountPosterAccount,
+            TAccountMostActiveAgent extends string ? WritableAccount<TAccountMostActiveAgent> : TAccountMostActiveAgent,
+            TAccountConfig extends string ? ReadonlyAccount<TAccountConfig> : TAccountConfig,
+            TAccountTask extends string ? WritableAccount<TAccountTask> : TAccountTask,
+            TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow,
+            TAccountJudgeStake extends string ? WritableAccount<TAccountJudgeStake> : TAccountJudgeStake,
+            TAccountJudgeAccount extends string ? WritableAccount<TAccountJudgeAccount> : TAccountJudgeAccount,
+            TAccountJudgeReputation extends string ? ReadonlyAccount<TAccountJudgeReputation> : TAccountJudgeReputation,
+            TAccountTreasury extends string ? WritableAccount<TAccountTreasury> : TAccountTreasury,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            TAccountPosterTokenAccount extends string
+                ? WritableAccount<TAccountPosterTokenAccount>
+                : TAccountPosterTokenAccount,
+            TAccountMostActiveAgentTokenAccount extends string
+                ? WritableAccount<TAccountMostActiveAgentTokenAccount>
+                : TAccountMostActiveAgentTokenAccount,
+            TAccountEscrowAta extends string ? WritableAccount<TAccountEscrowAta> : TAccountEscrowAta,
+            TAccountTreasuryAta extends string ? WritableAccount<TAccountTreasuryAta> : TAccountTreasuryAta,
+            TAccountMintAccount extends string ? ReadonlyAccount<TAccountMintAccount> : TAccountMintAccount,
+            TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram,
+            TAccountAssociatedTokenProgram extends string
+                ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+                : TAccountAssociatedTokenProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type ForceRefundInstructionData = { discriminator: number };
 
 export type ForceRefundInstructionDataArgs = {};
 
 export function getForceRefundInstructionDataEncoder(): FixedSizeEncoder<ForceRefundInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([["discriminator", getU8Encoder()]]),
-    (value) => ({ ...value, discriminator: FORCE_REFUND_DISCRIMINATOR }),
-  );
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), value => ({
+        ...value,
+        discriminator: FORCE_REFUND_DISCRIMINATOR,
+    }));
 }
 
 export function getForceRefundInstructionDataDecoder(): FixedSizeDecoder<ForceRefundInstructionData> {
-  return getStructDecoder([["discriminator", getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getU8Decoder()]]);
 }
 
 export function getForceRefundInstructionDataCodec(): FixedSizeCodec<
-  ForceRefundInstructionDataArgs,
-  ForceRefundInstructionData
+    ForceRefundInstructionDataArgs,
+    ForceRefundInstructionData
 > {
-  return combineCodec(
-    getForceRefundInstructionDataEncoder(),
-    getForceRefundInstructionDataDecoder(),
-  );
+    return combineCodec(getForceRefundInstructionDataEncoder(), getForceRefundInstructionDataDecoder());
 }
 
 export type ForceRefundAsyncInput<
-  TAccountAnyone extends string = string,
-  TAccountPosterAccount extends string = string,
-  TAccountMostActiveAgent extends string = string,
-  TAccountConfig extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountJudgeStake extends string = string,
-  TAccountJudgeAccount extends string = string,
-  TAccountJudgeReputation extends string = string,
-  TAccountTreasury extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountMostActiveAgentTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountTreasuryAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
+    TAccountAnyone extends string = string,
+    TAccountPosterAccount extends string = string,
+    TAccountMostActiveAgent extends string = string,
+    TAccountConfig extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountJudgeStake extends string = string,
+    TAccountJudgeAccount extends string = string,
+    TAccountJudgeReputation extends string = string,
+    TAccountTreasury extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountMostActiveAgentTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountTreasuryAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
+    TAccountAssociatedTokenProgram extends string = string,
 > = {
-  anyone: TransactionSigner<TAccountAnyone>;
-  posterAccount: Address<TAccountPosterAccount>;
-  mostActiveAgent: Address<TAccountMostActiveAgent>;
-  config: Address<TAccountConfig>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  judgeStake: Address<TAccountJudgeStake>;
-  judgeAccount: Address<TAccountJudgeAccount>;
-  judgeReputation: Address<TAccountJudgeReputation>;
-  treasury: Address<TAccountTreasury>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  mostActiveAgentTokenAccount?: Address<TAccountMostActiveAgentTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  treasuryAta?: Address<TAccountTreasuryAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+    anyone: TransactionSigner<TAccountAnyone>;
+    posterAccount: Address<TAccountPosterAccount>;
+    mostActiveAgent: Address<TAccountMostActiveAgent>;
+    config: Address<TAccountConfig>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    judgeStake: Address<TAccountJudgeStake>;
+    judgeAccount: Address<TAccountJudgeAccount>;
+    judgeReputation: Address<TAccountJudgeReputation>;
+    treasury: Address<TAccountTreasury>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    mostActiveAgentTokenAccount?: Address<TAccountMostActiveAgentTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    treasuryAta?: Address<TAccountTreasuryAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
+    associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
 };
 
 export async function getForceRefundInstructionAsync<
-  TAccountAnyone extends string,
-  TAccountPosterAccount extends string,
-  TAccountMostActiveAgent extends string,
-  TAccountConfig extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountJudgeStake extends string,
-  TAccountJudgeAccount extends string,
-  TAccountJudgeReputation extends string,
-  TAccountTreasury extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountMostActiveAgentTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountTreasuryAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string,
+    TAccountPosterAccount extends string,
+    TAccountMostActiveAgent extends string,
+    TAccountConfig extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountJudgeStake extends string,
+    TAccountJudgeAccount extends string,
+    TAccountJudgeReputation extends string,
+    TAccountTreasury extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountMostActiveAgentTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountTreasuryAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TAccountAssociatedTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: ForceRefundAsyncInput<
-    TAccountAnyone,
-    TAccountPosterAccount,
-    TAccountMostActiveAgent,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgeStake,
-    TAccountJudgeAccount,
-    TAccountJudgeReputation,
-    TAccountTreasury,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountMostActiveAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountTreasuryAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: ForceRefundAsyncInput<
+        TAccountAnyone,
+        TAccountPosterAccount,
+        TAccountMostActiveAgent,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgeStake,
+        TAccountJudgeAccount,
+        TAccountJudgeReputation,
+        TAccountTreasury,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountMostActiveAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountTreasuryAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  ForceRefundInstruction<
-    TProgramAddress,
-    TAccountAnyone,
-    TAccountPosterAccount,
-    TAccountMostActiveAgent,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgeStake,
-    TAccountJudgeAccount,
-    TAccountJudgeReputation,
-    TAccountTreasury,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountMostActiveAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountTreasuryAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >
+    ForceRefundInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPosterAccount,
+        TAccountMostActiveAgent,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgeStake,
+        TAccountJudgeAccount,
+        TAccountJudgeReputation,
+        TAccountTreasury,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountMostActiveAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountTreasuryAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    anyone: { value: input.anyone ?? null, isWritable: true },
-    posterAccount: { value: input.posterAccount ?? null, isWritable: true },
-    mostActiveAgent: { value: input.mostActiveAgent ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    judgeStake: { value: input.judgeStake ?? null, isWritable: true },
-    judgeAccount: { value: input.judgeAccount ?? null, isWritable: true },
-    judgeReputation: {
-      value: input.judgeReputation ?? null,
-      isWritable: false,
-    },
-    treasury: { value: input.treasury ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    mostActiveAgentTokenAccount: {
-      value: input.mostActiveAgentTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    treasuryAta: { value: input.treasuryAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        anyone: { value: input.anyone ?? null, isWritable: true },
+        posterAccount: { value: input.posterAccount ?? null, isWritable: true },
+        mostActiveAgent: { value: input.mostActiveAgent ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: false },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        judgeStake: { value: input.judgeStake ?? null, isWritable: true },
+        judgeAccount: { value: input.judgeAccount ?? null, isWritable: true },
+        judgeReputation: {
+            value: input.judgeReputation ?? null,
+            isWritable: false,
+        },
+        treasury: { value: input.treasury ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        mostActiveAgentTokenAccount: {
+            value: input.mostActiveAgentTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        treasuryAta: { value: input.treasuryAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+        associatedTokenProgram: {
+            value: input.associatedTokenProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.anyone),
-      getAccountMeta(accounts.posterAccount),
-      getAccountMeta(accounts.mostActiveAgent),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.judgeStake),
-      getAccountMeta(accounts.judgeAccount),
-      getAccountMeta(accounts.judgeReputation),
-      getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.mostActiveAgentTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.treasuryAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-    ],
-    data: getForceRefundInstructionDataEncoder().encode({}),
-    programAddress,
-  } as ForceRefundInstruction<
-    TProgramAddress,
-    TAccountAnyone,
-    TAccountPosterAccount,
-    TAccountMostActiveAgent,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgeStake,
-    TAccountJudgeAccount,
-    TAccountJudgeReputation,
-    TAccountTreasury,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountMostActiveAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountTreasuryAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.anyone),
+            getAccountMeta(accounts.posterAccount),
+            getAccountMeta(accounts.mostActiveAgent),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.judgeStake),
+            getAccountMeta(accounts.judgeAccount),
+            getAccountMeta(accounts.judgeReputation),
+            getAccountMeta(accounts.treasury),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.mostActiveAgentTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.treasuryAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+            getAccountMeta(accounts.associatedTokenProgram),
+        ],
+        data: getForceRefundInstructionDataEncoder().encode({}),
+        programAddress,
+    } as ForceRefundInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPosterAccount,
+        TAccountMostActiveAgent,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgeStake,
+        TAccountJudgeAccount,
+        TAccountJudgeReputation,
+        TAccountTreasury,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountMostActiveAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountTreasuryAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >);
 }
 
 export type ForceRefundInput<
-  TAccountAnyone extends string = string,
-  TAccountPosterAccount extends string = string,
-  TAccountMostActiveAgent extends string = string,
-  TAccountConfig extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountJudgeStake extends string = string,
-  TAccountJudgeAccount extends string = string,
-  TAccountJudgeReputation extends string = string,
-  TAccountTreasury extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountPosterTokenAccount extends string = string,
-  TAccountMostActiveAgentTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountTreasuryAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
+    TAccountAnyone extends string = string,
+    TAccountPosterAccount extends string = string,
+    TAccountMostActiveAgent extends string = string,
+    TAccountConfig extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountJudgeStake extends string = string,
+    TAccountJudgeAccount extends string = string,
+    TAccountJudgeReputation extends string = string,
+    TAccountTreasury extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountPosterTokenAccount extends string = string,
+    TAccountMostActiveAgentTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountTreasuryAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
+    TAccountAssociatedTokenProgram extends string = string,
 > = {
-  anyone: TransactionSigner<TAccountAnyone>;
-  posterAccount: Address<TAccountPosterAccount>;
-  mostActiveAgent: Address<TAccountMostActiveAgent>;
-  config: Address<TAccountConfig>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  judgeStake: Address<TAccountJudgeStake>;
-  judgeAccount: Address<TAccountJudgeAccount>;
-  judgeReputation: Address<TAccountJudgeReputation>;
-  treasury: Address<TAccountTreasury>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  posterTokenAccount?: Address<TAccountPosterTokenAccount>;
-  mostActiveAgentTokenAccount?: Address<TAccountMostActiveAgentTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  treasuryAta?: Address<TAccountTreasuryAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+    anyone: TransactionSigner<TAccountAnyone>;
+    posterAccount: Address<TAccountPosterAccount>;
+    mostActiveAgent: Address<TAccountMostActiveAgent>;
+    config: Address<TAccountConfig>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    judgeStake: Address<TAccountJudgeStake>;
+    judgeAccount: Address<TAccountJudgeAccount>;
+    judgeReputation: Address<TAccountJudgeReputation>;
+    treasury: Address<TAccountTreasury>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    posterTokenAccount?: Address<TAccountPosterTokenAccount>;
+    mostActiveAgentTokenAccount?: Address<TAccountMostActiveAgentTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    treasuryAta?: Address<TAccountTreasuryAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
+    associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
 };
 
 export function getForceRefundInstruction<
-  TAccountAnyone extends string,
-  TAccountPosterAccount extends string,
-  TAccountMostActiveAgent extends string,
-  TAccountConfig extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountJudgeStake extends string,
-  TAccountJudgeAccount extends string,
-  TAccountJudgeReputation extends string,
-  TAccountTreasury extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountPosterTokenAccount extends string,
-  TAccountMostActiveAgentTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountTreasuryAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAnyone extends string,
+    TAccountPosterAccount extends string,
+    TAccountMostActiveAgent extends string,
+    TAccountConfig extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountJudgeStake extends string,
+    TAccountJudgeAccount extends string,
+    TAccountJudgeReputation extends string,
+    TAccountTreasury extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountPosterTokenAccount extends string,
+    TAccountMostActiveAgentTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountTreasuryAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TAccountAssociatedTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: ForceRefundInput<
-    TAccountAnyone,
-    TAccountPosterAccount,
-    TAccountMostActiveAgent,
-    TAccountConfig,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountJudgeStake,
-    TAccountJudgeAccount,
-    TAccountJudgeReputation,
-    TAccountTreasury,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountPosterTokenAccount,
-    TAccountMostActiveAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountTreasuryAta,
-    TAccountMintAccount,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: ForceRefundInput<
+        TAccountAnyone,
+        TAccountPosterAccount,
+        TAccountMostActiveAgent,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgeStake,
+        TAccountJudgeAccount,
+        TAccountJudgeReputation,
+        TAccountTreasury,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountMostActiveAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountTreasuryAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): ForceRefundInstruction<
-  TProgramAddress,
-  TAccountAnyone,
-  TAccountPosterAccount,
-  TAccountMostActiveAgent,
-  TAccountConfig,
-  TAccountTask,
-  TAccountEscrow,
-  TAccountJudgeStake,
-  TAccountJudgeAccount,
-  TAccountJudgeReputation,
-  TAccountTreasury,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram,
-  TAccountPosterTokenAccount,
-  TAccountMostActiveAgentTokenAccount,
-  TAccountEscrowAta,
-  TAccountTreasuryAta,
-  TAccountMintAccount,
-  TAccountTokenProgram,
-  TAccountAssociatedTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    anyone: { value: input.anyone ?? null, isWritable: true },
-    posterAccount: { value: input.posterAccount ?? null, isWritable: true },
-    mostActiveAgent: { value: input.mostActiveAgent ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
-    task: { value: input.task ?? null, isWritable: true },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    judgeStake: { value: input.judgeStake ?? null, isWritable: true },
-    judgeAccount: { value: input.judgeAccount ?? null, isWritable: true },
-    judgeReputation: {
-      value: input.judgeReputation ?? null,
-      isWritable: false,
-    },
-    treasury: { value: input.treasury ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    posterTokenAccount: {
-      value: input.posterTokenAccount ?? null,
-      isWritable: true,
-    },
-    mostActiveAgentTokenAccount: {
-      value: input.mostActiveAgentTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    treasuryAta: { value: input.treasuryAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.anyone),
-      getAccountMeta(accounts.posterAccount),
-      getAccountMeta(accounts.mostActiveAgent),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.judgeStake),
-      getAccountMeta(accounts.judgeAccount),
-      getAccountMeta(accounts.judgeReputation),
-      getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.posterTokenAccount),
-      getAccountMeta(accounts.mostActiveAgentTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.treasuryAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-    ],
-    data: getForceRefundInstructionDataEncoder().encode({}),
-    programAddress,
-  } as ForceRefundInstruction<
     TProgramAddress,
     TAccountAnyone,
     TAccountPosterAccount,
@@ -591,87 +451,180 @@ export function getForceRefundInstruction<
     TAccountMintAccount,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        anyone: { value: input.anyone ?? null, isWritable: true },
+        posterAccount: { value: input.posterAccount ?? null, isWritable: true },
+        mostActiveAgent: { value: input.mostActiveAgent ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: false },
+        task: { value: input.task ?? null, isWritable: true },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        judgeStake: { value: input.judgeStake ?? null, isWritable: true },
+        judgeAccount: { value: input.judgeAccount ?? null, isWritable: true },
+        judgeReputation: {
+            value: input.judgeReputation ?? null,
+            isWritable: false,
+        },
+        treasury: { value: input.treasury ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        posterTokenAccount: {
+            value: input.posterTokenAccount ?? null,
+            isWritable: true,
+        },
+        mostActiveAgentTokenAccount: {
+            value: input.mostActiveAgentTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        treasuryAta: { value: input.treasuryAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+        associatedTokenProgram: {
+            value: input.associatedTokenProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.anyone),
+            getAccountMeta(accounts.posterAccount),
+            getAccountMeta(accounts.mostActiveAgent),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.judgeStake),
+            getAccountMeta(accounts.judgeAccount),
+            getAccountMeta(accounts.judgeReputation),
+            getAccountMeta(accounts.treasury),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.posterTokenAccount),
+            getAccountMeta(accounts.mostActiveAgentTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.treasuryAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+            getAccountMeta(accounts.associatedTokenProgram),
+        ],
+        data: getForceRefundInstructionDataEncoder().encode({}),
+        programAddress,
+    } as ForceRefundInstruction<
+        TProgramAddress,
+        TAccountAnyone,
+        TAccountPosterAccount,
+        TAccountMostActiveAgent,
+        TAccountConfig,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountJudgeStake,
+        TAccountJudgeAccount,
+        TAccountJudgeReputation,
+        TAccountTreasury,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountPosterTokenAccount,
+        TAccountMostActiveAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountTreasuryAta,
+        TAccountMintAccount,
+        TAccountTokenProgram,
+        TAccountAssociatedTokenProgram
+    >);
 }
 
 export type ParsedForceRefundInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    anyone: TAccountMetas[0];
-    posterAccount: TAccountMetas[1];
-    mostActiveAgent: TAccountMetas[2];
-    config: TAccountMetas[3];
-    task: TAccountMetas[4];
-    escrow: TAccountMetas[5];
-    judgeStake: TAccountMetas[6];
-    judgeAccount: TAccountMetas[7];
-    judgeReputation: TAccountMetas[8];
-    treasury: TAccountMetas[9];
-    systemProgram: TAccountMetas[10];
-    eventAuthority: TAccountMetas[11];
-    gradienceProgram: TAccountMetas[12];
-    posterTokenAccount?: TAccountMetas[13] | undefined;
-    mostActiveAgentTokenAccount?: TAccountMetas[14] | undefined;
-    escrowAta?: TAccountMetas[15] | undefined;
-    treasuryAta?: TAccountMetas[16] | undefined;
-    mintAccount?: TAccountMetas[17] | undefined;
-    tokenProgram?: TAccountMetas[18] | undefined;
-    associatedTokenProgram?: TAccountMetas[19] | undefined;
-  };
-  data: ForceRefundInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        anyone: TAccountMetas[0];
+        posterAccount: TAccountMetas[1];
+        mostActiveAgent: TAccountMetas[2];
+        config: TAccountMetas[3];
+        task: TAccountMetas[4];
+        escrow: TAccountMetas[5];
+        judgeStake: TAccountMetas[6];
+        judgeAccount: TAccountMetas[7];
+        judgeReputation: TAccountMetas[8];
+        treasury: TAccountMetas[9];
+        systemProgram: TAccountMetas[10];
+        eventAuthority: TAccountMetas[11];
+        gradienceProgram: TAccountMetas[12];
+        posterTokenAccount?: TAccountMetas[13] | undefined;
+        mostActiveAgentTokenAccount?: TAccountMetas[14] | undefined;
+        escrowAta?: TAccountMetas[15] | undefined;
+        treasuryAta?: TAccountMetas[16] | undefined;
+        mintAccount?: TAccountMetas[17] | undefined;
+        tokenProgram?: TAccountMetas[18] | undefined;
+        associatedTokenProgram?: TAccountMetas[19] | undefined;
+    };
+    data: ForceRefundInstructionData;
 };
 
-export function parseForceRefundInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parseForceRefundInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedForceRefundInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  const getNextOptionalAccount = () => {
-    const accountMeta = getNextAccount();
-    return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS
-      ? undefined
-      : accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      anyone: getNextAccount(),
-      posterAccount: getNextAccount(),
-      mostActiveAgent: getNextAccount(),
-      config: getNextAccount(),
-      task: getNextAccount(),
-      escrow: getNextAccount(),
-      judgeStake: getNextAccount(),
-      judgeAccount: getNextAccount(),
-      judgeReputation: getNextAccount(),
-      treasury: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-      posterTokenAccount: getNextOptionalAccount(),
-      mostActiveAgentTokenAccount: getNextOptionalAccount(),
-      escrowAta: getNextOptionalAccount(),
-      treasuryAta: getNextOptionalAccount(),
-      mintAccount: getNextOptionalAccount(),
-      tokenProgram: getNextOptionalAccount(),
-      associatedTokenProgram: getNextOptionalAccount(),
-    },
-    data: getForceRefundInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 20) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    const getNextOptionalAccount = () => {
+        const accountMeta = getNextAccount();
+        return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS ? undefined : accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            anyone: getNextAccount(),
+            posterAccount: getNextAccount(),
+            mostActiveAgent: getNextAccount(),
+            config: getNextAccount(),
+            task: getNextAccount(),
+            escrow: getNextAccount(),
+            judgeStake: getNextAccount(),
+            judgeAccount: getNextAccount(),
+            judgeReputation: getNextAccount(),
+            treasury: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+            posterTokenAccount: getNextOptionalAccount(),
+            mostActiveAgentTokenAccount: getNextOptionalAccount(),
+            escrowAta: getNextOptionalAccount(),
+            treasuryAta: getNextOptionalAccount(),
+            mintAccount: getNextOptionalAccount(),
+            tokenProgram: getNextOptionalAccount(),
+            associatedTokenProgram: getNextOptionalAccount(),
+        },
+        data: getForceRefundInstructionDataDecoder().decode(instruction.data),
+    };
 }

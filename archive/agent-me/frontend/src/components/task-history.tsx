@@ -63,9 +63,7 @@ export function TaskHistory({ walletAddress }: TaskHistoryProps) {
 
             const matched: SubmittedTaskHistoryRow[] = [];
             for (const row of submissionsByTask) {
-                const mine = row.submissions.filter(
-                    (submission) => submission.agent === walletAddress,
-                );
+                const mine = row.submissions.filter((submission) => submission.agent === walletAddress);
                 for (const submission of mine) {
                     matched.push({
                         task: row.task,
@@ -73,9 +71,7 @@ export function TaskHistory({ walletAddress }: TaskHistoryProps) {
                     });
                 }
             }
-            matched.sort(
-                (a, b) => b.submission.submission_slot - a.submission.submission_slot,
-            );
+            matched.sort((a, b) => b.submission.submission_slot - a.submission.submission_slot);
             setSubmittedRows(matched);
         } catch (historyError) {
             setError(historyError instanceof Error ? historyError.message : String(historyError));
@@ -94,12 +90,7 @@ export function TaskHistory({ walletAddress }: TaskHistoryProps) {
         <section className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2>Task History</h2>
-                <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void refresh()}
-                    disabled={!walletAddress}
-                >
+                <button type="button" className="secondary" onClick={() => void refresh()} disabled={!walletAddress}>
                     Refresh
                 </button>
             </div>
@@ -153,9 +144,7 @@ export function TaskHistory({ walletAddress }: TaskHistoryProps) {
                                 </thead>
                                 <tbody>
                                     {submittedRows.map((row) => (
-                                        <tr
-                                            key={`submitted-${row.task.task_id}-${row.submission.submission_slot}`}
-                                        >
+                                        <tr key={`submitted-${row.task.task_id}-${row.submission.submission_slot}`}>
                                             <td>#{row.task.task_id}</td>
                                             <td>{row.submission.submission_slot}</td>
                                             <td>{row.task.state}</td>

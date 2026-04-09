@@ -45,8 +45,7 @@ export function SocialView({ owner }: { owner: string }) {
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm space-y-1">
                 <p>
-                    data_flow:{' '}
-                    <span className="text-gray-300">Chain Hub → Indexer → AgentM Pro Social</span>
+                    data_flow: <span className="text-gray-300">Chain Hub → Indexer → AgentM Pro Social</span>
                 </p>
                 <p>
                     source:{' '}
@@ -87,10 +86,7 @@ export function SocialView({ owner }: { owner: string }) {
 
 function SocialRow({ item }: { item: SocialReputationEntry }) {
     return (
-        <div
-            data-testid={`social-row-${item.rank}`}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-4"
-        >
+        <div data-testid={`social-row-${item.rank}`} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-xs text-gray-500">#{item.rank}</p>

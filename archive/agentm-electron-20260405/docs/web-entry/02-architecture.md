@@ -25,13 +25,13 @@ flowchart LR
 
 ## 2.2 组件定义（必填）
 
-| 组件 | 职责 | 技术选型 | 状态 |
-|------|------|---------|------|
-| Web UI | 登录、配对、Agent 列表、文本/语音会话 | React + Vite（复用 AgentM UI） | 新建 |
-| Web Gateway | 会话鉴权、配对码、实时转发、状态聚合 | Node/Bun HTTP + WS | 新建 |
-| Local Bridge | 与网关建立出站长连接，代理本地 Agent | TypeScript（复用 agentm main 能力） | 新建 |
-| Local Agent Adapter | 统一调用本地 A2A/任务接口 | 复用 `api-server.ts`/A2A 客户端 | 已有扩展 |
-| Voice Pipeline | Web 音频采集/播放 + 语音事件协议 | Web APIs + 实时事件通道 | 新建 |
+| 组件                | 职责                                  | 技术选型                            | 状态     |
+| ------------------- | ------------------------------------- | ----------------------------------- | -------- |
+| Web UI              | 登录、配对、Agent 列表、文本/语音会话 | React + Vite（复用 AgentM UI）      | 新建     |
+| Web Gateway         | 会话鉴权、配对码、实时转发、状态聚合  | Node/Bun HTTP + WS                  | 新建     |
+| Local Bridge        | 与网关建立出站长连接，代理本地 Agent  | TypeScript（复用 agentm main 能力） | 新建     |
+| Local Agent Adapter | 统一调用本地 A2A/任务接口             | 复用 `api-server.ts`/A2A 客户端     | 已有扩展 |
+| Voice Pipeline      | Web 音频采集/播放 + 语音事件协议      | Web APIs + 实时事件通道             | 新建     |
 
 ## 2.3 数据流（必填）
 
@@ -71,21 +71,21 @@ Local Agent Adapter -> Existing agentm APIs / A2A
 
 ### 外部依赖
 
-| 依赖 | 版本 | 用途 | 是否可替换 |
-|------|------|------|-----------|
-| Privy Auth | existing | Web 身份认证 | 否（当前阶段） |
-| WebSocket | 标准协议 | 实时转发 | 是 |
-| WebRTC（可选） | 标准协议 | 后续低延迟语音 | 是 |
+| 依赖           | 版本     | 用途           | 是否可替换     |
+| -------------- | -------- | -------------- | -------------- |
+| Privy Auth     | existing | Web 身份认证   | 否（当前阶段） |
+| WebSocket      | 标准协议 | 实时转发       | 是             |
+| WebRTC（可选） | 标准协议 | 后续低延迟语音 | 是             |
 
 ## 2.5 状态管理（必填）
 
-| 状态名 | 含义 | 谁拥有 | 持久化方式 |
-|--------|------|--------|-----------|
-| WebSessionState | Web 登录会话 | Gateway | 内存 + 会话存储 |
-| PairingState | 配对码与消费状态 | Gateway | 内存/Redis（后续） |
-| BridgePresence | Bridge 在线状态 | Gateway | 内存（心跳） |
-| AgentPresence | 本地 Agent 在线/忙闲 | Bridge | 内存（上报） |
-| ChatSessionState | 文本/语音会话状态 | Web UI + Gateway | 内存 |
+| 状态名           | 含义                 | 谁拥有           | 持久化方式         |
+| ---------------- | -------------------- | ---------------- | ------------------ |
+| WebSessionState  | Web 登录会话         | Gateway          | 内存 + 会话存储    |
+| PairingState     | 配对码与消费状态     | Gateway          | 内存/Redis（后续） |
+| BridgePresence   | Bridge 在线状态      | Gateway          | 内存（心跳）       |
+| AgentPresence    | 本地 Agent 在线/忙闲 | Bridge           | 内存（上报）       |
+| ChatSessionState | 文本/语音会话状态    | Web UI + Gateway | 内存               |
 
 状态流转（简化）：
 
@@ -100,30 +100,30 @@ stateDiagram-v2
 
 ## 2.6 接口概览（必填）
 
-| 接口 | 类型 | 调用方 | 说明 |
-|------|------|--------|------|
-| `POST /web/session/pair` | REST | Web UI | 申请配对码 |
-| `POST /local/bridge/attach` | REST | Local Bridge | 消费配对码并绑定 |
-| `GET /web/agents` | REST | Web UI | 查询可连接 Agent |
-| `WS /web/chat/:agentId` | WS | Web UI | 文本/语音事件双向流 |
-| `WS /bridge/realtime` | WS | Local Bridge | Bridge 主连接 |
+| 接口                        | 类型 | 调用方       | 说明                |
+| --------------------------- | ---- | ------------ | ------------------- |
+| `POST /web/session/pair`    | REST | Web UI       | 申请配对码          |
+| `POST /local/bridge/attach` | REST | Local Bridge | 消费配对码并绑定    |
+| `GET /web/agents`           | REST | Web UI       | 查询可连接 Agent    |
+| `WS /web/chat/:agentId`     | WS   | Web UI       | 文本/语音事件双向流 |
+| `WS /bridge/realtime`       | WS   | Local Bridge | Bridge 主连接       |
 
 ## 2.7 安全考虑（必填）
 
-| 威胁 | 影响 | 缓解措施 |
-|------|------|---------|
-| 配对码泄露 | 他人劫持本地 Bridge | 一次性+短 TTL（120s）+消费即失效 |
-| 会话冒用 | 越权访问本地 Agent | Web Session 与 Bridge 强绑定，服务端鉴权 |
-| 重放攻击 | 重复执行敏感动作 | 事件 `nonce + timestamp`，幂等校验 |
-| 长连接劫持 | 数据泄露/伪造 | WSS + token 校验 + 心跳踢出 |
+| 威胁       | 影响                | 缓解措施                                 |
+| ---------- | ------------------- | ---------------------------------------- |
+| 配对码泄露 | 他人劫持本地 Bridge | 一次性+短 TTL（120s）+消费即失效         |
+| 会话冒用   | 越权访问本地 Agent  | Web Session 与 Bridge 强绑定，服务端鉴权 |
+| 重放攻击   | 重复执行敏感动作    | 事件 `nonce + timestamp`，幂等校验       |
+| 长连接劫持 | 数据泄露/伪造       | WSS + token 校验 + 心跳踢出              |
 
 ## 2.8 性能考虑（可选）
 
-| 指标 | 目标 | 约束 |
-|------|------|------|
-| Chat RTT | < 800ms | 取决于网络与 Agent 推理时长 |
-| 首次配对 | < 2 min | 含人工输入配对码 |
-| Bridge 心跳 | 10s 周期 | 30s 超时判离线 |
+| 指标        | 目标     | 约束                        |
+| ----------- | -------- | --------------------------- |
+| Chat RTT    | < 800ms  | 取决于网络与 Agent 推理时长 |
+| 首次配对    | < 2 min  | 含人工输入配对码            |
+| Bridge 心跳 | 10s 周期 | 30s 超时判离线              |
 
 ## 2.9 部署架构（可选）
 

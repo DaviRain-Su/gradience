@@ -1,4 +1,5 @@
 # Technical Spec: Metaplex Agent Registry Integration
+
 ## Phase 3 — agentm-web sub-module
 
 > **Parent PRD**: docs/hackathon/metaplex/demo.md
@@ -12,11 +13,11 @@
 
 Two deliverables:
 
-| File | Purpose |
-|------|---------|
-| `apps/agentm-web/src/lib/metaplex/agent-registry.ts` | On-chain agent identity via Metaplex Core Assets |
-| `apps/agentm-web/src/lib/metaplex/a2a-demo.ts` | Hackathon demo: two agents negotiate + settle |
-| `apps/agentm-pro/src/lib/metaplex/a2a-interactions.ts` | Enhance mock data + add real SDK stubs |
+| File                                                   | Purpose                                          |
+| ------------------------------------------------------ | ------------------------------------------------ |
+| `apps/agentm-web/src/lib/metaplex/agent-registry.ts`   | On-chain agent identity via Metaplex Core Assets |
+| `apps/agentm-web/src/lib/metaplex/a2a-demo.ts`         | Hackathon demo: two agents negotiate + settle    |
+| `apps/agentm-pro/src/lib/metaplex/a2a-interactions.ts` | Enhance mock data + add real SDK stubs           |
 
 ---
 
@@ -111,22 +112,22 @@ interface A2ADemoResult {
 // - Creates a Core Asset with name + attributes plugin
 // - Returns the registered agent details
 // - In demo mode (no real wallet): returns a deterministic mock
-async function registerAgent(input: AgentRegistrationInput): Promise<MetaplexAgentAsset>
+async function registerAgent(input: AgentRegistrationInput): Promise<MetaplexAgentAsset>;
 
 // Fetch a single agent by asset address
 // - Queries Metaplex Core Asset on-chain
 // - Falls back to registry cache in demo mode
-async function getAgentInfo(assetAddress: string): Promise<MetaplexAgentAsset | null>
+async function getAgentInfo(assetAddress: string): Promise<MetaplexAgentAsset | null>;
 
 // List all agents registered under a given collection or authority
 // - Uses Metaplex DAS (Digital Asset Standard) API
 // - Falls back to static demo registry
-async function listAgents(options?: { owner?: string; limit?: number }): Promise<MetaplexAgentAsset[]>
+async function listAgents(options?: { owner?: string; limit?: number }): Promise<MetaplexAgentAsset[]>;
 
 // Build the metadata URI for an agent
 // - Encodes capabilities as JSON attributes
 // - Returns a data URI (demo) or uploads to Arweave/IPFS (production)
-function buildAgentMetadataUri(name: string, capabilities: string[]): string
+function buildAgentMetadataUri(name: string, capabilities: string[]): string;
 ```
 
 ### a2a-demo.ts
@@ -134,22 +135,22 @@ function buildAgentMetadataUri(name: string, capabilities: string[]): string
 ```typescript
 // Full hackathon demo: two agents interact end-to-end
 // Steps: register → post task → discover → negotiate → settle
-async function runA2ADemo(options?: { simulate?: boolean }): Promise<A2ADemoResult>
+async function runA2ADemo(options?: { simulate?: boolean }): Promise<A2ADemoResult>;
 
 // Step 1: register two demo agents
-async function setupDemoAgents(): Promise<{ agentA: MetaplexAgentAsset; agentB: MetaplexAgentAsset }>
+async function setupDemoAgents(): Promise<{ agentA: MetaplexAgentAsset; agentB: MetaplexAgentAsset }>;
 
 // Step 2: simulate task posting by Agent A
-function postDemoTask(agentA: MetaplexAgentAsset): A2AInteractionStep
+function postDemoTask(agentA: MetaplexAgentAsset): A2AInteractionStep;
 
 // Step 3: Agent B discovers the task
-function discoverTask(agentB: MetaplexAgentAsset): A2AInteractionStep
+function discoverTask(agentB: MetaplexAgentAsset): A2AInteractionStep;
 
 // Step 4: negotiation exchange (3 messages)
-function negotiateTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset): A2AInteractionStep[]
+function negotiateTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset): A2AInteractionStep[];
 
 // Step 5: Gradience Protocol settlement
-function settleTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset, amount: number): A2AInteractionStep
+function settleTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset, amount: number): A2AInteractionStep;
 ```
 
 ---
@@ -157,6 +158,7 @@ function settleTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset, amou
 ## 5. Behavior Rules
 
 ### registerAgent
+
 - Name must be trimmed, 1–32 chars; throw `Error('name too long')` if >32
 - Capabilities must be a non-empty array; throw `Error('capabilities required')` if empty
 - When `NEXT_PUBLIC_SOLANA_RPC` is set and a real signer is provided: call `createV1` from `@metaplex-foundation/mpl-core`
@@ -165,21 +167,29 @@ function settleTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset, amou
 - `registeredAt`: `Date.now()`
 
 ### getAgentInfo
+
 - Return `null` for unknown addresses (never throw)
 - Demo fallback: search the static `DEMO_REGISTRY` array
 
 ### listAgents
+
 - Default `limit`: 20
 - Demo fallback: return `DEMO_REGISTRY.slice(0, limit)`
 - Real path: query Metaplex DAS via `fetch(RPC_URL, { method: 'getAssetsByOwner', ... })`
 
 ### buildAgentMetadataUri
+
 - Returns `data:application/json;base64,<encoded>` with shape:
-  ```json
-  { "name": "...", "description": "Gradience Protocol Agent", "attributes": [{"trait_type": "capability", "value": "..."}] }
-  ```
+    ```json
+    {
+        "name": "...",
+        "description": "Gradience Protocol Agent",
+        "attributes": [{ "trait_type": "capability", "value": "..." }]
+    }
+    ```
 
 ### runA2ADemo
+
 - Always runs in simulate mode for hackathon (no real wallet required)
 - Returns deterministic result for same inputs (seeded by agent names)
 - Total steps: exactly 7 (register A, register B, post task, discover, negotiate x2, settle)
@@ -189,11 +199,11 @@ function settleTask(agentA: MetaplexAgentAsset, agentB: MetaplexAgentAsset, amou
 
 ## 6. Error Codes
 
-| Condition | Error message |
-|-----------|--------------|
-| name.length > 32 | `'agent name must be ≤ 32 characters'` |
-| capabilities empty | `'at least one capability is required'` |
-| RPC unreachable | `'metaplex rpc unavailable — using demo mode'` (non-fatal, falls back) |
+| Condition          | Error message                                                          |
+| ------------------ | ---------------------------------------------------------------------- |
+| name.length > 32   | `'agent name must be ≤ 32 characters'`                                 |
+| capabilities empty | `'at least one capability is required'`                                |
+| RPC unreachable    | `'metaplex rpc unavailable — using demo mode'` (non-fatal, falls back) |
 
 ---
 
@@ -212,13 +222,16 @@ ID: mplx-agent:9bwp1ck5    name: DataIndexer_v1      capabilities: [data-indexin
 ## 8. Integration Points
 
 ### With existing agentm-pro code
+
 - `reputation-bridge.ts`: `buildMetaplexReputationBridge` already uses the same `mplx-agent:` prefix pattern → compatible
 - `a2a-interactions.ts`: existing `METAPLEX_REGISTRY` format is source of truth for mock agent shape
 
 ### With OWS wallet (agentm-web)
+
 - `OWSAgentWalletManager.getBinding(accountKey).masterWallet` is the `owner` field on `MetaplexAgentAsset`
 
 ### With Gradience Protocol
+
 - Settlement `txRef` format: `gradience-settle-${hex8}` to distinguish from Metaplex-native refs
 
 ---
@@ -235,4 +248,4 @@ apps/agentm-pro/src/lib/metaplex/
 
 ---
 
-*Technical Spec complete. Proceed to Phase 6: Implementation.*
+_Technical Spec complete. Proceed to Phase 6: Implementation._

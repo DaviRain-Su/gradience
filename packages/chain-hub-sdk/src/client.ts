@@ -11,7 +11,7 @@ export interface ChainHubClientConfig {
     /** Optional API key for authenticated endpoints */
     apiKey?: string;
     /** Network: devnet or mainnet */
-    network?: "devnet" | "mainnet";
+    network?: 'devnet' | 'mainnet';
 }
 
 export interface ReputationData {
@@ -38,7 +38,7 @@ export interface RegistryEntry {
     id: string;
     name: string;
     category: number;
-    status: "active" | "paused";
+    status: 'active' | 'paused';
     authority: string;
     uri: string;
 }
@@ -51,8 +51,8 @@ export interface SqlQueryResult {
 }
 
 const DEFAULT_CONFIG: ChainHubClientConfig = {
-    baseUrl: "https://indexer.gradiences.xyz",
-    network: "devnet",
+    baseUrl: 'https://indexer.gradiences.xyz',
+    network: 'devnet',
 };
 
 export class ChainHubClient {
@@ -62,10 +62,8 @@ export class ChainHubClient {
     constructor(config?: Partial<ChainHubClientConfig>) {
         this.config = { ...DEFAULT_CONFIG, ...config };
         this.headers = {
-            "Content-Type": "application/json",
-            ...(this.config.apiKey
-                ? { Authorization: `Bearer ${this.config.apiKey}` }
-                : {}),
+            'Content-Type': 'application/json',
+            ...(this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}),
         };
     }
 
@@ -137,7 +135,7 @@ export class ChainHubClient {
 
     async registerAgent(_pubkey: string, _profile: Partial<AgentInfo>): Promise<string> {
         // TODO: Build and send Solana transaction via program CPI
-        throw new Error("registerAgent requires Solana wallet signer — use SDK with @solana/kit");
+        throw new Error('registerAgent requires Solana wallet signer — use SDK with @solana/kit');
     }
 
     // ── Transaction API (GRA-145) ──
@@ -147,16 +145,16 @@ export class ChainHubClient {
     }
 
     async getTasks(params?: {
-        state?: "open" | "completed" | "refunded";
+        state?: 'open' | 'completed' | 'refunded';
         poster?: string;
         limit?: number;
     }): Promise<unknown[]> {
         const query = new URLSearchParams();
-        if (params?.state) query.set("state", params.state);
-        if (params?.poster) query.set("poster", params.poster);
-        if (params?.limit) query.set("limit", String(params.limit));
+        if (params?.state) query.set('state', params.state);
+        if (params?.poster) query.set('poster', params.poster);
+        if (params?.limit) query.set('limit', String(params.limit));
         const qs = query.toString();
-        return this.get<unknown[]>(`/api/tasks${qs ? "?" + qs : ""}`);
+        return this.get<unknown[]>(`/api/tasks${qs ? '?' + qs : ''}`);
     }
 
     async getTaskSubmissions(taskId: number): Promise<unknown[]> {
@@ -170,7 +168,7 @@ export class ChainHubClient {
     // ── SQL Query Interface (GRA-147) ──
 
     async query(sql: string, params?: unknown[]): Promise<SqlQueryResult> {
-        return this.post<SqlQueryResult>("/api/sql/query", { sql, params });
+        return this.post<SqlQueryResult>('/api/sql/query', { sql, params });
     }
 
     /** Convenience: count rows matching a condition */
@@ -183,10 +181,7 @@ export class ChainHubClient {
     }
 
     /** Convenience: select rows with limit */
-    async select(
-        table: string,
-        options?: { where?: string; orderBy?: string; limit?: number }
-    ): Promise<unknown[][]> {
+    async select(table: string, options?: { where?: string; orderBy?: string; limit?: number }): Promise<unknown[][]> {
         let sql = `SELECT * FROM ${table}`;
         if (options?.where) sql += ` WHERE ${options.where}`;
         if (options?.orderBy) sql += ` ORDER BY ${options.orderBy}`;
@@ -199,7 +194,7 @@ export class ChainHubClient {
 
     async healthCheck(): Promise<boolean> {
         try {
-            await this.get<{ status: string }>("/healthz");
+            await this.get<{ status: string }>('/healthz');
             return true;
         } catch (error) {
             console.warn('[ChainHub] Health check failed:', error);
@@ -221,7 +216,7 @@ export class ChainHubClient {
 
     private async post<T>(path: string, body: unknown): Promise<T> {
         const res = await fetch(`${this.config.baseUrl}${path}`, {
-            method: "POST",
+            method: 'POST',
             headers: this.headers,
             body: JSON.stringify(body),
         });
@@ -235,9 +230,9 @@ export class ChainHubClient {
 export class ChainHubError extends Error {
     constructor(
         public readonly status: number,
-        public readonly body: string
+        public readonly body: string,
     ) {
         super(`ChainHub API error ${status}: ${body}`);
-        this.name = "ChainHubError";
+        this.name = 'ChainHubError';
     }
 }

@@ -70,10 +70,7 @@ export async function findEscrowPda(taskId: bigint | number): Promise<[Address, 
     return [addr, bump];
 }
 
-export async function findApplicationPda(
-    taskId: bigint | number,
-    agent: Address,
-): Promise<[Address, number]> {
+export async function findApplicationPda(taskId: bigint | number, agent: Address): Promise<[Address, number]> {
     const [addr, bump] = await getProgramDerivedAddress({
         programAddress: ARENA_PROGRAM_ADDRESS,
         seeds: [APPLICATION_SEED, u64LeBuffer(taskId), toSeed(agent)],
@@ -81,10 +78,7 @@ export async function findApplicationPda(
     return [addr, bump];
 }
 
-export async function findSubmissionPda(
-    taskId: bigint | number,
-    agent: Address,
-): Promise<[Address, number]> {
+export async function findSubmissionPda(taskId: bigint | number, agent: Address): Promise<[Address, number]> {
     const [addr, bump] = await getProgramDerivedAddress({
         programAddress: ARENA_PROGRAM_ADDRESS,
         seeds: [SUBMISSION_SEED, u64LeBuffer(taskId), toSeed(agent)],

@@ -36,13 +36,7 @@ export interface WebEntryRuntimeDeps {
 }
 
 export interface WebEntryRuntime {
-    handleHttp(
-        req: IncomingMessage,
-        res: ServerResponse,
-        method: string,
-        path: string,
-        url: URL,
-    ): Promise<boolean>;
+    handleHttp(req: IncomingMessage, res: ServerResponse, method: string, path: string, url: URL): Promise<boolean>;
     handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): boolean;
     dispose(): void;
     getStatus(): {
@@ -85,14 +79,8 @@ export function createWebEntryRuntime(
     const bridgePeers = new Map<string, WsPeer>();
     const webChatPeers = new Set<WsPeer>();
     const webChatPeerAgents = new Map<WsPeer, string>();
-    const pendingChatRequests = new Map<
-        string,
-        { peer: WsPeer; bridgeId: string; agentId: string }
-    >();
-    const pendingVoiceRequests = new Map<
-        string,
-        { peer: WsPeer; bridgeId: string; agentId: string }
-    >();
+    const pendingChatRequests = new Map<string, { peer: WsPeer; bridgeId: string; agentId: string }>();
+    const pendingVoiceRequests = new Map<string, { peer: WsPeer; bridgeId: string; agentId: string }>();
     const runtimeMetrics = {
         pairCodeIssuedTotal: 0,
         pairCodeConsumedTotal: 0,
@@ -115,13 +103,7 @@ export function createWebEntryRuntime(
     }, 1_000);
     sweepTimer.unref?.();
 
-    async function handleHttp(
-        req: IncomingMessage,
-        res: ServerResponse,
-        method: string,
-        path: string,
-        _url: URL,
-    ) {
+    async function handleHttp(req: IncomingMessage, res: ServerResponse, method: string, path: string, _url: URL) {
         if (method === 'POST' && path === '/web/session/pair') {
             const session = deps.requireSession();
             if ('error' in session) {
@@ -545,11 +527,7 @@ function handleWebChatMessage(input: {
     }
 
     if (payload.type !== 'chat.message.send') {
-        if (
-            payload.type === 'voice.start' ||
-            payload.type === 'voice.chunk' ||
-            payload.type === 'voice.stop'
-        ) {
+        if (payload.type === 'voice.start' || payload.type === 'voice.chunk' || payload.type === 'voice.stop') {
             const bridgePeer = input.bridgePeers.get(input.bridgeId);
             if (!bridgePeer) {
                 input.peer.sendJson({
@@ -559,8 +537,7 @@ function handleWebChatMessage(input: {
                 return;
             }
 
-            const requestId =
-                asString((payload as { requestId?: unknown }).requestId).trim() || randomUUID();
+            const requestId = asString((payload as { requestId?: unknown }).requestId).trim() || randomUUID();
 
             if (payload.type === 'voice.start') {
                 input.runtimeMetrics.voiceRequestsTotal += 1;
@@ -599,10 +576,7 @@ function handleWebChatMessage(input: {
                     event: 'chunk',
                     requestId,
                     agentId: input.agentId,
-                    seq:
-                        typeof (payload as { seq?: unknown }).seq === 'number'
-                            ? (payload as { seq: number }).seq
-                            : 0,
+                    seq: typeof (payload as { seq?: unknown }).seq === 'number' ? (payload as { seq: number }).seq : 0,
                     dataBase64: asString((payload as { dataBase64?: unknown }).dataBase64),
                 });
                 return;
@@ -625,8 +599,7 @@ function handleWebChatMessage(input: {
     }
 
     const text = asString(
-        (payload as { text?: unknown }).text ??
-            (payload as { payload?: { text?: unknown } }).payload?.text,
+        (payload as { text?: unknown }).text ?? (payload as { payload?: { text?: unknown } }).payload?.text,
     ).trim();
     if (!text || Buffer.byteLength(text, 'utf8') > 16 * 1024) {
         input.peer.sendJson({

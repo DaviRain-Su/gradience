@@ -1,4 +1,15 @@
-import { appendTransactionMessageInstructions, compressTransactionMessageUsingAddressLookupTables, createNoopSigner, createSolanaRpc, createTransactionMessage, fetchAddressesForLookupTables, getBase64EncodedWireTransaction, setTransactionMessageFeePayerSigner, setTransactionMessageLifetimeUsingBlockhash, signTransactionMessageWithSigners, } from '@solana/kit';
+import {
+    appendTransactionMessageInstructions,
+    compressTransactionMessageUsingAddressLookupTables,
+    createNoopSigner,
+    createSolanaRpc,
+    createTransactionMessage,
+    fetchAddressesForLookupTables,
+    getBase64EncodedWireTransaction,
+    setTransactionMessageFeePayerSigner,
+    setTransactionMessageLifetimeUsingBlockhash,
+    signTransactionMessageWithSigners,
+} from '@solana/kit';
 export class KeypairAdapter {
     signer;
     rpc;
@@ -6,9 +17,7 @@ export class KeypairAdapter {
     constructor(options) {
         this.signer = options.signer;
         this.commitment = options.commitment ?? 'confirmed';
-        this.rpc =
-            options.rpc ??
-                createSolanaRpc((options.rpcEndpoint ?? 'http://127.0.0.1:8899'));
+        this.rpc = options.rpc ?? createSolanaRpc(options.rpcEndpoint ?? 'http://127.0.0.1:8899');
     }
     async sign(instructions, options) {
         const { value: latestBlockhash } = await this.rpc.getLatestBlockhash({ commitment: this.commitment }).send();
@@ -18,8 +27,14 @@ export class KeypairAdapter {
             const withLifetime = setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, withFeePayer);
             const withInstructions = appendTransactionMessageInstructions(instructions, withLifetime);
             if (options.addressLookupTableAddresses && options.addressLookupTableAddresses.length > 0) {
-                const addressesByLookupTableAddress = await fetchAddressesForLookupTables(options.addressLookupTableAddresses, this.rpc);
-                const compressed = compressTransactionMessageUsingAddressLookupTables(withInstructions, addressesByLookupTableAddress);
+                const addressesByLookupTableAddress = await fetchAddressesForLookupTables(
+                    options.addressLookupTableAddresses,
+                    this.rpc,
+                );
+                const compressed = compressTransactionMessageUsingAddressLookupTables(
+                    withInstructions,
+                    addressesByLookupTableAddress,
+                );
                 return signTransactionMessageWithSigners(compressed);
             }
             return signTransactionMessageWithSigners(withInstructions);
@@ -35,9 +50,9 @@ export class KeypairAdapter {
         const wireTransaction = getBase64EncodedWireTransaction(signedTransaction);
         return this.rpc
             .sendTransaction(wireTransaction, {
-            encoding: 'base64',
-            preflightCommitment: this.commitment,
-        })
+                encoding: 'base64',
+                preflightCommitment: this.commitment,
+            })
             .send();
     }
 }

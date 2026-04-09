@@ -12,13 +12,13 @@
 
 **结论**: Tempo 是 Gradience 当前最匹配的"第二链"，甚至可以说是**天作之合**。
 
-| 维度 | 评估 | 说明 |
-|------|------|------|
+| 维度         | 评估       | 说明                        |
+| ------------ | ---------- | --------------------------- |
 | **技术匹配** | ⭐⭐⭐⭐⭐ | EVM 兼容，kernel 零改动部署 |
-| **场景匹配** | ⭐⭐⭐⭐⭐ | MPP 专为 Agent 支付设计 |
-| **性能匹配** | ⭐⭐⭐⭐⭐ | 0.6s 确定性最终性 |
-| **商业潜力** | ⭐⭐⭐⭐⭐ | Stripe 生态，企业级场景 |
-| **战略价值** | ⭐⭐⭐⭐⭐ | 从 DeFi 链扩展到支付链 |
+| **场景匹配** | ⭐⭐⭐⭐⭐ | MPP 专为 Agent 支付设计     |
+| **性能匹配** | ⭐⭐⭐⭐⭐ | 0.6s 确定性最终性           |
+| **商业潜力** | ⭐⭐⭐⭐⭐ | Stripe 生态，企业级场景     |
+| **战略价值** | ⭐⭐⭐⭐⭐ | 从 DeFi 链扩展到支付链      |
 
 **核心洞察**: Solana (DeFi 流动性) + Tempo (支付 + Agent commerce) = Gradience 成为真正的 multi-chain Agent Trust Protocol。
 
@@ -39,13 +39,13 @@ Tempo 档案:
 
 ### 1.2 技术架构
 
-| 特性 | 详情 | Gradience 相关性 |
-|------|------|-----------------|
-| **EVM 兼容** | Reth SDK, Osaka hardfork | Kernel 几乎零改动部署 |
-| **共识** | Simplex (Commonware) | 0.4-0.6s 块时间，确定性最终性 |
-| **性能** | >100k TPS 目标 | 金融级结算可靠性 |
-| **Gas** | 任意 stablecoin | Agent 记账友好，费用可预测 |
-| **智能账户** | 原生支持 | Agent 自动化友好 |
+| 特性         | 详情                     | Gradience 相关性              |
+| ------------ | ------------------------ | ----------------------------- |
+| **EVM 兼容** | Reth SDK, Osaka hardfork | Kernel 几乎零改动部署         |
+| **共识**     | Simplex (Commonware)     | 0.4-0.6s 块时间，确定性最终性 |
+| **性能**     | >100k TPS 目标           | 金融级结算可靠性              |
+| **Gas**      | 任意 stablecoin          | Agent 记账友好，费用可预测    |
+| **智能账户** | 原生支持                 | Agent 自动化友好              |
 
 ### 1.3 Machine Payments Protocol (MPP) — 杀手级特性
 
@@ -68,6 +68,7 @@ MPP 核心设计:
 ```
 
 **与 Gradience 的完美契合**:
+
 ```
 Gradience Agent Arena:
 Agent A 竞标 → Agent B 竞标 → Judge 评分 → 结算
@@ -79,12 +80,12 @@ Agent 自主决定参与                    自动按 Judge 分数分配
 
 ### 1.4 原生支付原语
 
-| 原语 | 功能 | Gradience 应用场景 |
-|------|------|-------------------|
-| **TempoStreamChannel** | 流式支付 Escrow | Agent 任务奖励流式发放 |
-| **Tempo Transactions** | 批量 + 赞助 gas + 定时 | 批量任务结算 |
-| **TIP-20** | Stablecoin 扩展 | 多币种支持 |
-| **Confidential Tx** | 隐私交易 (coming soon) | ZK KYC 对接 |
+| 原语                   | 功能                   | Gradience 应用场景     |
+| ---------------------- | ---------------------- | ---------------------- |
+| **TempoStreamChannel** | 流式支付 Escrow        | Agent 任务奖励流式发放 |
+| **Tempo Transactions** | 批量 + 赞助 gas + 定时 | 批量任务结算           |
+| **TIP-20**             | Stablecoin 扩展        | 多币种支持             |
+| **Confidential Tx**    | 隐私交易 (coming soon) | ZK KYC 对接            |
 
 ---
 
@@ -92,20 +93,21 @@ Agent 自主决定参与                    自动按 Judge 分数分配
 
 ### 2.1 维度对比表
 
-| 维度 | Gradience (Solana) | Tempo | 扩展价值 | 匹配度 |
-|------|-------------------|-------|---------|--------|
-| **Kernel 部署** | Rust/Anchor | EVM + Solidity | 零改动部署 | ⭐⭐⭐⭐⭐ |
-| **Agent 结算** | Escrow + channels | MPP sessions + StreamChannel | 原生为 Agent 设计 | ⭐⭐⭐⭐⭐ |
-| **竞争机制** | Judge 95/3/2 | 完全兼容 | 可用 stablecoin gas | ⭐⭐⭐⭐⭐ |
-| **隐私/ZK** | 上层 SDK (zkMe) | Confidential tx (soon) | 直接对齐论文 | ⭐⭐⭐⭐⭐ |
-| **性能** | 高吞吐，少量 re-org | 0.6s 确定性 | 金融结算更可靠 | ⭐⭐⭐⭐⭐ |
-| **经济** | SOL gas | Stablecoin gas | Agent 记账友好 | ⭐⭐⭐⭐⭐ |
-| **分发** | Solana DeFi | Stripe 网络 | 真实支付场景 | ⭐⭐⭐⭐⭐ |
-| **维护成本** | 已有实现 | 第二份部署 | EVM 工具链一致 | ⭐⭐⭐⭐ |
+| 维度            | Gradience (Solana)  | Tempo                        | 扩展价值            | 匹配度     |
+| --------------- | ------------------- | ---------------------------- | ------------------- | ---------- |
+| **Kernel 部署** | Rust/Anchor         | EVM + Solidity               | 零改动部署          | ⭐⭐⭐⭐⭐ |
+| **Agent 结算**  | Escrow + channels   | MPP sessions + StreamChannel | 原生为 Agent 设计   | ⭐⭐⭐⭐⭐ |
+| **竞争机制**    | Judge 95/3/2        | 完全兼容                     | 可用 stablecoin gas | ⭐⭐⭐⭐⭐ |
+| **隐私/ZK**     | 上层 SDK (zkMe)     | Confidential tx (soon)       | 直接对齐论文        | ⭐⭐⭐⭐⭐ |
+| **性能**        | 高吞吐，少量 re-org | 0.6s 确定性                  | 金融结算更可靠      | ⭐⭐⭐⭐⭐ |
+| **经济**        | SOL gas             | Stablecoin gas               | Agent 记账友好      | ⭐⭐⭐⭐⭐ |
+| **分发**        | Solana DeFi         | Stripe 网络                  | 真实支付场景        | ⭐⭐⭐⭐⭐ |
+| **维护成本**    | 已有实现            | 第二份部署                   | EVM 工具链一致      | ⭐⭐⭐⭐   |
 
 ### 2.2 核心优势：MPP 与 Agent Arena 的化学反应
 
 **当前流程 (Solana)**:
+
 ```
 1. Poster 发布任务
 2. Agents 竞标
@@ -115,6 +117,7 @@ Agent 自主决定参与                    自动按 Judge 分数分配
 ```
 
 **优化流程 (Tempo + MPP)**:
+
 ```
 1. Poster 发布任务
 2. Agents 竞标
@@ -128,6 +131,7 @@ Agent 自主决定参与                    自动按 Judge 分数分配
 ```
 
 **差异**:
+
 - Solana: 批处理，Agent 被动等待
 - Tempo: 流式，Agent 主动管理资金
 
@@ -180,14 +184,14 @@ Gradience Multi-Chain Strategy:
 
 ### 3.2 链上功能分配
 
-| 功能 | Solana | Tempo | 原因 |
-|------|--------|-------|------|
-| **Agent Arena 核心** | ✅ 主 | ✅ 副 | 双链部署 |
-| **高价值 DeFi 任务** | ✅ | ❌ | Solana 流动性更好 |
-| **企业支付任务** | ❌ | ✅ | Stripe 生态 |
-| **流式支付任务** | ❌ | ✅ | MPP 原生支持 |
-| **Reputation 积累** | ✅ 主 | ✅ 同步 | 跨链桥接 |
-| **ZK KYC 验证** | ✅ | ✅ | 双链支持 |
+| 功能                 | Solana | Tempo   | 原因              |
+| -------------------- | ------ | ------- | ----------------- |
+| **Agent Arena 核心** | ✅ 主  | ✅ 副   | 双链部署          |
+| **高价值 DeFi 任务** | ✅     | ❌      | Solana 流动性更好 |
+| **企业支付任务**     | ❌     | ✅      | Stripe 生态       |
+| **流式支付任务**     | ❌     | ✅      | MPP 原生支持      |
+| **Reputation 积累**  | ✅ 主  | ✅ 同步 | 跨链桥接          |
+| **ZK KYC 验证**      | ✅     | ✅      | 双链支持          |
 
 ---
 
@@ -200,22 +204,13 @@ Gradience Multi-Chain Strategy:
 ```typescript
 // 实施步骤
 const phase1 = {
-  week1: [
-    '设置 Tempo 开发环境',
-    '配置 Foundry/Hardhat',
-    '将 Solidity kernel 移植到 Tempo',
-    '部署到 Tempo testnet'
-  ],
-  week2: [
-    '测试 Escrow + Judge 流程',
-    '验证 95/3/2 分成逻辑',
-    '测试 Reputation 积累',
-    '部署到 Tempo mainnet'
-  ]
+    week1: ['设置 Tempo 开发环境', '配置 Foundry/Hardhat', '将 Solidity kernel 移植到 Tempo', '部署到 Tempo testnet'],
+    week2: ['测试 Escrow + Judge 流程', '验证 95/3/2 分成逻辑', '测试 Reputation 积累', '部署到 Tempo mainnet'],
 };
 ```
 
 **交付物**:
+
 - Tempo 上的 Agent Layer 合约
 - 测试报告
 - 部署文档
@@ -236,7 +231,7 @@ interface MPPIntegration {
     duration: number,          // session 有效期
     allowedRecipients: string[] // 允许支付对象
   ): Promise<MPPSession>;
-  
+
   // 流式支付奖励
   async streamReward(
     session: MPPSession,
@@ -244,7 +239,7 @@ interface MPPIntegration {
     amount: BN,
     schedule: 'instant' | 'linear' | 'milestone'
   ): Promise<StreamId>;
-  
+
   // Agent 自主支付
   async agentAutonomousPay(
     session: MPPSession,
@@ -254,7 +249,7 @@ interface MPPIntegration {
       reason: string;
     }
   ): Promise<PaymentResult>;
-  
+
   // HTTP 402 协商
   async negotiatePayment402(
     endpoint: string,
@@ -284,6 +279,7 @@ await mpp.agentAutonomousPay(session, {
 ```
 
 **交付物**:
+
 - MPP SDK 集成
 - 流式支付 demo
 - 文档和示例
@@ -302,13 +298,13 @@ interface ReputationBridge {
     solanaAgent: PublicKey,
     tempoAgent: Address
   ): Promise<ReputationProof>;
-  
+
   // 将 Tempo Reputation 证明到 Solana
   async syncReputationToSolana(
     tempoAgent: Address,
     solanaAgent: PublicKey
   ): Promise<ReputationProof>;
-  
+
   // 统一 Reputation 查询
   async getUnifiedReputation(
     agentId: string
@@ -328,6 +324,7 @@ const bridgeImplementation = {
 ```
 
 **交付物**:
+
 - 跨链桥合约
 - Reputation 同步机制
 - 统一查询接口
@@ -347,13 +344,13 @@ interface ConfidentialTempo {
     encryptedAmount: EncryptedValue,
     auditorKey?: PublicKey
   ): Promise<TransactionHash>;
-  
+
   // ZK KYC 验证
   async verifyZKKYC(
     zkProof: ZKProof,
     requiredAttributes: string[]
   ): Promise<boolean>;
-  
+
   // 隐私任务结算
   async settleTaskConfidential(
     taskId: string,
@@ -364,6 +361,7 @@ interface ConfidentialTempo {
 ```
 
 **交付物**:
+
 - 隐私支付 SDK
 - ZK KYC 集成
 - 完整隐私工作流
@@ -374,13 +372,13 @@ interface ConfidentialTempo {
 
 ### 5.1 新收入场景
 
-| 场景 | Solana | Tempo | 说明 |
-|------|--------|-------|------|
-| **DeFi Agent 任务** | ✅ | ❌ | 套利、清算等 |
-| **企业 Payroll** | ❌ | ✅ | Stripe 生态 |
-| **跨境 Remittance** | ❌ | ✅ | Visa/MC 网络 |
-| **订阅支付** | ❌ | ✅ | MPP streaming |
-| **电商结算** | ❌ | ✅ | 商家 Agent |
+| 场景                | Solana | Tempo | 说明          |
+| ------------------- | ------ | ----- | ------------- |
+| **DeFi Agent 任务** | ✅     | ❌    | 套利、清算等  |
+| **企业 Payroll**    | ❌     | ✅    | Stripe 生态   |
+| **跨境 Remittance** | ❌     | ✅    | Visa/MC 网络  |
+| **订阅支付**        | ❌     | ✅    | MPP streaming |
+| **电商结算**        | ❌     | ✅    | 商家 Agent    |
 
 ### 5.2 费用结构
 
@@ -502,13 +500,13 @@ This is how AI Agents do business.
 
 ## 7. 风险评估
 
-| 风险 | 概率 | 影响 | 应对 |
-|------|------|------|------|
-| Tempo 主网早期问题 | 中 | 高 | 先在 testnet 验证 |
-| MPP 学习成本 | 中 | 中 | 提供详细 SDK 文档 |
-| 双链维护成本 | 中 | 中 | 统一 SDK 抽象层 |
-| Reputation 碎片化 | 低 | 高 | 强跨链桥接设计 |
-| 社区分歧 | 低 | 中 | 明确 Solana 仍是主链 |
+| 风险               | 概率 | 影响 | 应对                 |
+| ------------------ | ---- | ---- | -------------------- |
+| Tempo 主网早期问题 | 中   | 高   | 先在 testnet 验证    |
+| MPP 学习成本       | 中   | 中   | 提供详细 SDK 文档    |
+| 双链维护成本       | 中   | 中   | 统一 SDK 抽象层      |
+| Reputation 碎片化  | 低   | 高   | 强跨链桥接设计       |
+| 社区分歧           | 低   | 中   | 明确 Solana 仍是主链 |
 
 ---
 
@@ -524,13 +522,13 @@ This is how AI Agents do business.
 
 ### 立即行动
 
-| 优先级 | 行动 | 时间 | 负责人 |
-|--------|------|------|--------|
-| P0 | 发 X 宣布 Tempo 计划 | 今天 | Marketing |
-| P0 | 设置 Tempo 开发环境 | 本周 | Dev |
-| P1 | Kernel 移植到 Tempo testnet | 下周 | Dev |
-| P1 | 联系 Tempo 团队 | 本周 | BD |
-| P2 | MPP SDK 研究 | 下周 | Research |
+| 优先级 | 行动                        | 时间 | 负责人    |
+| ------ | --------------------------- | ---- | --------- |
+| P0     | 发 X 宣布 Tempo 计划        | 今天 | Marketing |
+| P0     | 设置 Tempo 开发环境         | 本周 | Dev       |
+| P1     | Kernel 移植到 Tempo testnet | 下周 | Dev       |
+| P1     | 联系 Tempo 团队             | 本周 | BD        |
+| P2     | MPP SDK 研究                | 下周 | Research  |
 
 ### 一句话总结
 
@@ -538,5 +536,5 @@ This is how AI Agents do business.
 
 ---
 
-*最后更新: 2026-04-03*  
-*建议: 立即启动 Tempo 集成*
+_最后更新: 2026-04-03_  
+_建议: 立即启动 Tempo 集成_

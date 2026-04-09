@@ -34,7 +34,7 @@ gh auth login
 
 **原因**: 合约是基础层，其他所有仓库都依赖它。
 
-```bash
+````bash
 # 1. 在 GitHub 创建 gradience-protocol 仓库
 gh repo create yourorg/gradience-protocol --public
 
@@ -65,13 +65,16 @@ Solana 智能合约集合。
 ```bash
 cargo build
 cargo test
-```
+````
+
 EOF
 
 # 4. 推送到新仓库
+
 git remote add origin git@github.com:yourorg/gradience-protocol.git
 git push -u origin main
-```
+
+````
 
 ### Step 2: 设置 CI/CD
 
@@ -88,18 +91,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Build
         run: cargo build --release
-      
+
       - name: Generate IDL
         run: ./scripts/generate-idl.sh
-      
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: target/idl/*.json
-```
+````
 
 ### Step 3: Agent Arena 仓库
 
@@ -178,13 +181,13 @@ git push -u origin main
 ```yaml
 # .github/settings.yml
 branches:
-  - name: main
-    protection:
-      required_pull_request_reviews:
-        required_approving_review_count: 1
-      required_status_checks:
-        - ci/test
-        - ci/build
+    - name: main
+      protection:
+          required_pull_request_reviews:
+              required_approving_review_count: 1
+          required_status_checks:
+              - ci/test
+              - ci/build
 ```
 
 ### 2. Secrets
@@ -258,14 +261,14 @@ done
 
 ## 📅 迁移时间线
 
-| 阶段 | 时长 | 任务 |
-|------|------|------|
-| 准备 | 2天 | 创建仓库、配置 CI |
-| 合约迁移 | 3天 | gradience-protocol |
-| 应用迁移 | 5天 | arena、chain-hub、agentm |
-| 文档迁移 | 2天 | dev-docs |
-| 验证 | 3天 | 测试、修复问题 |
-| **总计** | **15天** | 约3周 |
+| 阶段     | 时长     | 任务                     |
+| -------- | -------- | ------------------------ |
+| 准备     | 2天      | 创建仓库、配置 CI        |
+| 合约迁移 | 3天      | gradience-protocol       |
+| 应用迁移 | 5天      | arena、chain-hub、agentm |
+| 文档迁移 | 2天      | dev-docs                 |
+| 验证     | 3天      | 测试、修复问题           |
+| **总计** | **15天** | 约3周                    |
 
 ---
 

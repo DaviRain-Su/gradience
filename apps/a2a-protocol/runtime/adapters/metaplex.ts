@@ -32,10 +32,7 @@ export class MetaplexAdapter {
     constructor(private readonly client: MetaplexRegistryClient) {}
 
     /** Discover agents ranked by reputation for A2A interaction */
-    async discoverAgents(options?: {
-        minScore?: number;
-        limit?: number;
-    }): Promise<MetaplexAgentEntry[]> {
+    async discoverAgents(options?: { minScore?: number; limit?: number }): Promise<MetaplexAgentEntry[]> {
         const agents = await this.client.listAgents({ limit: options?.limit ?? 50 });
 
         const filtered = options?.minScore
@@ -43,9 +40,7 @@ export class MetaplexAdapter {
             : agents;
 
         // Sort by reputation score descending
-        return filtered.sort(
-            (a, b) => (b.reputation?.avgScore ?? 0) - (a.reputation?.avgScore ?? 0),
-        );
+        return filtered.sort((a, b) => (b.reputation?.avgScore ?? 0) - (a.reputation?.avgScore ?? 0));
     }
 
     /** Resolve A2A envelope recipient to Metaplex agent identity */

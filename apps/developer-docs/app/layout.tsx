@@ -7,7 +7,8 @@ import { SearchDialog } from './components/SearchDialog';
 
 export const metadata: Metadata = {
     title: 'Gradience Developer Docs',
-    description: 'Documentation for the Gradience Protocol — Agent reputation, task escrow, and cross-chain verification.',
+    description:
+        'Documentation for the Gradience Protocol — Agent reputation, task escrow, and cross-chain verification.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,9 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex min-h-screen pt-16">
                     <Sidebar />
                     <main className="flex-1 min-w-0 lg:ml-64 xl:mr-56">
-                        <div className="max-w-4xl mx-auto px-6 py-8">
-                            {children}
-                        </div>
+                        <div className="max-w-4xl mx-auto px-6 py-8">{children}</div>
                     </main>
                     <TableOfContents />
                 </div>

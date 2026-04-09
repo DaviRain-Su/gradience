@@ -24,16 +24,16 @@ flowchart TB
             UI[ChatView / DiscoverView]
             A2AHook[useA2A Hook]
         end
-        
+
         subgraph Main["Main Process (Node.js)"]
             Router[A2A Router]
-            
+
             subgraph Protocols["Protocol Adapters"]
                 NostrAdapter[Nostr Adapter]
                 Libp2pAdapter[libp2p Adapter]
                 MagicBlockAdapter[MagicBlock Adapter]
             end
-            
+
             subgraph Nodes["Network Nodes"]
                 NostrClient[Nostr Client
                     nip-04 encrypt
@@ -47,7 +47,7 @@ flowchart TB
             end
         end
     end
-    
+
     subgraph External["External Networks"]
         NostrRelays[Nostr Relays
             wss://relay.damus.io
@@ -58,17 +58,17 @@ flowchart TB
                     DHT]
         Solana[Solana L1]
     end
-    
+
     UI --> A2AHook
     A2AHook -->|IPC| Router
     Router --> NostrAdapter
     Router --> Libp2pAdapter
     Router --> MagicBlockAdapter
-    
+
     NostrAdapter --> NostrClient
     Libp2pAdapter --> Libp2pNode
     MagicBlockAdapter --> MagicBlockClient
-    
+
     NostrClient --> NostrRelays
     Libp2pNode --> Libp2pNetwork
     MagicBlockClient --> Solana
@@ -85,29 +85,29 @@ flowchart TB
 ```typescript
 // apps/agentm/src/main/a2a-router/router.ts
 export class A2ARouter {
-  constructor(
-    private nostr: NostrAdapter,
-    private libp2p: Libp2pAdapter,
-    private magicblock: MagicBlockAdapter,
-  ) {}
+    constructor(
+        private nostr: NostrAdapter,
+        private libp2p: Libp2pAdapter,
+        private magicblock: MagicBlockAdapter,
+    ) {}
 
-  async send(intent: A2AIntent): Promise<A2AResult> {
-    const protocol = this.selectProtocol(intent);
-    return protocol.send(intent);
-  }
-
-  private selectProtocol(intent: A2AIntent): ProtocolAdapter {
-    switch (intent.type) {
-      case 'BROADCAST':
-        return this.nostr; // 公开广播 → Nostr
-      case 'DIRECT_P2P':
-        return this.libp2p; // 直接协商 → libp2p
-      case 'PAID_SERVICE':
-        return this.magicblock; // 付费服务 → MagicBlock
-      case 'OFFLINE_MESSAGE':
-        return this.nostr; // 离线消息 → Nostr
+    async send(intent: A2AIntent): Promise<A2AResult> {
+        const protocol = this.selectProtocol(intent);
+        return protocol.send(intent);
     }
-  }
+
+    private selectProtocol(intent: A2AIntent): ProtocolAdapter {
+        switch (intent.type) {
+            case 'BROADCAST':
+                return this.nostr; // 公开广播 → Nostr
+            case 'DIRECT_P2P':
+                return this.libp2p; // 直接协商 → libp2p
+            case 'PAID_SERVICE':
+                return this.magicblock; // 付费服务 → MagicBlock
+            case 'OFFLINE_MESSAGE':
+                return this.nostr; // 离线消息 → Nostr
+        }
+    }
 }
 ```
 
@@ -118,12 +118,12 @@ export class A2ARouter {
 ```typescript
 // apps/agentm/src/main/a2a-router/adapters/nostr-adapter.ts
 export class NostrAdapter implements ProtocolAdapter {
-  private pool: SimplePool;
-  private relays: string[];
-  
-  async broadcast(agent: AgentProfile): Promise<void>;
-  async sendDM(to: string, message: string): Promise<void>;
-  async subscribe(filter: NostrFilter, callback: (event) => void): Promise<Subscription>;
+    private pool: SimplePool;
+    private relays: string[];
+
+    async broadcast(agent: AgentProfile): Promise<void>;
+    async sendDM(to: string, message: string): Promise<void>;
+    async subscribe(filter: NostrFilter, callback: (event) => void): Promise<Subscription>;
 }
 ```
 
@@ -134,12 +134,12 @@ export class NostrAdapter implements ProtocolAdapter {
 ```typescript
 // apps/agentm/src/main/a2a-router/adapters/libp2p-adapter.ts
 export class Libp2pAdapter implements ProtocolAdapter {
-  private node: Libp2pNode;
-  
-  async dial(peerId: string): Promise<Connection>;
-  async sendDirect(peerId: string, message: Uint8Array): Promise<void>;
-  async publish(topic: string, message: Uint8Array): Promise<void>;
-  async subscribe(topic: string, handler: (msg) => void): Promise<void>;
+    private node: Libp2pNode;
+
+    async dial(peerId: string): Promise<Connection>;
+    async sendDirect(peerId: string, message: Uint8Array): Promise<void>;
+    async publish(topic: string, message: Uint8Array): Promise<void>;
+    async subscribe(topic: string, handler: (msg) => void): Promise<void>;
 }
 ```
 
@@ -150,7 +150,7 @@ export class Libp2pAdapter implements ProtocolAdapter {
 ```typescript
 // 现有代码，无需修改
 export class MagicBlockAdapter implements ProtocolAdapter {
-  async sendWithPayment(intent: PaidIntent): Promise<Receipt>;
+    async sendWithPayment(intent: PaidIntent): Promise<Receipt>;
 }
 ```
 
@@ -212,7 +212,7 @@ sequenceDiagram
     Nostr->>Nostr: nip-04 encrypt
     Nostr->>Relay: publish(kind: 4)
     Relay-->>Relay: store(event)
-    
+
     Note over AgentB: Agent B comes online
     AgentB->>Relay: subscribe(kind: 4, p: B)
     Relay-->>AgentB: historical events
@@ -228,38 +228,34 @@ sequenceDiagram
 ```typescript
 // apps/agentm/src/shared/a2a-types.ts
 
-export type A2AIntent =
-  | BroadcastIntent
-  | DirectP2PIntent
-  | PaidServiceIntent
-  | OfflineMessageIntent;
+export type A2AIntent = BroadcastIntent | DirectP2PIntent | PaidServiceIntent | OfflineMessageIntent;
 
 export interface BroadcastIntent {
-  type: 'BROADCAST';
-  payload: AgentProfile;
-  ttl?: number; // 广播有效期
+    type: 'BROADCAST';
+    payload: AgentProfile;
+    ttl?: number; // 广播有效期
 }
 
 export interface DirectP2PIntent {
-  type: 'DIRECT_P2P';
-  to: string; // peerId 或 agent address
-  payload: NegotiationPayload;
-  timeout?: number;
+    type: 'DIRECT_P2P';
+    to: string; // peerId 或 agent address
+    payload: NegotiationPayload;
+    timeout?: number;
 }
 
 export interface PaidServiceIntent {
-  type: 'PAID_SERVICE';
-  to: string;
-  service: string;
-  payment: PaymentTerms;
-  payload: unknown;
+    type: 'PAID_SERVICE';
+    to: string;
+    service: string;
+    payment: PaymentTerms;
+    payload: unknown;
 }
 
 export interface OfflineMessageIntent {
-  type: 'OFFLINE_MESSAGE';
-  to: string; // Nostr pubkey
-  payload: MessagePayload;
-  priority?: 'high' | 'normal' | 'low';
+    type: 'OFFLINE_MESSAGE';
+    to: string; // Nostr pubkey
+    payload: MessagePayload;
+    priority?: 'high' | 'normal' | 'low';
 }
 ```
 
@@ -267,25 +263,20 @@ export interface OfflineMessageIntent {
 
 ```typescript
 export interface ProtocolAdapter {
-  readonly name: string;
-  readonly capabilities: ProtocolCapability[];
-  
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  
-  send(intent: A2AIntent): Promise<A2AResult>;
-  subscribe(filter: Filter, handler: Handler): Promise<Subscription>;
-  
-  // 健康检查
-  health(): Promise<HealthStatus>;
+    readonly name: string;
+    readonly capabilities: ProtocolCapability[];
+
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+
+    send(intent: A2AIntent): Promise<A2AResult>;
+    subscribe(filter: Filter, handler: Handler): Promise<Subscription>;
+
+    // 健康检查
+    health(): Promise<HealthStatus>;
 }
 
-export type ProtocolCapability = 
-  | 'broadcast' 
-  | 'direct_p2p' 
-  | 'offline_storage' 
-  | 'payment' 
-  | 'realtime_streaming';
+export type ProtocolCapability = 'broadcast' | 'direct_p2p' | 'offline_storage' | 'payment' | 'realtime_streaming';
 ```
 
 ---
@@ -322,13 +313,13 @@ libp2p Bootstrap (可选)
 
 ## 2.7 安全考虑
 
-| 威胁 | 缓解措施 |
-|------|---------|
-| Nostr relay 审查 | 多 relay 策略，至少连接 3 个 |
-| P2P 连接伪造 | 链上身份验证，连接前验证 Agent 签名 |
-| 消息窃听 | nip-04 加密 (短期)，未来迁移 nip-44 |
-| DHT 污染 | 验证 peer 的链上声誉 |
-| Sybil 攻击 | Agent 注册需链上质押 |
+| 威胁             | 缓解措施                            |
+| ---------------- | ----------------------------------- |
+| Nostr relay 审查 | 多 relay 策略，至少连接 3 个        |
+| P2P 连接伪造     | 链上身份验证，连接前验证 Agent 签名 |
+| 消息窃听         | nip-04 加密 (短期)，未来迁移 nip-44 |
+| DHT 污染         | 验证 peer 的链上声誉                |
+| Sybil 攻击       | Agent 注册需链上质押                |
 
 ---
 
@@ -353,17 +344,17 @@ A2A Router
 
 ### 2.9.1 已完成的组件
 
-| 组件 | 状态 | 文件路径 |
-|------|------|----------|
-| A2ARouter | ✅ 完成 | `src/main/a2a-router/router.ts` |
-| NostrAdapter | ✅ 完成 | `src/main/a2a-router/adapters/nostr-adapter.ts` |
-| Libp2pAdapter | ✅ 完成 | `src/main/a2a-router/adapters/libp2p-adapter.ts` |
+| 组件              | 状态    | 文件路径                                             |
+| ----------------- | ------- | ---------------------------------------------------- |
+| A2ARouter         | ✅ 完成 | `src/main/a2a-router/router.ts`                      |
+| NostrAdapter      | ✅ 完成 | `src/main/a2a-router/adapters/nostr-adapter.ts`      |
+| Libp2pAdapter     | ✅ 完成 | `src/main/a2a-router/adapters/libp2p-adapter.ts`     |
 | MagicBlockAdapter | ✅ 完成 | `src/main/a2a-router/adapters/magicblock-adapter.ts` |
-| useA2A Hook | ✅ 完成 | `src/renderer/hooks/useA2A.ts` |
-| DiscoverView 集成 | ✅ 完成 | `src/renderer/views/DiscoverView.tsx` |
-| ChatView 集成 | ✅ 完成 | `src/renderer/views/ChatView.tsx` |
-| A2ASettings 组件 | ✅ 完成 | `src/renderer/components/a2a-settings.tsx` |
-| API Server 集成 | ✅ 完成 | `src/main/a2a-api-integration.ts` |
+| useA2A Hook       | ✅ 完成 | `src/renderer/hooks/useA2A.ts`                       |
+| DiscoverView 集成 | ✅ 完成 | `src/renderer/views/DiscoverView.tsx`                |
+| ChatView 集成     | ✅ 完成 | `src/renderer/views/ChatView.tsx`                    |
+| A2ASettings 组件  | ✅ 完成 | `src/renderer/components/a2a-settings.tsx`           |
+| API Server 集成   | ✅ 完成 | `src/main/a2a-api-integration.ts`                    |
 
 ### 2.9.2 协议选择逻辑
 
@@ -371,24 +362,24 @@ A2A Router
 
 ```typescript
 const router = new A2ARouter({
-  protocolPriority: {
-    broadcast: ['nostr', 'libp2p'],      // 广播优先使用 Nostr
-    direct_p2p: ['libp2p', 'nostr'],     // P2P 优先使用 libp2p
-    paid_service: ['magicblock'],         // 付费服务使用 MagicBlock
-    offline_message: ['nostr'],           // 离线消息使用 Nostr
-  },
+    protocolPriority: {
+        broadcast: ['nostr', 'libp2p'], // 广播优先使用 Nostr
+        direct_p2p: ['libp2p', 'nostr'], // P2P 优先使用 libp2p
+        paid_service: ['magicblock'], // 付费服务使用 MagicBlock
+        offline_message: ['nostr'], // 离线消息使用 Nostr
+    },
 });
 ```
 
 ### 2.9.3 消息类型映射
 
-| A2A 消息类型 | Nostr | libp2p | MagicBlock |
-|-------------|-------|--------|------------|
-| `direct_message` | kind: 4 (DM) | direct protocol | topic: general |
-| `capability_offer` | kind: 10002 | gossipsub | topic: agent_presence |
-| `task_proposal` | kind: 30078 | direct protocol | topic: task_proposal |
-| `task_accept` | kind: 30078 | direct protocol | topic: task_accept |
-| `payment_request` | kind: 30078 | - | topic: payment_request |
+| A2A 消息类型       | Nostr        | libp2p          | MagicBlock             |
+| ------------------ | ------------ | --------------- | ---------------------- |
+| `direct_message`   | kind: 4 (DM) | direct protocol | topic: general         |
+| `capability_offer` | kind: 10002  | gossipsub       | topic: agent_presence  |
+| `task_proposal`    | kind: 30078  | direct protocol | topic: task_proposal   |
+| `task_accept`      | kind: 30078  | direct protocol | topic: task_accept     |
+| `payment_request`  | kind: 30078  | -               | topic: payment_request |
 
 ---
 

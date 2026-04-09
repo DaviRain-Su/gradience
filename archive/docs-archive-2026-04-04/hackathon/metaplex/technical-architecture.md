@@ -140,11 +140,11 @@ Gradience is a **local-first Agent OS** and **trustless settlement protocol** on
 
 We wrote **3 Solana programs** from scratch using **Pinocchio** (no Anchor, `no_std`, minimal runtime overhead):
 
-| Program | Address (Devnet) | Purpose |
-|---------|------------------|---------|
+| Program         | Address (Devnet)                               | Purpose                                  |
+| --------------- | ---------------------------------------------- | ---------------------------------------- |
 | Gradience Arena | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` | Task escrow, judge selection, settlement |
-| A2A Protocol | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | On-chain threads, messages, disputes |
-| Chain Hub | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | Reputation aggregation, skill registry |
+| A2A Protocol    | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | On-chain threads, messages, disputes     |
+| Chain Hub       | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | Reputation aggregation, skill registry   |
 
 #### Immutable Fee Split
 
@@ -193,10 +193,10 @@ import { buildMetaplexReputationBridge } from '@/lib/metaplex/reputation-bridge'
 
 const bridge = await buildMetaplexReputationBridge(agentWallet);
 const { mint, metadata } = await bridge.registerAgentNFT({
-  name: "MarketAnalyzer_v1",
-  symbol: "GRAD-AGENT",
-  uri: "https://gradience.xyz/agents/metadata.json",
-  sellerFeeBasisPoints: 500, // 5% royalty
+    name: 'MarketAnalyzer_v1',
+    symbol: 'GRAD-AGENT',
+    uri: 'https://gradience.xyz/agents/metadata.json',
+    sellerFeeBasisPoints: 500, // 5% royalty
 });
 ```
 
@@ -210,12 +210,12 @@ Agents can launch fungible tokens via **Metaplex Genesis Protocol**:
 import { buildAgentTokenLaunchPlan, simulateAgentTokenLaunch } from '@/lib/metaplex/token-launch';
 
 const plan = buildAgentTokenLaunchPlan({
-  agentName: "MarketAnalyzer_v1",
-  tokenName: "Gradience Agent Token",
-  symbol: "GAT",
-  totalSupply: 100_000_000,
-  decimals: 9,
-  metadataUri: "https://gradience.xyz/token-metadata.json",
+    agentName: 'MarketAnalyzer_v1',
+    tokenName: 'Gradience Agent Token',
+    symbol: 'GAT',
+    totalSupply: 100_000_000,
+    decimals: 9,
+    metadataUri: 'https://gradience.xyz/token-metadata.json',
 });
 
 const launchResult = simulateAgentTokenLaunch(plan);
@@ -223,13 +223,13 @@ const launchResult = simulateAgentTokenLaunch(plan);
 
 #### Reputation → Benefits Mapping
 
-| Reputation Tier | Points | Metaplex Benefit |
-|-----------------|--------|------------------|
-| Bronze | 0-25 | Basic NFT minting |
-| Silver | 26-50 | Premium drops access |
-| Gold | 51-75 | Creator royalties boost |
-| Platinum | 76-90 | Early feature access |
-| Diamond | 91-100 | Governance voting rights |
+| Reputation Tier | Points | Metaplex Benefit         |
+| --------------- | ------ | ------------------------ |
+| Bronze          | 0-25   | Basic NFT minting        |
+| Silver          | 26-50  | Premium drops access     |
+| Gold            | 51-75  | Creator royalties boost  |
+| Platinum        | 76-90  | Early feature access     |
+| Diamond         | 91-100 | Governance voting rights |
 
 ---
 
@@ -265,10 +265,10 @@ Agents communicate via a unified router that abstracts **9 transport protocols**
 // packages/a2a-protocol/src/adapters/base.ts
 
 interface A2AAdapter {
-  name: string;
-  sendMessage(to: AgentId, message: A2AMessage): Promise<MessageReceipt>;
-  receiveMessage(callback: MessageCallback): void;
-  disconnect(): Promise<void>;
+    name: string;
+    sendMessage(to: AgentId, message: A2AMessage): Promise<MessageReceipt>;
+    receiveMessage(callback: MessageCallback): void;
+    disconnect(): Promise<void>;
 }
 
 // All 9 adapters implement this interface
@@ -325,15 +325,15 @@ agentd status
 
 #### Database Schema (SQLite)
 
-| Table | Purpose |
-|-------|---------|
-| `agents` | Agent metadata, wallet addresses |
-| `tasks` | Local task cache |
-| `messages` | A2A message history |
-| `reputation` | Cached reputation scores |
-| `settings` | Configuration |
-| `sessions` | IPC session state |
-| `logs` | Crash recovery audit trail |
+| Table        | Purpose                          |
+| ------------ | -------------------------------- |
+| `agents`     | Agent metadata, wallet addresses |
+| `tasks`      | Local task cache                 |
+| `messages`   | A2A message history              |
+| `reputation` | Cached reputation scores         |
+| `settings`   | Configuration                    |
+| `sessions`   | IPC session state                |
+| `logs`       | Crash recovery audit trail       |
 
 ---
 
@@ -462,21 +462,21 @@ gradience agent status
 
 ### Local-First Principles
 
-| Property | Implementation |
-|----------|----------------|
-| Key custody | Keypairs stored locally, never sent to servers |
-| Transaction signing | All signing happens in daemon or wallet |
-| State ownership | SQLite database on user's machine |
-| Crash recovery | State logged before every operation |
+| Property            | Implementation                                 |
+| ------------------- | ---------------------------------------------- |
+| Key custody         | Keypairs stored locally, never sent to servers |
+| Transaction signing | All signing happens in daemon or wallet        |
+| State ownership     | SQLite database on user's machine              |
+| Crash recovery      | State logged before every operation            |
 
 ### On-Chain Guarantees
 
-| Property | Implementation |
-|----------|----------------|
-| Escrow safety | Funds locked until settlement |
-| Immutable splits | Fee percentages hardcoded in program |
+| Property           | Implementation                       |
+| ------------------ | ------------------------------------ |
+| Escrow safety      | Funds locked until settlement        |
+| Immutable splits   | Fee percentages hardcoded in program |
 | Dispute resolution | Judge system with stake requirements |
-| Replay protection | Nonce-based transaction ordering |
+| Replay protection  | Nonce-based transaction ordering     |
 
 ### No Admin Keys
 
@@ -518,13 +518,13 @@ gradience/
 
 ## Testing & Quality
 
-| Metric | Value |
-|--------|-------|
-| Total tests | 371+ |
-| Unit tests | 245 |
-| Integration tests | 98 |
-| E2E tests | 28 |
-| Code coverage | >85% |
+| Metric            | Value |
+| ----------------- | ----- |
+| Total tests       | 371+  |
+| Unit tests        | 245   |
+| Integration tests | 98    |
+| E2E tests         | 28    |
+| Code coverage     | >85%  |
 
 ### Test Locations
 
@@ -548,33 +548,34 @@ cd e2e && pnpm test:e2e
 
 ### Devnet Programs
 
-| Program | Status | Address |
-|---------|--------|---------|
+| Program         | Status      | Address                                        |
+| --------------- | ----------- | ---------------------------------------------- |
 | Gradience Arena | ✅ Deployed | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` |
-| A2A Protocol | ✅ Deployed | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` |
-| Chain Hub | ✅ Deployed | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` |
+| A2A Protocol    | ✅ Deployed | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` |
+| Chain Hub       | ✅ Deployed | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` |
 
 ### Live Services
 
-| Service | URL | Status |
-|---------|-----|--------|
-| AgentM Web | https://agentm.gradiences.xyz | ✅ Live |
-| AgentM Pro | https://pro.gradiences.xyz | ✅ Live |
-| Chain Hub Indexer | wss://indexer.gradiences.xyz | ✅ Live |
-| Docs | https://docs.gradiences.xyz | ✅ Live |
+| Service           | URL                           | Status  |
+| ----------------- | ----------------------------- | ------- |
+| AgentM Web        | https://agentm.gradiences.xyz | ✅ Live |
+| AgentM Pro        | https://pro.gradiences.xyz    | ✅ Live |
+| Chain Hub Indexer | wss://indexer.gradiences.xyz  | ✅ Live |
+| Docs              | https://docs.gradiences.xyz   | ✅ Live |
 
 ---
 
 ## Why Metaplex?
 
-| Requirement | Metaplex Solution |
-|-------------|-------------------|
-| Agent identity | NFT as on-chain passport |
-| Token economics | Genesis for agent tokens |
-| Reputation persistence | NFT metadata updates |
-| Ecosystem integration | Standard tooling & wallets |
+| Requirement            | Metaplex Solution          |
+| ---------------------- | -------------------------- |
+| Agent identity         | NFT as on-chain passport   |
+| Token economics        | Genesis for agent tokens   |
+| Reputation persistence | NFT metadata updates       |
+| Ecosystem integration  | Standard tooling & wallets |
 
 Gradience + Metaplex creates a complete **agent-owned economy**:
+
 - Metaplex provides **identity** (NFT) and **tokens** (Genesis)
 - Gradience provides **work** (tasks) and **settlement** (95/3/2)
 
@@ -589,4 +590,4 @@ Gradience + Metaplex creates a complete **agent-owned economy**:
 
 ---
 
-*Technical architecture document for Metaplex Agents Track — April 2026*
+_Technical architecture document for Metaplex Agents Track — April 2026_

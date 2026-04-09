@@ -4,17 +4,8 @@ import { address } from '@solana/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { OpenWalletAdapter } from '@gradiences/sdk';
 
-import {
-    loadActiveProfileId,
-    loadProfiles,
-    saveActiveProfileId,
-    saveProfiles,
-} from '../lib/wallet-storage';
-import {
-    createProfile,
-    parseKeypairAddress,
-    type WalletProfile,
-} from '../lib/wallet-utils';
+import { loadActiveProfileId, loadProfiles, saveActiveProfileId, saveProfiles } from '../lib/wallet-storage';
+import { createProfile, parseKeypairAddress, type WalletProfile } from '../lib/wallet-utils';
 
 interface WalletManagerProps {
     onActiveAddressChange: (address: string | null) => void;
@@ -34,7 +25,7 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
         const storedActive = loadActiveProfileId();
         setProfiles(storedProfiles);
         const activeExists = storedActive && storedProfiles.some((item) => item.id === storedActive);
-        setActiveProfileId(activeExists ? storedActive : storedProfiles[0]?.id ?? null);
+        setActiveProfileId(activeExists ? storedActive : (storedProfiles[0]?.id ?? null));
         setHydrated(true);
     }, []);
 
@@ -63,11 +54,7 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
         try {
             const parsedAddress = address(openWalletAddressInput.trim());
             new OpenWalletAdapter(parsedAddress);
-            const profile = createProfile(
-                'openwallet',
-                labelInput,
-                String(parsedAddress),
-            );
+            const profile = createProfile('openwallet', labelInput, String(parsedAddress));
             setProfiles((current) => [profile, ...current]);
             setActiveProfileId(profile.id);
             setLabelInput('');
@@ -81,11 +68,7 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
         setError(null);
         try {
             const parsedAddress = await parseKeypairAddress(keypairInput.trim());
-            const profile = createProfile(
-                'local_keypair',
-                labelInput,
-                String(parsedAddress),
-            );
+            const profile = createProfile('local_keypair', labelInput, String(parsedAddress));
             setProfiles((current) => [profile, ...current]);
             setActiveProfileId(profile.id);
             setLabelInput('');
@@ -108,9 +91,7 @@ export function WalletManager({ onActiveAddressChange }: WalletManagerProps) {
     return (
         <section className="panel">
             <h2>Wallet Management (OpenWallet)</h2>
-            <p className="muted">
-                Active wallet is used for reputation and task history queries.
-            </p>
+            <p className="muted">Active wallet is used for reputation and task history queries.</p>
             {activeProfile ? (
                 <p>
                     Active: <strong>{activeProfile.label}</strong> ({activeProfile.type})<br />

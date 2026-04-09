@@ -157,18 +157,12 @@ export class A2ARouter {
 
         // Send with timeout
         const timeout = intent.timeout ?? this.options.messageTimeout;
-        const result = await this.withTimeout(
-            adapter.send(message),
-            timeout,
-            `Message timeout after ${timeout}ms`
-        );
+        const result = await this.withTimeout(adapter.send(message), timeout, `Message timeout after ${timeout}ms`);
 
         return result;
     }
 
-    async subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<() => Promise<void>> {
+    async subscribe(handler: (message: A2AMessage) => void | Promise<void>): Promise<() => Promise<void>> {
         this.ensureInitialized();
 
         this.messageHandlers.push(handler);
@@ -316,11 +310,7 @@ export class A2ARouter {
         }, this.options.healthCheckInterval);
     }
 
-    private async withTimeout<T>(
-        promise: Promise<T>,
-        timeoutMs: number,
-        errorMessage: string
-    ): Promise<T> {
+    private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
         return Promise.race([
             promise,
             new Promise<T>((_, reject) => {
@@ -336,7 +326,6 @@ export class A2ARouter {
             if (protocol === 'nostr') {
                 return (adapter as NostrAdapter)['client'].getPublicKey();
             }
-
         }
         return 'unknown';
     }

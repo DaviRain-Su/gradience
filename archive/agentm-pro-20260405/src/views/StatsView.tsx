@@ -65,13 +65,9 @@ export function StatsView({ owner }: { owner: string }) {
                                     label="Completed Tasks"
                                     value={String(stats.reputation.completed)}
                                 />
-                                <StatCard
-                                    testId="stats-data-source-value"
-                                    label="Data Source"
-                                    value={stats.source}
-                                />
+                                <StatCard testId="stats-data-source-value" label="Data Source" value={stats.source} />
                             </div>
-                    <ReputationScore reputation={stats.reputation} />
+                            <ReputationScore reputation={stats.reputation} />
                             <RevenueChart values={stats.monthlyRevenueLamports} />
                         </>
                     )}
@@ -85,7 +81,9 @@ function StatCard({ label, value, testId }: { label: string; value: string; test
     return (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-xs text-gray-500">{label}</p>
-            <p data-testid={testId} className="text-xl font-semibold mt-1">{value}</p>
+            <p data-testid={testId} className="text-xl font-semibold mt-1">
+                {value}
+            </p>
         </div>
     );
 }

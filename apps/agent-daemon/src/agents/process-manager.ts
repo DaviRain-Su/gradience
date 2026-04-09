@@ -88,15 +88,25 @@ export class ProcessManager extends EventEmitter {
         }
 
         const now = Date.now();
-        this.db.prepare(`
+        this.db
+            .prepare(
+                `
             INSERT INTO agents (id, name, command, args, cwd, env, auto_start, max_restarts, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            config.id, config.name, config.command,
-            JSON.stringify(config.args), config.cwd ?? null,
-            JSON.stringify(config.env ?? {}),
-            config.autoStart ? 1 : 0, config.maxRestarts, now, now,
-        );
+        `,
+            )
+            .run(
+                config.id,
+                config.name,
+                config.command,
+                JSON.stringify(config.args),
+                config.cwd ?? null,
+                JSON.stringify(config.env ?? {}),
+                config.autoStart ? 1 : 0,
+                config.maxRestarts,
+                now,
+                now,
+            );
 
         this.processes.set(config.id, {
             config,
@@ -119,9 +129,15 @@ export class ProcessManager extends EventEmitter {
             throw new DaemonError(ErrorCodes.AGENT_ALREADY_RUNNING, 'Agent is already running', 409);
         }
 
-        const runningCount = [...this.processes.values()].filter((p) => p.state === 'running' || p.state === 'starting').length;
+        const runningCount = [...this.processes.values()].filter(
+            (p) => p.state === 'running' || p.state === 'starting',
+        ).length;
         if (runningCount >= this.maxProcesses) {
-            throw new DaemonError(ErrorCodes.AGENT_LIMIT_REACHED, `Max ${this.maxProcesses} agent processes reached`, 429);
+            throw new DaemonError(
+                ErrorCodes.AGENT_LIMIT_REACHED,
+                `Max ${this.maxProcesses} agent processes reached`,
+                429,
+            );
         }
 
         proc.state = 'starting';

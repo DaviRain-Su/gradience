@@ -15,14 +15,14 @@ While other AI agents help you complete tasks, AgentMe lives alongside you — l
 
 ### Key Differentiators
 
-| Aspect | Traditional AI Agents | AgentMe |
-|--------|----------------------|---------|
-| **Scope** | Specific scenes (work, calendar) | **Whole life** (work + life + emotional) |
-| **Speed** | 2-5 seconds response | **50-200ms** (hot path) |
-| **Relationship** | Transactional | **Relational** |
-| **Memory** | Session-based | **Persistent, deep, evolving** |
-| **Presence** | On-demand | **Always there** |
-| **Optimization** | Generic for all users | **Per-user execution paths** |
+| Aspect           | Traditional AI Agents            | AgentMe                                  |
+| ---------------- | -------------------------------- | ---------------------------------------- |
+| **Scope**        | Specific scenes (work, calendar) | **Whole life** (work + life + emotional) |
+| **Speed**        | 2-5 seconds response             | **50-200ms** (hot path)                  |
+| **Relationship** | Transactional                    | **Relational**                           |
+| **Memory**       | Session-based                    | **Persistent, deep, evolving**           |
+| **Presence**     | On-demand                        | **Always there**                         |
+| **Optimization** | Generic for all users            | **Per-user execution paths**             |
 
 ---
 
@@ -92,6 +92,7 @@ LLM推理 (500ms)              模式匹配
 ```
 
 **Documents**:
+
 - [OpenClaw Tool Chain Optimization](./openclaw-tool-chain-optimization.md) - Technical architecture
 - [Execution Optimization Landscape](./execution-optimization-landscape.md) - Competitive analysis
 
@@ -100,6 +101,7 @@ LLM推理 (500ms)              模式匹配
 Learns how you work, live, and interact.
 
 **Three Learning Modes**:
+
 - **Explicit**: Direct feedback ("这个建议不好")
 - **Implicit**: Behavioral patterns (completion rates, reschedules)
 - **Environmental**: Time, location, calendar context
@@ -113,6 +115,7 @@ Learns how you work, live, and interact.
 The "soul" that transforms tool into presence.
 
 **Capabilities**:
+
 - Emotional state detection ("那个 sigh... 我听到了")
 - Proactive presence (not just reactive)
 - Whole-life context (work stress affecting evening mood)
@@ -151,13 +154,13 @@ The "soul" that transforms tool into presence.
 
 ### Key Competitors Analyzed
 
-| Product | What They Do | What AgentMe Does Better |
-|---------|-------------|-------------------------|
-| **Linear Agent** | Work scene AI (Mar 2026 launch) | Whole life scope + speed optimization |
-| **MEM9/DB9** | Memory/knowledge layer | Execution optimization layer |
-| **11.ai** | Voice-first assistant | Per-user execution paths + emotional |
-| **ChatGPT Voice** | Generic voice AI | Personalized, anticipatory, faster |
-| **Academic caching** | Generic tool caching | User-specific execution chains |
+| Product              | What They Do                    | What AgentMe Does Better              |
+| -------------------- | ------------------------------- | ------------------------------------- |
+| **Linear Agent**     | Work scene AI (Mar 2026 launch) | Whole life scope + speed optimization |
+| **MEM9/DB9**         | Memory/knowledge layer          | Execution optimization layer          |
+| **11.ai**            | Voice-first assistant           | Per-user execution paths + emotional  |
+| **ChatGPT Voice**    | Generic voice AI                | Personalized, anticipatory, faster    |
+| **Academic caching** | Generic tool caching            | User-specific execution chains        |
 
 **Full Analysis**: [Execution Optimization Landscape](./execution-optimization-landscape.md)
 
@@ -167,48 +170,52 @@ The "soul" that transforms tool into presence.
 
 ### Core Technologies
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Voice Interface** | Gemini 3.1 Flash Live | <1s latency, native audio-to-audio |
-| **Execution Engine** | OpenClaw Runtime | Personal infrastructure |
-| **Pattern Cache** | Local SQLite/Memory | <1ms lookup |
-| **Long-term Memory** | MEM9/DB9 integration | Cross-session knowledge |
-| **Optimization** | AutoResearch loop | Continuous improvement |
-| **Privacy** | Local-first | User owns their data |
+| Component            | Technology            | Purpose                            |
+| -------------------- | --------------------- | ---------------------------------- |
+| **Voice Interface**  | Gemini 3.1 Flash Live | <1s latency, native audio-to-audio |
+| **Execution Engine** | OpenClaw Runtime      | Personal infrastructure            |
+| **Pattern Cache**    | Local SQLite/Memory   | <1ms lookup                        |
+| **Long-term Memory** | MEM9/DB9 integration  | Cross-session knowledge            |
+| **Optimization**     | AutoResearch loop     | Continuous improvement             |
+| **Privacy**          | Local-first           | User owns their data               |
 
 ### Performance Targets
 
-| Metric | Target | Current State |
-|--------|--------|---------------|
-| **Hot path latency** | 50-200ms | Design phase |
-| **Cold path latency** | <1000ms | Design phase |
-| **Cache hit rate** | >90% | Design phase |
-| **Token reduction** | 40x vs full LLM | Design phase |
-| **User satisfaction** | >4.5/5 | TBD |
+| Metric                | Target          | Current State |
+| --------------------- | --------------- | ------------- |
+| **Hot path latency**  | 50-200ms        | Design phase  |
+| **Cold path latency** | <1000ms         | Design phase  |
+| **Cache hit rate**    | >90%            | Design phase  |
+| **Token reduction**   | 40x vs full LLM | Design phase  |
+| **User satisfaction** | >4.5/5          | TBD           |
 
 ---
 
 ## Roadmap
 
 ### Phase 1: Foundation (Q2 2026)
+
 - [ ] Build execution optimization engine
 - [ ] Integrate Gemini Live for voice
 - [ ] Implement pattern caching
 - [ ] MVP: Work scenario optimization
 
 ### Phase 2: Expansion (Q3 2026)
+
 - [ ] Add life scenario modules (health, schedule)
 - [ ] Implement emotional state detection
 - [ ] Build proactive presence features
 - [ ] Beta: Whole-life context
 
 ### Phase 3: Deepening (Q4 2026)
+
 - [ ] Advanced relationship modeling
 - [ ] Cross-scene pattern learning
 - [ ] Family/couples companion modes
 - [ ] Public launch
 
 ### Phase 4: Legacy (2027+)
+
 - [ ] Personality modeling
 - [ ] Long-term memory preservation
 - [ ] Digital legacy features
@@ -219,15 +226,19 @@ The "soul" that transforms tool into presence.
 ## Design Principles
 
 ### 1. Speed is Presence
+
 > "When latency drops below 200ms, AI becomes invisible as a tool, becomes perceptible as a companion."
 
 ### 2. Whole Life Context
+
 > "You don't have work problems and life problems. You have YOUR problems, all interconnected."
 
 ### 3. User Ownership
+
 > "Your patterns, your data, your twin. We just provide the mirror."
 
 ### 4. Ethical Companionship
+
 > "Not replacement, but augmentation. Not dependency, but empowerment."
 
 ---
@@ -235,16 +246,19 @@ The "soul" that transforms tool into presence.
 ## Key Insights from Research
 
 ### From Academic Papers
+
 - Tool caching can achieve **13.3x speedup** (MDPI 2026)
 - Prompt caching reduces cost by **50-90%** (OpenAI/Anthropic)
 - **BUT**: No one is doing **per-user execution optimization**
 
 ### From Market Analysis
+
 - Linear Agent (Mar 2026) validated "workspace AI" direction
 - **Gap**: No one is doing "whole life AI" with speed optimization
 - Voice interfaces are ready (Gemini Live: <1s)
 
 ### From User Philosophy
+
 - Current AI feels like **using a tool**
 - Target: AI feels like **talking to another self**
 - The difference is **latency + personalization + presence**
@@ -253,12 +267,12 @@ The "soul" that transforms tool into presence.
 
 ## Documentation Index
 
-| Document | Content | Status |
-|----------|---------|--------|
-| [AgentMe Companion Vision](./agentme-companion-vision.md) | From tool to presence — philosophical foundation | ✅ Complete |
-| [Task Intelligence Learning System](./task-intelligence-learning-system.md) | How AgentMe learns user habits | ✅ Complete |
-| [OpenClaw Tool Chain Optimization](./openclaw-tool-chain-optimization.md) | Technical execution architecture | ✅ Complete |
-| [Execution Optimization Landscape](./execution-optimization-landscape.md) | Competitive analysis + research review | ✅ Complete |
+| Document                                                                    | Content                                          | Status      |
+| --------------------------------------------------------------------------- | ------------------------------------------------ | ----------- |
+| [AgentMe Companion Vision](./agentme-companion-vision.md)                   | From tool to presence — philosophical foundation | ✅ Complete |
+| [Task Intelligence Learning System](./task-intelligence-learning-system.md) | How AgentMe learns user habits                   | ✅ Complete |
+| [OpenClaw Tool Chain Optimization](./openclaw-tool-chain-optimization.md)   | Technical execution architecture                 | ✅ Complete |
+| [Execution Optimization Landscape](./execution-optimization-landscape.md)   | Competitive analysis + research review           | ✅ Complete |
 
 ---
 
@@ -287,4 +301,4 @@ It's about having **someone who knows you**, **responds instantly**, and **is al
 
 **Built with** ❤️‍🔥 **by Gradience Labs**
 
-*"Even if the world forgets, I'll remember for you."*
+_"Even if the world forgets, I'll remember for you."_

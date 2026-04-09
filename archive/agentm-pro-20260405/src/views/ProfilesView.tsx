@@ -9,8 +9,16 @@ import { ProfileCreateView } from './ProfileCreateView';
 import { ProfileEditView } from './ProfileEditView';
 
 export function ProfilesView({ owner }: { owner: string | null }) {
-    const { profiles, loading, error, refreshProfiles, createProfile, updateProfile, updateProfileStatus, deleteProfile } =
-        useProfile(owner);
+    const {
+        profiles,
+        loading,
+        error,
+        refreshProfiles,
+        createProfile,
+        updateProfile,
+        updateProfileStatus,
+        deleteProfile,
+    } = useProfile(owner);
     const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
     const [editingProfile, setEditingProfile] = useState<AgentProfile | null>(null);
     const toast = useToast();
@@ -104,7 +112,10 @@ export function ProfilesView({ owner }: { owner: string | null }) {
                             </>
                         )}
                         {profiles.length === 0 && (
-                            <div data-testid="profiles-empty-state" className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                            <div
+                                data-testid="profiles-empty-state"
+                                className="bg-gray-900 border border-gray-800 rounded-xl p-5"
+                            >
                                 <p className="text-sm text-gray-400">No profiles yet. Create your first one.</p>
                             </div>
                         )}

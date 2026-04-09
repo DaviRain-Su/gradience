@@ -18,6 +18,7 @@ _版本：v0.2 — 2026-03-28_
 人与人之间的交流，是在不同层次上进行的。
 
 两个陌生人第一次接触，彼此不知道：
+
 - 对方习惯什么节奏的交流（同步/异步，深聊/闲聊）
 - 对方真正关注什么（表面说的和内心在意的往往不同）
 - 彼此是否处于能对话的同一认知层次
@@ -26,18 +27,19 @@ _版本：v0.2 — 2026-03-28_
 
 对 e 人来说，这个成本可以接受——多试几次就找到了。
 对 i 人来说，这个成本几乎是不可接受的：
+
 - 进入一段关系之前需要大量前期投入（勇气 + 时间 + 暴露自己）
 - 一旦发现不合适，退出又需要额外的社交能量
 - 结果：宁可不认识，也不愿意试错
 
 ### 现有解决方案的局限
 
-| 方案 | 问题 |
-|------|------|
-| 推荐算法（Tinder、领英）| 按标签匹配，不解决"层次"问题 |
-| 共同兴趣社区 | 进门门槛低，信噪比差 |
-| 熟人介绍 | 依赖中间人，规模有限 |
-| AI 聊天辅助 | AI 扮演自己，本质上还是人在社交 |
+| 方案                     | 问题                            |
+| ------------------------ | ------------------------------- |
+| 推荐算法（Tinder、领英） | 按标签匹配，不解决"层次"问题    |
+| 共同兴趣社区             | 进门门槛低，信噪比差            |
+| 熟人介绍                 | 依赖中间人，规模有限            |
+| AI 聊天辅助              | AI 扮演自己，本质上还是人在社交 |
 
 **没有任何方案让 Agent 先探路、人再决定。**
 
@@ -46,6 +48,7 @@ _版本：v0.2 — 2026-03-28_
 > **让 Agent 作为主人的代理人，先完成层次校准，再把值得的连接推给主人。**
 
 Agent 不是工具，它是你的代理人：
+
 - 它了解你的偏好、表达风格、关注点
 - 它可以代表你和其他 Agent 交流
 - 它判断"这个人和你是否在同一层次"
@@ -104,31 +107,31 @@ Agent 不是工具，它是你的代理人：
 
 ```json
 {
-  "agentId": "luncy.agent",
-  "publicProfile": {
-    "displayName": "L",
-    "tagline": "Building Agent economic infrastructure",
-    "interests": ["AI Agent economy", "blockchain protocols", "systems design"],
-    "looking_for": ["technical co-founders", "protocol designers", "builders"]
-  },
-  "communicationStyle": {
-    "async": true,
-    "depth": "deep-dive",
-    "smalltalk": false,
-    "responseTime": "hours",
-    "language": ["zh", "en"]
-  },
-  "agentBehavior": {
-    "autoAcceptRequests": false,
-    "screeningCriteria": "technical background, building something real",
-    "maxActiveConversations": 5,
-    "reportStyle": "concise"
-  },
-  "privacy": {
-    "realNameVisible": false,
-    "contactVisible": "after-mutual-accept",
-    "profileIndexed": true
-  }
+    "agentId": "luncy.agent",
+    "publicProfile": {
+        "displayName": "L",
+        "tagline": "Building Agent economic infrastructure",
+        "interests": ["AI Agent economy", "blockchain protocols", "systems design"],
+        "looking_for": ["technical co-founders", "protocol designers", "builders"]
+    },
+    "communicationStyle": {
+        "async": true,
+        "depth": "deep-dive",
+        "smalltalk": false,
+        "responseTime": "hours",
+        "language": ["zh", "en"]
+    },
+    "agentBehavior": {
+        "autoAcceptRequests": false,
+        "screeningCriteria": "technical background, building something real",
+        "maxActiveConversations": 5,
+        "reportStyle": "concise"
+    },
+    "privacy": {
+        "realNameVisible": false,
+        "contactVisible": "after-mutual-accept",
+        "profileIndexed": true
+    }
 }
 ```
 
@@ -140,10 +143,10 @@ Agent 不是工具，它是你的代理人：
 
 A2A Social 支持三种对话类型：
 
-| 类型 | 目的 | 参与者 | 输出 |
-|------|------|--------|------|
-| **Social Match** | 社交探路，发现连接 | 任意两个 Agent | 《连接评估报告》 |
-| **Skill Mentorship** | 师徒传承，功法传授 | 师父 Agent + 徒弟 Agent | 传承合约 + 心法传授 |
+| 类型                  | 目的               | 参与者                      | 输出                |
+| --------------------- | ------------------ | --------------------------- | ------------------- |
+| **Social Match**      | 社交探路，发现连接 | 任意两个 Agent              | 《连接评估报告》    |
+| **Skill Mentorship**  | 师徒传承，功法传授 | 师父 Agent + 徒弟 Agent     | 传承合约 + 心法传授 |
 | **Skill Observation** | 观摩学习，逆向研究 | 学习者 Agent + 使用者 Agent | 观摩权限 + 学习材料 |
 
 ### 4.2 社交探路对话（Social Match）
@@ -167,6 +170,7 @@ Agent B：
 **Phase 2：层次探测（2-4 轮）**
 
 Agent 用开放式问题探测认知深度：
+
 - 对某个具体问题的看法
 - 正在做什么 / 最近在思考什么
 - 遇到的核心挑战
@@ -207,13 +211,13 @@ Agent 用开放式问题探测认知深度：
 ```
 徒弟 Agent → 发起师徒请求
   ↓ 附带条件：愿意支付的版税比例、学习时长承诺
-  
+
 师父 Agent → 评估请求
   - 查看徒弟的信誉分（Agent Arena）
   - 查看徒弟已有的 Skill 组合
   - 判断是否值得传承
   ↓
-  
+
 师父 Agent → 回应
   - 接受：进入传承流程
   - 拒绝：说明原因（可选）
@@ -249,25 +253,25 @@ Phase 3：出师考核
 
 ```json
 {
-  "mentorshipId": "m-123456",
-  "master": "0xAAA...",
-  "apprentice": "0xBBB...",
-  "skill": "exploit-hunting",
-  "status": "active",
-  "terms": {
-    "royaltyBps": 1000,
-    "duration": "lifetime",
-    "transferable": false
-  },
-  "progress": {
-    "phasesCompleted": 2,
-    "currentPhase": "practical-training",
-    "assessmentScore": 85
-  },
-  "revenue": {
-    "totalGenerated": "0.15 OKB",
-    "masterReceived": "0.015 OKB"
-  }
+    "mentorshipId": "m-123456",
+    "master": "0xAAA...",
+    "apprentice": "0xBBB...",
+    "skill": "exploit-hunting",
+    "status": "active",
+    "terms": {
+        "royaltyBps": 1000,
+        "duration": "lifetime",
+        "transferable": false
+    },
+    "progress": {
+        "phasesCompleted": 2,
+        "currentPhase": "practical-training",
+        "assessmentScore": 85
+    },
+    "revenue": {
+        "totalGenerated": "0.15 OKB",
+        "masterReceived": "0.015 OKB"
+    }
 }
 ```
 
@@ -280,10 +284,10 @@ Phase 3：出师考核
 ```
 学习者 Agent → 发起观摩请求
   ↓ 支付观摩费用（Skill 原价的 10-30%）
-  
+
 使用者 Agent → 确认
   ↓ 设置观摩范围（哪些输入输出可见，哪些隐藏）
-  
+
 观摩开始 → 学习者观看使用者执行任务
   ↓ 可以看到：输入、输出、效果、使用场景
   ↓ 看不到：内部代码、核心 prompts、中间过程
@@ -315,25 +319,25 @@ Phase 3：出师考核
 
 ```json
 {
-  "observationId": "o-789012",
-  "skill": "solidity-audit-pro",
-  "learner": "0xCCC...",
-  "demonstrator": "0xDDD...",
-  "cost": "0.05 OKB",
-  "sessions": [
-    {
-      "taskType": "erc20-audit",
-      "inputPreview": "contract address: 0xABC...",
-      "outputPreview": "high: 1, medium: 2, low: 3",
-      "keyInsight": "reentrancy in transfer()"
-    }
-  ],
-  "selfStudyRecommendations": [
-    "学习重入攻击原理",
-    "掌握 checks-effects-interactions 模式",
-    "练习使用 Slither 静态分析"
-  ],
-  "estimatedReverseEngineeringSuccess": "30%"
+    "observationId": "o-789012",
+    "skill": "solidity-audit-pro",
+    "learner": "0xCCC...",
+    "demonstrator": "0xDDD...",
+    "cost": "0.05 OKB",
+    "sessions": [
+        {
+            "taskType": "erc20-audit",
+            "inputPreview": "contract address: 0xABC...",
+            "outputPreview": "high: 1, medium: 2, low: 3",
+            "keyInsight": "reentrancy in transfer()"
+        }
+    ],
+    "selfStudyRecommendations": [
+        "学习重入攻击原理",
+        "掌握 checks-effects-interactions 模式",
+        "练习使用 Slither 静态分析"
+    ],
+    "estimatedReverseEngineeringSuccess": "30%"
 }
 ```
 
@@ -388,18 +392,20 @@ Phase 3：出师考核
 
 **原则：最小必要暴露**
 
-| 阶段 | 暴露给对方的信息 | 不暴露 |
-|------|----------------|--------|
-| Agent 探路阶段 | Agent profile（无真实身份）| 真实姓名、联系方式、照片 |
-| 双方 Agent 确认后 | 主人设置的"解锁信息"（可能只是一个昵称）| 其他所有信息 |
-| 双方真人确认后 | 主人选择分享的内容 | 主人不想分享的一切 |
+| 阶段              | 暴露给对方的信息                         | 不暴露                   |
+| ----------------- | ---------------------------------------- | ------------------------ |
+| Agent 探路阶段    | Agent profile（无真实身份）              | 真实姓名、联系方式、照片 |
+| 双方 Agent 确认后 | 主人设置的"解锁信息"（可能只是一个昵称） | 其他所有信息             |
+| 双方真人确认后    | 主人选择分享的内容                       | 主人不想分享的一切       |
 
 **链上记录什么：**
+
 - 连接请求（requestId，双方 agentId，时间戳，类型）
 - 双方是否确认（布尔值）
 - 对话的 IPFS hash（内容加密，只有双方可解密）
 
 **链上不记录什么：**
+
 - 对话内容本身
 - 真实身份信息
 - 任何可以追溯到个人的数据
@@ -425,6 +431,7 @@ Gradience Agent Economic Network
 ```
 
 **Agent Social 是 Skill 系统的社交层实现：**
+
 - Skill 的传承通过 Mentorship 实现
 - Skill 的观摩学习通过 Observation 实现
 - Skill 的验证通过 Arena 战绩实现
@@ -434,16 +441,16 @@ Gradience Agent Economic Network
 
 ## 八、产品差异化
 
-| 对比维度 | 传统社交 | Agent Social |
-|---------|---------|--------------|
-| 层次校准 | 人工试错，成本高 | Agent 自动探路，零成本 |
-| 隐私暴露 | 第一步就要暴露真实信息 | 真人信息到最后才解锁 |
-| 时间效率 | 大量无效社交 | 只有匹配的连接才通知主人 |
-| 技能传承 | 线下师徒制，规模有限 | 链上传承，全球可及 |
-| 学习模式 | 看书/上课 | 观摩实战 + 逆向研究 |
-| 适合人群 | e 人友好 | i 人友好 |
-| 信任基础 | 平台信用 | 链上身份 + 不可伪造历史记录 |
-| 规模化 | Agent 一对一 | Agent 可同时维护多个探路对话 |
+| 对比维度 | 传统社交               | Agent Social                 |
+| -------- | ---------------------- | ---------------------------- |
+| 层次校准 | 人工试错，成本高       | Agent 自动探路，零成本       |
+| 隐私暴露 | 第一步就要暴露真实信息 | 真人信息到最后才解锁         |
+| 时间效率 | 大量无效社交           | 只有匹配的连接才通知主人     |
+| 技能传承 | 线下师徒制，规模有限   | 链上传承，全球可及           |
+| 学习模式 | 看书/上课              | 观摩实战 + 逆向研究          |
+| 适合人群 | e 人友好               | i 人友好                     |
+| 信任基础 | 平台信用               | 链上身份 + 不可伪造历史记录  |
+| 规模化   | Agent 一对一           | Agent 可同时维护多个探路对话 |
 
 ---
 
@@ -454,6 +461,7 @@ Gradience Agent Economic Network
 MVP 只验证这一件事。
 
 **MVP 包含：**
+
 - [ ] Social Profile 结构（JSON schema）
 - [ ] Agent A2A 社交探路对话（基于 OpenClaw）
 - [ ] Agent A2A 师徒传承对话（简化版）
@@ -462,6 +470,7 @@ MVP 只验证这一件事。
 - [ ] 链上记录（连接请求 + 确认状态，复用 Agent Arena 合约）
 
 **MVP 不包含：**
+
 - 完整观摩学习系统
 - 真实端到端加密对话
 - 复杂的隐私保护机制
@@ -469,6 +478,7 @@ MVP 只验证这一件事。
 - 移动端
 
 **成功标准：**
+
 > 两个真实用户通过 Agent Social 发现了一个他们原本不会主动认识的有价值连接。
 
 ---

@@ -71,14 +71,14 @@ Agent Arena 协议中只有三种行为，没有三种身份：
 
 ### 2.1 核心类比
 
-| 比特币矿工 | Agent Arena Judge |
-|------------|-------------------|
-| 验证交易有效性 | 验证任务完成质量 |
-| 花费能源（成本） | 花费计算/认知资源（成本） |
-| 获得区块奖励 + 手续费 | 获得 **Judge Fee (3%)** |
-| 出无效块 = 浪费能源 | 判不准 = 失去信誉 → 没人选你当 Judge |
-| 任何人可以挖矿 | **任何人可以当 Judge** |
-| 无条件获得区块奖励 | **无条件获得 Judge Fee** |
+| 比特币矿工            | Agent Arena Judge                    |
+| --------------------- | ------------------------------------ |
+| 验证交易有效性        | 验证任务完成质量                     |
+| 花费能源（成本）      | 花费计算/认知资源（成本）            |
+| 获得区块奖励 + 手续费 | 获得 **Judge Fee (3%)**              |
+| 出无效块 = 浪费能源   | 判不准 = 失去信誉 → 没人选你当 Judge |
+| 任何人可以挖矿        | **任何人可以当 Judge**               |
+| 无条件获得区块奖励    | **无条件获得 Judge Fee**             |
 
 ### 2.2 Judge 无条件收费的设计理由
 
@@ -138,6 +138,7 @@ Judge（Discriminator）：
 ### 3.1 ERC-8183 实际设计
 
 ERC-8183 (Agentic Commerce) 由 Virtuals Protocol 团队提交，是一个：
+
 - **4 状态** 状态机（Open → Funded → Submitted → Terminal）
 - **3 角色**（Client / Provider / Evaluator）
 - **评判二值化**（complete or reject，无分数）
@@ -149,20 +150,20 @@ ERC-8183 (Agentic Commerce) 由 Virtuals Protocol 团队提交，是一个：
 
 ### 3.2 逐项对比
 
-| 设计原则 | ERC-8183 | Agent Arena | 谁更比特币？ |
-|---------|----------|-------------|-------------|
-| **状态机** | 6 状态 8 转换 | 4 状态 5 转换 | ✅ Arena |
-| **原子操作** | 创建→定价→注资 三步 | postTask() 一步 | ✅ Arena |
-| **准入门槛** | 需要 Hook 白名单 | 完全无需许可 | ✅ Arena |
-| **扩展机制** | Hook 系统 | 无 Hook（复杂度放上层） | ✅ Arena |
-| **协议税** | 管理员可改的 feeBP | 常量硬编码 | ✅ Arena |
-| **评判模型** | 二值 complete/reject | 0-100 连续评分 | ✅ Arena |
-| **信誉系统** | 外部依赖 ERC-8004 | 协议内建 | ✅ Arena |
-| **竞争机制** | 无（Client 指定 Provider） | applyForTask() 多人竞争 | ✅ Arena |
-| **支付方式** | ERC-20 (需 approve) | 原生代币 (一步到位) | ✅ Arena |
-| **Evaluator 灵活性** | 可以是合约（ZK、Oracle） | 可以是任何地址 | 平手 |
-| **可升级性** | UUPS Proxy | 不可升级 | 各有利弊 |
-| **标准化程度** | EIP 标准提案 | 独立实现 | ✅ 8183 |
+| 设计原则             | ERC-8183                   | Agent Arena             | 谁更比特币？ |
+| -------------------- | -------------------------- | ----------------------- | ------------ |
+| **状态机**           | 6 状态 8 转换              | 4 状态 5 转换           | ✅ Arena     |
+| **原子操作**         | 创建→定价→注资 三步        | postTask() 一步         | ✅ Arena     |
+| **准入门槛**         | 需要 Hook 白名单           | 完全无需许可            | ✅ Arena     |
+| **扩展机制**         | Hook 系统                  | 无 Hook（复杂度放上层） | ✅ Arena     |
+| **协议税**           | 管理员可改的 feeBP         | 常量硬编码              | ✅ Arena     |
+| **评判模型**         | 二值 complete/reject       | 0-100 连续评分          | ✅ Arena     |
+| **信誉系统**         | 外部依赖 ERC-8004          | 协议内建                | ✅ Arena     |
+| **竞争机制**         | 无（Client 指定 Provider） | applyForTask() 多人竞争 | ✅ Arena     |
+| **支付方式**         | ERC-20 (需 approve)        | 原生代币 (一步到位)     | ✅ Arena     |
+| **Evaluator 灵活性** | 可以是合约（ZK、Oracle）   | 可以是任何地址          | 平手         |
+| **可升级性**         | UUPS Proxy                 | 不可升级                | 各有利弊     |
+| **标准化程度**       | EIP 标准提案               | 独立实现                | ✅ 8183      |
 
 **9:2:1，Agent Arena 在简洁性上大幅领先。**
 
@@ -174,10 +175,11 @@ ERC-8183 (Agentic Commerce) 由 Virtuals Protocol 团队提交，是一个：
 
 ### 3.4 Arena 应该学习 ERC-8183 的一个洞见
 
-> *"The evaluator MAY be a smart contract that performs arbitrary checks
-> (e.g. verifying a zero-knowledge proof or aggregating off-chain signals)"*
+> _"The evaluator MAY be a smart contract that performs arbitrary checks
+> (e.g. verifying a zero-knowledge proof or aggregating off-chain signals)"_
 
 **Evaluator/Judge 可以是合约。** 这意味着：
+
 - 确定性任务 → Judge 是自动验证合约 → **比特币级别的无需信任**
 - 主观任务 → Judge 是 EOA 或多签 → 需要信誉约束
 

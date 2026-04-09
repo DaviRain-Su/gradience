@@ -69,7 +69,7 @@ function buildDemoStats(owner: string): StatsSnapshot {
     const completed = 8 + (seed % 23);
     const total_applied = completed + (seed % 16);
     const win_rate = Math.min(0.99, Math.max(0.25, completed / Math.max(total_applied, 1)));
-    const total_earned = (seed % 90 + 10) * 1_000_000_000;
+    const total_earned = ((seed % 90) + 10) * 1_000_000_000;
     const reputation: ReputationData = {
         avg_score,
         completed,
@@ -88,7 +88,7 @@ function buildDemoStats(owner: string): StatsSnapshot {
 function buildRevenueSeries(totalEarnedLamports: number, owner: string): number[] {
     const seed = owner.split('').reduce((acc, char) => acc * 33 + char.charCodeAt(0), 7);
     const weights = [0.12, 0.14, 0.15, 0.16, 0.19, 0.24];
-    const jitter = [0, 1, 2, 3, 4, 5].map((value) => 0.9 + (((seed + value * 13) % 31) / 100));
+    const jitter = [0, 1, 2, 3, 4, 5].map((value) => 0.9 + ((seed + value * 13) % 31) / 100);
     const raw = weights.map((weight, index) => weight * jitter[index]);
     const sum = raw.reduce((acc, value) => acc + value, 0);
     return raw.map((value) => Math.round((value / sum) * totalEarnedLamports));

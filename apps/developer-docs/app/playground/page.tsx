@@ -83,7 +83,8 @@ const ENDPOINTS: Endpoint[] = [
         mockResponse: {
             id: 'task_7xKp2mNqRw',
             title: 'Translate legal contract to Spanish',
-            description: 'Translate the attached 12-page legal contract from English to Spanish, preserving all formatting and legal terminology.',
+            description:
+                'Translate the attached 12-page legal contract from English to Spanish, preserving all formatting and legal terminology.',
             status: 'open',
             reward_lamports: 5000000,
             deadline: 1756080000,
@@ -185,7 +186,7 @@ function highlightJson(json: string): React.ReactNode[] {
             tokens.push(
                 <span key={key++} className="text-gray-400">
                     {json.slice(lastIndex, match.index)}
-                </span>
+                </span>,
             );
         }
 
@@ -198,33 +199,33 @@ function highlightJson(json: string): React.ReactNode[] {
                     <span key={key++}>
                         <span className="text-indigo-300">{strToken}</span>
                         <span className="text-gray-400">{colon}</span>
-                    </span>
+                    </span>,
                 );
             } else {
                 // String value
                 tokens.push(
                     <span key={key++} className="text-green-400">
                         {strToken}
-                    </span>
+                    </span>,
                 );
             }
         } else if (boolNull !== undefined) {
             tokens.push(
                 <span key={key++} className="text-yellow-400">
                     {boolNull}
-                </span>
+                </span>,
             );
         } else if (number !== undefined) {
             tokens.push(
                 <span key={key++} className="text-blue-400">
                     {number}
-                </span>
+                </span>,
             );
         } else if (punct !== undefined) {
             tokens.push(
                 <span key={key++} className="text-gray-500">
                     {punct}
-                </span>
+                </span>,
             );
         } else {
             tokens.push(<span key={key++}>{full}</span>);
@@ -237,7 +238,7 @@ function highlightJson(json: string): React.ReactNode[] {
         tokens.push(
             <span key={key++} className="text-gray-400">
                 {json.slice(lastIndex)}
-            </span>
+            </span>,
         );
     }
 
@@ -251,11 +252,7 @@ function MethodBadge({ method }: { method: 'GET' | 'POST' }) {
         method === 'GET'
             ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700'
             : 'bg-amber-900/60 text-amber-300 border border-amber-700';
-    return (
-        <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-semibold ${cls}`}>
-            {method}
-        </span>
-    );
+    return <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-semibold ${cls}`}>{method}</span>;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -349,8 +346,8 @@ export default function PlaygroundPage() {
             <div>
                 <h1 className="text-3xl font-bold mb-2">API Playground</h1>
                 <p className="text-gray-400 text-sm">
-                    Test the Gradience Indexer REST API. When the indexer is unreachable, pre-filled
-                    mock responses are returned so you can explore the schema offline.
+                    Test the Gradience Indexer REST API. When the indexer is unreachable, pre-filled mock responses are
+                    returned so you can explore the schema offline.
                 </p>
             </div>
 
@@ -410,9 +407,7 @@ export default function PlaygroundPage() {
                                 <input
                                     type="text"
                                     value={params[p.name] ?? ''}
-                                    onChange={(e) =>
-                                        setParams((prev) => ({ ...prev, [p.name]: e.target.value }))
-                                    }
+                                    onChange={(e) => setParams((prev) => ({ ...prev, [p.name]: e.target.value }))}
                                     placeholder={p.placeholder}
                                     className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm font-mono placeholder:text-gray-700 focus:outline-none focus:border-indigo-500 transition"
                                 />
@@ -462,9 +457,7 @@ export default function PlaygroundPage() {
             {response !== null && (
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            Response
-                        </label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Response</label>
                         {status && (
                             <span className={`text-xs font-mono font-semibold ${statusColor}`}>
                                 {status.code} {status.text}
@@ -484,9 +477,7 @@ export default function PlaygroundPage() {
 
             {/* Endpoint Reference */}
             <div>
-                <h2 className="text-lg font-semibold mb-3 border-b border-gray-800 pb-2">
-                    Endpoint Reference
-                </h2>
+                <h2 className="text-lg font-semibold mb-3 border-b border-gray-800 pb-2">Endpoint Reference</h2>
                 <div className="space-y-3">
                     {ENDPOINTS.map((ep) => (
                         <div

@@ -9,6 +9,7 @@
 **Tasks are now managed in Obsidian, NOT Linear.**
 
 **Quick Start:**
+
 ```bash
 ./scripts/task.sh list todo P0     # Get your tasks
 ./scripts/task.sh show GRA-64      # View task details
@@ -63,6 +64,7 @@ Tasks are managed in Obsidian vault at `docs/tasks/`
 ### Prerequisites
 
 Ensure you have:
+
 - Obsidian installed with CLI enabled
 - `scripts/task.sh` is executable
 
@@ -114,34 +116,38 @@ Tasks are Markdown files with YAML frontmatter:
 ```markdown
 ---
 linear-id: GRA-64
-title: "[Indexer] Design Profile API specification"
+title: '[Indexer] Design Profile API specification'
 status: in-progress
 priority: P0
-project: "Chain Hub Indexer"
+project: 'Chain Hub Indexer'
 created: 2026-04-03
-migrated-from: "Linear"
-assignee: "Code Agent"
+migrated-from: 'Linear'
+assignee: 'Code Agent'
 tags: [task, p0, chain-hub-indexer]
 ---
 
 # GRA-64: [Indexer] Design Profile API specification
 
 ## Description
+
 Design Indexer Profile API specification
 ...
 
 ## Acceptance Criteria
+
 - [ ] Research complete
 - [ ] API design documented
 - [ ] Review passed
 
 ## Related
+
 - [[GRA-65]] Next task
 - [[docs/03-technical-spec]] Reference
 
 ## Notes
 
 ## Log
+
 - 2026-04-03: Migrated from Linear
 - 2026-04-03: Status changed to "in-progress"
 ```
@@ -168,16 +174,17 @@ Design Indexer Profile API specification
 
 ### Project Mapping
 
-| Project | Path | Docs | Tasks |
-|---------|------|------|-------|
-| **AgentM Web** (Unified) | `apps/agentm-web/` | `apps/agentm-web/docs/` | docs/tasks/GRA-30*.md, GRA-125-128 |
-| Agent Arena | `apps/agent-arena/` | `apps/agent-arena/docs/` | docs/tasks/GRA-33*.md |
-| Agent Layer EVM | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` | docs/tasks/GRA-39*.md |
-| Chain Hub | `apps/chain-hub/` | `apps/chain-hub/docs/` | docs/tasks/GRA-4*.md, GRA-8*.md |
-| A2A Protocol | `apps/a2a-protocol/` | `apps/a2a-protocol/docs/` | docs/tasks/GRA-47*.md |
-| OWS Hackathon | - | `docs/hackathon/` | docs/tasks/GRA-56*.md |
+| Project                  | Path                    | Docs                         | Tasks                               |
+| ------------------------ | ----------------------- | ---------------------------- | ----------------------------------- |
+| **AgentM Web** (Unified) | `apps/agentm-web/`      | `apps/agentm-web/docs/`      | docs/tasks/GRA-30\*.md, GRA-125-128 |
+| Agent Arena              | `apps/agent-arena/`     | `apps/agent-arena/docs/`     | docs/tasks/GRA-33\*.md              |
+| Agent Layer EVM          | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` | docs/tasks/GRA-39\*.md              |
+| Chain Hub                | `apps/chain-hub/`       | `apps/chain-hub/docs/`       | docs/tasks/GRA-4*.md, GRA-8*.md     |
+| A2A Protocol             | `apps/a2a-protocol/`    | `apps/a2a-protocol/docs/`    | docs/tasks/GRA-47\*.md              |
+| OWS Hackathon            | -                       | `docs/hackathon/`            | docs/tasks/GRA-56\*.md              |
 
 > **Archived Projects** (2026-04-05):
+>
 > - `AgentM (Electron)` → `archive/agentm-electron-20260405/`
 > - `AgentM Pro` → merged into AgentM Web → `archive/agentm-pro-20260405/`
 > - `AgentM Core` → migrated to `programs/agentm-core/` + `packages/agentm-sdk/`
@@ -189,14 +196,16 @@ Design Indexer Profile API specification
 ### Before Starting
 
 1. Check Obsidian for assigned tasks
-   ```bash
-   ./scripts/task.sh list todo P0
-   ```
+
+    ```bash
+    ./scripts/task.sh list todo P0
+    ```
 
 2. Read Phase 3 Technical Spec completely
-   ```bash
-   open docs/<project>/03-technical-spec.md
-   ```
+
+    ```bash
+    open docs/<project>/03-technical-spec.md
+    ```
 
 3. Verify environment setup per `06-implementation.md`
 
@@ -228,6 +237,7 @@ Design Indexer Profile API specification
 ## Migration Notes (From Linear)
 
 All 118 tasks have been migrated from Linear to Obsidian:
+
 - Original Linear IDs preserved (GRA-1 to GRA-118)
 - Status, priority, and project data migrated
 - Task files are now in `docs/tasks/`

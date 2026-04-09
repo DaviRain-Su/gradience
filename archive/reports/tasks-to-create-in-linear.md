@@ -1,4 +1,5 @@
 # 需要创建到 Linear 的任务清单
+
 > 基于真实项目缺口分析
 > 生成时间: 2026-04-03
 
@@ -15,51 +16,53 @@
 ## 🤖 Agent 可执行任务 (32个)
 
 ### AgentM Pro (8个任务)
+
 项目: 🔧 AgentM Pro | 优先级: P1/P2
 
 1. **[AgentM Pro] Create Electron main process entry**
-   - 描述: Create src/main/index.ts for Electron main process
-   - 验收: Electron主进程可启动
+    - 描述: Create src/main/index.ts for Electron main process
+    - 验收: Electron主进程可启动
 
 2. **[AgentM Pro] Setup IPC communication between main and renderer**
-   - 描述: Setup IPC between main and renderer processes
-   - 验收: 主进程和渲染进程可通信
+    - 描述: Setup IPC between main and renderer processes
+    - 验收: 主进程和渲染进程可通信
 
 3. **[AgentM Pro] Integrate OWS Adapter with Electron**
-   - 描述: Integrate OWS adapter into Electron app
-   - 验收: OWS功能在Electron中可用
+    - 描述: Integrate OWS adapter into Electron app
+    - 验收: OWS功能在Electron中可用
 
 4. **[AgentM Pro] Create window management system**
-   - 描述: Manage multiple windows and their lifecycle
-   - 验收: 窗口管理正常
+    - 描述: Manage multiple windows and their lifecycle
+    - 验收: 窗口管理正常
 
 5. **[AgentM Pro] Add auto-updater functionality**
-   - 描述: Implement auto-update mechanism
-   - 优先级: P2
-   - 验收: 自动更新可用
+    - 描述: Implement auto-update mechanism
+    - 优先级: P2
+    - 验收: 自动更新可用
 
 6. **[AgentM Pro] Implement error handling and logging**
-   - 描述: Add comprehensive error handling
-   - 优先级: P2
-   - 验收: 错误日志记录完善
+    - 描述: Add comprehensive error handling
+    - 优先级: P2
+    - 验收: 错误日志记录完善
 
 7. **[AgentM Pro] Write E2E tests with Playwright**
-   - 描述: Create end-to-end tests for desktop app
-   - 验收: E2E测试覆盖主要流程
+    - 描述: Create end-to-end tests for desktop app
+    - 验收: E2E测试覆盖主要流程
 
 8. **[AgentM Pro] Build and package desktop app**
-   - 描述: Create build pipeline for distribution
-   - 优先级: P2
-   - 验收: 可打包发布
+    - 描述: Create build pipeline for distribution
+    - 优先级: P2
+    - 验收: 可打包发布
 
 ---
 
 ### Chain Hub (4个任务)
+
 项目: 🔗 Chain Hub | 优先级: P1/P2
 
 9. **[Chain Hub] Create TypeScript SDK** ⭐关键
-   - 描述: Create SDK for Chain Hub integration
-   - 验收: SDK可用，有基本功能
+    - 描述: Create SDK for Chain Hub integration
+    - 验收: SDK可用，有基本功能
 
 10. **[Chain Hub] Write SDK documentation and examples**
     - 描述: Documentation with usage examples
@@ -78,6 +81,7 @@
 ---
 
 ### Agent Arena (6个任务)
+
 项目: ⚡ Agent Arena (Solana) | 优先级: P1/P2
 
 13. **[Agent Arena] Complete React frontend UI** ⭐关键
@@ -111,6 +115,7 @@
 ---
 
 ### A2A Protocol (3个任务)
+
 项目: 📡 A2A Protocol | 优先级: P2
 
 19. **[A2A] Add more edge case tests**
@@ -128,6 +133,7 @@
 ---
 
 ### Infrastructure (5个任务)
+
 项目: 🔍 Chain Hub Indexer | 优先级: P1/P2
 
 22. **[Infra] Setup CI/CD pipeline with GitHub Actions** ⭐关键
@@ -156,6 +162,7 @@
 ---
 
 ### Testing (4个任务)
+
 项目: 📚 Documentation | 优先级: P1/P2
 
 27. **[Testing] Create E2E test suite for complete user flow** ⭐关键
@@ -179,6 +186,7 @@
 ---
 
 ### Documentation (2个任务)
+
 项目: 📚 Documentation | 优先级: P2
 
 31. **[Docs] Create developer documentation website**
@@ -194,6 +202,7 @@
 ## 👤 需要人工完成的任务 (8个)
 
 ### Security (3个任务)
+
 项目: 🔗 Chain Hub / 🔧 AgentM Pro | 优先级: P1
 
 33. **[人工-Security] Smart contract security audit** ⚠️ 关键
@@ -214,6 +223,7 @@
 ---
 
 ### Business/Operations (3个任务)
+
 项目: 📚 Documentation | 优先级: P1/P2
 
 36. **[人工] Publish Chain Hub SDK to npm**
@@ -234,6 +244,7 @@
 ---
 
 ### Events/Legal (2个任务)
+
 项目: 🏆 OWS Hackathon / 📚 Documentation | 优先级: P1/P2
 
 39. **[人工] OWS Hackathon 现场演示准备**
@@ -251,17 +262,20 @@
 ## 🎯 执行建议
 
 ### 立即执行 (本周)
+
 1. 完成 AgentM Pro Electron 核心 (任务1-4)
 2. 创建 Chain Hub SDK (任务9)
 3. 完成 Agent Arena 前端 (任务13)
 4. 部署 OWS Hackathon Demo
 
 ### 短期目标 (2周内)
+
 5. 完成 Infra 基础设置 (任务22-23)
 6. 完成核心测试 (任务27-28)
 7. 提交安全审计申请 (任务33)
 
 ### 中期目标 (1个月内)
+
 8. 完成所有 Agent 任务
 9. 完成人工任务中的注册和申请
 10. 准备产品发布
@@ -288,6 +302,7 @@
 ## 📊 创建后预计状态
 
 创建这40个任务后:
+
 - 总任务数: 118 + 40 = 158
 - Agent可执行: 32个 (可由Code Agent并行处理)
 - 人工任务: 8个 (需要人工跟进)
@@ -295,4 +310,4 @@
 
 ---
 
-*任务清单已准备完毕，可开始创建！*
+_任务清单已准备完毕，可开始创建！_

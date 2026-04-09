@@ -3,19 +3,19 @@ import { createSdk, createKeypairAdapter } from './gradience.ts';
 async function main() {
     const rpc = 'https://api.devnet.solana.com/';
     const keypair = process.env.HOME + '/.config/solana/id.json';
-    
+
     // Import sdk creation from the CLI module
     const { GradienceClient, KeypairWalletAdapter } = await import('../clients/typescript/src/sdk.js');
     const { createKeyPairSignerFromBytes, getBase58Encoder } = await import('@solana/kit');
     const fs = await import('node:fs');
-    
+
     const keypairBytes = JSON.parse(fs.readFileSync(keypair, 'utf-8'));
     const signer = await createKeyPairSignerFromBytes(new Uint8Array(keypairBytes));
     console.log('Signer:', signer.address);
-    
+
     const wallet = new KeypairWalletAdapter(rpc, signer);
     const sdk = new GradienceClient({ rpcEndpoint: rpc });
-    
+
     try {
         const sig = await sdk.postTask(wallet, {
             taskId: 3n,

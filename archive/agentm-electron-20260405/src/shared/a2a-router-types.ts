@@ -95,7 +95,7 @@ export interface AgentFilter {
     availableOnly?: boolean;
     /** Maximum results */
     limit?: number;
-    
+
     // Soul Profile filters (for social matching)
     /** Filter by soul type */
     soulType?: 'human' | 'agent';
@@ -181,9 +181,7 @@ export interface ProtocolAdapter {
     send(message: A2AMessage): Promise<A2AResult>;
 
     /** Subscribe to incoming messages */
-    subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription>;
+    subscribe(handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription>;
 
     /** Discover agents */
     discoverAgents(filter?: AgentFilter): Promise<AgentInfo[]>;
@@ -270,7 +268,7 @@ export class A2AError extends Error {
     constructor(
         public readonly code: string,
         message: string,
-        public readonly cause?: Error
+        public readonly cause?: Error,
     ) {
         super(message);
         this.name = 'A2AError';

@@ -26,7 +26,7 @@ export function MessagesView() {
     const [newMessage, setNewMessage] = useState('');
     const selectedDelegation = useMemo(
         () => delegations.find((item) => item.id === selectedDelegationId) ?? null,
-        [delegations, selectedDelegationId]
+        [delegations, selectedDelegationId],
     );
     const selectedAgent = useMemo(() => {
         if (!selectedDelegation) return null;
@@ -48,7 +48,7 @@ export function MessagesView() {
                     lastMessage: last?.content ?? `Delegated: ${delegation.taskTitle}`,
                 };
             }),
-        [delegations, messages, registryAgents]
+        [delegations, messages, registryAgents],
     );
 
     function handleCreateDelegation() {
@@ -100,9 +100,7 @@ export function MessagesView() {
 
         setSettlements((prev) => [settlement, ...prev]);
         setDelegations((prev) =>
-            prev.map((item) =>
-                item.id === selectedDelegation.id ? { ...item, status: 'settled' } : item
-            )
+            prev.map((item) => (item.id === selectedDelegation.id ? { ...item, status: 'settled' } : item)),
         );
         setMessages((prev) => [
             ...prev,
@@ -118,9 +116,7 @@ export function MessagesView() {
     return (
         <div className="space-y-6" data-testid="messages-view">
             <h1 className="text-3xl font-bold">Messages</h1>
-            <p className="text-gray-400">
-                Metaplex Registry discovery + A2A delegation + token settlement demo.
-            </p>
+            <p className="text-gray-400">Metaplex Registry discovery + A2A delegation + token settlement demo.</p>
             {!publicKey && (
                 <p className="text-xs text-yellow-400">
                     Demo mode: wallet not connected, using local operator identity.
@@ -142,15 +138,11 @@ export function MessagesView() {
                             }`}
                         >
                             <p className="font-medium">{agent.displayName}</p>
-                            <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-                                {agent.wallet}
-                            </p>
+                            <p className="text-xs text-gray-500 mt-1 font-mono truncate">{agent.wallet}</p>
                             <p className="text-xs text-gray-400 mt-1">
                                 {agent.token} min: {agent.minSettlementAmount}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {agent.capabilities.join(' · ')}
-                            </p>
+                            <p className="text-xs text-gray-500 mt-1">{agent.capabilities.join(' · ')}</p>
                         </button>
                     ))}
                 </div>
@@ -188,9 +180,7 @@ export function MessagesView() {
                 <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
                     <div className="divide-y divide-gray-800">
                         {conversationItems.length === 0 && (
-                            <p className="p-4 text-xs text-gray-500">
-                                No delegations yet. Create one above.
-                            </p>
+                            <p className="p-4 text-xs text-gray-500">No delegations yet. Create one above.</p>
                         )}
                         {conversationItems.map((item) => (
                             <ConversationItem
@@ -217,7 +207,9 @@ export function MessagesView() {
                             />
                             <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                                 {messages.length === 0 && (
-                                    <p className="text-xs text-gray-500 text-center mt-8">No messages yet. Say hello!</p>
+                                    <p className="text-xs text-gray-500 text-center mt-8">
+                                        No messages yet. Say hello!
+                                    </p>
                                 )}
                                 {messages
                                     .filter((msg) => msg.delegationId === selectedDelegation.id)
@@ -229,9 +221,7 @@ export function MessagesView() {
                                 <span data-testid="a2a-settlement-wallet">
                                     recipient_wallet: {selectedDelegation.toWallet}
                                 </span>
-                                <span data-testid="a2a-settlement-status">
-                                    status: {selectedDelegation.status}
-                                </span>
+                                <span data-testid="a2a-settlement-status">status: {selectedDelegation.status}</span>
                             </div>
                             <div className="p-3 border-t border-gray-800 flex gap-2">
                                 <input
@@ -299,9 +289,7 @@ function ConversationItem({
     return (
         <button
             onClick={onClick}
-            className={`w-full text-left p-3 text-sm transition ${
-                selected ? 'bg-gray-800' : 'hover:bg-gray-850'
-            }`}
+            className={`w-full text-left p-3 text-sm transition ${selected ? 'bg-gray-800' : 'hover:bg-gray-850'}`}
         >
             <div className="flex justify-between items-center">
                 <span className="font-medium truncate">{name}</span>
@@ -324,15 +312,9 @@ function ChatHeader({ title, subtitle }: { title: string; subtitle: string }) {
 function MessageBubble({ message, isOwn }: { message: A2AMessage; isOwn: boolean }) {
     return (
         <div data-testid="a2a-chat-message" className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <div
-                className={`max-w-[70%] px-3 py-2 rounded-xl text-sm ${
-                    isOwn ? 'bg-indigo-600' : 'bg-gray-800'
-                }`}
-            >
+            <div className={`max-w-[70%] px-3 py-2 rounded-xl text-sm ${isOwn ? 'bg-indigo-600' : 'bg-gray-800'}`}>
                 <p data-testid="a2a-chat-message-content">{message.content}</p>
-                <p className="text-xs opacity-50 mt-1">
-                    {new Date(message.createdAt).toLocaleTimeString()}
-                </p>
+                <p className="text-xs opacity-50 mt-1">{new Date(message.createdAt).toLocaleTimeString()}</p>
             </div>
         </div>
     );

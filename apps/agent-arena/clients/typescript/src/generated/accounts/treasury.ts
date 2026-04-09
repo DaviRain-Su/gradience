@@ -7,27 +7,27 @@
  */
 
 import {
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getStructDecoder,
-  getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
-  type Account,
-  type Address,
-  type EncodedAccount,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-} from "@solana/kit";
+    assertAccountExists,
+    assertAccountsExist,
+    combineCodec,
+    decodeAccount,
+    fetchEncodedAccount,
+    fetchEncodedAccounts,
+    getStructDecoder,
+    getStructEncoder,
+    getU8Decoder,
+    getU8Encoder,
+    type Account,
+    type Address,
+    type EncodedAccount,
+    type FetchAccountConfig,
+    type FetchAccountsConfig,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+    type MaybeAccount,
+    type MaybeEncodedAccount,
+} from '@solana/kit';
 
 export type Treasury = { discriminator: number; version: number; bump: number };
 
@@ -35,76 +35,73 @@ export type TreasuryArgs = Treasury;
 
 /** Gets the encoder for {@link TreasuryArgs} account data. */
 export function getTreasuryEncoder(): FixedSizeEncoder<TreasuryArgs> {
-  return getStructEncoder([
-    ["discriminator", getU8Encoder()],
-    ["version", getU8Encoder()],
-    ["bump", getU8Encoder()],
-  ]);
+    return getStructEncoder([
+        ['discriminator', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['bump', getU8Encoder()],
+    ]);
 }
 
 /** Gets the decoder for {@link Treasury} account data. */
 export function getTreasuryDecoder(): FixedSizeDecoder<Treasury> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["bump", getU8Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['version', getU8Decoder()],
+        ['bump', getU8Decoder()],
+    ]);
 }
 
 /** Gets the codec for {@link Treasury} account data. */
 export function getTreasuryCodec(): FixedSizeCodec<TreasuryArgs, Treasury> {
-  return combineCodec(getTreasuryEncoder(), getTreasuryDecoder());
+    return combineCodec(getTreasuryEncoder(), getTreasuryDecoder());
 }
 
 export function decodeTreasury<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress>,
 ): Account<Treasury, TAddress>;
 export function decodeTreasury<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+    encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Treasury, TAddress>;
 export function decodeTreasury<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Treasury, TAddress> | MaybeAccount<Treasury, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getTreasuryDecoder(),
-  );
+    return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getTreasuryDecoder());
 }
 
 export async function fetchTreasury<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<Account<Treasury, TAddress>> {
-  const maybeAccount = await fetchMaybeTreasury(rpc, address, config);
-  assertAccountExists(maybeAccount);
-  return maybeAccount;
+    const maybeAccount = await fetchMaybeTreasury(rpc, address, config);
+    assertAccountExists(maybeAccount);
+    return maybeAccount;
 }
 
 export async function fetchMaybeTreasury<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Treasury, TAddress>> {
-  const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeTreasury(maybeAccount);
+    const maybeAccount = await fetchEncodedAccount(rpc, address, config);
+    return decodeTreasury(maybeAccount);
 }
 
 export async function fetchAllTreasury(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<Account<Treasury>[]> {
-  const maybeAccounts = await fetchAllMaybeTreasury(rpc, addresses, config);
-  assertAccountsExist(maybeAccounts);
-  return maybeAccounts;
+    const maybeAccounts = await fetchAllMaybeTreasury(rpc, addresses, config);
+    assertAccountsExist(maybeAccounts);
+    return maybeAccounts;
 }
 
 export async function fetchAllMaybeTreasury(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Treasury>[]> {
-  const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeTreasury(maybeAccount));
+    const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
+    return maybeAccounts.map(maybeAccount => decodeTreasury(maybeAccount));
 }

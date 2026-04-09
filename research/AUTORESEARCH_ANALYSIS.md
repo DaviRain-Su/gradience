@@ -6,7 +6,7 @@ AutoResearch 是 Andrej Karpathy 提出的一个**自动化研究/优化范式**
 
 ```
 核心循环：
-修改代码 → 运行评估 → 对比指标 → 
+修改代码 → 运行评估 → 对比指标 →
   ├─ 改进 → 提交 (git commit)
   └─ 退化 → 回滚 (git revert)
     ↓
@@ -14,6 +14,7 @@ AutoResearch 是 Andrej Karpathy 提出的一个**自动化研究/优化范式**
 ```
 
 本质上是一个 **Agent 驱动的迭代优化工作流**，应用于：
+
 - LLM 训练优化（原版）
 - GPU kernel 优化
 - 提示词工程
@@ -46,6 +47,7 @@ Agent 竞争者：
 ```
 
 **价值：**
+
 - 为 Arena 增加**技术优化类任务**
 - 高价值任务（工程师愿意付费优化）
 - 可量化结果（延迟、准确率、吞吐量）
@@ -59,21 +61,22 @@ Agent 竞争者：
 
 ```yaml
 # Chain Hub 新增 Skill
-skill_id: "autoresearch/optimizer"
-description: "自动代码优化器"
+skill_id: 'autoresearch/optimizer'
+description: '自动代码优化器'
 capabilities:
-  - 分析代码瓶颈
-  - 提出优化方案
-  - 自动运行测试
-  - 迭代直至达标
+    - 分析代码瓶颈
+    - 提出优化方案
+    - 自动运行测试
+    - 迭代直至达标
 
 pricing:
-  base_fee: "0.01 OKB"
-  per_experiment: "0.001 OKB"
-  success_bonus: "0.05 OKB"  # 达到目标时
+    base_fee: '0.01 OKB'
+    per_experiment: '0.001 OKB'
+    success_bonus: '0.05 OKB' # 达到目标时
 ```
 
 **使用方式：**
+
 ```bash
 chainhub skill use autoresearch/optimizer \
   --target ./my_service.py \
@@ -83,6 +86,7 @@ chainhub skill use autoresearch/optimizer \
 ```
 
 **价值：**
+
 - 功法阁新增**自动化优化**类别
 - Skill 可以被购买/租赁
 - 开发者可以售卖自己的 AutoResearch 配置
@@ -122,6 +126,7 @@ program.md:
 | CLI | 命令响应 | time arena status |
 
 **价值：**
+
 - 自动化性能优化
 - 持续集成到 CI/CD
 - 降低人工优化成本
@@ -149,6 +154,7 @@ program.md:
 ```
 
 **价值：**
+
 - 将 AutoResearch 作为**可传授的技能**
 - 形成最佳实践库
 - 加速新 Agent 的能力成长
@@ -161,7 +167,7 @@ program.md:
 
 ```solidity
 // AgentArena.sol 新增任务类型
-enum TaskType { 
+enum TaskType {
     General,      // 一般任务
     CodeReview,   // 代码审查
     AutoResearch  // 自动优化
@@ -177,6 +183,7 @@ struct Task {
 ```
 
 **实现步骤：**
+
 1. 修改合约支持 AutoResearch 任务类型
 2. 前端新增任务发布表单
 3. Agent CLI 集成 AutoResearch 循环
@@ -201,6 +208,7 @@ impl Skill for AutoResearchSkill {
 ```
 
 **实现步骤：**
+
 1. 定义 AutoResearch Skill 标准接口
 2. 实现基础优化器（代码、配置、提示词）
 3. 支持用户自定义 program.md
@@ -233,15 +241,16 @@ jobs:
 
 ## 与 Virtuals 的差异化
 
-| | Virtuals | Gradience + AutoResearch |
-|---|----------|-------------------------|
-| **Agent 创建** | 无代码发射 | 需技术能力 |
-| **能力验证** | 社交/市场 | **实战任务 + AutoResearch** |
-| **优化方式** | 人工迭代 | **Agent 自动迭代** |
-| **Skill 交易** | ❌ 无 | ✅ 功法阁 |
-| **适用场景** | 社交/娱乐 Agent | **工程/优化 Agent** |
+|                | Virtuals        | Gradience + AutoResearch    |
+| -------------- | --------------- | --------------------------- |
+| **Agent 创建** | 无代码发射      | 需技术能力                  |
+| **能力验证**   | 社交/市场       | **实战任务 + AutoResearch** |
+| **优化方式**   | 人工迭代        | **Agent 自动迭代**          |
+| **Skill 交易** | ❌ 无           | ✅ 功法阁                   |
+| **适用场景**   | 社交/娱乐 Agent | **工程/优化 Agent**         |
 
 **核心差异：**
+
 - Virtuals = 让更多人创建 Agent
 - Gradience + AutoResearch = 让 Agent 自动变得更优秀
 
@@ -287,16 +296,19 @@ claude code program.md
 ## 风险与注意事项
 
 ### 1. 安全问题
+
 - AutoResearch 可能引入恶意代码
 - 需要沙箱执行环境
 - 评判前必须人工审查
 
 ### 2. 资源消耗
+
 - GPU/计算资源成本高
 - 需要限制实验次数
 - 考虑引入质押机制
 
 ### 3. 评估准确性
+
 - 评估脚本本身可能有 bug
 - 需要多维度验证
 - 防止 reward hacking
@@ -320,6 +332,7 @@ AutoResearch 的 **"评估驱动优化"** 与 Arena 的 **"竞争验证能力"**
 ---
 
 **下一步行动：**
+
 1. 实验：用 AutoResearch 优化 Arena 合约 gas
 2. 设计：起草 AutoResearch 任务类型的合约修改
 3. 调研：分析现有 AutoResearch 用例，找出适合 Arena 的场景

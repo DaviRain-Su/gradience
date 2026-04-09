@@ -1,18 +1,19 @@
 ---
 linear-id: GRA-61
-title: "[OWS] Prepare demo and presentation"
+title: '[OWS] Prepare demo and presentation'
 status: in-progress
 priority: P2
-project: "🏆 OWS Hackathon (Miami)"
+project: '🏆 OWS Hackathon (Miami)'
 created: 2026-04-03
-migrated-from: "Linear"
-assignee: "Code Agent"
+migrated-from: 'Linear'
+assignee: 'Code Agent'
 tags: [task, p2, -ows-hackathon-miami]
 ---
 
 # GRA-61: [OWS] Prepare demo and presentation
 
 ## Description
+
 准备 Hackathon Demo 和演示材料
 
 ## Demo 内容
@@ -36,16 +37,19 @@ tags: [task, p2, -ows-hackathon-miami]
 - [ ] 测试网环境配置
 
 ## Original Linear Info
+
 - **State**: In Progress
 - **Project**: 🏆 OWS Hackathon (Miami)
 - **Priority**: P2
 
 ## Acceptance Criteria
-- [ ] 
+
+- [ ]
 
 ## Related
 
 ## Notes
 
 ## Log
+
 - 2026-04-03: Migrated from Linear

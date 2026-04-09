@@ -7,7 +7,7 @@
 ```
 Costs 页面（原有）
 ├── API 成本统计 ✅ 保留
-├── Token 使用量 ✅ 保留  
+├── Token 使用量 ✅ 保留
 ├── Provider 统计 ✅ 保留
 └── 新增: Wallet 标签页 💰
     ├── SOL/USDC 余额
@@ -25,24 +25,25 @@ Costs 页面（原有）
 ```tsx
 // costs-screen.tsx
 export function CostsScreen() {
-  const [activeTab, setActiveTab] = useState<'costs' | 'wallet'>('costs')
-  
-  return (
-    <div>
-      {/* 标签切换 */}
-      <TabGroup>
-        <Tab onClick={() => setActiveTab('costs')}>API Costs</Tab>
-        <Tab onClick={() => setActiveTab('wallet')}>Wallet</Tab>
-      </TabGroup>
-      
-      {activeTab === 'costs' && <CostsAnalytics />}
-      {activeTab === 'wallet' && <WalletPanel />}
-    </div>
-  )
+    const [activeTab, setActiveTab] = useState<'costs' | 'wallet'>('costs');
+
+    return (
+        <div>
+            {/* 标签切换 */}
+            <TabGroup>
+                <Tab onClick={() => setActiveTab('costs')}>API Costs</Tab>
+                <Tab onClick={() => setActiveTab('wallet')}>Wallet</Tab>
+            </TabGroup>
+
+            {activeTab === 'costs' && <CostsAnalytics />}
+            {activeTab === 'wallet' && <WalletPanel />}
+        </div>
+    );
 }
 ```
 
 **优点：**
+
 - 用户可以在一个页面查看所有"经济相关"信息
 - 原有功能完整保留
 - 代码改动小
@@ -62,12 +63,14 @@ src/screens/
 ```
 
 **导航栏：**
+
 ```
 [Chat] [Dashboard] [Agent Hub] [Tasks] [Files] [Costs] [Wallet] [Settings]
                                                       ^^^^^ 新增
 ```
 
 **优点：**
+
 - Wallet 功能更突出
 - 两个页面各自独立，逻辑清晰
 - 适合 Wallet 功能很重的场景
@@ -85,94 +88,87 @@ src/screens/
 ### 实现步骤
 
 #### Step 1: 保留 Costs 功能
+
 ```tsx
 // costs-screen.tsx - 原有代码基本不变
 export function CostsScreen() {
-  const { analytics, isLoading } = useCostAnalytics() // 原有 hook
-  
-  // 原有的 KPI、图表、列表全部保留
-  return (
-    <div>
-      <KpiCards />
-      <CostCharts />
-      <SessionList />
-    </div>
-  )
+    const { analytics, isLoading } = useCostAnalytics(); // 原有 hook
+
+    // 原有的 KPI、图表、列表全部保留
+    return (
+        <div>
+            <KpiCards />
+            <CostCharts />
+            <SessionList />
+        </div>
+    );
 }
 ```
 
 #### Step 2: 添加 Wallet 标签
+
 ```tsx
 // costs-screen.tsx - 添加标签切换
 export function CostsScreen() {
-  const [activeTab, setActiveTab] = useState<'costs' | 'wallet'>('costs')
-  const { analytics } = useCostAnalytics()
-  const { walletData } = useWalletData() // 新增 hook
-  
-  return (
-    <div className="p-6">
-      {/* 页面标题 */}
-      <h1 className="text-2xl font-bold mb-6">Economics</h1>
-      
-      {/* 标签切换 */}
-      <div className="flex gap-4 mb-6 border-b">
-        <button 
-          onClick={() => setActiveTab('costs')}
-          className={cn(
-            'pb-2 px-4',
-            activeTab === 'costs' && 'border-b-2 border-accent-500 font-medium'
-          )}
-        >
-          API Costs
-        </button>
-        <button 
-          onClick={() => setActiveTab('wallet')}
-          className={cn(
-            'pb-2 px-4',
-            activeTab === 'wallet' && 'border-b-2 border-accent-500 font-medium'
-          )}
-        >
-          Wallet
-        </button>
-      </div>
-      
-      {/* 内容区 */}
-      {activeTab === 'costs' ? (
-        <CostsTab analytics={analytics} />
-      ) : (
-        <WalletTab walletData={walletData} />
-      )}
-    </div>
-  )
+    const [activeTab, setActiveTab] = useState<'costs' | 'wallet'>('costs');
+    const { analytics } = useCostAnalytics();
+    const { walletData } = useWalletData(); // 新增 hook
+
+    return (
+        <div className="p-6">
+            {/* 页面标题 */}
+            <h1 className="text-2xl font-bold mb-6">Economics</h1>
+
+            {/* 标签切换 */}
+            <div className="flex gap-4 mb-6 border-b">
+                <button
+                    onClick={() => setActiveTab('costs')}
+                    className={cn('pb-2 px-4', activeTab === 'costs' && 'border-b-2 border-accent-500 font-medium')}
+                >
+                    API Costs
+                </button>
+                <button
+                    onClick={() => setActiveTab('wallet')}
+                    className={cn('pb-2 px-4', activeTab === 'wallet' && 'border-b-2 border-accent-500 font-medium')}
+                >
+                    Wallet
+                </button>
+            </div>
+
+            {/* 内容区 */}
+            {activeTab === 'costs' ? <CostsTab analytics={analytics} /> : <WalletTab walletData={walletData} />}
+        </div>
+    );
 }
 ```
 
 #### Step 3: 拆分组件
+
 ```tsx
 // 原有 Costs 内容
 function CostsTab({ analytics }: { analytics: CostAnalytics }) {
-  return (
-    <>
-      <KpiCards data={analytics.kpis} />
-      <CostCharts data={analytics.timeseries} />
-      <SessionList sessions={analytics.sessions} />
-    </>
-  )
+    return (
+        <>
+            <KpiCards data={analytics.kpis} />
+            <CostCharts data={analytics.timeseries} />
+            <SessionList sessions={analytics.sessions} />
+        </>
+    );
 }
 
 // 新增 Wallet 内容
 function WalletTab({ walletData }: { walletData: WalletData }) {
-  return (
-    <>
-      <WalletCards 
-        solBalance={walletData.balances.sol}
-        usdcBalance={walletData.balances.usdc}
-        reputation={walletData.reputation}
-      />
-      <TransactionList transactions={walletData.transactions} />
-      <EscrowList escrows={walletData.escrows} />
-    </>
-  )
+    return (
+        <>
+            <WalletCards
+                solBalance={walletData.balances.sol}
+                usdcBalance={walletData.balances.usdc}
+                reputation={walletData.reputation}
+            />
+            <TransactionList transactions={walletData.transactions} />
+            <EscrowList escrows={walletData.escrows} />
+        </>
+    );
 }
 ```
 
@@ -211,10 +207,12 @@ CostsScreen (Economics)
 ## 🔄 需要修改的文件清单
 
 ### 修改（保留原有功能）
+
 - [x] `src/screens/costs/costs-screen.tsx` - 添加标签切换
 - [ ] `src/screens/costs/use-cost-analytics.ts` - 保留不变
 
 ### 新增
+
 - [ ] `src/screens/costs/use-wallet-data.ts` - Wallet 数据 hook
 - [ ] `src/screens/costs/components/WalletCards.tsx`
 - [ ] `src/screens/costs/components/TransactionList.tsx`
@@ -222,6 +220,7 @@ CostsScreen (Economics)
 - [ ] `src/server/solana/client.ts` - Solana 客户端
 
 ### 不变（完全保留）
+
 - [x] `src/server/usage-cost.ts` - 原有成本计算
 - [x] `src/server/provider-usage.ts` - Provider 统计
 - [x] `src/components/usage-meter/` - 用量组件

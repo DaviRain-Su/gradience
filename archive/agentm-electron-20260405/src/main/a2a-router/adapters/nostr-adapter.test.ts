@@ -166,7 +166,7 @@ describe('NostrAdapter - Soul Profile Features', () => {
                         embeddingHash: 'embed-hash-123',
                         visibility: 'public',
                         tags: ['AI', 'blockchain', 'DeFi'],
-                    }
+                    },
                 );
             });
         });
@@ -175,18 +175,18 @@ describe('NostrAdapter - Soul Profile Features', () => {
     describe('discoverAgents() with Soul filters', () => {
         it('should return empty when no relays configured', async () => {
             await adapter.initialize();
-            
+
             const agents = await adapter.discoverAgents({
                 soulType: 'agent',
                 interestTags: ['AI', 'blockchain'],
             });
-            
+
             assert.deepStrictEqual(agents, []);
         });
 
         it('should support all Soul filter combinations', async () => {
             await adapter.initialize();
-            
+
             // Should not throw with all filters
             await assert.doesNotReject(async () => {
                 await adapter.discoverAgents({

@@ -60,6 +60,7 @@ Gradience + OWS
 **Objective:** Understand OWS SDK capabilities and integration points
 
 **Research:**
+
 - OWS Core SDK: https://github.com/open-wallet-standard/core
 - OWS Agent Kit capabilities
 - Authentication flows
@@ -76,6 +77,7 @@ Gradience + OWS
 **Objective:** Create clean abstraction layer for OWS integration
 
 **Files:**
+
 - Create: `packages/ows-adapter/src/wallet.ts`
 - Create: `packages/ows-adapter/src/types.ts`
 - Create: `packages/ows-adapter/package.json`
@@ -92,29 +94,29 @@ mkdir -p packages/ows-adapter/tests
 ```typescript
 // packages/ows-adapter/src/types.ts
 export interface OWSWallet {
-  address: string;
-  publicKey: string;
-  signMessage(message: string): Promise<string>;
-  signTransaction(tx: any): Promise<any>;
+    address: string;
+    publicKey: string;
+    signMessage(message: string): Promise<string>;
+    signTransaction(tx: any): Promise<any>;
 }
 
 export interface OWSIdentity {
-  did: string;
-  wallet: OWSWallet;
-  credentials: OWSCredential[];
+    did: string;
+    wallet: OWSWallet;
+    credentials: OWSCredential[];
 }
 
 export interface OWSCredential {
-  type: string;
-  issuer: string;
-  data: any;
-  signature: string;
+    type: string;
+    issuer: string;
+    data: any;
+    signature: string;
 }
 
 export interface OWSAgentConfig {
-  apiKey?: string;
-  network: 'mainnet' | 'devnet';
-  defaultChain: 'solana' | 'ethereum';
+    apiKey?: string;
+    network: 'mainnet' | 'devnet';
+    defaultChain: 'solana' | 'ethereum';
 }
 ```
 
@@ -125,30 +127,30 @@ export interface OWSAgentConfig {
 import { OWSWallet, OWSIdentity, OWSAgentConfig } from './types';
 
 export class OWSWalletAdapter {
-  private config: OWSAgentConfig;
-  private wallet: OWSWallet | null = null;
+    private config: OWSAgentConfig;
+    private wallet: OWSWallet | null = null;
 
-  constructor(config: OWSAgentConfig) {
-    this.config = config;
-  }
-
-  async connect(): Promise<OWSWallet> {
-    // Initialize OWS SDK connection
-    // Return wallet instance
-    throw new Error('Not implemented');
-  }
-
-  async getIdentity(): Promise<OWSIdentity> {
-    // Get agent identity with credentials
-    throw new Error('Not implemented');
-  }
-
-  async signTaskAgreement(taskHash: string): Promise<string> {
-    if (!this.wallet) {
-      throw new Error('Wallet not connected');
+    constructor(config: OWSAgentConfig) {
+        this.config = config;
     }
-    return this.wallet.signMessage(taskHash);
-  }
+
+    async connect(): Promise<OWSWallet> {
+        // Initialize OWS SDK connection
+        // Return wallet instance
+        throw new Error('Not implemented');
+    }
+
+    async getIdentity(): Promise<OWSIdentity> {
+        // Get agent identity with credentials
+        throw new Error('Not implemented');
+    }
+
+    async signTaskAgreement(taskHash: string): Promise<string> {
+        if (!this.wallet) {
+            throw new Error('Wallet not connected');
+        }
+        return this.wallet.signMessage(taskHash);
+    }
 }
 ```
 
@@ -159,13 +161,13 @@ export class OWSWalletAdapter {
 import { OWSWalletAdapter } from '../src/wallet';
 
 describe('OWSWalletAdapter', () => {
-  it('should create adapter with config', () => {
-    const adapter = new OWSWalletAdapter({
-      network: 'devnet',
-      defaultChain: 'solana'
+    it('should create adapter with config', () => {
+        const adapter = new OWSWalletAdapter({
+            network: 'devnet',
+            defaultChain: 'solana',
+        });
+        expect(adapter).toBeDefined();
     });
-    expect(adapter).toBeDefined();
-  });
 });
 ```
 
@@ -185,6 +187,7 @@ git commit -m "feat(ows-adapter): create foundation types and wallet adapter"
 **Objective:** Connect OWS wallet to Gradience Agent identity
 
 **Files:**
+
 - Modify: `apps/agentm/src/shared/types.ts`
 - Create: `apps/agentm/src/lib/ows-identity.ts`
 
@@ -193,20 +196,20 @@ git commit -m "feat(ows-adapter): create foundation types and wallet adapter"
 ```typescript
 // apps/agentm/src/shared/types.ts
 export interface AgentIdentity {
-  // Existing
-  solanaAddress: string;
-  
-  // New: OWS integration
-  owsWallet?: string;
-  owsDID?: string;
-  credentials?: AgentCredential[];
+    // Existing
+    solanaAddress: string;
+
+    // New: OWS integration
+    owsWallet?: string;
+    owsDID?: string;
+    credentials?: AgentCredential[];
 }
 
 export interface AgentCredential {
-  type: 'reputation' | 'skill' | 'verification';
-  issuer: string;
-  data: any;
-  issuedAt: number;
+    type: 'reputation' | 'skill' | 'verification';
+    issuer: string;
+    data: any;
+    issuedAt: number;
 }
 ```
 
@@ -218,35 +221,35 @@ import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 import { AgentIdentity } from '../shared/types';
 
 export class AgentOWSIdentity {
-  private owsAdapter: OWSWalletAdapter;
-  
-  constructor() {
-    this.owsAdapter = new OWSWalletAdapter({
-      network: process.env.SOLANA_NETWORK === 'mainnet' ? 'mainnet' : 'devnet',
-      defaultChain: 'solana'
-    });
-  }
+    private owsAdapter: OWSWalletAdapter;
 
-  async initialize(): Promise<AgentIdentity> {
-    const wallet = await this.owsAdapter.connect();
-    const identity = await this.owsAdapter.getIdentity();
-    
-    return {
-      solanaAddress: wallet.address,
-      owsWallet: wallet.address,
-      owsDID: identity.did,
-      credentials: identity.credentials.map(c => ({
-        type: c.type as any,
-        issuer: c.issuer,
-        data: c.data,
-        issuedAt: Date.now()
-      }))
-    };
-  }
+    constructor() {
+        this.owsAdapter = new OWSWalletAdapter({
+            network: process.env.SOLANA_NETWORK === 'mainnet' ? 'mainnet' : 'devnet',
+            defaultChain: 'solana',
+        });
+    }
 
-  async signTask(taskHash: string): Promise<string> {
-    return this.owsAdapter.signTaskAgreement(taskHash);
-  }
+    async initialize(): Promise<AgentIdentity> {
+        const wallet = await this.owsAdapter.connect();
+        const identity = await this.owsAdapter.getIdentity();
+
+        return {
+            solanaAddress: wallet.address,
+            owsWallet: wallet.address,
+            owsDID: identity.did,
+            credentials: identity.credentials.map((c) => ({
+                type: c.type as any,
+                issuer: c.issuer,
+                data: c.data,
+                issuedAt: Date.now(),
+            })),
+        };
+    }
+
+    async signTask(taskHash: string): Promise<string> {
+        return this.owsAdapter.signTaskAgreement(taskHash);
+    }
 }
 ```
 
@@ -269,6 +272,7 @@ git commit -m "feat(agent): integrate OWS identity with Agent types"
 **Objective:** Enable agent-to-agent messaging through XMTP, using OWS for authentication
 
 **Files:**
+
 - Create: `packages/xmtp-adapter/src/client.ts`
 - Create: `packages/xmtp-adapter/src/types.ts`
 
@@ -287,50 +291,50 @@ import { Client } from '@xmtp/xmtp-js';
 import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 export interface XMTPMessage {
-  id: string;
-  sender: string;
-  content: any;
-  timestamp: number;
+    id: string;
+    sender: string;
+    content: any;
+    timestamp: number;
 }
 
 export class XMTPAgentClient {
-  private client: Client | null = null;
-  private owsWallet: OWSWalletAdapter;
+    private client: Client | null = null;
+    private owsWallet: OWSWalletAdapter;
 
-  constructor(owsWallet: OWSWalletAdapter) {
-    this.owsWallet = owsWallet;
-  }
-
-  async initialize(): Promise<void> {
-    // Use OWS wallet to sign XMTP identity
-    const signer = await this.owsWallet.getSigner();
-    this.client = await Client.create(signer);
-  }
-
-  async sendMessage(toAgentId: string, content: any): Promise<string> {
-    if (!this.client) {
-      throw new Error('XMTP not initialized');
+    constructor(owsWallet: OWSWalletAdapter) {
+        this.owsWallet = owsWallet;
     }
-    
-    const conversation = await this.client.conversations.newConversation(toAgentId);
-    const message = await conversation.send(JSON.stringify(content));
-    return message.id;
-  }
 
-  async listenForMessages(callback: (msg: XMTPMessage) => void): Promise<void> {
-    // Set up message stream
-    if (!this.client) return;
-    
-    const stream = await this.client.conversations.streamAllMessages();
-    for await (const message of stream) {
-      callback({
-        id: message.id,
-        sender: message.senderAddress,
-        content: JSON.parse(message.content),
-        timestamp: message.sent.getTime()
-      });
+    async initialize(): Promise<void> {
+        // Use OWS wallet to sign XMTP identity
+        const signer = await this.owsWallet.getSigner();
+        this.client = await Client.create(signer);
     }
-  }
+
+    async sendMessage(toAgentId: string, content: any): Promise<string> {
+        if (!this.client) {
+            throw new Error('XMTP not initialized');
+        }
+
+        const conversation = await this.client.conversations.newConversation(toAgentId);
+        const message = await conversation.send(JSON.stringify(content));
+        return message.id;
+    }
+
+    async listenForMessages(callback: (msg: XMTPMessage) => void): Promise<void> {
+        // Set up message stream
+        if (!this.client) return;
+
+        const stream = await this.client.conversations.streamAllMessages();
+        for await (const message of stream) {
+            callback({
+                id: message.id,
+                sender: message.senderAddress,
+                content: JSON.parse(message.content),
+                timestamp: message.sent.getTime(),
+            });
+        }
+    }
 }
 ```
 
@@ -350,6 +354,7 @@ git commit -m "feat(xmtp-adapter): create XMTP messaging layer with OWS auth"
 **Objective:** Define message format for agent task negotiation over XMTP
 
 **Files:**
+
 - Create: `packages/protocol/src/messages.ts`
 
 **Step 1: Define message types**
@@ -358,66 +363,66 @@ git commit -m "feat(xmtp-adapter): create XMTP messaging layer with OWS auth"
 // packages/protocol/src/messages.ts
 
 export enum MessageType {
-  TASK_REQUEST = 'TASK_REQUEST',
-  TASK_RESPONSE = 'TASK_RESPONSE',
-  TASK_ACCEPTED = 'TASK_ACCEPTED',
-  TASK_REJECTED = 'TASK_REJECTED',
-  DELIVERABLE_SUBMITTED = 'DELIVERABLE_SUBMITTED',
-  PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED'
+    TASK_REQUEST = 'TASK_REQUEST',
+    TASK_RESPONSE = 'TASK_RESPONSE',
+    TASK_ACCEPTED = 'TASK_ACCEPTED',
+    TASK_REJECTED = 'TASK_REJECTED',
+    DELIVERABLE_SUBMITTED = 'DELIVERABLE_SUBMITTED',
+    PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
 }
 
 export interface TaskRequestMessage {
-  type: MessageType.TASK_REQUEST;
-  taskId: string;
-  title: string;
-  description: string;
-  budget: number;
-  currency: string;
-  deadline: number;
-  requirements: string[];
+    type: MessageType.TASK_REQUEST;
+    taskId: string;
+    title: string;
+    description: string;
+    budget: number;
+    currency: string;
+    deadline: number;
+    requirements: string[];
 }
 
 export interface TaskResponseMessage {
-  type: MessageType.TASK_RESPONSE;
-  taskId: string;
-  accepted: boolean;
-  counterOffer?: {
-    budget: number;
-    deadline: number;
-  };
-  reason?: string;
+    type: MessageType.TASK_RESPONSE;
+    taskId: string;
+    accepted: boolean;
+    counterOffer?: {
+        budget: number;
+        deadline: number;
+    };
+    reason?: string;
 }
 
 export interface TaskAcceptedMessage {
-  type: MessageType.TASK_ACCEPTED;
-  taskId: string;
-  escrowAddress: string;
-  gradienceTaskId: string;
+    type: MessageType.TASK_ACCEPTED;
+    taskId: string;
+    escrowAddress: string;
+    gradienceTaskId: string;
 }
 
 // Protocol handler
 export class TaskNegotiationProtocol {
-  async handleMessage(message: any): Promise<any> {
-    switch (message.type) {
-      case MessageType.TASK_REQUEST:
-        return this.handleTaskRequest(message);
-      case MessageType.TASK_RESPONSE:
-        return this.handleTaskResponse(message);
-      // ... other handlers
+    async handleMessage(message: any): Promise<any> {
+        switch (message.type) {
+            case MessageType.TASK_REQUEST:
+                return this.handleTaskRequest(message);
+            case MessageType.TASK_RESPONSE:
+                return this.handleTaskResponse(message);
+            // ... other handlers
+        }
     }
-  }
 
-  private async handleTaskRequest(msg: TaskRequestMessage): Promise<void> {
-    // Agent evaluates task and decides
-    console.log('Received task request:', msg.title);
-  }
-
-  private async handleTaskResponse(msg: TaskResponseMessage): Promise<void> {
-    if (msg.accepted) {
-      // Create Gradience escrow
-      console.log('Task accepted, creating escrow...');
+    private async handleTaskRequest(msg: TaskRequestMessage): Promise<void> {
+        // Agent evaluates task and decides
+        console.log('Received task request:', msg.title);
     }
-  }
+
+    private async handleTaskResponse(msg: TaskResponseMessage): Promise<void> {
+        if (msg.accepted) {
+            // Create Gradience escrow
+            console.log('Task accepted, creating escrow...');
+        }
+    }
 }
 ```
 
@@ -439,6 +444,7 @@ git commit -m "feat(protocol): define task negotiation message types"
 **Objective:** Link XMTP negotiation to Gradience settlement
 
 **Files:**
+
 - Create: `packages/integration/src/task-orchestrator.ts`
 
 **Step 1: Create orchestrator**
@@ -448,10 +454,10 @@ git commit -m "feat(protocol): define task negotiation message types"
 import { XMTPAgentClient } from '@gradiences/xmtp-adapter';
 import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 import { GradienceSDK } from '@gradiences/sdk';
-import { 
-  TaskNegotiationProtocol, 
+import {
+  TaskNegotiationProtocol,
   MessageType,
-  TaskRequestMessage 
+  TaskRequestMessage
 } from '@gradiences/protocol';
 
 export class TaskOrchestrator {
@@ -478,7 +484,7 @@ export class TaskOrchestrator {
   async publishTask(workerAgentId: string, task: TaskRequestMessage): Promise<string> {
     // 1. Send task request via XMTP
     await this.xmtp.sendMessage(workerAgentId, task);
-    
+
     // 2. Wait for response (in real impl, use async/await or event)
     console.log('Task published, waiting for response...');
     return task.taskId;
@@ -532,6 +538,7 @@ git commit -m "feat(integration): create task orchestrator linking XMTP and Grad
 **Objective:** Create UI for agents to manage OWS identity and tasks
 
 **Files:**
+
 - Create: `apps/agentm/src/views/OWSDashboard.tsx`
 - Modify: `apps/agentm/src/renderer/App.tsx`
 
@@ -544,48 +551,50 @@ import { AgentOWSIdentity } from '../lib/ows-identity';
 import { XMTPAgentClient } from '@gradiences/xmtp-adapter';
 
 export function OWSDashboard() {
-  const [identity, setIdentity] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+    const [identity, setIdentity] = useState<any>(null);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadIdentity();
-    setupMessaging();
-  }, []);
+    useEffect(() => {
+        loadIdentity();
+        setupMessaging();
+    }, []);
 
-  async function loadIdentity() {
-    const owsIdentity = new AgentOWSIdentity();
-    const id = await owsIdentity.initialize();
-    setIdentity(id);
-  }
+    async function loadIdentity() {
+        const owsIdentity = new AgentOWSIdentity();
+        const id = await owsIdentity.initialize();
+        setIdentity(id);
+    }
 
-  async function setupMessaging() {
-    // Setup XMTP message listener
-  }
+    async function setupMessaging() {
+        // Setup XMTP message listener
+    }
 
-  return (
-    <div className="ows-dashboard">
-      <h1>Agent Identity</h1>
-      {identity && (
-        <div>
-          <p>OWS Wallet: {identity.owsWallet}</p>
-          <p>DID: {identity.owsDID}</p>
-          <h3>Credentials</h3>
-          <ul>
-            {identity.credentials?.map((cred, i) => (
-              <li key={i}>{cred.type} - {cred.issuer}</li>
-            ))}
-          </ul>
+    return (
+        <div className="ows-dashboard">
+            <h1>Agent Identity</h1>
+            {identity && (
+                <div>
+                    <p>OWS Wallet: {identity.owsWallet}</p>
+                    <p>DID: {identity.owsDID}</p>
+                    <h3>Credentials</h3>
+                    <ul>
+                        {identity.credentials?.map((cred, i) => (
+                            <li key={i}>
+                                {cred.type} - {cred.issuer}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            <h2>Active Tasks</h2>
+            {/* Task list */}
+
+            <h2>Messages</h2>
+            {/* Message list */}
         </div>
-      )}
-      
-      <h2>Active Tasks</h2>
-      {/* Task list */}
-      
-      <h2>Messages</h2>
-      {/* Message list */}
-    </div>
-  );
+    );
 }
 ```
 
@@ -607,6 +616,7 @@ git commit -m "feat(ui): add OWS identity dashboard for agents"
 **Objective:** Write comprehensive tests for OWS integration
 
 **Files:**
+
 - Create: `tests/integration/ows-integration.test.ts`
 
 **Step 1: Write integration tests**
@@ -614,31 +624,31 @@ git commit -m "feat(ui): add OWS identity dashboard for agents"
 ```typescript
 // tests/integration/ows-integration.test.ts
 describe('OWS Integration', () => {
-  describe('Wallet Connection', () => {
-    it('should connect OWS wallet', async () => {
-      // Test wallet connection
+    describe('Wallet Connection', () => {
+        it('should connect OWS wallet', async () => {
+            // Test wallet connection
+        });
+
+        it('should retrieve agent identity', async () => {
+            // Test identity retrieval
+        });
     });
 
-    it('should retrieve agent identity', async () => {
-      // Test identity retrieval
-    });
-  });
+    describe('Task Negotiation', () => {
+        it('should send task request via XMTP', async () => {
+            // Test message sending
+        });
 
-  describe('Task Negotiation', () => {
-    it('should send task request via XMTP', async () => {
-      // Test message sending
+        it('should receive and process task response', async () => {
+            // Test message handling
+        });
     });
 
-    it('should receive and process task response', async () => {
-      // Test message handling
+    describe('Settlement', () => {
+        it('should create escrow after task acceptance', async () => {
+            // Test Gradience integration
+        });
     });
-  });
-
-  describe('Settlement', () => {
-    it('should create escrow after task acceptance', async () => {
-      // Test Gradience integration
-    });
-  });
 });
 ```
 
@@ -658,12 +668,13 @@ git commit -m "test: add OWS integration tests"
 **Objective:** Document OWS integration for developers
 
 **Files:**
+
 - Create: `docs/integrations/ows/README.md`
 - Create: `docs/integrations/ows/quickstart.md`
 
 **Step 1: Write README**
 
-```markdown
+````markdown
 # OWS Integration
 
 Gradience uses OWS (Open Wallet Standard) for agent identity and authentication.
@@ -686,18 +697,20 @@ await agent.initialize();
 // Now agent has OWS-backed identity
 console.log(agent.identity.owsWallet);
 ```
+````
 
 ## Architecture
 
 See [architecture.md](./architecture.md)
-```
+
+````
 
 **Step 2: Commit**
 
 ```bash
 git add docs/integrations/ows/
 git commit -m "docs: add OWS integration documentation"
-```
+````
 
 **Time:** 2 hours
 
@@ -707,14 +720,14 @@ git commit -m "docs: add OWS integration documentation"
 
 ### Total Timeline
 
-| Phase | Tasks | Time | Week |
-|-------|-------|------|------|
-| Foundation | 1-3 | 7h | 1 |
-| Messaging | 4-5 | 7h | 1-2 |
-| Settlement | 6 | 4h | 2 |
-| UI | 7 | 4h | 2-3 |
-| Testing | 8-9 | 5h | 3 |
-| **Total** | **9** | **27h** | **3 weeks** |
+| Phase      | Tasks | Time    | Week        |
+| ---------- | ----- | ------- | ----------- |
+| Foundation | 1-3   | 7h      | 1           |
+| Messaging  | 4-5   | 7h      | 1-2         |
+| Settlement | 6     | 4h      | 2           |
+| UI         | 7     | 4h      | 2-3         |
+| Testing    | 8-9   | 5h      | 3           |
+| **Total**  | **9** | **27h** | **3 weeks** |
 
 ### Deliverables
 

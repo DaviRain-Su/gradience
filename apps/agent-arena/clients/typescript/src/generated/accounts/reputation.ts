@@ -7,140 +7,137 @@
  */
 
 import {
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
-  type Account,
-  type Address,
-  type Codec,
-  type Decoder,
-  type EncodedAccount,
-  type Encoder,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-} from "@solana/kit";
+    assertAccountExists,
+    assertAccountsExist,
+    combineCodec,
+    decodeAccount,
+    fetchEncodedAccount,
+    fetchEncodedAccounts,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU8Decoder,
+    getU8Encoder,
+    type Account,
+    type Address,
+    type Codec,
+    type Decoder,
+    type EncodedAccount,
+    type Encoder,
+    type FetchAccountConfig,
+    type FetchAccountsConfig,
+    type MaybeAccount,
+    type MaybeEncodedAccount,
+} from '@solana/kit';
 import {
-  getCategoryStatsDecoder,
-  getCategoryStatsEncoder,
-  getPubkeyBytesDecoder,
-  getPubkeyBytesEncoder,
-  getReputationStatsDecoder,
-  getReputationStatsEncoder,
-  type CategoryStats,
-  type CategoryStatsArgs,
-  type PubkeyBytes,
-  type PubkeyBytesArgs,
-  type ReputationStats,
-  type ReputationStatsArgs,
-} from "../types";
+    getCategoryStatsDecoder,
+    getCategoryStatsEncoder,
+    getPubkeyBytesDecoder,
+    getPubkeyBytesEncoder,
+    getReputationStatsDecoder,
+    getReputationStatsEncoder,
+    type CategoryStats,
+    type CategoryStatsArgs,
+    type PubkeyBytes,
+    type PubkeyBytesArgs,
+    type ReputationStats,
+    type ReputationStatsArgs,
+} from '../types';
 
 export type Reputation = {
-  discriminator: number;
-  version: number;
-  agent: PubkeyBytes;
-  global: ReputationStats;
-  byCategory: Array<CategoryStats>;
-  bump: number;
+    discriminator: number;
+    version: number;
+    agent: PubkeyBytes;
+    global: ReputationStats;
+    byCategory: Array<CategoryStats>;
+    bump: number;
 };
 
 export type ReputationArgs = {
-  discriminator: number;
-  version: number;
-  agent: PubkeyBytesArgs;
-  global: ReputationStatsArgs;
-  byCategory: Array<CategoryStatsArgs>;
-  bump: number;
+    discriminator: number;
+    version: number;
+    agent: PubkeyBytesArgs;
+    global: ReputationStatsArgs;
+    byCategory: Array<CategoryStatsArgs>;
+    bump: number;
 };
 
 /** Gets the encoder for {@link ReputationArgs} account data. */
 export function getReputationEncoder(): Encoder<ReputationArgs> {
-  return getStructEncoder([
-    ["discriminator", getU8Encoder()],
-    ["version", getU8Encoder()],
-    ["agent", getPubkeyBytesEncoder()],
-    ["global", getReputationStatsEncoder()],
-    ["byCategory", getArrayEncoder(getCategoryStatsEncoder())],
-    ["bump", getU8Encoder()],
-  ]);
+    return getStructEncoder([
+        ['discriminator', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['agent', getPubkeyBytesEncoder()],
+        ['global', getReputationStatsEncoder()],
+        ['byCategory', getArrayEncoder(getCategoryStatsEncoder())],
+        ['bump', getU8Encoder()],
+    ]);
 }
 
 /** Gets the decoder for {@link Reputation} account data. */
 export function getReputationDecoder(): Decoder<Reputation> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["agent", getPubkeyBytesDecoder()],
-    ["global", getReputationStatsDecoder()],
-    ["byCategory", getArrayDecoder(getCategoryStatsDecoder())],
-    ["bump", getU8Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['version', getU8Decoder()],
+        ['agent', getPubkeyBytesDecoder()],
+        ['global', getReputationStatsDecoder()],
+        ['byCategory', getArrayDecoder(getCategoryStatsDecoder())],
+        ['bump', getU8Decoder()],
+    ]);
 }
 
 /** Gets the codec for {@link Reputation} account data. */
 export function getReputationCodec(): Codec<ReputationArgs, Reputation> {
-  return combineCodec(getReputationEncoder(), getReputationDecoder());
+    return combineCodec(getReputationEncoder(), getReputationDecoder());
 }
 
 export function decodeReputation<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress>,
 ): Account<Reputation, TAddress>;
 export function decodeReputation<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+    encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Reputation, TAddress>;
 export function decodeReputation<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Reputation, TAddress> | MaybeAccount<Reputation, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getReputationDecoder(),
-  );
+    return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getReputationDecoder());
 }
 
 export async function fetchReputation<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<Account<Reputation, TAddress>> {
-  const maybeAccount = await fetchMaybeReputation(rpc, address, config);
-  assertAccountExists(maybeAccount);
-  return maybeAccount;
+    const maybeAccount = await fetchMaybeReputation(rpc, address, config);
+    assertAccountExists(maybeAccount);
+    return maybeAccount;
 }
 
 export async function fetchMaybeReputation<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Reputation, TAddress>> {
-  const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeReputation(maybeAccount);
+    const maybeAccount = await fetchEncodedAccount(rpc, address, config);
+    return decodeReputation(maybeAccount);
 }
 
 export async function fetchAllReputation(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<Account<Reputation>[]> {
-  const maybeAccounts = await fetchAllMaybeReputation(rpc, addresses, config);
-  assertAccountsExist(maybeAccounts);
-  return maybeAccounts;
+    const maybeAccounts = await fetchAllMaybeReputation(rpc, addresses, config);
+    assertAccountsExist(maybeAccounts);
+    return maybeAccounts;
 }
 
 export async function fetchAllMaybeReputation(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Reputation>[]> {
-  const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeReputation(maybeAccount));
+    const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
+    return maybeAccounts.map(maybeAccount => decodeReputation(maybeAccount));
 }

@@ -4,17 +4,17 @@
 
 ### ✅ 成功推送的分支
 
-| 分支 | 状态 | 说明 |
-|------|------|------|
-| `main` | ✅ 成功 | 主分支已强制更新 |
-| `backup-before-history-rewrite` | ✅ 成功 | 备份分支已推送 |
-| `entire/5a6619d-e3b0c4` | ✅ 成功 | 自动分支 |
-| `entire/a177403-e3b0c4` | ✅ 成功 | 自动分支 |
+| 分支                            | 状态    | 说明             |
+| ------------------------------- | ------- | ---------------- |
+| `main`                          | ✅ 成功 | 主分支已强制更新 |
+| `backup-before-history-rewrite` | ✅ 成功 | 备份分支已推送   |
+| `entire/5a6619d-e3b0c4`         | ✅ 成功 | 自动分支         |
+| `entire/a177403-e3b0c4`         | ✅ 成功 | 自动分支         |
 
 ### ⚠️ 有问题的分支
 
-| 分支 | 状态 | 说明 |
-|------|------|------|
+| 分支                    | 状态    | 说明                       |
+| ----------------------- | ------- | -------------------------- |
 | `entire/checkpoints/v1` | ⚠️ 冲突 | 可能受保护或有特殊同步机制 |
 
 ## 推送结果
@@ -32,11 +32,13 @@
 ## 验证
 
 ### Codeberg 上的仓库
+
 - **URL**: https://codeberg.org/gradiences/gradiences
 - **main 分支**: 已更新到最新提交 (a177403)
 - **大小**: 从 ~18GB 减少到 ~188MB
 
 ### 本地仓库状态
+
 ```
 总大小: 188 MB
 .git 目录: 117 MB
@@ -46,12 +48,15 @@ Pack 文件: 112 MB
 ## 注意事项
 
 ### 1. entire/checkpoints/v1 分支
+
 这个分支有特殊的同步机制，推送时出现错误：
+
 ```
 remote: error: cannot lock ref 'refs/heads/entire/checkpoints/v1': reference already exists
 ```
 
 这可能是因为：
+
 - 分支受保护
 - 有外部同步工具在操作
 - 需要特殊权限
@@ -59,7 +64,9 @@ remote: error: cannot lock ref 'refs/heads/entire/checkpoints/v1': reference alr
 **建议**: 如果需要这个分支，可以手动在 Codeberg 上处理，或者联系 Codeberg 支持。
 
 ### 2. 团队成员需要重新克隆
+
 所有开发者必须重新克隆仓库：
+
 ```bash
 # 备份本地修改
 cd gradiences
@@ -109,5 +116,5 @@ Best regards
 
 ---
 
-*推送完成时间: 2026-04-03*
-*远程: codeberg.org/gradiences/gradiences*
+_推送完成时间: 2026-04-03_
+_远程: codeberg.org/gradiences/gradiences_

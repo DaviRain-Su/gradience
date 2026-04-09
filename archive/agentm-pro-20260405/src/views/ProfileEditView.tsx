@@ -12,12 +12,5 @@ export function ProfileEditView({
     onSubmit: (draft: ProfileDraft) => Promise<void>;
     onCancel: () => void;
 }) {
-    return (
-        <ProfileForm
-            initialProfile={profile}
-            submitting={submitting}
-            onSubmit={onSubmit}
-            onCancel={onCancel}
-        />
-    );
+    return <ProfileForm initialProfile={profile} submitting={submitting} onSubmit={onSubmit} onCancel={onCancel} />;
 }

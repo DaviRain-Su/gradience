@@ -325,7 +325,7 @@ export class RateLimiter {
      */
     async execute<T>(
         operation: () => Promise<T>,
-        options: { priority?: RequestPriority; timeout?: number } = {}
+        options: { priority?: RequestPriority; timeout?: number } = {},
     ): Promise<T> {
         const priority = options.priority ?? 'normal';
         const timeout = options.timeout ?? this.config.queueTimeoutMs;
@@ -419,9 +419,7 @@ export class RateLimiter {
 
         // Insert by priority
         const weight = PRIORITY_WEIGHTS[request.priority];
-        const insertIdx = this.queue.findIndex(
-            (r) => PRIORITY_WEIGHTS[r.priority] < weight
-        );
+        const insertIdx = this.queue.findIndex((r) => PRIORITY_WEIGHTS[r.priority] < weight);
 
         if (insertIdx === -1) {
             this.queue.push(request);
@@ -495,12 +493,12 @@ export class RateLimitError extends Error {
     constructor(
         public readonly limiterName: string,
         public readonly retryAfterMs: number,
-        reason?: string
+        reason?: string,
     ) {
         super(
             reason
                 ? `Rate limited by '${limiterName}': ${reason}. Retry after ${retryAfterMs}ms`
-                : `Rate limited by '${limiterName}'. Retry after ${retryAfterMs}ms`
+                : `Rate limited by '${limiterName}'. Retry after ${retryAfterMs}ms`,
         );
         this.name = 'RateLimitError';
     }
@@ -590,7 +588,7 @@ export function getRateLimiterRegistry(): RateLimiterRegistry {
 export function withRateLimit<T extends (...args: unknown[]) => Promise<unknown>>(
     fn: T,
     limiterName: string,
-    config?: Partial<RateLimitConfig>
+    config?: Partial<RateLimitConfig>,
 ): T {
     const registry = getRateLimiterRegistry();
     const limiter = registry.get(limiterName, config);

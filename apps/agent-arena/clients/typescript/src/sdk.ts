@@ -857,9 +857,7 @@ export class GradienceSDK {
     }
 
     async getAgentProfile(agent: string): Promise<AgentProfileApi | null> {
-        return this.getJsonOrNull<AgentProfileApi>(
-            `/api/agents/${encodeURIComponent(agent)}/profile`,
-        );
+        return this.getJsonOrNull<AgentProfileApi>(`/api/agents/${encodeURIComponent(agent)}/profile`);
     }
 
     async updateAgentProfile(agent: string, data: AgentProfileUpdate): Promise<{ ok: boolean }> {

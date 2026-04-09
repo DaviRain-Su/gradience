@@ -11,14 +11,14 @@
 
 ### 1.1 基本信息
 
-| 属性 | 详情 |
-|------|------|
-| **参数规模** | 2B (20亿参数) |
-| **架构** | Conformer (Transformer 变体) |
-| **许可证** | Apache 2.0 (完全开源商用) |
-| **支持语言** | 14 种语言 |
-| **输入** | 音频波形 (自动重采样至 16kHz) |
-| **输出** | 文本转录 |
+| 属性         | 详情                          |
+| ------------ | ----------------------------- |
+| **参数规模** | 2B (20亿参数)                 |
+| **架构**     | Conformer (Transformer 变体)  |
+| **许可证**   | Apache 2.0 (完全开源商用)     |
+| **支持语言** | 14 种语言                     |
+| **输入**     | 音频波形 (自动重采样至 16kHz) |
+| **输出**     | 文本转录                      |
 
 ### 1.2 支持语言 (14种)
 
@@ -53,13 +53,13 @@ Cohere Transcribe vs 其他 ASR 模型 (同规模):
 
 ### 2.2 开源商用友好
 
-| 特性 | Cohere | Whisper (OpenAI) |
-|------|--------|------------------|
-| **许可证** | Apache 2.0 | MIT |
-| **商用限制** | 无 | 无 |
-| **模型权重** | 完全开放 | 开放 |
-| **自托管** | ✅ 可以 | ✅ 可以 |
-| **成本** | 免费 (自托管) | 免费 (自托管) |
+| 特性         | Cohere        | Whisper (OpenAI) |
+| ------------ | ------------- | ---------------- |
+| **许可证**   | Apache 2.0    | MIT              |
+| **商用限制** | 无            | 无               |
+| **模型权重** | 完全开放      | 开放             |
+| **自托管**   | ✅ 可以       | ✅ 可以          |
+| **成本**     | 免费 (自托管) | 免费 (自托管)    |
 
 ### 2.3 长音频支持
 
@@ -103,38 +103,38 @@ AgentM 语音入口场景:
 import { AutoProcessor, AutoModelForSpeechSeq2Seq } from '@transformers';
 
 export class VoiceInterface {
-  private model: AutoModelForSpeechSeq2Seq;
-  private processor: AutoProcessor;
-  
-  async initialize() {
-    const modelId = "CohereLabs/cohere-transcribe-03-2026";
-    
-    this.processor = await AutoProcessor.from_pretrained(modelId, {
-      trust_remote_code: true,
-    });
-    
-    this.model = await AutoModelForSpeechSeq2Seq.from_pretrained(modelId, {
-      trust_remote_code: true,
-    });
-    
-    // 可选：torch.compile 优化
-    // this.model = torch.compile(this.model);
-  }
-  
-  async transcribe(audioBlob: Blob, language: 'zh' | 'en' = 'zh'): Promise<string> {
-    // 浏览器录音 → ArrayBuffer
-    const audioArray = await blobToArray(audioBlob);
-    
-    const texts = await this.model.transcribe({
-      processor: this.processor,
-      audio_arrays: [audioArray],
-      sample_rates: [16000],
-      language: language,
-      // compile: true, // 生产环境启用
-    });
-    
-    return texts[0];
-  }
+    private model: AutoModelForSpeechSeq2Seq;
+    private processor: AutoProcessor;
+
+    async initialize() {
+        const modelId = 'CohereLabs/cohere-transcribe-03-2026';
+
+        this.processor = await AutoProcessor.from_pretrained(modelId, {
+            trust_remote_code: true,
+        });
+
+        this.model = await AutoModelForSpeechSeq2Seq.from_pretrained(modelId, {
+            trust_remote_code: true,
+        });
+
+        // 可选：torch.compile 优化
+        // this.model = torch.compile(this.model);
+    }
+
+    async transcribe(audioBlob: Blob, language: 'zh' | 'en' = 'zh'): Promise<string> {
+        // 浏览器录音 → ArrayBuffer
+        const audioArray = await blobToArray(audioBlob);
+
+        const texts = await this.model.transcribe({
+            processor: this.processor,
+            audio_arrays: [audioArray],
+            sample_rates: [16000],
+            language: language,
+            // compile: true, // 生产环境启用
+        });
+
+        return texts[0];
+    }
 }
 ```
 
@@ -243,7 +243,7 @@ sequenceDiagram
     participant Agent as AgentM
     participant LLM as Kimi/Claude
     participant TTS as 语音合成
-    
+
     User->>Recorder: 按住说话
     Recorder->>Recorder: 录制音频
     User->>Recorder: 松开结束
@@ -261,36 +261,36 @@ sequenceDiagram
 ```typescript
 // packages/agent-me/src/voice/session.ts
 export class VoiceSession {
-  private voiceInterface: VoiceInterface;
-  private agent: AgentCore;
-  
-  async start() {
-    // 1. 初始化 ASR
-    await this.voiceInterface.initialize();
-    
-    // 2. 开始监听
-    const recorder = new AudioRecorder();
-    
-    recorder.on('speechEnd', async (audioBlob) => {
-      // 3. 语音转文字
-      const text = await this.voiceInterface.transcribe(audioBlob, 'zh');
-      console.log('用户说:', text);
-      
-      // 4. Agent 处理
-      const response = await this.agent.process(text);
-      
-      // 5. 语音回复 (TTS)
-      await this.speak(response);
-    });
-    
-    await recorder.start();
-  }
-  
-  private async speak(text: string) {
-    // 使用 Edge TTS 或其他合成服务
-    const audio = await textToSpeech(text);
-    await playAudio(audio);
-  }
+    private voiceInterface: VoiceInterface;
+    private agent: AgentCore;
+
+    async start() {
+        // 1. 初始化 ASR
+        await this.voiceInterface.initialize();
+
+        // 2. 开始监听
+        const recorder = new AudioRecorder();
+
+        recorder.on('speechEnd', async (audioBlob) => {
+            // 3. 语音转文字
+            const text = await this.voiceInterface.transcribe(audioBlob, 'zh');
+            console.log('用户说:', text);
+
+            // 4. Agent 处理
+            const response = await this.agent.process(text);
+
+            // 5. 语音回复 (TTS)
+            await this.speak(response);
+        });
+
+        await recorder.start();
+    }
+
+    private async speak(text: string) {
+        // 使用 Edge TTS 或其他合成服务
+        const audio = await textToSpeech(text);
+        await playAudio(audio);
+    }
 }
 ```
 
@@ -298,12 +298,12 @@ export class VoiceSession {
 
 ## 6. 对比其他 ASR 方案
 
-| 方案 | 优势 | 劣势 | 适用场景 |
-|------|------|------|----------|
-| **Cohere** | 开源、2B参数、3x速度、中文支持 | 新发布，生态较小 | AgentM (推荐) |
-| **Whisper** | 成熟、多语言、社区大 | 速度较慢 | 通用场景 |
-| **Google Speech** | 准确率高、云端 | 闭源、付费、隐私问题 | 企业应用 |
-| **阿里云 ASR** | 中文优化好 | 闭源、付费、依赖云 | 国内应用 |
+| 方案              | 优势                           | 劣势                 | 适用场景      |
+| ----------------- | ------------------------------ | -------------------- | ------------- |
+| **Cohere**        | 开源、2B参数、3x速度、中文支持 | 新发布，生态较小     | AgentM (推荐) |
+| **Whisper**       | 成熟、多语言、社区大           | 速度较慢             | 通用场景      |
+| **Google Speech** | 准确率高、云端                 | 闭源、付费、隐私问题 | 企业应用      |
+| **阿里云 ASR**    | 中文优化好                     | 闭源、付费、依赖云   | 国内应用      |
 
 **结论**: Cohere 最适合 AgentM 的**主权 + 性能**需求。
 
@@ -346,6 +346,7 @@ python test_chinese.py  # "你好，帮我查看任务"
 > **Cohere Transcribe 是 AgentM 语音入口的理想选择**
 
 理由：
+
 1. ✅ **开源 Apache 2.0** — 与主权原则一致
 2. ✅ **中文支持** — 覆盖主要用户群
 3. ✅ **2B 参数 + 3x 速度** — 性能优秀
@@ -360,5 +361,5 @@ python test_chinese.py  # "你好，帮我查看任务"
 
 ---
 
-*文档版本: v1.0*  
-*最后更新: 2026-03-28*
+_文档版本: v1.0_  
+_最后更新: 2026-03-28_

@@ -68,13 +68,13 @@ Layer 0: 协议内核   Escrow + Judge + Reputation (链无关)
 
 ### 1.2 各模块职责边界
 
-| 模块 | 核心职责 | 数据所有权 | 依赖 |
-|------|---------|-----------|------|
-| **Agent Layer** | 结算 + 信誉 + Stake | 链上任务状态、信誉分数 | Solana Runtime |
-| **Chain Hub** | 工具接入 + Skill 市场 | Skill 注册表、协议注册表 | Agent Layer（信誉验证） |
-| **AgentM** | 用户入口 + 个人 Agent | AgentSoul（本地） | Agent Layer（参与任务） |
-| **Nostr Discovery** | 发现 + 匹配 (NIP-89/90) | 社交图谱、兼容性评分 | Agent Layer（信誉数据） |
-| **A2A Protocol** | Agent 间通信 (XMTP) + 微支付 | XMTP 消息、通道状态 | Agent Layer（结算层） |
+| 模块                | 核心职责                     | 数据所有权               | 依赖                    |
+| ------------------- | ---------------------------- | ------------------------ | ----------------------- |
+| **Agent Layer**     | 结算 + 信誉 + Stake          | 链上任务状态、信誉分数   | Solana Runtime          |
+| **Chain Hub**       | 工具接入 + Skill 市场        | Skill 注册表、协议注册表 | Agent Layer（信誉验证） |
+| **AgentM**          | 用户入口 + 个人 Agent        | AgentSoul（本地）        | Agent Layer（参与任务） |
+| **Nostr Discovery** | 发现 + 匹配 (NIP-89/90)      | 社交图谱、兼容性评分     | Agent Layer（信誉数据） |
+| **A2A Protocol**    | Agent 间通信 (XMTP) + 微支付 | XMTP 消息、通道状态      | Agent Layer（结算层）   |
 
 ---
 
@@ -88,46 +88,46 @@ flowchart TB
         Human["👤 人类用户"]
         AgentBot["🤖 自主 Agent"]
     end
-    
+
     subgraph Entry["入口层"]
         AgentM["AgentM<br/>个人 Agent 界面"]
         SDK["TypeScript SDK<br/>开发者接口"]
         CLI["CLI<br/>命令行工具"]
     end
-    
+
     subgraph Modules["模块层"]
         ChainHub["Chain Hub<br/>Skill 市场 + 工具"]
         NostrDiscovery["Nostr Discovery<br/>NIP-89/90 发现 + 匹配"]
     end
-    
+
     subgraph Communication["通信层"]
         XMTP["XMTP<br/>MLS E2E 加密消息"]
     end
-    
+
     subgraph Kernel["内核层"]
         AgentLayer["Agent Layer Program<br/>Escrow · Judge · Reputation"]
     end
-    
+
     subgraph Infra["基础设施"]
         Solana["Solana"]
         Nostr["Nostr Relays<br/>(去中心化发现)"]
         Storage["存储<br/>(Arweave / Avail)"]
     end
-    
+
     Human --> AgentM
     Human --> SDK
     AgentBot --> SDK
     AgentM --> SDK
-    
+
     SDK --> AgentLayer
     SDK --> ChainHub
     SDK --> NostrDiscovery
     SDK --> XMTP
     CLI --> SDK
-    
+
     ChainHub -->|"查询信誉"| AgentLayer
     NostrDiscovery -->|"读取信誉"| AgentLayer
-    
+
     AgentLayer --> Solana
     NostrDiscovery --> Nostr
     AgentLayer -->|"evaluationCID"| Storage
@@ -197,10 +197,10 @@ flowchart TB
 数据接口:
   // Chain Hub 查询信誉
   getReputation(agentPubkey) → { avgScore, winRate, completed, submitted }
-  
+
   // Chain Hub 验证 Skill
   verifySkill(agentPubkey, skillId) → { hasSkill, proficiency, evidence[] }
-  
+
   // Chain Hub 路由协议调用
   executeProtocolAction(protocol, action, params, sessionKey) → result
 ```
@@ -229,10 +229,10 @@ flowchart TB
   // AgentM 参与任务
   postTask(desc, evalRef, deadline, judge, stake) → taskId
   submitResult(taskId, resultRef) → tx
-  
+
   // AgentM 读取信誉
   getMyReputation() → { scores, history, rank }
-  
+
   // AgentM 管理 Skill
   getMySkills() → Skill[]  // 来自 Chain Hub
   acquireSkill(skillId) → tx
@@ -262,7 +262,7 @@ flowchart TB
   // Nostr Discovery 查询匹配
   findAgentsForTask(taskRequirements) → Agent[]
   findJudge(skillCategory, minReputation) → Judge[]
-  
+
   // Nostr Discovery 社交图谱
   getCollaborationHistory(agentA, agentB) → History
   getSocialGraph(agent, depth) → Graph
@@ -293,10 +293,10 @@ flowchart TB
   // A2A 通道管理
   openChannel(partner, deposit) → channelId
   closeChannel(channelId, finalState, signatures) → tx
-  
+
   // A2A 信誉回写
   batchUpdateReputation(proofs[]) → tx
-  
+
   // A2A 争议
   disputeChannel(channelId, evidence) → tx
 ```
@@ -505,20 +505,20 @@ Phase 4 (2027): A2A + 结算增强
 
 ## 7. 关键设计决策
 
-| 决策 | 选择 | 理由 |
-|------|------|------|
-| 内核 vs 模块 | 严格分层，单向依赖 | 内核不可变性是协议可信度的基石 |
-| Solana vs 自建链 | Solana | 10,000 任务 ≈ 100 TPS，Solana 绰绰有余 |
-| 发现层 | Nostr NIP-89/90 DVM | 去中心化、无运维、拗制抵抗 |
-| 存储 | Arweave (永久) + IPFS (临时) | evaluationCID 需永久可用 |
-| 跨链 | 信誉携带（零桥） | 桥是最大安全隐患，能不用就不用 |
-| 结算增强 | MagicBlock ER/PER/VRF | 可选结算层加速，非执行层 |
-| 通信层 | XMTP (MLS E2E) | Agent 间加密消息，钱包地址即身份 |
-| SDK 语言 | TypeScript | Agent 开发者首选语言 |
+| 决策             | 选择                         | 理由                                   |
+| ---------------- | ---------------------------- | -------------------------------------- |
+| 内核 vs 模块     | 严格分层，单向依赖           | 内核不可变性是协议可信度的基石         |
+| Solana vs 自建链 | Solana                       | 10,000 任务 ≈ 100 TPS，Solana 绰绰有余 |
+| 发现层           | Nostr NIP-89/90 DVM          | 去中心化、无运维、拗制抵抗             |
+| 存储             | Arweave (永久) + IPFS (临时) | evaluationCID 需永久可用               |
+| 跨链             | 信誉携带（零桥）             | 桥是最大安全隐患，能不用就不用         |
+| 结算增强         | MagicBlock ER/PER/VRF        | 可选结算层加速，非执行层               |
+| 通信层           | XMTP (MLS E2E)               | Agent 间加密消息，钱包地址即身份       |
+| SDK 语言         | TypeScript                   | Agent 开发者首选语言                   |
 
 ---
 
-*系统架构的目标不是画漂亮的图，是确保每个组件知道自己该做什么、不该做什么。*
-*内核做结算。模块做一切其他。内核不变。模块可长可消。*
+_系统架构的目标不是画漂亮的图，是确保每个组件知道自己该做什么、不该做什么。_
+_内核做结算。模块做一切其他。内核不变。模块可长可消。_
 
 _Gradience System Architecture v0.2 · 2026-04-04_

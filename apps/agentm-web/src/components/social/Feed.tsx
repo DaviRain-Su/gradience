@@ -54,7 +54,15 @@ function EmptyState({ filter, message }: { filter: FeedFilter; message?: string 
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 24px',
+            }}
+        >
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>ud83dudcdd</div>
             <p style={{ fontSize: '14px', color: c.ink, opacity: 0.5, textAlign: 'center', maxWidth: '320px' }}>
                 {message ?? defaultMessages[filter]}
@@ -143,11 +151,7 @@ export function Feed({
             <div className={`space-y-4 ${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
                 <PostSkeleton />
                 <PostSkeleton />
@@ -162,22 +166,34 @@ export function Feed({
             <div className={`${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '48px 24px',
+                    }}
+                >
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>ud83dudea8</div>
-                    <p style={{ fontSize: '14px', color: '#DC2626', textAlign: 'center', marginBottom: '16px' }}>{error}</p>
+                    <p style={{ fontSize: '14px', color: '#DC2626', textAlign: 'center', marginBottom: '16px' }}>
+                        {error}
+                    </p>
                     {onLoadMore && (
                         <button
                             type="button"
                             onClick={() => void handleLoadMore()}
                             style={{
-                                padding: '10px 20px', background: c.bg, border: `1.5px solid ${c.ink}`,
-                                borderRadius: '12px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', color: c.ink,
+                                padding: '10px 20px',
+                                background: c.bg,
+                                border: `1.5px solid ${c.ink}`,
+                                borderRadius: '12px',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                color: c.ink,
                             }}
                         >
                             Try again
@@ -194,11 +210,7 @@ export function Feed({
             <div className={`${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
                 <EmptyState filter={activeFilter} message={emptyMessage} />
             </div>
@@ -255,22 +267,44 @@ export interface FeedHeaderProps {
     className?: string;
 }
 
-export function FeedHeader({
-    title = 'Feed',
-    onRefresh,
-    refreshing = false,
-    className = '',
-}: FeedHeaderProps) {
+export function FeedHeader({ title = 'Feed', onRefresh, refreshing = false, className = '' }: FeedHeaderProps) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', marginBottom: '16px', borderBottom: `1.5px solid ${c.ink}` }}>
-            <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: c.ink, margin: 0 }}>{title}</h1>
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '16px',
+                marginBottom: '16px',
+                borderBottom: `1.5px solid ${c.ink}`,
+            }}
+        >
+            <h1
+                style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: c.ink,
+                    margin: 0,
+                }}
+            >
+                {title}
+            </h1>
             {onRefresh && (
                 <button
                     type="button"
                     onClick={onRefresh}
                     disabled={refreshing}
                     aria-label="Refresh feed"
-                    style={{ padding: '8px', background: 'transparent', border: `1.5px solid ${c.ink}`, borderRadius: '8px', cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.5 : 1, color: c.ink }}
+                    style={{
+                        padding: '8px',
+                        background: 'transparent',
+                        border: `1.5px solid ${c.ink}`,
+                        borderRadius: '8px',
+                        cursor: refreshing ? 'not-allowed' : 'pointer',
+                        opacity: refreshing ? 0.5 : 1,
+                        color: c.ink,
+                    }}
                 >
                     u21bb
                 </button>

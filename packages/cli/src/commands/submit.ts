@@ -16,10 +16,10 @@ submitCommand
     .option('--runtime-version <version>', 'Runtime version', '20')
     .action(async (options) => {
         const spinner = ora('Submitting task result...').start();
-        
+
         try {
             const taskId = parseU64(options.taskId, 'task-id');
-            
+
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-submit-signature`;
                 spinner.succeed('Task result submitted (mock mode)');

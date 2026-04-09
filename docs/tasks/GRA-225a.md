@@ -1,11 +1,11 @@
 ---
 linear-id: GRA-225a
-title: "[Daemon] Chain Hub Reputation Integration"
+title: '[Daemon] Chain Hub Reputation Integration'
 status: todo
 priority: P1
-project: "Agent Daemon"
+project: 'Agent Daemon'
 created: 2026-04-05
-assignee: ""
+assignee: ''
 tags: [task, p1, daemon, reputation, chain-hub]
 ---
 
@@ -21,24 +21,27 @@ tags: [task, p1, daemon, reputation, chain-hub]
 
 ```typescript
 interface ChainHubReputationClient {
-  // 获取 Agent 声誉
-  getReputation(agentAddress: string): Promise<{
-    score: number;
-    completedTasks: number;
-    avgRating: number;
-    updatedAt: string;
-  }>;
-  
-  // 获取 Master Wallet 下所有 Agent 的声誉
-  getReputationsByMaster(masterWallet: string): Promise<Array<{
-    agentAddress: string;
-    score: number;
-    completedTasks: number;
-  }>>;
+    // 获取 Agent 声誉
+    getReputation(agentAddress: string): Promise<{
+        score: number;
+        completedTasks: number;
+        avgRating: number;
+        updatedAt: string;
+    }>;
+
+    // 获取 Master Wallet 下所有 Agent 的声誉
+    getReputationsByMaster(masterWallet: string): Promise<
+        Array<{
+            agentAddress: string;
+            score: number;
+            completedTasks: number;
+        }>
+    >;
 }
 ```
 
 **Chain Hub API**:
+
 ```
 GET /api/agents/{address}/reputation
 GET /api/agents?master={masterWallet}&includeReputation=true

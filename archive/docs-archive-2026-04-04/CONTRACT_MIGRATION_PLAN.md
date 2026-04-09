@@ -102,6 +102,7 @@ cp apps/agent-arena/program-keypair.json programs/agent-arena/
 ```
 
 **需要处理的文件**:
+
 - `Cargo.toml` - 简化为单包配置
 - `src/` - 代码保持不变
 - `build.rs` - 保持不变
@@ -114,7 +115,8 @@ mkdir -p programs/a2a-protocol
 cp -r apps/a2a-protocol/program/* programs/a2a-protocol/
 ```
 
-**注意**: 
+**注意**:
+
 - A2A 有 `tests/` 目录，考虑是否一起迁移或保留在 apps/
 - 建议测试保留在 apps/a2a-protocol/，只迁移程序代码
 
@@ -126,6 +128,7 @@ cp -r apps/chain-hub/program/* programs/chain-hub/
 ```
 
 **注意**:
+
 - Chain Hub 有集成测试 `tests/integration-tests/`
 - 建议测试代码保留在原位置
 
@@ -144,6 +147,7 @@ cp -r apps/agent-layer-evm/contracts/* programs/agent-layer-evm/
 ```
 
 **特殊处理**:
+
 - EVM 是 Solidity，不是 Rust
 - 需要单独的 Hardhat/Foundry 配置
 
@@ -248,28 +252,28 @@ a2a-protocol/
 
 ## 迁移时间表
 
-| 阶段 | 任务 | 预计时间 | 优先级 |
-|------|------|----------|--------|
-| 1 | 创建统一 workspace | 30分钟 | P0 |
-| 2 | 迁移 agent-arena | 1小时 | P0 |
-| 3 | 迁移 chain-hub | 1小时 | P0 |
-| 4 | 迁移 a2a-protocol | 1小时 | P0 |
-| 5 | 迁移 agentm-core | 30分钟 | P1 |
-| 6 | 迁移 agent-layer-evm | 30分钟 | P1 |
-| 7 | 更新文档和脚本 | 2小时 | P0 |
-| 8 | 验证测试 | 1小时 | P0 |
-| **总计** | | **~7小时** | |
+| 阶段     | 任务                 | 预计时间   | 优先级 |
+| -------- | -------------------- | ---------- | ------ |
+| 1        | 创建统一 workspace   | 30分钟     | P0     |
+| 2        | 迁移 agent-arena     | 1小时      | P0     |
+| 3        | 迁移 chain-hub       | 1小时      | P0     |
+| 4        | 迁移 a2a-protocol    | 1小时      | P0     |
+| 5        | 迁移 agentm-core     | 30分钟     | P1     |
+| 6        | 迁移 agent-layer-evm | 30分钟     | P1     |
+| 7        | 更新文档和脚本       | 2小时      | P0     |
+| 8        | 验证测试             | 1小时      | P0     |
+| **总计** |                      | **~7小时** |        |
 
 ---
 
 ## 风险评估
 
-| 风险 | 概率 | 影响 | 缓解措施 |
-|------|------|------|----------|
-| 路径引用遗漏 | 高 | 中 | 全局搜索 `apps/xxx/program` 替换 |
-| Workspace 冲突 | 中 | 高 | 逐步迁移，逐个验证 |
-| 测试失效 | 中 | 中 | 保留测试在原位置，只迁移程序 |
-| CI/CD 中断 | 低 | 高 | 在非主分支测试，确认后再合并 |
+| 风险           | 概率 | 影响 | 缓解措施                         |
+| -------------- | ---- | ---- | -------------------------------- |
+| 路径引用遗漏   | 高   | 中   | 全局搜索 `apps/xxx/program` 替换 |
+| Workspace 冲突 | 中   | 高   | 逐步迁移，逐个验证               |
+| 测试失效       | 中   | 中   | 保留测试在原位置，只迁移程序     |
+| CI/CD 中断     | 低   | 高   | 在非主分支测试，确认后再合并     |
 
 ---
 
@@ -295,7 +299,7 @@ cat > programs/Cargo.toml << 'EOF'
 [workspace]
 members = [
     "a2a-protocol",
-    "agent-arena", 
+    "agent-arena",
     "chain-hub",
     "agentm-core",
     "workflow-marketplace",

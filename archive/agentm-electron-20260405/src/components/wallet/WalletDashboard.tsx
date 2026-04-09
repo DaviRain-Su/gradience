@@ -16,13 +16,7 @@ import type {
     ReputationHistoryEntry,
     ReputationTier,
 } from './types.ts';
-import {
-    getReputationTier,
-    getTierConfig,
-    formatUsdCents,
-    truncateAddress,
-    calculatePolicy,
-} from './types.ts';
+import { getReputationTier, getTierConfig, formatUsdCents, truncateAddress, calculatePolicy } from './types.ts';
 
 // ============================================================================
 // Sub-components
@@ -44,9 +38,7 @@ function TierProgressionBar({ score }: { score: number }) {
     const nextTier = currentTierIndex < tiers.length - 1 ? tiers[currentTierIndex + 1] : null;
 
     const progressInTier = nextTier
-        ? ((score - tiers[currentTierIndex].threshold) /
-              (nextTier.threshold - tiers[currentTierIndex].threshold)) *
-          100
+        ? ((score - tiers[currentTierIndex].threshold) / (nextTier.threshold - tiers[currentTierIndex].threshold)) * 100
         : 100;
 
     return (
@@ -76,14 +68,9 @@ function TierProgressionBar({ score }: { score: number }) {
                     const isCurrent = tier.name === currentTier;
 
                     return (
-                        <div
-                            key={tier.name}
-                            className={`flex flex-col items-center ${isActive ? '' : 'opacity-50'}`}
-                        >
+                        <div key={tier.name} className={`flex flex-col items-center ${isActive ? '' : 'opacity-50'}`}>
                             <span className="text-sm">{config.icon}</span>
-                            <span
-                                className={`text-xs ${isCurrent ? config.color : 'text-gray-500'}`}
-                            >
+                            <span className={`text-xs ${isCurrent ? config.color : 'text-gray-500'}`}>
                                 {tier.threshold}
                             </span>
                         </div>
@@ -97,22 +84,12 @@ function TierProgressionBar({ score }: { score: number }) {
 /**
  * Daily spending meter
  */
-function SpendingMeter({
-    current,
-    limit,
-}: {
-    current: number;
-    limit: number;
-}) {
+function SpendingMeter({ current, limit }: { current: number; limit: number }) {
     const percentage = Math.min((current / limit) * 100, 100);
     const isWarning = percentage >= 75;
     const isDanger = percentage >= 90;
 
-    const colorClass = isDanger
-        ? 'bg-red-500'
-        : isWarning
-            ? 'bg-yellow-500'
-            : 'bg-emerald-500';
+    const colorClass = isDanger ? 'bg-red-500' : isWarning ? 'bg-yellow-500' : 'bg-emerald-500';
 
     return (
         <div className="bg-gray-800/50 rounded-lg p-4">
@@ -130,11 +107,7 @@ function SpendingMeter({
                 />
             </div>
 
-            {isDanger && (
-                <p className="text-xs text-red-400 mt-2">
-                    ⚠️ Approaching daily limit
-                </p>
-            )}
+            {isDanger && <p className="text-xs text-red-400 mt-2">⚠️ Approaching daily limit</p>}
         </div>
     );
 }
@@ -164,15 +137,11 @@ function PolicyCard({ wallet }: { wallet: WalletInfo }) {
             <div className="space-y-3">
                 <div className="flex justify-between">
                     <span className="text-sm text-gray-400">Daily Limit</span>
-                    <span className="text-sm font-medium text-white">
-                        {formatUsdCents(policy.dailyLimit)}
-                    </span>
+                    <span className="text-sm font-medium text-white">{formatUsdCents(policy.dailyLimit)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-sm text-gray-400">Max Transaction</span>
-                    <span className="text-sm font-medium text-white">
-                        {formatUsdCents(policy.maxTransaction)}
-                    </span>
+                    <span className="text-sm font-medium text-white">{formatUsdCents(policy.maxTransaction)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-sm text-gray-400">Approval Required</span>
@@ -188,10 +157,7 @@ function PolicyCard({ wallet }: { wallet: WalletInfo }) {
                     <span className="text-sm text-gray-400">Allowed Chains</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                         {policy.allowedChains.map((chain) => (
-                            <span
-                                key={chain}
-                                className="text-xs px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded"
-                            >
+                            <span key={chain} className="text-xs px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded">
                                 {chain}
                             </span>
                         ))}
@@ -242,9 +208,7 @@ function UpgradeBenefits({ currentScore }: { currentScore: number }) {
     }
 
     const nextTier = tiers[currentIndex + 1];
-    const nextPolicy = calculatePolicy(
-        nextTier === 'silver' ? 31 : nextTier === 'gold' ? 51 : 81
-    );
+    const nextPolicy = calculatePolicy(nextTier === 'silver' ? 31 : nextTier === 'gold' ? 51 : 81);
     const currentPolicy = calculatePolicy(currentScore);
     const nextConfig = getTierConfig(nextTier);
 
@@ -252,9 +216,7 @@ function UpgradeBenefits({ currentScore }: { currentScore: number }) {
         <div className={`${nextConfig.bgColor} border ${nextConfig.borderColor} rounded-lg p-4`}>
             <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">{nextConfig.icon}</span>
-                <h4 className={`text-sm font-medium ${nextConfig.color}`}>
-                    Upgrade to {nextConfig.label}
-                </h4>
+                <h4 className={`text-sm font-medium ${nextConfig.color}`}>Upgrade to {nextConfig.label}</h4>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -329,31 +291,22 @@ function TransactionItem({
                         ${isIncoming ? 'bg-emerald-600/20' : 'bg-blue-600/20'}
                     `}
                 >
-                    <span className={isIncoming ? 'text-emerald-400' : 'text-blue-400'}>
-                        {isIncoming ? '↓' : '↑'}
-                    </span>
+                    <span className={isIncoming ? 'text-emerald-400' : 'text-blue-400'}>{isIncoming ? '↓' : '↑'}</span>
                 </div>
                 <div>
                     <p className="text-sm text-white">
                         {isIncoming ? 'Received' : 'Sent'} {transaction.token}
                     </p>
-                    <p className="text-xs text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleString()}
-                    </p>
+                    <p className="text-xs text-gray-500">{new Date(transaction.createdAt).toLocaleString()}</p>
                 </div>
             </div>
 
             <div className="text-right">
-                <p
-                    className={`text-sm font-medium ${
-                        isIncoming ? 'text-emerald-400' : 'text-white'
-                    }`}
-                >
-                    {isIncoming ? '+' : '-'}{transaction.amount} {transaction.token}
+                <p className={`text-sm font-medium ${isIncoming ? 'text-emerald-400' : 'text-white'}`}>
+                    {isIncoming ? '+' : '-'}
+                    {transaction.amount} {transaction.token}
                 </p>
-                <p className={`text-xs ${statusColors[transaction.status]}`}>
-                    {transaction.status}
-                </p>
+                <p className={`text-xs ${statusColors[transaction.status]}`}>{transaction.status}</p>
             </div>
         </div>
     );
@@ -364,11 +317,7 @@ function TransactionItem({
  */
 function ReputationHistoryChart({ history }: { history: ReputationHistoryEntry[] }) {
     if (history.length === 0) {
-        return (
-            <p className="text-sm text-gray-500 text-center py-4">
-                No reputation history yet
-            </p>
-        );
+        return <p className="text-sm text-gray-500 text-center py-4">No reputation history yet</p>;
     }
 
     // Show last 10 entries
@@ -388,12 +337,9 @@ function ReputationHistoryChart({ history }: { history: ReputationHistoryEntry[]
                         <span className="text-gray-400 w-8">{entry.oldScore}</span>
                         <span className="text-gray-600">→</span>
                         <span className="text-white w-8">{entry.newScore}</span>
-                        <span
-                            className={`w-10 ${
-                                isPositive ? 'text-emerald-400' : 'text-red-400'
-                            }`}
-                        >
-                            {isPositive ? '+' : ''}{change}
+                        <span className={`w-10 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {isPositive ? '+' : ''}
+                            {change}
                         </span>
                         <span className="text-gray-500 flex-1 truncate" title={entry.reason}>
                             {entry.reason}
@@ -451,10 +397,7 @@ export function WalletDashboard({
     const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'history'>('overview');
 
     // Computed values
-    const score = useMemo(
-        () => reputation?.score ?? wallet?.reputationScore ?? 0,
-        [reputation, wallet]
-    );
+    const score = useMemo(() => reputation?.score ?? wallet?.reputationScore ?? 0, [reputation, wallet]);
     const tier = useMemo(() => getReputationTier(score), [score]);
     const tierConfig = useMemo(() => getTierConfig(tier), [tier]);
 
@@ -490,17 +433,13 @@ export function WalletDashboard({
         return (
             <div className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${className}`}>
                 <p className="text-gray-400 text-center mb-2">No wallet connected</p>
-                <p className="text-sm text-gray-500 text-center">
-                    Connect a wallet to view your reputation dashboard
-                </p>
+                <p className="text-sm text-gray-500 text-center">Connect a wallet to view your reputation dashboard</p>
             </div>
         );
     }
 
     return (
-        <div
-            className={`bg-gray-900 border border-gray-800 rounded-xl ${className}`}
-        >
+        <div className={`bg-gray-900 border border-gray-800 rounded-xl ${className}`}>
             {/* Header */}
             <div className="p-4 border-b border-gray-800">
                 <div className="flex items-center justify-between">
@@ -511,17 +450,11 @@ export function WalletDashboard({
                                 ${tierConfig.bgColor} ${tierConfig.borderColor} border-2
                             `}
                         >
-                            <span className={`text-xl font-bold ${tierConfig.color}`}>
-                                {score}
-                            </span>
+                            <span className={`text-xl font-bold ${tierConfig.color}`}>{score}</span>
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-white">
-                                Reputation Wallet
-                            </h2>
-                            <p className="text-sm text-gray-500 font-mono">
-                                {truncateAddress(wallet.address)}
-                            </p>
+                            <h2 className="text-lg font-bold text-white">Reputation Wallet</h2>
+                            <p className="text-sm text-gray-500 font-mono">{truncateAddress(wallet.address)}</p>
                         </div>
                     </div>
 
@@ -563,10 +496,7 @@ export function WalletDashboard({
                             onClick={() => setActiveTab(tab)}
                             className={`
                                 text-sm px-3 py-1 rounded-lg transition
-                                ${activeTab === tab
-                                    ? 'bg-gray-800 text-white'
-                                    : 'text-gray-500 hover:text-gray-400'
-                                }
+                                ${activeTab === tab ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-400'}
                             `}
                         >
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -584,10 +514,7 @@ export function WalletDashboard({
 
                         {/* Spending and Policy row */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SpendingMeter
-                                current={currentDailySpend}
-                                limit={wallet.policy.dailyLimit}
-                            />
+                            <SpendingMeter current={currentDailySpend} limit={wallet.policy.dailyLimit} />
                             <PolicyCard wallet={wallet} />
                         </div>
 
@@ -597,20 +524,14 @@ export function WalletDashboard({
                         {/* Reputation stats */}
                         {reputation && (
                             <div className="bg-gray-800/50 rounded-lg p-4">
-                                <h4 className="text-sm font-medium text-gray-300 mb-3">
-                                    Reputation Stats
-                                </h4>
+                                <h4 className="text-sm font-medium text-gray-300 mb-3">Reputation Stats</h4>
                                 <div className="grid grid-cols-4 gap-4 text-center">
                                     <div>
-                                        <p className="text-xl font-bold text-white">
-                                            {score}
-                                        </p>
+                                        <p className="text-xl font-bold text-white">{score}</p>
                                         <p className="text-xs text-gray-500">Score</p>
                                     </div>
                                     <div>
-                                        <p className="text-xl font-bold text-white">
-                                            {reputation.completed}
-                                        </p>
+                                        <p className="text-xl font-bold text-white">{reputation.completed}</p>
                                         <p className="text-xs text-gray-500">Completed</p>
                                     </div>
                                     <div>
@@ -620,9 +541,7 @@ export function WalletDashboard({
                                         <p className="text-xs text-gray-500">Win Rate</p>
                                     </div>
                                     <div>
-                                        <p className="text-xl font-bold text-white">
-                                            {reputation.totalApplied}
-                                        </p>
+                                        <p className="text-xl font-bold text-white">{reputation.totalApplied}</p>
                                         <p className="text-xs text-gray-500">Applied</p>
                                     </div>
                                 </div>
@@ -634,16 +553,10 @@ export function WalletDashboard({
                 {activeTab === 'transactions' && (
                     <div className="space-y-2">
                         {transactions.length === 0 ? (
-                            <p className="text-sm text-gray-500 text-center py-8">
-                                No transactions yet
-                            </p>
+                            <p className="text-sm text-gray-500 text-center py-8">No transactions yet</p>
                         ) : (
                             transactions.map((tx) => (
-                                <TransactionItem
-                                    key={tx.id}
-                                    transaction={tx}
-                                    onClick={onTransactionClick}
-                                />
+                                <TransactionItem key={tx.id} transaction={tx} onClick={onTransactionClick} />
                             ))
                         )}
                     </div>
@@ -651,9 +564,7 @@ export function WalletDashboard({
 
                 {activeTab === 'history' && (
                     <div className="bg-gray-800/50 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-300 mb-3">
-                            Reputation History
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-300 mb-3">Reputation History</h4>
                         <ReputationHistoryChart history={reputationHistory} />
                     </div>
                 )}

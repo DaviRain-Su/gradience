@@ -38,9 +38,7 @@ function main() {
     const distPath = path.join(process.cwd(), 'dist');
     const distBytes = getDirectorySizeBytes(distPath);
     if (distBytes > MAX_DIST_BYTES) {
-        throw new Error(
-            `dist size exceeds 20MB gate: ${(distBytes / 1024 / 1024).toFixed(2)}MB`,
-        );
+        throw new Error(`dist size exceeds 20MB gate: ${(distBytes / 1024 / 1024).toFixed(2)}MB`);
     }
 
     process.stdout.write(

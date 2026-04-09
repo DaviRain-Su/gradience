@@ -4,32 +4,35 @@
 
 ## 📚 文档列表
 
-| 阶段 | 文档 | 描述 | 行数 |
-|------|------|------|------|
-| Phase 1 | [01-prd.md](./01-prd.md) | 产品需求文档 | 126 |
-| Phase 2 | [02-architecture.md](./02-architecture.md) | 架构设计 | 169 |
-| Phase 3 | [03-technical-spec.md](./03-technical-spec.md) | 技术规格（最重要） | 469 |
-| Phase 4 | [04-task-breakdown.md](./04-task-breakdown.md) | 任务分解 | 190 |
-| Phase 5 | [05-test-spec.md](./05-test-spec.md) | 测试规范 | 274 |
-| Phase 6 | [06-implementation.md](./06-implementation.md) | 实现日志 | 197 |
-| Phase 7 | [07-review-report.md](./07-review-report.md) | 评审报告 | 196 |
+| 阶段    | 文档                                           | 描述               | 行数 |
+| ------- | ---------------------------------------------- | ------------------ | ---- |
+| Phase 1 | [01-prd.md](./01-prd.md)                       | 产品需求文档       | 126  |
+| Phase 2 | [02-architecture.md](./02-architecture.md)     | 架构设计           | 169  |
+| Phase 3 | [03-technical-spec.md](./03-technical-spec.md) | 技术规格（最重要） | 469  |
+| Phase 4 | [04-task-breakdown.md](./04-task-breakdown.md) | 任务分解           | 190  |
+| Phase 5 | [05-test-spec.md](./05-test-spec.md)           | 测试规范           | 274  |
+| Phase 6 | [06-implementation.md](./06-implementation.md) | 实现日志           | 197  |
+| Phase 7 | [07-review-report.md](./07-review-report.md)   | 评审报告           | 196  |
 
 **总计**: 1,621 行文档
 
 ## 🎯 快速导航
 
 ### 如果你是新开发者
+
 1. 先读 [02-architecture.md](./02-architecture.md) 了解系统架构
 2. 再读 [03-technical-spec.md](./03-technical-spec.md) 了解技术细节
 3. 查看 [04-task-breakdown.md](./04-task-breakdown.md) 了解功能模块
 
 ### 如果你要添加新功能
+
 1. 从 [01-prd.md](./01-prd.md) 开始定义需求
 2. 更新 [03-technical-spec.md](./03-technical-spec.md) 技术规格
 3. 添加测试到 [05-test-spec.md](./05-test-spec.md)
 4. 实现后更新 [06-implementation.md](./06-implementation.md)
 
 ### 如果你要审查代码
+
 1. 参考 [03-technical-spec.md](./03-technical-spec.md) 验证实现一致性
 2. 检查 [05-test-spec.md](./05-test-spec.md) 测试覆盖
 3. 更新 [07-review-report.md](./07-review-report.md) 审查结果
@@ -56,11 +59,11 @@ AgentM Web 是一个基于 Next.js 15 的 Web 应用，提供：
 
 ```typescript
 const colors = {
-  bg: '#F3F3F8',        // 背景色
-  surface: '#FFFFFF',   // 表面色
-  ink: '#16161A',       // 文字主色
-  lavender: '#C6BBFF',  // 强调色
-  lime: '#CDFF4D',      // 成功/活跃色
+    bg: '#F3F3F8', // 背景色
+    surface: '#FFFFFF', // 表面色
+    ink: '#16161A', // 文字主色
+    lavender: '#C6BBFF', // 强调色
+    lime: '#CDFF4D', // 成功/活跃色
 };
 ```
 

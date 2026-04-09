@@ -44,7 +44,7 @@ export interface PostComposerProps {
 export function PostComposer({
     content,
     onChange,
-    placeholder = 'What\'s happening?',
+    placeholder = "What's happening?",
     maxLength = 2000,
     disabled = false,
     minRows = 3,
@@ -204,11 +204,7 @@ export function PostComposer({
                     )}
                     <span
                         className={`text-xs ${
-                            isAtLimit
-                                ? 'text-red-400'
-                                : isNearLimit
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-500'
+                            isAtLimit ? 'text-red-400' : isNearLimit ? 'text-yellow-400' : 'text-gray-500'
                         }`}
                     >
                         {maxLength - content.length}

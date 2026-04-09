@@ -29,7 +29,7 @@ export function InfiniteScroll({
 
     const handleLoadMore = useCallback(async () => {
         if (loading || !hasMore) return;
-        
+
         try {
             setError(null);
             await onLoadMore();
@@ -79,19 +79,15 @@ export function InfiniteScroll({
         </div>
     );
 
-    const defaultEndMessage = (
-        <div className="text-center py-6 text-gray-500 text-sm">
-            — End of feed —
-        </div>
-    );
+    const defaultEndMessage = <div className="text-center py-6 text-gray-500 text-sm">— End of feed —</div>;
 
     return (
         <div className={className}>
             {children}
-            
+
             {/* Loading state */}
             {loading && (loader || defaultLoader)}
-            
+
             {/* Error state */}
             {error && !loading && (
                 <div className="py-4 text-center">
@@ -104,12 +100,10 @@ export function InfiniteScroll({
                     </button>
                 </div>
             )}
-            
+
             {/* Intersection observer target */}
-            {!loading && !error && hasMore && (
-                <div ref={loadMoreRef} className="h-4" aria-hidden="true" />
-            )}
-            
+            {!loading && !error && hasMore && <div ref={loadMoreRef} className="h-4" aria-hidden="true" />}
+
             {/* End of feed */}
             {!loading && !hasMore && (endMessage || defaultEndMessage)}
         </div>
@@ -143,7 +137,7 @@ export function useInfiniteScroll<T>({
         try {
             const newItems = await fetchItems(pageRef.current, pageSize);
             pageRef.current += 1;
-            
+
             setItems((prev) => [...prev, ...newItems]);
             setHasMoreItems(hasMore(newItems));
         } catch (err) {

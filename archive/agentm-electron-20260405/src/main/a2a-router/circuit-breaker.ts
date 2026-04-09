@@ -22,12 +22,7 @@ const metrics = getMetrics();
 export type CircuitState = 'closed' | 'open' | 'half_open';
 
 /** Circuit breaker event types */
-export type CircuitEvent =
-    | 'state_change'
-    | 'success'
-    | 'failure'
-    | 'timeout'
-    | 'rejected';
+export type CircuitEvent = 'state_change' | 'success' | 'failure' | 'timeout' | 'rejected';
 
 /** Circuit breaker configuration */
 export interface CircuitBreakerConfig {
@@ -125,11 +120,7 @@ export interface CircuitStats {
 }
 
 /** Circuit event listener */
-export type CircuitEventListener = (
-    event: CircuitEvent,
-    state: CircuitState,
-    stats: CircuitStats
-) => void;
+export type CircuitEventListener = (event: CircuitEvent, state: CircuitState, stats: CircuitStats) => void;
 
 // ============ Sliding Window ============
 
@@ -465,7 +456,7 @@ export class CircuitBreaker {
 export class CircuitOpenError extends Error {
     constructor(
         public readonly circuitName: string,
-        public readonly retryAfterMs: number
+        public readonly retryAfterMs: number,
     ) {
         super(`Circuit breaker '${circuitName}' is open. Retry after ${retryAfterMs}ms`);
         this.name = 'CircuitOpenError';

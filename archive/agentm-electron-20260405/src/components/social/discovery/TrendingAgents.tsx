@@ -123,9 +123,7 @@ export function TrendingAgents({
             <div className={`bg-gray-900 rounded-xl border border-gray-800 p-6 text-center ${className}`}>
                 <h3 className="font-semibold text-white mb-2">{title}</h3>
                 <p className="text-sm text-gray-500">No trending agents yet</p>
-                <p className="text-xs text-gray-600 mt-1">
-                    Check back later for top performers
-                </p>
+                <p className="text-xs text-gray-600 mt-1">Check back later for top performers</p>
             </div>
         );
     }
@@ -221,11 +219,7 @@ function RankBadge({ rank, rankChange, className = '' }: RankBadgeProps) {
                 {isTopThree ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
             </span>
             {rankChange !== undefined && rankChange !== 0 && (
-                <span
-                    className={`text-[10px] font-medium ${
-                        rankChange > 0 ? 'text-green-400' : 'text-red-400'
-                    }`}
-                >
+                <span className={`text-[10px] font-medium ${rankChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {rankChange > 0 ? `↑${rankChange}` : `↓${Math.abs(rankChange)}`}
                 </span>
             )}
@@ -241,12 +235,7 @@ interface TrendingAgentRowProps {
     onUnfollow?: (agent: AgentSearchResult) => Promise<void>;
 }
 
-function TrendingAgentRow({
-    trending,
-    onClick,
-    onFollow,
-    onUnfollow,
-}: TrendingAgentRowProps) {
+function TrendingAgentRow({ trending, onClick, onFollow, onUnfollow }: TrendingAgentRowProps) {
     const { agent, rank, rankChange, reason, trendingScore } = trending;
     const [isFollowing, setIsFollowing] = useState(agent.isFollowing ?? false);
     const [isLoading, setIsLoading] = useState(false);
@@ -289,11 +278,7 @@ function TrendingAgentRow({
 
             {/* Avatar */}
             {agent.avatarUrl ? (
-                <img
-                    src={agent.avatarUrl}
-                    alt={displayName}
-                    className="w-10 h-10 rounded-full object-cover"
-                />
+                <img src={agent.avatarUrl} alt={displayName} className="w-10 h-10 rounded-full object-cover" />
             ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white">
                     {displayName.charAt(0).toUpperCase()}
@@ -311,9 +296,7 @@ function TrendingAgentRow({
                     )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                    {agent.primaryDomain && (
-                        <span className="font-mono">{agent.primaryDomain.name}</span>
-                    )}
+                    {agent.primaryDomain && <span className="font-mono">{agent.primaryDomain.name}</span>}
                     {agent.reputation && (
                         <>
                             <span>•</span>
@@ -325,9 +308,7 @@ function TrendingAgentRow({
 
             {/* Trending score */}
             <div className="text-right">
-                <p className="text-sm font-semibold text-orange-400">
-                    {trendingScore.toFixed(0)}
-                </p>
+                <p className="text-sm font-semibold text-orange-400">{trendingScore.toFixed(0)}</p>
                 <p className="text-[10px] text-gray-600">trend</p>
             </div>
 
@@ -338,9 +319,10 @@ function TrendingAgentRow({
                     disabled={isLoading}
                     className={`
                         px-3 py-1 text-xs font-medium rounded-lg transition
-                        ${isFollowing
-                            ? 'bg-gray-700 text-gray-300 hover:bg-red-600/20 hover:text-red-400'
-                            : 'bg-blue-600 text-white hover:bg-blue-500'
+                        ${
+                            isFollowing
+                                ? 'bg-gray-700 text-gray-300 hover:bg-red-600/20 hover:text-red-400'
+                                : 'bg-blue-600 text-white hover:bg-blue-500'
                         }
                         disabled:opacity-50
                     `}
@@ -370,9 +352,7 @@ function TrendingAgentCompact({ trending, onClick }: TrendingAgentCompactProps) 
             <RankBadge rank={rank} rankChange={rankChange} />
             <span className="flex-1 text-sm text-white truncate">{displayName}</span>
             {agent.reputation && (
-                <span className="text-xs text-gray-500">
-                    {agent.reputation.globalScore.toFixed(0)}
-                </span>
+                <span className="text-xs text-gray-500">{agent.reputation.globalScore.toFixed(0)}</span>
             )}
         </div>
     );
@@ -410,11 +390,7 @@ export interface TrendingAgentsBannerProps {
     className?: string;
 }
 
-export function TrendingAgentsBanner({
-    agents,
-    onAgentClick,
-    className = '',
-}: TrendingAgentsBannerProps) {
+export function TrendingAgentsBanner({ agents, onAgentClick, className = '' }: TrendingAgentsBannerProps) {
     if (agents.length === 0) return null;
 
     return (
@@ -432,11 +408,7 @@ export function TrendingAgentsBanner({
                     >
                         <span className="text-xs font-bold text-gray-500">#{trending.rank}</span>
                         {trending.agent.avatarUrl ? (
-                            <img
-                                src={trending.agent.avatarUrl}
-                                alt=""
-                                className="w-6 h-6 rounded-full"
-                            />
+                            <img src={trending.agent.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
                         ) : (
                             <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold">
                                 {(trending.agent.displayName || trending.agent.address).charAt(0).toUpperCase()}

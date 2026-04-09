@@ -25,13 +25,7 @@ interface DomainBadgeProps {
 /**
  * Domain Badge - Display SNS (.sol) or ENS (.eth) domain
  */
-export function DomainBadge({
-    domain,
-    address,
-    size = 'md',
-    showCopy = false,
-    onClick,
-}: DomainBadgeProps) {
+export function DomainBadge({ domain, address, size = 'md', showCopy = false, onClick }: DomainBadgeProps) {
     const [resolvedDomain, setResolvedDomain] = useState<string | null>(domain || null);
     const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -92,14 +86,18 @@ export function DomainBadge({
 
     // Background color based on domain type
     const getDomainColor = (d: string) => {
-        if (d.endsWith('.sol')) return 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-300 border-purple-500/30';
-        if (d.endsWith('.eth')) return 'bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-300 border-blue-500/30';
+        if (d.endsWith('.sol'))
+            return 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-300 border-purple-500/30';
+        if (d.endsWith('.eth'))
+            return 'bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-300 border-blue-500/30';
         return 'bg-gray-700 text-gray-300 border-gray-600';
     };
 
     if (loading) {
         return (
-            <span className={`inline-flex items-center gap-1.5 ${sizeClasses[size]} rounded-full border animate-pulse bg-gray-800 text-gray-500`}>
+            <span
+                className={`inline-flex items-center gap-1.5 ${sizeClasses[size]} rounded-full border animate-pulse bg-gray-800 text-gray-500`}
+            >
                 <span className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                 Resolving...
             </span>
@@ -111,8 +109,8 @@ export function DomainBadge({
         const displayAddress = address
             ? `${address.slice(0, 6)}...${address.slice(-4)}`
             : resolvedAddress
-                ? `${resolvedAddress.slice(0, 6)}...${resolvedAddress.slice(-4)}`
-                : 'Unknown';
+              ? `${resolvedAddress.slice(0, 6)}...${resolvedAddress.slice(-4)}`
+              : 'Unknown';
 
         return (
             <span
@@ -162,19 +160,15 @@ export function DomainBadge({
 /**
  * Domain Badge with Link - Clickable domain that opens in explorer
  */
-export function DomainBadgeLink({
-    domain,
-    address,
-    size = 'md',
-}: Omit<DomainBadgeProps, 'onClick' | 'showCopy'>) {
+export function DomainBadgeLink({ domain, address, size = 'md' }: Omit<DomainBadgeProps, 'onClick' | 'showCopy'>) {
     const handleClick = () => {
         const url = domain?.endsWith('.eth')
             ? `https://app.ens.domains/${domain}`
             : domain?.endsWith('.sol')
-                ? `https://sns.id/domain/${domain}`
-                : address
-                    ? `https://solscan.io/account/${address}`
-                    : null;
+              ? `https://sns.id/domain/${domain}`
+              : address
+                ? `https://solscan.io/account/${address}`
+                : null;
 
         if (url) {
             window.open(url, '_blank');

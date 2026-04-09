@@ -48,12 +48,7 @@ function EmptyState({ filter, message }: { filter: FeedFilter; message?: string 
     return (
         <div className="flex flex-col items-center justify-center py-12 px-6">
             <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                <svg
-                    className="w-8 h-8 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
+                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -62,9 +57,7 @@ function EmptyState({ filter, message }: { filter: FeedFilter; message?: string 
                     />
                 </svg>
             </div>
-            <p className="text-sm text-gray-500 text-center max-w-xs">
-                {message ?? defaultMessages[filter]}
-            </p>
+            <p className="text-sm text-gray-500 text-center max-w-xs">{message ?? defaultMessages[filter]}</p>
         </div>
     );
 }
@@ -148,11 +141,7 @@ export function Feed({
             <div className={`space-y-4 ${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
                 <PostSkeleton />
                 <PostSkeleton />
@@ -167,20 +156,11 @@ export function Feed({
             <div className={`${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
                 <div className="flex flex-col items-center justify-center py-12 px-6">
                     <div className="w-16 h-16 rounded-full bg-red-600/10 flex items-center justify-center mb-4">
-                        <svg
-                            className="w-8 h-8 text-red-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -210,11 +190,7 @@ export function Feed({
             <div className={`${className}`}>
                 {header}
                 {showFilter && (
-                    <FilterBar
-                        activeFilter={activeFilter}
-                        onFilterChange={handleFilterChange}
-                        counts={filterCounts}
-                    />
+                    <FilterBar activeFilter={activeFilter} onFilterChange={handleFilterChange} counts={filterCounts} />
                 )}
                 <EmptyState filter={activeFilter} message={emptyMessage} />
             </div>
@@ -271,16 +247,9 @@ export interface FeedHeaderProps {
     className?: string;
 }
 
-export function FeedHeader({
-    title = 'Feed',
-    onRefresh,
-    refreshing = false,
-    className = '',
-}: FeedHeaderProps) {
+export function FeedHeader({ title = 'Feed', onRefresh, refreshing = false, className = '' }: FeedHeaderProps) {
     return (
-        <div
-            className={`flex items-center justify-between py-4 border-b border-gray-800 mb-4 ${className}`}
-        >
+        <div className={`flex items-center justify-between py-4 border-b border-gray-800 mb-4 ${className}`}>
             <h1 className="text-xl font-bold text-white">{title}</h1>
 
             {onRefresh && (

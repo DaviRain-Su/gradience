@@ -60,7 +60,7 @@ export function UnreadBadge({
 
     // Calculate unread count
     const unreadCount = peerAddress
-        ? conversations.find((c) => c.peerAddress === peerAddress)?.unreadCount ?? 0
+        ? (conversations.find((c) => c.peerAddress === peerAddress)?.unreadCount ?? 0)
         : conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
     // Don't render if no unread and not showing zero
@@ -95,48 +95,21 @@ export function UnreadBadge({
 /**
  * ConversationUnreadBadge - Badge specifically for a conversation item
  */
-export function ConversationUnreadBadge({
-    peerAddress,
-    className = '',
-}: {
-    peerAddress: string;
-    className?: string;
-}) {
-    return (
-        <UnreadBadge
-            peerAddress={peerAddress}
-            size="sm"
-            variant="default"
-            className={className}
-        />
-    );
+export function ConversationUnreadBadge({ peerAddress, className = '' }: { peerAddress: string; className?: string }) {
+    return <UnreadBadge peerAddress={peerAddress} size="sm" variant="default" className={className} />;
 }
 
 /**
  * GlobalUnreadBadge - Badge for total unread across all conversations
  */
-export function GlobalUnreadBadge({
-    className = '',
-}: {
-    className?: string;
-}) {
-    return (
-        <UnreadBadge
-            size="md"
-            variant="pill"
-            className={className}
-        />
-    );
+export function GlobalUnreadBadge({ className = '' }: { className?: string }) {
+    return <UnreadBadge size="md" variant="pill" className={className} />;
 }
 
 /**
  * UnreadIndicator - Simple dot indicator for any unread status
  */
-export function UnreadIndicator({
-    className = '',
-}: {
-    className?: string;
-}) {
+export function UnreadIndicator({ className = '' }: { className?: string }) {
     const conversations = useAppStore((s) => s.conversations);
     const hasUnread = conversations.some((c) => c.unreadCount > 0);
 

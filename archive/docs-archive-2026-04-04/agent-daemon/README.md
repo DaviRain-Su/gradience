@@ -12,26 +12,26 @@ u4ee3u7801u4f4du7f6e: `apps/agent-daemon/`
 
 ### u6838u5fc3u6a21u5757u5b8cu6210u5ea6
 
-| u6a21u5757 | u6587u4ef6 | u72b6u6001 | u5bf9u5e94u4efbu52a1 |
-|------|------|------|----------|
-| u9879u76eeu521du59cbu5316 | `package.json`, `tsconfig.json` | u2705 | AGENTD-1 |
-| Connection Manager | `src/connection/connection-manager.ts` | u2705 | AGENTD-2 |
-| Message Router | `src/messages/message-router.ts` | u2705 | AGENTD-3 |
-| Task Queue | `src/tasks/task-queue.ts` | u2705 | AGENTD-4 |
-| Task Executor | `src/tasks/task-executor.ts` | u2705 | AGENTD-5 |
-| Process Manager | `src/agents/process-manager.ts` | u2705 | AGENTD-6 |
-| Agent Lifecycle API | `src/api/routes/agents.ts` | u2705 | AGENTD-7 |
-| Agent Sandbox | - | u26a0ufe0f u5ef6u540e | AGENTD-8 |
-| Key Manager | `src/keys/key-manager.ts` | u2705 | AGENTD-9 |
-| Wallet Integration | `src/wallet/authorization.ts` | u2705 | AGENTD-10 |
-| Authentication | `src/api/auth-middleware.ts` | u2705 | AGENTD-11 |
-| Local Cache (SQLite) | `src/storage/database.ts` | u2705 | AGENTD-12 |
-| Sync Engine | - | u26a0ufe0f u5ef6u540e | AGENTD-13 |
-| REST API (Fastify) | `src/api/server.ts` + 7 u4e2au8defu7531u6587u4ef6 | u2705 | AGENTD-14 |
-| AgentM Pro u96c6u6210 | `src/daemon.ts` + `src/index.ts` | u2705 | AGENTD-15 |
-| u5355u5143u6d4bu8bd5 | `tests/unit/key-manager.test.ts` (6 tests) | u2705 | AGENTD-16 |
-| u96c6u6210u6d4bu8bd5 | `tests/integration/api.test.ts` (11 tests) | u2705 | AGENTD-17 |
-| u6784u5efau6253u5305 | `npm run build` (tsup) | u2705 | AGENTD-18 |
+| u6a21u5757                | u6587u4ef6                                        | u72b6u6001            | u5bf9u5e94u4efbu52a1 |
+| ------------------------- | ------------------------------------------------- | --------------------- | -------------------- |
+| u9879u76eeu521du59cbu5316 | `package.json`, `tsconfig.json`                   | u2705                 | AGENTD-1             |
+| Connection Manager        | `src/connection/connection-manager.ts`            | u2705                 | AGENTD-2             |
+| Message Router            | `src/messages/message-router.ts`                  | u2705                 | AGENTD-3             |
+| Task Queue                | `src/tasks/task-queue.ts`                         | u2705                 | AGENTD-4             |
+| Task Executor             | `src/tasks/task-executor.ts`                      | u2705                 | AGENTD-5             |
+| Process Manager           | `src/agents/process-manager.ts`                   | u2705                 | AGENTD-6             |
+| Agent Lifecycle API       | `src/api/routes/agents.ts`                        | u2705                 | AGENTD-7             |
+| Agent Sandbox             | -                                                 | u26a0ufe0f u5ef6u540e | AGENTD-8             |
+| Key Manager               | `src/keys/key-manager.ts`                         | u2705                 | AGENTD-9             |
+| Wallet Integration        | `src/wallet/authorization.ts`                     | u2705                 | AGENTD-10            |
+| Authentication            | `src/api/auth-middleware.ts`                      | u2705                 | AGENTD-11            |
+| Local Cache (SQLite)      | `src/storage/database.ts`                         | u2705                 | AGENTD-12            |
+| Sync Engine               | -                                                 | u26a0ufe0f u5ef6u540e | AGENTD-13            |
+| REST API (Fastify)        | `src/api/server.ts` + 7 u4e2au8defu7531u6587u4ef6 | u2705                 | AGENTD-14            |
+| AgentM Pro u96c6u6210     | `src/daemon.ts` + `src/index.ts`                  | u2705                 | AGENTD-15            |
+| u5355u5143u6d4bu8bd5      | `tests/unit/key-manager.test.ts` (6 tests)        | u2705                 | AGENTD-16            |
+| u96c6u6210u6d4bu8bd5      | `tests/integration/api.test.ts` (11 tests)        | u2705                 | AGENTD-17            |
+| u6784u5efau6253u5305      | `npm run build` (tsup)                            | u2705                 | AGENTD-18            |
 
 ### u6280u672fu6808
 
@@ -45,17 +45,17 @@ u4ee3u7801u4f4du7f6e: `apps/agent-daemon/`
 
 ### API u8defu7531
 
-| u7aefu70b9 | u65b9u6cd5 | u8bf4u660e |
-|------|------|------|
-| `/api/v1/status` | GET | Daemon u72b6u6001u3001u8fdeu63a5u3001u4efbu52a1u8ba1u6570 |
-| `/api/v1/tasks` | GET | u4efbu52a1u5217u8868 |
-| `/api/v1/tasks/:id` | GET | u4efbu52a1u8be6u60c5 |
-| `/api/v1/agents` | GET/POST | Agent u6ce8u518cu4e0eu5217u8868 |
-| `/api/v1/keys/public` | GET | u516cu94a5 |
-| `/api/v1/keys/sign` | POST | u6d88u606fu7b7eu540d |
-| `/api/v1/messages` | GET | u6d88u606fu5217u8868 |
-| `/api/v1/wallet/*` | GET/POST | u94b1u5305u64cdu4f5c |
-| `/api/v1/solana/*` | GET/POST | Solana u4ea4u6613 |
+| u7aefu70b9            | u65b9u6cd5 | u8bf4u660e                                                |
+| --------------------- | ---------- | --------------------------------------------------------- |
+| `/api/v1/status`      | GET        | Daemon u72b6u6001u3001u8fdeu63a5u3001u4efbu52a1u8ba1u6570 |
+| `/api/v1/tasks`       | GET        | u4efbu52a1u5217u8868                                      |
+| `/api/v1/tasks/:id`   | GET        | u4efbu52a1u8be6u60c5                                      |
+| `/api/v1/agents`      | GET/POST   | Agent u6ce8u518cu4e0eu5217u8868                           |
+| `/api/v1/keys/public` | GET        | u516cu94a5                                                |
+| `/api/v1/keys/sign`   | POST       | u6d88u606fu7b7eu540d                                      |
+| `/api/v1/messages`    | GET        | u6d88u606fu5217u8868                                      |
+| `/api/v1/wallet/*`    | GET/POST   | u94b1u5305u64cdu4f5c                                      |
+| `/api/v1/solana/*`    | GET/POST   | Solana u4ea4u6613                                         |
 
 ### u67b6u6784
 
@@ -89,10 +89,10 @@ u2514u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2518     
 
 ### u5ef6u540eu529fu80fd
 
-| u529fu80fd | u539fu56e0 |
-|------|------|
+| u529fu80fd                                                | u539fu56e0                                             |
+| --------------------------------------------------------- | ------------------------------------------------------ |
 | Agent Sandbox (u8fdbu7a0bu9694u79bb/u8d44u6e90u9650u5236) | MVP u4e0du9700u8981uff0cu751fu4ea7u73afu5883u518du52a0 |
-| Sync Engine (u94feu4e0au6570u636eu540cu6b65) | u5f53u524du901au8fc7 Indexer REST API u5df2u5145u5206 |
+| Sync Engine (u94feu4e0au6570u636eu540cu6b65)              | u5f53u524du901au8fc7 Indexer REST API u5df2u5145u5206  |
 
 ### u8fd0u884c
 
@@ -116,16 +116,16 @@ npx vitest run
 
 ## u6587u6863u7d22u5f15
 
-| u6587u6863 | u5185u5bb9 | u72b6u6001 |
-|------|------|------|
-| [01-prd.md](01-prd.md) | u4ea7u54c1u9700u6c42 | u2705 u5b8cu6210 |
-| [02-architecture.md](02-architecture.md) | u7cfbu7edfu67b6u6784 | u2705 u5b8cu6210 |
-| [03-technical-spec.md](03-technical-spec.md) | u6280u672fu89c4u683c | u2705 u5b8cu6210 |
-| [04-task-breakdown.md](04-task-breakdown.md) | u4efbu52a1u62c6u89e3 | u2705 u5b8cu6210 |
-| [05-test-spec.md](05-test-spec.md) | u6d4bu8bd5u89c4u683c | u2705 u5b8cu6210 |
-| README.md | u672cu6587u6863 (u5b9eu73b0u72b6u6001) | u2705 u5df2u66f4u65b0 |
+| u6587u6863                                   | u5185u5bb9                             | u72b6u6001            |
+| -------------------------------------------- | -------------------------------------- | --------------------- |
+| [01-prd.md](01-prd.md)                       | u4ea7u54c1u9700u6c42                   | u2705 u5b8cu6210      |
+| [02-architecture.md](02-architecture.md)     | u7cfbu7edfu67b6u6784                   | u2705 u5b8cu6210      |
+| [03-technical-spec.md](03-technical-spec.md) | u6280u672fu89c4u683c                   | u2705 u5b8cu6210      |
+| [04-task-breakdown.md](04-task-breakdown.md) | u4efbu52a1u62c6u89e3                   | u2705 u5b8cu6210      |
+| [05-test-spec.md](05-test-spec.md)           | u6d4bu8bd5u89c4u683c                   | u2705 u5b8cu6210      |
+| README.md                                    | u672cu6587u6863 (u5b9eu73b0u72b6u6001) | u2705 u5df2u66f4u65b0 |
 
 ---
 
-*u6700u540eu66f4u65b0: 2026-04-03*
-*u72b6u6001: MVP u5b8cu6210uff0c16/18 u4efbu52a1 Done*
+_u6700u540eu66f4u65b0: 2026-04-03_
+_u72b6u6001: MVP u5b8cu6210uff0c16/18 u4efbu52a1 Done_

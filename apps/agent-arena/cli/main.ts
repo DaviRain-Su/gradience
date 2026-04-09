@@ -4,37 +4,17 @@
  * Main entry point for Gradience CLI
  */
 
-import {
-    loadConfig,
-    updateConfig,
-} from './utils/config.js';
+import { loadConfig, updateConfig } from './utils/config.js';
 
-import {
-    printJson,
-    isNoDnaMode,
-    shouldShowHelp,
-    printHelp,
-} from './utils/output.js';
+import { printJson, isNoDnaMode, shouldShowHelp, printHelp } from './utils/output.js';
 
-import {
-    handleTaskCommand,
-} from './commands/task.js';
+import { handleTaskCommand } from './commands/task.js';
 
-import {
-    handleJudgeCommand,
-} from './commands/judge.js';
+import { handleJudgeCommand } from './commands/judge.js';
 
-import {
-    handleProfileCommand,
-} from './commands/profile.js';
+import { handleProfileCommand } from './commands/profile.js';
 
-import {
-    CliError,
-    type ConfigKey,
-    isTaskCommand,
-    isJudgeCommand,
-    isProfileCommand,
-} from './types.js';
+import { CliError, type ConfigKey, isTaskCommand, isJudgeCommand, isProfileCommand } from './types.js';
 
 function isSupportedConfigKey(value: string): value is ConfigKey {
     return value === 'rpc' || value === 'keypair';

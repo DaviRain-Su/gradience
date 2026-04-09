@@ -11,21 +11,21 @@ interface MatchingReportViewProps {
 
 export function MatchingReportView({ report, onClose, onStartChat }: MatchingReportViewProps) {
     const [activeTab, setActiveTab] = useState<'summary' | 'dimensions' | 'conversation'>('summary');
-    
+
     const getScoreColor = (score: number) => {
         if (score >= 80) return 'text-green-400';
         if (score >= 60) return 'text-yellow-400';
         if (score >= 40) return 'text-orange-400';
         return 'text-red-400';
     };
-    
+
     const getScoreBg = (score: number) => {
         if (score >= 80) return 'bg-green-600';
         if (score >= 60) return 'bg-yellow-600';
         if (score >= 40) return 'bg-orange-600';
         return 'bg-red-600';
     };
-    
+
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-6">
             {/* Header */}
@@ -46,16 +46,13 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                         </button>
                     )}
                     {onClose && (
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-400 hover:text-white transition"
-                        >
+                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white transition">
                             Close
                         </button>
                     )}
                 </div>
             </div>
-            
+
             {/* Overall Score */}
             <section className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-8 text-center">
                 <h3 className="text-lg font-medium text-gray-400 mb-2">Overall Compatibility</h3>
@@ -63,7 +60,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                     {report.compatibilityScore}
                     <span className="text-3xl text-gray-500">/100</span>
                 </div>
-                
+
                 {/* Score Bar */}
                 <div className="mt-6 h-4 bg-gray-700 rounded-full overflow-hidden">
                     <div
@@ -71,10 +68,10 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                         style={{ width: `${report.compatibilityScore}%` }}
                     />
                 </div>
-                
+
                 <p className="mt-4 text-gray-300">{report.analysis.assessment}</p>
             </section>
-            
+
             {/* Score Breakdown */}
             <section className="bg-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold mb-4">Score Breakdown</h3>
@@ -93,11 +90,11 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                     </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                    Weighted: Embedding {(report.breakdown.weights.embedding * 100).toFixed(0)}% + 
-                    LLM {(report.breakdown.weights.llm * 100).toFixed(0)}%
+                    Weighted: Embedding {(report.breakdown.weights.embedding * 100).toFixed(0)}% + LLM{' '}
+                    {(report.breakdown.weights.llm * 100).toFixed(0)}%
                 </p>
             </section>
-            
+
             {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-700">
                 {(['summary', 'dimensions', 'conversation'] as const).map((tab) => (
@@ -114,7 +111,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                     </button>
                 ))}
             </div>
-            
+
             {/* Tab Content */}
             {activeTab === 'summary' && (
                 <div className="space-y-6">
@@ -131,7 +128,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                             </div>
                         </section>
                     )}
-                    
+
                     {/* Topics to Avoid */}
                     {report.analysis.avoidTopics.length > 0 && (
                         <section className="bg-gray-800 rounded-lg p-6">
@@ -145,7 +142,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                             </div>
                         </section>
                     )}
-                    
+
                     {/* Embedding Similarity */}
                     <section className="bg-gray-800 rounded-lg p-6">
                         <h3 className="text-xl font-semibold mb-4">📊 Embedding Similarity</h3>
@@ -162,7 +159,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                     </section>
                 </div>
             )}
-            
+
             {activeTab === 'dimensions' && (
                 <div className="space-y-6">
                     {Object.entries(report.analysis.dimensions).map(([key, dim]) => (
@@ -170,7 +167,7 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                     ))}
                 </div>
             )}
-            
+
             {activeTab === 'conversation' && (
                 <div className="bg-gray-800 rounded-lg p-6">
                     <h3 className="text-xl font-semibold mb-4">Conversation Transcript</h3>
@@ -178,14 +175,10 @@ export function MatchingReportView({ report, onClose, onStartChat }: MatchingRep
                         <div className="space-y-3">
                             <p className="text-sm text-gray-400">Session ID: {report.sessionId}</p>
                             {/* Conversation messages would go here */}
-                            <p className="text-gray-500 text-center py-8">
-                                Conversation details not yet implemented
-                            </p>
+                            <p className="text-gray-500 text-center py-8">Conversation details not yet implemented</p>
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-8">
-                            No probe conversation conducted yet
-                        </p>
+                        <p className="text-gray-500 text-center py-8">No probe conversation conducted yet</p>
                     )}
                 </div>
             )}
@@ -201,22 +194,22 @@ function DimensionCard({ dimension }: { dimension: DimensionAnalysis }) {
         if (score >= 40) return 'text-orange-400';
         return 'text-red-400';
     };
-    
+
     const dimensionIcons: Record<string, string> = {
         values: '💎',
         tone: '💬',
         boundaries: '🛡️',
         interests: '🎯',
     };
-    
+
     const dimensionNames: Record<string, string> = {
         values: 'Values Alignment',
         tone: 'Communication Style',
         boundaries: 'Boundary Respect',
         interests: 'Interest Overlap',
-        [dimension.dimension]: (dimension.dimension.charAt(0).toUpperCase() + dimension.dimension.slice(1)),
+        [dimension.dimension]: dimension.dimension.charAt(0).toUpperCase() + dimension.dimension.slice(1),
     };
-    
+
     return (
         <section className="bg-gray-800 rounded-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -224,13 +217,11 @@ function DimensionCard({ dimension }: { dimension: DimensionAnalysis }) {
                     <span>{dimensionIcons[dimension.dimension]}</span>
                     {dimensionNames[dimension.dimension]}
                 </h3>
-                <span className={`text-3xl font-bold ${getScoreColor(dimension.score)}`}>
-                    {dimension.score}
-                </span>
+                <span className={`text-3xl font-bold ${getScoreColor(dimension.score)}`}>{dimension.score}</span>
             </div>
-            
+
             <p className="text-gray-300">{dimension.summary}</p>
-            
+
             {dimension.evidence.length > 0 && (
                 <div>
                     <h4 className="text-sm font-semibold text-gray-400 mb-2">✅ Evidence</h4>
@@ -244,7 +235,7 @@ function DimensionCard({ dimension }: { dimension: DimensionAnalysis }) {
                     </ul>
                 </div>
             )}
-            
+
             {dimension.risks.length > 0 && (
                 <div>
                     <h4 className="text-sm font-semibold text-gray-400 mb-2">⚠️ Risks</h4>
@@ -258,7 +249,7 @@ function DimensionCard({ dimension }: { dimension: DimensionAnalysis }) {
                     </ul>
                 </div>
             )}
-            
+
             {dimension.suggestions.length > 0 && (
                 <div>
                     <h4 className="text-sm font-semibold text-gray-400 mb-2">💡 Suggestions</h4>
@@ -284,7 +275,7 @@ export function MatchingReportCard({ report, onClick }: { report: MatchingReport
         if (score >= 40) return 'text-orange-400';
         return 'text-red-400';
     };
-    
+
     return (
         <div
             onClick={onClick}
@@ -293,17 +284,15 @@ export function MatchingReportCard({ report, onClick }: { report: MatchingReport
             <div className="flex items-center justify-between mb-3">
                 <div>
                     <h4 className="font-semibold">Compatibility Report</h4>
-                    <p className="text-xs text-gray-500">
-                        {new Date(report.generatedAt).toLocaleDateString()}
-                    </p>
+                    <p className="text-xs text-gray-500">{new Date(report.generatedAt).toLocaleDateString()}</p>
                 </div>
                 <div className={`text-3xl font-bold ${getScoreColor(report.compatibilityScore)}`}>
                     {report.compatibilityScore}
                 </div>
             </div>
-            
+
             <p className="text-sm text-gray-400">{report.analysis.assessment}</p>
-            
+
             <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-700">
                 <div className="text-center">
                     <p className="text-xs text-gray-500">Values</p>

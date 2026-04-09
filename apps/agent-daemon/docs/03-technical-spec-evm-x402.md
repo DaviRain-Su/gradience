@@ -8,6 +8,7 @@
 ## 1. Objective
 
 Enable the daemon to create, authorize, settle, and rollback X402 micropayments on EVM using a lightweight on-chain escrow contract. The design must:
+
 - Reuse the existing `X402Handler` / `X402PaymentManager` interfaces where possible.
 - Support ERC-20 tokens (USDC as primary) via ERC-2612 `permit()` for gasless authorization.
 - Fall back to standard `approve()` + `transferFrom()` when `permit()` is unavailable.
@@ -18,10 +19,12 @@ Enable the daemon to create, authorize, settle, and rollback X402 micropayments 
 ## 2. Architecture Overview
 
 ### 2.1 Existing Patterns
+
 - **Solana X402** (`src/payments/x402-handler.ts`): server responds with `402 Payment Required`; client returns a signed Solana transaction; server submits it.
 - **EVM Transaction Manager** (`src/evm/transaction-manager.ts`): uses `viem` to call `AgentArenaEVM` functions.
 
 ### 2.2 EVM X402 Addition
+
 We introduce a new smart contract **`X402Settlement`** in `apps/agent-layer-evm/src/` and extend the daemon payment layer.
 
 ```
@@ -67,9 +70,11 @@ mapping(address => mapping(bytes32 => bool)) public usedNonces;
 ### 3.2 Key Functions
 
 #### `createAuthorization`
+
 Called by **provider** (Agent B) to register a payment channel before receiving the client signature. This is optional; the provider can also derive the channel ID off-chain and call `lockWithPermit` directly.
 
 #### `lockWithPermit`
+
 ```solidity
 function lockWithPermit(
     bytes32 channelId,
@@ -84,13 +89,16 @@ function lockWithPermit(
     bytes32 s
 ) external;
 ```
+
 - Verifies `permit(token, maxAmount, deadline, v, r, s)` on the ERC-20.
 - Transfers `maxAmount` from `payer` into this contract.
 - Stores the `Authorization`.
 - Emits `Locked(channelId, payer, recipient, token, maxAmount)`.
 
 #### `lockWithApproval`
+
 Fallback for tokens without ERC-2612.
+
 ```solidity
 function lockWithApproval(
     bytes32 channelId,
@@ -101,13 +109,16 @@ function lockWithApproval(
     bytes32 nonce
 ) external;
 ```
+
 - Requires prior `approve()` on the ERC-20.
 - Transfers `maxAmount` from `payer` via `transferFrom`.
 
 #### `settle`
+
 ```solidity
 function settle(bytes32 channelId, uint256 actualAmount) external;
 ```
+
 - Only callable by `authorization.recipient`.
 - Requires `actualAmount <= maxAmount`.
 - Transfers `actualAmount` to `recipient`.
@@ -115,9 +126,11 @@ function settle(bytes32 channelId, uint256 actualAmount) external;
 - Emits `Settled(channelId, actualAmount, refunded)`.
 
 #### `rollback`
+
 ```solidity
 function rollback(bytes32 channelId) external;
 ```
+
 - Callable by `recipient` (provider failed) or `payer` (after timeout).
 - Requires `block.timestamp > authorization.deadline` for payer rollback.
 - Refunds full `maxAmount` to `payer`.
@@ -141,32 +154,35 @@ Wraps `viem` interactions with `X402Settlement`.
 
 ```typescript
 export interface EvmX402Config {
-  rpcUrl: string;
-  chain: Chain;               // e.g. baseSepolia
-  settlementAddress: `0x${string}`;
-  walletPrivateKey: `0x${string}`;
+    rpcUrl: string;
+    chain: Chain; // e.g. baseSepolia
+    settlementAddress: `0x${string}`;
+    walletPrivateKey: `0x${string}`;
 }
 
 export class X402EvmClient {
-  async lockWithPermit(params: LockPermitParams): Promise<`0x${string}`>;
-  async lockWithApproval(params: LockApprovalParams): Promise<`0x${string}`>;
-  async settle(channelId: string, actualAmount: bigint): Promise<`0x${string}`>;
-  async rollback(channelId: string): Promise<`0x${string}`>;
+    async lockWithPermit(params: LockPermitParams): Promise<`0x${string}`>;
+    async lockWithApproval(params: LockApprovalParams): Promise<`0x${string}`>;
+    async settle(channelId: string, actualAmount: bigint): Promise<`0x${string}`>;
+    async rollback(channelId: string): Promise<`0x${string}`>;
 }
 ```
 
 ### 4.2 Extending `X402Handler`
 
 Update `X402Authorization.type` to support:
+
 - `'evm_permit'` — contains the packed `v,r,s` signature + permit deadline.
 - `'evm_transaction'` — fallback pre-signed EVM transaction (for wallets that don't support permit).
 
 When `processAuthorization()` receives `type === 'evm_permit'`:
+
 1. Deserialize the authorization payload (JSON with `channelId, maxAmount, deadline, nonce, v, r, s`).
 2. Call `X402EvmClient.lockWithPermit(...)` to move funds on-chain.
 3. On success, update session status to `authorized` (not `completed` yet — settlement happens later).
 
 When `settle(channelId, actualAmount)` is called:
+
 1. Call `X402EvmClient.settle(channelId, actualAmount)`.
 2. Update session status to `completed`.
 
@@ -198,11 +214,11 @@ Stored in `src/evm/abi/x402-settlement.ts` as a `viem`-compatible ABI array.
 3. **Payer** signs an ERC-2612 `permit(X402Settlement, maxAmount, deadline, v, r, s)`.
 4. **Payer** sends the signature back as `X402Authorization { type: 'evm_permit', ... }`.
 5. **Provider** calls `X402Handler.processAuthorization()`.
-   - `processAuthorization` invokes `X402EvmClient.lockWithPermit(...)`.
-   - Funds are locked in `X402Settlement`.
+    - `processAuthorization` invokes `X402EvmClient.lockWithPermit(...)`.
+    - Funds are locked in `X402Settlement`.
 6. **Provider** executes the service.
 7. **Provider** calls `X402Handler.settle(paymentId, actualAmount)`.
-   - Funds are transferred to provider; remainder refunded to payer.
+    - Funds are transferred to provider; remainder refunded to payer.
 
 ### Sequence: Rollback
 
@@ -213,16 +229,17 @@ Stored in `src/evm/abi/x402-settlement.ts` as a `viem`-compatible ABI array.
 
 ## 6. Security & Error Handling
 
-| Risk | Mitigation |
-|------|------------|
-| Replay of permit signature | `usedNonces` mapping in contract + EIP-2612 nonce tracking on token |
-| Provider steals more than max | `settle` enforces `actualAmount <= maxAmount` |
-| Payer double-spends off-chain | Lock happens on-chain before service execution |
-| Provider never settles | `rollback` callable by payer after deadline |
-| Re-entrancy on ERC-20 transfer | Use `ReentrancyGuard` or checks-effects-interactions pattern |
-| Invalid token contract | Validate token address is a contract (`extcodesize > 0`) on first lock |
+| Risk                           | Mitigation                                                             |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| Replay of permit signature     | `usedNonces` mapping in contract + EIP-2612 nonce tracking on token    |
+| Provider steals more than max  | `settle` enforces `actualAmount <= maxAmount`                          |
+| Payer double-spends off-chain  | Lock happens on-chain before service execution                         |
+| Provider never settles         | `rollback` callable by payer after deadline                            |
+| Re-entrancy on ERC-20 transfer | Use `ReentrancyGuard` or checks-effects-interactions pattern           |
+| Invalid token contract         | Validate token address is a contract (`extcodesize > 0`) on first lock |
 
 ### Custom Errors (Solidity)
+
 - `InvalidChannelId()`
 - `ChannelAlreadyExists(bytes32)`
 - `UnauthorizedCaller(address)`
@@ -248,6 +265,7 @@ x402Evm: {
 ```
 
 Environment variables:
+
 ```bash
 AGENTD_X402_EVM_ENABLED=true
 AGENTD_X402_EVM_SETTLEMENT=0x...
@@ -260,25 +278,25 @@ AGENTD_X402_EVM_USDC=0x...
 
 ### X Layer Testnet (chainId 195)
 
-| Contract | Address |
-|----------|---------|
+| Contract         | Address                                      |
+| ---------------- | -------------------------------------------- |
 | `X402Settlement` | `0x1Af0E217d434323f428609a42Df36B3D93c2452a` |
 
-*Deployer:* `0x067aBc270C4638869Cd347530Be34cBdD93D0EA1`  
-*Deployed at:* 2026-04-09
+_Deployer:_ `0x067aBc270C4638869Cd347530Be34cBdD93D0EA1`  
+_Deployed at:_ 2026-04-09
 
 ### Deployment Steps
 
 1. Deploy `X402Settlement.sol` to X Layer Testnet via Foundry script:
-   ```bash
-   cd apps/agent-layer-evm
-   PRIVATE_KEY=0x... forge script script/DeployX402Settlement.s.sol --rpc-url xlayer-testnet --broadcast
-   ```
+    ```bash
+    cd apps/agent-layer-evm
+    PRIVATE_KEY=0x... forge script script/DeployX402Settlement.s.sol --rpc-url xlayer-testnet --broadcast
+    ```
 2. Record address in `apps/agent-layer-evm/DEPLOYMENT.md`.
 3. Update daemon `.env` with the deployed address:
-   ```bash
-   AGENTD_X402_EVM_SETTLEMENT_ADDRESS=0x1Af0E217d434323f428609a42Df36B3D93c2452a
-   ```
+    ```bash
+    AGENTD_X402_EVM_SETTLEMENT_ADDRESS=0x1Af0E217d434323f428609a42Df36B3D93c2452a
+    ```
 
 ---
 

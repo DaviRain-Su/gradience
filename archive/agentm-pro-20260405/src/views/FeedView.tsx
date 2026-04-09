@@ -69,27 +69,14 @@ export function FeedView() {
 
             <div className="space-y-4">
                 {posts.map((post) => (
-                    <PostCard
-                        key={post.id}
-                        post={post}
-                        isOwn={post.author === publicKey}
-                        onDelete={handleDelete}
-                    />
+                    <PostCard key={post.id} post={post} isOwn={post.author === publicKey} onDelete={handleDelete} />
                 ))}
             </div>
         </div>
     );
 }
 
-function TabButton({
-    active,
-    onClick,
-    children,
-}: {
-    active: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-}) {
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
     return (
         <button
             onClick={onClick}

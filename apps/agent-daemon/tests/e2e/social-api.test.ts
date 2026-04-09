@@ -35,7 +35,7 @@ describe('Social API E2E', () => {
         walletAddress = bs58.encode(kp.publicKey);
 
         const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-        const { challenge, message } = await challengeRes.json() as { challenge: string; message: string };
+        const { challenge, message } = (await challengeRes.json()) as { challenge: string; message: string };
 
         const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);
         const verifyRes = await fetch(apiUrl('/api/v1/auth/verify'), {
@@ -47,7 +47,7 @@ describe('Social API E2E', () => {
                 signature: Buffer.from(sig).toString('base64'),
             }),
         });
-        const session = await verifyRes.json() as { token: string };
+        const session = (await verifyRes.json()) as { token: string };
         sessionToken = session.token;
     });
 
@@ -83,7 +83,7 @@ describe('Social API E2E', () => {
         it('should return default profile for unknown address', async () => {
             const res = await get('/api/profile/UnknownAddr123');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.address).toBe('UnknownAddr123');
             expect(body.displayName).toContain('Agent');
             expect(body.followers).toBe(0);
@@ -96,14 +96,14 @@ describe('Social API E2E', () => {
                 avatar: 'https://example.com/avatar.png',
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.success).toBe(true);
         });
 
         it('should retrieve created profile', async () => {
             const res = await get(`/api/profile/${walletAddress}`);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.displayName).toBe('TestAgent');
             expect(body.bio).toBe('E2E test agent');
             expect(body.avatar).toBe('https://example.com/avatar.png');
@@ -127,7 +127,7 @@ describe('Social API E2E', () => {
         it('should return empty feed initially', async () => {
             const res = await get('/api/feed');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.posts).toEqual([]);
             expect(body.hasMore).toBe(false);
         });
@@ -138,7 +138,7 @@ describe('Social API E2E', () => {
                 media: [{ type: 'image', url: 'https://example.com/img.png' }],
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.success).toBe(true);
             expect(body.id).toBeTruthy();
             postId = body.id;
@@ -160,7 +160,7 @@ describe('Social API E2E', () => {
 
         it('should appear in feed', async () => {
             const res = await get('/api/feed');
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.posts.length).toBe(1);
             expect(body.posts[0].id).toBe(postId);
             expect(body.posts[0].content).toBe('Hello from E2E test!');
@@ -171,7 +171,7 @@ describe('Social API E2E', () => {
         it('should get post by id', async () => {
             const res = await get(`/api/posts/${postId}`);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.content).toBe('Hello from E2E test!');
             expect(body.media).toHaveLength(1);
         });
@@ -185,21 +185,21 @@ describe('Social API E2E', () => {
             // Like
             const likeRes = await post(`/api/posts/${postId}/like`, {});
             expect(likeRes.status).toBe(200);
-            const likeBody = await likeRes.json() as any;
+            const likeBody = (await likeRes.json()) as any;
             expect(likeBody.liked).toBe(true);
 
             // Verify like count
             let postRes = await get(`/api/posts/${postId}`);
-            let postBody = await postRes.json() as any;
+            let postBody = (await postRes.json()) as any;
             expect(postBody.likes).toBe(1);
 
             // Unlike (toggle)
             const unlikeRes = await post(`/api/posts/${postId}/like`, {});
-            const unlikeBody = await unlikeRes.json() as any;
+            const unlikeBody = (await unlikeRes.json()) as any;
             expect(unlikeBody.liked).toBe(false);
 
             postRes = await get(`/api/posts/${postId}`);
-            postBody = await postRes.json() as any;
+            postBody = (await postRes.json()) as any;
             expect(postBody.likes).toBe(0);
         });
 
@@ -210,12 +210,12 @@ describe('Social API E2E', () => {
             }
 
             const page1 = await get('/api/feed?limit=2&page=1');
-            const body1 = await page1.json() as any;
+            const body1 = (await page1.json()) as any;
             expect(body1.posts.length).toBe(2);
             expect(body1.hasMore).toBe(true);
 
             const page2 = await get('/api/feed?limit=2&page=2');
-            const body2 = await page2.json() as any;
+            const body2 = (await page2.json()) as any;
             expect(body2.posts.length).toBe(2);
             expect(body2.hasMore).toBe(false);
         });
@@ -230,7 +230,7 @@ describe('Social API E2E', () => {
         it('should follow a target', async () => {
             const res = await post('/api/follow', { targetAddress });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.success).toBe(true);
         });
 
@@ -258,7 +258,7 @@ describe('Social API E2E', () => {
 
             const res = await get(`/api/following/${walletAddress}`);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.following.length).toBe(2);
             const addresses = body.following.map((f: any) => f.address);
             expect(addresses).toContain(targetAddress);
@@ -268,25 +268,25 @@ describe('Social API E2E', () => {
         it('should list followers', async () => {
             const res = await get(`/api/followers/${targetAddress}`);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.followers.length).toBe(1);
             expect(body.followers[0].address).toBe(walletAddress);
         });
 
         it('should update profile follower counts', async () => {
             const res = await get(`/api/profile/${walletAddress}`);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.following).toBe(2);
         });
 
         it('should unfollow', async () => {
             const res = await post('/api/unfollow', { targetAddress });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.success).toBe(true);
 
             const followingRes = await get(`/api/following/${walletAddress}`);
-            const followingBody = await followingRes.json() as any;
+            const followingBody = (await followingRes.json()) as any;
             expect(followingBody.following.length).toBe(1);
         });
     });

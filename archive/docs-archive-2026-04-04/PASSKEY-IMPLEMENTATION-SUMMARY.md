@@ -48,7 +48,7 @@ function CreateAgent() {
       masterWalletAddress: '5Y3d...7xKp',
       derivationIndex: 0,
     });
-    
+
     if (credential) {
       console.log('Created:', credential.credentialId);
     }
@@ -155,13 +155,13 @@ function MigrationPage() {
 
 ## 安全特性
 
-| 特性 | 实现 |
-|------|------|
-| 私钥存储 | Secure Enclave / TPM (硬件级) |
-| 加密算法 | AES-256-GCM |
-| 密钥派生 | SHA-256 + 钱包地址 |
+| 特性     | 实现                             |
+| -------- | -------------------------------- |
+| 私钥存储 | Secure Enclave / TPM (硬件级)    |
+| 加密算法 | AES-256-GCM                      |
+| 密钥派生 | SHA-256 + 钱包地址               |
 | 认证方式 | FaceID / TouchID / Windows Hello |
-| 同步 | iCloud / Google (端到端加密) |
+| 同步     | iCloud / Google (端到端加密)     |
 
 ## 下一步
 

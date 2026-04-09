@@ -9,6 +9,7 @@
 ## Summary
 
 Successfully implemented and deployed **payment features** for the Workflow Marketplace program, including:
+
 - SOL payment transfers with revenue distribution
 - Subscription time management (30-day expiration)
 - Execution tracking for usage-based pricing
@@ -21,6 +22,7 @@ Successfully implemented and deployed **payment features** for the Workflow Mark
 ### Instruction 8: Purchase Workflow V2 (with Payment)
 
 **Accounts**:
+
 1. `[signer, writable]` Buyer (pays for workflow + rent)
 2. `[writable]` Workflow PDA (read metadata, update purchases)
 3. `[writable]` Access PDA (to create)
@@ -30,6 +32,7 @@ Successfully implemented and deployed **payment features** for the Workflow Mark
 7. `[]` System program
 
 **Payment Flow**:
+
 ```
 Price: 0.01 SOL
 ├── Protocol Fee (2%): 0.0002 SOL → Treasury
@@ -37,17 +40,20 @@ Price: 0.01 SOL
 ```
 
 **Data Layout**:
+
 - `workflow_id`: [u8; 32]
 - `access_type`: u8 (0=purchased, 1=subscribed, 2=rented)
 
 ### Instruction 9: Record Execution
 
 **Accounts**:
+
 1. `[signer]` Executor
 2. `[writable]` Workflow PDA (increment total_executions)
 3. `[writable]` Access PDA (increment executions, check limits)
 
 **Features**:
+
 - Verifies user has access
 - Checks access hasn't expired
 - Checks execution limits (if set)
@@ -68,18 +74,22 @@ Signature: PmhirEP46f2Nhatdpc21cGPdwtXCj1RaDtKB9CGUB3NK...
 ### Test 2: Purchase with Payment ✅
 
 **Before**:
+
 - Author Balance: 25.003162965 SOL
 - Treasury Balance: 0.00091176 SOL
 
 **After**:
+
 - Author Balance: 25.001426765 SOL
 - Treasury Balance: 0.00111176 SOL
 
 **Transfers**:
+
 - Protocol Fee (2%): 0.0002 SOL ✅
 - Author Receive (98%): 0.0098 SOL ✅
 
 **Verification**:
+
 ```
 Expected protocol fee: 0.0002 SOL
 Expected author receive: 0.0098 SOL
@@ -97,6 +107,7 @@ Signature: 128KSPY7bSyNmHzdSWc81x9qeWAtVCLTvKWdLtmXckJ3...
 ```
 
 **Expiration Logic**:
+
 ```rust
 let expires_at = match access_type {
     1 => now + (30 * 24 * 60 * 60), // Subscription: 30 days
@@ -149,11 +160,11 @@ Transfer {
 
 ### Access Type Expiration
 
-| Access Type | Duration | Use Case |
-|-------------|----------|----------|
-| 0 (Purchased) | Never | One-time buy |
-| 1 (Subscribed) | 30 days | Monthly subscription |
-| 2 (Rented) | 7 days | Short-term rental |
+| Access Type    | Duration | Use Case             |
+| -------------- | -------- | -------------------- |
+| 0 (Purchased)  | Never    | One-time buy         |
+| 1 (Subscribed) | 30 days  | Monthly subscription |
+| 2 (Rented)     | 7 days   | Short-term rental    |
 
 ### Execution Tracking
 
@@ -228,15 +239,18 @@ createRecordExecutionInstruction(
 ### On-Chain Data
 
 **Treasury PDA**: `5uUKJGkXj1hgNue9a77vZ3anyEZDK2nPG33rp2Xu722w`
+
 - Before: 0.00091176 SOL
 - After: 0.00111176 SOL
 - Received: 0.0002 SOL ✅
 
 **Access PDA** (Subscription):
+
 - Access Type: 1 (Subscription)
 - Expires: 30 days from purchase ✅
 
 **Execution Counter**:
+
 - Before: 0
 - After: 1 ✅
 
@@ -244,14 +258,14 @@ createRecordExecutionInstruction(
 
 ## Cost Analysis
 
-| Operation | Cost (SOL) | Breakdown |
-|-----------|-----------|-----------|
-| Create Paid Workflow | ~0.0024 | Rent for 218 bytes |
-| Purchase (0.01 SOL) | 0.01 + fees | Price + protocol fee |
-| Protocol Fee (2%) | 0.0002 | To treasury |
-| Author Payment | 0.0098 | To creator |
-| Subscription | 0.005 | Monthly price |
-| Record Execution | ~0.000005 | Small compute cost |
+| Operation            | Cost (SOL)  | Breakdown            |
+| -------------------- | ----------- | -------------------- |
+| Create Paid Workflow | ~0.0024     | Rent for 218 bytes   |
+| Purchase (0.01 SOL)  | 0.01 + fees | Price + protocol fee |
+| Protocol Fee (2%)    | 0.0002      | To treasury          |
+| Author Payment       | 0.0098      | To creator           |
+| Subscription         | 0.005       | Monthly price        |
+| Record Execution     | ~0.000005   | Small compute cost   |
 
 ---
 
@@ -261,31 +275,31 @@ createRecordExecutionInstruction(
 ✅ **Access Control**: Only signer can purchase/execute  
 ✅ **Expiration Check**: Subscriptions validated before execution  
 ✅ **PDA Verification**: All PDAs verified with correct seeds  
-✅ **Balance Checks**: System program handles insufficient funds  
+✅ **Balance Checks**: System program handles insufficient funds
 
 ---
 
 ## Next Steps (Phase 6+)
 
 1. **SPL Token Support**
-   - Add pinocchio-token dependency
-   - Support USDC, USDT payments
-   - Token account validation
+    - Add pinocchio-token dependency
+    - Support USDC, USDT payments
+    - Token account validation
 
 2. **Advanced Revenue Sharing**
-   - Multiple beneficiaries
-   - Percentage-based splits
-   - Automatic distribution
+    - Multiple beneficiaries
+    - Percentage-based splits
+    - Automatic distribution
 
 3. **Usage-Based Pricing**
-   - Per-execution billing
-   - Tiered pricing models
-   - Automatic billing on execution
+    - Per-execution billing
+    - Tiered pricing models
+    - Automatic billing on execution
 
 4. **Escrow System**
-   - Hold payments in escrow
-   - Dispute resolution
-   - Refund mechanism
+    - Hold payments in escrow
+    - Dispute resolution
+    - Refund mechanism
 
 ---
 
@@ -308,6 +322,7 @@ npx tsx test-phase5.ts
 **Phase 5 Complete!** ✅
 
 Payment system fully functional with:
+
 - SOL transfers
 - Revenue distribution (2% protocol fee)
 - Subscription management (30-day expiration)

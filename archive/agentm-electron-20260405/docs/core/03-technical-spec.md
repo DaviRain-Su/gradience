@@ -21,6 +21,7 @@
 | 3 | system_program | ❌ | ❌ | System program |
 
 **Data**:
+
 ```rust
 struct RegisterAgentData {
     name: String,           // max 64 bytes
@@ -33,6 +34,7 @@ struct RegisterAgentData {
 ```
 
 **Validation**:
+
 - `agent_account` must not exist (8000: AgentAlreadyRegistered)
 - `name.len() <= 64` (8004)
 - `description.len() <= 256` (8005)
@@ -50,6 +52,7 @@ struct RegisterAgentData {
 **Data**: Same as RegisterAgentData (all fields replaced).
 
 **Validation**:
+
 - `agent_account.owner == owner` (8002)
 - `agent_account.status == Active` (8003)
 
@@ -70,6 +73,7 @@ struct RegisterAgentData {
 | 1 | agent_profile | ❌ | ✅ | Profile to update |
 
 **Data**:
+
 ```rust
 struct UpdateReputationData {
     avg_score: u16,     // basis points
@@ -79,6 +83,7 @@ struct UpdateReputationData {
 ```
 
 **Validation**:
+
 - Caller must be the authorized Agent Arena program (8006)
 
 ### link_metaplex
@@ -93,22 +98,22 @@ struct UpdateReputationData {
 
 ## 2. PDA Seeds
 
-| PDA | Seeds | Description |
-|-----|-------|-------------|
-| AgentAccount | `["agent", owner_pubkey]` | One per owner |
+| PDA          | Seeds                               | Description   |
+| ------------ | ----------------------------------- | ------------- |
+| AgentAccount | `["agent", owner_pubkey]`           | One per owner |
 | AgentProfile | `["profile", agent_account_pubkey]` | One per agent |
 
 ---
 
 ## 3. 事件 (Log Events)
 
-| Event | Discriminator | Data |
-|-------|:---:|------|
-| AgentRegistered | 1 | owner, agent_account, name |
-| ProfileUpdated | 2 | agent_account, updated_fields |
-| AgentDeactivated | 3 | agent_account |
-| ReputationUpdated | 4 | agent_account, avg_score, completed, win_rate |
-| MetaplexLinked | 5 | agent_account, metaplex_mint |
+| Event             | Discriminator | Data                                          |
+| ----------------- | :-----------: | --------------------------------------------- |
+| AgentRegistered   |       1       | owner, agent_account, name                    |
+| ProfileUpdated    |       2       | agent_account, updated_fields                 |
+| AgentDeactivated  |       3       | agent_account                                 |
+| ReputationUpdated |       4       | agent_account, avg_score, completed, win_rate |
+| MetaplexLinked    |       5       | agent_account, metaplex_mint                  |
 
 ---
 

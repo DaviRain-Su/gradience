@@ -10,6 +10,7 @@
 - **自动负载均衡**：模型自动分配到可用节点
 
 ### 核心概念
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Mesh-LLM 网络                            │
@@ -40,27 +41,29 @@
 ### 1. Mesh-LLM 工作原理
 
 **节点角色：**
+
 - **Coordinator (协调器)**：管理节点发现、任务分配
 - **Worker (工作节点)**：实际运行模型推理
 - **API Proxy (API 代理)**：暴露 OpenAI-compatible API
 
 **自动分布策略：**
+
 ```
 模型大小          分布策略
 ─────────────────────────────────────
 < 8GB            单节点运行
-8-16GB           Pipeline 并行  
+8-16GB           Pipeline 并行
 16-32GB          MoE 专家分片
 > 32GB           混合并行
 ```
 
 ### 2. 端口配置
 
-| 组件 | 端口 | 说明 |
-|------|------|------|
-| API Proxy | 9337 | OpenAI-compatible API |
-| Coordinator | 9338 | 节点协调服务 |
-| QUIC Transport | 动态 | 节点间通信 |
+| 组件           | 端口 | 说明                  |
+| -------------- | ---- | --------------------- |
+| API Proxy      | 9337 | OpenAI-compatible API |
+| Coordinator    | 9338 | 节点协调服务          |
+| QUIC Transport | 动态 | 节点间通信            |
 
 ---
 
@@ -73,16 +76,16 @@
 ```typescript
 // 模型路由策略
 const modelRouter = {
-  // 用户有 OpenAI/Anthropic Token
-  primary: ['gpt-4', 'claude-3', 'gemini-pro'],
-  
-  // 用户没有 Token → 使用 Mesh-LLM
-  fallback: {
-    provider: 'mesh-llm',
-    endpoint: 'http://localhost:9337/v1',
-    models: ['llama-3.1-70b', 'qwen2.5-72b', 'mixtral-8x22b'],
-  }
-}
+    // 用户有 OpenAI/Anthropic Token
+    primary: ['gpt-4', 'claude-3', 'gemini-pro'],
+
+    // 用户没有 Token → 使用 Mesh-LLM
+    fallback: {
+        provider: 'mesh-llm',
+        endpoint: 'http://localhost:9337/v1',
+        models: ['llama-3.1-70b', 'qwen2.5-72b', 'mixtral-8x22b'],
+    },
+};
 ```
 
 ### 方案 B：构建分布式推理云
@@ -93,7 +96,7 @@ const modelRouter = {
 用户 A (8GB GPU) ──┐
                    ├──► 小龙虾 Cloud ◄── 用户请求
 用户 B (16GB GPU) ─┘    (Mesh-LLM Coordinator)
-                   
+
 用户 C (24GB GPU) ────► 模型分片运行
 ```
 
@@ -140,33 +143,33 @@ mesh-llm worker \
 ```yaml
 # config.yaml
 models:
-  # 商业 API
-  openai:
-    api_key: ${OPENAI_API_KEY}
-    base_url: https://api.openai.com/v1
-    
-  # Mesh-LLM 分布式网络
-  mesh:
-    enabled: true
-    endpoint: http://localhost:9337/v1
-    api_key: "not-needed"
-    fallback_when: "openai_unavailable OR user_no_quota"
-    
-    # 支持的模型
-    available_models:
-      - name: "llama-3.1-70b-instruct"
-        size: "40GB"
-        min_nodes: 2
-        quantization: "Q4_K_M"
-        
-      - name: "qwen2.5-72b"
-        size: "45GB"
-        min_nodes: 2
-        
-      - name: "mixtral-8x22b"
-        size: "88GB"
-        min_nodes: 4
-        specialization: "coding"
+    # 商业 API
+    openai:
+        api_key: ${OPENAI_API_KEY}
+        base_url: https://api.openai.com/v1
+
+    # Mesh-LLM 分布式网络
+    mesh:
+        enabled: true
+        endpoint: http://localhost:9337/v1
+        api_key: 'not-needed'
+        fallback_when: 'openai_unavailable OR user_no_quota'
+
+        # 支持的模型
+        available_models:
+            - name: 'llama-3.1-70b-instruct'
+              size: '40GB'
+              min_nodes: 2
+              quantization: 'Q4_K_M'
+
+            - name: 'qwen2.5-72b'
+              size: '45GB'
+              min_nodes: 2
+
+            - name: 'mixtral-8x22b'
+              size: '88GB'
+              min_nodes: 4
+              specialization: 'coding'
 ```
 
 ---
@@ -188,20 +191,23 @@ curl http://localhost:9337/v1/chat/completions \
 ```
 
 响应格式：
+
 ```json
 {
-  "id": "chatcmpl-xxx",
-  "object": "chat.completion",
-  "created": 1234567890,
-  "model": "llama-3.1-70b-instruct",
-  "choices": [{
-    "index": 0,
-    "message": {
-      "role": "assistant",
-      "content": "I'm doing well, thank you!"
-    },
-    "finish_reason": "stop"
-  }]
+    "id": "chatcmpl-xxx",
+    "object": "chat.completion",
+    "created": 1234567890,
+    "model": "llama-3.1-70b-instruct",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "I'm doing well, thank you!"
+            },
+            "finish_reason": "stop"
+        }
+    ]
 }
 ```
 
@@ -215,11 +221,11 @@ curl http://localhost:9337/v1/chat/completions \
 用户订阅计划
 ├── Free Tier
 │   └── 使用 Mesh-LLM 社区节点（较慢，共享资源）
-│   
+│
 ├── Pro Tier ($9/month)
 │   ├── 优先访问 Mesh-LLM 网络
 │   └── 更快的推理速度
-│   
+│
 └── Enterprise ($49/month)
     ├── 专用 Mesh-LLM 节点
     └── 自定义模型支持
@@ -242,32 +248,34 @@ curl http://localhost:9337/v1/chat/completions \
 ## 🔒 安全和隐私
 
 ### 数据传输
+
 - **QUIC + TLS 1.3**：端到端加密
 - **模型分片**：单节点无法获取完整模型
 - **请求隔离**：用户请求不经过其他用户节点
 
 ### 用户数据
+
 ```yaml
 privacy:
-  # 用户提示词不会离开协调器
-  prompt_routing: coordinator_only
-  
-  # 推理结果缓存策略
-  cache_ttl: 0  # 不缓存
-  
-  # 日志策略
-  logging: minimal  # 只记录用量，不记录内容
+    # 用户提示词不会离开协调器
+    prompt_routing: coordinator_only
+
+    # 推理结果缓存策略
+    cache_ttl: 0 # 不缓存
+
+    # 日志策略
+    logging: minimal # 只记录用量，不记录内容
 ```
 
 ---
 
 ## 📊 性能对比
 
-| 场景 | 单节点 (A100) | Mesh-LLM (4x 3090) | 备注 |
-|------|--------------|-------------------|------|
-| Llama-70B | 35 tok/s | 28 tok/s | Mesh 有通信开销 |
-| Mixtral-8x22B | OOM | 22 tok/s | 单节点无法运行 |
-| Qwen-110B | OOM | 18 tok/s | 需要分布式 |
+| 场景          | 单节点 (A100) | Mesh-LLM (4x 3090) | 备注            |
+| ------------- | ------------- | ------------------ | --------------- |
+| Llama-70B     | 35 tok/s      | 28 tok/s           | Mesh 有通信开销 |
+| Mixtral-8x22B | OOM           | 22 tok/s           | 单节点无法运行  |
+| Qwen-110B     | OOM           | 18 tok/s           | 需要分布式      |
 
 **结论**：Mesh-LLM 适合运行单节点无法承载的大模型。
 
@@ -276,16 +284,19 @@ privacy:
 ## 🎯 下一步行动
 
 ### 短期（1-2 周）
+
 1. **部署测试节点**：在小龙虾 Cloud 测试环境部署 Mesh-LLM
 2. **模型准备**：下载 Llama-3.1-70B、Qwen2.5-72B 等模型
 3. **API 适配**：修改小龙虾 Cloud 网关支持 Mesh-LLM 后端
 
 ### 中期（1 个月）
+
 1. **用户 Beta**：邀请用户测试分布式推理
 2. **节点激励**：设计算力贡献奖励机制
 3. **性能优化**：根据实际负载调整分布策略
 
 ### 长期（3 个月）
+
 1. **去中心化**：支持用户自建协调器
 2. **模型市场**：支持用户上传自定义模型
 3. **边缘计算**：支持手机/嵌入式设备加入网络

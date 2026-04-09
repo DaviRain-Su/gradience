@@ -1,16 +1,15 @@
-const { expect } = require("chai");
-require("@nomicfoundation/hardhat-chai-matchers");
-const { ethers } = require("hardhat");
+const { expect } = require('chai');
+require('@nomicfoundation/hardhat-chai-matchers');
+const { ethers } = require('hardhat');
 
-describe("AgentLayerRaceTask", function () {
+describe('AgentLayerRaceTask', function () {
     async function deployFixture() {
-        const [deployer, poster, judge, agentA, agentB, treasury, attacker] =
-            await ethers.getSigners();
-        const factory = await ethers.getContractFactory("AgentLayerRaceTask", deployer);
+        const [deployer, poster, judge, agentA, agentB, treasury, attacker] = await ethers.getSigners();
+        const factory = await ethers.getContractFactory('AgentLayerRaceTask', deployer);
         const impl = await factory.deploy();
         await impl.waitForDeployment();
-        const proxyFactory = await ethers.getContractFactory("ERC1967Proxy", deployer);
-        const initData = factory.interface.encodeFunctionData("initialize", [deployer.address, treasury.address]);
+        const proxyFactory = await ethers.getContractFactory('ERC1967Proxy', deployer);
+        const initData = factory.interface.encodeFunctionData('initialize', [deployer.address, treasury.address]);
         const proxy = await proxyFactory.deploy(await impl.getAddress(), initData);
         await proxy.waitForDeployment();
         const contract = factory.attach(await proxy.getAddress());
@@ -19,11 +18,11 @@ describe("AgentLayerRaceTask", function () {
 
     async function deployErc20Fixture() {
         const fixture = await deployFixture();
-        const tokenFactory = await ethers.getContractFactory("TestERC20", fixture.deployer);
+        const tokenFactory = await ethers.getContractFactory('TestERC20', fixture.deployer);
         const token = await tokenFactory.deploy();
         await token.waitForDeployment();
 
-        const mintAmount = ethers.parseEther("10");
+        const mintAmount = ethers.parseEther('10');
         await token.mint(fixture.poster.address, mintAmount);
         await token.mint(fixture.agentA.address, mintAmount);
         await token.mint(fixture.agentB.address, mintAmount);
@@ -31,20 +30,18 @@ describe("AgentLayerRaceTask", function () {
         return { ...fixture, token };
     }
 
-    it("post_task creates an open task with reward locked", async function () {
+    it('post_task creates an open task with reward locked', async function () {
         const { contract, poster, judge } = await deployFixture();
-        const reward = ethers.parseEther("1");
+        const reward = ethers.parseEther('1');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await expect(
-            contract
-                .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, 0n, {
-                    value: reward,
-                }),
-        ).to.emit(contract, "TaskCreated");
+            contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, 0n, {
+                value: reward,
+            }),
+        ).to.emit(contract, 'TaskCreated');
 
         const task = await contract.tasks(1n);
         expect(task[0]).to.equal(poster.address);
@@ -53,30 +50,28 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(0n);
     });
 
-    it("apply_for_task + submit_result + judge_and_pay completes payout path", async function () {
+    it('apply_for_task + submit_result + judge_and_pay completes payout path', async function () {
         const { contract, poster, judge, agentA, agentB, treasury } = await deployFixture();
-        const reward = ethers.parseEther("1");
-        const minStake = ethers.parseEther("0.1");
+        const reward = ethers.parseEther('1');
+        const minStake = ethers.parseEther('0.1');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
-        await contract
-            .connect(poster)
-            .post_task("cid://eval", deadline, judgeDeadline, judge.address, 2, minStake, {
-                value: reward,
-            });
+        await contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, judge.address, 2, minStake, {
+            value: reward,
+        });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
         await contract.connect(agentB).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "cid://result-a", "cid://trace-a");
-        await contract.connect(agentB).submit_result(1n, "cid://result-b", "cid://trace-b");
+        await contract.connect(agentA).submit_result(1n, 'cid://result-a', 'cid://trace-a');
+        await contract.connect(agentB).submit_result(1n, 'cid://result-b', 'cid://trace-b');
 
         const winnerBalanceBefore = await ethers.provider.getBalance(agentA.address);
         const loserBalanceBefore = await ethers.provider.getBalance(agentB.address);
         const treasuryBefore = await ethers.provider.getBalance(treasury.address);
 
         await expect(contract.connect(judge).judge_and_pay(1n, agentA.address, 80))
-            .to.emit(contract, "TaskJudged")
+            .to.emit(contract, 'TaskJudged')
             .withArgs(
                 1n,
                 agentA.address,
@@ -89,9 +84,7 @@ describe("AgentLayerRaceTask", function () {
         const winnerBalanceAfterJudge = await ethers.provider.getBalance(agentA.address);
         const loserBalanceAfterJudge = await ethers.provider.getBalance(agentB.address);
 
-        expect(winnerBalanceAfterJudge - winnerBalanceBefore).to.equal(
-            (reward * 9500n) / 10000n,
-        );
+        expect(winnerBalanceAfterJudge - winnerBalanceBefore).to.equal((reward * 9500n) / 10000n);
         expect(loserBalanceAfterJudge - loserBalanceBefore).to.equal(0n);
         expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal((reward * 200n) / 10000n);
 
@@ -104,11 +97,10 @@ describe("AgentLayerRaceTask", function () {
         expect(task[9]).to.equal(80n);
     });
 
-    it("supports ERC20 reward and stake lifecycle", async function () {
-        const { contract, poster, judge, agentA, agentB, attacker, treasury, token } =
-            await deployErc20Fixture();
-        const reward = ethers.parseEther("1");
-        const minStake = ethers.parseEther("0.1");
+    it('supports ERC20 reward and stake lifecycle', async function () {
+        const { contract, poster, judge, agentA, agentB, attacker, treasury, token } = await deployErc20Fixture();
+        const reward = ethers.parseEther('1');
+        const minStake = ethers.parseEther('0.1');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
@@ -117,7 +109,7 @@ describe("AgentLayerRaceTask", function () {
         await contract
             .connect(poster)
             .post_task_erc20(
-                "cid://eval-erc20",
+                'cid://eval-erc20',
                 deadline,
                 judgeDeadline,
                 judge.address,
@@ -132,11 +124,11 @@ describe("AgentLayerRaceTask", function () {
         await contract.connect(agentA).apply_for_task(1n);
         await contract.connect(agentB).apply_for_task(1n);
         await expect(contract.connect(attacker).apply_for_task(1n, { value: 1n }))
-            .to.be.revertedWithCustomError(contract, "UnexpectedEther")
+            .to.be.revertedWithCustomError(contract, 'UnexpectedEther')
             .withArgs(1n);
 
-        await contract.connect(agentA).submit_result(1n, "cid://result-a", "cid://trace-a");
-        await contract.connect(agentB).submit_result(1n, "cid://result-b", "cid://trace-b");
+        await contract.connect(agentA).submit_result(1n, 'cid://result-a', 'cid://trace-a');
+        await contract.connect(agentB).submit_result(1n, 'cid://result-b', 'cid://trace-b');
 
         const winnerBefore = await token.balanceOf(agentA.address);
         const loserBefore = await token.balanceOf(agentB.address);
@@ -168,27 +160,27 @@ describe("AgentLayerRaceTask", function () {
         expect(task[3]).to.equal(await token.getAddress());
     });
 
-    it("judge_and_pay with score < MIN_SCORE refunds poster", async function () {
+    it('judge_and_pay with score < MIN_SCORE refunds poster', async function () {
         const { contract, poster, judge, agentA } = await deployFixture();
-        const reward = ethers.parseEther("0.5");
-        const minStake = ethers.parseEther("0.05");
+        const reward = ethers.parseEther('0.5');
+        const minStake = ethers.parseEther('0.05');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-low", deadline, judgeDeadline, judge.address, 0, minStake, {
+            .post_task('cid://eval-low', deadline, judgeDeadline, judge.address, 0, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+        await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
 
         const posterBefore = await ethers.provider.getBalance(poster.address);
         const agentBefore = await ethers.provider.getBalance(agentA.address);
 
         await expect(contract.connect(judge).judge_and_pay(1n, agentA.address, 59))
-            .to.emit(contract, "TaskRefunded")
+            .to.emit(contract, 'TaskRefunded')
             .withArgs(1n, poster.address, reward, 59n);
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
@@ -202,70 +194,64 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(2n);
     });
 
-    it("judge_and_pay rejects non-judge signer", async function () {
+    it('judge_and_pay rejects non-judge signer', async function () {
         const { contract, poster, judge, agentA, attacker } = await deployFixture();
-        const reward = ethers.parseEther("0.2");
+        const reward = ethers.parseEther('0.2');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
-        await contract
-            .connect(poster)
-            .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, 0n, {
-                value: reward,
-            });
+        await contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, 0n, {
+            value: reward,
+        });
         await contract.connect(agentA).apply_for_task(1n, { value: 0n });
-        await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+        await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
 
         await expect(contract.connect(attacker).judge_and_pay(1n, agentA.address, 80))
-            .to.be.revertedWithCustomError(contract, "NotTaskJudge")
+            .to.be.revertedWithCustomError(contract, 'NotTaskJudge')
             .withArgs(1n, attacker.address, judge.address);
     });
 
-    it("submit_result rejects overwrite and judge cannot apply", async function () {
+    it('submit_result rejects overwrite and judge cannot apply', async function () {
         const { contract, poster, judge, agentA } = await deployFixture();
-        const reward = ethers.parseEther("0.2");
-        const minStake = ethers.parseEther("0.01");
+        const reward = ethers.parseEther('0.2');
+        const minStake = ethers.parseEther('0.01');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
-        await contract
-            .connect(poster)
-            .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
-                value: reward,
-            });
+        await contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
+            value: reward,
+        });
         await expect(contract.connect(judge).apply_for_task(1n, { value: minStake }))
-            .to.be.revertedWithCustomError(contract, "JudgeCannotApply")
+            .to.be.revertedWithCustomError(contract, 'JudgeCannotApply')
             .withArgs(1n, judge.address);
 
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "cid://result-a", "cid://trace-a");
-        await expect(
-            contract.connect(agentA).submit_result(1n, "cid://result-b", "cid://trace-b"),
-        )
-            .to.be.revertedWithCustomError(contract, "AlreadySubmitted")
+        await contract.connect(agentA).submit_result(1n, 'cid://result-a', 'cid://trace-a');
+        await expect(contract.connect(agentA).submit_result(1n, 'cid://result-b', 'cid://trace-b'))
+            .to.be.revertedWithCustomError(contract, 'AlreadySubmitted')
             .withArgs(1n, agentA.address);
     });
 
-    it("claim_expired refunds poster and stakes after judge deadline", async function () {
+    it('claim_expired refunds poster and stakes after judge deadline', async function () {
         const { contract, poster, judge, agentA, attacker } = await deployFixture();
-        const reward = ethers.parseEther("0.4");
-        const minStake = ethers.parseEther("0.03");
+        const reward = ethers.parseEther('0.4');
+        const minStake = ethers.parseEther('0.03');
         const now = await currentTime();
         const deadline = now + 60n;
         const judgeDeadline = deadline + 60n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-expired", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-expired', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "cid://result-expired", "cid://trace-expired");
+        await contract.connect(agentA).submit_result(1n, 'cid://result-expired', 'cid://trace-expired');
 
         await expect(contract.connect(attacker).claim_expired(1n))
-            .to.be.revertedWithCustomError(contract, "JudgeDeadlineNotReached")
+            .to.be.revertedWithCustomError(contract, 'JudgeDeadlineNotReached')
             .withArgs(1n);
 
         await warpTo(judgeDeadline + 1n);
@@ -273,7 +259,7 @@ describe("AgentLayerRaceTask", function () {
         const posterBefore = await ethers.provider.getBalance(poster.address);
         const agentBefore = await ethers.provider.getBalance(agentA.address);
         await expect(contract.connect(attacker).claim_expired(1n))
-            .to.emit(contract, "TaskRefunded")
+            .to.emit(contract, 'TaskRefunded')
             .withArgs(1n, poster.address, reward, 0n);
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
@@ -286,26 +272,26 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(2n);
     });
 
-    it("force_refund compensates submitted agents when judge times out", async function () {
+    it('force_refund compensates submitted agents when judge times out', async function () {
         const { contract, poster, judge, agentA, agentB, attacker, treasury } = await deployFixture();
-        const reward = ethers.parseEther("1");
-        const minStake = ethers.parseEther("0.01");
+        const reward = ethers.parseEther('1');
+        const minStake = ethers.parseEther('0.01');
         const now = await currentTime();
         const deadline = now + 60n;
         const judgeDeadline = deadline + 60n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-force-refund", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-force-refund', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
         await contract.connect(agentB).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "cid://result-a", "cid://trace-a");
-        await contract.connect(agentB).submit_result(1n, "cid://result-b", "cid://trace-b");
+        await contract.connect(agentA).submit_result(1n, 'cid://result-a', 'cid://trace-a');
+        await contract.connect(agentB).submit_result(1n, 'cid://result-b', 'cid://trace-b');
 
         await expect(contract.connect(attacker).force_refund(1n))
-            .to.be.revertedWithCustomError(contract, "JudgeDeadlineNotReached")
+            .to.be.revertedWithCustomError(contract, 'JudgeDeadlineNotReached')
             .withArgs(1n);
 
         await warpTo(judgeDeadline + 1n);
@@ -316,7 +302,7 @@ describe("AgentLayerRaceTask", function () {
         const agentBBefore = await ethers.provider.getBalance(agentB.address);
 
         await expect(contract.connect(attacker).force_refund(1n))
-            .to.emit(contract, "TaskRefunded")
+            .to.emit(contract, 'TaskRefunded')
             .withArgs(1n, poster.address, (reward * 9500n) / 10000n, 0n);
 
         const posterAfter = await ethers.provider.getBalance(poster.address);
@@ -335,38 +321,38 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(2n);
     });
 
-    it("force_refund rejects tasks without any submitted agent", async function () {
+    it('force_refund rejects tasks without any submitted agent', async function () {
         const { contract, poster, judge, agentA, attacker } = await deployFixture();
-        const reward = ethers.parseEther("0.2");
-        const minStake = ethers.parseEther("0.01");
+        const reward = ethers.parseEther('0.2');
+        const minStake = ethers.parseEther('0.01');
         const now = await currentTime();
         const deadline = now + 60n;
         const judgeDeadline = deadline + 60n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-force-refund-empty", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-force-refund-empty', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
         await warpTo(judgeDeadline + 1n);
 
         await expect(contract.connect(attacker).force_refund(1n))
-            .to.be.revertedWithCustomError(contract, "NoSubmittedAgents")
+            .to.be.revertedWithCustomError(contract, 'NoSubmittedAgents')
             .withArgs(1n);
     });
 
-    it("cancel_task with no applicants: 100% refund, no protocol fee", async function () {
+    it('cancel_task with no applicants: 100% refund, no protocol fee', async function () {
         const { contract, poster, judge, treasury } = await deployFixture();
-        const reward = ethers.parseEther("0.5");
-        const minStake = ethers.parseEther("0.02");
+        const reward = ethers.parseEther('0.5');
+        const minStake = ethers.parseEther('0.02');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-cancel", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-cancel', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
 
@@ -386,23 +372,23 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(2n); // Refunded
     });
 
-    it("cancel_task with applicants but no submissions: 5% compensation split", async function () {
+    it('cancel_task with applicants but no submissions: 5% compensation split', async function () {
         const { contract, poster, judge, agentA, attacker, treasury } = await deployFixture();
-        const reward = ethers.parseEther("0.5");
-        const minStake = ethers.parseEther("0.02");
+        const reward = ethers.parseEther('0.5');
+        const minStake = ethers.parseEther('0.02');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-cancel", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-cancel', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
 
         await expect(contract.connect(attacker).cancel_task(1n))
-            .to.be.revertedWithCustomError(contract, "NotTaskPoster")
+            .to.be.revertedWithCustomError(contract, 'NotTaskPoster')
             .withArgs(1n, attacker.address, poster.address);
 
         const posterBefore = await ethers.provider.getBalance(poster.address);
@@ -432,75 +418,73 @@ describe("AgentLayerRaceTask", function () {
         expect(task[10]).to.equal(2n);
     });
 
-    it("cancel_task after submission is blocked", async function () {
+    it('cancel_task after submission is blocked', async function () {
         const { contract, poster, judge, agentA } = await deployFixture();
-        const reward = ethers.parseEther("0.1");
-        const minStake = ethers.parseEther("0.01");
+        const reward = ethers.parseEther('0.1');
+        const minStake = ethers.parseEther('0.01');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-cancel-block", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-cancel-block', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "result", "trace");
+        await contract.connect(agentA).submit_result(1n, 'result', 'trace');
 
         await expect(contract.connect(poster).cancel_task(1n))
-            .to.be.revertedWithCustomError(contract, "CannotCancelAfterSubmission")
+            .to.be.revertedWithCustomError(contract, 'CannotCancelAfterSubmission')
             .withArgs(1n);
     });
 
-    it("treasury can withdraw accumulated protocol fees", async function () {
+    it('treasury can withdraw accumulated protocol fees', async function () {
         const { contract, poster, judge, agentA, treasury } = await deployFixture();
-        const reward = ethers.parseEther("0.1");
-        const minStake = ethers.parseEther("0.01");
+        const reward = ethers.parseEther('0.1');
+        const minStake = ethers.parseEther('0.01');
         const now = await currentTime();
         const deadline = now + 3600n;
         const judgeDeadline = deadline + 1800n;
 
         await contract
             .connect(poster)
-            .post_task("cid://eval-withdraw", deadline, judgeDeadline, judge.address, 1, minStake, {
+            .post_task('cid://eval-withdraw', deadline, judgeDeadline, judge.address, 1, minStake, {
                 value: reward,
             });
         await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-        await contract.connect(agentA).submit_result(1n, "result", "trace");
+        await contract.connect(agentA).submit_result(1n, 'result', 'trace');
         await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
         const expectedFee = (reward * 200n) / 10000n;
         expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(expectedFee);
 
         await expect(contract.connect(poster).withdrawProtocolFees(ethers.ZeroAddress))
-            .to.be.revertedWithCustomError(contract, "NotTreasury")
+            .to.be.revertedWithCustomError(contract, 'NotTreasury')
             .withArgs(poster.address);
 
         await expect(contract.connect(treasury).withdrawProtocolFees(ethers.ZeroAddress))
-            .to.emit(contract, "ProtocolFeesWithdrawn")
+            .to.emit(contract, 'ProtocolFeesWithdrawn')
             .withArgs(ethers.ZeroAddress, treasury.address, expectedFee);
 
         expect(await contract.protocolFees(ethers.ZeroAddress)).to.equal(0n);
     });
 
-    it("get_reputation derives avg score from totalScore without cumulative drift", async function () {
+    it('get_reputation derives avg score from totalScore without cumulative drift', async function () {
         const { contract, poster, judge, agentA } = await deployFixture();
-        const reward = ethers.parseEther("0.1");
+        const reward = ethers.parseEther('0.1');
         const scores = [60, 61, 62];
 
         for (const score of scores) {
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
-            await contract
-                .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, 0n, {
-                    value: reward,
-                });
+            await contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, 0n, {
+                value: reward,
+            });
             const taskId = await contract.taskCount();
             await contract.connect(agentA).apply_for_task(taskId, { value: 0n });
-            await contract.connect(agentA).submit_result(taskId, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(taskId, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(taskId, agentA.address, score);
         }
 
@@ -510,91 +494,89 @@ describe("AgentLayerRaceTask", function () {
         expect(reputation[4]).to.equal(61n);
     });
 
-    describe("Dispute", function () {
-        it("dispute_task opens a dispute during window with correct bond", async function () {
+    describe('Dispute', function () {
+        it('dispute_task opens a dispute during window with correct bond', async function () {
             const { contract, poster, judge, agentA, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
                     value: reward,
                 });
             await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
             const bond = reward / 10n;
             await expect(
-                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond }),
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond }),
             )
-                .to.emit(contract, "DisputeOpened")
-                .withArgs(1n, attacker.address, bond, ethers.encodeBytes32String("reason"));
+                .to.emit(contract, 'DisputeOpened')
+                .withArgs(1n, attacker.address, bond, ethers.encodeBytes32String('reason'));
 
             const d = await contract.disputes(1n);
             expect(d[0]).to.equal(1n); // DisputeState.Open
             expect(d[1]).to.equal(attacker.address);
         });
 
-        it("rejects dispute with wrong bond or outside window", async function () {
+        it('rejects dispute with wrong bond or outside window', async function () {
             const { contract, poster, judge, agentA, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
                     value: reward,
                 });
             await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
             const bond = reward / 10n;
             await expect(
-                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond - 1n }),
-            ).to.be.revertedWithCustomError(contract, "BondAmountIncorrect");
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond - 1n }),
+            ).to.be.revertedWithCustomError(contract, 'BondAmountIncorrect');
 
             await warpTo(judgeDeadline + 7n * 86400n + 1n);
             await expect(
-                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond }),
-            ).to.be.revertedWithCustomError(contract, "DisputeWindowClosed");
+                contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond }),
+            ).to.be.revertedWithCustomError(contract, 'DisputeWindowClosed');
         });
 
-        it("resolver can uphold dispute and redistribute", async function () {
+        it('resolver can uphold dispute and redistribute', async function () {
             const { contract, poster, judge, agentA, attacker, deployer } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
                     value: reward,
                 });
             await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
             const bond = reward / 10n;
-            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond });
 
             const challengerBefore = await ethers.provider.getBalance(attacker.address);
 
-            const tx = await contract
-                .connect(deployer)
-                .resolve_dispute(1n, 1, agentA.address, 80); // DisputeOutcome.Uphold = 1
+            const tx = await contract.connect(deployer).resolve_dispute(1n, 1, agentA.address, 80); // DisputeOutcome.Uphold = 1
             await expect(tx)
-                .to.emit(contract, "DisputeResolved")
+                .to.emit(contract, 'DisputeResolved')
                 .withArgs(1n, 1n, deployer.address, agentA.address, 80n);
             await tx.wait();
 
@@ -606,28 +588,28 @@ describe("AgentLayerRaceTask", function () {
             expect(d[5]).to.equal(1n); // DisputeOutcome.Uphold
         });
 
-        it("resolver can reject dispute and split bond to judge and treasury", async function () {
+        it('resolver can reject dispute and split bond to judge and treasury', async function () {
             const { contract, poster, judge, agentA, attacker, deployer } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
                     value: reward,
                 });
             await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
             const bond = reward / 10n;
-            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond });
 
-            await expect(() =>
-                contract.connect(deployer).resolve_dispute(1n, 2, agentA.address, 80), // DisputeOutcome.Reject = 2
+            await expect(
+                () => contract.connect(deployer).resolve_dispute(1n, 2, agentA.address, 80), // DisputeOutcome.Reject = 2
             ).to.changeEtherBalance(judge, bond / 2n);
 
             const d = await contract.disputes(1n);
@@ -635,37 +617,37 @@ describe("AgentLayerRaceTask", function () {
             expect(d[5]).to.equal(2n); // DisputeOutcome.Reject
         });
 
-        it("non-resolver cannot resolve dispute", async function () {
+        it('non-resolver cannot resolve dispute', async function () {
             const { contract, poster, judge, agentA, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, judge.address, 1, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, judge.address, 1, minStake, {
                     value: reward,
                 });
             await contract.connect(agentA).apply_for_task(1n, { value: minStake });
-            await contract.connect(agentA).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(agentA).submit_result(1n, 'cid://result', 'cid://trace');
             await contract.connect(judge).judge_and_pay(1n, agentA.address, 80);
 
             const bond = reward / 10n;
-            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String("reason"), { value: bond });
+            await contract.connect(attacker).dispute_task(1n, ethers.encodeBytes32String('reason'), { value: bond });
 
             await expect(
                 contract.connect(attacker).resolve_dispute(1n, 1, agentA.address, 80),
-            ).to.be.revertedWithCustomError(contract, "NotDisputeResolver");
+            ).to.be.revertedWithCustomError(contract, 'NotDisputeResolver');
         });
     });
 
-    describe("Quorum", function () {
-        it("post_task_quorum creates a pool-based task", async function () {
+    describe('Quorum', function () {
+        it('post_task_quorum creates a pool-based task', async function () {
             const { contract, poster, judge, agentA, agentB } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
@@ -674,12 +656,22 @@ describe("AgentLayerRaceTask", function () {
             await expect(
                 contract
                     .connect(poster)
-                    .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                    .post_task_quorum('cid://eval', deadline, judgeDeadline, 1, minStake, 1, judges, {
                         value: reward,
                     }),
             )
-                .to.emit(contract, "TaskCreated")
-                .withArgs(1n, poster.address, ethers.ZeroAddress, 1n, minStake, reward, deadline, judgeDeadline, "cid://eval");
+                .to.emit(contract, 'TaskCreated')
+                .withArgs(
+                    1n,
+                    poster.address,
+                    ethers.ZeroAddress,
+                    1n,
+                    minStake,
+                    reward,
+                    deadline,
+                    judgeDeadline,
+                    'cid://eval',
+                );
 
             const task = await contract.tasks(1n);
             expect(task[10]).to.equal(0n); // TaskState.Open
@@ -689,10 +681,10 @@ describe("AgentLayerRaceTask", function () {
             expect(pool.map((a) => a)).to.deep.equal(judges);
         });
 
-        it("pool judges can submit judgements and settle with quorum", async function () {
+        it('pool judges can submit judgements and settle with quorum', async function () {
             const { contract, poster, judge, agentA, agentB, treasury, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
@@ -700,13 +692,13 @@ describe("AgentLayerRaceTask", function () {
 
             await contract
                 .connect(poster)
-                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                .post_task_quorum('cid://eval', deadline, judgeDeadline, 1, minStake, 1, judges, {
                     value: reward,
                 });
 
             const applicant = attacker;
             await contract.connect(applicant).apply_for_task(1n, { value: minStake });
-            await contract.connect(applicant).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(applicant).submit_result(1n, 'cid://result', 'cid://trace');
 
             // 2-of-3 majority required
             await contract.connect(judge).submit_judgement(1n, applicant.address, 80);
@@ -715,14 +707,14 @@ describe("AgentLayerRaceTask", function () {
             await contract.connect(agentB).submit_judgement(1n, ethers.ZeroAddress, 0);
 
             await expect(contract.connect(treasury).settle_with_quorum(1n))
-                .to.be.revertedWithCustomError(contract, "JudgeDeadlineNotReached")
+                .to.be.revertedWithCustomError(contract, 'JudgeDeadlineNotReached')
                 .withArgs(1n);
 
             await warpTo(judgeDeadline + 1n);
 
             const winnerBefore = await ethers.provider.getBalance(applicant.address);
             await expect(contract.connect(treasury).settle_with_quorum(1n))
-                .to.emit(contract, "TaskJudged")
+                .to.emit(contract, 'TaskJudged')
                 .withArgs(
                     1n,
                     applicant.address,
@@ -740,10 +732,10 @@ describe("AgentLayerRaceTask", function () {
             expect(task[9]).to.equal(80n);
         });
 
-        it("non-pool judge cannot submit judgement", async function () {
+        it('non-pool judge cannot submit judgement', async function () {
             const { contract, poster, judge, agentA, agentB, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
@@ -751,19 +743,19 @@ describe("AgentLayerRaceTask", function () {
 
             await contract
                 .connect(poster)
-                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                .post_task_quorum('cid://eval', deadline, judgeDeadline, 1, minStake, 1, judges, {
                     value: reward,
                 });
 
             await expect(
                 contract.connect(attacker).submit_judgement(1n, agentA.address, 80),
-            ).to.be.revertedWithCustomError(contract, "NotPoolJudge");
+            ).to.be.revertedWithCustomError(contract, 'NotPoolJudge');
         });
 
-        it("quorum rejects when no majority reached", async function () {
+        it('quorum rejects when no majority reached', async function () {
             const { contract, poster, judge, agentA, agentB, attacker } = await deployFixture();
-            const reward = ethers.parseEther("1");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('1');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
@@ -771,12 +763,12 @@ describe("AgentLayerRaceTask", function () {
 
             await contract
                 .connect(poster)
-                .post_task_quorum("cid://eval", deadline, judgeDeadline, 1, minStake, 1, judges, {
+                .post_task_quorum('cid://eval', deadline, judgeDeadline, 1, minStake, 1, judges, {
                     value: reward,
                 });
 
             await contract.connect(attacker).apply_for_task(1n, { value: minStake });
-            await contract.connect(attacker).submit_result(1n, "cid://result", "cid://trace");
+            await contract.connect(attacker).submit_result(1n, 'cid://result', 'cid://trace');
 
             // No majority: 1-1-0 split
             await contract.connect(judge).submit_judgement(1n, attacker.address, 80);
@@ -784,15 +776,15 @@ describe("AgentLayerRaceTask", function () {
 
             await warpTo(judgeDeadline + 1n);
             await expect(contract.settle_with_quorum(1n))
-                .to.be.revertedWithCustomError(contract, "QuorumNotReached")
+                .to.be.revertedWithCustomError(contract, 'QuorumNotReached')
                 .withArgs(1n);
         });
     });
 
-    describe("JudgeRegistry Integration (GRA-179)", function () {
+    describe('JudgeRegistry Integration (GRA-179)', function () {
         async function deployWithRegistry() {
             const base = await deployFixture();
-            const registryFactory = await ethers.getContractFactory("JudgeRegistry", base.deployer);
+            const registryFactory = await ethers.getContractFactory('JudgeRegistry', base.deployer);
             const registry = await registryFactory.deploy(base.deployer.address);
             await registry.waitForDeployment();
             await registry.connect(base.deployer).setArena(await base.contract.getAddress());
@@ -800,56 +792,56 @@ describe("AgentLayerRaceTask", function () {
             return { ...base, registry };
         }
 
-        it("auto-assigns judge from registry when judge is zero address", async function () {
+        it('auto-assigns judge from registry when judge is zero address', async function () {
             const { contract, poster, judge, registry } = await deployWithRegistry();
             await registry.connect(judge).register(2);
 
-            const reward = ethers.parseEther("0.5");
+            const reward = ethers.parseEther('0.5');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await expect(
-                contract.connect(poster).post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
+                contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
                     value: reward,
                 }),
             )
-                .to.emit(contract, "TaskCreated")
-                .withArgs(1n, poster.address, judge.address, 2n, 0n, reward, deadline, judgeDeadline, "cid://eval");
+                .to.emit(contract, 'TaskCreated')
+                .withArgs(1n, poster.address, judge.address, 2n, 0n, reward, deadline, judgeDeadline, 'cid://eval');
 
             const task = await contract.tasks(1n);
             expect(task[1]).to.equal(judge.address);
         });
 
-        it("reverts auto-assignment for high-value tasks without designated judge", async function () {
+        it('reverts auto-assignment for high-value tasks without designated judge', async function () {
             const { contract, poster, registry } = await deployWithRegistry();
 
-            const reward = ethers.parseEther("2"); // > 1 ether
+            const reward = ethers.parseEther('2'); // > 1 ether
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 1800n;
 
             await expect(
-                contract.connect(poster).post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
+                contract.connect(poster).post_task('cid://eval', deadline, judgeDeadline, ethers.ZeroAddress, 2, 0n, {
                     value: reward,
                 }),
-            ).to.be.revertedWithCustomError(contract, "HighValueTaskRequiresDesignatedJudge");
+            ).to.be.revertedWithCustomError(contract, 'HighValueTaskRequiresDesignatedJudge');
         });
 
-        it("reassign_judge slashes inactive judge and picks new one", async function () {
+        it('reassign_judge slashes inactive judge and picks new one', async function () {
             const { contract, poster, judge, agentA, registry } = await deployWithRegistry();
             await registry.connect(judge).register(2);
             await registry.connect(agentA).register(2);
 
-            const reward = ethers.parseEther("0.5");
-            const minStake = ethers.parseEther("0.1");
+            const reward = ethers.parseEther('0.5');
+            const minStake = ethers.parseEther('0.1');
             const now = await currentTime();
             const deadline = now + 3600n;
             const judgeDeadline = deadline + 2n * 86400n; // 2 days after deadline
 
             await contract
                 .connect(poster)
-                .post_task("cid://eval", deadline, judgeDeadline, ethers.ZeroAddress, 2, minStake, {
+                .post_task('cid://eval', deadline, judgeDeadline, ethers.ZeroAddress, 2, minStake, {
                     value: reward,
                 });
 
@@ -857,16 +849,13 @@ describe("AgentLayerRaceTask", function () {
             const oldJudge = taskBefore[1];
             expect(oldJudge).to.not.equal(ethers.ZeroAddress);
 
-            await expect(contract.reassign_judge(1n)).to.be.revertedWithCustomError(
-                contract,
-                "ReassignWindowNotOpen",
-            );
+            await expect(contract.reassign_judge(1n)).to.be.revertedWithCustomError(contract, 'ReassignWindowNotOpen');
 
             await warpTo(judgeDeadline - 60n * 60n * 23n); // 23h before judgeDeadline, inside reassign window
             await expect(contract.reassign_judge(1n))
-                .to.emit(contract, "JudgeSlashed")
-                .withArgs(0n, oldJudge, minStake / 10n, "SLASHED")
-                .to.emit(contract, "JudgeSlashed"); // second event not matched fully
+                .to.emit(contract, 'JudgeSlashed')
+                .withArgs(0n, oldJudge, minStake / 10n, 'SLASHED')
+                .to.emit(contract, 'JudgeSlashed'); // second event not matched fully
 
             const taskAfter = await contract.tasks(1n);
             expect(taskAfter[1]).to.not.equal(oldJudge);
@@ -874,12 +863,12 @@ describe("AgentLayerRaceTask", function () {
     });
 
     async function currentTime() {
-        const latestBlock = await ethers.provider.getBlock("latest");
+        const latestBlock = await ethers.provider.getBlock('latest');
         return BigInt(latestBlock.timestamp);
     }
 
     async function warpTo(timestamp) {
-        await ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp)]);
-        await ethers.provider.send("evm_mine", []);
+        await ethers.provider.send('evm_setNextBlockTimestamp', [Number(timestamp)]);
+        await ethers.provider.send('evm_mine', []);
     }
 });

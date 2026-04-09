@@ -1,4 +1,5 @@
 # 黑客松实施计划 - Privy + OWS
+
 > 立即开始执行
 
 ---
@@ -8,22 +9,26 @@
 ### Phase 1: Privy 集成 (2小时)
 
 **Task 1**: 注册 Privy 并获取 App ID
+
 - [ ] 访问 https://dashboard.privy.io
 - [ ] 创建 Application
 - [ ] 获取 App ID
 - [ ] 配置允许的域名 (localhost, vercel.app)
 
 **Task 2**: 安装并配置 Privy SDK
+
 ```bash
 npm install @privy-io/react-auth @privy-io/wagmi-connector
 ```
 
 **Task 3**: 创建认证组件
+
 - [ ] 创建 PrivyProvider wrapper
 - [ ] 创建 LoginButton 组件
 - [ ] 创建 UserProfile 组件
 
 **Task 4**: 集成到 AgentM Pro
+
 - [ ] 替换现有登录逻辑
 - [ ] 测试 Google 登录
 - [ ] 测试钱包连接
@@ -33,6 +38,7 @@ npm install @privy-io/react-auth @privy-io/wagmi-connector
 ### Phase 2: OWS 协议实现 (4小时)
 
 **Task 5**: 创建 OWS Core 接口
+
 ```typescript
 - OWSProvider interface
 - Wallet discovery
@@ -40,12 +46,14 @@ npm install @privy-io/react-auth @privy-io/wagmi-connector
 ```
 
 **Task 6**: 实现 Wallet Providers
+
 - [ ] MetaMask Provider
 - [ ] Phantom Provider
 - [ ] OKX Wallet Provider
 - [ ] Privy Embedded Wallet Provider
 
 **Task 7**: 创建 OWS Adapter
+
 - [ ] 统一接口封装
 - [ ] 自动发现逻辑
 - [ ] 连接状态管理
@@ -55,12 +63,14 @@ npm install @privy-io/react-auth @privy-io/wagmi-connector
 ### Phase 3: 结合演示 (2小时)
 
 **Task 8**: 创建演示页面
+
 - [ ] 钱包发现展示
 - [ ] 一键连接功能
 - [ ] 签名演示
 - [ ] Agent 集成演示
 
 **Task 9**: 部署到 Vercel
+
 - [ ] 构建测试
 - [ ] 环境变量配置
 - [ ] 在线演示
@@ -102,20 +112,20 @@ apps/hackathon-demo/
 ## 🎯 成功标准
 
 1. **Privy 集成** ✅
-   - Google 登录可用
-   - Email 登录可用
-   - 钱包连接可用
+    - Google 登录可用
+    - Email 登录可用
+    - 钱包连接可用
 
 2. **OWS 实现** ✅
-   - 发现多个钱包
-   - 统一连接接口
-   - 支持签名操作
+    - 发现多个钱包
+    - 统一连接接口
+    - 支持签名操作
 
 3. **演示完成** ✅
-   - 在线可访问
-   - 3分钟演示流程
-   - 评委可交互
+    - 在线可访问
+    - 3分钟演示流程
+    - 评委可交互
 
 ---
 
-*Plan created: 2026-04-03*
+_Plan created: 2026-04-03_

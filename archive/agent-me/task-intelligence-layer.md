@@ -65,11 +65,11 @@
 
 ### Key Distinction
 
-| Layer | Scope | Example |
-|-------|-------|---------|
+| Layer                 | Scope         | Example                          |
+| --------------------- | ------------- | -------------------------------- |
 | **Task Intelligence** | User-specific | "You always do deep work at 9am" |
-| **Agent Runtime** | Universal | "Process this request" |
-| **Skills** | Shared tools | "Audit Solidity code" |
+| **Agent Runtime**     | Universal     | "Process this request"           |
+| **Skills**            | Shared tools  | "Audit Solidity code"            |
 
 ---
 
@@ -81,46 +81,46 @@ Each user gets a **Personal Task Intelligence Model** that learns:
 
 ```yaml
 user_intelligence_model:
-  # Learned from behavior
-  work_patterns:
-    deep_work_hours: [09:00, 10:00, 11:00]  # Learned from calendar
-    low_energy_hours: [14:00, 15:00]        # Learned from task completion
-    peak_creativity: "evening"               # Learned from output quality
-    
-  project_contexts:
-    gradience:
-      priority: "high"
-      related_tags: ["blockchain", "AI", "infrastructure"]
-      typical_tasks: ["coding", "documentation", "research"]
-      
-    personal:
-      priority: "medium"
-      related_tags: ["health", "learning"]
-      typical_tasks: ["reading", "exercise"]
-      
-  communication_preferences:
-    notification_style: "concise"            # vs "detailed"
-    proactive_level: "high"                  # vs "only when asked"
-    voice_tone: "casual"                     # vs "formal"
-    reminder_frequency: "daily_digest"       # vs "real-time"
-    
-  task_patterns:
-    auto_expansion:  # When user says X, expand to Y
-      - trigger: "fix bug"
-        expansion: ["find bug", "analyze impact", "implement fix", "test", "deploy"]
-        
-      - trigger: "research"
-        expansion: ["search sources", "synthesize findings", "create summary", "suggest actions"]
-        
-    auto_categorization:
-      - keyword: "solidity"
-        category: "coding"
-        project: "gradience"
-        energy: "high"
-        
-      - keyword: "meeting"
-        category: "communication"
-        energy: "low"
+    # Learned from behavior
+    work_patterns:
+        deep_work_hours: [09:00, 10:00, 11:00] # Learned from calendar
+        low_energy_hours: [14:00, 15:00] # Learned from task completion
+        peak_creativity: 'evening' # Learned from output quality
+
+    project_contexts:
+        gradience:
+            priority: 'high'
+            related_tags: ['blockchain', 'AI', 'infrastructure']
+            typical_tasks: ['coding', 'documentation', 'research']
+
+        personal:
+            priority: 'medium'
+            related_tags: ['health', 'learning']
+            typical_tasks: ['reading', 'exercise']
+
+    communication_preferences:
+        notification_style: 'concise' # vs "detailed"
+        proactive_level: 'high' # vs "only when asked"
+        voice_tone: 'casual' # vs "formal"
+        reminder_frequency: 'daily_digest' # vs "real-time"
+
+    task_patterns:
+        auto_expansion: # When user says X, expand to Y
+            - trigger: 'fix bug'
+              expansion: ['find bug', 'analyze impact', 'implement fix', 'test', 'deploy']
+
+            - trigger: 'research'
+              expansion: ['search sources', 'synthesize findings', 'create summary', 'suggest actions']
+
+        auto_categorization:
+            - keyword: 'solidity'
+              category: 'coding'
+              project: 'gradience'
+              energy: 'high'
+
+            - keyword: 'meeting'
+              category: 'communication'
+              energy: 'low'
 ```
 
 ### How It Works
@@ -164,7 +164,7 @@ Hypothesis: "User works best on coding tasks at 9am"
     ↓
 Experiment:
 ├── Schedule 10 coding tasks at 9am
-├── Schedule 10 coding tasks at 3pm  
+├── Schedule 10 coding tasks at 3pm
 ├── Measure: completion rate, quality, user satisfaction
     ↓
 Result:
@@ -187,17 +187,17 @@ interface TaskFeedback {
   // Explicit feedback
   user_rating?: 1-5;           // "How well did this work?"
   user_comment?: string;       // "Too many subtasks"
-  
+
   // Implicit feedback
   completion_time?: number;    // How long it actually took
   completion_quality?: number; // Measured by judge/reviewer
   rescheduled_count?: number;  // How many times user moved it
-  
+
   // Behavioral signals
   time_to_start?: number;      // Delay before starting
   interruption_count?: number; // How many times interrupted
   context_switches?: number;   // Switched to other tasks?
-  
+
   // Outcome
   successful_completion: boolean;
 }
@@ -206,10 +206,10 @@ interface TaskFeedback {
 function optimizeTaskIntelligence(feedback: TaskFeedback[]) {
   // Pattern detection
   const patterns = detectPatterns(feedback);
-  
+
   // A/B test new suggestions
   const experiments = generateExperiments(patterns);
-  
+
   // Update model
   updateIntelligenceModel(experiments);
 }
@@ -225,7 +225,7 @@ function optimizeTaskIntelligence(feedback: TaskFeedback[]) {
 // Generate user-specific system prompt
 function generateUserPrompt(userId: string): string {
   const intelligence = loadUserIntelligence(userId);
-  
+
   return `
 You are ${userName}'s personal agent assistant.
 
@@ -349,8 +349,8 @@ Step 3: Expand Task
 └── Total: 90min, schedule for tomorrow 9am
     ↓
 Step 4: Personalize Communication
-"Found a contract to audit. I've broken it down into 4 steps 
-(90min total). Your energy is low now, so I scheduled it for 
+"Found a contract to audit. I've broken it down into 4 steps
+(90min total). Your energy is low now, so I scheduled it for
 tomorrow 9am during your deep work block. Sound good?"
     ↓
 [OpenClaw Execution]
@@ -409,7 +409,7 @@ Skills decide:
 └── HOW to execute (implementation)
 
 Example:
-Task Intelligence: "Audit this contract tomorrow 9am, 
+Task Intelligence: "Audit this contract tomorrow 9am,
                     90min, use detailed template"
                     ↓
 Skills (solidity-audit): [actual execution]
@@ -441,11 +441,11 @@ Skills (solidity-audit): [actual execution]
 
 ### Three Layers, Three Optimizations
 
-| Layer | Optimization Target | Method |
-|-------|-------------------|--------|
-| **Task Intelligence** | User productivity | AutoResearch feedback loop |
-| **Agent Runtime** | Task completion | Agent loop + reasoning |
-| **Skills** | Execution quality | Training + verification |
+| Layer                 | Optimization Target | Method                     |
+| --------------------- | ------------------- | -------------------------- |
+| **Task Intelligence** | User productivity   | AutoResearch feedback loop |
+| **Agent Runtime**     | Task completion     | Agent loop + reasoning     |
+| **Skills**            | Execution quality   | Training + verification    |
 
 **Yes, this is the right architecture.**
 

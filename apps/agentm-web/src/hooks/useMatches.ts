@@ -50,12 +50,14 @@ export function useMatches() {
                 if (!res.ok) throw new Error(`Matches error: ${res.status}`);
                 return res.json();
             })
-            .then(data => setMatches(data.matches || []))
-            .catch(err => setError(err instanceof Error ? err.message : 'Unknown error'))
+            .then((data) => setMatches(data.matches || []))
+            .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
             .finally(() => setLoading(false));
     }, [daemonUrl, sessionToken]);
 
-    useEffect(() => { refresh(); }, [refresh]);
+    useEffect(() => {
+        refresh();
+    }, [refresh]);
 
     return { matches, loading, error, refresh };
 }
@@ -73,8 +75,8 @@ export function useDiscover() {
                 if (!res.ok) throw new Error(`Discover error: ${res.status}`);
                 return res.json();
             })
-            .then(data => setProfiles(data.profiles || []))
-            .catch(err => setError(err instanceof Error ? err.message : 'Unknown error'))
+            .then((data) => setProfiles(data.profiles || []))
+            .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
             .finally(() => setLoading(false));
     }, [daemonUrl, sessionToken]);
 

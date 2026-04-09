@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { OWSSdkClient, type OWSCreateWalletReceipt, type OWSSignRouteReceipt } from '@/lib/ows/sdk-client';
-import { OWSAgentRouter, type OWSAgentRoutingState, type OWSAgentSubWallet, type AgentSigningPolicy } from '@/lib/ows/agent-router';
+import {
+    OWSAgentRouter,
+    type OWSAgentRoutingState,
+    type OWSAgentSubWallet,
+    type AgentSigningPolicy,
+} from '@/lib/ows/agent-router';
 import { OWSDaemonClient } from '@/lib/ows/daemon-client';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import type { EncryptionProvider } from '@/lib/ows/encrypted-store';
@@ -33,7 +38,7 @@ export interface AgentSubWallet {
 
 /**
  * useOWSAgentRouter - Enhanced to use Daemon API for wallet operations
- * 
+ *
  * GRA-222 Tasks:
  * - createSubWallet() calls daemon API -> OWS SDK createWallet()
  * - signWithActiveSubWallet() calls daemon /api/v1/ows/sign/transaction
@@ -49,7 +54,7 @@ export function useOWSAgentRouter(params: {
 }) {
     const { accountKey, masterWallet, cosign, indexerBase } = params;
     const { daemonUrl, sessionToken } = useDaemonConnection();
-    
+
     const [state, setState] = useState<OWSAgentRoutingState | null>(null);
     const [daemonWallets, setDaemonWallets] = useState<AgentSubWallet[]>([]);
     const [activeWalletId, setActiveWalletId] = useState<string | null>(null);
@@ -95,10 +100,10 @@ export function useOWSAgentRouter(params: {
         const syncWallets = async () => {
             try {
                 const wallets = await daemonClient.listWallets();
-                const agentWallets: AgentSubWallet[] = wallets.map(w => ({
+                const agentWallets: AgentSubWallet[] = wallets.map((w) => ({
                     id: w.id,
                     handle: w.name,
-                    walletAddress: w.solanaAddress || w.accounts.find(a => a.chainId === 'solana')?.address || '',
+                    walletAddress: w.solanaAddress || w.accounts.find((a) => a.chainId === 'solana')?.address || '',
                     createReceipt: {
                         method: 'daemon_wallet_sync',
                         txRef: null,
@@ -123,15 +128,15 @@ export function useOWSAgentRouter(params: {
     const createSubWallet = useCallback(
         async (handle: string): Promise<OWSAgentRoutingState | null> => {
             if (!accountKey || !masterWallet) return null;
-            
+
             setBusy(true);
             setError(null);
-            
+
             try {
                 // Try daemon first
                 if (sessionToken) {
                     const wallet = await daemonClient.createWallet(handle);
-                    
+
                     // Add to local list
                     const newWallet: AgentSubWallet = {
                         id: wallet.id,
@@ -145,8 +150,8 @@ export function useOWSAgentRouter(params: {
                         },
                         isPasskeyProtected: false,
                     };
-                    setDaemonWallets(prev => [...prev, newWallet]);
-                    
+                    setDaemonWallets((prev) => [...prev, newWallet]);
+
                     // Also create local state for compatibility
                     const next = await localRouterRef.current.createSubWallet({
                         accountKey,
@@ -154,7 +159,7 @@ export function useOWSAgentRouter(params: {
                         handle,
                     });
                     setState(next);
-                    
+
                     // Submit to indexer
                     if (indexerBase && wallet.solanaAddress) {
                         const receipt: OWSCreateWalletReceipt = {
@@ -170,10 +175,10 @@ export function useOWSAgentRouter(params: {
                             receipt,
                         }).catch(() => {});
                     }
-                    
+
                     return next;
                 }
-                
+
                 // Fallback to local
                 const next = await localRouterRef.current.createSubWallet({
                     accountKey,
@@ -182,7 +187,6 @@ export function useOWSAgentRouter(params: {
                 });
                 setState(next);
                 return next;
-                
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to create agent sub wallet');
                 return null;
@@ -220,14 +224,15 @@ export function useOWSAgentRouter(params: {
             payload: unknown,
         ): Promise<SignRouteResult | null> => {
             if (!accountKey) return null;
-            
+
             setBusy(true);
             setError(null);
-            
+
             try {
-                const activeWallet = daemonWallets.find(w => w.id === activeWalletId) ||
-                                     state?.subWallets.find(w => w.id === state.activeSubWalletId);
-                
+                const activeWallet =
+                    daemonWallets.find((w) => w.id === activeWalletId) ||
+                    state?.subWallets.find((w) => w.id === state.activeSubWalletId);
+
                 if (!activeWallet) {
                     throw new Error('No active sub-wallet selected');
                 }
@@ -236,13 +241,13 @@ export function useOWSAgentRouter(params: {
                 if (sessionToken && activeWalletId) {
                     const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
                     const txHex = Buffer.from(payloadStr).toString('hex');
-                    
+
                     const result = await daemonClient.signTransaction({
                         wallet: activeWalletId,
                         chain: 'solana',
                         txHex,
                     });
-                    
+
                     const receipt: OWSSignRouteReceipt = {
                         method: 'daemon_sign_transaction',
                         signature: result.signature,
@@ -251,7 +256,7 @@ export function useOWSAgentRouter(params: {
                         txRef: null,
                         raw: result,
                     };
-                    
+
                     // Handle cosign if needed
                     let cosignReceipt: MasterCosignReceipt | null = null;
                     if (cosign) {
@@ -261,7 +266,7 @@ export function useOWSAgentRouter(params: {
                             routeType,
                         });
                     }
-                    
+
                     // Submit to indexer
                     if (indexerBase) {
                         submitRouteSignature(indexerBase, {
@@ -271,17 +276,17 @@ export function useOWSAgentRouter(params: {
                             cosign: cosignReceipt,
                         }).catch(() => {});
                     }
-                    
+
                     return { receipt, cosign: cosignReceipt };
                 }
-                
+
                 // Fallback to local signing
                 const result = await localRouterRef.current.signWithActiveSubWallet({
                     accountKey,
                     request: { routeType, payload },
                 });
                 setState(result.state);
-                
+
                 let cosignReceipt: MasterCosignReceipt | null = null;
                 if (cosign && activeWallet) {
                     cosignReceipt = await cosign({
@@ -290,7 +295,7 @@ export function useOWSAgentRouter(params: {
                         routeType,
                     });
                 }
-                
+
                 if (indexerBase && activeWallet) {
                     submitRouteSignature(indexerBase, {
                         walletAddress: activeWallet.walletAddress,
@@ -299,9 +304,8 @@ export function useOWSAgentRouter(params: {
                         cosign: cosignReceipt,
                     }).catch(() => {});
                 }
-                
+
                 return { receipt: result.receipt, cosign: cosignReceipt };
-                
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to sign route');
                 return null;
@@ -315,11 +319,11 @@ export function useOWSAgentRouter(params: {
     // Combine daemon and local wallets for display
     const allSubWallets: (OWSAgentSubWallet | AgentSubWallet)[] = useMemo(() => {
         const localWallets = state?.subWallets ?? [];
-        
+
         // Merge, preferring daemon wallets when IDs match
         const merged: (OWSAgentSubWallet | AgentSubWallet)[] = [...daemonWallets];
         for (const local of localWallets) {
-            if (!merged.find(d => d.walletAddress === local.walletAddress)) {
+            if (!merged.find((d) => d.walletAddress === local.walletAddress)) {
                 merged.push(local);
             }
         }
@@ -327,14 +331,14 @@ export function useOWSAgentRouter(params: {
     }, [state?.subWallets, daemonWallets]);
 
     const activeSubWallet: (OWSAgentSubWallet | AgentSubWallet) | null =
-        allSubWallets.find(w => w.id === (activeWalletId || state?.activeSubWalletId)) ?? null;
+        allSubWallets.find((w) => w.id === (activeWalletId || state?.activeSubWalletId)) ?? null;
 
     const isPasskeyProtected = useCallback(
         (address: string): boolean => {
             // Check daemon first
-            const daemonWallet = daemonWallets.find(w => w.walletAddress === address);
+            const daemonWallet = daemonWallets.find((w) => w.walletAddress === address);
             if (daemonWallet) return daemonWallet.isPasskeyProtected;
-            
+
             // Fallback to local
             try {
                 const sdk = new OWSSdkClient(params.encryptionProvider ?? null);

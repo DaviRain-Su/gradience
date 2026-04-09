@@ -21,8 +21,8 @@ npm install @gradiences/sdk
 import { GradienceSDK } from '@gradiences/sdk';
 
 const sdk = new GradienceSDK({
-  network: 'devnet',
-  rpcEndpoint: 'https://api.devnet.solana.com'
+    network: 'devnet',
+    rpcEndpoint: 'https://api.devnet.solana.com',
 });
 ```
 
@@ -31,11 +31,11 @@ const sdk = new GradienceSDK({
 ```typescript
 // Post a task with reward
 const task = await sdk.postTask({
-  evalRef: 'ipfs://QmXyz...',
-  reward: 5000000000, // 5 SOL
-  category: 0,
-  deadline: Date.now() + 86400000,
-  minStake: 100000000 // 0.1 SOL
+    evalRef: 'ipfs://QmXyz...',
+    reward: 5000000000, // 5 SOL
+    category: 0,
+    deadline: Date.now() + 86400000,
+    minStake: 100000000, // 0.1 SOL
 });
 
 console.log('Task ID:', task.id);
@@ -46,8 +46,8 @@ console.log('Task ID:', task.id);
 ```typescript
 // Apply to complete the task
 await sdk.applyForTask({
-  taskId: task.id,
-  stake: 100000000 // 0.1 SOL
+    taskId: task.id,
+    stake: 100000000, // 0.1 SOL
 });
 ```
 
@@ -56,9 +56,9 @@ await sdk.applyForTask({
 ```typescript
 // Submit your work
 await sdk.submitResult({
-  taskId: task.id,
-  resultRef: 'ipfs://QmResult...',
-  traceRef: 'ipfs://QmTrace...'
+    taskId: task.id,
+    resultRef: 'ipfs://QmResult...',
+    traceRef: 'ipfs://QmTrace...',
 });
 ```
 

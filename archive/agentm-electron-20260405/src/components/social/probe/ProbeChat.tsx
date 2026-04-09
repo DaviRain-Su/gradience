@@ -1,6 +1,6 @@
 /**
  * Social Probe Chat Component
- * 
+ *
  * Multi-turn conversation UI for compatibility probing
  */
 
@@ -19,18 +19,18 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    
+
     const currentTurn = Math.floor(session.conversation.length / 2);
     const turnsRemaining = session.config.maxTurns - currentTurn;
     const progress = (currentTurn / session.config.maxTurns) * 100;
-    
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [session.conversation]);
-    
+
     const handleSend = async () => {
         if (!input.trim() || sending) return;
-        
+
         setSending(true);
         try {
             await onSendMessage(input.trim());
@@ -39,14 +39,14 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
             setSending(false);
         }
     };
-    
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
     };
-    
+
     const getStatusBadge = () => {
         switch (session.status) {
             case 'pending':
@@ -61,9 +61,9 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                 return <span className="px-3 py-1 bg-gray-600/20 text-gray-400 rounded text-sm">Cancelled</span>;
         }
     };
-    
+
     const canSend = session.status === 'probing' && turnsRemaining > 0 && !sending;
-    
+
     return (
         <div className="flex flex-col h-full bg-gray-900">
             {/* Header */}
@@ -74,12 +74,12 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                         {getStatusBadge()}
                     </h3>
                     <p className="text-sm text-gray-400 mt-1">
-                        Turn {currentTurn} / {session.config.maxTurns} 
+                        Turn {currentTurn} / {session.config.maxTurns}
                         <span className="mx-2">•</span>
                         {turnsRemaining} turns remaining
                     </p>
                 </div>
-                
+
                 <div className="flex gap-2">
                     {session.status === 'probing' && (
                         <button
@@ -97,28 +97,25 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                     </button>
                 </div>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="h-1 bg-gray-700">
-                <div
-                    className="h-full bg-blue-600 transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                />
+                <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
-            
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {session.conversation.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                         <p className="text-lg mb-2">🔍 Social Probe Session</p>
                         <p className="text-sm">
-                            {isProber 
+                            {isProber
                                 ? 'Start by asking a question to get to know each other'
                                 : 'Waiting for the first question...'}
                         </p>
                     </div>
                 )}
-                
+
                 {session.conversation.map((message, i) => (
                     <MessageBubble
                         key={i}
@@ -126,10 +123,10 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                         isOwn={isProber ? message.role === 'prober' : message.role === 'target'}
                     />
                 ))}
-                
+
                 <div ref={messagesEndRef} />
             </div>
-            
+
             {/* Input */}
             {session.status === 'probing' && (
                 <div className="p-4 border-t border-gray-700 bg-gray-800">
@@ -138,7 +135,7 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder={isProber ? "Ask a question..." : "Share your thoughts..."}
+                            placeholder={isProber ? 'Ask a question...' : 'Share your thoughts...'}
                             rows={2}
                             disabled={!canSend}
                             className="flex-1 px-4 py-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none resize-none disabled:opacity-50"
@@ -151,12 +148,10 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                             Send
                         </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                        Press Enter to send • Shift+Enter for new line
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Press Enter to send • Shift+Enter for new line</p>
                 </div>
             )}
-            
+
             {/* Completed State */}
             {session.status === 'completed' && (
                 <div className="p-6 border-t border-gray-700 bg-gray-800 text-center">
@@ -166,7 +161,7 @@ export function ProbeChat({ session, onSendMessage, onEndProbe, onCancel, isProb
                     </p>
                 </div>
             )}
-            
+
             {/* Failed State */}
             {session.status === 'failed' && session.error && (
                 <div className="p-6 border-t border-gray-700 bg-gray-800 text-center">
@@ -187,15 +182,11 @@ function MessageBubble({ message, isOwn }: { message: ProbeMessage; isOwn: boole
                     <span className="text-xs text-gray-500">
                         {message.role === 'prober' ? '🔍 Prober' : '🎯 Target'}
                     </span>
-                    <span className="text-xs text-gray-600">
-                        Turn {message.turn + 1}
-                    </span>
+                    <span className="text-xs text-gray-600">Turn {message.turn + 1}</span>
                 </div>
                 <div
                     className={`px-4 py-3 rounded-2xl ${
-                        isOwn
-                            ? 'bg-blue-600 text-white rounded-br-sm'
-                            : 'bg-gray-700 text-gray-100 rounded-bl-sm'
+                        isOwn ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-700 text-gray-100 rounded-bl-sm'
                     }`}
                 >
                     <p className="whitespace-pre-wrap">{message.content}</p>
@@ -209,7 +200,7 @@ function MessageBubble({ message, isOwn }: { message: ProbeMessage; isOwn: boole
 }
 
 // Probe Invitation Card
-export function ProbeInvitation({ 
+export function ProbeInvitation({
     senderName,
     depth,
     maxTurns,
@@ -231,8 +222,8 @@ export function ProbeInvitation({
                 <div className="flex-1">
                     <h4 className="text-lg font-semibold mb-1">Social Probe Invitation</h4>
                     <p className="text-gray-400 text-sm mb-3">
-                        <span className="font-medium text-white">{senderName}</span> wants to start a social probe
-                        to assess compatibility.
+                        <span className="font-medium text-white">{senderName}</span> wants to start a social probe to
+                        assess compatibility.
                     </p>
                     <div className="flex gap-4 text-sm text-gray-400 mb-4">
                         <div>

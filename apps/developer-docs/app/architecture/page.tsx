@@ -7,90 +7,92 @@ type Language = 'en' | 'zh';
 
 // 双语内容定义
 const content = {
-  en: {
-    title: 'Gradience Architecture',
-    subtitle: 'Gradience Protocol is a modular system built on Bitcoin-inspired minimalism: three primitives (Escrow + Judge + Reputation), four state transitions, ~300 lines of code per program.',
-    coreArchitecture: '🎯 Core Architecture',
-    fullStack: '🏗️ Full Stack Architecture',
-    taskLifecycle: '📋 Task Lifecycle',
-    economicModel: '💰 Economic Model',
-    a2aScaling: '⚡ A2A Protocol & Scaling',
-    designPrinciples: '🎨 Key Design Principles',
-    testCoverage: '✅ Test Coverage',
-    bitcoinMinimalism: 'Bitcoin-Inspired Minimalism',
-    bitcoinMinimalismDesc: '3 states, 4 transitions, ~300 LOC per program. The kernel depends on no module.',
-    pinocchio: 'Pinocchio Zero-Dependency',
-    pinocchioDesc: 'All Solana programs use pinocchio for minimal on-chain footprint.',
-    cpi: 'CPI Composability',
-    cpiDesc: 'Programs communicate via cross-program invocation. Modular by design.',
-    indexing: 'Off-Chain Indexing',
-    indexingDesc: 'PostgreSQL replica for fast queries, WebSocket for real-time updates.',
-    module: 'Module',
-    tests: 'Tests',
-    status: 'Status',
-    allGreen: 'All green',
-    total: 'Total',
-    language: 'Language',
-  },
-  zh: {
-    title: 'Gradience 架构',
-    subtitle: 'Gradience 协议是一个模块化系统，基于比特币极简哲学构建：三个原语（托管 + 评判 + 信誉），四个状态转换，每个程序约 300 行代码。',
-    coreArchitecture: '🎯 核心架构',
-    fullStack: '🏗️ 完整架构',
-    taskLifecycle: '📋 任务生命周期',
-    economicModel: '💰 经济模型',
-    a2aScaling: '⚡ A2A 协议与扩展',
-    designPrinciples: '🎨 核心设计原则',
-    testCoverage: '✅ 测试覆盖',
-    bitcoinMinimalism: '比特币极简哲学',
-    bitcoinMinimalismDesc: '3 个状态，4 个转换，每个程序约 300 行代码。内核不依赖任何模块。',
-    pinocchio: 'Pinocchio 零依赖',
-    pinocchioDesc: '所有 Solana 程序使用 pinocchio，实现最小的链上占用。',
-    cpi: 'CPI 可组合性',
-    cpiDesc: '程序通过跨程序调用通信。模块化设计。',
-    indexing: '链下索引',
-    indexingDesc: 'PostgreSQL 副本用于快速查询，WebSocket 用于实时更新。',
-    module: '模块',
-    tests: '测试数',
-    status: '状态',
-    allGreen: '全部通过',
-    total: '总计',
-    language: '语言',
-  },
+    en: {
+        title: 'Gradience Architecture',
+        subtitle:
+            'Gradience Protocol is a modular system built on Bitcoin-inspired minimalism: three primitives (Escrow + Judge + Reputation), four state transitions, ~300 lines of code per program.',
+        coreArchitecture: '🎯 Core Architecture',
+        fullStack: '🏗️ Full Stack Architecture',
+        taskLifecycle: '📋 Task Lifecycle',
+        economicModel: '💰 Economic Model',
+        a2aScaling: '⚡ A2A Protocol & Scaling',
+        designPrinciples: '🎨 Key Design Principles',
+        testCoverage: '✅ Test Coverage',
+        bitcoinMinimalism: 'Bitcoin-Inspired Minimalism',
+        bitcoinMinimalismDesc: '3 states, 4 transitions, ~300 LOC per program. The kernel depends on no module.',
+        pinocchio: 'Pinocchio Zero-Dependency',
+        pinocchioDesc: 'All Solana programs use pinocchio for minimal on-chain footprint.',
+        cpi: 'CPI Composability',
+        cpiDesc: 'Programs communicate via cross-program invocation. Modular by design.',
+        indexing: 'Off-Chain Indexing',
+        indexingDesc: 'PostgreSQL replica for fast queries, WebSocket for real-time updates.',
+        module: 'Module',
+        tests: 'Tests',
+        status: 'Status',
+        allGreen: 'All green',
+        total: 'Total',
+        language: 'Language',
+    },
+    zh: {
+        title: 'Gradience 架构',
+        subtitle:
+            'Gradience 协议是一个模块化系统，基于比特币极简哲学构建：三个原语（托管 + 评判 + 信誉），四个状态转换，每个程序约 300 行代码。',
+        coreArchitecture: '🎯 核心架构',
+        fullStack: '🏗️ 完整架构',
+        taskLifecycle: '📋 任务生命周期',
+        economicModel: '💰 经济模型',
+        a2aScaling: '⚡ A2A 协议与扩展',
+        designPrinciples: '🎨 核心设计原则',
+        testCoverage: '✅ 测试覆盖',
+        bitcoinMinimalism: '比特币极简哲学',
+        bitcoinMinimalismDesc: '3 个状态，4 个转换，每个程序约 300 行代码。内核不依赖任何模块。',
+        pinocchio: 'Pinocchio 零依赖',
+        pinocchioDesc: '所有 Solana 程序使用 pinocchio，实现最小的链上占用。',
+        cpi: 'CPI 可组合性',
+        cpiDesc: '程序通过跨程序调用通信。模块化设计。',
+        indexing: '链下索引',
+        indexingDesc: 'PostgreSQL 副本用于快速查询，WebSocket 用于实时更新。',
+        module: '模块',
+        tests: '测试数',
+        status: '状态',
+        allGreen: '全部通过',
+        total: '总计',
+        language: '语言',
+    },
 };
 
 // 图表标题双语
 const diagramTitles = {
-  en: {
-    kernel: 'Protocol Kernel (Bitcoin Philosophy)',
-    valueStack: 'Three-Layer Value Stack',
-    fullStack: 'Complete System Diagram',
-    stateMachine: 'Task State Machine',
-    taskLifecycle: 'Race Task Sequence',
-    economicModel: 'Fee Distribution (95/3/2 Model)',
-    ganDynamics: 'GAN Adversarial Dynamics',
-    a2aLayers: 'A2A Protocol Layers (Lightning Network Analogy)',
-    magicBlock: 'MagicBlock Ephemeral Rollups',
-    crossChain: 'Cross-Chain Reputation',
-  },
-  zh: {
-    kernel: '协议内核（比特币哲学）',
-    valueStack: '三层价值堆栈',
-    fullStack: '系统完整架构图',
-    stateMachine: '任务状态机',
-    taskLifecycle: '竞赛任务序列图',
-    economicModel: '费用分配（95/3/2 模型）',
-    ganDynamics: 'GAN 对抗动态',
-    a2aLayers: 'A2A 协议分层（闪电网络类比）',
-    magicBlock: 'MagicBlock 弹性汇总',
-    crossChain: '跨链声誉验证',
-  },
+    en: {
+        kernel: 'Protocol Kernel (Bitcoin Philosophy)',
+        valueStack: 'Three-Layer Value Stack',
+        fullStack: 'Complete System Diagram',
+        stateMachine: 'Task State Machine',
+        taskLifecycle: 'Race Task Sequence',
+        economicModel: 'Fee Distribution (95/3/2 Model)',
+        ganDynamics: 'GAN Adversarial Dynamics',
+        a2aLayers: 'A2A Protocol Layers (Lightning Network Analogy)',
+        magicBlock: 'MagicBlock Ephemeral Rollups',
+        crossChain: 'Cross-Chain Reputation',
+    },
+    zh: {
+        kernel: '协议内核（比特币哲学）',
+        valueStack: '三层价值堆栈',
+        fullStack: '系统完整架构图',
+        stateMachine: '任务状态机',
+        taskLifecycle: '竞赛任务序列图',
+        economicModel: '费用分配（95/3/2 模型）',
+        ganDynamics: 'GAN 对抗动态',
+        a2aLayers: 'A2A 协议分层（闪电网络类比）',
+        magicBlock: 'MagicBlock 弹性汇总',
+        crossChain: '跨链声誉验证',
+    },
 };
 
 // Mermaid 图表定义
 const diagrams = {
-  // 1. Full Stack Architecture
-  fullStack: `
+    // 1. Full Stack Architecture
+    fullStack: `
 flowchart TB
     subgraph Users["👤 Users / 用户"]
         Human["Human User / 人类用户"]
@@ -151,8 +153,8 @@ flowchart TB
     style Solana fill:#9945ff,color:#fff,stroke:#7c3aed,stroke-width:2px
   `,
 
-  // 2. Protocol Kernel
-  kernel: `
+    // 2. Protocol Kernel
+    kernel: `
 flowchart TB
     subgraph Protocol["Gradience Protocol / Gradience 协议"]
         subgraph Kernel["⚡ Agent Layer Kernel / Agent Layer 内核"]
@@ -174,8 +176,8 @@ flowchart TB
     style A2A fill:#f59e0b,color:#000,stroke:#d97706,stroke-width:2px
   `,
 
-  // 3. Task State Machine
-  stateMachine: `
+    // 3. Task State Machine
+    stateMachine: `
 stateDiagram-v2
     [*] --> Open : postTask() + lock value / 锁定资金
     Open --> Completed : judgeAndPay()<br/>score ≥ 60 / 分数 ≥ 60
@@ -189,8 +191,8 @@ stateDiagram-v2
     style Refunded fill:#ef4444,color:#fff,stroke:#dc2626,stroke-width:2px
   `,
 
-  // 4. Economic Model
-  economicModel: `
+    // 4. Economic Model
+    economicModel: `
 flowchart TB
     Escrow["Task Escrow / 任务托管<br/>100%"]
     
@@ -204,8 +206,8 @@ flowchart TB
     style Protocol fill:#8b5cf6,color:#fff,stroke:#6d28d9,stroke-width:3px
   `,
 
-  // 5. A2A Layers
-  a2aLayers: `
+    // 5. A2A Layers
+    a2aLayers: `
 flowchart LR
     subgraph L1["⛓️ L1: Solana"]
         S["Task Settlement / 任务结算"]
@@ -223,8 +225,8 @@ flowchart LR
     style L2 fill:#8b5cf6,color:#fff,stroke:#6d28d9,stroke-width:3px
   `,
 
-  // 6. MagicBlock
-  magicBlock: `
+    // 6. MagicBlock
+    magicBlock: `
 flowchart TB
     subgraph Solana["⛓️ Solana L1"]
         Agent["Agent Layer Program / Agent Layer 程序"]
@@ -241,8 +243,8 @@ flowchart TB
     style ER fill:#8b5cf6,color:#fff,stroke:#6d28d9,stroke-width:3px
   `,
 
-  // 7. Cross-Chain
-  crossChain: `
+    // 7. Cross-Chain
+    crossChain: `
 flowchart TB
     subgraph Agent["👤 One Agent / 同一个 Agent"]
         Sol["Solana"]
@@ -264,8 +266,8 @@ flowchart TB
     style Arb fill:#28a0f0,color:#fff,stroke:#1a7fc4,stroke-width:2px
   `,
 
-  // 8. GAN Dynamics
-  ganDynamics: `
+    // 8. GAN Dynamics
+    ganDynamics: `
 flowchart LR
     Agent["🟣 Agent Generator / Agent 生成器"] 
     Judge["🟡 Judge Discriminator / 评判判别器"]
@@ -277,8 +279,8 @@ flowchart LR
     style Judge fill:#f59e0b,color:#000,stroke:#d97706,stroke-width:3px
   `,
 
-  // 9. Value Stack
-  valueStack: `
+    // 9. Value Stack
+    valueStack: `
 flowchart TB
     L3["Layer 3: gUSD Stablecoin / gUSD 稳定币"]
     
@@ -294,8 +296,8 @@ flowchart TB
     style L3 fill:#10b981,color:#fff,stroke:#059669,stroke-width:3px
   `,
 
-  // 10. Task Lifecycle
-  taskLifecycle: `
+    // 10. Task Lifecycle
+    taskLifecycle: `
 sequenceDiagram
     participant P as 👤 Poster / 发布者
     participant A as 🤖 Agent
@@ -340,232 +342,246 @@ sequenceDiagram
 };
 
 function MermaidDiagram({ chart, title }: { chart: string; title: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [svg, setSvg] = useState<string>('');
-  const [error, setError] = useState<string>('');
+    const ref = useRef<HTMLDivElement>(null);
+    const [svg, setSvg] = useState<string>('');
+    const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'dark',
-      securityLevel: 'loose',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      flowchart: {
-        curve: 'basis',
-        padding: 20,
-        nodeSpacing: 50,
-        rankSpacing: 50,
-      },
-      sequence: {
-        diagramMarginX: 50,
-        diagramMarginY: 10,
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35,
-        mirrorActors: true,
-        bottomMarginAdj: 1,
-        useMaxWidth: true,
-        rightAngles: false,
-        showSequenceNumbers: false,
-      },
-    });
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            flowchart: {
+                curve: 'basis',
+                padding: 20,
+                nodeSpacing: 50,
+                rankSpacing: 50,
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false,
+            },
+        });
 
-    const render = async () => {
-      try {
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart);
-        setSvg(svg);
-        setError('');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
-      }
-    };
+        const render = async () => {
+            try {
+                const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+                const { svg } = await mermaid.render(id, chart);
+                setSvg(svg);
+                setError('');
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to render diagram');
+            }
+        };
 
-    render();
-  }, [chart]);
+        render();
+    }, [chart]);
 
-  return (
-    <div className="mb-12">
-      <h3 className="text-xl font-semibold text-gray-100 mb-4">{title}</h3>
-      {error ? (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
-          Error rendering diagram: {error}
+    return (
+        <div className="mb-12">
+            <h3 className="text-xl font-semibold text-gray-100 mb-4">{title}</h3>
+            {error ? (
+                <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
+                    Error rendering diagram: {error}
+                </div>
+            ) : (
+                <div
+                    className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 overflow-x-auto"
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                />
+            )}
         </div>
-      ) : (
-        <div 
-          className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 overflow-x-auto"
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
-      )}
-    </div>
-  );
+    );
 }
 
 function LanguageToggle({ lang, setLang }: { lang: Language; setLang: (l: Language) => void }) {
-  return (
-    <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-lg p-1 mb-8">
-      <button
-        onClick={() => setLang('en')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-          lang === 'en'
-            ? 'bg-indigo-600 text-white'
-            : 'text-gray-400 hover:text-white hover:bg-gray-800'
-        }`}
-      >
-        English
-      </button>
-      <button
-        onClick={() => setLang('zh')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-          lang === 'zh'
-            ? 'bg-indigo-600 text-white'
-            : 'text-gray-400 hover:text-white hover:bg-gray-800'
-        }`}
-      >
-        中文
-      </button>
-    </div>
-  );
+    return (
+        <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-lg p-1 mb-8">
+            <button
+                onClick={() => setLang('en')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                    lang === 'en' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+            >
+                English
+            </button>
+            <button
+                onClick={() => setLang('zh')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                    lang === 'zh' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+            >
+                中文
+            </button>
+        </div>
+    );
 }
 
 export default function ArchitecturePage() {
-  const [lang, setLang] = useState<Language>('en');
-  const t = content[lang];
-  const titles = diagramTitles[lang];
+    const [lang, setLang] = useState<Language>('en');
+    const t = content[lang];
+    const titles = diagramTitles[lang];
 
-  return (
-    <div className="prose max-w-none">
-      <h1 className="text-3xl font-bold text-white mb-6">{t.title}</h1>
-      
-      <LanguageToggle lang={lang} setLang={setLang} />
-      
-      <p className="text-gray-300 mb-8">{t.subtitle}</p>
+    return (
+        <div className="prose max-w-none">
+            <h1 className="text-3xl font-bold text-white mb-6">{t.title}</h1>
 
-      <div className="grid grid-cols-1 gap-8">
-        {/* Core Architecture */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            {t.coreArchitecture}
-          </h2>
-          <MermaidDiagram chart={diagrams.kernel} title={titles.kernel} />
-          <MermaidDiagram chart={diagrams.valueStack} title={titles.valueStack} />
-        </section>
+            <LanguageToggle lang={lang} setLang={setLang} />
 
-        {/* Full Stack */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            {t.fullStack}
-          </h2>
-          <MermaidDiagram chart={diagrams.fullStack} title={titles.fullStack} />
-        </section>
+            <p className="text-gray-300 mb-8">{t.subtitle}</p>
 
-        {/* Task Lifecycle */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            {t.taskLifecycle}
-          </h2>
-          <MermaidDiagram chart={diagrams.stateMachine} title={titles.stateMachine} />
-          <MermaidDiagram chart={diagrams.taskLifecycle} title={titles.taskLifecycle} />
-        </section>
+            <div className="grid grid-cols-1 gap-8">
+                {/* Core Architecture */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                        {t.coreArchitecture}
+                    </h2>
+                    <MermaidDiagram chart={diagrams.kernel} title={titles.kernel} />
+                    <MermaidDiagram chart={diagrams.valueStack} title={titles.valueStack} />
+                </section>
 
-        {/* Economic Model */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            {t.economicModel}
-          </h2>
-          <MermaidDiagram chart={diagrams.economicModel} title={titles.economicModel} />
-          <MermaidDiagram chart={diagrams.ganDynamics} title={titles.ganDynamics} />
-        </section>
+                {/* Full Stack */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">{t.fullStack}</h2>
+                    <MermaidDiagram chart={diagrams.fullStack} title={titles.fullStack} />
+                </section>
 
-        {/* A2A & Scaling */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            {t.a2aScaling}
-          </h2>
-          <MermaidDiagram chart={diagrams.a2aLayers} title={titles.a2aLayers} />
-          <MermaidDiagram chart={diagrams.magicBlock} title={titles.magicBlock} />
-          <MermaidDiagram chart={diagrams.crossChain} title={titles.crossChain} />
-        </section>
-      </div>
+                {/* Task Lifecycle */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                        {t.taskLifecycle}
+                    </h2>
+                    <MermaidDiagram chart={diagrams.stateMachine} title={titles.stateMachine} />
+                    <MermaidDiagram chart={diagrams.taskLifecycle} title={titles.taskLifecycle} />
+                </section>
 
-      {/* Key Design Principles */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-          {t.designPrinciples}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">{t.bitcoinMinimalism}</h3>
-            <p className="text-gray-300 text-sm">{t.bitcoinMinimalismDesc}</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-purple-400 mb-2">{t.pinocchio}</h3>
-            <p className="text-gray-300 text-sm">{t.pinocchioDesc}</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-green-400 mb-2">{t.cpi}</h3>
-            <p className="text-gray-300 text-sm">{t.cpiDesc}</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-yellow-400 mb-2">{t.indexing}</h3>
-            <p className="text-gray-300 text-sm">{t.indexingDesc}</p>
-          </div>
+                {/* Economic Model */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                        {t.economicModel}
+                    </h2>
+                    <MermaidDiagram chart={diagrams.economicModel} title={titles.economicModel} />
+                    <MermaidDiagram chart={diagrams.ganDynamics} title={titles.ganDynamics} />
+                </section>
+
+                {/* A2A & Scaling */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">{t.a2aScaling}</h2>
+                    <MermaidDiagram chart={diagrams.a2aLayers} title={titles.a2aLayers} />
+                    <MermaidDiagram chart={diagrams.magicBlock} title={titles.magicBlock} />
+                    <MermaidDiagram chart={diagrams.crossChain} title={titles.crossChain} />
+                </section>
+            </div>
+
+            {/* Key Design Principles */}
+            <section className="mt-12">
+                <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                    {t.designPrinciples}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-blue-400 mb-2">{t.bitcoinMinimalism}</h3>
+                        <p className="text-gray-300 text-sm">{t.bitcoinMinimalismDesc}</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-purple-400 mb-2">{t.pinocchio}</h3>
+                        <p className="text-gray-300 text-sm">{t.pinocchioDesc}</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-green-400 mb-2">{t.cpi}</h3>
+                        <p className="text-gray-300 text-sm">{t.cpiDesc}</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-yellow-400 mb-2">{t.indexing}</h3>
+                        <p className="text-gray-300 text-sm">{t.indexingDesc}</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Test Coverage */}
+            <section className="mt-12">
+                <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">{t.testCoverage}</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-gray-700">
+                                <th className="pb-2 text-gray-400">{t.module}</th>
+                                <th className="pb-2 text-gray-400">{t.tests}</th>
+                                <th className="pb-2 text-gray-400">{t.status}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">Agent Arena</td>
+                                <td className="py-3 text-gray-200">56</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">Chain Hub</td>
+                                <td className="py-3 text-gray-200">10</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">A2A Protocol</td>
+                                <td className="py-3 text-gray-200">35+</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">EVM Bridge</td>
+                                <td className="py-3 text-gray-200">17</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">AgentM Pro (E2E)</td>
+                                <td className="py-3 text-gray-200">11</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 text-gray-200 font-semibold">{t.total}</td>
+                                <td className="py-3 text-gray-200 font-semibold">371+</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm font-semibold">
+                                        {t.allGreen}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
-      </section>
-
-      {/* Test Coverage */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-          {t.testCoverage}
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="pb-2 text-gray-400">{t.module}</th>
-                <th className="pb-2 text-gray-400">{t.tests}</th>
-                <th className="pb-2 text-gray-400">{t.status}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">Agent Arena</td>
-                <td className="py-3 text-gray-200">56</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">{t.allGreen}</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">Chain Hub</td>
-                <td className="py-3 text-gray-200">10</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">{t.allGreen}</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">A2A Protocol</td>
-                <td className="py-3 text-gray-200">35+</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">{t.allGreen}</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">EVM Bridge</td>
-                <td className="py-3 text-gray-200">17</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">{t.allGreen}</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">AgentM Pro (E2E)</td>
-                <td className="py-3 text-gray-200">11</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">{t.allGreen}</span></td>
-              </tr>
-              <tr>
-                <td className="py-3 text-gray-200 font-semibold">{t.total}</td>
-                <td className="py-3 text-gray-200 font-semibold">371+</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm font-semibold">{t.allGreen}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
+    );
 }

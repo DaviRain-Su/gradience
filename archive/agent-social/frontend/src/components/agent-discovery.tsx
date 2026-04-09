@@ -61,9 +61,7 @@ export function AgentDiscovery({ onInviteTargetChange }: AgentDiscoveryProps) {
                     Refresh
                 </button>
             </div>
-            <p className="muted">
-                Search agents by category and rank by reputation.
-            </p>
+            <p className="muted">Search agents by category and rank by reputation.</p>
             <div className="grid" style={{ marginTop: 12 }}>
                 <select value={category} onChange={(event) => setCategory(Number(event.target.value))}>
                     {CATEGORIES.map((item) => (

@@ -3,13 +3,14 @@ import { Connection, PublicKey } from '@solana/web3.js';
 
 // @bonfida/spl-name-service types don't resolve under Node16 moduleResolution
 // but the runtime exports are correct.
-const loadSNS = () => import('@bonfida/spl-name-service' as string) as Promise<{
-    resolve(connection: Connection, domain: string): Promise<PublicKey>;
-    getDomainKeySync(domain: string, record?: boolean): { pubkey: PublicKey };
-    NameRegistryState: { retrieve(conn: Connection, key: PublicKey): Promise<any> };
-    performReverseLookup(connection: Connection, nameAccount: PublicKey): Promise<string>;
-    getAllDomains(connection: Connection, wallet: PublicKey): Promise<PublicKey[]>;
-}>;
+const loadSNS = () =>
+    import('@bonfida/spl-name-service' as string) as Promise<{
+        resolve(connection: Connection, domain: string): Promise<PublicKey>;
+        getDomainKeySync(domain: string, record?: boolean): { pubkey: PublicKey };
+        NameRegistryState: { retrieve(conn: Connection, key: PublicKey): Promise<any> };
+        performReverseLookup(connection: Connection, nameAccount: PublicKey): Promise<string>;
+        getAllDomains(connection: Connection, wallet: PublicKey): Promise<PublicKey[]>;
+    }>;
 
 const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 const ETH_RPC_URL = process.env.ETH_RPC_URL || 'https://eth.llamarpc.com';
@@ -70,8 +71,10 @@ export function registerDomainRoutes(app: FastifyInstance) {
             setCache(cacheKey, address);
             return reply.send({ domain, address });
         } catch (err: any) {
-            if (err?.message?.includes('Account does not exist') ||
-                err?.message?.includes('Invalid name account provided')) {
+            if (
+                err?.message?.includes('Account does not exist') ||
+                err?.message?.includes('Invalid name account provided')
+            ) {
                 setCache(cacheKey, null);
                 return reply.send({ domain, address: null });
             }
@@ -220,8 +223,6 @@ export function registerDomainRoutes(app: FastifyInstance) {
 
 // ---- ENS resolution via Ethereum JSON-RPC (no extra deps) ----
 
-
-
 // Lazy-loaded keccak256 from @noble/hashes (transitive dep of @solana/web3.js)
 let _keccakFn: ((d: Uint8Array) => Uint8Array) | null = null;
 
@@ -262,11 +263,13 @@ async function ethCall(to: string, data: string): Promise<string | null> {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                jsonrpc: '2.0', id: 1, method: 'eth_call',
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'eth_call',
                 params: [{ to, data }, 'latest'],
             }),
         });
-        const json = await res.json() as { result?: string; error?: any };
+        const json = (await res.json()) as { result?: string; error?: any };
         if (json.error || !json.result || json.result === '0x') return null;
         return json.result;
     } catch {

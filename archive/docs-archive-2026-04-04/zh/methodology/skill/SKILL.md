@@ -1,10 +1,10 @@
 ---
 name: dev-lifecycle
 description: >
-  Structured 7-phase development lifecycle for AI-assisted coding.
-  Use when starting a new project, module, or feature that involves writing code.
-  Enforces: PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review.
-  Invoke with /skill:dev-lifecycle to start.
+    Structured 7-phase development lifecycle for AI-assisted coding.
+    Use when starting a new project, module, or feature that involves writing code.
+    Enforces: PRD → Architecture → Technical Spec → Task Breakdown → Test Spec → Implementation → Review.
+    Invoke with /skill:dev-lifecycle to start.
 ---
 
 # Dev Lifecycle — 结构化开发流程
@@ -54,6 +54,7 @@ Phase 7: Review & Deploy（审查）   → 确认质量，部署上线
 ### Phase 3 技术规格（最关键的模板）核心要求
 
 技术规格必须精确到：
+
 - **数据结构**：每个字段名、类型、字节大小、约束
 - **接口定义**：参数、返回值、错误码、前置/后置条件
 - **状态机**：当前状态 + 触发动作 + 条件 → 新状态 + 副作用
@@ -65,6 +66,7 @@ Phase 7: Review & Deploy（审查）   → 确认质量，部署上线
 ### Phase 5 测试规格核心要求
 
 每个接口/函数必须有三类测试：
+
 - **Happy Path**：正常输入 → 正常输出
 - **Boundary**：边界值（最小/最大/刚好等于阈值）
 - **Error/Attack**：异常输入 → 预期错误码

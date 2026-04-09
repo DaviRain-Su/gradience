@@ -71,26 +71,20 @@ function ConversationItem({
         >
             {/* Avatar placeholder */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-sm">
-                    {displayName.charAt(0).toUpperCase()}
-                </span>
+                <span className="text-white font-semibold text-sm">{displayName.charAt(0).toUpperCase()}</span>
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center gap-2">
-                    <span className="font-medium text-sm truncate text-gray-200">
-                        {displayName}
-                    </span>
+                    <span className="font-medium text-sm truncate text-gray-200">{displayName}</span>
                     <span className="text-xs text-gray-500 flex-shrink-0">
                         {formatTimeAgo(conversation.lastMessageAt)}
                     </span>
                 </div>
 
                 <div className="flex justify-between items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-400 truncate flex-1">
-                        {truncate(conversation.lastMessage, 40)}
-                    </p>
+                    <p className="text-xs text-gray-400 truncate flex-1">{truncate(conversation.lastMessage, 40)}</p>
 
                     {conversation.unreadCount > 0 && (
                         <span className="bg-blue-600 text-white text-xs font-medium rounded-full px-2 py-0.5 min-w-[1.25rem] text-center flex-shrink-0">
@@ -120,14 +114,12 @@ export function ConversationList({
         ? conversations.filter(
               (c) =>
                   c.peerAddress.toLowerCase().includes(filter.toLowerCase()) ||
-                  (c.peerName?.toLowerCase() ?? '').includes(filter.toLowerCase())
+                  (c.peerName?.toLowerCase() ?? '').includes(filter.toLowerCase()),
           )
         : conversations;
 
     // Sort by most recent
-    const sortedConversations = [...filteredConversations].sort(
-        (a, b) => b.lastMessageAt - a.lastMessageAt
-    );
+    const sortedConversations = [...filteredConversations].sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
     const handleSelect = (peerAddress: string) => {
         setActiveConversation(peerAddress);
@@ -138,12 +130,7 @@ export function ConversationList({
         return (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
-                    <svg
-                        className="w-6 h-6 text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
+                    <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                             strokeLinecap="round"
                             strokeLinejoin="round"

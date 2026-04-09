@@ -25,10 +25,7 @@ export function initNetworkDomain(
     return { connectionManager, messageRouter };
 }
 
-export async function initA2ARouter(
-    config: DaemonConfig,
-    keyManager: KeyManager,
-): Promise<A2ARouterType | null> {
+export async function initA2ARouter(config: DaemonConfig, keyManager: KeyManager): Promise<A2ARouterType | null> {
     if (!config.a2aEnabled) return null;
     try {
         const { A2ARouter } = await import('../a2a-router/router.js');
@@ -46,7 +43,9 @@ export async function initA2ARouter(
             enableHealthMonitor: true,
         });
         await a2aRouter.initialize();
-        logger.info('A2ARouter configured with production-grade features (circuit breaker, rate limiter, health monitor, metrics)');
+        logger.info(
+            'A2ARouter configured with production-grade features (circuit breaker, rate limiter, health monitor, metrics)',
+        );
         return a2aRouter;
     } catch (err) {
         logger.warn({ err }, 'A2A Router not available (missing dependencies), continuing without A2A');

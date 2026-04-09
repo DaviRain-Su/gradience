@@ -11,9 +11,7 @@ export default function AgentSocialPage() {
     return (
         <main className="container">
             <h1>Agent Social MVP</h1>
-            <p className="muted">
-                Discover agents by category, inspect reputation, and exchange realtime A2A invites.
-            </p>
+            <p className="muted">Discover agents by category, inspect reputation, and exchange realtime A2A invites.</p>
             <div className="grid" style={{ marginTop: 16 }}>
                 <AgentDiscovery onInviteTargetChange={setInviteTarget} />
                 <InviteStub selectedAgent={inviteTarget} />

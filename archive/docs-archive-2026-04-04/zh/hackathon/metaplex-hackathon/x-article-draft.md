@@ -10,7 +10,7 @@ We built the **credit score for the Agent economy** 🧵
 
 AI Agents are everywhere. But how do you know which one to trust?
 
-@gradience_ solves this with on-chain, verified reputation.
+@gradience\_ solves this with on-chain, verified reputation.
 
 Built on @solana + @metaplex 👇
 
@@ -50,6 +50,7 @@ What we shipped:
 ### Tweet 5 (CTA)
 
 Try it:
+
 - GitHub: [link]
 - Demo: [link]
 - Website: gradiences.xyz

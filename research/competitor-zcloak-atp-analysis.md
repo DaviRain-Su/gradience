@@ -58,11 +58,11 @@ ATP Framework:
 
 ### 1.3 三层架构
 
-| 层级 | 技术实现 | 功能 |
-|------|---------|------|
-| **Protocol Layer** | ATP 规范 | 定义规则：身份、签名、验证、声誉 |
-| **Data Plane** | Internet Computer (ICP) | VetKey 加密 + ZKP 计算 + 链上持久化 |
-| **Services** | 上层应用 | Keychain、AI-ID、AI-Name、发现平台 |
+| 层级               | 技术实现                | 功能                                |
+| ------------------ | ----------------------- | ----------------------------------- |
+| **Protocol Layer** | ATP 规范                | 定义规则：身份、签名、验证、声誉    |
+| **Data Plane**     | Internet Computer (ICP) | VetKey 加密 + ZKP 计算 + 链上持久化 |
+| **Services**       | 上层应用                | Keychain、AI-ID、AI-Name、发现平台  |
 
 ### 1.4 关键技术创新
 
@@ -89,21 +89,22 @@ AI-Name:
 
 ### 2.1 全景对比表
 
-| 维度 | Gradience | zCloak ATP | 评估 |
-|------|-----------|------------|------|
-| **核心目标** | Agent 自主竞争、结算、声誉 | Agent 身份、隐私、问责、安全 | 高度重合：都是"信任基础设施" |
-| **信任机制** | Escrow + Judge + Reputation | Identity + Accountability + Privacy + Security | 互补：你重"结果"，他重"过程" |
-| **验证方式** | Battle 对战（市场验证） | ZKP 证明（密码学验证） | 差异：公开竞争 vs 隐私保护 |
-| **结算机制** | 链上 Escrow + 自动结算 | 金融 OS（支付、多签、合规） | 差异：协议层 vs 应用层 |
-| **经济模型** | 任务竞价 + 声誉借贷 | 金融操作 + 合规 Treasury | 差异：去中心化市场 vs 机构金融 |
-| **极简程度** | ~300 行，不可升级 | 模块化协议 + ICP 生态 | 差异：Bitcoin 极简 vs 企业级灵活 |
-| **底层链** | Solana | Internet Computer (ICP) | 不同生态，可跨链互操作 |
-| **隐私策略** | 未强调（公开竞争） | 核心卖点（ZKP + VetKey） | 差异：透明市场 vs 隐私协作 |
-| **当前状态** | Agent Arena MVP Live | ATP 白皮书 + AI-Name 注册 | 都在早期，窗口期重叠 |
+| 维度         | Gradience                   | zCloak ATP                                     | 评估                             |
+| ------------ | --------------------------- | ---------------------------------------------- | -------------------------------- |
+| **核心目标** | Agent 自主竞争、结算、声誉  | Agent 身份、隐私、问责、安全                   | 高度重合：都是"信任基础设施"     |
+| **信任机制** | Escrow + Judge + Reputation | Identity + Accountability + Privacy + Security | 互补：你重"结果"，他重"过程"     |
+| **验证方式** | Battle 对战（市场验证）     | ZKP 证明（密码学验证）                         | 差异：公开竞争 vs 隐私保护       |
+| **结算机制** | 链上 Escrow + 自动结算      | 金融 OS（支付、多签、合规）                    | 差异：协议层 vs 应用层           |
+| **经济模型** | 任务竞价 + 声誉借贷         | 金融操作 + 合规 Treasury                       | 差异：去中心化市场 vs 机构金融   |
+| **极简程度** | ~300 行，不可升级           | 模块化协议 + ICP 生态                          | 差异：Bitcoin 极简 vs 企业级灵活 |
+| **底层链**   | Solana                      | Internet Computer (ICP)                        | 不同生态，可跨链互操作           |
+| **隐私策略** | 未强调（公开竞争）          | 核心卖点（ZKP + VetKey）                       | 差异：透明市场 vs 隐私协作       |
+| **当前状态** | Agent Arena MVP Live        | ATP 白皮书 + AI-Name 注册                      | 都在早期，窗口期重叠             |
 
 ### 2.2 架构图对比
 
 **Gradience 架构:**
+
 ```
 User Agent
     ↓
@@ -118,6 +119,7 @@ A2A Protocol (网络层)
 ```
 
 **zCloak ATP 架构:**
+
 ```
 User / Agent
     ↓
@@ -133,14 +135,14 @@ zCloak.Money (DeFi 集成)
 
 ### 2.3 技术栈对比
 
-| 组件 | Gradience | zCloak |
-|------|-----------|--------|
-| 智能合约 | Solana Program (Rust) | ICP Canister (Motoko/Rust) |
-| 身份标准 | ERC-8004 | ATP AI-ID |
-| 加密方案 | 标准加密 | VetKey (阈值) + ZKP |
-| 存储 | Arweave/Avail | ICP 链上存储 |
-| 可扩展性 | Solana 高 TPS | ICP 无限计算 |
-| 去中心化程度 | 高（Solana 验证者）| 高（ICP 子网）|
+| 组件         | Gradience             | zCloak                     |
+| ------------ | --------------------- | -------------------------- |
+| 智能合约     | Solana Program (Rust) | ICP Canister (Motoko/Rust) |
+| 身份标准     | ERC-8004              | ATP AI-ID                  |
+| 加密方案     | 标准加密              | VetKey (阈值) + ZKP        |
+| 存储         | Arweave/Avail         | ICP 链上存储               |
+| 可扩展性     | Solana 高 TPS         | ICP 无限计算               |
+| 去中心化程度 | 高（Solana 验证者）   | 高（ICP 子网）             |
 
 ---
 
@@ -166,14 +168,14 @@ zCloak 方式:
 
 ### 3.2 适用场景对比
 
-| 场景 | 更适合 | 原因 |
-|------|--------|------|
-| 代码竞赛 | Gradience | 结果可量化，公开公平 |
+| 场景      | 更适合    | 原因                 |
+| --------- | --------- | -------------------- |
+| 代码竞赛  | Gradience | 结果可量化，公开公平 |
 | DeFi 策略 | Gradience | 收益可验证，市场检验 |
-| KYC 合规 | zCloak | 隐私保护，选择性披露 |
-| 医疗数据 | zCloak | 敏感信息不能公开 |
-| 金融支付 | zCloak | 合规要求，多签安全 |
-| 内容创作 | Gradience | 质量主观，竞争发现 |
+| KYC 合规  | zCloak    | 隐私保护，选择性披露 |
+| 医疗数据  | zCloak    | 敏感信息不能公开     |
+| 金融支付  | zCloak    | 合规要求，多签安全   |
+| 内容创作  | Gradience | 质量主观，竞争发现   |
 
 ### 3.3 竞争优势矩阵
 
@@ -210,9 +212,11 @@ zCloak ←── 可集成 ──→ Gradience
 ### 4.1 战略定位：互补而非替代
 
 **关键洞察:**
+
 > Gradience 和 zCloak 不是零和竞争，而是**同一基础设施的不同层面**。
 
 **类比:**
+
 - zCloak = **身份层**（你是谁，你能做什么）
 - Gradience = **市场层**（你做了什么，结果如何）
 
@@ -237,6 +241,7 @@ Gradience Arena + zCloak ATP:
 ```
 
 **价值:**
+
 - Gradience 获得隐私能力
 - zCloak 获得应用场景
 - 双方共享用户基础
@@ -263,13 +268,13 @@ Gradience Arena + zCloak ATP:
 
 ### 4.3 短期行动建议
 
-| 优先级 | 行动 | 目的 |
-|--------|------|------|
-| P0 | 发 X 与 @xiao_zcloak 互动 | 建立联系，展示差异化 |
-| P0 | 在文档中提及 ATP 兼容性 | 为 future 集成留空间 |
-| P1 | 研究 VetKey + ZKP 可行性 | 评估技术集成难度 |
-| P1 | 分析 ICP <-> Solana 跨链 | 技术互通可能性 |
-| P2 | 共同起草 Agent 声誉标准 | 行业话语权 |
+| 优先级 | 行动                      | 目的                 |
+| ------ | ------------------------- | -------------------- |
+| P0     | 发 X 与 @xiao_zcloak 互动 | 建立联系，展示差异化 |
+| P0     | 在文档中提及 ATP 兼容性   | 为 future 集成留空间 |
+| P1     | 研究 VetKey + ZKP 可行性  | 评估技术集成难度     |
+| P1     | 分析 ICP <-> Solana 跨链  | 技术互通可能性       |
+| P2     | 共同起草 Agent 声誉标准   | 行业话语权           |
 
 ### 4.4 长期战略
 
@@ -358,8 +363,8 @@ Agent 信任基础设施的拼图正在形成：
 1. **赛道验证**: zCloak 的 $5.8M 融资和 ATP 协议证明"Agent 信任基础设施"是**真实需求**
 
 2. **差异化清晰**:
-   - zCloak: **过程可信**（身份、隐私、合规）
-   - Gradience: **结果可信**（竞争、评判、声誉）
+    - zCloak: **过程可信**（身份、隐私、合规）
+    - Gradience: **结果可信**（竞争、评判、声誉）
 
 3. **互补性强**: 理想状态下，Agent 先用 ATP 建立身份，再用 Gradience 证明能力
 
@@ -399,5 +404,5 @@ Agent 信任基础设施的拼图正在形成：
 
 ---
 
-*最后更新: 2026-04-03*  
-*建议行动: 立即与 @xiao_zcloak 建立联系，探讨合作可能性*
+_最后更新: 2026-04-03_  
+_建议行动: 立即与 @xiao_zcloak 建立联系，探讨合作可能性_

@@ -33,17 +33,20 @@ apps/agentm-pro/
 ## ✨ 功能特性
 
 ### 1. Agent 身份管理
+
 - ENS 名称注册 (`agent-name.ows.eth`)
 - 多链钱包地址 (ETH, SOL, BTC)
 - 与 Privy 用户绑定
 
 ### 2. 声誉系统
+
 - 分数 0-100
 - 等级: Bronze/Silver/Gold/Platinum
 - 任务完成记录
 - 声誉提升解锁更多权限
 
 ### 3. 策略引擎
+
 - 基于声誉的钱包限额
 - 子钱包继承策略
 - 权限控制
@@ -53,11 +56,13 @@ apps/agentm-pro/
 ## 🔌 API 端点
 
 ### 获取用户的 Agents
+
 ```http
 GET /api/agents?ownerId={privy_user_id}
 ```
 
 ### 创建 Agent
+
 ```http
 POST /api/agents
 {
@@ -68,11 +73,13 @@ POST /api/agents
 ```
 
 ### 获取声誉
+
 ```http
 GET /api/agents/{name}/reputation
 ```
 
 ### 记录任务
+
 ```http
 POST /api/agents/{name}/reputation
 {
@@ -88,6 +95,7 @@ POST /api/agents/{name}/reputation
 ### AgentIdentityView
 
 展示：
+
 - Agent 列表
 - 声誉分数和等级
 - 钱包限额
@@ -110,13 +118,13 @@ POST /api/agents/{name}/reputation
 ```typescript
 // 使用特定 Agent 进行对话
 const response = await chatWithAgent({
-  agentName: "trading-agent.ows.eth",
-  message: "分析市场趋势"
+    agentName: 'trading-agent.ows.eth',
+    message: '分析市场趋势',
 });
 
 // Agent 声誉影响权限
 if (agent.reputation.score > 80) {
-  // 可以执行高风险交易
+    // 可以执行高风险交易
 }
 ```
 
@@ -146,13 +154,13 @@ AgentM Pro 项目，包含 OWS 集成：
 
 ## ✅ 与黑客松要求的对应
 
-| 黑客松要求 | 实现方式 |
-|-----------|---------|
-| OWS 身份 | Agent ENS 注册 |
-| 多链支持 | ETH, SOL, BTC 地址 |
-| 声誉系统 | 0-100 分数 + 等级 |
+| 黑客松要求       | 实现方式            |
+| ---------------- | ------------------- |
+| OWS 身份         | Agent ENS 注册      |
+| 多链支持         | ETH, SOL, BTC 地址  |
+| 声誉系统         | 0-100 分数 + 等级   |
 | Wallet-per-Agent | 每个 Agent 独立钱包 |
-| 策略引擎 | 基于声誉的限额控制 |
+| 策略引擎         | 基于声誉的限额控制  |
 
 ---
 

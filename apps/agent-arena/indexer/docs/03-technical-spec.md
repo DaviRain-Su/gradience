@@ -181,14 +181,14 @@ CREATE INDEX idx_invocations_created ON invocations(created_at DESC);
 
 ### 3.1.2 配置与常量
 
-| 常量名 | 值 | 类型 | 说明 | 可变性 |
-|--------|----|------|------|--------|
-| `AGENT_ARENA_PROGRAM_ID` | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` | `&str` | Agent Arena program | immutable |
-| `CHAIN_HUB_PROGRAM_ID` | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | `&str` | Chain Hub program | immutable |
-| `A2A_PROTOCOL_PROGRAM_ID` | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | `&str` | A2A protocol program | immutable (预留) |
-| `DEFAULT_BIND_ADDR` | `0.0.0.0:3001` | `&str` | HTTP 监听地址 | configurable |
-| `DEFAULT_SOLANA_WS_URL` | `wss://api.devnet.solana.com` | `&str` | WebSocket RPC | configurable |
-| `TRITON_STALE_AFTER_SECONDS` | `30` | `u64` | Webhook 超时阈值 | configurable |
+| 常量名                       | 值                                             | 类型   | 说明                 | 可变性           |
+| ---------------------------- | ---------------------------------------------- | ------ | -------------------- | ---------------- |
+| `AGENT_ARENA_PROGRAM_ID`     | `5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs` | `&str` | Agent Arena program  | immutable        |
+| `CHAIN_HUB_PROGRAM_ID`       | `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` | `&str` | Chain Hub program    | immutable        |
+| `A2A_PROTOCOL_PROGRAM_ID`    | `FPaeaqQCziLidnwTtQndUB1SiaqBuBUad6UCnshfMd3H` | `&str` | A2A protocol program | immutable (预留) |
+| `DEFAULT_BIND_ADDR`          | `0.0.0.0:3001`                                 | `&str` | HTTP 监听地址        | configurable     |
+| `DEFAULT_SOLANA_WS_URL`      | `wss://api.devnet.solana.com`                  | `&str` | WebSocket RPC        | configurable     |
+| `TRITON_STALE_AFTER_SECONDS` | `30`                                           | `u64`  | Webhook 超时阈值     | configurable     |
 
 ---
 
@@ -197,6 +197,7 @@ CREATE INDEX idx_invocations_created ON invocations(created_at DESC);
 ### 3.2.1 REST API — Agent Arena (保留)
 
 **`GET /api/tasks`**
+
 ```
 Query:
   ?state={open|completed|refunded}
@@ -218,34 +219,40 @@ Response 200:
 ```
 
 **`GET /api/tasks/{task_id}`**
+
 ```
 Response 200: TaskApi (单个任务详情)
 Response 404: { "error": "task_not_found" }
 ```
 
 **`GET /api/tasks/{task_id}/submissions`**
+
 ```
 Query: ?sort={submitted_at_desc|score_desc}
 Response 200: { "submissions": [SubmissionApi] }
 ```
 
 **`GET /api/agents/{pubkey}/profile`**
+
 ```
 Response 200: AgentProfileApi
 Response 404: { "error": "profile_not_found" }
 ```
 
 **`GET /api/agents/{pubkey}/reputation`**
+
 ```
 Response 200: ReputationApi
 ```
 
 **`GET /api/reputation/{agent}`** (legacy)
+
 ```
 Response 200: ReputationApi (兼容旧版)
 ```
 
 **`GET /api/judge-pool/{category}`**
+
 ```
 Response 200: { "category": number, "members": [JudgePoolEntryApi] }
 ```
@@ -253,6 +260,7 @@ Response 200: { "category": number, "members": [JudgePoolEntryApi] }
 ### 3.2.2 REST API — Chain Hub (新增)
 
 **`GET /api/skills`**
+
 ```
 Query:
   ?status={0|1}
@@ -272,12 +280,14 @@ Response 200:
 ```
 
 **`GET /api/skills/{skill_id}`**
+
 ```
 Response 200: SkillApi
 Response 404: { "error": "skill_not_found" }
 ```
 
 **`GET /api/protocols`**
+
 ```
 Query:
   ?status={0|1}
@@ -297,18 +307,21 @@ Response 200:
 ```
 
 **`GET /api/protocols/{protocol_id}`**
+
 ```
 Response 200: ProtocolApi
 Response 404: { "error": "protocol_not_found" }
 ```
 
 **`GET /api/royalties/{agent}`**
+
 ```
 Response 200: RoyaltyApi
 Response 404: { "error": "royalty_not_found" }
 ```
 
 **`GET /api/invocations`**
+
 ```
 Query:
   ?agent={string}
@@ -329,6 +342,7 @@ Response 200:
 ```
 
 **`GET /api/invocations/{invocation_id}`**
+
 ```
 Response 200: InvocationApi
 Response 404: { "error": "invocation_not_found" }
@@ -350,29 +364,29 @@ Response 404: { "error": "invocation_not_found" }
 
 ### 3.2.5 前端修复清单（API 调用目标修正）
 
-| 前端文件 | 当前行为 | 修复后行为 |
-|---------|---------|-----------|
-| `apps/agentm-web/src/hooks/useSocial.ts` | 所有 Social 请求发给 `INDEXER_URL` (`/api/social/*`) | 全部改为 `DAEMON_URL`，路径前缀去掉 `/social/` |
-| `apps/agentm-web/src/hooks/useDiscoverAgents.ts` | 调用 `/api/agents` 并声称来自 Chain Hub Indexer | 确认调用目标为统一 Indexer `/api/agents`，或改为调用 Daemon |
-| `apps/agentm-web/src/app/app/MainAppLazy.tsx` | 混合使用 `resolveIndexerBase()`，本地/生产指向不同服务 | `resolveIndexerBase()` 始终指向统一 Indexer（`localhost:3001` 或 `api.gradiences.xyz/indexer`） |
-| `apps/agentm-web/src/hooks/useOWSAgentRouter.ts` | `indexerBase` 用于 `/api/agents/sub-wallet`、`/api/agents/route-signature` | 两个端点需在统一 Indexer 中实现，或改为 Daemon 端点 |
+| 前端文件                                         | 当前行为                                                                   | 修复后行为                                                                                      |
+| ------------------------------------------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/agentm-web/src/hooks/useSocial.ts`         | 所有 Social 请求发给 `INDEXER_URL` (`/api/social/*`)                       | 全部改为 `DAEMON_URL`，路径前缀去掉 `/social/`                                                  |
+| `apps/agentm-web/src/hooks/useDiscoverAgents.ts` | 调用 `/api/agents` 并声称来自 Chain Hub Indexer                            | 确认调用目标为统一 Indexer `/api/agents`，或改为调用 Daemon                                     |
+| `apps/agentm-web/src/app/app/MainAppLazy.tsx`    | 混合使用 `resolveIndexerBase()`，本地/生产指向不同服务                     | `resolveIndexerBase()` 始终指向统一 Indexer（`localhost:3001` 或 `api.gradiences.xyz/indexer`） |
+| `apps/agentm-web/src/hooks/useOWSAgentRouter.ts` | `indexerBase` 用于 `/api/agents/sub-wallet`、`/api/agents/route-signature` | 两个端点需在统一 Indexer 中实现，或改为 Daemon 端点                                             |
 
 **Social API 路由映射表**（前端 → Daemon）：
 
-| 前端旧路径 | Daemon 正确路径 | 方法 |
-|-----------|----------------|------|
-| `/api/social/follow` | `/api/follow` | POST |
-| `/api/social/unfollow` | `/api/unfollow` | POST |
-| `/api/social/posts` | `/api/posts` | POST |
-| `/api/social/posts/delete` | `/api/posts/:id` (带 delete 逻辑) 或新路由 `/api/posts/:id/delete` | DELETE/POST |
-| `/api/social/feed/{addr}` | `/api/feed?author={addr}` 或保持 `/api/feed` | GET |
-| `/api/social/feed/global` | `/api/feed` | GET |
-| `/api/social/posts/like` | `/api/posts/:id/like` | POST |
-| `/api/social/followers/{target}` | `/api/followers/:target` | GET |
-| `/api/social/following/{target}` | `/api/following/:target` | GET |
-| `/api/social/notifications/{addr}` | **新增** `/api/notifications/:addr` (Daemon) | GET |
-| `/api/social/notifications/{addr}/unread` | **新增** `/api/notifications/:addr/unread` (Daemon) | GET |
-| `/api/social/notifications/{addr}/read` | **新增** `/api/notifications/:addr/read` (Daemon) | POST |
+| 前端旧路径                                | Daemon 正确路径                                                    | 方法        |
+| ----------------------------------------- | ------------------------------------------------------------------ | ----------- |
+| `/api/social/follow`                      | `/api/follow`                                                      | POST        |
+| `/api/social/unfollow`                    | `/api/unfollow`                                                    | POST        |
+| `/api/social/posts`                       | `/api/posts`                                                       | POST        |
+| `/api/social/posts/delete`                | `/api/posts/:id` (带 delete 逻辑) 或新路由 `/api/posts/:id/delete` | DELETE/POST |
+| `/api/social/feed/{addr}`                 | `/api/feed?author={addr}` 或保持 `/api/feed`                       | GET         |
+| `/api/social/feed/global`                 | `/api/feed`                                                        | GET         |
+| `/api/social/posts/like`                  | `/api/posts/:id/like`                                              | POST        |
+| `/api/social/followers/{target}`          | `/api/followers/:target`                                           | GET         |
+| `/api/social/following/{target}`          | `/api/following/:target`                                           | GET         |
+| `/api/social/notifications/{addr}`        | **新增** `/api/notifications/:addr` (Daemon)                       | GET         |
+| `/api/social/notifications/{addr}/unread` | **新增** `/api/notifications/:addr/unread` (Daemon)                | GET         |
+| `/api/social/notifications/{addr}/read`   | **新增** `/api/notifications/:addr/read` (Daemon)                  | POST        |
 
 > **决策**: 如果 Daemon 尚未实现 notifications 路由，则在 Daemon 的 `social.ts` 中新增，而不是在 Indexer 中实现。
 
@@ -380,21 +394,21 @@ Response 404: { "error": "invocation_not_found" }
 
 ## 3.3 错误码定义
 
-| 错误码 | 名称 | 触发条件 | 用户提示 |
-|--------|------|---------|---------|
-| `4000` | `INVALID_TASK_ID` | task_id 格式错误或 <= 0 | "Invalid task ID" |
-| `4001` | `INVALID_SKILL_ID` | skill_id 格式错误或 <= 0 | "Invalid skill ID" |
-| `4002` | `INVALID_INVOCATION_ID` | invocation_id 格式错误或 <= 0 | "Invalid invocation ID" |
-| `4003` | `INVALID_PROTOCOL_ID` | protocol_id 为空 | "Invalid protocol ID" |
-| `4004` | `INVALID_PAGINATION` | limit > 100 或 page/offset 非法 | "Invalid pagination parameters" |
-| `4005` | `INVALID_CATEGORY` | category 值超出 u8 范围 | "Invalid category" |
-| `4040` | `TASK_NOT_FOUND` | task_id 不存在 | "Task not found" |
-| `4041` | `SKILL_NOT_FOUND` | skill_id 不存在 | "Skill not found" |
-| `4042` | `PROTOCOL_NOT_FOUND` | protocol_id 不存在 | "Protocol not found" |
-| `4043` | `INVOCATION_NOT_FOUND` | invocation_id 不存在 | "Invocation not found" |
-| `4044` | `AGENT_NOT_FOUND` | pubkey 未注册 profile/reputation | "Agent not found" |
-| `4045` | `ROYALTY_NOT_FOUND` | agent 无版税记录 | "Royalty record not found" |
-| `5000` | `INTERNAL_ERROR` | 数据库或解析异常 | "Internal server error" |
+| 错误码 | 名称                    | 触发条件                         | 用户提示                        |
+| ------ | ----------------------- | -------------------------------- | ------------------------------- |
+| `4000` | `INVALID_TASK_ID`       | task_id 格式错误或 <= 0          | "Invalid task ID"               |
+| `4001` | `INVALID_SKILL_ID`      | skill_id 格式错误或 <= 0         | "Invalid skill ID"              |
+| `4002` | `INVALID_INVOCATION_ID` | invocation_id 格式错误或 <= 0    | "Invalid invocation ID"         |
+| `4003` | `INVALID_PROTOCOL_ID`   | protocol_id 为空                 | "Invalid protocol ID"           |
+| `4004` | `INVALID_PAGINATION`    | limit > 100 或 page/offset 非法  | "Invalid pagination parameters" |
+| `4005` | `INVALID_CATEGORY`      | category 值超出 u8 范围          | "Invalid category"              |
+| `4040` | `TASK_NOT_FOUND`        | task_id 不存在                   | "Task not found"                |
+| `4041` | `SKILL_NOT_FOUND`       | skill_id 不存在                  | "Skill not found"               |
+| `4042` | `PROTOCOL_NOT_FOUND`    | protocol_id 不存在               | "Protocol not found"            |
+| `4043` | `INVOCATION_NOT_FOUND`  | invocation_id 不存在             | "Invocation not found"          |
+| `4044` | `AGENT_NOT_FOUND`       | pubkey 未注册 profile/reputation | "Agent not found"               |
+| `4045` | `ROYALTY_NOT_FOUND`     | agent 无版税记录                 | "Royalty record not found"      |
+| `5000` | `INTERNAL_ERROR`        | 数据库或解析异常                 | "Internal server error"         |
 
 ---
 
@@ -402,26 +416,26 @@ Response 404: { "error": "invocation_not_found" }
 
 ### 任务状态 (Agent Arena)
 
-| 当前状态 | 触发动作 | 条件 | 新状态 | 副作用 |
-|---------|---------|------|--------|--------|
-| Open | `postTask()` | — | Open | 创建任务记录 |
-| Open | `applyForTask()` | stake >= min_stake | Open | 记录申请者 |
-| Open | `submitResult()` | 已申请 | Open | 增加 submission_count |
-| Open | `judgeAndPay()` | Judge 评分 | Completed | 更新 winner, state=1 |
-| Open | `refundExpired()` | deadline 过期 | Refunded | state=2, 退款 |
-| Open | `cancelTask()` | poster 调用 | Refunded | state=2, 退款 |
-| Completed | — | — | Completed | 不可变更 |
-| Refunded | — | — | Refunded | 不可变更 |
+| 当前状态  | 触发动作          | 条件               | 新状态    | 副作用                |
+| --------- | ----------------- | ------------------ | --------- | --------------------- |
+| Open      | `postTask()`      | —                  | Open      | 创建任务记录          |
+| Open      | `applyForTask()`  | stake >= min_stake | Open      | 记录申请者            |
+| Open      | `submitResult()`  | 已申请             | Open      | 增加 submission_count |
+| Open      | `judgeAndPay()`   | Judge 评分         | Completed | 更新 winner, state=1  |
+| Open      | `refundExpired()` | deadline 过期      | Refunded  | state=2, 退款         |
+| Open      | `cancelTask()`    | poster 调用        | Refunded  | state=2, 退款         |
+| Completed | —                 | —                  | Completed | 不可变更              |
+| Refunded  | —                 | —                  | Refunded  | 不可变更              |
 
 ### 调用状态 (Chain Hub)
 
-| 当前状态 | 触发动作 | 条件 | 新状态 | 副作用 |
-|---------|---------|------|--------|--------|
-| Pending | `invokeSkill()` | — | Pending | 创建 invocation |
-| Pending | `completeInvocation()` | success=true | Completed | status=1, 更新 royalty |
-| Pending | `completeInvocation()` | success=false | Failed | status=2 |
-| Completed | — | — | Completed | 不可变更 |
-| Failed | — | — | Failed | 不可变更 |
+| 当前状态  | 触发动作               | 条件          | 新状态    | 副作用                 |
+| --------- | ---------------------- | ------------- | --------- | ---------------------- |
+| Pending   | `invokeSkill()`        | —             | Pending   | 创建 invocation        |
+| Pending   | `completeInvocation()` | success=true  | Completed | status=1, 更新 royalty |
+| Pending   | `completeInvocation()` | success=false | Failed    | status=2               |
+| Completed | —                      | —             | Completed | 不可变更               |
+| Failed    | —                      | —             | Failed    | 不可变更               |
 
 ---
 
@@ -456,13 +470,13 @@ fn route_events_by_program(logs: &[String], program_id: &str) -> Result<Vec<Even
 
 ## 3.6 安全规则
 
-| 规则 | 实现方式 | 验证方法 |
-|------|---------|--------- |
-| 参数化查询防 SQL 注入 | 所有 SQL 使用 `tokio-postgres` 参数化查询 | 集成测试 + 源码审计 |
-| Webhook 来源验证 | Triton/Helius 签名验证（未来扩展） |  currently 不验证，留接口 |
-| 分页上限限制 | `limit` 最大 100 | 单元测试 |
-| ID 参数校验 | 所有 ID 路径参数经过 `validate_task_id` 等校验函数 | 单元测试 |
-| CORS 配置 | 由 nginx 统一配置，Indexer 本身不处理跨域 | 配置文件审计 |
+| 规则                  | 实现方式                                           | 验证方法                 |
+| --------------------- | -------------------------------------------------- | ------------------------ |
+| 参数化查询防 SQL 注入 | 所有 SQL 使用 `tokio-postgres` 参数化查询          | 集成测试 + 源码审计      |
+| Webhook 来源验证      | Triton/Helius 签名验证（未来扩展）                 | currently 不验证，留接口 |
+| 分页上限限制          | `limit` 最大 100                                   | 单元测试                 |
+| ID 参数校验           | 所有 ID 路径参数经过 `validate_task_id` 等校验函数 | 单元测试                 |
+| CORS 配置             | 由 nginx 统一配置，Indexer 本身不处理跨域          | 配置文件审计             |
 
 ---
 
@@ -471,7 +485,7 @@ fn route_events_by_program(logs: &[String], program_id: &str) -> Result<Vec<Even
 由于 `agent-arena/indexer` 现有的 PostgreSQL 数据库需要新增 Chain Hub 表，迁移策略如下：
 
 1. **新增 migration 文件**: `apps/agent-arena/indexer/migrations/0005_chain_hub_tables.sql`
-   - 包含 `skills`, `protocols`, `royalties`, `invocations` 的 CREATE TABLE / INDEX 语句。
+    - 包含 `skills`, `protocols`, `royalties`, `invocations` 的 CREATE TABLE / INDEX 语句。
 2. **Docker Compose 启动时自动执行**: `docker-compose.yml` 中通过 `volumes` 将 `migrations/` 挂载到 Postgres 容器的 `/docker-entrypoint-initdb.d/`。
 3. **现有数据保留**: Arena 表（tasks, submissions, reputations 等）数据完全保留，不受影响。
 4. **Chain Hub 数据冷启动**: Chain Hub 的事件历史不会被回溯索引。新表从部署时刻开始接收 webhook 事件。如需历史数据，需额外运行一次性 backfill 脚本（不在本次范围内）。
@@ -480,20 +494,20 @@ fn route_events_by_program(logs: &[String], program_id: &str) -> Result<Vec<Even
 
 ## 3.8 边界条件清单
 
-| # | 边界条件 | 预期行为 | 备注 |
-|---|---------|---------|------|
-| 1 | `limit = 0` | 返回空数组，total 正常 | 允许 |
-| 2 | `limit = 101` (> max) | 返回 `INVALID_PAGINATION` (4004) | 硬上限 100 |
-| 3 | `offset` 超过 total | 返回空数组 | 正常行为 |
-| 4 | `task_id = 0` | 返回 `INVALID_TASK_ID` (4000) | 路径参数校验 |
-| 5 | `skill_id = -1` | 返回 `INVALID_SKILL_ID` (4001) | 路径参数校验 |
-| 6 | Webhook payload 为空 | 忽略，返回 204 | 不报错 |
-| 7 | Webhook 包含未知 program 日志 | 忽略未知事件，只解析匹配的事件 | 正常行为 |
-| 8 | 数据库连接断开 | REST API 返回 `INTERNAL_ERROR` (5000)，待连接恢复 | 需健康检查捕获 |
-| 9 | `created_at` / `completed_at` 为 NULL | `completed_at` 可为 NULL；`created_at` 不可为 NULL | Schema 约束 |
-| 10 | `amount` / `reward` = 0 | 允许 0，但 UI 应提示 "Free task" | 业务层处理 |
-| 11 | `protocol_id` 包含非法字符 | 返回 `INVALID_PROTOCOL_ID` (4003) | 正则校验 `[a-zA-Z0-9_-]+` |
-| 12 | `invocations` 中 `skill_id` 或 `protocol_id` 外键不存在 | 写入时如遇外键冲突，跳过该 invocation 并记录 warn | 防止乱序事件 |
+| #   | 边界条件                                                | 预期行为                                           | 备注                      |
+| --- | ------------------------------------------------------- | -------------------------------------------------- | ------------------------- |
+| 1   | `limit = 0`                                             | 返回空数组，total 正常                             | 允许                      |
+| 2   | `limit = 101` (> max)                                   | 返回 `INVALID_PAGINATION` (4004)                   | 硬上限 100                |
+| 3   | `offset` 超过 total                                     | 返回空数组                                         | 正常行为                  |
+| 4   | `task_id = 0`                                           | 返回 `INVALID_TASK_ID` (4000)                      | 路径参数校验              |
+| 5   | `skill_id = -1`                                         | 返回 `INVALID_SKILL_ID` (4001)                     | 路径参数校验              |
+| 6   | Webhook payload 为空                                    | 忽略，返回 204                                     | 不报错                    |
+| 7   | Webhook 包含未知 program 日志                           | 忽略未知事件，只解析匹配的事件                     | 正常行为                  |
+| 8   | 数据库连接断开                                          | REST API 返回 `INTERNAL_ERROR` (5000)，待连接恢复  | 需健康检查捕获            |
+| 9   | `created_at` / `completed_at` 为 NULL                   | `completed_at` 可为 NULL；`created_at` 不可为 NULL | Schema 约束               |
+| 10  | `amount` / `reward` = 0                                 | 允许 0，但 UI 应提示 "Free task"                   | 业务层处理                |
+| 11  | `protocol_id` 包含非法字符                              | 返回 `INVALID_PROTOCOL_ID` (4003)                  | 正则校验 `[a-zA-Z0-9_-]+` |
+| 12  | `invocations` 中 `skill_id` 或 `protocol_id` 外键不存在 | 写入时如遇外键冲突，跳过该 invocation 并记录 warn  | 防止乱序事件              |
 
 ---
 
@@ -502,28 +516,32 @@ fn route_events_by_program(logs: &[String], program_id: &str) -> Result<Vec<Even
 ### Docker Compose (本地)
 
 `apps/agent-arena/indexer/docker-compose.yml` 保持不变，但确保：
+
 - `migrations/` 目录包含 `0005_chain_hub_tables.sql`
 - 端口映射 `3001:3001`
 
 ### Nginx (生产)
 
 `deploy/nginx-api.conf` 保持不变：
+
 - `api.gradiences.xyz/indexer/` → `127.0.0.1:3001`
 - `indexer.gradiences.xyz` → `127.0.0.1:3001`
 
 ### 生产 docker-compose.prod.yml
 
 `deploy/docker-compose.prod.yml` 中的 `indexer` 服务需要：
+
 1. **构建上下文改为 `agent-arena/indexer`**（不再是 `chain-hub/indexer-service`）
 2. **Migration 挂载改为 `apps/agent-arena/indexer/migrations`**
 3. **Image 名称保持 `gradience/indexer:latest`**
 
 修改内容：
+
 ```yaml
-  indexer:
+indexer:
     build:
-      context: ../apps/agent-arena/indexer
-      dockerfile: Dockerfile
+        context: ../apps/agent-arena/indexer
+        dockerfile: Dockerfile
     image: gradience/indexer:latest
     # ... 其他 env 和端口保持不变
 ```

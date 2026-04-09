@@ -28,22 +28,24 @@ GET /protocols
 ```
 
 **Query Parameters:**
+
 - `chain` (optional): Filter by chain (solana, ethereum)
 - `category` (optional): Filter by category
 - `limit` (optional): Max results (default: 20)
 
 **Response:**
+
 ```json
 {
-  "protocols": [
-    {
-      "id": "proto_123",
-      "name": "My DeFi Protocol",
-      "chain": "solana",
-      "category": "defi",
-      "endpoint": "https://api.myprotocol.com"
-    }
-  ]
+    "protocols": [
+        {
+            "id": "proto_123",
+            "name": "My DeFi Protocol",
+            "chain": "solana",
+            "category": "defi",
+            "endpoint": "https://api.myprotocol.com"
+        }
+    ]
 }
 ```
 
@@ -54,13 +56,14 @@ POST /protocols
 ```
 
 **Request Body:**
+
 ```json
 {
-  "name": "My Protocol",
-  "description": "Protocol description",
-  "chain": "solana",
-  "endpoint": "https://api.example.com",
-  "category": "defi"
+    "name": "My Protocol",
+    "description": "Protocol description",
+    "chain": "solana",
+    "endpoint": "https://api.example.com",
+    "category": "defi"
 }
 ```
 
@@ -73,23 +76,25 @@ GET /skills
 ```
 
 **Query Parameters:**
+
 - `protocol` (optional): Filter by protocol ID
 - `chain` (optional): Filter by chain
 
 **Response:**
+
 ```json
 {
-  "skills": [
-    {
-      "id": "skill_456",
-      "name": "yield_farm",
-      "protocol": "proto_123",
-      "parameters": [
-        {"name": "token", "type": "string"},
-        {"name": "amount", "type": "number"}
-      ]
-    }
-  ]
+    "skills": [
+        {
+            "id": "skill_456",
+            "name": "yield_farm",
+            "protocol": "proto_123",
+            "parameters": [
+                { "name": "token", "type": "string" },
+                { "name": "amount", "type": "number" }
+            ]
+        }
+    ]
 }
 ```
 
@@ -100,13 +105,14 @@ POST /skills/{skill_id}/execute
 ```
 
 **Request Body:**
+
 ```json
 {
-  "parameters": {
-    "token": "USDC",
-    "amount": 1000
-  },
-  "wallet": "7xKx...9Yz"
+    "parameters": {
+        "token": "USDC",
+        "amount": 1000
+    },
+    "wallet": "7xKx...9Yz"
 }
 ```
 
@@ -119,30 +125,30 @@ POST /query
 ```
 
 **Request Body:**
+
 ```json
 {
-  "query": "SELECT * FROM tasks WHERE status = 'open' LIMIT 10"
+    "query": "SELECT * FROM tasks WHERE status = 'open' LIMIT 10"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "results": [
-    {"task_id": 1, "status": "open", "reward": 5000}
-  ]
+    "results": [{ "task_id": 1, "status": "open", "reward": 5000 }]
 }
 ```
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 404 | Not Found |
-| 429 | Rate Limited |
-| 500 | Server Error |
+| Code | Description  |
+| ---- | ------------ |
+| 400  | Bad Request  |
+| 401  | Unauthorized |
+| 404  | Not Found    |
+| 429  | Rate Limited |
+| 500  | Server Error |
 
 ## Rate Limits
 
@@ -161,7 +167,7 @@ const protocols = await hub.listProtocols();
 
 // Execute skill
 const result = await hub.executeSkill('skill_456', {
-  token: 'USDC',
-  amount: 1000
+    token: 'USDC',
+    amount: 1000,
 });
 ```

@@ -1,79 +1,79 @@
 name: X402 Self-Test
 
 on:
-  # Manual trigger
-  workflow_dispatch:
-  # Nightly sanity check
-  schedule:
-    - cron: '0 2 * * *'
-  # Run on relevant code changes
-  push:
-    branches: [main]
-    paths:
-      - 'apps/agent-daemon/src/payments/**'
-      - 'apps/agent-daemon/src/health/**'
-      - 'apps/agent-daemon/src/index.ts'
-      - 'apps/agent-daemon/src/daemon.ts'
-      - 'apps/agent-layer-evm/src/X402Settlement.sol'
-      - 'apps/agent-layer-evm/src/mocks/TestPermitERC20.sol'
-      - '.github/workflows/self-test-x402.yml'
+    # Manual trigger
+    workflow_dispatch:
+    # Nightly sanity check
+    schedule:
+        - cron: '0 2 * * *'
+    # Run on relevant code changes
+    push:
+        branches: [main]
+        paths:
+            - 'apps/agent-daemon/src/payments/**'
+            - 'apps/agent-daemon/src/health/**'
+            - 'apps/agent-daemon/src/index.ts'
+            - 'apps/agent-daemon/src/daemon.ts'
+            - 'apps/agent-layer-evm/src/X402Settlement.sol'
+            - 'apps/agent-layer-evm/src/mocks/TestPermitERC20.sol'
+            - '.github/workflows/self-test-x402.yml'
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # X402 EVM Smoke Test on X Layer Testnet
-  # ---------------------------------------------------------------------------
-  evm-smoke:
-    name: X402 EVM Smoke Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # ---------------------------------------------------------------------------
+    # X402 EVM Smoke Test on X Layer Testnet
+    # ---------------------------------------------------------------------------
+    evm-smoke:
+        name: X402 EVM Smoke Test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Install workspace dependencies
+              run: pnpm install --frozen-lockfile
 
-      - name: Run X402 EVM self-test
-        working-directory: apps/agent-daemon
-        env:
-          # Testnet deployer wallet — safe to hardcode for CI smoke tests.
-          # For production/mainnet workflows, migrate these to GitHub Secrets.
-          PRIVATE_KEY: "0xbebff393a40d6aabe1e7fd66bd7299f094255ed574b4abc08f5329b9629ee4c9"
-          AGENTD_X402_EVM_SETTLEMENT_ADDRESS: "0x1Af0E217d434323f428609a42Df36B3D93c2452a"
-          AGENTD_X402_EVM_TEST_TOKEN: "0xa8ad936e0489d847a8e4cffd555cacffdc24b092"
-          AGENTD_EVM_RPC_URL: https://testrpc.xlayer.tech
-        run: npx tsx src/index.ts self-test --x402-evm
+            - name: Run X402 EVM self-test
+              working-directory: apps/agent-daemon
+              env:
+                  # Testnet deployer wallet — safe to hardcode for CI smoke tests.
+                  # For production/mainnet workflows, migrate these to GitHub Secrets.
+                  PRIVATE_KEY: '0xbebff393a40d6aabe1e7fd66bd7299f094255ed574b4abc08f5329b9629ee4c9'
+                  AGENTD_X402_EVM_SETTLEMENT_ADDRESS: '0x1Af0E217d434323f428609a42Df36B3D93c2452a'
+                  AGENTD_X402_EVM_TEST_TOKEN: '0xa8ad936e0489d847a8e4cffd555cacffdc24b092'
+                  AGENTD_EVM_RPC_URL: https://testrpc.xlayer.tech
+              run: npx tsx src/index.ts self-test --x402-evm
 
-  # ---------------------------------------------------------------------------
-  # X402 Solana Smoke Test on Devnet (simulation fallback)
-  # ---------------------------------------------------------------------------
-  solana-smoke:
-    name: X402 Solana Smoke Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    # ---------------------------------------------------------------------------
+    # X402 Solana Smoke Test on Devnet (simulation fallback)
+    # ---------------------------------------------------------------------------
+    solana-smoke:
+        name: X402 Solana Smoke Test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
 
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Install workspace dependencies
+              run: pnpm install --frozen-lockfile
 
-      - name: Run X402 Solana self-test
-        working-directory: apps/agent-daemon
-        env:
-          AGENTD_SOLANA_RPC_URL: https://api.devnet.solana.com
-        run: npx tsx src/index.ts self-test --x402-solana
+            - name: Run X402 Solana self-test
+              working-directory: apps/agent-daemon
+              env:
+                  AGENTD_SOLANA_RPC_URL: https://api.devnet.solana.com
+              run: npx tsx src/index.ts self-test --x402-solana

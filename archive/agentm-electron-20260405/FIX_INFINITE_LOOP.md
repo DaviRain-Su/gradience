@@ -11,6 +11,7 @@
 React 错误：`Maximum update depth exceeded`
 
 **根本原因**:
+
 ```tsx
 // 错误代码
 const setAuth = useAppStore((s) => s.setAuth);
@@ -57,9 +58,9 @@ appStore.setState({ auth: EMPTY_AUTH });
 
 ## 修改的文件
 
-| 文件 | 修改内容 |
-|------|----------|
-| `App.tsx` | 修复 useEffect 依赖项 |
+| 文件      | 修改内容                            |
+| --------- | ----------------------------------- |
+| `App.tsx` | 修复 useEffect 依赖项               |
 | `App.tsx` | 使用 appStore.setState 替代 setAuth |
 
 ---

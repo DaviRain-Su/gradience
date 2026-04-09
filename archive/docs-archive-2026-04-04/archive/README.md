@@ -52,11 +52,11 @@ docs/archive/
 - **核心文档**: `docs/` 根目录
 - **任务管理**: `docs/tasks/`
 - **中文文档**: `docs/zh/`
-- **子项目文档**: 
-  - `docs/agent-daemon/`
-  - `docs/architecture-refactor/`
-  - `docs/workflow-engine/`
-  - ...
+- **子项目文档**:
+    - `docs/agent-daemon/`
+    - `docs/architecture-refactor/`
+    - `docs/workflow-engine/`
+    - ...
 
 ---
 

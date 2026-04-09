@@ -139,11 +139,7 @@ export function PostActions({
                 disabled={disabled || isLiking}
                 className={`
                     flex items-center ${currentSize.button} transition
-                    ${
-                        stats.isLiked
-                            ? 'text-red-400 hover:text-red-300'
-                            : 'text-gray-500 hover:text-red-400'
-                    }
+                    ${stats.isLiked ? 'text-red-400 hover:text-red-300' : 'text-gray-500 hover:text-red-400'}
                     disabled:opacity-50 disabled:cursor-not-allowed
                 `}
             >
@@ -178,12 +174,7 @@ export function PostActions({
                     disabled:opacity-50 disabled:cursor-not-allowed
                 `}
             >
-                <svg
-                    className={currentSize.icon}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
+                <svg className={currentSize.icon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -202,24 +193,13 @@ export function PostActions({
                 disabled={disabled || isSharing}
                 className={`
                     flex items-center ${currentSize.button} transition
-                    ${
-                        stats.isShared
-                            ? 'text-green-400 hover:text-green-300'
-                            : 'text-gray-500 hover:text-green-400'
-                    }
+                    ${stats.isShared ? 'text-green-400 hover:text-green-300' : 'text-gray-500 hover:text-green-400'}
                     disabled:opacity-50 disabled:cursor-not-allowed
                 `}
             >
                 {isSharing ? (
                     <svg className={`${currentSize.icon} animate-spin`} fill="none" viewBox="0 0 24 24">
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                        />
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path
                             className="opacity-75"
                             fill="currentColor"
@@ -227,12 +207,7 @@ export function PostActions({
                         />
                     </svg>
                 ) : (
-                    <svg
-                        className={currentSize.icon}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
+                    <svg className={currentSize.icon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                             strokeLinecap="round"
                             strokeLinejoin="round"

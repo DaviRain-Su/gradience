@@ -19,16 +19,12 @@ export function Providers({ children }: ProvidersProps) {
         // Prevent SSR/hydration mismatch and window access during server render.
         // Children that depend on DynamicProvider (e.g. /app) must wait until
         // the client has mounted to avoid calling useDynamicContext() too early.
-        return (
-            <div style={{ minHeight: '100vh', background: '#F3F3F8' }} />
-        );
+        return <div style={{ minHeight: '100vh', background: '#F3F3F8' }} />;
     }
 
     return (
         <ConnectionProvider>
-            <DynamicProvider>
-                {children}
-            </DynamicProvider>
+            <DynamicProvider>{children}</DynamicProvider>
         </ConnectionProvider>
     );
 }

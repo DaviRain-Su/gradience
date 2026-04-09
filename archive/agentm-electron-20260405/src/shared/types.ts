@@ -109,13 +109,7 @@ export interface AgentProfile {
 
 // ── Arena Task Flow (local workflow tracking) ───────────────────────
 
-export type TaskFlowStatus =
-    | 'available'
-    | 'applied'
-    | 'submitted'
-    | 'won'
-    | 'lost'
-    | 'refunded';
+export type TaskFlowStatus = 'available' | 'applied' | 'submitted' | 'won' | 'lost' | 'refunded';
 
 export interface ArenaTaskSummary {
     taskId: number;
@@ -201,12 +195,7 @@ export interface InteropSyncEvent {
 
 // ── Identity Registration (Metaplex / ERC-8004 relay) ──────────────
 
-export type IdentityRegistrationState =
-    | 'unknown'
-    | 'pending'
-    | 'registered'
-    | 'failed'
-    | 'disabled';
+export type IdentityRegistrationState = 'unknown' | 'pending' | 'registered' | 'failed' | 'disabled';
 
 export interface IdentityRegistrationStatus {
     agent: string;

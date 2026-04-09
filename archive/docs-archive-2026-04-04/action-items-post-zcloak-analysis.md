@@ -29,6 +29,7 @@
 ```
 
 **备选（更技术向）**:
+
 ```
 @xiao_zcloak ATP 的四支柱设计很棒。
 
@@ -60,6 +61,7 @@ Gradience is designed to be composable with other Agent trust infrastructure:
 - **Cross-chain**: EVM bridge (Week 4), ICP bridge (future)
 
 We believe Agent economy needs multiple complementary protocols:
+
 - Identity/Privacy → zCloak ATP
 - Market/Settlement → Gradience
 ```
@@ -73,6 +75,7 @@ We believe Agent economy needs multiple complementary protocols:
 **目标**: 评估在 Gradience 中加入可选隐私层的难度
 
 **研究问题**:
+
 - [ ] Solana 上的 ZKP 方案（Light Protocol?）
 - [ ] 选择性披露的可行性（证明有能力但不暴露细节）
 - [ ] 与 zCloak ATP 的技术对接点
@@ -86,15 +89,19 @@ We believe Agent economy needs multiple complementary protocols:
 **目标**: 对齐 Dorsey 话语体系，强调"信任基础设施"
 
 **当前**（假设）:
+
 > "Decentralized AI Agent credit protocol"
 
 **优化**:
+
 > "The Trust Infrastructure for AI Agents — From Hierarchy to Intelligence"
 
 或:
+
 > "Agent Arena: Where AI Agents compete, settle, and build reputation"
 
 **各平台统一**:
+
 - Twitter Bio
 - GitHub README
 - Website hero
@@ -107,6 +114,7 @@ We believe Agent economy needs multiple complementary protocols:
 **目标**: 持续跟踪 zCloak 进展
 
 **行动**:
+
 - [ ] 关注 @xiao_zcloak
 - [ ] 加入 zCloak Discord/Telegram
 - [ ] 订阅 ATP GitHub releases
@@ -121,26 +129,28 @@ We believe Agent economy needs multiple complementary protocols:
 **目标**: 争取行业标准话语权
 
 **行动**:
+
 - [ ] 起草"Agent Reputation Standard"提案
 - [ ] 联系 zCloak 讨论协作
 - [ ] 参与 ERC-8004 扩展讨论
 - [ ] 考虑发起"Agent Trust Alliance"
 
 **标准草案要点**:
+
 ```yaml
 Agent Reputation Standard:
-  identity: # 来自 ATP / ERC-8004
-    - did
-    - credentials
-  
-  capability: # 来自 Gradience
-    - battle_history
-    - task_completion_rate
-    - judge_scores
-  
-  privacy: # 可选
-    - selective_disclosure
-    - zk_proofs
+    identity: # 来自 ATP / ERC-8004
+        - did
+        - credentials
+
+    capability: # 来自 Gradience
+        - battle_history
+        - task_completion_rate
+        - judge_scores
+
+    privacy: # 可选
+        - selective_disclosure
+        - zk_proofs
 ```
 
 ---
@@ -150,6 +160,7 @@ Agent Reputation Standard:
 **目标**: 在市场沟通中清晰区分
 
 **核心信息**:
+
 ```
 不是另一个 Agent 身份协议。
 不是社交背书网络。
@@ -162,6 +173,7 @@ Gradience = 市场验证层
 ```
 
 **营销材料更新**:
+
 - [ ] 官网首页突出"Battle-verified"
 - [ ] 对比图：Gradience vs ATP vs Universal Trust vs Helixa
 - [ ] 案例：展示真实任务对战结果
@@ -173,6 +185,7 @@ Gradience = 市场验证层
 **目标**: 在竞品完全成型前建立先发优势
 
 **关键里程碑**:
+
 ```
 Week 1-2: Agent Arena 主网上线
 Week 3-4: 前 100 个 Agent 注册
@@ -181,6 +194,7 @@ Month 3: 首个 10K+ 声誉 Agent
 ```
 
 **加速策略**:
+
 - [ ] 设定 hard deadline（例如 4 月 30 日）
 - [ ] 削减非核心功能
 - [ ] 启动 bug bounty
@@ -195,6 +209,7 @@ Month 3: 首个 10K+ 声誉 Agent
 **目标**: 成为"Agent 市场验证"的默认标准
 
 **策略**:
+
 - 与 Agent 框架集成（Eliza, Rig, etc.）
 - 与 Task 平台合作（Superteam, etc.）
 - 开源 Judge Daemon 标准
@@ -205,6 +220,7 @@ Month 3: 首个 10K+ 声誉 Agent
 **目标**: 形成最强组合
 
 **提案草案**:
+
 ```
 Title: "Identity + Market: A Complete Trust Stack for AI Agents"
 
@@ -231,14 +247,14 @@ Benefits:
 
 ## 成功指标
 
-| 指标 | 目标 | 时间 |
-|------|------|------|
-| X 互动 | @xiao_zcloak 回复 | 本周 |
-| 官网更新 | 新叙事上线 | 本周 |
-| Agent 注册 | 100 | 4 月底 |
-| 任务完成 | 1000 | 5 月底 |
-| 合作探讨 | 与 zCloak 初步沟通 | 本月 |
-| 标准提案 | Draft 发布 | 6 月 |
+| 指标       | 目标               | 时间   |
+| ---------- | ------------------ | ------ |
+| X 互动     | @xiao_zcloak 回复  | 本周   |
+| 官网更新   | 新叙事上线         | 本周   |
+| Agent 注册 | 100                | 4 月底 |
+| 任务完成   | 1000               | 5 月底 |
+| 合作探讨   | 与 zCloak 初步沟通 | 本月   |
+| 标准提案   | Draft 发布         | 6 月   |
 
 ---
 
@@ -252,5 +268,5 @@ Benefits:
 
 ---
 
-*最后更新: 2026-04-03*  
-*下一步: 立即发 X 互动*
+_最后更新: 2026-04-03_  
+_下一步: 立即发 X 互动_

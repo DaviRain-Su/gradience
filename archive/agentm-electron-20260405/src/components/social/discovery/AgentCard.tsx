@@ -133,13 +133,10 @@ export function AgentCard({
         [onMessage, agent],
     );
 
-    const handleExpandToggle = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            setIsExpanded((prev) => !prev);
-        },
-        [],
-    );
+    const handleExpandToggle = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsExpanded((prev) => !prev);
+    }, []);
 
     const displayName = agent.displayName || formatAddress(agent.address);
     const primaryDomain = agent.primaryDomain ?? agent.domains?.[0];
@@ -181,14 +178,10 @@ export function AgentCard({
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-white truncate">
-                                {displayName}
-                            </h3>
+                            <h3 className="font-semibold text-white truncate">{displayName}</h3>
 
                             {/* Domain badge */}
-                            {primaryDomain && (
-                                <DomainBadge domain={primaryDomain} />
-                            )}
+                            {primaryDomain && <DomainBadge domain={primaryDomain} />}
 
                             {/* Reputation tier badge */}
                             {tier !== 'new' && (
@@ -204,16 +197,10 @@ export function AgentCard({
                         </div>
 
                         {/* Address */}
-                        <p className="text-xs text-gray-500 font-mono mt-0.5">
-                            {formatAddress(agent.address)}
-                        </p>
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">{formatAddress(agent.address)}</p>
 
                         {/* Bio preview */}
-                        {agent.bio && (
-                            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                                {agent.bio}
-                            </p>
-                        )}
+                        {agent.bio && <p className="text-sm text-gray-400 mt-2 line-clamp-2">{agent.bio}</p>}
 
                         {/* Stats row */}
                         <div className="flex items-center gap-4 mt-3">
@@ -230,11 +217,15 @@ export function AgentCard({
                                                 agent.reputation.trend === 'up'
                                                     ? 'text-green-400'
                                                     : agent.reputation.trend === 'down'
-                                                        ? 'text-red-400'
-                                                        : 'text-gray-500'
+                                                      ? 'text-red-400'
+                                                      : 'text-gray-500'
                                             }`}
                                         >
-                                            {agent.reputation.trend === 'up' ? '↑' : agent.reputation.trend === 'down' ? '↓' : '→'}
+                                            {agent.reputation.trend === 'up'
+                                                ? '↑'
+                                                : agent.reputation.trend === 'down'
+                                                  ? '↓'
+                                                  : '→'}
                                         </span>
                                     )}
                                 </div>
@@ -270,9 +261,10 @@ export function AgentCard({
                                 disabled={isFollowLoading}
                                 className={`
                                     px-3 py-1.5 text-xs font-medium rounded-lg transition
-                                    ${isFollowing
-                                        ? 'bg-gray-700 text-gray-300 hover:bg-red-600/20 hover:text-red-400 hover:border-red-500/30 border border-transparent'
-                                        : 'bg-blue-600 text-white hover:bg-blue-500'
+                                    ${
+                                        isFollowing
+                                            ? 'bg-gray-700 text-gray-300 hover:bg-red-600/20 hover:text-red-400 hover:border-red-500/30 border border-transparent'
+                                            : 'bg-blue-600 text-white hover:bg-blue-500'
                                     }
                                     disabled:opacity-50 disabled:cursor-not-allowed
                                 `}
@@ -335,14 +327,8 @@ export function AgentCard({
                             <div>
                                 <p className="text-xs text-gray-500 mb-1.5">Reputation Details</p>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <ReputationStat
-                                        label="Tasks Completed"
-                                        value={agent.reputation.tasksCompleted}
-                                    />
-                                    <ReputationStat
-                                        label="Total Applied"
-                                        value={agent.reputation.totalApplied}
-                                    />
+                                    <ReputationStat label="Tasks Completed" value={agent.reputation.tasksCompleted} />
+                                    <ReputationStat label="Total Applied" value={agent.reputation.totalApplied} />
                                     <ReputationStat
                                         label="Win Rate"
                                         value={`${agent.reputation.winRate.toFixed(1)}%`}
@@ -353,9 +339,7 @@ export function AgentCard({
 
                         {/* Discovery source */}
                         {agent.discoveredVia && (
-                            <p className="text-[10px] text-gray-600">
-                                Discovered via: {agent.discoveredVia}
-                            </p>
+                            <p className="text-[10px] text-gray-600">Discovered via: {agent.discoveredVia}</p>
                         )}
                     </div>
                 </div>
@@ -439,11 +423,7 @@ export function CompactAgentCard({ agent, onClick, className = '' }: CompactAgen
         >
             {/* Avatar */}
             {agent.avatarUrl ? (
-                <img
-                    src={agent.avatarUrl}
-                    alt={displayName}
-                    className="w-8 h-8 rounded-full object-cover"
-                />
+                <img src={agent.avatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
             ) : (
                 <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${tierColors.bg} ${tierColors.text}`}

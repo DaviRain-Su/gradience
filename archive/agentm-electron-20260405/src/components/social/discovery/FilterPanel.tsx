@@ -11,17 +11,8 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type {
-    FilterState,
-    ReputationTier,
-    DomainSearchType,
-    CapabilityTag,
-} from './types.ts';
-import {
-    DEFAULT_FILTER_STATE,
-    REPUTATION_TIER_THRESHOLDS,
-    COMMON_CAPABILITIES,
-} from './types.ts';
+import type { FilterState, ReputationTier, DomainSearchType, CapabilityTag } from './types.ts';
+import { DEFAULT_FILTER_STATE, REPUTATION_TIER_THRESHOLDS, COMMON_CAPABILITIES } from './types.ts';
 
 export interface FilterPanelProps {
     /** Current filter state */
@@ -132,9 +123,7 @@ export function FilterPanel({
     const toggleDomainType = useCallback(
         (type: DomainSearchType) => {
             const current = filters.domainTypes;
-            const newTypes = current.includes(type)
-                ? current.filter((t) => t !== type)
-                : [...current, type];
+            const newTypes = current.includes(type) ? current.filter((t) => t !== type) : [...current, type];
             updateFilter('domainTypes', newTypes);
         },
         [filters.domainTypes, updateFilter],
@@ -144,9 +133,7 @@ export function FilterPanel({
     const toggleCapability = useCallback(
         (capId: string) => {
             const current = filters.capabilities;
-            const newCaps = current.includes(capId)
-                ? current.filter((c) => c !== capId)
-                : [...current, capId];
+            const newCaps = current.includes(capId) ? current.filter((c) => c !== capId) : [...current, capId];
             updateFilter('capabilities', newCaps);
         },
         [filters.capabilities, updateFilter],
@@ -219,9 +206,7 @@ export function FilterPanel({
                         </span>
                     )}
                 </div>
-                <span className="text-gray-500 text-sm">
-                    {collapsed ? '▼' : '▲'}
-                </span>
+                <span className="text-gray-500 text-sm">{collapsed ? '▼' : '▲'}</span>
             </button>
 
             {/* Filter content */}
@@ -237,9 +222,10 @@ export function FilterPanel({
                                     title={TIER_LABELS[tier].description}
                                     className={`
                                         px-3 py-1.5 text-xs font-medium rounded-lg transition
-                                        ${filters.reputationTier === tier
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                                        ${
+                                            filters.reputationTier === tier
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                                         }
                                     `}
                                 >
@@ -291,9 +277,10 @@ export function FilterPanel({
                                                 onClick={() => toggleDomainType(type)}
                                                 className={`
                                                     px-3 py-1.5 text-xs font-medium rounded-lg transition
-                                                    ${isSelected
-                                                        ? `${DOMAIN_LABELS[type].color} text-white`
-                                                        : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                                                    ${
+                                                        isSelected
+                                                            ? `${DOMAIN_LABELS[type].color} text-white`
+                                                            : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                                                     }
                                                 `}
                                             >
@@ -322,9 +309,10 @@ export function FilterPanel({
                                                     onClick={() => toggleCapability(cap.id)}
                                                     className={`
                                                         inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-full transition
-                                                        ${isSelected
-                                                            ? 'bg-blue-600/30 text-blue-400 border border-blue-500/30'
-                                                            : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-gray-300'
+                                                        ${
+                                                            isSelected
+                                                                ? 'bg-blue-600/30 text-blue-400 border border-blue-500/30'
+                                                                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-gray-300'
                                                         }
                                                     `}
                                                 >
@@ -349,9 +337,7 @@ export function FilterPanel({
                                     onChange={(e) => updateFilter('verifiedOnly', e.target.checked)}
                                     className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900"
                                 />
-                                <span className="text-sm text-gray-300">
-                                    Only show verified agents
-                                </span>
+                                <span className="text-sm text-gray-300">Only show verified agents</span>
                             </label>
                         </FilterSection>
                     )}
@@ -400,9 +386,7 @@ interface FilterSectionProps {
 function FilterSection({ title, children }: FilterSectionProps) {
     return (
         <div>
-            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                {title}
-            </h4>
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{title}</h4>
             {children}
         </div>
     );
@@ -445,9 +429,10 @@ export function CompactFilterPanel({
                     onClick={() => updateFilter('reputationTier', filters.reputationTier === tier ? 'all' : tier)}
                     className={`
                         px-2 py-1 text-[10px] font-medium rounded transition
-                        ${filters.reputationTier === tier
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                        ${
+                            filters.reputationTier === tier
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-800 text-gray-500 hover:text-gray-300'
                         }
                     `}
                 >
@@ -460,9 +445,10 @@ export function CompactFilterPanel({
                 onClick={() => updateFilter('verifiedOnly', !filters.verifiedOnly)}
                 className={`
                     px-2 py-1 text-[10px] font-medium rounded transition
-                    ${filters.verifiedOnly
-                        ? 'bg-green-600/30 text-green-400 border border-green-500/30'
-                        : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                    ${
+                        filters.verifiedOnly
+                            ? 'bg-green-600/30 text-green-400 border border-green-500/30'
+                            : 'bg-gray-800 text-gray-500 hover:text-gray-300'
                     }
                 `}
             >

@@ -10,8 +10,8 @@ export default function DocsHome() {
                         Gradience Protocol
                     </h1>
                     <p className="text-xl text-gray-400 leading-relaxed mb-8">
-                        The credit score for the Agent economy. On-chain, verified reputation
-                        for AI Agents across Solana and EVM chains.
+                        The credit score for the Agent economy. On-chain, verified reputation for AI Agents across
+                        Solana and EVM chains.
                     </p>
                     <div className="flex flex-wrap gap-4">
                         <a
@@ -100,22 +100,22 @@ export default function DocsHome() {
                         <span className="text-sm text-gray-400">Terminal</span>
                         <button className="text-xs text-gray-500 hover:text-gray-300">Copy</button>
                     </div>
-                    <pre className="p-4 text-sm text-gray-300 overflow-x-auto"><code>{`# Install SDK
+                    <pre className="p-4 text-sm text-gray-300 overflow-x-auto">
+                        <code>{`# Install SDK
 npm install @gradiences/sdk @solana/kit
 
 # Query agent reputation
 import { GradienceSDK } from '@gradiences/sdk';
 const sdk = new GradienceSDK({ network: 'devnet' });
-const rep = await sdk.getReputation('AGENT_PUBKEY');`}</code></pre>
+const rep = await sdk.getReputation('AGENT_PUBKEY');`}</code>
+                    </pre>
                 </div>
             </section>
 
             {/* Fee Structure */}
             <section className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 rounded-2xl p-8 -mx-6">
                 <h2 className="text-2xl font-semibold mb-4">Fee Structure</h2>
-                <p className="text-gray-400 mb-6">
-                    Every judged task distributes fees transparently:
-                </p>
+                <p className="text-gray-400 mb-6">Every judged task distributes fees transparently:</p>
                 <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                         <div className="text-4xl font-bold text-indigo-400 mb-2">95%</div>
@@ -159,7 +159,17 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
     );
 }
 
-function ModuleCard({ title, chain, description, href }: { title: string; chain: string; description: string; href: string }) {
+function ModuleCard({
+    title,
+    chain,
+    description,
+    href,
+}: {
+    title: string;
+    chain: string;
+    description: string;
+    href: string;
+}) {
     return (
         <a
             href={href}

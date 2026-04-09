@@ -6,48 +6,50 @@ This directory contains comprehensive tests for the AgentM Core Solana Program, 
 
 The test suite covers all 9 instructions in the AgentM Core Program:
 
-| Instruction | Discriminator | Status | Test Coverage |
-|-------------|---------------|--------|---------------|
-| `initialize` | 0 | ✅ Implemented | Unit tests for validation logic |
-| `register_user` | 1 | ✅ Implemented | Unit tests for validation logic |
-| `update_profile` | 2 | ✅ Implemented | Unit tests for validation logic |
-| `follow_user` | 3 | ⚠️ Stub only | Unit tests for current behavior |
-| `unfollow_user` | 4 | ⚠️ Stub only | Unit tests for current behavior |
-| `send_message` | 5 | ✅ Implemented | Unit tests for validation logic |
-| `create_agent` | 6 | ✅ Implemented | Unit tests for validation logic |
-| `update_agent_config` | 7 | ✅ Implemented | Unit tests for validation logic |
-| `update_reputation` | 8 | ✅ Implemented | Unit tests for validation logic |
+| Instruction           | Discriminator | Status         | Test Coverage                   |
+| --------------------- | ------------- | -------------- | ------------------------------- |
+| `initialize`          | 0             | ✅ Implemented | Unit tests for validation logic |
+| `register_user`       | 1             | ✅ Implemented | Unit tests for validation logic |
+| `update_profile`      | 2             | ✅ Implemented | Unit tests for validation logic |
+| `follow_user`         | 3             | ⚠️ Stub only   | Unit tests for current behavior |
+| `unfollow_user`       | 4             | ⚠️ Stub only   | Unit tests for current behavior |
+| `send_message`        | 5             | ✅ Implemented | Unit tests for validation logic |
+| `create_agent`        | 6             | ✅ Implemented | Unit tests for validation logic |
+| `update_agent_config` | 7             | ✅ Implemented | Unit tests for validation logic |
+| `update_reputation`   | 8             | ✅ Implemented | Unit tests for validation logic |
 
 ## Test Files
 
 ### `unit_tests.rs` ✅ PASSING
+
 **12 tests passing**
 
 Focused unit tests that validate the core business logic, data structures, and validation rules:
 
 - **Input Validation Tests**: Validates length limits for all text fields
-  - Username length validation
-  - Profile field length validation (display_name, bio, avatar_url)
-  - Message content length validation
-  - Agent field length validation (name, description, config)
-  - Reputation score validation
+    - Username length validation
+    - Profile field length validation (display_name, bio, avatar_url)
+    - Message content length validation
+    - Agent field length validation (name, description, config)
+    - Reputation score validation
 
 - **Data Structure Tests**: Ensures proper serialization/deserialization
-  - `User` state structure
-  - `Profile` state structure  
-  - `Message` state structure
-  - `Agent` state structure
-  - `Reputation` state structure
-  - `ProgramConfig` state structure
+    - `User` state structure
+    - `Profile` state structure
+    - `Message` state structure
+    - `Agent` state structure
+    - `Reputation` state structure
+    - `ProgramConfig` state structure
 
 - **Business Logic Tests**:
-  - Reputation calculation algorithms
-  - Agent type enum validation
-  - Error code conversion
-  - Address conversion utilities
-  - Constant value validation
+    - Reputation calculation algorithms
+    - Agent type enum validation
+    - Error code conversion
+    - Address conversion utilities
+    - Constant value validation
 
 ### `agentm_core_tests.rs` ❌ NOT WORKING
+
 **29 tests failing due to litesvm setup issues**
 
 Comprehensive integration tests that were designed to test the full instruction execution flow but currently fail due to SVM setup complexity. These tests cover:
@@ -60,8 +62,9 @@ Comprehensive integration tests that were designed to test the full instruction 
 ## Key Test Areas Covered
 
 ### 1. Input Validation ✅
+
 - **Username**: Maximum 32 characters
-- **Display Name**: Maximum 64 characters  
+- **Display Name**: Maximum 64 characters
 - **Bio**: Maximum 256 characters
 - **Avatar URL**: Maximum 128 characters
 - **Message Content**: Maximum 1024 characters
@@ -71,6 +74,7 @@ Comprehensive integration tests that were designed to test the full instruction 
 - **Reputation Score**: 0-10,000 basis points (0-100%)
 
 ### 2. State Management ✅
+
 - Proper account discriminators for all state types
 - Correct struct sizing calculations
 - Borsh serialization/deserialization
@@ -78,15 +82,17 @@ Comprehensive integration tests that were designed to test the full instruction 
 - Timestamp handling
 
 ### 3. Business Logic ✅
-- **Reputation System**: 
-  - Average score calculation
-  - Win rate tracking
-  - Review aggregation
-  - Bounds checking
+
+- **Reputation System**:
+    - Average score calculation
+    - Win rate tracking
+    - Review aggregation
+    - Bounds checking
 
 - **Agent Types**: TaskExecutor, SocialAgent, TradingAgent, Custom
 
 ### 4. Security Controls (Partially Tested)
+
 - Account ownership validation
 - Signer verification
 - Error handling and custom error codes
@@ -94,13 +100,16 @@ Comprehensive integration tests that were designed to test the full instruction 
 ## Current Status
 
 ### Working Tests ✅
+
 The unit tests provide excellent coverage of the core validation logic and data structures. They test:
+
 - All validation rules work correctly
 - State structs serialize/deserialize properly
 - Business logic calculations are accurate
 - Error handling behaves as expected
 
 ### Non-Working Tests ❌
+
 The integration tests using `litesvm` fail due to program loading complexity. The SVM requires actual compiled program bytecode, which adds significant complexity to the test setup.
 
 ## Running Tests
@@ -128,12 +137,14 @@ cargo test --test unit_tests -- --nocapture
 ## Recommendations
 
 ### Immediate Actions ✅ COMPLETED
+
 1. **Unit test coverage** for all validation logic - DONE
-2. **State structure testing** for serialization - DONE  
+2. **State structure testing** for serialization - DONE
 3. **Business logic verification** - DONE
 4. **Error handling validation** - DONE
 
 ### Future Improvements
+
 1. **Fix SVM Integration Tests**: Resolve the litesvm setup issues to enable full end-to-end testing
 2. **Add Mock Framework**: Create simpler mocks for account interactions
 3. **Property-Based Testing**: Add fuzzing tests for validation logic
@@ -143,6 +154,7 @@ cargo test --test unit_tests -- --nocapture
 ## Security Considerations
 
 The current test suite validates critical security aspects:
+
 - ✅ Input sanitization and bounds checking
 - ✅ Data structure integrity
 - ✅ Error code correctness

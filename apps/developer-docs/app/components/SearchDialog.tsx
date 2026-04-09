@@ -41,7 +41,7 @@ export function SearchDialog() {
         ? ALL_PAGES.filter(
               (p) =>
                   p.title.toLowerCase().includes(query.toLowerCase()) ||
-                  p.section.toLowerCase().includes(query.toLowerCase())
+                  p.section.toLowerCase().includes(query.toLowerCase()),
           )
         : ALL_PAGES;
 
@@ -51,7 +51,7 @@ export function SearchDialog() {
             setQuery('');
             router.push(href);
         },
-        [router]
+        [router],
     );
 
     useEffect(() => {

@@ -77,7 +77,7 @@ export class ConnectionManager extends EventEmitter {
     private connections = new Map<string, PeerConnection>();
     private destroyed = false;
     private agentPubkey: string = '';
-    
+
     // REST API fallback
     private restFallbackEnabled = false;
     private restFallbackTimer: ReturnType<typeof setInterval> | null = null;
@@ -102,7 +102,7 @@ export class ConnectionManager extends EventEmitter {
 
     getState(): ConnectionState {
         // Return the state of the primary indexer connection, or 'disconnected' if none
-        const indexerConnection = Array.from(this.connections.values()).find(c => c.type === 'indexer');
+        const indexerConnection = Array.from(this.connections.values()).find((c) => c.type === 'indexer');
         return indexerConnection?.state ?? 'disconnected';
     }
 
@@ -124,29 +124,25 @@ export class ConnectionManager extends EventEmitter {
 
     async connect(): Promise<void> {
         if (this.destroyed) return;
-        
+
         // Add the primary indexer connection if chainHubUrl is configured
         const indexerId = 'indexer-primary';
         if (this.config.chainHubUrl && !this.connections.has(indexerId)) {
             this.addPeer(indexerId, this.config.chainHubUrl, 'indexer');
         }
-        
+
         // Connect to all peers
-        const connectPromises = Array.from(this.connections.keys()).map(peerId => 
-            this.connectToPeer(peerId)
-        );
-        
+        const connectPromises = Array.from(this.connections.keys()).map((peerId) => this.connectToPeer(peerId));
+
         await Promise.allSettled(connectPromises);
     }
 
     async disconnect(): Promise<void> {
         this.destroyed = true;
         this.stopRestFallback();
-        
-        const disconnectPromises = Array.from(this.connections.keys()).map(peerId =>
-            this.disconnectFromPeer(peerId)
-        );
-        
+
+        const disconnectPromises = Array.from(this.connections.keys()).map((peerId) => this.disconnectFromPeer(peerId));
+
         await Promise.allSettled(disconnectPromises);
         this.connections.clear();
     }
@@ -167,13 +163,13 @@ export class ConnectionManager extends EventEmitter {
                 latency: 0,
                 reconnectCount: 0,
                 lastSeen: 0,
-                uptime: 0
+                uptime: 0,
             },
             subscriptions: new Set(),
             reconnectAttempts: 0,
             reconnectTimer: null,
             heartbeatTimer: null,
-            heartbeatTimeout: null
+            heartbeatTimeout: null,
         };
 
         this.connections.set(peerId, connection);
@@ -212,7 +208,8 @@ export class ConnectionManager extends EventEmitter {
         // Subscribe on all connections
         let success = false;
         for (const [id, connection] of this.connections) {
-            if (connection.type === 'indexer') { // Only subscribe to indexer connections
+            if (connection.type === 'indexer') {
+                // Only subscribe to indexer connections
                 if (this.subscribeToTopics(id, topics)) {
                     success = true;
                 }
@@ -228,7 +225,7 @@ export class ConnectionManager extends EventEmitter {
         }
 
         this.setState(peerId, 'connecting');
-        
+
         try {
             connection.ws = new WebSocket(connection.url);
         } catch (err) {
@@ -246,18 +243,18 @@ export class ConnectionManager extends EventEmitter {
         if (!connection) return;
 
         this.clearTimers(peerId);
-        
+
         if (connection.ws) {
             const ws = connection.ws;
             connection.ws = null; // Clear reference first
-            
+
             ws.removeAllListeners();
-            
+
             // Add a one-time error handler to catch termination errors
             ws.on('error', () => {
                 // Ignore errors during cleanup
             });
-            
+
             if (ws.readyState === WebSocket.OPEN) {
                 ws.close(1000, 'Client disconnect');
             } else if (ws.readyState === WebSocket.CONNECTING) {
@@ -266,7 +263,7 @@ export class ConnectionManager extends EventEmitter {
             }
             // If readyState is CLOSING or CLOSED, don't do anything
         }
-        
+
         this.setState(peerId, 'disconnected');
     }
 
@@ -289,7 +286,7 @@ export class ConnectionManager extends EventEmitter {
             connection.metrics.uptime = Date.now();
             this.setState(peerId, 'connected');
             this.startHeartbeat(peerId);
-            
+
             // Subscribe to default topics for indexer connections
             if (connection.type === 'indexer') {
                 this.subscribeToTopics(peerId, ['tasks', 'messages']);
@@ -298,7 +295,7 @@ export class ConnectionManager extends EventEmitter {
 
         ws.on('message', (raw: WebSocket.RawData) => {
             connection.metrics.lastSeen = Date.now();
-            
+
             try {
                 const data = JSON.parse(raw.toString()) as WebSocketMessage;
                 this.handleMessage(peerId, data);
@@ -315,7 +312,7 @@ export class ConnectionManager extends EventEmitter {
             logger.info({ peerId, code, reason: reason.toString() }, 'WebSocket closed');
             this.stopHeartbeat(peerId);
             connection.metrics.uptime = 0;
-            
+
             if (!this.destroyed) {
                 this.scheduleReconnect(peerId);
             }
@@ -327,15 +324,15 @@ export class ConnectionManager extends EventEmitter {
             case 'task_event':
                 this.emit('task-event', message.event);
                 break;
-                
+
             case 'message_event':
                 this.emit('message-event', message.message);
                 break;
-                
+
             case 'pong':
                 this.handlePong(peerId, Buffer.from(JSON.stringify({ timestamp: message.timestamp })));
                 break;
-                
+
             default:
                 // Backward compatibility - emit raw message
                 this.emit('message', message);
@@ -348,7 +345,7 @@ export class ConnectionManager extends EventEmitter {
         if (!connection?.ws || connection.ws.readyState !== WebSocket.OPEN) {
             return false;
         }
-        
+
         try {
             connection.ws.send(JSON.stringify(data));
             return true;
@@ -362,9 +359,9 @@ export class ConnectionManager extends EventEmitter {
         const subscriptionMessage: SubscriptionMessage = {
             type: 'subscribe',
             topics,
-            agentPubkey: this.agentPubkey
+            agentPubkey: this.agentPubkey,
         };
-        
+
         return this.sendToPeer(peerId, subscriptionMessage);
     }
 
@@ -373,12 +370,12 @@ export class ConnectionManager extends EventEmitter {
         if (!connection) return false;
 
         // Add topics to subscription set
-        topics.forEach(topic => connection.subscriptions.add(topic));
+        topics.forEach((topic) => connection.subscriptions.add(topic));
 
         if (connection.state === 'connected') {
             return this.sendSubscription(peerId, topics);
         }
-        
+
         return true; // Will subscribe when connected
     }
 
@@ -390,7 +387,7 @@ export class ConnectionManager extends EventEmitter {
         if (maxAttempts > 0 && connection.reconnectAttempts >= maxAttempts) {
             logger.error(
                 { peerId, attempts: connection.reconnectAttempts, max: maxAttempts },
-                'Max reconnect attempts reached'
+                'Max reconnect attempts reached',
             );
             this.setState(peerId, 'disconnected');
             this.handleConnectionFailure(peerId);
@@ -413,7 +410,7 @@ export class ConnectionManager extends EventEmitter {
         if (!connection || connection.type !== 'indexer') return;
 
         this.wsFailureCount++;
-        
+
         if (this.wsFailureCount >= this.config.wsFailureThreshold && !this.restFallbackEnabled) {
             logger.warn('WebSocket failures exceeded threshold, enabling REST fallback');
             this.startRestFallback();
@@ -422,28 +419,28 @@ export class ConnectionManager extends EventEmitter {
 
     private startRestFallback(): void {
         if (this.restFallbackEnabled) return;
-        
+
         this.restFallbackEnabled = true;
         this.emit('fallback-mode', true);
-        
+
         this.restFallbackTimer = setInterval(() => {
             this.pollRestAPI();
         }, this.config.restPollingInterval);
-        
+
         logger.info('REST API fallback mode enabled');
     }
 
     private stopRestFallback(): void {
         if (!this.restFallbackEnabled) return;
-        
+
         this.restFallbackEnabled = false;
         this.emit('fallback-mode', false);
-        
+
         if (this.restFallbackTimer) {
             clearInterval(this.restFallbackTimer);
             this.restFallbackTimer = null;
         }
-        
+
         logger.info('REST API fallback mode disabled');
     }
 
@@ -451,32 +448,33 @@ export class ConnectionManager extends EventEmitter {
         try {
             const since = this.lastTaskFetch;
             const response = await fetch(`${this.config.chainHubRestUrl}/api/tasks?since=${since}`);
-            
+
             if (!response.ok) {
                 logger.warn({ status: response.status }, 'REST API polling failed');
                 return;
             }
-            
-            const data = await response.json() as { tasks: Array<{ id: string; type: string; payload: unknown; priority: number; timestamp: number }> };
-            
+
+            const data = (await response.json()) as {
+                tasks: Array<{ id: string; type: string; payload: unknown; priority: number; timestamp: number }>;
+            };
+
             // Emit task events for new tasks
             for (const task of data.tasks) {
                 if (task.timestamp > this.lastTaskFetch) {
                     this.emit('task-event', task);
                 }
             }
-            
+
             this.lastTaskFetch = Date.now();
-            
+
             // Check if WebSocket connections are back online
             const hasConnectedIndexer = Array.from(this.connections.values()).some(
-                c => c.type === 'indexer' && c.state === 'connected'
+                (c) => c.type === 'indexer' && c.state === 'connected',
             );
-            
+
             if (hasConnectedIndexer) {
                 this.stopRestFallback();
             }
-            
         } catch (err) {
             logger.debug({ err }, 'REST API polling error');
         }
@@ -498,7 +496,7 @@ export class ConnectionManager extends EventEmitter {
             if (connection.ws?.readyState === WebSocket.OPEN) {
                 const pingTimestamp = Date.now();
                 connection.ws.ping(Buffer.from(JSON.stringify({ timestamp: pingTimestamp })));
-                
+
                 connection.heartbeatTimeout = setTimeout(() => {
                     logger.warn({ peerId }, 'Heartbeat timeout, closing connection');
                     connection.ws?.terminate();
@@ -534,7 +532,7 @@ export class ConnectionManager extends EventEmitter {
             const parsed = JSON.parse(data.toString()) as { timestamp: number };
             const latency = Date.now() - parsed.timestamp;
             connection.metrics.latency = latency;
-            
+
             if (this.config.connectionHealthMetrics) {
                 this.emit('health-metrics', peerId, { ...connection.metrics });
             }
@@ -557,7 +555,7 @@ export class ConnectionManager extends EventEmitter {
     private setState(peerId: string, newState: ConnectionState): void {
         const connection = this.connections.get(peerId);
         if (!connection || connection.state === newState) return;
-        
+
         const prev = connection.state;
         connection.state = newState;
         logger.debug({ peerId, from: prev, to: newState }, 'Connection state changed');

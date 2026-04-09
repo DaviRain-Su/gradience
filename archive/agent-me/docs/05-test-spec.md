@@ -4,9 +4,9 @@
 
 ## 1. 当前测试文件
 
-| 文件 | 测试数 | 测试内容 | 状态 |
-|------|--------|---------|------|
-| `wallet-utils.test.ts` | 3 | isByte / createProfile / parseKeypairAddress | ✅ |
+| 文件                   | 测试数 | 测试内容                                     | 状态 |
+| ---------------------- | ------ | -------------------------------------------- | ---- |
+| `wallet-utils.test.ts` | 3      | isByte / createProfile / parseKeypairAddress | ✅   |
 
 ---
 
@@ -23,29 +23,29 @@ tsx --test src/lib/wallet-utils.test.ts
 
 ### 已覆盖（✅）
 
-| 场景 | 测试 |
-|------|------|
+| 场景                                        | 测试                 |
+| ------------------------------------------- | -------------------- |
 | `isByte` 边界值（0 / 255 / 256 / -1 / 1.5） | wallet-utils.test.ts |
-| `createProfile` 生成唯一 ID 和默认 label | wallet-utils.test.ts |
-| `parseKeypairAddress` 拒绝格式错误的输入 | wallet-utils.test.ts |
+| `createProfile` 生成唯一 ID 和默认 label    | wallet-utils.test.ts |
+| `parseKeypairAddress` 拒绝格式错误的输入    | wallet-utils.test.ts |
 
 ### 缺失（P0）
 
-| 场景 | 说明 |
-|------|------|
-| `parseKeypairAddress` 有效 64 字节 → 返回正确地址 | 核心 happy path |
-| `parseKeypairAddress` 长度非 64 → 报错 | 边界 |
-| `wallet-storage` load/save 循环（localStorage mock） | 持久化正确性 |
-| 切换活跃 Profile → `onActiveAddressChange` 触发 | 组件回调 |
+| 场景                                                 | 说明            |
+| ---------------------------------------------------- | --------------- |
+| `parseKeypairAddress` 有效 64 字节 → 返回正确地址    | 核心 happy path |
+| `parseKeypairAddress` 长度非 64 → 报错               | 边界            |
+| `wallet-storage` load/save 循环（localStorage mock） | 持久化正确性    |
+| 切换活跃 Profile → `onActiveAddressChange` 触发      | 组件回调        |
 
 ### 缺失（P1）
 
-| 场景 | 说明 |
-|------|------|
+| 场景                                      | 说明    |
+| ----------------------------------------- | ------- |
 | ReputationPanel：声誉为 null 时展示空状态 | UI 边界 |
-| TaskHistory：任务列表为空时展示提示 | UI 边界 |
-| WalletManager：重复添加同一地址 | 幂等性 |
-| localStorage 不可用时的降级行为 | 容错性 |
+| TaskHistory：任务列表为空时展示提示       | UI 边界 |
+| WalletManager：重复添加同一地址           | 幂等性  |
+| localStorage 不可用时的降级行为           | 容错性  |
 
 ---
 

@@ -10,10 +10,7 @@
 export * from './llm-config.js';
 
 // Re-export fallback configuration utilities
-export { 
-    buildLLMConfigWithFallback,
-    getFallbackModeDescription 
-} from './llm-config.js';
+export { buildLLMConfigWithFallback, getFallbackModeDescription } from './llm-config.js';
 
 // Export all types
 export * from './types.js';

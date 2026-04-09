@@ -17,35 +17,35 @@
 
 ### Target Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Message Latency (P2P) | < 100ms | libp2p direct connection |
-| Message Latency (Relay) | < 500ms | Nostr relay round-trip |
-| Discovery Time | < 5s | Agent discovery response |
-| Memory Usage | < 100MB | Per protocol adapter |
-| Connection Establishment | < 3s | libp2p peer connection |
-| Relay Reconnection | < 10s | Nostr relay failure recovery |
+| Metric                   | Target  | Measurement                  |
+| ------------------------ | ------- | ---------------------------- |
+| Message Latency (P2P)    | < 100ms | libp2p direct connection     |
+| Message Latency (Relay)  | < 500ms | Nostr relay round-trip       |
+| Discovery Time           | < 5s    | Agent discovery response     |
+| Memory Usage             | < 100MB | Per protocol adapter         |
+| Connection Establishment | < 3s    | libp2p peer connection       |
+| Relay Reconnection       | < 10s   | Nostr relay failure recovery |
 
 ### Current Benchmarks
 
 ```typescript
 // Benchmark results (local test)
 const benchmarks = {
-  nostr: {
-    sendLatency: '250ms',      // Relay round-trip
-    receiveLatency: '50ms',     // Event processing
-    memoryPerConnection: '5MB', // Per relay
-  },
-  libp2p: {
-    dialLatency: '500ms',       // Initial connection
-    sendLatency: '20ms',        // Direct P2P
-    memoryPerPeer: '2MB',       // Per connected peer
-  },
-  magicblock: {
-    estimateLatency: '1ms',     // Local calculation
-    sendLatency: '50ms',        // In-memory transport
-    memoryOverhead: '1MB',      // Fixed overhead
-  },
+    nostr: {
+        sendLatency: '250ms', // Relay round-trip
+        receiveLatency: '50ms', // Event processing
+        memoryPerConnection: '5MB', // Per relay
+    },
+    libp2p: {
+        dialLatency: '500ms', // Initial connection
+        sendLatency: '20ms', // Direct P2P
+        memoryPerPeer: '2MB', // Per connected peer
+    },
+    magicblock: {
+        estimateLatency: '1ms', // Local calculation
+        sendLatency: '50ms', // In-memory transport
+        memoryOverhead: '1MB', // Fixed overhead
+    },
 };
 ```
 
@@ -60,14 +60,10 @@ const benchmarks = {
 ```typescript
 // Optimize relay connections
 const nostrOptions = {
-  relays: [
-    'wss://relay.damus.io',
-    'wss://relay.nostr.band',
-    'wss://nos.lol',
-  ],
-  // Connection pooling
-  maxConcurrentRequests: 10,
-  relayTimeout: 5000,  // 5s timeout
+    relays: ['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol'],
+    // Connection pooling
+    maxConcurrentRequests: 10,
+    relayTimeout: 5000, // 5s timeout
 };
 ```
 
@@ -76,8 +72,8 @@ const nostrOptions = {
 ```typescript
 // Batch subscribe requests
 const batchSubscribe = async (filters: NostrFilter[]) => {
-  const batch = filters.slice(0, 10); // Max 10 concurrent
-  return Promise.all(batch.map(f => nostr.subscribe(f)));
+    const batch = filters.slice(0, 10); // Max 10 concurrent
+    return Promise.all(batch.map((f) => nostr.subscribe(f)));
 };
 ```
 
@@ -88,11 +84,11 @@ const batchSubscribe = async (filters: NostrFilter[]) => {
 const profileCache = new Map<string, { profile: AgentProfile; expires: number }>();
 
 const getCachedProfile = (pubkey: string): AgentProfile | null => {
-  const cached = profileCache.get(pubkey);
-  if (cached && cached.expires > Date.now()) {
-    return cached.profile;
-  }
-  return null;
+    const cached = profileCache.get(pubkey);
+    if (cached && cached.expires > Date.now()) {
+        return cached.profile;
+    }
+    return null;
 };
 ```
 
@@ -103,9 +99,9 @@ const getCachedProfile = (pubkey: string): AgentProfile | null => {
 ```typescript
 // Limit concurrent connections
 const libp2pOptions = {
-  maxConnections: 50,        // Max peers
-  minConnections: 5,         // Maintain minimum
-  maxPendingConnections: 10, // Pending dial queue
+    maxConnections: 50, // Max peers
+    minConnections: 5, // Maintain minimum
+    maxPendingConnections: 10, // Pending dial queue
 };
 ```
 
@@ -114,7 +110,7 @@ const libp2pOptions = {
 ```typescript
 // Use client mode for lighter footprint
 const libp2pOptions = {
-  dhtClientMode: true,  // Don't store DHT records
+    dhtClientMode: true, // Don't store DHT records
 };
 ```
 
@@ -123,10 +119,10 @@ const libp2pOptions = {
 ```typescript
 // Prefer direct connections over relay
 const connectionPriorities = [
-  'webrtc-direct',  // Best: direct WebRTC
-  'webrtc',         // Good: relayed WebRTC
-  'wss',            // Okay: WebSocket secure
-  'ws',             // Fallback: WebSocket
+    'webrtc-direct', // Best: direct WebRTC
+    'webrtc', // Good: relayed WebRTC
+    'wss', // Okay: WebSocket secure
+    'ws', // Fallback: WebSocket
 ];
 ```
 
@@ -137,8 +133,8 @@ const connectionPriorities = [
 ```typescript
 // Batch multiple payments
 const batchPayments = async (payments: Payment[]) => {
-  const total = payments.reduce((sum, p) => sum + p.amount, 0);
-  return magicblock.sendBatch(payments, total);
+    const total = payments.reduce((sum, p) => sum + p.amount, 0);
+    return magicblock.sendBatch(payments, total);
 };
 ```
 
@@ -161,21 +157,21 @@ const adapter2 = new MagicBlockAdapter({ hub: sharedHub, ... });
 ```typescript
 // Cache protocol selection results
 class ProtocolSelector {
-  private cache = new Map<string, ProtocolType>();
-  private cacheTtl = 30000; // 30s
+    private cache = new Map<string, ProtocolType>();
+    private cacheTtl = 30000; // 30s
 
-  select(intent: A2AIntent): ProtocolType {
-    const key = `${intent.type}-${intent.to}`;
-    const cached = this.cache.get(key);
-    
-    if (cached && Date.now() - cached.timestamp < this.cacheTtl) {
-      return cached.protocol;
+    select(intent: A2AIntent): ProtocolType {
+        const key = `${intent.type}-${intent.to}`;
+        const cached = this.cache.get(key);
+
+        if (cached && Date.now() - cached.timestamp < this.cacheTtl) {
+            return cached.protocol;
+        }
+
+        const protocol = this.doSelect(intent);
+        this.cache.set(key, { protocol, timestamp: Date.now() });
+        return protocol;
     }
-    
-    const protocol = this.doSelect(intent);
-    this.cache.set(key, { protocol, timestamp: Date.now() });
-    return protocol;
-  }
 }
 ```
 
@@ -184,21 +180,21 @@ class ProtocolSelector {
 ```typescript
 // Batch small messages
 class MessageBatcher {
-  private batch: A2AMessage[] = [];
-  private flushInterval = 100; // ms
+    private batch: A2AMessage[] = [];
+    private flushInterval = 100; // ms
 
-  add(message: A2AMessage) {
-    this.batch.push(message);
-    if (this.batch.length >= 10) {
-      this.flush();
+    add(message: A2AMessage) {
+        this.batch.push(message);
+        if (this.batch.length >= 10) {
+            this.flush();
+        }
     }
-  }
 
-  private flush() {
-    if (this.batch.length === 0) return;
-    router.sendBatch(this.batch);
-    this.batch = [];
-  }
+    private flush() {
+        if (this.batch.length === 0) return;
+        router.sendBatch(this.batch);
+        this.batch = [];
+    }
 }
 ```
 
@@ -207,16 +203,16 @@ class MessageBatcher {
 ```typescript
 // Initialize protocols on demand
 class LazyRouter {
-  private adapters = new Map<ProtocolType, ProtocolAdapter>();
+    private adapters = new Map<ProtocolType, ProtocolAdapter>();
 
-  async getAdapter(protocol: ProtocolType): Promise<ProtocolAdapter> {
-    let adapter = this.adapters.get(protocol);
-    if (!adapter) {
-      adapter = await this.createAdapter(protocol);
-      this.adapters.set(protocol, adapter);
+    async getAdapter(protocol: ProtocolType): Promise<ProtocolAdapter> {
+        let adapter = this.adapters.get(protocol);
+        if (!adapter) {
+            adapter = await this.createAdapter(protocol);
+            this.adapters.set(protocol, adapter);
+        }
+        return adapter;
     }
-    return adapter;
-  }
 }
 ```
 
@@ -229,11 +225,11 @@ class LazyRouter {
 ```typescript
 // Always cleanup subscriptions
 useEffect(() => {
-  const unsubscribe = router.subscribe(handler);
-  
-  return () => {
-    unsubscribe(); // Critical for memory
-  };
+    const unsubscribe = router.subscribe(handler);
+
+    return () => {
+        unsubscribe(); // Critical for memory
+    };
 }, []);
 ```
 
@@ -244,14 +240,14 @@ useEffect(() => {
 const MAX_MESSAGES = 1000;
 
 const messageStore = {
-  messages: [] as A2AMessage[],
-  
-  add(message: A2AMessage) {
-    this.messages.push(message);
-    if (this.messages.length > MAX_MESSAGES) {
-      this.messages = this.messages.slice(-MAX_MESSAGES);
-    }
-  },
+    messages: [] as A2AMessage[],
+
+    add(message: A2AMessage) {
+        this.messages.push(message);
+        if (this.messages.length > MAX_MESSAGES) {
+            this.messages = this.messages.slice(-MAX_MESSAGES);
+        }
+    },
 };
 ```
 
@@ -260,13 +256,14 @@ const messageStore = {
 ```typescript
 // Periodic cleanup of idle connections
 setInterval(() => {
-  const now = Date.now();
-  for (const [peerId, conn] of connections) {
-    if (now - conn.lastActivity > 300000) { // 5min idle
-      conn.close();
-      connections.delete(peerId);
+    const now = Date.now();
+    for (const [peerId, conn] of connections) {
+        if (now - conn.lastActivity > 300000) {
+            // 5min idle
+            conn.close();
+            connections.delete(peerId);
+        }
     }
-  }
 }, 60000); // Check every minute
 ```
 
@@ -279,12 +276,16 @@ setInterval(() => {
 ```typescript
 // Adjust timeout based on protocol
 const getTimeout = (protocol: ProtocolType): number => {
-  switch (protocol) {
-    case 'libp2p': return 5000;   // Fast P2P
-    case 'nostr': return 10000;   // Relay-based
-    case 'magicblock': return 3000; // Local
-    default: return 10000;
-  }
+    switch (protocol) {
+        case 'libp2p':
+            return 5000; // Fast P2P
+        case 'nostr':
+            return 10000; // Relay-based
+        case 'magicblock':
+            return 3000; // Local
+        default:
+            return 10000;
+    }
 };
 ```
 
@@ -292,18 +293,15 @@ const getTimeout = (protocol: ProtocolType): number => {
 
 ```typescript
 // Exponential backoff
-const retryWithBackoff = async (
-  fn: () => Promise<void>,
-  maxRetries = 3
-) => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      await sleep(Math.pow(2, i) * 1000); // 1s, 2s, 4s
+const retryWithBackoff = async (fn: () => Promise<void>, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            await sleep(Math.pow(2, i) * 1000); // 1s, 2s, 4s
+        }
     }
-  }
 };
 ```
 
@@ -312,14 +310,14 @@ const retryWithBackoff = async (
 ```typescript
 // Fast fallback on failure
 const sendWithFallback = async (intent: A2AIntent) => {
-  const protocols = ['libp2p', 'nostr', 'magicblock'];
-  
-  for (const protocol of protocols) {
-    const result = await router.send({ ...intent, preferredProtocol: protocol });
-    if (result.success) return result;
-  }
-  
-  throw new Error('All protocols failed');
+    const protocols = ['libp2p', 'nostr', 'magicblock'];
+
+    for (const protocol of protocols) {
+        const result = await router.send({ ...intent, preferredProtocol: protocol });
+        if (result.success) return result;
+    }
+
+    throw new Error('All protocols failed');
 };
 ```
 
@@ -332,20 +330,20 @@ const sendWithFallback = async (intent: A2AIntent) => {
 ```typescript
 // Track key metrics
 const metrics = {
-  messagesSent: 0,
-  messagesReceived: 0,
-  averageLatency: 0,
-  protocolDistribution: {
-    nostr: 0,
-    libp2p: 0,
-    magicblock: 0,
-  },
+    messagesSent: 0,
+    messagesReceived: 0,
+    averageLatency: 0,
+    protocolDistribution: {
+        nostr: 0,
+        libp2p: 0,
+        magicblock: 0,
+    },
 };
 
 // Update on each message
 router.subscribe((msg) => {
-  metrics.messagesReceived++;
-  metrics.protocolDistribution[msg.protocol!]++;
+    metrics.messagesReceived++;
+    metrics.protocolDistribution[msg.protocol!]++;
 });
 ```
 
@@ -354,16 +352,16 @@ router.subscribe((msg) => {
 ```typescript
 // Periodic health monitoring
 setInterval(() => {
-  const health = router.health();
-  
-  // Alert on issues
-  if (health.totalPeers === 0) {
-    console.warn('No peers connected');
-  }
-  
-  if (!health.protocolStatus.nostr.available) {
-    console.warn('Nostr unavailable');
-  }
+    const health = router.health();
+
+    // Alert on issues
+    if (health.totalPeers === 0) {
+        console.warn('No peers connected');
+    }
+
+    if (!health.protocolStatus.nostr.available) {
+        console.warn('Nostr unavailable');
+    }
 }, 30000);
 ```
 
@@ -372,12 +370,12 @@ setInterval(() => {
 ```typescript
 // Monitor memory usage
 const logMemory = () => {
-  const usage = process.memoryUsage();
-  console.log({
-    rss: `${(usage.rss / 1024 / 1024).toFixed(2)} MB`,
-    heapUsed: `${(usage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
-    external: `${(usage.external / 1024 / 1024).toFixed(2)} MB`,
-  });
+    const usage = process.memoryUsage();
+    console.log({
+        rss: `${(usage.rss / 1024 / 1024).toFixed(2)} MB`,
+        heapUsed: `${(usage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+        external: `${(usage.external / 1024 / 1024).toFixed(2)} MB`,
+    });
 };
 
 setInterval(logMemory, 60000);

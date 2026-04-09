@@ -35,7 +35,7 @@ describe('Task Flow E2E', () => {
         walletAddress = bs58.encode(kp.publicKey);
 
         const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-        const { challenge, message } = await challengeRes.json() as { challenge: string; message: string };
+        const { challenge, message } = (await challengeRes.json()) as { challenge: string; message: string };
         const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);
 
         const verifyRes = await fetch(apiUrl('/api/v1/auth/verify'), {
@@ -47,7 +47,7 @@ describe('Task Flow E2E', () => {
                 signature: Buffer.from(sig).toString('base64'),
             }),
         });
-        const session = await verifyRes.json() as { token: string };
+        const session = (await verifyRes.json()) as { token: string };
         sessionToken = session.token;
     });
 
@@ -83,7 +83,7 @@ describe('Task Flow E2E', () => {
         it('should return empty task list initially', async () => {
             const res = await get('/api/v1/tasks');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.tasks).toEqual([]);
             expect(body.total).toBe(0);
         });
@@ -91,21 +91,21 @@ describe('Task Flow E2E', () => {
         it('should accept pagination params', async () => {
             const res = await get('/api/v1/tasks?limit=10&offset=0');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.tasks).toBeDefined();
         });
 
         it('should accept state filter', async () => {
             const res = await get('/api/v1/tasks?state=queued');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.tasks).toEqual([]);
         });
 
         it('should return 404 for non-existent task', async () => {
             const res = await get('/api/v1/tasks/nonexistent-task-id');
             expect(res.status).toBe(404);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.error).toBe('TASK_NOT_FOUND');
         });
     });
@@ -157,7 +157,7 @@ describe('Task Flow E2E', () => {
         it('should list registered agents', async () => {
             const res = await get('/api/v1/agents');
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agents.length).toBeGreaterThanOrEqual(1);
             const agent = body.agents.find((a: any) => a.config.id === 'e2e-agent');
             expect(agent).toBeTruthy();
@@ -183,7 +183,7 @@ describe('Task Flow E2E', () => {
         it('should request wallet authorization challenge', async () => {
             const res = await post('/api/v1/wallet/request-authorization', {}, daemonToken);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agentPubkey).toBeTruthy();
             expect(body.challenge).toBeTruthy();
             expect(body.message).toContain('Authorize agent');
@@ -192,7 +192,7 @@ describe('Task Flow E2E', () => {
         it('should show wallet status as not authorized', async () => {
             const res = await get('/api/v1/wallet/status', daemonToken);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.authorized).toBe(false);
             expect(body.agentWallet).toBeTruthy();
         });
@@ -200,7 +200,7 @@ describe('Task Flow E2E', () => {
         it('should complete full wallet authorization flow', async () => {
             // Step 1: Get challenge
             const challengeRes = await post('/api/v1/wallet/request-authorization', {}, daemonToken);
-            const { challenge, message, agentPubkey } = await challengeRes.json() as any;
+            const { challenge, message, agentPubkey } = (await challengeRes.json()) as any;
 
             // Step 2: Sign with master wallet
             const masterKp = nacl.sign.keyPair();
@@ -208,20 +208,24 @@ describe('Task Flow E2E', () => {
             const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), masterKp.secretKey);
 
             // Step 3: Authorize
-            const authRes = await post('/api/v1/wallet/authorize', {
-                masterWallet: masterAddress,
-                challenge,
-                signature: Buffer.from(sig).toString('base64'),
-            }, daemonToken);
+            const authRes = await post(
+                '/api/v1/wallet/authorize',
+                {
+                    masterWallet: masterAddress,
+                    challenge,
+                    signature: Buffer.from(sig).toString('base64'),
+                },
+                daemonToken,
+            );
             expect(authRes.status).toBe(200);
-            const authBody = await authRes.json() as any;
+            const authBody = (await authRes.json()) as any;
             expect(authBody.ok).toBe(true);
             expect(authBody.masterWallet).toBe(masterAddress);
             expect(authBody.agentWallet).toBe(agentPubkey);
 
             // Step 4: Verify status
             const statusRes = await get('/api/v1/wallet/status', daemonToken);
-            const status = await statusRes.json() as any;
+            const status = (await statusRes.json()) as any;
             expect(status.authorized).toBe(true);
             expect(status.masterWallet).toBe(masterAddress);
         });
@@ -229,7 +233,7 @@ describe('Task Flow E2E', () => {
         it('should get wallet policy after authorization', async () => {
             const res = await get('/api/v1/wallet/policy', daemonToken);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.policy).toBeDefined();
             expect(body.policy.dailyLimitLamports).toBeGreaterThan(0);
             expect(body.dailySpendLamports).toBe(0);
@@ -240,7 +244,7 @@ describe('Task Flow E2E', () => {
             expect(revokeRes.status).toBe(200);
 
             const statusRes = await get('/api/v1/wallet/status', daemonToken);
-            const status = await statusRes.json() as any;
+            const status = (await statusRes.json()) as any;
             expect(status.authorized).toBe(false);
         });
 

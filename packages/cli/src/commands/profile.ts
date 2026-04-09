@@ -6,7 +6,7 @@ import { loadKeypairSigner, outputResult, outputError, isMockMode, isNoJsonMode 
 
 export async function showProfile(options: { agent?: string }): Promise<void> {
     const spinner = ora('Fetching agent profile...').start();
-    
+
     try {
         if (isMockMode()) {
             const mockProfile = generateMockProfile(options.agent);
@@ -26,7 +26,9 @@ export async function showProfile(options: { agent?: string }): Promise<void> {
         } else {
             const keypairPath = await config.get('keypair');
             if (!keypairPath) {
-                throw new Error('No agent specified and keypair not configured. Run: gradience config set keypair <path>');
+                throw new Error(
+                    'No agent specified and keypair not configured. Run: gradience config set keypair <path>',
+                );
             }
             const signer = await loadKeypairSigner(keypairPath);
             agent = signer.address;
@@ -54,7 +56,7 @@ export async function updateProfile(options: {
     publishMode?: string;
 }): Promise<void> {
     const spinner = ora('Updating agent profile...').start();
-    
+
     try {
         if (isMockMode()) {
             const mockProfile = generateMockProfile(options.agent, options);
@@ -121,8 +123,8 @@ export async function updateProfile(options: {
         });
 
         spinner.succeed('Profile updated successfully');
-        outputResult({ 
-            ok: true, 
+        outputResult({
+            ok: true,
             agent,
             display_name: displayName,
             bio: bio.slice(0, 50) + (bio.length > 50 ? '...' : ''),
@@ -134,13 +136,9 @@ export async function updateProfile(options: {
     }
 }
 
-export async function publishProfile(options: {
-    agent?: string;
-    mode?: string;
-    contentRef?: string;
-}): Promise<void> {
+export async function publishProfile(options: { agent?: string; mode?: string; contentRef?: string }): Promise<void> {
     const spinner = ora('Publishing profile on-chain...').start();
-    
+
     try {
         if (isMockMode()) {
             const mockResult = {
@@ -179,12 +177,11 @@ export async function publishProfile(options: {
         }
 
         const mode = parsePublishMode(options.mode);
-        
+
         spinner.text = 'Publishing on-chain reference...';
-        
+
         // Note: This would need to be implemented in the SDK
         throw new Error('Profile publishing not yet implemented in SDK');
-        
     } catch (error) {
         spinner.fail('Failed to publish profile');
         outputError(error, 'PROFILE_PUBLISH_ERROR');
@@ -207,7 +204,7 @@ function emitProfileShowResult(agent: string, profile: any | null): void {
     console.log(`${chalk.bold('Display Name:')} ${profile.display_name}`);
     console.log(`${chalk.bold('Bio:')} ${profile.bio}`);
     console.log(`${chalk.bold('Publish Mode:')} ${profile.publish_mode}`);
-    
+
     if (profile.links?.website || profile.links?.github || profile.links?.x) {
         console.log(chalk.bold('\nLinks:'));
         if (profile.links.website) {
@@ -220,7 +217,7 @@ function emitProfileShowResult(agent: string, profile: any | null): void {
             console.log(`  X (Twitter): ${profile.links.x}`);
         }
     }
-    
+
     console.log(`\n${chalk.bold('On-chain Reference:')} ${profile.onchain_ref ?? 'None'}`);
     console.log(`${chalk.bold('Last Updated:')} ${new Date(profile.updated_at * 1000).toLocaleString()}`);
 }

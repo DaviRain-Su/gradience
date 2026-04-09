@@ -11,11 +11,7 @@ Hold-to-record voice button. User holds the button to record speech and releases
 ```tsx
 import { VoiceButton } from './voice/VoiceButton';
 
-<VoiceButton
-  onTranscript={(text) => setInputValue(text)}
-  onError={(err) => console.error(err)}
-  size="md"
-/>
+<VoiceButton onTranscript={(text) => setInputValue(text)} onError={(err) => console.error(err)} size="md" />;
 ```
 
 ### VoiceToggleButton
@@ -25,11 +21,7 @@ Click-to-toggle voice button. Click once to start recording, click again to stop
 ```tsx
 import { VoiceToggleButton } from './voice/VoiceButton';
 
-<VoiceToggleButton
-  onTranscript={(text) => setInputValue(text)}
-  onError={(err) => console.error(err)}
-  size="md"
-/>
+<VoiceToggleButton onTranscript={(text) => setInputValue(text)} onError={(err) => console.error(err)} size="md" />;
 ```
 
 ## Hooks
@@ -42,19 +34,19 @@ React hook for voice functionality.
 import { useVoice } from '@/hooks/useVoice';
 
 const {
-  recording,          // Whether currently recording
-  speaking,           // Whether currently speaking (TTS)
-  supported,          // Whether voice features are supported
-  recognitionSupported, // Whether speech recognition is supported
-  synthesisSupported,   // Whether speech synthesis is supported
-  startRecording,     // Start recording
-  stopRecording,      // Stop and get transcript
-  toggleRecording,    // Toggle recording state
-  speak,              // Speak text using TTS
-  stopSpeaking,       // Stop speaking
+    recording, // Whether currently recording
+    speaking, // Whether currently speaking (TTS)
+    supported, // Whether voice features are supported
+    recognitionSupported, // Whether speech recognition is supported
+    synthesisSupported, // Whether speech synthesis is supported
+    startRecording, // Start recording
+    stopRecording, // Stop and get transcript
+    toggleRecording, // Toggle recording state
+    speak, // Speak text using TTS
+    stopSpeaking, // Stop speaking
 } = useVoice({
-  onTranscript: (text) => console.log('Transcribed:', text),
-  onError: (err) => console.error('Error:', err),
+    onTranscript: (text) => console.log('Transcribed:', text),
+    onError: (err) => console.error('Error:', err),
 });
 ```
 
@@ -68,6 +60,7 @@ const {
 ## Fallback Behavior
 
 If the browser doesn't support Web Speech API, the components will:
+
 - Show a disabled state with a warning icon
 - Display a tooltip explaining the limitation
 - Not crash or throw errors

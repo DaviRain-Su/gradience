@@ -65,13 +65,7 @@ const ICON_SIZE = {
  * - .ens: Indigo (ENS)
  * - .bonfida: Pink (Bonfida)
  */
-export function DomainBadge({
-    domain,
-    size = 'md',
-    showStatus = true,
-    onClick,
-    className = '',
-}: DomainBadgeProps) {
+export function DomainBadge({ domain, size = 'md', showStatus = true, onClick, className = '' }: DomainBadgeProps) {
     const config = TYPE_CONFIG[domain.type];
     const isClickable = !!onClick;
 
@@ -142,12 +136,7 @@ export function DomainBadgeList({
     return (
         <div className={`flex flex-wrap gap-2 ${className}`}>
             {displayDomains.map((domain) => (
-                <DomainBadge
-                    key={domain.name}
-                    domain={domain}
-                    size={size}
-                    onClick={onDomainClick}
-                />
+                <DomainBadge key={domain.name} domain={domain} size={size} onClick={onDomainClick} />
             ))}
             {remainingCount > 0 && (
                 <span

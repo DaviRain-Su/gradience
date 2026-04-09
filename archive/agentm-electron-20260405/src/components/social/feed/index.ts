@@ -25,11 +25,7 @@ export { PostCard } from './PostCard.tsx';
 export type { PostCardProps } from './PostCard.tsx';
 
 export { InfiniteScroll, useInfiniteScroll } from './InfiniteScroll.tsx';
-export type {
-    InfiniteScrollProps,
-    UseInfiniteScrollOptions,
-    UseInfiniteScrollResult,
-} from './InfiniteScroll.tsx';
+export type { InfiniteScrollProps, UseInfiniteScrollOptions, UseInfiniteScrollResult } from './InfiniteScroll.tsx';
 
 export { FilterBar, FilterBarCompact } from './FilterBar.tsx';
 export type { FilterBarProps, FilterBarCompactProps } from './FilterBar.tsx';

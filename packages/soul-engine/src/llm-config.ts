@@ -109,7 +109,8 @@ export function buildLLMConfig(config?: Partial<LLMConfig>): LLMConfig {
 
     return {
         provider,
-        model: config?.model ||
+        model:
+            config?.model ||
             (typeof process !== 'undefined' ? process.env.LLM_MODEL : undefined) ||
             providerConfig.model,
         apiKey: config?.apiKey || providerConfig.apiKey,
@@ -124,15 +125,11 @@ export function buildLLMConfig(config?: Partial<LLMConfig>): LLMConfig {
  * Get provider-specific configuration from environment
  */
 export function getLLMProviderConfig(provider: LLMProvider): LLMProviderConfig {
-    const baseUrl = getEnvVar(`${provider.toUpperCase()}_BASE_URL`) ||
-        LLM_DEFAULT_BASE_URLS[provider];
+    const baseUrl = getEnvVar(`${provider.toUpperCase()}_BASE_URL`) || LLM_DEFAULT_BASE_URLS[provider];
 
-    const apiKey = getEnvVar(LLM_API_KEY_ENV[provider]) ||
-        getEnvVar('LLM_API_KEY') ||
-        '';
+    const apiKey = getEnvVar(LLM_API_KEY_ENV[provider]) || getEnvVar('LLM_API_KEY') || '';
 
-    const model = getEnvVar(`${provider.toUpperCase()}_MODEL`) ||
-        LLM_DEFAULT_MODELS[provider];
+    const model = getEnvVar(`${provider.toUpperCase()}_MODEL`) || LLM_DEFAULT_MODELS[provider];
 
     return { baseUrl, apiKey, model };
 }
@@ -141,9 +138,7 @@ export function getLLMProviderConfig(provider: LLMProvider): LLMProviderConfig {
  * Get API key for a specific provider
  */
 export function getLLMApiKey(provider: LLMProvider): string {
-    return getEnvVar(LLM_API_KEY_ENV[provider]) ||
-        getEnvVar('LLM_API_KEY') ||
-        '';
+    return getEnvVar(LLM_API_KEY_ENV[provider]) || getEnvVar('LLM_API_KEY') || '';
 }
 
 /**
@@ -156,10 +151,12 @@ export function isLLMConfigured(config?: LLMConfig): boolean {
     if (typeof process === 'undefined') {
         return false;
     }
-    return !!(process.env.LLM_API_KEY ||
+    return !!(
+        process.env.LLM_API_KEY ||
         process.env.OPENAI_API_KEY ||
         process.env.ANTHROPIC_API_KEY ||
-        process.env.MOONSHOT_API_KEY);
+        process.env.MOONSHOT_API_KEY
+    );
 }
 
 // ============================================================================
@@ -183,19 +180,16 @@ export interface LLMConfigWithFallback extends LLMConfig {
 
 /**
  * Build LLM configuration with fallback support
- * 
+ *
  * If no API key is provided, automatically enables fallback mode
  */
-export function buildLLMConfigWithFallback(
-    config?: Partial<LLMConfigWithFallback>
-): LLMConfigWithFallback {
+export function buildLLMConfigWithFallback(config?: Partial<LLMConfigWithFallback>): LLMConfigWithFallback {
     const baseConfig = buildLLMConfig(config);
     const hasApiKey = !!baseConfig.apiKey;
-    
+
     // Auto-enable fallback if no API key
-    const fallbackMode: FallbackMode = config?.fallbackMode ?? 
-        (hasApiKey ? 'off' : 'embedding-only');
-    
+    const fallbackMode: FallbackMode = config?.fallbackMode ?? (hasApiKey ? 'off' : 'embedding-only');
+
     return {
         ...baseConfig,
         fallbackMode,
@@ -282,7 +276,7 @@ export function validateLLMConfig(config: LLMConfig): { valid: boolean; errors: 
 export function createLLMHeaders(config: LLMConfig): Record<string, string> {
     return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
     };
 }
 

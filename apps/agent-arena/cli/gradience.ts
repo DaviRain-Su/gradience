@@ -23,10 +23,12 @@ import { main } from './main.js';
 
 // Run CLI if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().then((code) => process.exit(code)).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+    main()
+        .then(code => process.exit(code))
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
 }
 
 export { main };

@@ -55,29 +55,29 @@ describe('ConnectionManager Integration', () => {
 
     it('should track health metrics for each peer', () => {
         cm.addPeer('test-peer', 'wss://test.example.com/ws');
-        
+
         const metrics = cm.getHealthMetrics();
         expect(metrics.has('test-peer')).toBe(true);
-        
+
         const peerMetrics = metrics.get('test-peer')!;
         expect(peerMetrics).toEqual({
             latency: 0,
             reconnectCount: 0,
             lastSeen: 0,
-            uptime: 0
+            uptime: 0,
         });
     });
 
     it('should handle subscription protocol', () => {
         cm.setAgentPubkey('test_agent_pubkey_12345');
-        
+
         // Add an indexer connection first
         cm.addPeer('test-indexer', 'wss://indexer.test.com/ws', 'indexer');
-        
+
         // Should return true when there are indexer connections (even if not connected)
         const subscribeResult = cm.subscribe(['tasks', 'messages']);
         expect(subscribeResult).toBe(true);
-        
+
         // Subscribe to specific peer
         const peerSubscribeResult = cm.subscribe(['custom_topic'], 'test-indexer');
         expect(peerSubscribeResult).toBe(true);
@@ -102,8 +102,8 @@ describe('ConnectionManager Integration', () => {
                 type: 'test-task',
                 payload: { test: true },
                 priority: 2,
-                timestamp: Date.now()
-            }
+                timestamp: Date.now(),
+            },
         });
 
         (cm as any).handleMessage('test-peer', {
@@ -114,8 +114,8 @@ describe('ConnectionManager Integration', () => {
                 to: 'agent-y',
                 type: 'greeting',
                 payload: { message: 'hello world' },
-                timestamp: Date.now()
-            }
+                timestamp: Date.now(),
+            },
         });
 
         // Trigger fallback mode
@@ -124,10 +124,10 @@ describe('ConnectionManager Integration', () => {
         // Verify events were emitted
         expect(taskEvents).toHaveLength(1);
         expect(taskEvents[0].id).toBe('task-456');
-        
+
         expect(messageEvents).toHaveLength(1);
         expect(messageEvents[0].id).toBe('msg-789');
-        
+
         expect(fallbackEvents).toHaveLength(1);
         expect(fallbackEvents[0]).toBe(true);
     });
@@ -149,11 +149,11 @@ describe('ConnectionManager Integration', () => {
 
     it('should support sending to specific peers', () => {
         cm.addPeer('target-peer', 'wss://target.com/ws');
-        
+
         // Send to specific peer (should return false since not connected)
         const specificResult = cm.send({ test: 'data' }, 'target-peer');
         expect(specificResult).toBe(false);
-        
+
         // Send to all peers (should return false since none are connected)
         const broadcastResult = cm.send({ test: 'broadcast' });
         expect(broadcastResult).toBe(false);

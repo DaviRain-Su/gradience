@@ -102,20 +102,14 @@ const FILTER_OPTIONS: FilterOption[] = [
  * - Keyboard accessible
  * - Responsive sizing
  */
-export function FilterBar({
-    activeFilter,
-    onFilterChange,
-    counts,
-    className = '',
-    size = 'md',
-}: FilterBarProps) {
+export function FilterBar({ activeFilter, onFilterChange, counts, className = '', size = 'md' }: FilterBarProps) {
     const handleFilterClick = useCallback(
         (filter: FeedFilter) => {
             if (filter !== activeFilter) {
                 onFilterChange(filter);
             }
         },
-        [activeFilter, onFilterChange]
+        [activeFilter, onFilterChange],
     );
 
     const sizeClasses = {
@@ -157,11 +151,7 @@ export function FilterBar({
                                 <span
                                     className={`
                                         ml-1 px-1.5 py-0.5 rounded-full text-xs
-                                        ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-700 text-gray-400'
-                                        }
+                                        ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400'}
                                     `}
                                 >
                                     {count > 99 ? '99+' : count}
@@ -187,16 +177,12 @@ export interface FilterBarCompactProps {
     className?: string;
 }
 
-export function FilterBarCompact({
-    activeFilter,
-    onFilterChange,
-    className = '',
-}: FilterBarCompactProps) {
+export function FilterBarCompact({ activeFilter, onFilterChange, className = '' }: FilterBarCompactProps) {
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLSelectElement>) => {
             onFilterChange(e.target.value as FeedFilter);
         },
-        [onFilterChange]
+        [onFilterChange],
     );
 
     const activeOption = FILTER_OPTIONS.find((opt) => opt.value === activeFilter);
@@ -219,12 +205,7 @@ export function FilterBarCompact({
             {/* Dropdown arrow */}
             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </div>
         </div>

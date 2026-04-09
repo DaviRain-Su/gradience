@@ -7,160 +7,157 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getI64Decoder,
-  getI64Encoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  type Account,
-  type Address,
-  type Codec,
-  type Decoder,
-  type EncodedAccount,
-  type Encoder,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-} from "@solana/kit";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    assertAccountExists,
+    assertAccountsExist,
+    combineCodec,
+    decodeAccount,
+    fetchEncodedAccount,
+    fetchEncodedAccounts,
+    getI64Decoder,
+    getI64Encoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    type Account,
+    type Address,
+    type Codec,
+    type Decoder,
+    type EncodedAccount,
+    type Encoder,
+    type FetchAccountConfig,
+    type FetchAccountsConfig,
+    type MaybeAccount,
+    type MaybeEncodedAccount,
+} from '@solana/kit';
 import {
-  getPubkeyBytesDecoder,
-  getPubkeyBytesEncoder,
-  getRuntimeEnvDecoder,
-  getRuntimeEnvEncoder,
-  type PubkeyBytes,
-  type PubkeyBytesArgs,
-  type RuntimeEnv,
-  type RuntimeEnvArgs,
-} from "../types";
+    getPubkeyBytesDecoder,
+    getPubkeyBytesEncoder,
+    getRuntimeEnvDecoder,
+    getRuntimeEnvEncoder,
+    type PubkeyBytes,
+    type PubkeyBytesArgs,
+    type RuntimeEnv,
+    type RuntimeEnvArgs,
+} from '../types';
 
 export type Submission = {
-  discriminator: number;
-  version: number;
-  taskId: bigint;
-  agent: PubkeyBytes;
-  resultRef: string;
-  traceRef: string;
-  runtimeEnv: RuntimeEnv;
-  submissionSlot: bigint;
-  submittedAt: bigint;
-  bump: number;
+    discriminator: number;
+    version: number;
+    taskId: bigint;
+    agent: PubkeyBytes;
+    resultRef: string;
+    traceRef: string;
+    runtimeEnv: RuntimeEnv;
+    submissionSlot: bigint;
+    submittedAt: bigint;
+    bump: number;
 };
 
 export type SubmissionArgs = {
-  discriminator: number;
-  version: number;
-  taskId: number | bigint;
-  agent: PubkeyBytesArgs;
-  resultRef: string;
-  traceRef: string;
-  runtimeEnv: RuntimeEnvArgs;
-  submissionSlot: number | bigint;
-  submittedAt: number | bigint;
-  bump: number;
+    discriminator: number;
+    version: number;
+    taskId: number | bigint;
+    agent: PubkeyBytesArgs;
+    resultRef: string;
+    traceRef: string;
+    runtimeEnv: RuntimeEnvArgs;
+    submissionSlot: number | bigint;
+    submittedAt: number | bigint;
+    bump: number;
 };
 
 /** Gets the encoder for {@link SubmissionArgs} account data. */
 export function getSubmissionEncoder(): Encoder<SubmissionArgs> {
-  return getStructEncoder([
-    ["discriminator", getU8Encoder()],
-    ["version", getU8Encoder()],
-    ["taskId", getU64Encoder()],
-    ["agent", getPubkeyBytesEncoder()],
-    ["resultRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["traceRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["runtimeEnv", getRuntimeEnvEncoder()],
-    ["submissionSlot", getU64Encoder()],
-    ["submittedAt", getI64Encoder()],
-    ["bump", getU8Encoder()],
-  ]);
+    return getStructEncoder([
+        ['discriminator', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['taskId', getU64Encoder()],
+        ['agent', getPubkeyBytesEncoder()],
+        ['resultRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['traceRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['runtimeEnv', getRuntimeEnvEncoder()],
+        ['submissionSlot', getU64Encoder()],
+        ['submittedAt', getI64Encoder()],
+        ['bump', getU8Encoder()],
+    ]);
 }
 
 /** Gets the decoder for {@link Submission} account data. */
 export function getSubmissionDecoder(): Decoder<Submission> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["taskId", getU64Decoder()],
-    ["agent", getPubkeyBytesDecoder()],
-    ["resultRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["traceRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["runtimeEnv", getRuntimeEnvDecoder()],
-    ["submissionSlot", getU64Decoder()],
-    ["submittedAt", getI64Decoder()],
-    ["bump", getU8Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['version', getU8Decoder()],
+        ['taskId', getU64Decoder()],
+        ['agent', getPubkeyBytesDecoder()],
+        ['resultRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['traceRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['runtimeEnv', getRuntimeEnvDecoder()],
+        ['submissionSlot', getU64Decoder()],
+        ['submittedAt', getI64Decoder()],
+        ['bump', getU8Decoder()],
+    ]);
 }
 
 /** Gets the codec for {@link Submission} account data. */
 export function getSubmissionCodec(): Codec<SubmissionArgs, Submission> {
-  return combineCodec(getSubmissionEncoder(), getSubmissionDecoder());
+    return combineCodec(getSubmissionEncoder(), getSubmissionDecoder());
 }
 
 export function decodeSubmission<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress>,
 ): Account<Submission, TAddress>;
 export function decodeSubmission<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+    encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Submission, TAddress>;
 export function decodeSubmission<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Submission, TAddress> | MaybeAccount<Submission, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getSubmissionDecoder(),
-  );
+    return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getSubmissionDecoder());
 }
 
 export async function fetchSubmission<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<Account<Submission, TAddress>> {
-  const maybeAccount = await fetchMaybeSubmission(rpc, address, config);
-  assertAccountExists(maybeAccount);
-  return maybeAccount;
+    const maybeAccount = await fetchMaybeSubmission(rpc, address, config);
+    assertAccountExists(maybeAccount);
+    return maybeAccount;
 }
 
 export async function fetchMaybeSubmission<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Submission, TAddress>> {
-  const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeSubmission(maybeAccount);
+    const maybeAccount = await fetchEncodedAccount(rpc, address, config);
+    return decodeSubmission(maybeAccount);
 }
 
 export async function fetchAllSubmission(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<Account<Submission>[]> {
-  const maybeAccounts = await fetchAllMaybeSubmission(rpc, addresses, config);
-  assertAccountsExist(maybeAccounts);
-  return maybeAccounts;
+    const maybeAccounts = await fetchAllMaybeSubmission(rpc, addresses, config);
+    assertAccountsExist(maybeAccounts);
+    return maybeAccounts;
 }
 
 export async function fetchAllMaybeSubmission(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Submission>[]> {
-  const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeSubmission(maybeAccount));
+    const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
+    return maybeAccounts.map(maybeAccount => decodeSubmission(maybeAccount));
 }

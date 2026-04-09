@@ -7,398 +7,304 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU8Decoder,
+    getU8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const APPLY_FOR_TASK_DISCRIMINATOR = 2;
 
 export function getApplyForTaskDiscriminatorBytes() {
-  return getU8Encoder().encode(APPLY_FOR_TASK_DISCRIMINATOR);
+    return getU8Encoder().encode(APPLY_FOR_TASK_DISCRIMINATOR);
 }
 
 export type ApplyForTaskInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountAgent extends string | AccountMeta<string> = string,
-  TAccountTask extends string | AccountMeta<string> = string,
-  TAccountEscrow extends string | AccountMeta<string> = string,
-  TAccountApplication extends string | AccountMeta<string> = string,
-  TAccountReputation extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TAccountAgentTokenAccount extends string | AccountMeta<string> = string,
-  TAccountEscrowAta extends string | AccountMeta<string> = string,
-  TAccountMintAccount extends string | AccountMeta<string> = string,
-  TAccountTokenProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string | AccountMeta<string> = string,
+    TAccountTask extends string | AccountMeta<string> = string,
+    TAccountEscrow extends string | AccountMeta<string> = string,
+    TAccountApplication extends string | AccountMeta<string> = string,
+    TAccountReputation extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TAccountAgentTokenAccount extends string | AccountMeta<string> = string,
+    TAccountEscrowAta extends string | AccountMeta<string> = string,
+    TAccountMintAccount extends string | AccountMeta<string> = string,
+    TAccountTokenProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountAgent extends string
-        ? WritableSignerAccount<TAccountAgent> &
-            AccountSignerMeta<TAccountAgent>
-        : TAccountAgent,
-      TAccountTask extends string
-        ? ReadonlyAccount<TAccountTask>
-        : TAccountTask,
-      TAccountEscrow extends string
-        ? WritableAccount<TAccountEscrow>
-        : TAccountEscrow,
-      TAccountApplication extends string
-        ? WritableAccount<TAccountApplication>
-        : TAccountApplication,
-      TAccountReputation extends string
-        ? WritableAccount<TAccountReputation>
-        : TAccountReputation,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      TAccountAgentTokenAccount extends string
-        ? WritableAccount<TAccountAgentTokenAccount>
-        : TAccountAgentTokenAccount,
-      TAccountEscrowAta extends string
-        ? WritableAccount<TAccountEscrowAta>
-        : TAccountEscrowAta,
-      TAccountMintAccount extends string
-        ? ReadonlyAccount<TAccountMintAccount>
-        : TAccountMintAccount,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountAgent extends string
+                ? WritableSignerAccount<TAccountAgent> & AccountSignerMeta<TAccountAgent>
+                : TAccountAgent,
+            TAccountTask extends string ? ReadonlyAccount<TAccountTask> : TAccountTask,
+            TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow,
+            TAccountApplication extends string ? WritableAccount<TAccountApplication> : TAccountApplication,
+            TAccountReputation extends string ? WritableAccount<TAccountReputation> : TAccountReputation,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            TAccountAgentTokenAccount extends string
+                ? WritableAccount<TAccountAgentTokenAccount>
+                : TAccountAgentTokenAccount,
+            TAccountEscrowAta extends string ? WritableAccount<TAccountEscrowAta> : TAccountEscrowAta,
+            TAccountMintAccount extends string ? ReadonlyAccount<TAccountMintAccount> : TAccountMintAccount,
+            TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type ApplyForTaskInstructionData = { discriminator: number };
 
 export type ApplyForTaskInstructionDataArgs = {};
 
 export function getApplyForTaskInstructionDataEncoder(): FixedSizeEncoder<ApplyForTaskInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([["discriminator", getU8Encoder()]]),
-    (value) => ({ ...value, discriminator: APPLY_FOR_TASK_DISCRIMINATOR }),
-  );
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), value => ({
+        ...value,
+        discriminator: APPLY_FOR_TASK_DISCRIMINATOR,
+    }));
 }
 
 export function getApplyForTaskInstructionDataDecoder(): FixedSizeDecoder<ApplyForTaskInstructionData> {
-  return getStructDecoder([["discriminator", getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getU8Decoder()]]);
 }
 
 export function getApplyForTaskInstructionDataCodec(): FixedSizeCodec<
-  ApplyForTaskInstructionDataArgs,
-  ApplyForTaskInstructionData
+    ApplyForTaskInstructionDataArgs,
+    ApplyForTaskInstructionData
 > {
-  return combineCodec(
-    getApplyForTaskInstructionDataEncoder(),
-    getApplyForTaskInstructionDataDecoder(),
-  );
+    return combineCodec(getApplyForTaskInstructionDataEncoder(), getApplyForTaskInstructionDataDecoder());
 }
 
 export type ApplyForTaskAsyncInput<
-  TAccountAgent extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountApplication extends string = string,
-  TAccountReputation extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountAgentTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
+    TAccountAgent extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountApplication extends string = string,
+    TAccountReputation extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountAgentTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
 > = {
-  agent: TransactionSigner<TAccountAgent>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  application: Address<TAccountApplication>;
-  reputation: Address<TAccountReputation>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  agentTokenAccount?: Address<TAccountAgentTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+    agent: TransactionSigner<TAccountAgent>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    application: Address<TAccountApplication>;
+    reputation: Address<TAccountReputation>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    agentTokenAccount?: Address<TAccountAgentTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
 };
 
 export async function getApplyForTaskInstructionAsync<
-  TAccountAgent extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountApplication extends string,
-  TAccountReputation extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountAgentTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountApplication extends string,
+    TAccountReputation extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountAgentTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: ApplyForTaskAsyncInput<
-    TAccountAgent,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountApplication,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: ApplyForTaskAsyncInput<
+        TAccountAgent,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountApplication,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  ApplyForTaskInstruction<
-    TProgramAddress,
-    TAccountAgent,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountApplication,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >
+    ApplyForTaskInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountApplication,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    agent: { value: input.agent ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: false },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    application: { value: input.application ?? null, isWritable: true },
-    reputation: { value: input.reputation ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    agentTokenAccount: {
-      value: input.agentTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        agent: { value: input.agent ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: false },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        application: { value: input.application ?? null, isWritable: true },
+        reputation: { value: input.reputation ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        agentTokenAccount: {
+            value: input.agentTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.agent),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.application),
-      getAccountMeta(accounts.reputation),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.agentTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getApplyForTaskInstructionDataEncoder().encode({}),
-    programAddress,
-  } as ApplyForTaskInstruction<
-    TProgramAddress,
-    TAccountAgent,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountApplication,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.agent),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.application),
+            getAccountMeta(accounts.reputation),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.agentTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+        ],
+        data: getApplyForTaskInstructionDataEncoder().encode({}),
+        programAddress,
+    } as ApplyForTaskInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountApplication,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >);
 }
 
 export type ApplyForTaskInput<
-  TAccountAgent extends string = string,
-  TAccountTask extends string = string,
-  TAccountEscrow extends string = string,
-  TAccountApplication extends string = string,
-  TAccountReputation extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
-  TAccountAgentTokenAccount extends string = string,
-  TAccountEscrowAta extends string = string,
-  TAccountMintAccount extends string = string,
-  TAccountTokenProgram extends string = string,
+    TAccountAgent extends string = string,
+    TAccountTask extends string = string,
+    TAccountEscrow extends string = string,
+    TAccountApplication extends string = string,
+    TAccountReputation extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
+    TAccountAgentTokenAccount extends string = string,
+    TAccountEscrowAta extends string = string,
+    TAccountMintAccount extends string = string,
+    TAccountTokenProgram extends string = string,
 > = {
-  agent: TransactionSigner<TAccountAgent>;
-  task: Address<TAccountTask>;
-  escrow: Address<TAccountEscrow>;
-  application: Address<TAccountApplication>;
-  reputation: Address<TAccountReputation>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  agentTokenAccount?: Address<TAccountAgentTokenAccount>;
-  escrowAta?: Address<TAccountEscrowAta>;
-  mintAccount?: Address<TAccountMintAccount>;
-  tokenProgram?: Address<TAccountTokenProgram>;
+    agent: TransactionSigner<TAccountAgent>;
+    task: Address<TAccountTask>;
+    escrow: Address<TAccountEscrow>;
+    application: Address<TAccountApplication>;
+    reputation: Address<TAccountReputation>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    agentTokenAccount?: Address<TAccountAgentTokenAccount>;
+    escrowAta?: Address<TAccountEscrowAta>;
+    mintAccount?: Address<TAccountMintAccount>;
+    tokenProgram?: Address<TAccountTokenProgram>;
 };
 
 export function getApplyForTaskInstruction<
-  TAccountAgent extends string,
-  TAccountTask extends string,
-  TAccountEscrow extends string,
-  TAccountApplication extends string,
-  TAccountReputation extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TAccountAgentTokenAccount extends string,
-  TAccountEscrowAta extends string,
-  TAccountMintAccount extends string,
-  TAccountTokenProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string,
+    TAccountTask extends string,
+    TAccountEscrow extends string,
+    TAccountApplication extends string,
+    TAccountReputation extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TAccountAgentTokenAccount extends string,
+    TAccountEscrowAta extends string,
+    TAccountMintAccount extends string,
+    TAccountTokenProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: ApplyForTaskInput<
-    TAccountAgent,
-    TAccountTask,
-    TAccountEscrow,
-    TAccountApplication,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram,
-    TAccountAgentTokenAccount,
-    TAccountEscrowAta,
-    TAccountMintAccount,
-    TAccountTokenProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: ApplyForTaskInput<
+        TAccountAgent,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountApplication,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): ApplyForTaskInstruction<
-  TProgramAddress,
-  TAccountAgent,
-  TAccountTask,
-  TAccountEscrow,
-  TAccountApplication,
-  TAccountReputation,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram,
-  TAccountAgentTokenAccount,
-  TAccountEscrowAta,
-  TAccountMintAccount,
-  TAccountTokenProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    agent: { value: input.agent ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: false },
-    escrow: { value: input.escrow ?? null, isWritable: true },
-    application: { value: input.application ?? null, isWritable: true },
-    reputation: { value: input.reputation ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-    agentTokenAccount: {
-      value: input.agentTokenAccount ?? null,
-      isWritable: true,
-    },
-    escrowAta: { value: input.escrowAta ?? null, isWritable: true },
-    mintAccount: { value: input.mintAccount ?? null, isWritable: false },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.agent),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.escrow),
-      getAccountMeta(accounts.application),
-      getAccountMeta(accounts.reputation),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-      getAccountMeta(accounts.agentTokenAccount),
-      getAccountMeta(accounts.escrowAta),
-      getAccountMeta(accounts.mintAccount),
-      getAccountMeta(accounts.tokenProgram),
-    ],
-    data: getApplyForTaskInstructionDataEncoder().encode({}),
-    programAddress,
-  } as ApplyForTaskInstruction<
     TProgramAddress,
     TAccountAgent,
     TAccountTask,
@@ -412,71 +318,131 @@ export function getApplyForTaskInstruction<
     TAccountEscrowAta,
     TAccountMintAccount,
     TAccountTokenProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        agent: { value: input.agent ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: false },
+        escrow: { value: input.escrow ?? null, isWritable: true },
+        application: { value: input.application ?? null, isWritable: true },
+        reputation: { value: input.reputation ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+        agentTokenAccount: {
+            value: input.agentTokenAccount ?? null,
+            isWritable: true,
+        },
+        escrowAta: { value: input.escrowAta ?? null, isWritable: true },
+        mintAccount: { value: input.mintAccount ?? null, isWritable: false },
+        tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.agent),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.escrow),
+            getAccountMeta(accounts.application),
+            getAccountMeta(accounts.reputation),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+            getAccountMeta(accounts.agentTokenAccount),
+            getAccountMeta(accounts.escrowAta),
+            getAccountMeta(accounts.mintAccount),
+            getAccountMeta(accounts.tokenProgram),
+        ],
+        data: getApplyForTaskInstructionDataEncoder().encode({}),
+        programAddress,
+    } as ApplyForTaskInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountEscrow,
+        TAccountApplication,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram,
+        TAccountAgentTokenAccount,
+        TAccountEscrowAta,
+        TAccountMintAccount,
+        TAccountTokenProgram
+    >);
 }
 
 export type ParsedApplyForTaskInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    agent: TAccountMetas[0];
-    task: TAccountMetas[1];
-    escrow: TAccountMetas[2];
-    application: TAccountMetas[3];
-    reputation: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
-    eventAuthority: TAccountMetas[6];
-    gradienceProgram: TAccountMetas[7];
-    agentTokenAccount?: TAccountMetas[8] | undefined;
-    escrowAta?: TAccountMetas[9] | undefined;
-    mintAccount?: TAccountMetas[10] | undefined;
-    tokenProgram?: TAccountMetas[11] | undefined;
-  };
-  data: ApplyForTaskInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        agent: TAccountMetas[0];
+        task: TAccountMetas[1];
+        escrow: TAccountMetas[2];
+        application: TAccountMetas[3];
+        reputation: TAccountMetas[4];
+        systemProgram: TAccountMetas[5];
+        eventAuthority: TAccountMetas[6];
+        gradienceProgram: TAccountMetas[7];
+        agentTokenAccount?: TAccountMetas[8] | undefined;
+        escrowAta?: TAccountMetas[9] | undefined;
+        mintAccount?: TAccountMetas[10] | undefined;
+        tokenProgram?: TAccountMetas[11] | undefined;
+    };
+    data: ApplyForTaskInstructionData;
 };
 
-export function parseApplyForTaskInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parseApplyForTaskInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedApplyForTaskInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  const getNextOptionalAccount = () => {
-    const accountMeta = getNextAccount();
-    return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS
-      ? undefined
-      : accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      agent: getNextAccount(),
-      task: getNextAccount(),
-      escrow: getNextAccount(),
-      application: getNextAccount(),
-      reputation: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-      agentTokenAccount: getNextOptionalAccount(),
-      escrowAta: getNextOptionalAccount(),
-      mintAccount: getNextOptionalAccount(),
-      tokenProgram: getNextOptionalAccount(),
-    },
-    data: getApplyForTaskInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 12) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    const getNextOptionalAccount = () => {
+        const accountMeta = getNextAccount();
+        return accountMeta.address === GRADIENCE_PROGRAM_ADDRESS ? undefined : accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            agent: getNextAccount(),
+            task: getNextAccount(),
+            escrow: getNextAccount(),
+            application: getNextAccount(),
+            reputation: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+            agentTokenAccount: getNextOptionalAccount(),
+            escrowAta: getNextOptionalAccount(),
+            mintAccount: getNextOptionalAccount(),
+            tokenProgram: getNextOptionalAccount(),
+        },
+        data: getApplyForTaskInstructionDataDecoder().decode(instruction.data),
+    };
 }

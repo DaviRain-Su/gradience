@@ -3,11 +3,7 @@ import type { A2ARouter } from '../../a2a-router/router.js';
 import type { MessageRouter } from '../../messages/message-router.js';
 import type { A2AMessageType, ProtocolType } from '@gradiences/a2a-types';
 
-export function registerA2ARoutes(
-    app: FastifyInstance,
-    a2aRouter: A2ARouter,
-    messageRouter: MessageRouter,
-): void {
+export function registerA2ARoutes(app: FastifyInstance, a2aRouter: A2ARouter, messageRouter: MessageRouter): void {
     // Discover agents via Nostr relays
     app.get<{
         Querystring: {

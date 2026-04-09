@@ -22,38 +22,38 @@ Main router class for multi-protocol A2A communication.
 import { A2ARouter } from './a2a-router/router.js';
 
 const router = new A2ARouter({
-  // Protocol enablement
-  enableNostr: true,      // Enable Nostr protocol (default: true)
-  enableLibp2p: true,     // Enable libp2p protocol (default: true)
-  enableMagicBlock: false, // Enable MagicBlock protocol (default: false)
-  
-  // Protocol options
-  nostrOptions: {
-    relays: ['wss://relay.example.com'],
-    privateKey: 'nsec1...',
-  },
-  libp2pOptions: {
-    bootstrapList: ['/ip4/.../tcp/.../p2p/...'],
-    topics: ['agent-presence'],
-  },
-  magicblockOptions: {
-    agentId: 'solana-address',
-    paymentPolicy: {
-      baseMicrolamports: 100,
-      perByteMicrolamports: 2,
+    // Protocol enablement
+    enableNostr: true, // Enable Nostr protocol (default: true)
+    enableLibp2p: true, // Enable libp2p protocol (default: true)
+    enableMagicBlock: false, // Enable MagicBlock protocol (default: false)
+
+    // Protocol options
+    nostrOptions: {
+        relays: ['wss://relay.example.com'],
+        privateKey: 'nsec1...',
     },
-  },
-  
-  // Router options
-  agentId: 'your-solana-address',
-  protocolPriority: {
-    broadcast: ['nostr', 'libp2p'],
-    direct_p2p: ['libp2p', 'nostr'],
-    paid_service: ['magicblock'],
-    offline_message: ['nostr'],
-  },
-  healthCheckInterval: 30000,  // ms
-  messageTimeout: 10000,       // ms
+    libp2pOptions: {
+        bootstrapList: ['/ip4/.../tcp/.../p2p/...'],
+        topics: ['agent-presence'],
+    },
+    magicblockOptions: {
+        agentId: 'solana-address',
+        paymentPolicy: {
+            baseMicrolamports: 100,
+            perByteMicrolamports: 2,
+        },
+    },
+
+    // Router options
+    agentId: 'your-solana-address',
+    protocolPriority: {
+        broadcast: ['nostr', 'libp2p'],
+        direct_p2p: ['libp2p', 'nostr'],
+        paid_service: ['magicblock'],
+        offline_message: ['nostr'],
+    },
+    healthCheckInterval: 30000, // ms
+    messageTimeout: 10000, // ms
 });
 ```
 
@@ -65,10 +65,10 @@ Initialize the router and all enabled protocol adapters.
 
 ```typescript
 try {
-  await router.initialize();
-  console.log('Router initialized');
+    await router.initialize();
+    console.log('Router initialized');
 } catch (error) {
-  console.error('Initialization failed:', error);
+    console.error('Initialization failed:', error);
 }
 ```
 
@@ -86,7 +86,7 @@ Check if router is initialized.
 
 ```typescript
 if (router.isInitialized()) {
-  // Router is ready
+    // Router is ready
 }
 ```
 
@@ -96,17 +96,17 @@ Send a message via the best available protocol.
 
 ```typescript
 const result = await router.send({
-  to: 'recipient-solana-address',
-  type: 'direct_message',
-  payload: { content: 'Hello!' },
-  preferredProtocol: 'nostr',  // optional
-  timeout: 5000,               // optional
+    to: 'recipient-solana-address',
+    type: 'direct_message',
+    payload: { content: 'Hello!' },
+    preferredProtocol: 'nostr', // optional
+    timeout: 5000, // optional
 });
 
 if (result.success) {
-  console.log('Sent via', result.protocol);
+    console.log('Sent via', result.protocol);
 } else {
-  console.error('Failed:', result.error);
+    console.error('Failed:', result.error);
 }
 ```
 
@@ -116,8 +116,8 @@ Subscribe to incoming messages.
 
 ```typescript
 const unsubscribe = await router.subscribe((message) => {
-  console.log('Received:', message);
-  // message: { id, from, to, type, timestamp, payload, protocol }
+    console.log('Received:', message);
+    // message: { id, from, to, type, timestamp, payload, protocol }
 });
 
 // Later: unsubscribe
@@ -130,12 +130,12 @@ Discover agents via all available protocols.
 
 ```typescript
 const agents = await router.discoverAgents({
-  capabilities: ['task_execution'],
-  minReputation: 0.5,
+    capabilities: ['task_execution'],
+    minReputation: 0.5,
 });
 
-agents.forEach(agent => {
-  console.log(agent.address, agent.displayName);
+agents.forEach((agent) => {
+    console.log(agent.address, agent.displayName);
 });
 ```
 
@@ -145,11 +145,11 @@ Broadcast agent capabilities to the network.
 
 ```typescript
 await router.broadcastCapabilities({
-  address: 'your-solana-address',
-  displayName: 'My Agent',
-  capabilities: ['task_execution', 'data_analysis'],
-  reputationScore: 0.85,
-  available: true,
+    address: 'your-solana-address',
+    displayName: 'My Agent',
+    capabilities: ['task_execution', 'data_analysis'],
+    reputationScore: 0.85,
+    available: true,
 });
 ```
 
@@ -160,12 +160,12 @@ Get router health status.
 ```typescript
 const health = router.health();
 console.log({
-  initialized: health.initialized,
-  protocols: health.availableProtocols,
-  peers: health.totalPeers,
-  nostr: health.protocolStatus.nostr,
-  libp2p: health.protocolStatus.libp2p,
-  magicblock: health.protocolStatus.magicblock,
+    initialized: health.initialized,
+    protocols: health.availableProtocols,
+    peers: health.totalPeers,
+    nostr: health.protocolStatus.nostr,
+    libp2p: health.protocolStatus.libp2p,
+    magicblock: health.protocolStatus.magicblock,
 });
 ```
 
@@ -181,14 +181,15 @@ Nostr relay-based communication.
 import { NostrAdapter } from './a2a-router/adapters/nostr-adapter.js';
 
 const adapter = new NostrAdapter({
-  relays: ['wss://relay.damus.io', 'wss://relay.nostr.band'],
-  privateKey: 'nsec1...',  // Optional: auto-generated if not provided
+    relays: ['wss://relay.damus.io', 'wss://relay.nostr.band'],
+    privateKey: 'nsec1...', // Optional: auto-generated if not provided
 });
 
 await adapter.initialize();
 ```
 
 **Features:**
+
 - Relay-based messaging
 - NIP-01 compatible
 - Automatic relay reconnection
@@ -202,16 +203,17 @@ Direct P2P communication.
 import { Libp2pAdapter } from './a2a-router/adapters/libp2p-adapter.js';
 
 const adapter = new Libp2pAdapter({
-  bootstrapList: ['/ip4/127.0.0.1/tcp/4001/p2p/...'],
-  topics: ['agent-presence'],
-  dhtClientMode: true,
-  maxConnections: 50,
+    bootstrapList: ['/ip4/127.0.0.1/tcp/4001/p2p/...'],
+    topics: ['agent-presence'],
+    dhtClientMode: true,
+    maxConnections: 50,
 });
 
 await adapter.initialize();
 ```
 
 **Features:**
+
 - Direct peer-to-peer connections
 - DHT-based peer discovery
 - PubSub messaging
@@ -225,11 +227,11 @@ Micropayment-based messaging.
 import { MagicBlockAdapter } from './a2a-router/adapters/magicblock-adapter.js';
 
 const adapter = new MagicBlockAdapter({
-  agentId: 'solana-address',
-  paymentPolicy: {
-    baseMicrolamports: 100,
-    perByteMicrolamports: 2,
-  },
+    agentId: 'solana-address',
+    paymentPolicy: {
+        baseMicrolamports: 100,
+        perByteMicrolamports: 2,
+    },
 });
 
 await adapter.initialize();
@@ -240,6 +242,7 @@ console.log(`Cost: ${cost} microlamports`);
 ```
 
 **Features:**
+
 - Automatic micropayment calculation
 - Per-byte billing
 - In-memory transport (default)
@@ -294,9 +297,9 @@ function MyComponent() {
   // Subscribe to messages
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     let unsubscribe: (() => Promise<void>) | null = null;
-    
+
     subscribe((message) => {
       console.log('Received:', message);
     }).then((unsub) => {
@@ -327,27 +330,27 @@ function MyComponent() {
 
 ```typescript
 interface A2AMessage {
-  id: string;
-  from: string;           // Sender Solana address
-  to: string;             // Recipient Solana address
-  type: A2AMessageType;
-  timestamp: number;      // Unix ms
-  payload: unknown;
-  protocol?: ProtocolType;
+    id: string;
+    from: string; // Sender Solana address
+    to: string; // Recipient Solana address
+    type: A2AMessageType;
+    timestamp: number; // Unix ms
+    payload: unknown;
+    protocol?: ProtocolType;
 }
 
 type A2AMessageType =
-  | 'capability_offer'
-  | 'capability_query'
-  | 'task_proposal'
-  | 'task_accept'
-  | 'task_reject'
-  | 'task_counter'
-  | 'direct_message'
-  | 'reputation_query'
-  | 'reputation_response'
-  | 'payment_request'
-  | 'payment_confirm';
+    | 'capability_offer'
+    | 'capability_query'
+    | 'task_proposal'
+    | 'task_accept'
+    | 'task_reject'
+    | 'task_counter'
+    | 'direct_message'
+    | 'reputation_query'
+    | 'reputation_response'
+    | 'payment_request'
+    | 'payment_confirm';
 
 type ProtocolType = 'nostr' | 'libp2p' | 'magicblock';
 ```
@@ -356,12 +359,12 @@ type ProtocolType = 'nostr' | 'libp2p' | 'magicblock';
 
 ```typescript
 interface A2AIntent {
-  to: string;
-  type: A2AMessageType;
-  payload: unknown;
-  preferredProtocol?: ProtocolType;
-  requireReceipt?: boolean;
-  timeout?: number;
+    to: string;
+    type: A2AMessageType;
+    payload: unknown;
+    preferredProtocol?: ProtocolType;
+    requireReceipt?: boolean;
+    timeout?: number;
 }
 ```
 
@@ -369,12 +372,12 @@ interface A2AIntent {
 
 ```typescript
 interface A2AResult {
-  success: boolean;
-  messageId: string;
-  protocol: ProtocolType;
-  error?: string;
-  errorCode?: string;
-  timestamp: number;
+    success: boolean;
+    messageId: string;
+    protocol: ProtocolType;
+    error?: string;
+    errorCode?: string;
+    timestamp: number;
 }
 ```
 
@@ -382,12 +385,12 @@ interface A2AResult {
 
 ```typescript
 interface AgentInfo {
-  address: string;           // Solana address
-  displayName?: string;
-  capabilities: string[];
-  reputationScore: number;   // 0-1
-  available: boolean;
-  lastSeenAt?: number;       // Unix ms
+    address: string; // Solana address
+    displayName?: string;
+    capabilities: string[];
+    reputationScore: number; // 0-1
+    available: boolean;
+    lastSeenAt?: number; // Unix ms
 }
 ```
 
@@ -395,20 +398,20 @@ interface AgentInfo {
 
 ```typescript
 interface RouterHealthStatus {
-  initialized: boolean;
-  availableProtocols: ProtocolType[];
-  protocolStatus: Record<ProtocolType, ProtocolHealthStatus>;
-  totalPeers: number;
-  activeSubscriptions: number;
-  lastError?: string;
+    initialized: boolean;
+    availableProtocols: ProtocolType[];
+    protocolStatus: Record<ProtocolType, ProtocolHealthStatus>;
+    totalPeers: number;
+    activeSubscriptions: number;
+    lastError?: string;
 }
 
 interface ProtocolHealthStatus {
-  available: boolean;
-  peerCount: number;
-  subscribedTopics: string[];
-  lastActivityAt?: number;
-  error?: string;
+    available: boolean;
+    peerCount: number;
+    subscribedTopics: string[];
+    lastActivityAt?: number;
+    error?: string;
 }
 ```
 
@@ -418,44 +421,44 @@ interface ProtocolHealthStatus {
 
 ### Error Codes
 
-| Code | Description |
-|------|-------------|
-| `ROUTER_001` | Router not initialized |
-| `ROUTER_002` | Router already initialized |
-| `ROUTER_003` | No protocol available |
-| `ROUTER_004` | Send failed |
-| `ROUTER_005` | Discover failed |
-| `PROTOCOL_001` | Protocol not available |
-| `PROTOCOL_002` | Protocol send failed |
-| `PROTOCOL_003` | Protocol subscribe failed |
-| `PROTOCOL_004` | Protocol discover failed |
-| `MESSAGE_001` | Invalid message |
-| `MESSAGE_002` | Message timeout |
-| `MESSAGE_003` | Message rejected |
+| Code           | Description                |
+| -------------- | -------------------------- |
+| `ROUTER_001`   | Router not initialized     |
+| `ROUTER_002`   | Router already initialized |
+| `ROUTER_003`   | No protocol available      |
+| `ROUTER_004`   | Send failed                |
+| `ROUTER_005`   | Discover failed            |
+| `PROTOCOL_001` | Protocol not available     |
+| `PROTOCOL_002` | Protocol send failed       |
+| `PROTOCOL_003` | Protocol subscribe failed  |
+| `PROTOCOL_004` | Protocol discover failed   |
+| `MESSAGE_001`  | Invalid message            |
+| `MESSAGE_002`  | Message timeout            |
+| `MESSAGE_003`  | Message rejected           |
 
 ### Handling Errors
 
 ```typescript
 const result = await router.send({
-  to: 'recipient',
-  type: 'direct_message',
-  payload: { content: 'Hello' },
+    to: 'recipient',
+    type: 'direct_message',
+    payload: { content: 'Hello' },
 });
 
 if (!result.success) {
-  switch (result.errorCode) {
-    case 'ROUTER_003':
-      console.error('No protocol available - check network connection');
-      break;
-    case 'PROTOCOL_002':
-      console.error('Send failed - retry with different protocol');
-      break;
-    case 'MESSAGE_002':
-      console.error('Message timeout - recipient may be offline');
-      break;
-    default:
-      console.error('Unknown error:', result.error);
-  }
+    switch (result.errorCode) {
+        case 'ROUTER_003':
+            console.error('No protocol available - check network connection');
+            break;
+        case 'PROTOCOL_002':
+            console.error('Send failed - retry with different protocol');
+            break;
+        case 'MESSAGE_002':
+            console.error('Message timeout - recipient may be offline');
+            break;
+        default:
+            console.error('Unknown error:', result.error);
+    }
 }
 ```
 
@@ -471,14 +474,14 @@ await router.initialize();
 
 // Send
 await router.send({
-  to: 'recipient-address',
-  type: 'direct_message',
-  payload: { content: 'Hello!' },
+    to: 'recipient-address',
+    type: 'direct_message',
+    payload: { content: 'Hello!' },
 });
 
 // Receive
 await router.subscribe((msg) => {
-  console.log(`${msg.from}: ${msg.payload}`);
+    console.log(`${msg.from}: ${msg.payload}`);
 });
 ```
 
@@ -486,13 +489,13 @@ await router.subscribe((msg) => {
 
 ```typescript
 const router = new A2ARouter({
-  enableNostr: true,
-  enableLibp2p: true,
-  enableMagicBlock: true,
-  protocolPriority: {
-    direct_p2p: ['libp2p', 'nostr'],  // Try libp2p first
-    paid_service: ['magicblock'],      // Use MagicBlock for paid services
-  },
+    enableNostr: true,
+    enableLibp2p: true,
+    enableMagicBlock: true,
+    protocolPriority: {
+        direct_p2p: ['libp2p', 'nostr'], // Try libp2p first
+        paid_service: ['magicblock'], // Use MagicBlock for paid services
+    },
 });
 ```
 
@@ -501,17 +504,17 @@ const router = new A2ARouter({
 ```typescript
 // Broadcast presence
 await router.broadcastCapabilities({
-  address: 'my-address',
-  displayName: 'Task Executor',
-  capabilities: ['task_execution', 'code_review'],
-  reputationScore: 0.9,
-  available: true,
+    address: 'my-address',
+    displayName: 'Task Executor',
+    capabilities: ['task_execution', 'code_review'],
+    reputationScore: 0.9,
+    available: true,
 });
 
 // Discover agents
 const agents = await router.discoverAgents({
-  capabilities: ['task_execution'],
-  minReputation: 0.7,
+    capabilities: ['task_execution'],
+    minReputation: 0.7,
 });
 ```
 

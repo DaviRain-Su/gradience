@@ -40,7 +40,7 @@ export function App() {
 function DemoAppContent() {
     const [authState, setAuthState] = useState(() => store.getState().auth);
     const activeView = useAppStore((s) => s.activeView);
-    
+
     const authProvider = useMemo(() => new MockAuthProvider(), []);
 
     // Sync with store once on mount
@@ -62,10 +62,7 @@ function DemoAppContent() {
 
     if (!authState.authenticated) {
         return (
-            <LoginScreen
-                onLogin={handleLogin}
-                modeLabel="Demo mode (set VITE_PRIVY_APP_ID for real Google OAuth)"
-            />
+            <LoginScreen onLogin={handleLogin} modeLabel="Demo mode (set VITE_PRIVY_APP_ID for real Google OAuth)" />
         );
     }
 
@@ -91,7 +88,7 @@ function PrivyAppContent() {
 
         const address = extractSolanaAddress(user);
         const currentAuth = store.getState().auth;
-        
+
         // Only update if changed
         if (currentAuth.publicKey !== address || !currentAuth.authenticated) {
             store.setState({
@@ -100,7 +97,7 @@ function PrivyAppContent() {
                     publicKey: address,
                     email: user.email?.address ?? null,
                     privyUserId: user.id,
-                }
+                },
             });
         }
     }, [ready, authenticated, user?.id]);
@@ -131,10 +128,7 @@ function PrivyAppContent() {
 
     if (!authenticated || !authState.authenticated) {
         return (
-            <LoginScreen
-                onLogin={handleLogin}
-                modeLabel="Powered by Privy (Google OAuth + embedded Solana wallet)"
-            />
+            <LoginScreen onLogin={handleLogin} modeLabel="Powered by Privy (Google OAuth + embedded Solana wallet)" />
         );
     }
 
@@ -155,13 +149,7 @@ function AppShell({ activeView }: { activeView: ActiveView }) {
     );
 }
 
-function LoginScreen({ 
-    onLogin, 
-    modeLabel 
-}: { 
-    onLogin: () => void | Promise<void>;
-    modeLabel: string;
-}) {
+function LoginScreen({ onLogin, modeLabel }: { onLogin: () => void | Promise<void>; modeLabel: string }) {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClick = useCallback(async () => {

@@ -4,11 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createApiServer } from './api-server.ts';
 import { createAppStore } from '../renderer/lib/store.ts';
-import {
-    InMemoryMagicBlockHub,
-    InMemoryMagicBlockTransport,
-    MagicBlockA2AAgent,
-} from '../renderer/lib/a2a-client.ts';
+import { InMemoryMagicBlockHub, InMemoryMagicBlockTransport, MagicBlockA2AAgent } from '../renderer/lib/a2a-client.ts';
 
 export interface WebEntrySmokeStep {
     name: string;
@@ -64,9 +60,7 @@ export async function runWebEntrySmoke(): Promise<WebEntrySmokeResult> {
             actual: `HTTP ${attachRes.status}, token=${attachBody.bridgeToken.slice(0, 8)}...`,
         });
 
-        const bridgeWs = await openWebSocket(
-            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
-        );
+        const bridgeWs = await openWebSocket(`ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`);
         bridgeWs.send(
             JSON.stringify({
                 type: 'bridge.agent.presence',
@@ -182,8 +176,8 @@ async function waitForMessage(ws: WebSocket, timeoutMs = 1000): Promise<Record<s
                     typeof event.data === 'string'
                         ? event.data
                         : 'text' in (event.data as object)
-                            ? await (event.data as { text: () => Promise<string> }).text()
-                            : String(event.data);
+                          ? await (event.data as { text: () => Promise<string> }).text()
+                          : String(event.data);
                 resolve(JSON.parse(raw) as Record<string, unknown>);
             },
             { once: true },
@@ -203,9 +197,7 @@ async function delay(ms: number) {
     await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runWebEntrySmoke()

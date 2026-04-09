@@ -1,6 +1,6 @@
 /**
  * Nostr type definitions
- * 
+ *
  * @module shared/nostr-types
  */
 
@@ -15,9 +15,9 @@ export type { NostrEventBase };
  */
 export interface AgentPresenceEvent {
     kind: 10002;
-    pubkey: string;  // Agent's Nostr pubkey
+    pubkey: string; // Agent's Nostr pubkey
     created_at: number;
-    content: string;  // JSON stringified AgentPresenceContent
+    content: string; // JSON stringified AgentPresenceContent
     tags: string[][];
     id?: string;
     sig?: string;
@@ -43,13 +43,13 @@ export interface SoulProfileMetadata {
  * Content of agent presence event
  */
 export interface AgentPresenceContent {
-    agent: string;           // Solana address
+    agent: string; // Solana address
     display_name: string;
-    capabilities: string[];  // e.g., ['defi', 'coding', 'writing']
+    capabilities: string[]; // e.g., ['defi', 'coding', 'writing']
     reputation_score: number;
     available: boolean;
-    endpoint?: string;       // Optional: Agent endpoint URL
-    
+    endpoint?: string; // Optional: Agent endpoint URL
+
     /** Optional: Soul Profile for social matching */
     soul?: SoulProfileMetadata;
 }
@@ -65,7 +65,7 @@ export interface AgentCapabilityEvent {
     kind: 10003;
     pubkey: string;
     created_at: number;
-    content: string;  // JSON stringified AgentCapabilityContent
+    content: string; // JSON stringified AgentCapabilityContent
     tags: string[][];
     id?: string;
     sig?: string;
@@ -96,7 +96,7 @@ export interface ReputationProofEvent {
     kind: 10004;
     pubkey: string;
     created_at: number;
-    content: string;  // JSON stringified ReputationProofContent
+    content: string; // JSON stringified ReputationProofContent
     tags: string[][];
     id?: string;
     sig?: string;
@@ -113,7 +113,7 @@ export interface ReputationProofContent {
         global_total_applied: number;
         win_rate: number;
     };
-    proof: string;  // Solana signature or attestation hash
+    proof: string; // Solana signature or attestation hash
     updated_at: number;
 }
 
@@ -165,8 +165,8 @@ export interface NIP89HandlerEvent {
     kind: 31990;
     pubkey: string;
     created_at: number;
-    content: string;  // JSON stringified NIP89HandlerContent
-    tags: string[][];  // [[\"d\", \"<handler-id>\"], [\"k\", \"<supported-kind>\"], ...]
+    content: string; // JSON stringified NIP89HandlerContent
+    tags: string[][]; // [[\"d\", \"<handler-id>\"], [\"k\", \"<supported-kind>\"], ...]
     id?: string;
     sig?: string;
 }
@@ -198,11 +198,11 @@ export interface NIP89HandlerContent {
  * Client requests a service from DVMs
  */
 export interface NIP90JobRequest {
-    kind: number;  // 5000-5999 based on job type
+    kind: number; // 5000-5999 based on job type
     pubkey: string;
     created_at: number;
-    content: string;  // Job input data
-    tags: string[][];  // [[\"i\", \"<input-url>\", \"<input-type>\"], [\"param\", \"<key>\", \"<value>\"], ...]
+    content: string; // Job input data
+    tags: string[][]; // [[\"i\", \"<input-url>\", \"<input-type>\"], [\"param\", \"<key>\", \"<value>\"], ...]
     id?: string;
     sig?: string;
 }
@@ -212,11 +212,11 @@ export interface NIP90JobRequest {
  * DVM returns job result
  */
 export interface NIP90JobResult {
-    kind: number;  // 6000-6999 (kind + 1000 from request)
+    kind: number; // 6000-6999 (kind + 1000 from request)
     pubkey: string;
     created_at: number;
-    content: string;  // Job result data
-    tags: string[][];  // [[\"e\", \"<job-request-id>\"], [\"p\", \"<requester-pubkey>\"], [\"amount\", \"<msat>\"], ...]
+    content: string; // Job result data
+    tags: string[][]; // [[\"e\", \"<job-request-id>\"], [\"p\", \"<requester-pubkey>\"], [\"amount\", \"<msat>\"], ...]
     id?: string;
     sig?: string;
 }
@@ -229,8 +229,8 @@ export interface NIP90JobFeedback {
     kind: 7000;
     pubkey: string;
     created_at: number;
-    content: string;  // Feedback message
-    tags: string[][];  // [[\"e\", \"<job-result-id>\"], [\"p\", \"<dvm-pubkey>\"], [\"status\", \"success|partial|error\"], ...]
+    content: string; // Feedback message
+    tags: string[][]; // [[\"e\", \"<job-result-id>\"], [\"p\", \"<dvm-pubkey>\"], [\"status\", \"success|partial|error\"], ...]
     id?: string;
     sig?: string;
 }
@@ -244,12 +244,12 @@ export enum NIP90JobKind {
     Summarization = 5001,
     Translation = 5002,
     Classification = 5003,
-    
+
     // Image/Video processing
     ImageGeneration = 5100,
     TextToSpeech = 5101,
     SpeechToText = 5102,
-    
+
     // Gradience-specific (task matching, agent selection)
     AgentSelection = 5900,
     TaskMatching = 5901,

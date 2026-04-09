@@ -27,47 +27,51 @@ export function FeedView({ address }: FeedViewProps) {
     const [dataSource, setDataSource] = useState<'live' | 'none'>('none');
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    
+
     const { createPost, deletePost, getFeed, getGlobalFeed, likePost } = useSocial(address);
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     // Initial load
-    const loadFeed = useCallback(async (reset = false) => {
-        if (loading || loadingMore) return;
-        
-        if (reset) {
-            setLoading(true);
-            setOffset(0);
-        } else {
-            setLoadingMore(true);
-        }
-        setError(null);
-        
-        try {
-            const currentOffset = reset ? 0 : offset;
-            const data = tab === 'following' && address
-                ? await getFeed(20, currentOffset)
-                : await getGlobalFeed(20, currentOffset);
-            
-            if (data.length > 0) {
-                setPosts(prev => reset ? data : [...prev, ...data]);
-                setDataSource('live');
-                setOffset(currentOffset + data.length);
-                setHasMore(data.length === 20);
+    const loadFeed = useCallback(
+        async (reset = false) => {
+            if (loading || loadingMore) return;
+
+            if (reset) {
+                setLoading(true);
+                setOffset(0);
             } else {
-                if (reset) {
-                    setPosts([]);
-                }
-                setHasMore(false);
+                setLoadingMore(true);
             }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load feed');
-        } finally {
-            setLoading(false);
-            setLoadingMore(false);
-        }
-    }, [tab, address, getFeed, getGlobalFeed, offset, loading, loadingMore]);
+            setError(null);
+
+            try {
+                const currentOffset = reset ? 0 : offset;
+                const data =
+                    tab === 'following' && address
+                        ? await getFeed(20, currentOffset)
+                        : await getGlobalFeed(20, currentOffset);
+
+                if (data.length > 0) {
+                    setPosts((prev) => (reset ? data : [...prev, ...data]));
+                    setDataSource('live');
+                    setOffset(currentOffset + data.length);
+                    setHasMore(data.length === 20);
+                } else {
+                    if (reset) {
+                        setPosts([]);
+                    }
+                    setHasMore(false);
+                }
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load feed');
+            } finally {
+                setLoading(false);
+                setLoadingMore(false);
+            }
+        },
+        [tab, address, getFeed, getGlobalFeed, offset, loading, loadingMore],
+    );
 
     // Reset and reload when tab changes
     useEffect(() => {
@@ -89,7 +93,7 @@ export function FeedView({ address }: FeedViewProps) {
                     loadFeed(false);
                 }
             },
-            { threshold: 0.1, rootMargin: '100px' }
+            { threshold: 0.1, rootMargin: '100px' },
         );
 
         if (loadMoreRef.current) {
@@ -123,160 +127,203 @@ export function FeedView({ address }: FeedViewProps) {
         const serverPost = await createPost(content, tags);
         if (serverPost) {
             // Update with server-generated data
-            setPosts(prev => prev.map(p => 
-                p.id === localPost.id ? serverPost : p
-            ));
+            setPosts((prev) => prev.map((p) => (p.id === localPost.id ? serverPost : p)));
         }
     }
 
     async function handleDelete(postId: string) {
         if (!address) return;
-        
+
         // Optimistic delete
-        setPosts(prev => prev.filter(p => p.id !== postId));
-        
+        setPosts((prev) => prev.filter((p) => p.id !== postId));
+
         // Persist to backend
         await deletePost(postId);
     }
 
     async function handleLike(postId: string) {
         if (!address) return;
-        
+
         // Optimistic update
-        setPosts(prev => prev.map(p => 
-            p.id === postId ? { ...p, likes: p.likes + 1 } : p
-        ));
-        
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, likes: p.likes + 1 } : p)));
+
         // Persist to backend
         await likePost(postId);
     }
 
     return (
-        <div style={{
-            display: 'flex',
-            height: '100%',
-            background: colors.bg,
-            padding: '24px',
-            gap: '24px',
-        }}>
-            {/* Left Sidebar */}
-            <div style={{
-                width: '320px',
+        <div
+            style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-            }}>
+                height: '100%',
+                background: colors.bg,
+                padding: '24px',
+                gap: '24px',
+            }}
+        >
+            {/* Left Sidebar */}
+            <div
+                style={{
+                    width: '320px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                }}
+            >
                 {/* Feed Info Card */}
-                <div style={{
-                    background: colors.lavender,
-                    borderRadius: '24px',
-                    padding: '24px',
-                    border: `1.5px solid ${colors.ink}`,
-                }}>
-                    <span style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        opacity: 0.7,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                    }}>Social Feed</span>
-                    <h2 style={{
-                        fontFamily: "'Oswald', sans-serif",
-                        fontSize: '28px',
-                        fontWeight: 700,
-                        margin: '8px 0 0 0',
-                        color: colors.ink,
-                    }}>Feed</h2>
+                <div
+                    style={{
+                        background: colors.lavender,
+                        borderRadius: '24px',
+                        padding: '24px',
+                        border: `1.5px solid ${colors.ink}`,
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            opacity: 0.7,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                        }}
+                    >
+                        Social Feed
+                    </span>
+                    <h2
+                        style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            margin: '8px 0 0 0',
+                            color: colors.ink,
+                        }}
+                    >
+                        Feed
+                    </h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                         <p style={{ fontSize: '13px', opacity: 0.8, lineHeight: 1.4, margin: 0 }}>
                             Stay updated with the latest from the agent community.
                         </p>
-                        <span style={{
-                            fontSize: '10px', padding: '3px 8px', borderRadius: '9999px',
-                            background: dataSource === 'live' ? '#D1FAE5' : '#F3F4F6',
-                            color: dataSource === 'live' ? '#059669' : '#6B7280',
-                            border: `1px solid ${dataSource === 'live' ? '#10B981' : '#D1D5DB'}`,
-                            flexShrink: 0,
-                        }}>
+                        <span
+                            style={{
+                                fontSize: '10px',
+                                padding: '3px 8px',
+                                borderRadius: '9999px',
+                                background: dataSource === 'live' ? '#D1FAE5' : '#F3F4F6',
+                                color: dataSource === 'live' ? '#059669' : '#6B7280',
+                                border: `1px solid ${dataSource === 'live' ? '#10B981' : '#D1D5DB'}`,
+                                flexShrink: 0,
+                            }}
+                        >
                             {dataSource === 'live' ? 'Live' : 'No Data'}
                         </span>
                     </div>
                 </div>
 
                 {/* Stats Card */}
-                <div style={{
-                    background: colors.surface,
-                    borderRadius: '24px',
-                    padding: '20px',
-                    border: `1.5px solid ${colors.ink}`,
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-end',
-                        borderBottom: `1px dashed ${colors.ink}`,
-                        paddingBottom: '12px',
-                        marginBottom: '12px',
-                    }}>
+                <div
+                    style={{
+                        background: colors.surface,
+                        borderRadius: '24px',
+                        padding: '20px',
+                        border: `1.5px solid ${colors.ink}`,
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-end',
+                            borderBottom: `1px dashed ${colors.ink}`,
+                            paddingBottom: '12px',
+                            marginBottom: '12px',
+                        }}
+                    >
                         <div>
-                            <div style={{
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                opacity: 0.6,
-                            }}>Total Posts</div>
-                            <div style={{
-                                fontFamily: "'Oswald', sans-serif",
-                                fontSize: '32px',
-                                fontWeight: 700,
-                                lineHeight: 1,
-                            }}>{posts.length}</div>
+                            <div
+                                style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    opacity: 0.6,
+                                }}
+                            >
+                                Total Posts
+                            </div>
+                            <div
+                                style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '32px',
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {posts.length}
+                            </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <div style={{
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
-                                opacity: 0.6,
-                            }}>Status</div>
-                            <div style={{
-                                fontFamily: "'Oswald', sans-serif",
-                                fontSize: '14px',
-                                fontWeight: 600,
-                                lineHeight: 1,
-                                color: dataSource === 'live' ? '#059669' : '#6B7280',
-                            }}>{dataSource === 'live' ? 'Connected' : 'Offline'}</div>
+                            <div
+                                style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    opacity: 0.6,
+                                }}
+                            >
+                                Status
+                            </div>
+                            <div
+                                style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    lineHeight: 1,
+                                    color: dataSource === 'live' ? '#059669' : '#6B7280',
+                                }}
+                            >
+                                {dataSource === 'live' ? 'Connected' : 'Offline'}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Trending Tags */}
-                <div style={{
-                    background: colors.surface,
-                    borderRadius: '24px',
-                    padding: '20px',
-                    border: `1.5px solid ${colors.ink}`,
-                    flex: 1,
-                }}>
-                    <h3 style={{
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        marginBottom: '16px',
-                        borderBottom: `1.5px solid ${colors.ink}`,
-                        paddingBottom: '8px',
-                    }}>Trending</h3>
+                <div
+                    style={{
+                        background: colors.surface,
+                        borderRadius: '24px',
+                        padding: '20px',
+                        border: `1.5px solid ${colors.ink}`,
+                        flex: 1,
+                    }}
+                >
+                    <h3
+                        style={{
+                            fontSize: '14px',
+                            fontWeight: 700,
+                            marginBottom: '16px',
+                            borderBottom: `1.5px solid ${colors.ink}`,
+                            paddingBottom: '8px',
+                        }}
+                    >
+                        Trending
+                    </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                         {['#DeFi', '#AI', '#Solana', '#AgentEconomy', '#Web3'].map((tag) => (
-                            <span key={tag} style={{
-                                padding: '8px 14px',
-                                background: colors.bg,
-                                borderRadius: '999px',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                border: `1.5px solid ${colors.ink}`,
-                            }}>
+                            <span
+                                key={tag}
+                                style={{
+                                    padding: '8px 14px',
+                                    background: colors.bg,
+                                    borderRadius: '999px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    border: `1.5px solid ${colors.ink}`,
+                                }}
+                            >
                                 {tag}
                             </span>
                         ))}
@@ -285,25 +332,25 @@ export function FeedView({ address }: FeedViewProps) {
             </div>
 
             {/* Main Content */}
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                overflow: 'hidden',
-            }}>
+            <div
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    overflow: 'hidden',
+                }}
+            >
                 {/* Post Input */}
-                <PostComposer 
-                    onSubmit={handlePost} 
-                    userAddress={address}
-                    disabled={loading}
-                />
+                <PostComposer onSubmit={handlePost} userAddress={address} disabled={loading} />
 
                 {/* Tabs */}
-                <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                    }}
+                >
                     {(['global', 'following'] as FeedTab[]).map((t) => (
                         <button
                             key={t}
@@ -329,17 +376,19 @@ export function FeedView({ address }: FeedViewProps) {
 
                 {/* Error State */}
                 {error && (
-                    <div style={{
-                        padding: '16px 20px',
-                        background: '#FEE2E2',
-                        borderRadius: '12px',
-                        border: '1.5px solid #EF4444',
-                        color: '#DC2626',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                    }}>
+                    <div
+                        style={{
+                            padding: '16px 20px',
+                            background: '#FEE2E2',
+                            borderRadius: '12px',
+                            border: '1.5px solid #EF4444',
+                            color: '#DC2626',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}
+                    >
                         <span>{error}</span>
                         <button
                             onClick={() => loadFeed(true)}
@@ -360,39 +409,47 @@ export function FeedView({ address }: FeedViewProps) {
                 )}
 
                 {/* Posts List */}
-                <div style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                }}>
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                    }}
+                >
                     {loading && posts.length === 0 && (
-                        <div style={{
-                            padding: '40px',
-                            textAlign: 'center',
-                            color: colors.ink,
-                            opacity: 0.6,
-                        }}>
+                        <div
+                            style={{
+                                padding: '40px',
+                                textAlign: 'center',
+                                color: colors.ink,
+                                opacity: 0.6,
+                            }}
+                        >
                             Loading feed...
                         </div>
                     )}
 
                     {!loading && posts.length === 0 && (
-                        <div style={{
-                            padding: '60px',
-                            textAlign: 'center',
-                            background: colors.surface,
-                            borderRadius: '24px',
-                            border: `1.5px solid ${colors.ink}`,
-                        }}>
+                        <div
+                            style={{
+                                padding: '60px',
+                                textAlign: 'center',
+                                background: colors.surface,
+                                borderRadius: '24px',
+                                border: `1.5px solid ${colors.ink}`,
+                            }}
+                        >
                             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-                            <h3 style={{
-                                fontFamily: "'Oswald', sans-serif",
-                                fontSize: '20px',
-                                fontWeight: 700,
-                                marginBottom: '8px',
-                            }}>
+                            <h3
+                                style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '20px',
+                                    fontWeight: 700,
+                                    marginBottom: '8px',
+                                }}
+                            >
                                 {tab === 'following' ? 'No Posts Yet' : 'Be the First'}
                             </h3>
                             <p style={{ opacity: 0.6 }}>
@@ -402,9 +459,9 @@ export function FeedView({ address }: FeedViewProps) {
                     )}
 
                     {posts.map((post) => (
-                        <PostCard 
-                            key={post.id} 
-                            post={post} 
+                        <PostCard
+                            key={post.id}
+                            post={post}
                             isOwn={post.author === address}
                             onDelete={handleDelete}
                             onLike={handleLike}
@@ -413,7 +470,7 @@ export function FeedView({ address }: FeedViewProps) {
 
                     {/* Load More Trigger */}
                     {posts.length > 0 && (
-                        <div 
+                        <div
                             ref={loadMoreRef}
                             style={{
                                 padding: '20px',
@@ -444,50 +501,60 @@ function PostCard({ post, isOwn = false, onDelete, onLike }: PostCardProps) {
     const formattedDate = new Date(post.createdAt).toLocaleString();
 
     return (
-        <div style={{
-            background: colors.surface,
-            borderRadius: '20px',
-            padding: '20px',
-            border: `1.5px solid ${colors.ink}`,
-        }}>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '12px',
-            }}>
+        <div
+            style={{
+                background: colors.surface,
+                borderRadius: '20px',
+                padding: '20px',
+                border: `1.5px solid ${colors.ink}`,
+            }}
+        >
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '12px',
+                }}
+            >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: colors.lavender,
-                        border: `1.5px solid ${colors.ink}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                    }}>
+                    <div
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            background: colors.lavender,
+                            border: `1.5px solid ${colors.ink}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px',
+                        }}
+                    >
                         {post.authorDomain?.[0] || '👤'}
                     </div>
                     <div>
-                        <p style={{
-                            fontSize: '14px',
-                            fontWeight: 700,
-                            color: colors.ink,
-                        }}>
+                        <p
+                            style={{
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                color: colors.ink,
+                            }}
+                        >
                             {displayName}
                         </p>
-                        <p style={{
-                            fontSize: '12px',
-                            color: colors.ink,
-                            opacity: 0.5,
-                        }}>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                color: colors.ink,
+                                opacity: 0.5,
+                            }}
+                        >
                             {formattedDate}
                         </p>
                     </div>
                 </div>
-                
+
                 {isOwn && onDelete && (
                     <button
                         onClick={() => onDelete(post.id)}
@@ -515,36 +582,47 @@ function PostCard({ post, isOwn = false, onDelete, onLike }: PostCardProps) {
                     </button>
                 )}
             </div>
-            
-            <p style={{
-                fontSize: '15px',
-                color: colors.ink,
-                lineHeight: 1.6,
-                marginBottom: '12px',
-                whiteSpace: 'pre-wrap',
-            }}>{post.content}</p>
-            
+
+            <p
+                style={{
+                    fontSize: '15px',
+                    color: colors.ink,
+                    lineHeight: 1.6,
+                    marginBottom: '12px',
+                    whiteSpace: 'pre-wrap',
+                }}
+            >
+                {post.content}
+            </p>
+
             {post.tags.length > 0 && (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     {post.tags.map((tag) => (
-                        <span key={tag} style={{
-                            padding: '4px 10px',
-                            background: colors.bg,
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            border: `1.5px solid ${colors.ink}`,
-                        }}>#{tag}</span>
+                        <span
+                            key={tag}
+                            style={{
+                                padding: '4px 10px',
+                                background: colors.bg,
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                border: `1.5px solid ${colors.ink}`,
+                            }}
+                        >
+                            #{tag}
+                        </span>
                     ))}
                 </div>
             )}
-            
-            <div style={{
-                display: 'flex',
-                gap: '16px',
-                paddingTop: '12px',
-                borderTop: `1px dashed ${colors.ink}`,
-            }}>
-                <button 
+
+            <div
+                style={{
+                    display: 'flex',
+                    gap: '16px',
+                    paddingTop: '12px',
+                    borderTop: `1px dashed ${colors.ink}`,
+                }}
+            >
+                <button
                     onClick={() => onLike?.(post.id)}
                     disabled={!onLike}
                     style={{
@@ -564,19 +642,21 @@ function PostCard({ post, isOwn = false, onDelete, onLike }: PostCardProps) {
                 >
                     ❤️ {post.likes > 0 ? post.likes : ''}
                 </button>
-                <button style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '6px 12px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    color: colors.ink,
-                    cursor: 'default',
-                    opacity: 0.4,
-                }}>
+                <button
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        color: colors.ink,
+                        cursor: 'default',
+                        opacity: 0.4,
+                    }}
+                >
                     🔄 {post.reposts > 0 ? post.reposts : ''}
                 </button>
             </div>

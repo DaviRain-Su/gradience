@@ -7,330 +7,255 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type Codec,
+    type Decoder,
+    type Encoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
 export const REGISTER_JUDGE_DISCRIMINATOR = 8;
 
 export function getRegisterJudgeDiscriminatorBytes() {
-  return getU8Encoder().encode(REGISTER_JUDGE_DISCRIMINATOR);
+    return getU8Encoder().encode(REGISTER_JUDGE_DISCRIMINATOR);
 }
 
 export type RegisterJudgeInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountJudge extends string | AccountMeta<string> = string,
-  TAccountConfig extends string | AccountMeta<string> = string,
-  TAccountStake extends string | AccountMeta<string> = string,
-  TAccountReputation extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountJudge extends string | AccountMeta<string> = string,
+    TAccountConfig extends string | AccountMeta<string> = string,
+    TAccountStake extends string | AccountMeta<string> = string,
+    TAccountReputation extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountJudge extends string
-        ? WritableSignerAccount<TAccountJudge> &
-            AccountSignerMeta<TAccountJudge>
-        : TAccountJudge,
-      TAccountConfig extends string
-        ? ReadonlyAccount<TAccountConfig>
-        : TAccountConfig,
-      TAccountStake extends string
-        ? WritableAccount<TAccountStake>
-        : TAccountStake,
-      TAccountReputation extends string
-        ? ReadonlyAccount<TAccountReputation>
-        : TAccountReputation,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountJudge extends string
+                ? WritableSignerAccount<TAccountJudge> & AccountSignerMeta<TAccountJudge>
+                : TAccountJudge,
+            TAccountConfig extends string ? ReadonlyAccount<TAccountConfig> : TAccountConfig,
+            TAccountStake extends string ? WritableAccount<TAccountStake> : TAccountStake,
+            TAccountReputation extends string ? ReadonlyAccount<TAccountReputation> : TAccountReputation,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type RegisterJudgeInstructionData = {
-  discriminator: number;
-  categories: Array<number>;
-  stakeAmount: bigint;
+    discriminator: number;
+    categories: Array<number>;
+    stakeAmount: bigint;
 };
 
 export type RegisterJudgeInstructionDataArgs = {
-  categories: Array<number>;
-  stakeAmount: number | bigint;
+    categories: Array<number>;
+    stakeAmount: number | bigint;
 };
 
 export function getRegisterJudgeInstructionDataEncoder(): Encoder<RegisterJudgeInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ["discriminator", getU8Encoder()],
-      ["categories", getArrayEncoder(getU8Encoder())],
-      ["stakeAmount", getU64Encoder()],
-    ]),
-    (value) => ({ ...value, discriminator: REGISTER_JUDGE_DISCRIMINATOR }),
-  );
+    return transformEncoder(
+        getStructEncoder([
+            ['discriminator', getU8Encoder()],
+            ['categories', getArrayEncoder(getU8Encoder())],
+            ['stakeAmount', getU64Encoder()],
+        ]),
+        value => ({ ...value, discriminator: REGISTER_JUDGE_DISCRIMINATOR }),
+    );
 }
 
 export function getRegisterJudgeInstructionDataDecoder(): Decoder<RegisterJudgeInstructionData> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["categories", getArrayDecoder(getU8Decoder())],
-    ["stakeAmount", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['categories', getArrayDecoder(getU8Decoder())],
+        ['stakeAmount', getU64Decoder()],
+    ]);
 }
 
 export function getRegisterJudgeInstructionDataCodec(): Codec<
-  RegisterJudgeInstructionDataArgs,
-  RegisterJudgeInstructionData
+    RegisterJudgeInstructionDataArgs,
+    RegisterJudgeInstructionData
 > {
-  return combineCodec(
-    getRegisterJudgeInstructionDataEncoder(),
-    getRegisterJudgeInstructionDataDecoder(),
-  );
+    return combineCodec(getRegisterJudgeInstructionDataEncoder(), getRegisterJudgeInstructionDataDecoder());
 }
 
 export type RegisterJudgeAsyncInput<
-  TAccountJudge extends string = string,
-  TAccountConfig extends string = string,
-  TAccountStake extends string = string,
-  TAccountReputation extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
+    TAccountJudge extends string = string,
+    TAccountConfig extends string = string,
+    TAccountStake extends string = string,
+    TAccountReputation extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
 > = {
-  judge: TransactionSigner<TAccountJudge>;
-  config: Address<TAccountConfig>;
-  stake: Address<TAccountStake>;
-  reputation: Address<TAccountReputation>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  categories: RegisterJudgeInstructionDataArgs["categories"];
-  stakeAmount: RegisterJudgeInstructionDataArgs["stakeAmount"];
+    judge: TransactionSigner<TAccountJudge>;
+    config: Address<TAccountConfig>;
+    stake: Address<TAccountStake>;
+    reputation: Address<TAccountReputation>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    categories: RegisterJudgeInstructionDataArgs['categories'];
+    stakeAmount: RegisterJudgeInstructionDataArgs['stakeAmount'];
 };
 
 export async function getRegisterJudgeInstructionAsync<
-  TAccountJudge extends string,
-  TAccountConfig extends string,
-  TAccountStake extends string,
-  TAccountReputation extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountJudge extends string,
+    TAccountConfig extends string,
+    TAccountStake extends string,
+    TAccountReputation extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: RegisterJudgeAsyncInput<
-    TAccountJudge,
-    TAccountConfig,
-    TAccountStake,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: RegisterJudgeAsyncInput<
+        TAccountJudge,
+        TAccountConfig,
+        TAccountStake,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  RegisterJudgeInstruction<
-    TProgramAddress,
-    TAccountJudge,
-    TAccountConfig,
-    TAccountStake,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >
+    RegisterJudgeInstruction<
+        TProgramAddress,
+        TAccountJudge,
+        TAccountConfig,
+        TAccountStake,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    judge: { value: input.judge ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
-    stake: { value: input.stake ?? null, isWritable: true },
-    reputation: { value: input.reputation ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        judge: { value: input.judge ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: false },
+        stake: { value: input.stake ?? null, isWritable: true },
+        reputation: { value: input.reputation ?? null, isWritable: false },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Original args.
-  const args = { ...input };
+    // Original args.
+    const args = { ...input };
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.judge),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.stake),
-      getAccountMeta(accounts.reputation),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-    ],
-    data: getRegisterJudgeInstructionDataEncoder().encode(
-      args as RegisterJudgeInstructionDataArgs,
-    ),
-    programAddress,
-  } as RegisterJudgeInstruction<
-    TProgramAddress,
-    TAccountJudge,
-    TAccountConfig,
-    TAccountStake,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.judge),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.stake),
+            getAccountMeta(accounts.reputation),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+        ],
+        data: getRegisterJudgeInstructionDataEncoder().encode(args as RegisterJudgeInstructionDataArgs),
+        programAddress,
+    } as RegisterJudgeInstruction<
+        TProgramAddress,
+        TAccountJudge,
+        TAccountConfig,
+        TAccountStake,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >);
 }
 
 export type RegisterJudgeInput<
-  TAccountJudge extends string = string,
-  TAccountConfig extends string = string,
-  TAccountStake extends string = string,
-  TAccountReputation extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
+    TAccountJudge extends string = string,
+    TAccountConfig extends string = string,
+    TAccountStake extends string = string,
+    TAccountReputation extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
 > = {
-  judge: TransactionSigner<TAccountJudge>;
-  config: Address<TAccountConfig>;
-  stake: Address<TAccountStake>;
-  reputation: Address<TAccountReputation>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  categories: RegisterJudgeInstructionDataArgs["categories"];
-  stakeAmount: RegisterJudgeInstructionDataArgs["stakeAmount"];
+    judge: TransactionSigner<TAccountJudge>;
+    config: Address<TAccountConfig>;
+    stake: Address<TAccountStake>;
+    reputation: Address<TAccountReputation>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    categories: RegisterJudgeInstructionDataArgs['categories'];
+    stakeAmount: RegisterJudgeInstructionDataArgs['stakeAmount'];
 };
 
 export function getRegisterJudgeInstruction<
-  TAccountJudge extends string,
-  TAccountConfig extends string,
-  TAccountStake extends string,
-  TAccountReputation extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountJudge extends string,
+    TAccountConfig extends string,
+    TAccountStake extends string,
+    TAccountReputation extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: RegisterJudgeInput<
-    TAccountJudge,
-    TAccountConfig,
-    TAccountStake,
-    TAccountReputation,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: RegisterJudgeInput<
+        TAccountJudge,
+        TAccountConfig,
+        TAccountStake,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): RegisterJudgeInstruction<
-  TProgramAddress,
-  TAccountJudge,
-  TAccountConfig,
-  TAccountStake,
-  TAccountReputation,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    judge: { value: input.judge ?? null, isWritable: true },
-    config: { value: input.config ?? null, isWritable: false },
-    stake: { value: input.stake ?? null, isWritable: true },
-    reputation: { value: input.reputation ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Original args.
-  const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.judge),
-      getAccountMeta(accounts.config),
-      getAccountMeta(accounts.stake),
-      getAccountMeta(accounts.reputation),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-    ],
-    data: getRegisterJudgeInstructionDataEncoder().encode(
-      args as RegisterJudgeInstructionDataArgs,
-    ),
-    programAddress,
-  } as RegisterJudgeInstruction<
     TProgramAddress,
     TAccountJudge,
     TAccountConfig,
@@ -339,55 +264,102 @@ export function getRegisterJudgeInstruction<
     TAccountSystemProgram,
     TAccountEventAuthority,
     TAccountGradienceProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        judge: { value: input.judge ?? null, isWritable: true },
+        config: { value: input.config ?? null, isWritable: false },
+        stake: { value: input.stake ?? null, isWritable: true },
+        reputation: { value: input.reputation ?? null, isWritable: false },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Original args.
+    const args = { ...input };
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.judge),
+            getAccountMeta(accounts.config),
+            getAccountMeta(accounts.stake),
+            getAccountMeta(accounts.reputation),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+        ],
+        data: getRegisterJudgeInstructionDataEncoder().encode(args as RegisterJudgeInstructionDataArgs),
+        programAddress,
+    } as RegisterJudgeInstruction<
+        TProgramAddress,
+        TAccountJudge,
+        TAccountConfig,
+        TAccountStake,
+        TAccountReputation,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >);
 }
 
 export type ParsedRegisterJudgeInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    judge: TAccountMetas[0];
-    config: TAccountMetas[1];
-    stake: TAccountMetas[2];
-    reputation: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
-    eventAuthority: TAccountMetas[5];
-    gradienceProgram: TAccountMetas[6];
-  };
-  data: RegisterJudgeInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        judge: TAccountMetas[0];
+        config: TAccountMetas[1];
+        stake: TAccountMetas[2];
+        reputation: TAccountMetas[3];
+        systemProgram: TAccountMetas[4];
+        eventAuthority: TAccountMetas[5];
+        gradienceProgram: TAccountMetas[6];
+    };
+    data: RegisterJudgeInstructionData;
 };
 
-export function parseRegisterJudgeInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parseRegisterJudgeInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedRegisterJudgeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      judge: getNextAccount(),
-      config: getNextAccount(),
-      stake: getNextAccount(),
-      reputation: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-    },
-    data: getRegisterJudgeInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 7) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            judge: getNextAccount(),
+            config: getNextAccount(),
+            stake: getNextAccount(),
+            reputation: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+        },
+        data: getRegisterJudgeInstructionDataDecoder().decode(instruction.data),
+    };
 }

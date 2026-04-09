@@ -19,9 +19,13 @@ export function CopyButton({ text }: { text: string }) {
             aria-label="Copy code"
         >
             {copied ? (
-                <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
+                <>
+                    <Check className="w-3.5 h-3.5 text-green-400" /> Copied!
+                </>
             ) : (
-                <><Copy className="w-3.5 h-3.5" /> Copy</>
+                <>
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                </>
             )}
         </button>
     );

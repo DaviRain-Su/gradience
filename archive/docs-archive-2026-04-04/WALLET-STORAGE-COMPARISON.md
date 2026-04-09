@@ -23,22 +23,22 @@
 ```typescript
 // 当前实现
 const binding = {
-  accountKey: 'user@example.com',
-  masterWallet: '5Y3d...7xKp',
-  agentWalletId: 'ows-agent:a1b2c3d4',
-  // ...
+    accountKey: 'user@example.com',
+    masterWallet: '5Y3d...7xKp',
+    agentWalletId: 'ows-agent:a1b2c3d4',
+    // ...
 };
 
 localStorage.setItem('agentm:ows:binding', JSON.stringify(binding));
 ```
 
-| 特性 | 状态 |
-|------|------|
-| 跨设备同步 | ❌ 不支持 |
-| 浏览器清除后恢复 | ❌ 丢失 |
-| 安全性 | ⚠️ 明文存储 |
-| 用户体验 | ⚠️ 需要重新绑定 |
-| 实现复杂度 | ✅ 简单 |
+| 特性             | 状态            |
+| ---------------- | --------------- |
+| 跨设备同步       | ❌ 不支持       |
+| 浏览器清除后恢复 | ❌ 丢失         |
+| 安全性           | ⚠️ 明文存储     |
+| 用户体验         | ⚠️ 需要重新绑定 |
+| 实现复杂度       | ✅ 简单         |
 
 ---
 
@@ -47,22 +47,22 @@ localStorage.setItem('agentm:ows:binding', JSON.stringify(binding));
 ```typescript
 // Passkey 方案
 const wallet = await manager.createPasskeyWallet({
-  agentId: 'agent_xyz789',
-  masterWalletAddress: '5Y3d...7xKp',
-  derivationIndex: 0,
+    agentId: 'agent_xyz789',
+    masterWalletAddress: '5Y3d...7xKp',
+    derivationIndex: 0,
 });
 
 // 数据存储在 WebAuthn credential 中
 // 自动同步到 iCloud Keychain / Google Password Manager
 ```
 
-| 特性 | 状态 |
-|------|------|
-| 跨设备同步 | ✅ iCloud/Google 同步 |
-| 浏览器清除后恢复 | ✅ 不受影响 |
-| 安全性 | ✅ 硬件级保护 |
-| 用户体验 | ✅ 生物特征解锁 |
-| 实现复杂度 | ⚠️ 需要 WebAuthn |
+| 特性             | 状态                  |
+| ---------------- | --------------------- |
+| 跨设备同步       | ✅ iCloud/Google 同步 |
+| 浏览器清除后恢复 | ✅ 不受影响           |
+| 安全性           | ✅ 硬件级保护         |
+| 用户体验         | ✅ 生物特征解锁       |
+| 实现复杂度       | ⚠️ 需要 WebAuthn      |
 
 ---
 
@@ -75,25 +75,25 @@ const encrypted = await encrypt(binding, userPassword);
 
 // 2. 存储到后端
 await api.storeWalletBackup({
-  userId: 'user_abc123',
-  encryptedData: encrypted,
-  recoveryHint: 'my first pet name',
+    userId: 'user_abc123',
+    encryptedData: encrypted,
+    recoveryHint: 'my first pet name',
 });
 
 // 3. 恢复时需要密码或社交恢复
 const recovered = await api.recoverWallet({
-  userId: 'user_abc123',
-  password: userInput,
+    userId: 'user_abc123',
+    password: userInput,
 });
 ```
 
-| 特性 | 状态 |
-|------|------|
-| 跨设备同步 | ✅ 支持 |
-| 浏览器清除后恢复 | ✅ 支持 |
-| 安全性 | ⚠️ 依赖后端 |
-| 用户体验 | ⚠️ 需要记住密码 |
-| 实现复杂度 | ⚠️ 需要后端支持 |
+| 特性             | 状态            |
+| ---------------- | --------------- |
+| 跨设备同步       | ✅ 支持         |
+| 浏览器清除后恢复 | ✅ 支持         |
+| 安全性           | ⚠️ 依赖后端     |
+| 用户体验         | ⚠️ 需要记住密码 |
+| 实现复杂度       | ⚠️ 需要后端支持 |
 
 ---
 
@@ -165,10 +165,10 @@ const recovered = await api.recoverWallet({
 ```typescript
 // 存储在 Passkey 的 userHandle 中
 interface EncryptedDerivationParams {
-  encryptedAgentId: string;      // 加密的 Agent ID
-  derivationIndex: number;       // 派生索引
-  masterWalletAddress: string;   // 主钱包地址 (用于验证)
-  version: 'v1';
+    encryptedAgentId: string; // 加密的 Agent ID
+    derivationIndex: number; // 派生索引
+    masterWalletAddress: string; // 主钱包地址 (用于验证)
+    version: 'v1';
 }
 
 // 编码为 Uint8Array 存储
@@ -227,6 +227,7 @@ Temple Wallet (Tezos) 的 Passkey 实现:
 ```
 
 我们的方案改进:
+
 ```
 1. 使用标准 BIP-44 派生 (可导出)
 2. 支持多域名 (通过后端备份)
@@ -271,8 +272,8 @@ Temple Wallet (Tezos) 的 Passkey 实现:
 ```typescript
 // 创建 Agent
 const binding = manager.bindMasterWallet({
-  accountKey: user.email,
-  walletAddress: masterWallet.address,
+    accountKey: user.email,
+    walletAddress: masterWallet.address,
 });
 // 自动存储到 localStorage
 ```
@@ -282,15 +283,15 @@ const binding = manager.bindMasterWallet({
 ```typescript
 // 创建 Agent
 const wallet = await passkeyManager.createPasskeyWallet({
-  agentId: agent.id,
-  masterWalletAddress: masterWallet.address,
-  derivationIndex: 0,
+    agentId: agent.id,
+    masterWalletAddress: masterWallet.address,
+    derivationIndex: 0,
 });
 
 // 可选: 后端备份
 await api.backupWallet({
-  credentialId: wallet.credentialId,
-  encryptedData: await encrypt(wallet.derivationParams, userPassword),
+    credentialId: wallet.credentialId,
+    encryptedData: await encrypt(wallet.derivationParams, userPassword),
 });
 ```
 
@@ -298,23 +299,23 @@ await api.backupWallet({
 
 ## 浏览器兼容性
 
-| 浏览器 | Passkey 支持 | 同步支持 |
-|--------|-------------|----------|
-| Chrome 108+ | ✅ | ✅ Google |
-| Safari 16+ | ✅ | ✅ iCloud |
-| Firefox 122+ | ✅ | ⚠️ 有限 |
-| Edge 108+ | ✅ | ✅ Microsoft |
+| 浏览器       | Passkey 支持 | 同步支持     |
+| ------------ | ------------ | ------------ |
+| Chrome 108+  | ✅           | ✅ Google    |
+| Safari 16+   | ✅           | ✅ iCloud    |
+| Firefox 122+ | ✅           | ⚠️ 有限      |
+| Edge 108+    | ✅           | ✅ Microsoft |
 
 ---
 
 ## 总结
 
-| 维度 | LocalStorage | Passkey | 后端备份 |
-|------|-------------|---------|---------|
-| 安全性 | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| 用户体验 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| 跨设备 | ⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| 恢复能力 | ⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| 实现成本 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
+| 维度     | LocalStorage | Passkey    | 后端备份   |
+| -------- | ------------ | ---------- | ---------- |
+| 安全性   | ⭐⭐         | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐   |
+| 用户体验 | ⭐⭐⭐⭐     | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     |
+| 跨设备   | ⭐           | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| 恢复能力 | ⭐           | ⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐ |
+| 实现成本 | ⭐⭐⭐⭐⭐   | ⭐⭐⭐     | ⭐⭐       |
 
 **推荐: Passkey 为主 + 后端备份为辅**

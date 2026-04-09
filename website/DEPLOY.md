@@ -4,10 +4,10 @@
 
 ## 自动部署状态
 
-| 环境 | 分支 | 状态 |
-|-----|------|------|
+| 环境       | 分支   | 状态                                                                                                                     |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
 | Production | `main` | ![Deploy Status](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg?branch=main) |
-| Preview | PR | ![Deploy Status](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg) |
+| Preview    | PR     | ![Deploy Status](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg)             |
 
 ## 快速开始
 
@@ -32,11 +32,13 @@ pnpm build
 ### 方案 1: Vercel 托管（推荐，支持 API 路由）
 
 #### 1. 注册 Resend
+
 - 访问 https://resend.com
 - 注册账号
 - 获取 API Key
 
 #### 2. 部署到 Vercel
+
 ```bash
 # 安装 Vercel CLI
 npm i -g vercel
@@ -50,13 +52,16 @@ vercel --prod
 ```
 
 #### 3. 配置环境变量
+
 在 Vercel Dashboard 中添加：
+
 ```
 RESEND_API_KEY=re_xxxxxxxx
 ADMIN_EMAIL=hello@gradiences.xyz
 ```
 
 #### 4. 验证域名（可选）
+
 在 Resend 中添加 gradiences.xyz 域名，验证后可从 hello@gradiences.xyz 发送邮件。
 
 ---
@@ -66,16 +71,19 @@ ADMIN_EMAIL=hello@gradiences.xyz
 静态托管不支持 API 路由，需要改用第三方表单服务：
 
 #### 选项 A: Google Forms（免费，最简单）
+
 1. 创建 Google Form（邮箱 + 用户类型）
 2. 获取预填充链接
 3. 修改 Waitlist.tsx 跳转至 Google Form
 
 #### 选项 B: Formspree（免费 50 次/月）
+
 1. 注册 https://formspree.io
 2. 获取 form endpoint
 3. 修改 API 调用地址
 
 #### 选项 C: Airtable（免费 1200 行）
+
 1. 创建 Airtable Base
 2. 使用 Airtable Form
 3. 嵌入到网站
@@ -93,6 +101,7 @@ npm start
 ```
 
 或使用 Docker：
+
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -107,6 +116,7 @@ CMD ["npm", "start"]
 ## 构建命令
 
 ### 开发
+
 ```bash
 cd website
 npm install
@@ -114,6 +124,7 @@ npm run dev
 ```
 
 ### 生产构建
+
 ```bash
 cd website
 npm install
@@ -121,6 +132,7 @@ npm run build
 ```
 
 ### 静态导出（用于 Netlify/Cloudflare Pages）
+
 ```bash
 cd website
 STATIC_EXPORT=true npm run build
@@ -132,6 +144,7 @@ STATIC_EXPORT=true npm run build
 ## 环境变量
 
 创建 `.env.local`：
+
 ```bash
 # Resend API Key（用于发送邮件）
 RESEND_API_KEY=re_xxxxxxxx

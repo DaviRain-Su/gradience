@@ -49,7 +49,9 @@ export function useDiscover(category: number = 0) {
         }
     }, [category, setDiscoveryRows]);
 
-    useEffect(() => { refresh(); }, [refresh]);
+    useEffect(() => {
+        refresh();
+    }, [refresh]);
 
     return { loading, error, refresh, categories: CATEGORIES };
 }

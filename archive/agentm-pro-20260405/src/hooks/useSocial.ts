@@ -62,12 +62,9 @@ export function useSocial(currentUserAddress: string | null) {
         [currentUserAddress],
     );
 
-    const getGlobalFeed = useCallback(
-        async (limit = 20, offset = 0): Promise<SocialPost[]> => {
-            return clientRef.current.getGlobalFeed(limit, offset);
-        },
-        [],
-    );
+    const getGlobalFeed = useCallback(async (limit = 20, offset = 0): Promise<SocialPost[]> => {
+        return clientRef.current.getGlobalFeed(limit, offset);
+    }, []);
 
     // ── Followers ──
 

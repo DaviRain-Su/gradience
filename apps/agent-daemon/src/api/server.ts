@@ -102,9 +102,14 @@ export async function createAPIServer(deps: APIServerDeps) {
     app.addHook('onSend', async (request, reply, payload) => {
         if (request.method === 'GET') {
             const path = request.url.split('?')[0];
-            if (path.startsWith('/api/feed') || path.startsWith('/api/profile/') ||
-                path.startsWith('/api/followers/') || path.startsWith('/api/following/') ||
-                path.startsWith('/api/discover') || path.startsWith('/api/matches')) {
+            if (
+                path.startsWith('/api/feed') ||
+                path.startsWith('/api/profile/') ||
+                path.startsWith('/api/followers/') ||
+                path.startsWith('/api/following/') ||
+                path.startsWith('/api/discover') ||
+                path.startsWith('/api/matches')
+            ) {
                 reply.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
             } else if (path.startsWith('/api/v1/domains')) {
                 reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
@@ -133,7 +138,10 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerKeyRoutes(app, deps.keyManager);
     registerWalletRoutes(app, deps.authorizationManager);
     if ('publicKey' in deps.transactionManager) {
-      registerSolanaRoutes(app, deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager);
+        registerSolanaRoutes(
+            app,
+            deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager,
+        );
     }
     registerSocialRoutes(app, deps.database);
     registerNetworkRoutes(app, deps.database);
@@ -144,15 +152,19 @@ export async function createAPIServer(deps: APIServerDeps) {
     registerRiskRoutes(app);
     registerIdentityRoutes(app, deps.database);
     if ('publicKey' in deps.transactionManager) {
-      registerCrossChainIdentityRoutes(app, deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager);
+        registerCrossChainIdentityRoutes(
+            app,
+            deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager,
+        );
     }
     registerMagicBlockRoutes(app, deps.bridgeManager);
 
     // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)
     const reputationEngine = createReputationAggregationEngine();
-    const txManager = 'connection' in deps.transactionManager
-        ? (deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager)
-        : undefined;
+    const txManager =
+        'connection' in deps.transactionManager
+            ? (deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager)
+            : undefined;
     registerReputationOracleRoutes(app, reputationEngine, undefined, {
         solanaConnection: txManager?.connection,
     });

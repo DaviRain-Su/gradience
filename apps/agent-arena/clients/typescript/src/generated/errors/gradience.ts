@@ -7,12 +7,12 @@
  */
 
 import {
-  isProgramError,
-  type Address,
-  type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  type SolanaError,
-} from "@solana/kit";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
+    isProgramError,
+    type Address,
+    type SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
+    type SolanaError,
+} from '@solana/kit';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
 
 export const GRADIENCE_ERROR__TASK_NOT_OPEN = 0x1770; // 6000
 export const GRADIENCE_ERROR__DEADLINE_PASSED = 0x1771; // 6001
@@ -46,93 +46,88 @@ export const GRADIENCE_ERROR__OVERFLOW = 0x1798; // 6040
 export const GRADIENCE_ERROR__UNSUPPORTED_MINT_EXTENSION = 0x1799; // 6041
 
 export type GradienceError =
-  | typeof GRADIENCE_ERROR__AGENT_NOT_APPLIED
-  | typeof GRADIENCE_ERROR__ALREADY_APPLIED
-  | typeof GRADIENCE_ERROR__ALREADY_IN_POOL
-  | typeof GRADIENCE_ERROR__COOLDOWN_NOT_EXPIRED
-  | typeof GRADIENCE_ERROR__DEADLINE_NOT_PASSED
-  | typeof GRADIENCE_ERROR__DEADLINE_PASSED
-  | typeof GRADIENCE_ERROR__EMPTY_REF
-  | typeof GRADIENCE_ERROR__FORCE_REFUND_DELAY_NOT_PASSED
-  | typeof GRADIENCE_ERROR__HAS_SUBMISSIONS
-  | typeof GRADIENCE_ERROR__INSUFFICIENT_AGENT_STAKE
-  | typeof GRADIENCE_ERROR__INSUFFICIENT_JUDGE_STAKE
-  | typeof GRADIENCE_ERROR__INVALID_CATEGORIES
-  | typeof GRADIENCE_ERROR__INVALID_CATEGORY
-  | typeof GRADIENCE_ERROR__INVALID_DEADLINE
-  | typeof GRADIENCE_ERROR__INVALID_JUDGE_DEADLINE
-  | typeof GRADIENCE_ERROR__INVALID_RUNTIME_ENV
-  | typeof GRADIENCE_ERROR__INVALID_SCORE
-  | typeof GRADIENCE_ERROR__JUDGE_DEADLINE_NOT_PASSED
-  | typeof GRADIENCE_ERROR__JUDGE_POOL_EMPTY
-  | typeof GRADIENCE_ERROR__JUDGE_POOL_FULL
-  | typeof GRADIENCE_ERROR__NO_SUBMISSIONS
-  | typeof GRADIENCE_ERROR__NOT_TASK_JUDGE
-  | typeof GRADIENCE_ERROR__NOT_TASK_POSTER
-  | typeof GRADIENCE_ERROR__NOT_UPGRADE_AUTHORITY
-  | typeof GRADIENCE_ERROR__OVERFLOW
-  | typeof GRADIENCE_ERROR__REF_TOO_LONG
-  | typeof GRADIENCE_ERROR__TASK_NOT_OPEN
-  | typeof GRADIENCE_ERROR__UNSUPPORTED_MINT_EXTENSION
-  | typeof GRADIENCE_ERROR__WINNER_NO_SUBMISSION
-  | typeof GRADIENCE_ERROR__ZERO_REWARD;
+    | typeof GRADIENCE_ERROR__AGENT_NOT_APPLIED
+    | typeof GRADIENCE_ERROR__ALREADY_APPLIED
+    | typeof GRADIENCE_ERROR__ALREADY_IN_POOL
+    | typeof GRADIENCE_ERROR__COOLDOWN_NOT_EXPIRED
+    | typeof GRADIENCE_ERROR__DEADLINE_NOT_PASSED
+    | typeof GRADIENCE_ERROR__DEADLINE_PASSED
+    | typeof GRADIENCE_ERROR__EMPTY_REF
+    | typeof GRADIENCE_ERROR__FORCE_REFUND_DELAY_NOT_PASSED
+    | typeof GRADIENCE_ERROR__HAS_SUBMISSIONS
+    | typeof GRADIENCE_ERROR__INSUFFICIENT_AGENT_STAKE
+    | typeof GRADIENCE_ERROR__INSUFFICIENT_JUDGE_STAKE
+    | typeof GRADIENCE_ERROR__INVALID_CATEGORIES
+    | typeof GRADIENCE_ERROR__INVALID_CATEGORY
+    | typeof GRADIENCE_ERROR__INVALID_DEADLINE
+    | typeof GRADIENCE_ERROR__INVALID_JUDGE_DEADLINE
+    | typeof GRADIENCE_ERROR__INVALID_RUNTIME_ENV
+    | typeof GRADIENCE_ERROR__INVALID_SCORE
+    | typeof GRADIENCE_ERROR__JUDGE_DEADLINE_NOT_PASSED
+    | typeof GRADIENCE_ERROR__JUDGE_POOL_EMPTY
+    | typeof GRADIENCE_ERROR__JUDGE_POOL_FULL
+    | typeof GRADIENCE_ERROR__NO_SUBMISSIONS
+    | typeof GRADIENCE_ERROR__NOT_TASK_JUDGE
+    | typeof GRADIENCE_ERROR__NOT_TASK_POSTER
+    | typeof GRADIENCE_ERROR__NOT_UPGRADE_AUTHORITY
+    | typeof GRADIENCE_ERROR__OVERFLOW
+    | typeof GRADIENCE_ERROR__REF_TOO_LONG
+    | typeof GRADIENCE_ERROR__TASK_NOT_OPEN
+    | typeof GRADIENCE_ERROR__UNSUPPORTED_MINT_EXTENSION
+    | typeof GRADIENCE_ERROR__WINNER_NO_SUBMISSION
+    | typeof GRADIENCE_ERROR__ZERO_REWARD;
 
 let gradienceErrorMessages: Record<GradienceError, string> | undefined;
-if (process.env.NODE_ENV !== "production") {
-  gradienceErrorMessages = {
-    [GRADIENCE_ERROR__AGENT_NOT_APPLIED]: `Agent has not applied for this task`,
-    [GRADIENCE_ERROR__ALREADY_APPLIED]: `Agent already applied for this task`,
-    [GRADIENCE_ERROR__ALREADY_IN_POOL]: `Judge already in pool`,
-    [GRADIENCE_ERROR__COOLDOWN_NOT_EXPIRED]: `Unstake cooldown has not expired`,
-    [GRADIENCE_ERROR__DEADLINE_NOT_PASSED]: `Deadline has not passed yet`,
-    [GRADIENCE_ERROR__DEADLINE_PASSED]: `Task deadline has passed`,
-    [GRADIENCE_ERROR__EMPTY_REF]: `Reference field is empty`,
-    [GRADIENCE_ERROR__FORCE_REFUND_DELAY_NOT_PASSED]: `Force-refund delay has not elapsed`,
-    [GRADIENCE_ERROR__HAS_SUBMISSIONS]: `Task has submissions and cannot be cancelled`,
-    [GRADIENCE_ERROR__INSUFFICIENT_AGENT_STAKE]: `Agent stake amount is below the required minimum`,
-    [GRADIENCE_ERROR__INSUFFICIENT_JUDGE_STAKE]: `Judge stake is below the protocol minimum`,
-    [GRADIENCE_ERROR__INVALID_CATEGORIES]: `Invalid categories list`,
-    [GRADIENCE_ERROR__INVALID_CATEGORY]: `Invalid task category`,
-    [GRADIENCE_ERROR__INVALID_DEADLINE]: `Invalid deadline`,
-    [GRADIENCE_ERROR__INVALID_JUDGE_DEADLINE]: `Invalid judge deadline`,
-    [GRADIENCE_ERROR__INVALID_RUNTIME_ENV]: `RuntimeEnv field is invalid`,
-    [GRADIENCE_ERROR__INVALID_SCORE]: `Score is out of valid range`,
-    [GRADIENCE_ERROR__JUDGE_DEADLINE_NOT_PASSED]: `Judge deadline has not passed`,
-    [GRADIENCE_ERROR__JUDGE_POOL_EMPTY]: `JudgePool is empty for this category`,
-    [GRADIENCE_ERROR__JUDGE_POOL_FULL]: `JudgePool is full`,
-    [GRADIENCE_ERROR__NO_SUBMISSIONS]: `No submissions for task`,
-    [GRADIENCE_ERROR__NOT_TASK_JUDGE]: `Caller is not the task judge`,
-    [GRADIENCE_ERROR__NOT_TASK_POSTER]: `Caller is not the task poster`,
-    [GRADIENCE_ERROR__NOT_UPGRADE_AUTHORITY]: `Caller is not the upgrade authority`,
-    [GRADIENCE_ERROR__OVERFLOW]: `Arithmetic overflow`,
-    [GRADIENCE_ERROR__REF_TOO_LONG]: `Reference string exceeds maximum length`,
-    [GRADIENCE_ERROR__TASK_NOT_OPEN]: `Task is not open`,
-    [GRADIENCE_ERROR__UNSUPPORTED_MINT_EXTENSION]: `Mint extension is not supported`,
-    [GRADIENCE_ERROR__WINNER_NO_SUBMISSION]: `Winner has no submission for this task`,
-    [GRADIENCE_ERROR__ZERO_REWARD]: `Task reward cannot be zero`,
-  };
+if (process.env.NODE_ENV !== 'production') {
+    gradienceErrorMessages = {
+        [GRADIENCE_ERROR__AGENT_NOT_APPLIED]: `Agent has not applied for this task`,
+        [GRADIENCE_ERROR__ALREADY_APPLIED]: `Agent already applied for this task`,
+        [GRADIENCE_ERROR__ALREADY_IN_POOL]: `Judge already in pool`,
+        [GRADIENCE_ERROR__COOLDOWN_NOT_EXPIRED]: `Unstake cooldown has not expired`,
+        [GRADIENCE_ERROR__DEADLINE_NOT_PASSED]: `Deadline has not passed yet`,
+        [GRADIENCE_ERROR__DEADLINE_PASSED]: `Task deadline has passed`,
+        [GRADIENCE_ERROR__EMPTY_REF]: `Reference field is empty`,
+        [GRADIENCE_ERROR__FORCE_REFUND_DELAY_NOT_PASSED]: `Force-refund delay has not elapsed`,
+        [GRADIENCE_ERROR__HAS_SUBMISSIONS]: `Task has submissions and cannot be cancelled`,
+        [GRADIENCE_ERROR__INSUFFICIENT_AGENT_STAKE]: `Agent stake amount is below the required minimum`,
+        [GRADIENCE_ERROR__INSUFFICIENT_JUDGE_STAKE]: `Judge stake is below the protocol minimum`,
+        [GRADIENCE_ERROR__INVALID_CATEGORIES]: `Invalid categories list`,
+        [GRADIENCE_ERROR__INVALID_CATEGORY]: `Invalid task category`,
+        [GRADIENCE_ERROR__INVALID_DEADLINE]: `Invalid deadline`,
+        [GRADIENCE_ERROR__INVALID_JUDGE_DEADLINE]: `Invalid judge deadline`,
+        [GRADIENCE_ERROR__INVALID_RUNTIME_ENV]: `RuntimeEnv field is invalid`,
+        [GRADIENCE_ERROR__INVALID_SCORE]: `Score is out of valid range`,
+        [GRADIENCE_ERROR__JUDGE_DEADLINE_NOT_PASSED]: `Judge deadline has not passed`,
+        [GRADIENCE_ERROR__JUDGE_POOL_EMPTY]: `JudgePool is empty for this category`,
+        [GRADIENCE_ERROR__JUDGE_POOL_FULL]: `JudgePool is full`,
+        [GRADIENCE_ERROR__NO_SUBMISSIONS]: `No submissions for task`,
+        [GRADIENCE_ERROR__NOT_TASK_JUDGE]: `Caller is not the task judge`,
+        [GRADIENCE_ERROR__NOT_TASK_POSTER]: `Caller is not the task poster`,
+        [GRADIENCE_ERROR__NOT_UPGRADE_AUTHORITY]: `Caller is not the upgrade authority`,
+        [GRADIENCE_ERROR__OVERFLOW]: `Arithmetic overflow`,
+        [GRADIENCE_ERROR__REF_TOO_LONG]: `Reference string exceeds maximum length`,
+        [GRADIENCE_ERROR__TASK_NOT_OPEN]: `Task is not open`,
+        [GRADIENCE_ERROR__UNSUPPORTED_MINT_EXTENSION]: `Mint extension is not supported`,
+        [GRADIENCE_ERROR__WINNER_NO_SUBMISSION]: `Winner has no submission for this task`,
+        [GRADIENCE_ERROR__ZERO_REWARD]: `Task reward cannot be zero`,
+    };
 }
 
 export function getGradienceErrorMessage(code: GradienceError): string {
-  if (process.env.NODE_ENV !== "production") {
-    return (gradienceErrorMessages as Record<GradienceError, string>)[code];
-  }
+    if (process.env.NODE_ENV !== 'production') {
+        return (gradienceErrorMessages as Record<GradienceError, string>)[code];
+    }
 
-  return "Error message not available in production bundles.";
+    return 'Error message not available in production bundles.';
 }
 
 export function isGradienceError<TProgramErrorCode extends GradienceError>(
-  error: unknown,
-  transactionMessage: {
-    instructions: Record<number, { programAddress: Address }>;
-  },
-  code?: TProgramErrorCode,
+    error: unknown,
+    transactionMessage: {
+        instructions: Record<number, { programAddress: Address }>;
+    },
+    code?: TProgramErrorCode,
 ): error is SolanaError<typeof SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM> &
-  Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
-  return isProgramError<TProgramErrorCode>(
-    error,
-    transactionMessage,
-    GRADIENCE_PROGRAM_ADDRESS,
-    code,
-  );
+    Readonly<{ context: Readonly<{ code: TProgramErrorCode }> }> {
+    return isProgramError<TProgramErrorCode>(error, transactionMessage, GRADIENCE_PROGRAM_ADDRESS, code);
 }

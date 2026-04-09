@@ -16,6 +16,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Status:** ✅ Complete
 
 **Refactoring:**
+
 - Extracted `mappers.rs` - Data mapping functions (map_task, map_submission, etc.)
 - Extracted `utils.rs` - Helper functions (parsing, validation, formatting)
 - Updated `main.rs` to delegate to new modules
@@ -31,6 +32,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agent-daemon/src/payments/mpp-handler.ts`
 
 **Refactoring:**
+
 - Created `mpp/types.ts` - All MPP type definitions
 - Created `mpp/payment-manager.ts` - Payment creation and escrow
 - Created `mpp/voting.ts` - Voting and milestone management
@@ -47,6 +49,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agent-daemon/src/revenue/distribution.ts`
 
 **Refactoring:**
+
 - Created `distribution/types.ts` - Type definitions
 - Created `distribution/builder.ts` - Instruction building
 - Created `distribution/cpi-caller.ts` - CPI execution
@@ -65,6 +68,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agentm-web/src/app/app/page.tsx`
 
 **Completed:**
+
 - ✅ Created `types.ts` - Centralized type definitions
 - ✅ Created `constants.ts` - App constants
 - ✅ Created `utils.ts` - Helper functions
@@ -72,6 +76,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 - ✅ Created `components/LoginScreen.tsx` - Login UI component
 
 **Remaining:**
+
 - ⏳ Extract `Shell` component
 - ⏳ Extract `DiscoverView` component
 - ⏳ Extract `MeView` component
@@ -90,6 +95,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agent-arena/clients/typescript/src/sdk.ts`
 
 **Refactoring:**
+
 - Created `types.ts` - All SDK type definitions
 - Created `resources/tasks.ts` - Task management methods
 - Created `resources/reputation.ts` - Reputation queries
@@ -111,6 +117,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agent-arena/cli/gradience.ts`
 
 **Refactoring:**
+
 - Created `types.ts` - CLI type definitions
 - Created `commands/task.ts` - Task commands (post, apply, submit, etc.)
 - Created `commands/judge.ts` - Judge commands (register, unstake)
@@ -132,6 +139,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agent-arena/indexer/worker/src/index.ts`
 
 **Refactoring:**
+
 - Created `types.ts` - All type definitions
 - Created `handlers/events.ts` - Event processing
 - Created `handlers/api.ts` - API route handlers
@@ -152,6 +160,7 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/chain-hub/indexer-service/src/main.rs`
 
 **Refactoring:**
+
 - Created `handlers.rs` - HTTP API handlers
 - Extracted: health, metrics, skills, protocols, royalties, invocations
 - Updated `main.rs` to use handlers module
@@ -171,10 +180,12 @@ This document tracks the modularization of large monolithic files in the Gradien
 **Location:** `apps/agentm-web/src/components/wallet/ReputationDashboard.tsx`
 
 **Analysis:**
+
 - Large React component with multiple sections
 - Likely contains: stats, charts, history, actions
 
 **Proposed Refactoring:**
+
 ```
 components/wallet/
 ├── ReputationDashboard.tsx (container)
@@ -198,10 +209,12 @@ components/wallet/
 **Location:** `packages/workflow-engine/src/handlers/trading-real.ts`
 
 **Analysis:**
+
 - Trading workflow handler
 - Likely contains: order logic, risk management, position tracking
 
 **Proposed Refactoring:**
+
 ```
 handlers/trading/
 ├── index.ts (re-export)
@@ -223,10 +236,12 @@ handlers/trading/
 **Location:** `apps/agent-arena/judge-daemon/src/interop.ts`
 
 **Analysis:**
+
 - Interoperability layer for judge daemon
 - Likely contains: protocol adapters, data transformers
 
 **Proposed Refactoring:**
+
 ```
 judge-daemon/src/interop/
 ├── index.ts (re-export)
@@ -309,39 +324,39 @@ Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.g
 
 ## Progress Tracking
 
-| Priority | File | Lines | Status | Notes |
-|----------|------|-------|--------|-------|
-| - | indexer/main.rs | 1434 | ✅ | mappers.rs, utils.rs |
-| - | mpp-handler.ts | 823 | ✅ | mpp/ directory |
-| - | distribution.ts | 596 | ✅ | distribution/ directory |
-| - | page.tsx | 2683 | 🔄 | types, constants, utils, LoginScreen done |
-| P1 | sdk.ts | 1559 | ⏳ | TypeScript SDK |
-| P1 | gradience.ts | 1329 | ⏳ | CLI tool |
-| P1 | indexer/worker | 1322 | ⏳ | Worker handlers |
-| P1 | chain-hub/main.rs | 879 | ⏳ | Rust indexer |
-| P2 | ReputationDashboard | 959 | ⏳ | React component |
-| P2 | trading-real.ts | 977 | ⏳ | Trading handler |
-| P2 | interop.ts | 893 | ⏳ | Judge daemon |
-| P3 | soul/page.tsx | 820 | ⏳ | Web page |
-| P3 | runtime.ts | 859 | ⏳ | Evaluator |
-| P3 | ows-wallet-manager | 800 | ⏳ | Wallet manager |
+| Priority | File                | Lines | Status | Notes                                     |
+| -------- | ------------------- | ----- | ------ | ----------------------------------------- |
+| -        | indexer/main.rs     | 1434  | ✅     | mappers.rs, utils.rs                      |
+| -        | mpp-handler.ts      | 823   | ✅     | mpp/ directory                            |
+| -        | distribution.ts     | 596   | ✅     | distribution/ directory                   |
+| -        | page.tsx            | 2683  | 🔄     | types, constants, utils, LoginScreen done |
+| P1       | sdk.ts              | 1559  | ⏳     | TypeScript SDK                            |
+| P1       | gradience.ts        | 1329  | ⏳     | CLI tool                                  |
+| P1       | indexer/worker      | 1322  | ⏳     | Worker handlers                           |
+| P1       | chain-hub/main.rs   | 879   | ⏳     | Rust indexer                              |
+| P2       | ReputationDashboard | 959   | ⏳     | React component                           |
+| P2       | trading-real.ts     | 977   | ⏳     | Trading handler                           |
+| P2       | interop.ts          | 893   | ⏳     | Judge daemon                              |
+| P3       | soul/page.tsx       | 820   | ⏳     | Web page                                  |
+| P3       | runtime.ts          | 859   | ⏳     | Evaluator                                 |
+| P3       | ows-wallet-manager  | 800   | ⏳     | Wallet manager                            |
 
 ---
 
 ## Next Actions
 
 1. **Start P1 tasks** in order:
-   - sdk.ts (highest impact - client SDK)
-   - gradience.ts (CLI usability)
-   - indexer/worker (consistency with main indexer)
-   - chain-hub/main.rs (Rust pattern consistency)
+    - sdk.ts (highest impact - client SDK)
+    - gradience.ts (CLI usability)
+    - indexer/worker (consistency with main indexer)
+    - chain-hub/main.rs (Rust pattern consistency)
 
 2. **Continue page.tsx** extraction:
-   - Shell component
-   - View components
+    - Shell component
+    - View components
 
 3. **Move to P2** after P1 complete
 
 ---
 
-*Last Updated: 2026-04-05*
+_Last Updated: 2026-04-05_

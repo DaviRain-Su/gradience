@@ -16,12 +16,15 @@ Show how Gradience Protocol integrates with Open Wallet Standard (OWS) to create
 ## 📋 Demo Flow (5 minutes)
 
 ### 1. Introduction (30s)
+
 **What we built:**
+
 - Gradience: Decentralized AI Agent Credit Protocol
 - OWS Integration: Multi-chain wallet + identity layer
 - Result: Reputation-powered agent economy
 
 **Key innovation:**
+
 > "Your work history becomes your creditworthiness"
 
 ---
@@ -29,15 +32,17 @@ Show how Gradience Protocol integrates with Open Wallet Standard (OWS) to create
 ### 2. Login with OWS (45s)
 
 **Show:**
+
 1. User opens AgentM
 2. Clicks "Login with OWS Wallet"
 3. OWS connection established
 4. Multi-chain addresses displayed
-   - Solana: `7xKx...9Yz`
-   - Ethereum: `0xabc...def`
+    - Solana: `7xKx...9Yz`
+    - Ethereum: `0xabc...def`
 5. DID: `did:ows:7xKx...9Yz`
 
 **Key point:**
+
 > One wallet, multiple chains, unified identity
 
 ---
@@ -45,6 +50,7 @@ Show how Gradience Protocol integrates with Open Wallet Standard (OWS) to create
 ### 3. Reputation Dashboard (60s)
 
 **Show:**
+
 ```
 🏆 REPUTATION-POWERED WALLET
 
@@ -65,6 +71,7 @@ Overall Score: 85/100
 ```
 
 **Key points:**
+
 - Reputation = Work history on-chain
 - Higher reputation = Higher credit limit
 - Tier-based access control
@@ -74,6 +81,7 @@ Overall Score: 85/100
 ### 4. Post a Task (45s)
 
 **Show:**
+
 1. User creates task: "Analyze market data"
 2. Sets reward: 5,000 lamports
 3. Signs escrow with OWS
@@ -81,6 +89,7 @@ Overall Score: 85/100
 5. Task broadcast to agents
 
 **Key point:**
+
 > OWS handles multi-chain escrow seamlessly
 
 ---
@@ -88,12 +97,14 @@ Overall Score: 85/100
 ### 5. Agent Competition (45s)
 
 **Show:**
+
 1. Agents discover task via XMTP
 2. Agent "DataAnalyzer_v2" applies
 3. Stakes 500 lamports via OWS
 4. Submits result to IPFS
 
 **Key point:**
+
 > Race model: Best agent wins, not platform-assigned
 
 ---
@@ -101,14 +112,16 @@ Overall Score: 85/100
 ### 6. Automatic Settlement (45s)
 
 **Show:**
+
 1. Judge evaluates: Score 88/100
 2. Automatic payment split:
-   - Agent: 4,750 (95%)
-   - Judge: 150 (3%)
-   - Protocol: 100 (2%)
+    - Agent: 4,750 (95%)
+    - Judge: 150 (3%)
+    - Protocol: 100 (2%)
 3. Reputation updated for both
 
 **Key point:**
+
 > 5% total fees vs 20-30% industry standard
 
 ---
@@ -116,11 +129,13 @@ Overall Score: 85/100
 ### 7. Cross-Chain Reputation (30s)
 
 **Show:**
+
 1. User generates reputation proof via OWS
 2. Proof verified on Ethereum
 3. Same agent identity, new chain
 
 **Key point:**
+
 > Reputation is portable across chains
 
 ---
@@ -128,22 +143,26 @@ Overall Score: 85/100
 ## 🎤 Talking Points
 
 ### Problem (15s)
+
 - AI Agents can't prove capability
 - Data trapped in platforms
 - No autonomous commerce
 
 ### Solution (15s)
+
 - On-chain work history = reputation
 - OWS provides multi-chain identity
 - Gradience provides settlement layer
 
 ### Why OWS (15s)
+
 - Multi-chain wallet management
 - Verifiable credentials
 - XMTP messaging integration
 - Backed by MoonPay, PayPal, EF
 
 ### Traction (15s)
+
 - 55 integration tests passing
 - 7-Phase methodology complete
 - Demo live today
@@ -152,24 +171,24 @@ Overall Score: 85/100
 
 ## 🛠️ Technical Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Identity | OWS Wallet + DID |
+| Layer      | Technology                  |
+| ---------- | --------------------------- |
+| Identity   | OWS Wallet + DID            |
 | Settlement | Gradience Protocol (Solana) |
-| Messaging | XMTP via OWS |
-| Frontend | AgentM (React + Vite) |
-| Reputation | On-chain + OWS Credentials |
+| Messaging  | XMTP via OWS                |
+| Frontend   | AgentM (React + Vite)       |
+| Reputation | On-chain + OWS Credentials  |
 
 ---
 
 ## 📊 Key Metrics
 
-| Metric | Value |
-|--------|-------|
-| Test Coverage | 371+ tests |
-| Fees | 5% (vs 20-30% industry) |
-| States | 3 (vs 6 in ERC-8183) |
-| Code | ~300 lines core |
+| Metric        | Value                   |
+| ------------- | ----------------------- |
+| Test Coverage | 371+ tests              |
+| Fees          | 5% (vs 20-30% industry) |
+| States        | 3 (vs 6 in ERC-8183)    |
+| Code          | ~300 lines core         |
 
 ---
 
@@ -208,4 +227,4 @@ A: Reputation is earned through work, not bought. New agents start at Bronze tie
 
 ---
 
-*Demo prepared for OWS Hackathon Miami 2026*
+_Demo prepared for OWS Hackathon Miami 2026_

@@ -9,7 +9,6 @@ import { FollowingList } from '../../components/social/FollowingList';
 import { FollowersList } from '../../components/social/FollowersList';
 import { FollowButton } from '../../components/social/FollowButton';
 
-
 type SocialTab = 'discover' | 'matches' | 'probes' | 'following';
 
 const colors = {
@@ -44,9 +43,10 @@ export function SocialView({ address }: { address: string | null }) {
 
     // Stats
     const matchCount = effectiveMatches.length;
-    const avgScore = effectiveMatches.length > 0
-        ? Math.round(effectiveMatches.reduce((s, m) => s + m.score, 0) / effectiveMatches.length)
-        : 0;
+    const avgScore =
+        effectiveMatches.length > 0
+            ? Math.round(effectiveMatches.reduce((s, m) => s + m.score, 0) / effectiveMatches.length)
+            : 0;
     const topScore = effectiveMatches[0] ? `${Math.round(effectiveMatches[0].score)}%` : '-';
     const sharedCount = effectiveMatches.reduce((s, m) => s + (m.sharedValues?.length || 0), 0);
 
@@ -71,7 +71,16 @@ export function SocialView({ address }: { address: string | null }) {
 
     if (!hasProfile) {
         return (
-            <div style={{ display: 'flex', height: '100%', background: colors.bg, padding: '24px', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+                style={{
+                    display: 'flex',
+                    height: '100%',
+                    background: colors.bg,
+                    padding: '24px',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
                 <div style={{ textAlign: 'center' }}>
                     <EmptyState
                         icon="👤"
@@ -103,36 +112,137 @@ export function SocialView({ address }: { address: string | null }) {
         <div style={{ display: 'flex', height: '100%', background: colors.bg, padding: '24px', gap: '24px' }}>
             {/* Left Sidebar */}
             <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ background: colors.lavender, borderRadius: '24px', padding: '24px', border: `1.5px solid ${colors.ink}` }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Soul Profile</span>
-                    <h2 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '28px', fontWeight: 700, margin: '8px 0 0 0', color: colors.ink }}>
+                <div
+                    style={{
+                        background: colors.lavender,
+                        borderRadius: '24px',
+                        padding: '24px',
+                        border: `1.5px solid ${colors.ink}`,
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            opacity: 0.7,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                        }}
+                    >
+                        My Soul Profile
+                    </span>
+                    <h2
+                        style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            margin: '8px 0 0 0',
+                            color: colors.ink,
+                        }}
+                    >
                         {myProfile?.displayName || 'Anonymous'}
                     </h2>
                     <p style={{ fontSize: '13px', opacity: 0.8, marginTop: '8px', lineHeight: 1.4 }}>
                         {myProfile?.bio?.slice(0, 80) || 'No bio yet'}...
                     </p>
-                    <div style={{ marginTop: '12px', padding: '8px 12px', background: `${colors.lime}40`, borderRadius: '8px', fontSize: '11px', fontWeight: 600, border: `1px solid ${colors.ink}` }}>
+                    <div
+                        style={{
+                            marginTop: '12px',
+                            padding: '8px 12px',
+                            background: `${colors.lime}40`,
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            border: `1px solid ${colors.ink}`,
+                        }}
+                    >
                         Privacy-aware matching active
                     </div>
                 </div>
 
-                <div style={{ background: colors.surface, borderRadius: '24px', padding: '20px', border: `1.5px solid ${colors.ink}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px dashed ${colors.ink}`, paddingBottom: '12px', marginBottom: '12px' }}>
+                <div
+                    style={{
+                        background: colors.surface,
+                        borderRadius: '24px',
+                        padding: '20px',
+                        border: `1.5px solid ${colors.ink}`,
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            borderBottom: `1px dashed ${colors.ink}`,
+                            paddingBottom: '12px',
+                            marginBottom: '12px',
+                        }}
+                    >
                         <div>
-                            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6 }}>Matches</div>
-                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '32px', fontWeight: 700, lineHeight: 1 }}>{matchCount}</div>
+                            <div
+                                style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6 }}
+                            >
+                                Matches
+                            </div>
+                            <div
+                                style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '32px',
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {matchCount}
+                            </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6 }}>Avg Score</div>
-                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '32px', fontWeight: 700, lineHeight: 1 }}>{avgScore}</div>
+                            <div
+                                style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6 }}
+                            >
+                                Avg Score
+                            </div>
+                            <div
+                                style={{
+                                    fontFamily: "'Oswald', sans-serif",
+                                    fontSize: '32px',
+                                    fontWeight: 700,
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {avgScore}
+                            </div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        {[{ icon: '🎯', label: 'Top Match', value: topScore, bg: colors.lime },
-                          { icon: '💎', label: 'Shared Values', value: `${sharedCount}`, bg: colors.lavender },
-                        ].map(item => (
-                            <div key={item.label} style={{ flex: 1, background: colors.bg, border: `1.5px solid ${colors.ink}`, borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-                                <div style={{ width: '28px', height: '28px', background: item.bg, borderRadius: '50%', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{item.icon}</div>
+                        {[
+                            { icon: '🎯', label: 'Top Match', value: topScore, bg: colors.lime },
+                            { icon: '💎', label: 'Shared Values', value: `${sharedCount}`, bg: colors.lavender },
+                        ].map((item) => (
+                            <div
+                                key={item.label}
+                                style={{
+                                    flex: 1,
+                                    background: colors.bg,
+                                    border: `1.5px solid ${colors.ink}`,
+                                    borderRadius: '12px',
+                                    padding: '12px',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: '28px',
+                                        height: '28px',
+                                        background: item.bg,
+                                        borderRadius: '50%',
+                                        margin: '0 auto 8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '12px',
+                                    }}
+                                >
+                                    {item.icon}
+                                </div>
                                 <div style={{ fontWeight: 700, fontSize: '14px' }}>{item.value}</div>
                                 <div style={{ fontSize: '10px', opacity: 0.7 }}>{item.label}</div>
                             </div>
@@ -143,26 +253,68 @@ export function SocialView({ address }: { address: string | null }) {
 
             {/* Main Content */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: colors.surface, borderRadius: '16px', padding: '8px', border: `1.5px solid ${colors.ink}` }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: colors.surface,
+                        borderRadius: '16px',
+                        padding: '8px',
+                        border: `1.5px solid ${colors.ink}`,
+                    }}
+                >
                     <div style={{ display: 'flex', gap: '4px' }}>
                         {[
                             { id: 'discover' as SocialTab, label: '🔍 Discover', count: serverProfiles.length },
                             { id: 'matches' as SocialTab, label: '💕 Matches', count: matchCount },
                             { id: 'probes' as SocialTab, label: '💬 Probes', count: probes.length },
                             { id: 'following' as SocialTab, label: '👥 Following', count: 0 },
-                        ].map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                                padding: '10px 20px', borderRadius: '12px', fontWeight: 600, fontSize: '14px',
-                                background: activeTab === tab.id ? colors.ink : 'transparent',
-                                color: activeTab === tab.id ? colors.surface : colors.ink,
-                                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                            }}>
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '12px',
+                                    fontWeight: 600,
+                                    fontSize: '14px',
+                                    background: activeTab === tab.id ? colors.ink : 'transparent',
+                                    color: activeTab === tab.id ? colors.surface : colors.ink,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                }}
+                            >
                                 {tab.label}
-                                {tab.count > 0 && <span style={{ padding: '2px 8px', background: colors.lavender, borderRadius: '999px', fontSize: '11px', color: colors.ink }}>{tab.count}</span>}
+                                {tab.count > 0 && (
+                                    <span
+                                        style={{
+                                            padding: '2px 8px',
+                                            background: colors.lavender,
+                                            borderRadius: '999px',
+                                            fontSize: '11px',
+                                            color: colors.ink,
+                                        }}
+                                    >
+                                        {tab.count}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
-                    <div style={{ padding: '6px 12px', background: `${colors.lime}40`, borderRadius: '8px', fontSize: '11px', fontWeight: 600, border: `1px solid ${colors.ink}` }}>
+                    <div
+                        style={{
+                            padding: '6px 12px',
+                            background: `${colors.lime}40`,
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            border: `1px solid ${colors.ink}`,
+                        }}
+                    >
                         Privacy-aware matching active
                     </div>
                 </div>
@@ -171,14 +323,28 @@ export function SocialView({ address }: { address: string | null }) {
                     {activeTab === 'discover' && (
                         <div>
                             {serverProfiles.length === 0 ? (
-                                <EmptyState icon="🔍" title="No Profiles Found" description="Be the first to create a Soul Profile and start the network!" />
+                                <EmptyState
+                                    icon="🔍"
+                                    title="No Profiles Found"
+                                    description="Be the first to create a Soul Profile and start the network!"
+                                />
                             ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
-                                    {serverProfiles.map(p => (
-                                        <DiscoverCard key={p.address} profile={p} onClick={() => {
-                                            const m = serverMatches.find(sm => sm.address === p.address);
-                                            if (m) handleViewMatch(m);
-                                        }} />
+                                <div
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                                        gap: '16px',
+                                    }}
+                                >
+                                    {serverProfiles.map((p) => (
+                                        <DiscoverCard
+                                            key={p.address}
+                                            profile={p}
+                                            onClick={() => {
+                                                const m = serverMatches.find((sm) => sm.address === p.address);
+                                                if (m) handleViewMatch(m);
+                                            }}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -188,9 +354,13 @@ export function SocialView({ address }: { address: string | null }) {
                     {activeTab === 'matches' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {effectiveMatches.length === 0 ? (
-                                <EmptyState icon="💕" title="No Matches Yet" description="Matches appear when other agents have compatible Soul Profiles" />
+                                <EmptyState
+                                    icon="💕"
+                                    title="No Matches Yet"
+                                    description="Matches appear when other agents have compatible Soul Profiles"
+                                />
                             ) : (
-                                effectiveMatches.map(m => (
+                                effectiveMatches.map((m) => (
                                     <MatchCard key={m.address} match={m} onClick={() => handleViewMatch(m)} />
                                 ))
                             )}
@@ -200,38 +370,78 @@ export function SocialView({ address }: { address: string | null }) {
                     {activeTab === 'probes' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {probes.length === 0 ? (
-                                <EmptyState icon="💬" title="No Active Probes" description="Start a probe from Discover or Matches to begin a compatibility conversation" />
+                                <EmptyState
+                                    icon="💬"
+                                    title="No Active Probes"
+                                    description="Start a probe from Discover or Matches to begin a compatibility conversation"
+                                />
                             ) : (
-                                probes.map(p => (
-                                    <ProbeCard key={p.id} probe={p} onResume={() => handleViewMatch(p.match)} onClose={() => setProbes(prev => prev.filter(x => x.id !== p.id))} />
+                                probes.map((p) => (
+                                    <ProbeCard
+                                        key={p.id}
+                                        probe={p}
+                                        onResume={() => handleViewMatch(p.match)}
+                                        onClose={() => setProbes((prev) => prev.filter((x) => x.id !== p.id))}
+                                    />
                                 ))
                             )}
                         </div>
                     )}
 
-                    {activeTab === 'following' && (
-                        <FollowingTabContent />
-                    )}
+                    {activeTab === 'following' && <FollowingTabContent />}
                 </div>
             </div>
 
             {/* Modal */}
-            {selectedMatch && <MatchModal match={selectedMatch} onClose={closeModal} onStartProbe={() => startProbe(selectedMatch)} />}
+            {selectedMatch && (
+                <MatchModal match={selectedMatch} onClose={closeModal} onStartProbe={() => startProbe(selectedMatch)} />
+            )}
         </div>
     );
 }
 
 // ── Components ──
 
-function DiscoverCard({ profile, onClick }: { profile: { address: string; soulType: string; displayName: string; bio?: string; privacyLevel: string; interests?: { topics: string[] }; communication?: { tone: string; pace: string; depth: string } }; onClick: () => void }) {
+function DiscoverCard({
+    profile,
+    onClick,
+}: {
+    profile: {
+        address: string;
+        soulType: string;
+        displayName: string;
+        bio?: string;
+        privacyLevel: string;
+        interests?: { topics: string[] };
+        communication?: { tone: string; pace: string; depth: string };
+    };
+    onClick: () => void;
+}) {
     const isPrivate = profile.privacyLevel === 'private';
     return (
-        <div onClick={onClick} style={{
-            background: colors.surface, borderRadius: '24px', padding: '24px', border: `1.5px solid ${colors.ink}`,
-            cursor: 'pointer', transition: 'transform 0.15s',
-        }}>
+        <div
+            onClick={onClick}
+            style={{
+                background: colors.surface,
+                borderRadius: '24px',
+                padding: '24px',
+                border: `1.5px solid ${colors.ink}`,
+                cursor: 'pointer',
+                transition: 'transform 0.15s',
+            }}
+        >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ padding: '4px 10px', background: colors.lavender, borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', border: `1px solid ${colors.ink}` }}>
+                <span
+                    style={{
+                        padding: '4px 10px',
+                        background: colors.lavender,
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        border: `1px solid ${colors.ink}`,
+                    }}
+                >
                     {profile.soulType === 'agent' ? 'AI Agent' : 'Human'}
                 </span>
                 <PrivacyBadge level={profile.privacyLevel} />
@@ -246,13 +456,26 @@ function DiscoverCard({ profile, onClick }: { profile: { address: string; soulTy
             )}
             {!isPrivate && profile.interests?.topics && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {profile.interests.topics.slice(0, 4).map(t => (
-                        <span key={t} style={{ padding: '4px 8px', background: colors.bg, borderRadius: '6px', fontSize: '11px', border: `1px solid ${colors.ink}` }}>#{t}</span>
+                    {profile.interests.topics.slice(0, 4).map((t) => (
+                        <span
+                            key={t}
+                            style={{
+                                padding: '4px 8px',
+                                background: colors.bg,
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                border: `1px solid ${colors.ink}`,
+                            }}
+                        >
+                            #{t}
+                        </span>
                     ))}
                 </div>
             )}
             {isPrivate && (
-                <p style={{ fontSize: '12px', opacity: 0.5, fontStyle: 'italic' }}>This profile is private. Match to see compatibility score only.</p>
+                <p style={{ fontSize: '12px', opacity: 0.5, fontStyle: 'italic' }}>
+                    This profile is private. Match to see compatibility score only.
+                </p>
             )}
         </div>
     );
@@ -261,15 +484,34 @@ function DiscoverCard({ profile, onClick }: { profile: { address: string; soulTy
 function MatchCard({ match, onClick }: { match: MatchProfile; onClick: () => void }) {
     const scoreColor = match.score >= 60 ? colors.lime : match.score >= 35 ? '#FFD700' : '#FF6B6B';
     return (
-        <div onClick={onClick} style={{
-            background: colors.surface, borderRadius: '16px', padding: '20px', border: `1.5px solid ${colors.ink}`,
-            display: 'flex', alignItems: 'center', gap: '20px', cursor: 'pointer',
-        }}>
-            <div style={{
-                width: '64px', height: '64px', borderRadius: '16px', background: colors.lavender,
-                border: `1.5px solid ${colors.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: "'Oswald', sans-serif", fontSize: '24px', fontWeight: 700,
-            }}>
+        <div
+            onClick={onClick}
+            style={{
+                background: colors.surface,
+                borderRadius: '16px',
+                padding: '20px',
+                border: `1.5px solid ${colors.ink}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+                cursor: 'pointer',
+            }}
+        >
+            <div
+                style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '16px',
+                    background: colors.lavender,
+                    border: `1.5px solid ${colors.ink}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '24px',
+                    fontWeight: 700,
+                }}
+            >
                 {match.displayName[0]}
             </div>
             <div style={{ flex: 1 }}>
@@ -277,57 +519,182 @@ function MatchCard({ match, onClick }: { match: MatchProfile; onClick: () => voi
                     <span style={{ fontWeight: 700, fontSize: '16px' }}>{match.displayName}</span>
                     <PrivacyBadge level={match.privacyLevel} />
                 </div>
-                {match.bio && <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>{match.bio.slice(0, 60)}...</div>}
+                {match.bio && (
+                    <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>{match.bio.slice(0, 60)}...</div>
+                )}
                 <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    {(match.sharedValues || []).slice(0, 3).map(v => (
-                        <span key={v} style={{ padding: '2px 8px', background: colors.lavender, borderRadius: '999px', fontSize: '10px', fontWeight: 600 }}>{v}</span>
+                    {(match.sharedValues || []).slice(0, 3).map((v) => (
+                        <span
+                            key={v}
+                            style={{
+                                padding: '2px 8px',
+                                background: colors.lavender,
+                                borderRadius: '999px',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                            }}
+                        >
+                            {v}
+                        </span>
                     ))}
-                    {(match.sharedInterests || []).slice(0, 2).map(v => (
-                        <span key={v} style={{ padding: '2px 8px', background: colors.bg, borderRadius: '999px', fontSize: '10px', border: `1px solid ${colors.ink}` }}>#{v}</span>
+                    {(match.sharedInterests || []).slice(0, 2).map((v) => (
+                        <span
+                            key={v}
+                            style={{
+                                padding: '2px 8px',
+                                background: colors.bg,
+                                borderRadius: '999px',
+                                fontSize: '10px',
+                                border: `1px solid ${colors.ink}`,
+                            }}
+                        >
+                            #{v}
+                        </span>
                     ))}
                     {match.privacyLevel === 'private' && (
-                        <span style={{ padding: '2px 8px', background: '#f3f3f8', borderRadius: '999px', fontSize: '10px', fontStyle: 'italic', opacity: 0.6 }}>Details hidden</span>
+                        <span
+                            style={{
+                                padding: '2px 8px',
+                                background: '#f3f3f8',
+                                borderRadius: '999px',
+                                fontSize: '10px',
+                                fontStyle: 'italic',
+                                opacity: 0.6,
+                            }}
+                        >
+                            Details hidden
+                        </span>
                     )}
                 </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '36px', fontWeight: 700 }}>{Math.round(match.score)}</div>
+                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '36px', fontWeight: 700 }}>
+                    {Math.round(match.score)}
+                </div>
                 <div style={{ fontSize: '10px', fontWeight: 600, opacity: 0.6 }}>MATCH</div>
-                <div style={{ width: '60px', height: '4px', background: colors.bg, borderRadius: '2px', marginTop: '6px' }}>
-                    <div style={{ width: `${match.score}%`, height: '100%', background: scoreColor, borderRadius: '2px' }} />
+                <div
+                    style={{
+                        width: '60px',
+                        height: '4px',
+                        background: colors.bg,
+                        borderRadius: '2px',
+                        marginTop: '6px',
+                    }}
+                >
+                    <div
+                        style={{
+                            width: `${match.score}%`,
+                            height: '100%',
+                            background: scoreColor,
+                            borderRadius: '2px',
+                        }}
+                    />
                 </div>
             </div>
         </div>
     );
 }
 
-function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onClose: () => void; onStartProbe?: () => void }) {
+function MatchModal({
+    match,
+    onClose,
+    onStartProbe,
+}: {
+    match: MatchProfile;
+    onClose: () => void;
+    onStartProbe?: () => void;
+}) {
     return (
-        <div onClick={onClose} style={{
-            position: 'fixed', inset: 0, background: 'rgba(243,243,248,0.85)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '24px',
-        }}>
-            <div onClick={e => e.stopPropagation()} style={{
-                background: colors.surface, borderRadius: '32px', maxWidth: '900px', width: '100%', maxHeight: '85vh',
-                overflowY: 'auto', border: `2px solid ${colors.ink}`, boxShadow: '0 40px 80px -20px rgba(0,0,0,0.15)',
-                display: 'grid', gridTemplateColumns: '380px 1fr',
-            }}>
+        <div
+            onClick={onClose}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(243,243,248,0.85)',
+                backdropFilter: 'blur(4px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 50,
+                padding: '24px',
+            }}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    background: colors.surface,
+                    borderRadius: '32px',
+                    maxWidth: '900px',
+                    width: '100%',
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
+                    border: `2px solid ${colors.ink}`,
+                    boxShadow: '0 40px 80px -20px rgba(0,0,0,0.15)',
+                    display: 'grid',
+                    gridTemplateColumns: '380px 1fr',
+                }}
+            >
                 {/* Left */}
-                <div style={{ background: colors.bg, borderRight: `2px solid ${colors.ink}`, padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div
+                    style={{
+                        background: colors.bg,
+                        borderRight: `2px solid ${colors.ink}`,
+                        padding: '32px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px',
+                    }}
+                >
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <span style={{ padding: '6px 12px', background: colors.lavender, borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', border: `1.5px solid ${colors.ink}` }}>
+                        <span
+                            style={{
+                                padding: '6px 12px',
+                                background: colors.lavender,
+                                borderRadius: '999px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                border: `1.5px solid ${colors.ink}`,
+                            }}
+                        >
                             {match.soulType === 'agent' ? 'AI Agent' : 'Human'}
                         </span>
                         <PrivacyBadge level={match.privacyLevel} />
                     </div>
-                    <h2 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '48px', fontWeight: 700, color: colors.ink, margin: 0 }}>
+                    <h2
+                        style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '48px',
+                            fontWeight: 700,
+                            color: colors.ink,
+                            margin: 0,
+                        }}
+                    >
                         {match.displayName}
                     </h2>
 
                     <div>
-                        <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Compatibility Score</div>
-                        <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '64px', fontWeight: 700, color: colors.ink }}>
-                            {Math.round(match.score)}<span style={{ fontSize: '24px' }}>%</span>
+                        <div
+                            style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                opacity: 0.6,
+                                marginBottom: '8px',
+                            }}
+                        >
+                            Compatibility Score
+                        </div>
+                        <div
+                            style={{
+                                fontFamily: "'Oswald', sans-serif",
+                                fontSize: '64px',
+                                fontWeight: 700,
+                                color: colors.ink,
+                            }}
+                        >
+                            {Math.round(match.score)}
+                            <span style={{ fontSize: '24px' }}>%</span>
                         </div>
                     </div>
 
@@ -337,13 +704,33 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                                 { label: 'Values', score: match.breakdown.values, color: colors.lavender },
                                 { label: 'Interests', score: match.breakdown.interests, color: colors.lime },
                                 { label: 'Communication', score: match.breakdown.communication, color: '#FFD700' },
-                            ].map(item => (
+                            ].map((item) => (
                                 <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{ width: '80px', fontSize: '11px', fontWeight: 600, opacity: 0.7 }}>{item.label}</div>
-                                    <div style={{ flex: 1, height: '8px', background: `${colors.ink}15`, borderRadius: '4px' }}>
-                                        <div style={{ width: `${item.score}%`, height: '100%', background: item.color, borderRadius: '4px' }} />
+                                    <div style={{ width: '80px', fontSize: '11px', fontWeight: 600, opacity: 0.7 }}>
+                                        {item.label}
                                     </div>
-                                    <div style={{ width: '30px', fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>{item.score}</div>
+                                    <div
+                                        style={{
+                                            flex: 1,
+                                            height: '8px',
+                                            background: `${colors.ink}15`,
+                                            borderRadius: '4px',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: `${item.score}%`,
+                                                height: '100%',
+                                                background: item.color,
+                                                borderRadius: '4px',
+                                            }}
+                                        />
+                                    </div>
+                                    <div
+                                        style={{ width: '30px', fontSize: '12px', fontWeight: 700, textAlign: 'right' }}
+                                    >
+                                        {item.score}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -351,18 +738,65 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
 
                     {(match.sharedValues?.length ?? 0) > 0 && (
                         <div style={{ padding: '16px', background: `${colors.lime}30`, borderRadius: '12px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6, marginBottom: '6px' }}>Shared Values</div>
+                            <div
+                                style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    opacity: 0.6,
+                                    marginBottom: '6px',
+                                }}
+                            >
+                                Shared Values
+                            </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                {match.sharedValues!.map(v => <span key={v} style={{ padding: '4px 10px', background: colors.lime, borderRadius: '999px', fontSize: '11px', fontWeight: 600 }}>{v}</span>)}
+                                {match.sharedValues!.map((v) => (
+                                    <span
+                                        key={v}
+                                        style={{
+                                            padding: '4px 10px',
+                                            background: colors.lime,
+                                            borderRadius: '999px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        {v}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                     )}
 
                     {(match.conflictAreas?.length ?? 0) > 0 && (
                         <div style={{ padding: '16px', background: '#FEE2E230', borderRadius: '12px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6, marginBottom: '6px' }}>Potential Conflicts</div>
+                            <div
+                                style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    opacity: 0.6,
+                                    marginBottom: '6px',
+                                }}
+                            >
+                                Potential Conflicts
+                            </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                {match.conflictAreas!.map(v => <span key={v} style={{ padding: '4px 10px', background: '#FEE2E2', borderRadius: '999px', fontSize: '11px', fontWeight: 600, color: '#DC2626' }}>{v}</span>)}
+                                {match.conflictAreas!.map((v) => (
+                                    <span
+                                        key={v}
+                                        style={{
+                                            padding: '4px 10px',
+                                            background: '#FEE2E2',
+                                            borderRadius: '999px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            color: '#DC2626',
+                                        }}
+                                    >
+                                        {v}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -371,30 +805,76 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                         <div style={{ padding: '16px', background: `${colors.ink}08`, borderRadius: '12px' }}>
                             <div style={{ fontSize: '12px', opacity: 0.6 }}>
                                 {match.privacyLevel === 'private'
-                                    ? 'This user\'s profile is private. Only the compatibility score is visible.'
+                                    ? "This user's profile is private. Only the compatibility score is visible."
                                     : 'This user uses selective disclosure. Detailed breakdown is not available.'}
                             </div>
                         </div>
                     )}
 
                     {onStartProbe && (
-                        <button onClick={onStartProbe} style={{
-                            padding: '16px 24px', background: colors.lime, color: colors.ink, border: `1.5px solid ${colors.ink}`,
-                            borderRadius: '16px', fontSize: '16px', fontWeight: 700, cursor: 'pointer',
-                        }}>Start Probe 💬</button>
+                        <button
+                            onClick={onStartProbe}
+                            style={{
+                                padding: '16px 24px',
+                                background: colors.lime,
+                                color: colors.ink,
+                                border: `1.5px solid ${colors.ink}`,
+                                borderRadius: '16px',
+                                fontSize: '16px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Start Probe 💬
+                        </button>
                     )}
-                    <button onClick={onClose} style={{
-                        padding: '16px 24px', background: colors.ink, color: colors.surface, border: 'none',
-                        borderRadius: '16px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                    }}>Close</button>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            padding: '16px 24px',
+                            background: colors.ink,
+                            color: colors.surface,
+                            border: 'none',
+                            borderRadius: '16px',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Close
+                    </button>
                 </div>
 
                 {/* Right */}
-                <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
-                    <button onClick={onClose} style={{
-                        position: 'absolute', top: '24px', right: '24px', width: '48px', height: '48px', borderRadius: '50%',
-                        border: `2px solid ${colors.ink}`, background: colors.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '20px',
-                    }}>✕</button>
+                <div
+                    style={{
+                        padding: '32px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '24px',
+                        position: 'relative',
+                    }}
+                >
+                    <button
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute',
+                            top: '24px',
+                            right: '24px',
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '50%',
+                            border: `2px solid ${colors.ink}`,
+                            background: colors.surface,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                        }}
+                    >
+                        ✕
+                    </button>
 
                     {match.bio && (
                         <Section title="About">
@@ -406,8 +886,25 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                         <Section title="Core Values">
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                 {match.values.core.map((v, i) => {
-                                    const isShared = match.sharedValues?.map(s => s.toLowerCase()).includes(v.toLowerCase());
-                                    return <span key={i} style={{ padding: '8px 16px', background: isShared ? colors.lime : colors.lavender, borderRadius: '999px', fontSize: '13px', fontWeight: 600, border: `1.5px solid ${colors.ink}` }}>{v}{isShared ? ' ✓' : ''}</span>;
+                                    const isShared = match.sharedValues
+                                        ?.map((s) => s.toLowerCase())
+                                        .includes(v.toLowerCase());
+                                    return (
+                                        <span
+                                            key={i}
+                                            style={{
+                                                padding: '8px 16px',
+                                                background: isShared ? colors.lime : colors.lavender,
+                                                borderRadius: '999px',
+                                                fontSize: '13px',
+                                                fontWeight: 600,
+                                                border: `1.5px solid ${colors.ink}`,
+                                            }}
+                                        >
+                                            {v}
+                                            {isShared ? ' ✓' : ''}
+                                        </span>
+                                    );
                                 })}
                             </div>
                         </Section>
@@ -417,8 +914,24 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                         <Section title="Interests">
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                 {match.interests.topics.map((t, i) => {
-                                    const isShared = match.sharedInterests?.map(s => s.toLowerCase()).includes(t.toLowerCase());
-                                    return <span key={i} style={{ padding: '6px 12px', background: isShared ? `${colors.lime}60` : colors.bg, borderRadius: '8px', fontSize: '12px', border: `1.5px solid ${colors.ink}` }}>#{t}{isShared ? ' ✓' : ''}</span>;
+                                    const isShared = match.sharedInterests
+                                        ?.map((s) => s.toLowerCase())
+                                        .includes(t.toLowerCase());
+                                    return (
+                                        <span
+                                            key={i}
+                                            style={{
+                                                padding: '6px 12px',
+                                                background: isShared ? `${colors.lime}60` : colors.bg,
+                                                borderRadius: '8px',
+                                                fontSize: '12px',
+                                                border: `1.5px solid ${colors.ink}`,
+                                            }}
+                                        >
+                                            #{t}
+                                            {isShared ? ' ✓' : ''}
+                                        </span>
+                                    );
                                 })}
                             </div>
                         </Section>
@@ -427,14 +940,50 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                     {match.communication && (
                         <Section title="Communication Style">
                             <div style={{ display: 'flex', gap: '16px' }}>
-                                {[{ label: 'Tone', value: match.communication.tone, bg: colors.lavender },
-                                  { label: 'Pace', value: match.communication.pace, bg: colors.lime },
-                                  { label: 'Depth', value: match.communication.depth, bg: colors.surface },
-                                ].map(item => (
-                                    <div key={item.label} style={{ flex: 1, padding: '16px', background: colors.bg, borderRadius: '12px', border: `1.5px solid ${colors.ink}` }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.bg, marginBottom: '8px' }} />
-                                        <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.6 }}>{item.label}</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 700, textTransform: 'capitalize', marginTop: '4px' }}>{item.value}</div>
+                                {[
+                                    { label: 'Tone', value: match.communication.tone, bg: colors.lavender },
+                                    { label: 'Pace', value: match.communication.pace, bg: colors.lime },
+                                    { label: 'Depth', value: match.communication.depth, bg: colors.surface },
+                                ].map((item) => (
+                                    <div
+                                        key={item.label}
+                                        style={{
+                                            flex: 1,
+                                            padding: '16px',
+                                            background: colors.bg,
+                                            borderRadius: '12px',
+                                            border: `1.5px solid ${colors.ink}`,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                borderRadius: '50%',
+                                                background: item.bg,
+                                                marginBottom: '8px',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: '11px',
+                                                fontWeight: 600,
+                                                textTransform: 'uppercase',
+                                                opacity: 0.6,
+                                            }}
+                                        >
+                                            {item.label}
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: '14px',
+                                                fontWeight: 700,
+                                                textTransform: 'capitalize',
+                                                marginTop: '4px',
+                                            }}
+                                        >
+                                            {item.value}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -442,7 +991,17 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
                     )}
 
                     {match.privacyLevel === 'private' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, textAlign: 'center', opacity: 0.5 }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flex: 1,
+                                textAlign: 'center',
+                                opacity: 0.5,
+                            }}
+                        >
                             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔒</div>
                             <p>This user&apos;s profile details are private.</p>
                         </div>
@@ -456,15 +1015,32 @@ function MatchModal({ match, onClose, onStartProbe }: { match: MatchProfile; onC
 // Probe Card Component
 function ProbeCard({ probe, onResume, onClose }: { probe: ProbeSession; onResume: () => void; onClose: () => void }) {
     return (
-        <div style={{
-            background: colors.surface, borderRadius: '16px', padding: '20px', border: `1.5px solid ${colors.ink}`,
-            display: 'flex', alignItems: 'center', gap: '20px',
-        }}>
-            <div style={{
-                width: '56px', height: '56px', borderRadius: '12px', background: colors.lavender,
-                border: `1.5px solid ${colors.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700,
-            }}>
+        <div
+            style={{
+                background: colors.surface,
+                borderRadius: '16px',
+                padding: '20px',
+                border: `1.5px solid ${colors.ink}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+            }}
+        >
+            <div
+                style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '12px',
+                    background: colors.lavender,
+                    border: `1.5px solid ${colors.ink}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '20px',
+                    fontWeight: 700,
+                }}
+            >
                 {probe.match.displayName[0]}
             </div>
             <div style={{ flex: 1 }}>
@@ -474,21 +1050,54 @@ function ProbeCard({ probe, onResume, onClose }: { probe: ProbeSession; onResume
                 </div>
                 {probe.match.sharedValues && probe.match.sharedValues.length > 0 && (
                     <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
-                        {probe.match.sharedValues.slice(0, 3).map(v => (
-                            <span key={v} style={{ padding: '2px 8px', background: colors.lime, borderRadius: '999px', fontSize: '10px', fontWeight: 600 }}>{v}</span>
+                        {probe.match.sharedValues.slice(0, 3).map((v) => (
+                            <span
+                                key={v}
+                                style={{
+                                    padding: '2px 8px',
+                                    background: colors.lime,
+                                    borderRadius: '999px',
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                {v}
+                            </span>
                         ))}
                     </div>
                 )}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={onResume} style={{
-                    padding: '10px 16px', borderRadius: '10px', border: 'none', background: colors.lime,
-                    color: colors.ink, fontWeight: 600, fontSize: '14px', cursor: 'pointer',
-                }}>Resume</button>
-                <button onClick={onClose} style={{
-                    padding: '10px 16px', borderRadius: '10px', border: `1.5px solid ${colors.ink}`,
-                    background: colors.surface, color: colors.ink, fontWeight: 600, fontSize: '14px', cursor: 'pointer',
-                }}>End</button>
+                <button
+                    onClick={onResume}
+                    style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: colors.lime,
+                        color: colors.ink,
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Resume
+                </button>
+                <button
+                    onClick={onClose}
+                    style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        border: `1.5px solid ${colors.ink}`,
+                        background: colors.surface,
+                        color: colors.ink,
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    End
+                </button>
             </div>
         </div>
     );
@@ -497,13 +1106,24 @@ function ProbeCard({ probe, onResume, onClose }: { probe: ProbeSession; onResume
 // ── Shared Components ──
 
 function PrivacyBadge({ level }: { level: string }) {
-    const config = level === 'private'
-        ? { label: 'Private', bg: '#FEE2E2', color: '#DC2626' }
-        : level === 'zk-selective'
-        ? { label: 'Selective', bg: '#FEF3C7', color: '#92400E' }
-        : { label: 'Public', bg: `${colors.lime}60`, color: colors.ink };
+    const config =
+        level === 'private'
+            ? { label: 'Private', bg: '#FEE2E2', color: '#DC2626' }
+            : level === 'zk-selective'
+              ? { label: 'Selective', bg: '#FEF3C7', color: '#92400E' }
+              : { label: 'Public', bg: `${colors.lime}60`, color: colors.ink };
     return (
-        <span style={{ padding: '3px 8px', background: config.bg, color: config.color, borderRadius: '999px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
+        <span
+            style={{
+                padding: '3px 8px',
+                background: config.bg,
+                color: config.color,
+                borderRadius: '999px',
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+            }}
+        >
             {config.label}
         </span>
     );
@@ -515,12 +1135,31 @@ function LoadingState() {
 
 function EmptyState({ icon, title, description }: { icon: string; title: string; description: string }) {
     return (
-        <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            height: '100%', textAlign: 'center', background: colors.surface, borderRadius: '24px', border: `1.5px solid ${colors.ink}`,
-        }}>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                textAlign: 'center',
+                background: colors.surface,
+                borderRadius: '24px',
+                border: `1.5px solid ${colors.ink}`,
+            }}
+        >
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>{icon}</div>
-            <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '24px', fontWeight: 700, color: colors.ink, marginBottom: '8px' }}>{title}</h3>
+            <h3
+                style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '24px',
+                    fontWeight: 700,
+                    color: colors.ink,
+                    marginBottom: '8px',
+                }}
+            >
+                {title}
+            </h3>
             <p style={{ color: colors.ink, opacity: 0.6, maxWidth: '400px' }}>{description}</p>
         </div>
     );
@@ -529,7 +1168,19 @@ function EmptyState({ icon, title, description }: { icon: string; title: string;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <div>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', borderBottom: `1.5px solid ${colors.ink}`, paddingBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h3>
+            <h3
+                style={{
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    marginBottom: '16px',
+                    borderBottom: `1.5px solid ${colors.ink}`,
+                    paddingBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                }}
+            >
+                {title}
+            </h3>
             {children}
         </div>
     );
@@ -542,7 +1193,14 @@ function FollowingTabContent() {
     return (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', height: '100%' }}>
             {/* Following List */}
-            <div style={{ background: colors.surface, borderRadius: '24px', border: `1.5px solid ${colors.ink}`, overflow: 'hidden' }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    borderRadius: '24px',
+                    border: `1.5px solid ${colors.ink}`,
+                    overflow: 'hidden',
+                }}
+            >
                 <div style={{ padding: '16px 20px', borderBottom: `1px dashed ${colors.ink}` }}>
                     <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700 }}>
                         Following ({following.length})
@@ -559,9 +1217,20 @@ function FollowingTabContent() {
                         </div>
                     ) : (
                         following.map((f) => (
-                            <div key={f.address} style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div
+                                key={f.address}
+                                style={{
+                                    padding: '16px 20px',
+                                    borderBottom: `1px solid ${colors.bg}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
                                 <div>
-                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{f.displayName || `${f.address.slice(0, 8)}...`}</p>
+                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>
+                                        {f.displayName || `${f.address.slice(0, 8)}...`}
+                                    </p>
                                     <p style={{ fontSize: '12px', opacity: 0.6 }}>{f.address.slice(0, 16)}...</p>
                                 </div>
                                 <button
@@ -585,7 +1254,14 @@ function FollowingTabContent() {
             </div>
 
             {/* Followers List */}
-            <div style={{ background: colors.surface, borderRadius: '24px', border: `1.5px solid ${colors.ink}`, overflow: 'hidden' }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    borderRadius: '24px',
+                    border: `1.5px solid ${colors.ink}`,
+                    overflow: 'hidden',
+                }}
+            >
                 <div style={{ padding: '16px 20px', borderBottom: `1px dashed ${colors.ink}` }}>
                     <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 700 }}>
                         Followers ({followers.length})
@@ -602,13 +1278,32 @@ function FollowingTabContent() {
                         </div>
                     ) : (
                         followers.map((f) => (
-                            <div key={f.address} style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div
+                                key={f.address}
+                                style={{
+                                    padding: '16px 20px',
+                                    borderBottom: `1px solid ${colors.bg}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
                                 <div>
-                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>{f.displayName || `${f.address.slice(0, 8)}...`}</p>
+                                    <p style={{ fontWeight: 600, fontSize: '14px' }}>
+                                        {f.displayName || `${f.address.slice(0, 8)}...`}
+                                    </p>
                                     <p style={{ fontSize: '12px', opacity: 0.6 }}>{f.address.slice(0, 16)}...</p>
                                 </div>
                                 {f.isFollowing ? (
-                                    <span style={{ padding: '6px 12px', background: colors.lavender, borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                                    <span
+                                        style={{
+                                            padding: '6px 12px',
+                                            background: colors.lavender,
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 600,
+                                        }}
+                                    >
                                         Follows You
                                     </span>
                                 ) : (

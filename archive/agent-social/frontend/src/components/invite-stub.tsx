@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
-import {
-    MagicBlockA2AAgent,
-    createDefaultMagicBlockTransport,
-    type A2ADelivery,
-} from '../lib/magicblock-a2a';
+import { MagicBlockA2AAgent, createDefaultMagicBlockTransport, type A2ADelivery } from '../lib/magicblock-a2a';
 
 interface InviteStubProps {
     selectedAgent: string | null;
@@ -45,9 +41,7 @@ export function InviteStub({ selectedAgent }: InviteStubProps) {
         const off = agent.onDelivery((delivery) => {
             setDeliveries((current) => [delivery, ...current].slice(0, 20));
             if (delivery.direction === 'incoming') {
-                setStatus(
-                    `Received from ${delivery.envelope.from} via ${delivery.channel} in ${delivery.latencyMs}ms`,
-                );
+                setStatus(`Received from ${delivery.envelope.from} via ${delivery.channel} in ${delivery.latencyMs}ms`);
             }
         });
         agent.start();
@@ -83,9 +77,7 @@ export function InviteStub({ selectedAgent }: InviteStubProps) {
     return (
         <section className="panel">
             <h2>Collaboration Channel (T45 A2A)</h2>
-            <p className="muted">
-                MagicBlock-style realtime channel with micropayment stub accounting.
-            </p>
+            <p className="muted">MagicBlock-style realtime channel with micropayment stub accounting.</p>
             <form onSubmit={submit} className="grid" style={{ marginTop: 12 }}>
                 <input
                     value={agentIdInput}
@@ -137,12 +129,10 @@ export function InviteStub({ selectedAgent }: InviteStubProps) {
                                 </div>
                                 <div className="muted">{delivery.envelope.message}</div>
                                 <div className="muted">
-                                    {delivery.direction} · {delivery.channel} · latency {delivery.latencyMs}ms ·{' '}
-                                    fee {delivery.envelope.paymentMicrolamports} μlamports
+                                    {delivery.direction} · {delivery.channel} · latency {delivery.latencyMs}ms · fee{' '}
+                                    {delivery.envelope.paymentMicrolamports} μlamports
                                 </div>
-                                <div className="muted">
-                                    {new Date(delivery.receivedAt).toLocaleString()}
-                                </div>
+                                <div className="muted">{new Date(delivery.receivedAt).toLocaleString()}</div>
                             </li>
                         ))}
                     </ul>

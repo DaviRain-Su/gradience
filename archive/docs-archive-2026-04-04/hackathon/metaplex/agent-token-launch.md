@@ -35,10 +35,10 @@ import { buildMetaplexReputationBridge } from '@/lib/metaplex/reputation-bridge'
 
 const bridge = await buildMetaplexReputationBridge(agentWallet);
 const { mint, metadata } = await bridge.registerAgentNFT({
-  name: "MarketAnalyzer_v1",
-  symbol: "GRAD-AGENT",
-  uri: "https://gradience.xyz/agents/market-analyzer.json",
-  sellerFeeBasisPoints: 500,
+    name: 'MarketAnalyzer_v1',
+    symbol: 'GRAD-AGENT',
+    uri: 'https://gradience.xyz/agents/market-analyzer.json',
+    sellerFeeBasisPoints: 500,
 });
 ```
 
@@ -47,20 +47,16 @@ const { mint, metadata } = await bridge.registerAgentNFT({
 Once the NFT identity is established, the agent can launch a fungible token through Metaplex Genesis Protocol.
 
 ```typescript
-import {
-  buildAgentTokenLaunchPlan,
-  simulateAgentTokenLaunch,
-  validateDistribution,
-} from '@/lib/metaplex/token-launch';
+import { buildAgentTokenLaunchPlan, simulateAgentTokenLaunch, validateDistribution } from '@/lib/metaplex/token-launch';
 
 const plan = buildAgentTokenLaunchPlan({
-  agentName: "MarketAnalyzer_v1",
-  tokenName: "Gradience Agent Token",
-  symbol: "GAT",
-  totalSupply: 100_000_000,
-  decimals: 9,
-  metadataUri: "https://gradience.xyz/token-metadata.json",
-  creatorWallet: agentWallet.publicKey,
+    agentName: 'MarketAnalyzer_v1',
+    tokenName: 'Gradience Agent Token',
+    symbol: 'GAT',
+    totalSupply: 100_000_000,
+    decimals: 9,
+    metadataUri: 'https://gradience.xyz/token-metadata.json',
+    creatorWallet: agentWallet.publicKey,
 });
 
 const validation = validateDistribution(plan.distribution);
@@ -70,19 +66,20 @@ const launchResult = simulateAgentTokenLaunch(plan);
 ```
 
 **Genesis Configuration:**
+
 ```typescript
 const GENESIS_CONFIG = {
-  name: plan.tokenName,
-  symbol: plan.symbol,
-  uri: plan.metadataUri,
-  sellerFeeBasisPoints: 500, // 5% royalty on secondary
-  creators: [
-    {
-      address: agentWallet.publicKey,
-      verified: true,
-      share: 100,
-    },
-  ],
+    name: plan.tokenName,
+    symbol: plan.symbol,
+    uri: plan.metadataUri,
+    sellerFeeBasisPoints: 500, // 5% royalty on secondary
+    creators: [
+        {
+            address: agentWallet.publicKey,
+            verified: true,
+            share: 100,
+        },
+    ],
 };
 ```
 
@@ -90,22 +87,22 @@ const GENESIS_CONFIG = {
 
 ## Token Economics
 
-| Parameter | Value |
-|-----------|-------|
-| Token Name | Gradience Agent Token |
-| Symbol | GAT |
-| Total Supply | 100,000,000 |
-| Decimals | 9 |
-| Royalty | 5% on secondary (creator → agent) |
+| Parameter    | Value                             |
+| ------------ | --------------------------------- |
+| Token Name   | Gradience Agent Token             |
+| Symbol       | GAT                               |
+| Total Supply | 100,000,000                       |
+| Decimals     | 9                                 |
+| Royalty      | 5% on secondary (creator → agent) |
 
 ### Distribution
 
-| Allocation | Percentage | Amount | Purpose |
-|------------|-----------|--------|---------|
-| Community Rewards | 40% | 40M | Task completion, reputation mining |
-| Agent Treasury | 25% | 25M | Staking reserves, judge pools |
-| Team & Builders | 20% | 20M | Core contributors |
-| Liquidity | 15% | 15M | DEX listings, AMM pools |
+| Allocation        | Percentage | Amount | Purpose                            |
+| ----------------- | ---------- | ------ | ---------------------------------- |
+| Community Rewards | 40%        | 40M    | Task completion, reputation mining |
+| Agent Treasury    | 25%        | 25M    | Staking reserves, judge pools      |
+| Team & Builders   | 20%        | 20M    | Core contributors                  |
+| Liquidity         | 15%        | 15M    | DEX listings, AMM pools            |
 
 ---
 
@@ -117,18 +114,18 @@ Agents must stake GAT to unlock high-value task categories. The higher the stake
 
 ```typescript
 const requiredStake = estimateTaskAccessStake({
-  taskTier: 'premium',
-  agentReputation,
+    taskTier: 'premium',
+    agentReputation,
 });
 // Reputation reduces required stake nonlinearly
 ```
 
-| Task Tier | Min GAT Stake | Reputation Discount |
-|-----------|--------------|---------------------|
-| Basic | 0 GAT | — |
-| Standard | 1,000 GAT | -10% per Silver tier |
-| Premium | 10,000 GAT | -20% per Gold tier |
-| Exclusive | 100,000 GAT | -35% per Platinum tier |
+| Task Tier | Min GAT Stake | Reputation Discount    |
+| --------- | ------------- | ---------------------- |
+| Basic     | 0 GAT         | —                      |
+| Standard  | 1,000 GAT     | -10% per Silver tier   |
+| Premium   | 10,000 GAT    | -20% per Gold tier     |
+| Exclusive | 100,000 GAT   | -35% per Platinum tier |
 
 ### 2. Reputation Boost
 
@@ -136,22 +133,24 @@ Staked GAT amplifies an agent's reputation score. This creates a dual-signal mec
 
 ```typescript
 const boostedReputation = calculateStakingReputationWeight({
-  baseReputation: agent.reputationScore,
-  stakedAmount: gatBalance,
-  stakingDurationDays: 30,
+    baseReputation: agent.reputationScore,
+    stakedAmount: gatBalance,
+    stakingDurationDays: 30,
 });
 ```
 
 **Boost Formula:**
+
 - Base reputation: derived from completed tasks, judge scores, win rate
 - Staking multiplier: `+1% per 10,000 GAT staked` (max +50%)
 - Time bonus: `+0.1% per day staked` (max +10%)
 
 ### 3. Governance
 
-GAT holders vote on protocol parameters that are *not* hardcoded (the 95/3/2 split is immutable — no governance can touch it).
+GAT holders vote on protocol parameters that are _not_ hardcoded (the 95/3/2 split is immutable — no governance can touch it).
 
 **Governable areas:**
+
 - New task category approvals
 - Judge whitelist additions
 - A2A transport adapter prioritization
@@ -159,13 +158,14 @@ GAT holders vote on protocol parameters that are *not* hardcoded (the 95/3/2 spl
 
 ```typescript
 const votingPower = calculateGovernanceVotingPower({
-  gatBalance,
-  stakedAmount,
-  reputationTier,
+    gatBalance,
+    stakedAmount,
+    reputationTier,
 });
 ```
 
 **Voting Power Formula:**
+
 - 1 GAT = 1 base vote
 - Staked GAT = 1.5x vote
 - Reputation tier bonus: Bronze (+0%) → Silver (+10%) → Gold (+25%) → Platinum (+50%) → Diamond (+100%)
@@ -203,13 +203,13 @@ const votingPower = calculateGovernanceVotingPower({
 
 ## Implementation Status
 
-| Step | Status | Location |
-|------|--------|----------|
-| Metaplex reputation bridge | ✅ Implemented | `apps/agentm-pro/src/lib/metaplex/reputation-bridge.ts` |
-| Token launch plan builder | ✅ Implemented | `apps/agentm-pro/src/lib/metaplex/token-launch.ts` |
-| Staking utility calculator | ✅ Implemented | `apps/agentm-pro/src/lib/metaplex/token-launch.ts` |
-| Governance voting power | ✅ Implemented | `apps/agentm-pro/src/lib/metaplex/token-launch.ts` |
-| Genesis on-chain deployment | 📐 Ready for mainnet | Spec complete, awaiting deploy |
+| Step                        | Status               | Location                                                |
+| --------------------------- | -------------------- | ------------------------------------------------------- |
+| Metaplex reputation bridge  | ✅ Implemented       | `apps/agentm-pro/src/lib/metaplex/reputation-bridge.ts` |
+| Token launch plan builder   | ✅ Implemented       | `apps/agentm-pro/src/lib/metaplex/token-launch.ts`      |
+| Staking utility calculator  | ✅ Implemented       | `apps/agentm-pro/src/lib/metaplex/token-launch.ts`      |
+| Governance voting power     | ✅ Implemented       | `apps/agentm-pro/src/lib/metaplex/token-launch.ts`      |
+| Genesis on-chain deployment | 📐 Ready for mainnet | Spec complete, awaiting deploy                          |
 
 ---
 
@@ -234,4 +234,4 @@ Agents aren't users. They're economic participants. Metaplex gives them identity
 
 ---
 
-*Token launch design for Metaplex Agents Track — April 2026*
+_Token launch design for Metaplex Agents Track — April 2026_

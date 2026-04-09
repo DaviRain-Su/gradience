@@ -1,7 +1,7 @@
 # Agent Me：实时音视频通话架构
 
 > **愿景**: 与 Agent 进行语音/视频通话，Agent 基于 SOUL.md 实时渲染形象
-> 
+>
 > **核心**: 模拟微信语音/视频通话体验，而非语音消息
 >
 > **分析日期**: 2026-03-28
@@ -74,12 +74,12 @@ flowchart TB
         LocalASR["本地 ASR (VAD)"]
         AvatarRenderer["Avatar 渲染器 (未来)"]
     end
-    
+
     subgraph Signaling["信令服务器"]
         SFU["SFU / MCU 服务器"]
         RoomMgr["房间管理"]
     end
-    
+
     subgraph Cloud["OpenClaw 云端"]
         VoiceHandler["语音处理器"]
         Cohere["Cohere 2B"]
@@ -87,16 +87,16 @@ flowchart TB
         TTS["TTS 合成"]
         AvatarEngine["Avatar 生成引擎 (未来)"]
     end
-    
+
     subgraph Blockchain["区块链"]
         Wallet["钱包操作"]
         Contracts["智能合约"]
     end
-    
+
     Mobile --"WebRTC"--> Signaling
     Signaling --"路由"--> Cloud
     Cloud --"操作"--> Blockchain
-    
+
     Mobile --"本地 VAD"--> LocalASR
     LocalASR --"检测到语音"--> WebRTC
 ```
@@ -108,53 +108,53 @@ flowchart TB
 ```typescript
 // 通话管理器
 class CallManager {
-  private pc: RTCPeerConnection;
-  private localStream: MediaStream;
-  private remoteStream: MediaStream;
-  
-  async startCall(type: 'voice' | 'video') {
-    // 1. 获取本地媒体
-    this.localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: type === 'video'
-    });
-    
-    // 2. 创建 RTCPeerConnection
-    this.pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-    
-    // 3. 添加本地轨道
-    this.localStream.getTracks().forEach(track => {
-      this.pc.addTrack(track, this.localStream);
-    });
-    
-    // 4. 监听远程轨道 (来自 Agent)
-    this.pc.ontrack = (event) => {
-      this.remoteStream = event.streams[0];
-      this.playRemoteStream();
-    };
-    
-    // 5. 信令交换 (连接 OpenClaw)
-    await this.setupSignaling();
-  }
-  
-  // VAD (语音活动检测) - 关键！
-  setupVAD() {
-    const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(this.localStream);
-    const vad = new VADProcessor();
-    
-    vad.onSpeechStart = () => {
-      // 开始说话，可以显示"正在听..."
-      this.ui.showListening();
-    };
-    
-    vad.onSpeechEnd = (audioBuffer) => {
-      // 说话结束，发送音频到云端
-      this.sendAudioToCloud(audioBuffer);
-    };
-  }
+    private pc: RTCPeerConnection;
+    private localStream: MediaStream;
+    private remoteStream: MediaStream;
+
+    async startCall(type: 'voice' | 'video') {
+        // 1. 获取本地媒体
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: type === 'video',
+        });
+
+        // 2. 创建 RTCPeerConnection
+        this.pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        });
+
+        // 3. 添加本地轨道
+        this.localStream.getTracks().forEach((track) => {
+            this.pc.addTrack(track, this.localStream);
+        });
+
+        // 4. 监听远程轨道 (来自 Agent)
+        this.pc.ontrack = (event) => {
+            this.remoteStream = event.streams[0];
+            this.playRemoteStream();
+        };
+
+        // 5. 信令交换 (连接 OpenClaw)
+        await this.setupSignaling();
+    }
+
+    // VAD (语音活动检测) - 关键！
+    setupVAD() {
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(this.localStream);
+        const vad = new VADProcessor();
+
+        vad.onSpeechStart = () => {
+            // 开始说话，可以显示"正在听..."
+            this.ui.showListening();
+        };
+
+        vad.onSpeechEnd = (audioBuffer) => {
+            // 说话结束，发送音频到云端
+            this.sendAudioToCloud(audioBuffer);
+        };
+    }
 }
 ```
 
@@ -163,42 +163,42 @@ class CallManager {
 ```typescript
 // 实时语音处理
 class RealtimeVoicePipeline {
-  private audioQueue: AudioBuffer[] = [];
-  private isProcessing = false;
-  
-  // 持续接收音频流
-  async onAudioStream(audioChunk: ArrayBuffer) {
-    // 1. 累积音频 (滑动窗口)
-    this.audioQueue.push(audioChunk);
-    
-    // 2. 如果队列够长，开始处理
-    if (this.audioQueue.length >= 3 && !this.isProcessing) {
-      await this.processBatch();
+    private audioQueue: AudioBuffer[] = [];
+    private isProcessing = false;
+
+    // 持续接收音频流
+    async onAudioStream(audioChunk: ArrayBuffer) {
+        // 1. 累积音频 (滑动窗口)
+        this.audioQueue.push(audioChunk);
+
+        // 2. 如果队列够长，开始处理
+        if (this.audioQueue.length >= 3 && !this.isProcessing) {
+            await this.processBatch();
+        }
     }
-  }
-  
-  async processBatch() {
-    this.isProcessing = true;
-    
-    // 1. 合并音频
-    const combinedAudio = this.combineAudio(this.audioQueue);
-    
-    // 2. Cohere 流式识别
-    const transcript = await this.cohere.transcribeStreaming(combinedAudio);
-    
-    // 3. 如果检测到完整句子，发送给 Kimi
-    if (this.isCompleteSentence(transcript)) {
-      const response = await this.kimi.generateStreaming(transcript);
-      
-      // 4. 流式 TTS (边说边生成)
-      for await (const chunk of response) {
-        const audioChunk = await this.tts.synthesizeChunk(chunk);
-        this.sendToClient(audioChunk);
-      }
+
+    async processBatch() {
+        this.isProcessing = true;
+
+        // 1. 合并音频
+        const combinedAudio = this.combineAudio(this.audioQueue);
+
+        // 2. Cohere 流式识别
+        const transcript = await this.cohere.transcribeStreaming(combinedAudio);
+
+        // 3. 如果检测到完整句子，发送给 Kimi
+        if (this.isCompleteSentence(transcript)) {
+            const response = await this.kimi.generateStreaming(transcript);
+
+            // 4. 流式 TTS (边说边生成)
+            for await (const chunk of response) {
+                const audioChunk = await this.tts.synthesizeChunk(chunk);
+                this.sendToClient(audioChunk);
+            }
+        }
+
+        this.isProcessing = false;
     }
-    
-    this.isProcessing = false;
-  }
 }
 ```
 
@@ -208,13 +208,13 @@ class RealtimeVoicePipeline {
 
 ### 3.1 技术方案对比
 
-| 方案 | 质量 | 延迟 | 成本 | 成熟度 |
-|------|------|------|------|--------|
-| **Unreal Engine** | ⭐⭐⭐ | 低 | 高 | 高 |
-| **Unity** | ⭐⭐⭐ | 低 | 中 | 高 |
-| **WebGL Three.js** | ⭐⭐ | 低 | 低 | 中 |
-| **2D Live2D** | ⭐⭐ | 极低 | 低 | 高 |
-| **预录制视频** | ⭐ | 极低 | 极低 | 高 |
+| 方案               | 质量   | 延迟 | 成本 | 成熟度 |
+| ------------------ | ------ | ---- | ---- | ------ |
+| **Unreal Engine**  | ⭐⭐⭐ | 低   | 高   | 高     |
+| **Unity**          | ⭐⭐⭐ | 低   | 中   | 高     |
+| **WebGL Three.js** | ⭐⭐   | 低   | 低   | 中     |
+| **2D Live2D**      | ⭐⭐   | 极低 | 低   | 高     |
+| **预录制视频**     | ⭐     | 极低 | 极低 | 高     |
 
 ### 3.2 推荐方案：渐进式
 
@@ -239,44 +239,44 @@ SOUL.md 驱动:
 ```typescript
 // Three.js 渲染
 class AvatarRenderer {
-  private scene: THREE.Scene;
-  private avatar: THREE.Group;
-  private morphTargets: { [key: string]: number };
-  
-  async initFromSOUL(soul: SOUL) {
-    // 基于 SOUL.md 生成 Avatar 配置
-    const config = this.parseSOUL(soul);
-    
-    // 加载模型
-    this.avatar = await this.loadModel(config.modelUrl);
-    
-    // 应用个性特征
-    this.applyPersonality(config.personality);
-  }
-  
-  // 语音驱动口型
-  updateLipSync(audioData: Float32Array) {
-    const visemes = this.analyzeAudio(audioData);
-    
-    // 更新 morph targets
-    this.morphTargets['A'] = visemes.a;
-    this.morphTargets['I'] = visemes.i;
-    this.morphTargets['U'] = visemes.u;
-    this.morphTargets['E'] = visemes.e;
-    this.morphTargets['O'] = visemes.o;
-  }
-  
-  // 表情变化
-  setExpression(emotion: string) {
-    switch(emotion) {
-      case 'happy':
-        this.morphTargets['smile'] = 1;
-        break;
-      case 'thinking':
-        this.morphTargets['brow_raise'] = 0.5;
-        break;
+    private scene: THREE.Scene;
+    private avatar: THREE.Group;
+    private morphTargets: { [key: string]: number };
+
+    async initFromSOUL(soul: SOUL) {
+        // 基于 SOUL.md 生成 Avatar 配置
+        const config = this.parseSOUL(soul);
+
+        // 加载模型
+        this.avatar = await this.loadModel(config.modelUrl);
+
+        // 应用个性特征
+        this.applyPersonality(config.personality);
     }
-  }
+
+    // 语音驱动口型
+    updateLipSync(audioData: Float32Array) {
+        const visemes = this.analyzeAudio(audioData);
+
+        // 更新 morph targets
+        this.morphTargets['A'] = visemes.a;
+        this.morphTargets['I'] = visemes.i;
+        this.morphTargets['U'] = visemes.u;
+        this.morphTargets['E'] = visemes.e;
+        this.morphTargets['O'] = visemes.o;
+    }
+
+    // 表情变化
+    setExpression(emotion: string) {
+        switch (emotion) {
+            case 'happy':
+                this.morphTargets['smile'] = 1;
+                break;
+            case 'thinking':
+                this.morphTargets['brow_raise'] = 0.5;
+                break;
+        }
+    }
 }
 ```
 
@@ -297,39 +297,35 @@ class AvatarRenderer {
 ```typescript
 // SOUL.md 解析
 interface SOULProfile {
-  personality: {
-    traits: string[];      // ['guardian', 'hot-blooded']
-    tone: string;          // 'teasing but caring'
-    catchphrase: string;   // "Even if the world forgets..."
-  };
-  appearance: {
-    style: 'anime' | 'realistic' | 'abstract';
-    colorPalette: string[];
-    accessories: string[];
-  };
+    personality: {
+        traits: string[]; // ['guardian', 'hot-blooded']
+        tone: string; // 'teasing but caring'
+        catchphrase: string; // "Even if the world forgets..."
+    };
+    appearance: {
+        style: 'anime' | 'realistic' | 'abstract';
+        colorPalette: string[];
+        accessories: string[];
+    };
 }
 
 // 生成 Avatar 配置
 function generateAvatarConfig(soul: SOULProfile): AvatarConfig {
-  return {
-    // 性格 → 表情库
-    expressions: {
-      default: soul.personality.traits.includes('guardian') 
-        ? 'protective_smile' 
-        : 'neutral',
-      happy: 'eyes_soften',
-      concerned: 'brow_furrow',
-      excited: 'hot_blooded_glow',
-    },
-    
-    // 配色
-    themeColor: soul.appearance.colorPalette[0] || '#FF6B6B',
-    
-    // 标志性元素
-    accessory: soul.appearance.accessories.includes('flame') 
-      ? 'flame_collar' 
-      : null,
-  };
+    return {
+        // 性格 → 表情库
+        expressions: {
+            default: soul.personality.traits.includes('guardian') ? 'protective_smile' : 'neutral',
+            happy: 'eyes_soften',
+            concerned: 'brow_furrow',
+            excited: 'hot_blooded_glow',
+        },
+
+        // 配色
+        themeColor: soul.appearance.colorPalette[0] || '#FF6B6B',
+
+        // 标志性元素
+        accessory: soul.appearance.accessories.includes('flame') ? 'flame_collar' : null,
+    };
 }
 ```
 
@@ -340,68 +336,70 @@ function generateAvatarConfig(soul: SOULProfile): AvatarConfig {
 ```typescript
 // 通话状态管理
 enum CallState {
-  IDLE = 'idle',
-  CALLING = 'calling',      // 正在呼叫
-  RINGING = 'ringing',      // 对方响铃
-  CONNECTED = 'connected',  // 接通
-  RECONNECTING = 'reconnecting',
-  ENDED = 'ended'
+    IDLE = 'idle',
+    CALLING = 'calling', // 正在呼叫
+    RINGING = 'ringing', // 对方响铃
+    CONNECTED = 'connected', // 接通
+    RECONNECTING = 'reconnecting',
+    ENDED = 'ended',
 }
 
 class CallSession {
-  private state: CallState = CallState.IDLE;
-  private startTime: number;
-  
-  async initiateCall() {
-    this.state = CallState.CALLING;
-    
-    // 播放拨号音
-    this.playTone('dialing');
-    
-    // 连接 OpenClaw
-    await this.connectToAgent();
-    
-    // Agent 秒接 (不像人类需要等待)
-    this.state = CallState.CONNECTED;
-    this.startTime = Date.now();
-    
-    // Agent 打招呼
-    await this.agentGreet();
-  }
-  
-  async agentGreet() {
-    const hour = new Date().getHours();
-    let greeting: string;
-    
-    if (hour < 6) {
-      greeting = "这么晚还没睡？又熬夜了是吧。";
-    } else if (hour < 12) {
-      greeting = "早。今天有什么计划？";
-    } else {
-      greeting = "回来了？今天过得怎么样？";
+    private state: CallState = CallState.IDLE;
+    private startTime: number;
+
+    async initiateCall() {
+        this.state = CallState.CALLING;
+
+        // 播放拨号音
+        this.playTone('dialing');
+
+        // 连接 OpenClaw
+        await this.connectToAgent();
+
+        // Agent 秒接 (不像人类需要等待)
+        this.state = CallState.CONNECTED;
+        this.startTime = Date.now();
+
+        // Agent 打招呼
+        await this.agentGreet();
     }
-    
-    await this.speak(greeting);
-  }
-  
-  // 打断处理
-  onUserInterrupt() {
-    // 停止当前 TTS
-    this.tts.stop();
-    
-    // Agent 反应
-    this.speak("嗯？你说。", { quick: true });
-  }
-  
-  // 长时间沉默
-  onSilenceDetected(duration: number) {
-    if (duration > 30000) { // 30秒
-      this.speak("还在吗？没睡着吧？");
-    } else if (duration > 60000) { // 1分钟
-      this.speak("我先去处理点别的事，有需要叫我。");
-      this.enterBackgroundMode();
+
+    async agentGreet() {
+        const hour = new Date().getHours();
+        let greeting: string;
+
+        if (hour < 6) {
+            greeting = '这么晚还没睡？又熬夜了是吧。';
+        } else if (hour < 12) {
+            greeting = '早。今天有什么计划？';
+        } else {
+            greeting = '回来了？今天过得怎么样？';
+        }
+
+        await this.speak(greeting);
     }
-  }
+
+    // 打断处理
+    onUserInterrupt() {
+        // 停止当前 TTS
+        this.tts.stop();
+
+        // Agent 反应
+        this.speak('嗯？你说。', { quick: true });
+    }
+
+    // 长时间沉默
+    onSilenceDetected(duration: number) {
+        if (duration > 30000) {
+            // 30秒
+            this.speak('还在吗？没睡着吧？');
+        } else if (duration > 60000) {
+            // 1分钟
+            this.speak('我先去处理点别的事，有需要叫我。');
+            this.enterBackgroundMode();
+        }
+    }
 }
 ```
 
@@ -431,22 +429,22 @@ class CallSession {
 ```typescript
 // 打断检测
 class BargeInHandler {
-  private isAgentSpeaking = false;
-  
-  onAgentStartSpeaking() {
-    this.isAgentSpeaking = true;
-    // 开始监听用户语音 (VAD)
-    this.vad.start();
-  }
-  
-  onUserSpeechDuringAgentSpeak() {
-    if (this.isAgentSpeaking) {
-      // 用户打断
-      this.tts.stop();
-      this.playStingSound(); // "叮" 一声
-      this.agent.respondToInterrupt();
+    private isAgentSpeaking = false;
+
+    onAgentStartSpeaking() {
+        this.isAgentSpeaking = true;
+        // 开始监听用户语音 (VAD)
+        this.vad.start();
     }
-  }
+
+    onUserSpeechDuringAgentSpeak() {
+        if (this.isAgentSpeaking) {
+            // 用户打断
+            this.tts.stop();
+            this.playStingSound(); // "叮" 一声
+            this.agent.respondToInterrupt();
+        }
+    }
 }
 ```
 
@@ -531,12 +529,12 @@ Agent Me App (终极形态)
 
 ### 愿景可实现性
 
-| 功能 | 难度 | 时间 | 关键技术 |
-|------|------|------|----------|
-| **语音通话** | 中等 | 1-2月 | WebRTC + VAD |
-| **视频通话(2D)** | 中等 | 2-3月 | Live2D + 口型同步 |
-| **视频通话(3D)** | 困难 | 4-6月 | Three.js/UE |
-| **SOUL驱动Avatar** | 中等 | 1月 | Personality → 表情映射 |
+| 功能               | 难度 | 时间  | 关键技术               |
+| ------------------ | ---- | ----- | ---------------------- |
+| **语音通话**       | 中等 | 1-2月 | WebRTC + VAD           |
+| **视频通话(2D)**   | 中等 | 2-3月 | Live2D + 口型同步      |
+| **视频通话(3D)**   | 困难 | 4-6月 | Three.js/UE            |
+| **SOUL驱动Avatar** | 中等 | 1月   | Personality → 表情映射 |
 
 ### 核心创新点
 
@@ -548,6 +546,7 @@ Agent Me App (终极形态)
 ### 下一步
 
 要我：
+
 1. **搭建 WebRTC 语音通话 Demo** (最简单可行版本)
 2. **设计 SOUL.md → Avatar 的转换规范**
 3. **做一个 Live2D 原型** (2D Avatar)

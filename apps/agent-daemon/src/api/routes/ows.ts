@@ -17,574 +17,569 @@ const bridge = new OWSSdkBridge();
 const policyEngine = new PolicyEngine();
 
 export function registerOWSRoutes(app: FastifyInstance): void {
-  // ── Wallet CRUD ──
+    // ── Wallet CRUD ──
 
-  app.post<{
-    Body: { name: string; passphrase?: string };
-  }>('/api/v1/ows/wallets', async (request, reply) => {
-    try {
-      const { name, passphrase } = request.body;
-      if (!name || typeof name !== 'string') {
-        return reply.code(400).send({ error: 'name is required' });
-      }
-      const wallet = bridge.createAgentWallet(name, passphrase);
-      return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
-    } catch (err: any) {
-      logger.error({ err }, 'Failed to create OWS wallet');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.get('/api/v1/ows/wallets', async (_req, reply) => {
-    try {
-      const wallets = bridge.listAgentWallets();
-      return { wallets };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.get<{ Params: { id: string } }>('/api/v1/ows/wallets/:id', async (request, reply) => {
-    try {
-      const wallet = bridge.getAgentWallet(request.params.id);
-      return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
-    } catch (err: any) {
-      return reply.code(404).send({ error: err.message });
-    }
-  });
-
-  app.delete<{ Params: { id: string } }>('/api/v1/ows/wallets/:id', async (request, reply) => {
-    try {
-      bridge.deleteAgentWallet(request.params.id);
-      return { ok: true };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: { nameOrId: string; passphrase?: string };
-  }>('/api/v1/ows/wallets/export', async (request, reply) => {
-    try {
-      const { nameOrId, passphrase } = request.body;
-      const secret = bridge.exportAgentWallet(nameOrId, passphrase);
-      return { secret };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: { name: string; mnemonic: string; passphrase?: string };
-  }>('/api/v1/ows/wallets/import/mnemonic', async (request, reply) => {
-    try {
-      const { name, mnemonic, passphrase } = request.body;
-      const wallet = bridge.importFromMnemonic(name, mnemonic, passphrase);
-      return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: { name: string; privateKeyHex: string; chain?: string; passphrase?: string };
-  }>('/api/v1/ows/wallets/import/private-key', async (request, reply) => {
-    try {
-      const { name, privateKeyHex, chain, passphrase } = request.body;
-      const wallet = bridge.importFromPrivateKey(name, privateKeyHex, chain, passphrase);
-      return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  // ── Signing (policy-gated) ──
-
-  app.post<{
-    Body: {
-      wallet: string;
-      chain: string;
-      message: string;
-      credential?: string;
-      policyIds?: string[];
-      amount?: number;
-      program?: string;
-    };
-  }>('/api/v1/ows/sign/message', async (request, reply) => {
-    try {
-      const { wallet, chain, message, credential, policyIds, amount, program } = request.body;
-
-      const ctx: SigningContext = {
-        chain,
-        walletId: wallet,
-        operation: 'sign_message',
-        amount,
-        program,
-        payload: message,
-        timestamp: Date.now(),
-      };
-
-      if (policyIds && policyIds.length > 0) {
-        const policies = policyIds.map(id => bridge.getSigningPolicy(id));
-        const evaluation = await policyEngine.evaluate(policies, ctx);
-        if (!evaluation.allowed) {
-          return reply.code(403).send({
-            error: 'POLICY_DENIED',
-            evaluation,
-          });
+    app.post<{
+        Body: { name: string; passphrase?: string };
+    }>('/api/v1/ows/wallets', async (request, reply) => {
+        try {
+            const { name, passphrase } = request.body;
+            if (!name || typeof name !== 'string') {
+                return reply.code(400).send({ error: 'name is required' });
+            }
+            const wallet = bridge.createAgentWallet(name, passphrase);
+            return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
+        } catch (err: any) {
+            logger.error({ err }, 'Failed to create OWS wallet');
+            return reply.code(500).send({ error: err.message });
         }
-      }
+    });
 
-      const result = bridge.signAgentMessage(wallet, chain, message, credential);
-      if (amount) recordPolicySpend(wallet, amount);
-      return result;
-    } catch (err: any) {
-      logger.error({ err }, 'OWS sign message failed');
-      return reply.code(403).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: {
-      wallet: string;
-      chain: string;
-      txHex: string;
-      credential?: string;
-      policyIds?: string[];
-      amount?: number;
-      program?: string;
-    };
-  }>('/api/v1/ows/sign/transaction', async (request, reply) => {
-    try {
-      const { wallet, chain, txHex, credential, policyIds, amount, program } = request.body;
-
-      const ctx: SigningContext = {
-        chain,
-        walletId: wallet,
-        operation: 'sign_transaction',
-        amount,
-        program,
-        payload: txHex,
-        timestamp: Date.now(),
-      };
-
-      if (policyIds && policyIds.length > 0) {
-        const policies = policyIds.map(id => bridge.getSigningPolicy(id));
-        const evaluation = await policyEngine.evaluate(policies, ctx);
-        if (!evaluation.allowed) {
-          return reply.code(403).send({
-            error: 'POLICY_DENIED',
-            evaluation,
-          });
+    app.get('/api/v1/ows/wallets', async (_req, reply) => {
+        try {
+            const wallets = bridge.listAgentWallets();
+            return { wallets };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
         }
-      }
+    });
 
-      const result = bridge.signAgentTransaction(wallet, chain, txHex, credential);
-      if (amount) recordPolicySpend(wallet, amount);
-      return result;
-    } catch (err: any) {
-      logger.error({ err }, 'OWS sign transaction failed');
-      return reply.code(403).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: {
-      wallet: string;
-      chain: string;
-      txHex: string;
-      credential?: string;
-      rpcUrl?: string;
-      policyIds?: string[];
-      amount?: number;
-      program?: string;
-    };
-  }>('/api/v1/ows/sign/send', async (request, reply) => {
-    try {
-      const { wallet, chain, txHex, credential, rpcUrl, policyIds, amount, program } = request.body;
-
-      const ctx: SigningContext = {
-        chain,
-        walletId: wallet,
-        operation: 'sign_and_send',
-        amount,
-        program,
-        payload: txHex,
-        timestamp: Date.now(),
-      };
-
-      if (policyIds && policyIds.length > 0) {
-        const policies = policyIds.map(id => bridge.getSigningPolicy(id));
-        const evaluation = await policyEngine.evaluate(policies, ctx);
-        if (!evaluation.allowed) {
-          return reply.code(403).send({
-            error: 'POLICY_DENIED',
-            evaluation,
-          });
+    app.get<{ Params: { id: string } }>('/api/v1/ows/wallets/:id', async (request, reply) => {
+        try {
+            const wallet = bridge.getAgentWallet(request.params.id);
+            return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
+        } catch (err: any) {
+            return reply.code(404).send({ error: err.message });
         }
-      }
+    });
 
-      const result = bridge.signAndSendTransaction(wallet, chain, txHex, credential, rpcUrl);
-      if (amount) recordPolicySpend(wallet, amount);
-      return result;
-    } catch (err: any) {
-      logger.error({ err }, 'OWS sign and send failed');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  // ── Policy Audit Log ──
-
-  app.get('/api/v1/ows/audit', async (request) => {
-    const limit = (request.query as any)?.limit ?? 50;
-    return { log: policyEngine.getAuditLog(Number(limit)) };
-  });
-
-  // ── Policy Management ──
-
-  app.post<{
-    Body: {
-      id: string;
-      name: string;
-      rules?: Array<{ type: string; [key: string]: unknown }>;
-      executable?: string | null;
-      config?: Record<string, unknown> | null;
-    };
-  }>('/api/v1/ows/policies', async (request, reply) => {
-    try {
-      const { id, name, rules, executable, config } = request.body;
-      bridge.createSigningPolicy({
-        id,
-        name,
-        version: 1,
-        created_at: new Date().toISOString(),
-        rules,
-        executable,
-        config,
-        action: 'deny',
-      });
-      return { ok: true, id };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.get('/api/v1/ows/policies', async (_req, reply) => {
-    try {
-      return { policies: bridge.listSigningPolicies() };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.get<{ Params: { id: string } }>('/api/v1/ows/policies/:id', async (request, reply) => {
-    try {
-      return { policy: bridge.getSigningPolicy(request.params.id) };
-    } catch (err: any) {
-      return reply.code(404).send({ error: err.message });
-    }
-  });
-
-  app.delete<{ Params: { id: string } }>('/api/v1/ows/policies/:id', async (request, reply) => {
-    try {
-      bridge.deleteSigningPolicy(request.params.id);
-      return { ok: true };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  // ── API Key Management ──
-
-  app.post<{
-    Body: {
-      name: string;
-      walletIds: string[];
-      policyIds: string[];
-      passphrase: string;
-      expiresAt?: string;
-    };
-  }>('/api/v1/ows/keys', async (request, reply) => {
-    try {
-      const { name, walletIds, policyIds, passphrase, expiresAt } = request.body;
-      const result = bridge.createAgentApiKey(name, walletIds, policyIds, passphrase, expiresAt);
-      return result;
-    } catch (err: any) {
-      logger.error({ err }, 'Failed to create OWS API key');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.get('/api/v1/ows/keys', async (_req, reply) => {
-    try {
-      return { keys: bridge.listAgentApiKeys() };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.delete<{ Params: { id: string } }>('/api/v1/ows/keys/:id', async (request, reply) => {
-    try {
-      bridge.revokeAgentApiKey(request.params.id);
-      return { ok: true };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  // ── Utility ──
-
-  app.post<{
-    Body: { words?: 12 | 24 };
-  }>('/api/v1/ows/mnemonic/generate', async (request) => {
-    const words = request.body?.words ?? 12;
-    return { mnemonic: bridge.generateNewMnemonic(words) };
-  });
-
-  app.post<{
-    Body: { mnemonic: string; chain: string; index?: number };
-  }>('/api/v1/ows/derive', async (request) => {
-    const { mnemonic, chain, index } = request.body;
-    return { address: bridge.deriveWalletAddress(mnemonic, chain, index ?? 0) };
-  });
-
-  // u2500u2500 Wallet Lifecycle (GRA-223) u2500u2500
-
-  app.post<{
-    Body: {
-      walletId: string;
-      passphrase: string;
-      defaultPolicyIds?: string[];
-    };
-  }>('/api/v1/ows/wallets/provision-agent', async (request, reply) => {
-    try {
-      const { walletId, passphrase, defaultPolicyIds } = request.body;
-      const wallet = bridge.getAgentWallet(walletId);
-      const policyIds = defaultPolicyIds ?? [];
-      const key = bridge.createAgentApiKey(
-        `agent-${wallet.name}`,
-        [walletId],
-        policyIds,
-        passphrase,
-      );
-      return {
-        wallet,
-        solanaAddress: bridge.getSolanaAddress(wallet),
-        apiKey: { id: key.id, name: key.name, token: key.token },
-      };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.post<{
-    Body: {
-      name: string;
-      localStorageExport: {
-        secretKey: number[];
-        handle?: string;
-      };
-    };
-  }>('/api/v1/ows/wallets/migrate', async (request, reply) => {
-    try {
-      const { name, localStorageExport } = request.body;
-      const hexKey = Buffer.from(localStorageExport.secretKey).toString('hex');
-      const wallet = bridge.importFromPrivateKey(name, hexKey, 'solana');
-      return {
-        wallet,
-        solanaAddress: bridge.getSolanaAddress(wallet),
-        migrated: true,
-        handle: localStorageExport.handle ?? null,
-      };
-    } catch (err: any) {
-      logger.error({ err }, 'Migration from localStorage failed');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  app.delete<{
-    Params: { id: string };
-    Querystring: { revokeKeys?: string };
-  }>('/api/v1/ows/wallets/:id/cascade', async (request, reply) => {
-    try {
-      const walletId = request.params.id;
-      const revokeKeys = (request.query as any)?.revokeKeys !== 'false';
-
-      if (revokeKeys) {
-        const keys = bridge.listAgentApiKeys();
-        for (const key of keys) {
-          if (key.walletIds.includes(walletId)) {
-            bridge.revokeAgentApiKey(key.id);
-          }
+    app.delete<{ Params: { id: string } }>('/api/v1/ows/wallets/:id', async (request, reply) => {
+        try {
+            bridge.deleteAgentWallet(request.params.id);
+            return { ok: true };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
         }
-      }
+    });
 
-      bridge.deleteAgentWallet(walletId);
-      return { ok: true, walletDeleted: true, keysRevoked: revokeKeys };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
+    app.post<{
+        Body: { nameOrId: string; passphrase?: string };
+    }>('/api/v1/ows/wallets/export', async (request, reply) => {
+        try {
+            const { nameOrId, passphrase } = request.body;
+            const secret = bridge.exportAgentWallet(nameOrId, passphrase);
+            return { secret };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
 
-  app.post<{
-    Body: { keyId: string; passphrase: string; policyIds?: string[] };
-  }>('/api/v1/ows/keys/rotate', async (request, reply) => {
-    try {
-      const { keyId, passphrase, policyIds } = request.body;
-      const keys = bridge.listAgentApiKeys();
-      const oldKey = keys.find(k => k.id === keyId);
-      if (!oldKey) {
-        return reply.code(404).send({ error: 'Key not found' });
-      }
+    app.post<{
+        Body: { name: string; mnemonic: string; passphrase?: string };
+    }>('/api/v1/ows/wallets/import/mnemonic', async (request, reply) => {
+        try {
+            const { name, mnemonic, passphrase } = request.body;
+            const wallet = bridge.importFromMnemonic(name, mnemonic, passphrase);
+            return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
 
-      const newKey = bridge.createAgentApiKey(
-        oldKey.name,
-        oldKey.walletIds,
-        policyIds ?? oldKey.policyIds,
-        passphrase,
-      );
+    app.post<{
+        Body: { name: string; privateKeyHex: string; chain?: string; passphrase?: string };
+    }>('/api/v1/ows/wallets/import/private-key', async (request, reply) => {
+        try {
+            const { name, privateKeyHex, chain, passphrase } = request.body;
+            const wallet = bridge.importFromPrivateKey(name, privateKeyHex, chain, passphrase);
+            return { wallet, solanaAddress: bridge.getSolanaAddress(wallet) };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
 
-      bridge.revokeAgentApiKey(keyId);
+    // ── Signing (policy-gated) ──
 
-      return {
-        oldKeyRevoked: keyId,
-        newKey: { id: newKey.id, name: newKey.name, token: newKey.token },
-      };
-    } catch (err: any) {
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  // ── GRA-225c: Reputation Endpoints ──
-
-  /**
-   * GET /api/v1/ows/wallets/:id/reputation
-   * Get reputation for a specific wallet
-   */
-  app.get<{
-    Params: { id: string };
-  }>('/api/v1/ows/wallets/:id/reputation', async (request, reply) => {
-    try {
-      const walletId = request.params.id;
-      const wallet = bridge.getAgentWallet(walletId);
-      
-      if (!wallet) {
-        return reply.code(404).send({ error: 'Wallet not found' });
-      }
-
-      // Get reputation from wallet metadata or calculate from policy
-      const reputationScore = (wallet as any).reputationScore ?? 50;
-      const tier = getReputationTier(reputationScore);
-      const policy = (wallet as any).policy ?? calculatePolicy(reputationScore);
-
-      return {
-        walletId,
-        agentAddress: bridge.getSolanaAddress(wallet),
-        reputationScore,
-        tier,
-        completedTasks: (wallet as any).completedTasks ?? 0,
-        avgRating: (wallet as any).avgRating ?? 0,
-        policy: {
-          dailyLimitUsd: policy.dailyLimit ?? reputationScore * 10,
-          allowedChains: policy.allowedChains ?? ['solana'],
-          autoApprove: !policy.requireApproval,
-        },
-        updatedAt: new Date().toISOString(),
-      };
-    } catch (err: any) {
-      logger.error({ err, walletId: request.params.id }, 'Failed to get wallet reputation');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
-
-  /**
-   * GET /api/v1/ows/wallets/master/:address/aggregate-reputation
-   * Get aggregate reputation for all wallets under a master wallet
-   */
-  app.get<{
-    Params: { address: string };
-  }>('/api/v1/ows/wallets/master/:address/aggregate-reputation', async (request, reply) => {
-    try {
-      const masterWallet = request.params.address;
-      const wallets = bridge.listAgentWallets();
-      
-      // Filter wallets by parent (in real implementation, this would check parentWallet field)
-      const agentWallets = wallets.map(w => {
-        const score = (w as any).reputationScore ?? 50;
-        return {
-          walletId: w.id,
-          address: bridge.getSolanaAddress(w),
-          handle: w.name,
-          reputationScore: score,
-          tier: getReputationTier(score),
-          completedTasks: (w as any).completedTasks ?? 0,
-          weight: Math.max((w as any).completedTasks ?? 1, 1),
+    app.post<{
+        Body: {
+            wallet: string;
+            chain: string;
+            message: string;
+            credential?: string;
+            policyIds?: string[];
+            amount?: number;
+            program?: string;
         };
-      });
+    }>('/api/v1/ows/sign/message', async (request, reply) => {
+        try {
+            const { wallet, chain, message, credential, policyIds, amount, program } = request.body;
 
-      // Calculate aggregate score (weighted by completed tasks)
-      const totalWeight = agentWallets.reduce((sum, a) => sum + a.weight, 0);
-      const weightedScore = agentWallets.reduce((sum, a) => {
-        return sum + a.reputationScore * (a.weight / totalWeight);
-      }, 0);
-      const aggregateScore = Math.round(weightedScore);
-      const tier = getReputationTier(aggregateScore);
+            const ctx: SigningContext = {
+                chain,
+                walletId: wallet,
+                operation: 'sign_message',
+                amount,
+                program,
+                payload: message,
+                timestamp: Date.now(),
+            };
 
-      // Calculate derived policy
-      const derivedPolicy = calculatePolicy(aggregateScore);
+            if (policyIds && policyIds.length > 0) {
+                const policies = policyIds.map((id) => bridge.getSigningPolicy(id));
+                const evaluation = await policyEngine.evaluate(policies, ctx);
+                if (!evaluation.allowed) {
+                    return reply.code(403).send({
+                        error: 'POLICY_DENIED',
+                        evaluation,
+                    });
+                }
+            }
 
-      return {
-        masterWallet,
-        aggregateScore,
-        tier,
-        agentCount: agentWallets.length,
-        totalCompletedTasks: agentWallets.reduce((sum, a) => sum + a.completedTasks, 0),
-        agents: agentWallets,
-        derivedPolicy: {
-          dailyLimitUsd: derivedPolicy.dailyLimit,
-          allowedChains: derivedPolicy.allowedChains,
-          autoApprove: !derivedPolicy.requireApproval,
-        },
-      };
-    } catch (err: any) {
-      logger.error({ err, masterWallet: request.params.address }, 'Failed to get aggregate reputation');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
+            const result = bridge.signAgentMessage(wallet, chain, message, credential);
+            if (amount) recordPolicySpend(wallet, amount);
+            return result;
+        } catch (err: any) {
+            logger.error({ err }, 'OWS sign message failed');
+            return reply.code(403).send({ error: err.message });
+        }
+    });
 
-  /**
-   * POST /api/v1/ows/wallets/:id/sync-reputation
-   * Sync reputation from Chain Hub
-   */
-  app.post<{
-    Params: { id: string };
-  }>('/api/v1/ows/wallets/:id/sync-reputation', async (request, reply) => {
-    try {
-      const walletId = request.params.id;
-      const wallet = bridge.getAgentWallet(walletId);
-      
-      if (!wallet) {
-        return reply.code(404).send({ error: 'Wallet not found' });
-      }
+    app.post<{
+        Body: {
+            wallet: string;
+            chain: string;
+            txHex: string;
+            credential?: string;
+            policyIds?: string[];
+            amount?: number;
+            program?: string;
+        };
+    }>('/api/v1/ows/sign/transaction', async (request, reply) => {
+        try {
+            const { wallet, chain, txHex, credential, policyIds, amount, program } = request.body;
 
-      // In real implementation, this would call ChainHubReputationClient
-      // For now, return current reputation with sync timestamp
-      const reputationScore = (wallet as any).reputationScore ?? 50;
-      
-      logger.info({ walletId, reputationScore }, 'Reputation sync requested');
+            const ctx: SigningContext = {
+                chain,
+                walletId: wallet,
+                operation: 'sign_transaction',
+                amount,
+                program,
+                payload: txHex,
+                timestamp: Date.now(),
+            };
 
-      return {
-        walletId,
-        synced: true,
-        reputationScore,
-        tier: getReputationTier(reputationScore),
-        syncedAt: new Date().toISOString(),
-      };
-    } catch (err: any) {
-      logger.error({ err, walletId: request.params.id }, 'Failed to sync reputation');
-      return reply.code(500).send({ error: err.message });
-    }
-  });
+            if (policyIds && policyIds.length > 0) {
+                const policies = policyIds.map((id) => bridge.getSigningPolicy(id));
+                const evaluation = await policyEngine.evaluate(policies, ctx);
+                if (!evaluation.allowed) {
+                    return reply.code(403).send({
+                        error: 'POLICY_DENIED',
+                        evaluation,
+                    });
+                }
+            }
 
-  logger.info('OWS routes registered: /api/v1/ows/*');
+            const result = bridge.signAgentTransaction(wallet, chain, txHex, credential);
+            if (amount) recordPolicySpend(wallet, amount);
+            return result;
+        } catch (err: any) {
+            logger.error({ err }, 'OWS sign transaction failed');
+            return reply.code(403).send({ error: err.message });
+        }
+    });
+
+    app.post<{
+        Body: {
+            wallet: string;
+            chain: string;
+            txHex: string;
+            credential?: string;
+            rpcUrl?: string;
+            policyIds?: string[];
+            amount?: number;
+            program?: string;
+        };
+    }>('/api/v1/ows/sign/send', async (request, reply) => {
+        try {
+            const { wallet, chain, txHex, credential, rpcUrl, policyIds, amount, program } = request.body;
+
+            const ctx: SigningContext = {
+                chain,
+                walletId: wallet,
+                operation: 'sign_and_send',
+                amount,
+                program,
+                payload: txHex,
+                timestamp: Date.now(),
+            };
+
+            if (policyIds && policyIds.length > 0) {
+                const policies = policyIds.map((id) => bridge.getSigningPolicy(id));
+                const evaluation = await policyEngine.evaluate(policies, ctx);
+                if (!evaluation.allowed) {
+                    return reply.code(403).send({
+                        error: 'POLICY_DENIED',
+                        evaluation,
+                    });
+                }
+            }
+
+            const result = bridge.signAndSendTransaction(wallet, chain, txHex, credential, rpcUrl);
+            if (amount) recordPolicySpend(wallet, amount);
+            return result;
+        } catch (err: any) {
+            logger.error({ err }, 'OWS sign and send failed');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    // ── Policy Audit Log ──
+
+    app.get('/api/v1/ows/audit', async (request) => {
+        const limit = (request.query as any)?.limit ?? 50;
+        return { log: policyEngine.getAuditLog(Number(limit)) };
+    });
+
+    // ── Policy Management ──
+
+    app.post<{
+        Body: {
+            id: string;
+            name: string;
+            rules?: Array<{ type: string; [key: string]: unknown }>;
+            executable?: string | null;
+            config?: Record<string, unknown> | null;
+        };
+    }>('/api/v1/ows/policies', async (request, reply) => {
+        try {
+            const { id, name, rules, executable, config } = request.body;
+            bridge.createSigningPolicy({
+                id,
+                name,
+                version: 1,
+                created_at: new Date().toISOString(),
+                rules,
+                executable,
+                config,
+                action: 'deny',
+            });
+            return { ok: true, id };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.get('/api/v1/ows/policies', async (_req, reply) => {
+        try {
+            return { policies: bridge.listSigningPolicies() };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.get<{ Params: { id: string } }>('/api/v1/ows/policies/:id', async (request, reply) => {
+        try {
+            return { policy: bridge.getSigningPolicy(request.params.id) };
+        } catch (err: any) {
+            return reply.code(404).send({ error: err.message });
+        }
+    });
+
+    app.delete<{ Params: { id: string } }>('/api/v1/ows/policies/:id', async (request, reply) => {
+        try {
+            bridge.deleteSigningPolicy(request.params.id);
+            return { ok: true };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    // ── API Key Management ──
+
+    app.post<{
+        Body: {
+            name: string;
+            walletIds: string[];
+            policyIds: string[];
+            passphrase: string;
+            expiresAt?: string;
+        };
+    }>('/api/v1/ows/keys', async (request, reply) => {
+        try {
+            const { name, walletIds, policyIds, passphrase, expiresAt } = request.body;
+            const result = bridge.createAgentApiKey(name, walletIds, policyIds, passphrase, expiresAt);
+            return result;
+        } catch (err: any) {
+            logger.error({ err }, 'Failed to create OWS API key');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.get('/api/v1/ows/keys', async (_req, reply) => {
+        try {
+            return { keys: bridge.listAgentApiKeys() };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.delete<{ Params: { id: string } }>('/api/v1/ows/keys/:id', async (request, reply) => {
+        try {
+            bridge.revokeAgentApiKey(request.params.id);
+            return { ok: true };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    // ── Utility ──
+
+    app.post<{
+        Body: { words?: 12 | 24 };
+    }>('/api/v1/ows/mnemonic/generate', async (request) => {
+        const words = request.body?.words ?? 12;
+        return { mnemonic: bridge.generateNewMnemonic(words) };
+    });
+
+    app.post<{
+        Body: { mnemonic: string; chain: string; index?: number };
+    }>('/api/v1/ows/derive', async (request) => {
+        const { mnemonic, chain, index } = request.body;
+        return { address: bridge.deriveWalletAddress(mnemonic, chain, index ?? 0) };
+    });
+
+    // u2500u2500 Wallet Lifecycle (GRA-223) u2500u2500
+
+    app.post<{
+        Body: {
+            walletId: string;
+            passphrase: string;
+            defaultPolicyIds?: string[];
+        };
+    }>('/api/v1/ows/wallets/provision-agent', async (request, reply) => {
+        try {
+            const { walletId, passphrase, defaultPolicyIds } = request.body;
+            const wallet = bridge.getAgentWallet(walletId);
+            const policyIds = defaultPolicyIds ?? [];
+            const key = bridge.createAgentApiKey(`agent-${wallet.name}`, [walletId], policyIds, passphrase);
+            return {
+                wallet,
+                solanaAddress: bridge.getSolanaAddress(wallet),
+                apiKey: { id: key.id, name: key.name, token: key.token },
+            };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.post<{
+        Body: {
+            name: string;
+            localStorageExport: {
+                secretKey: number[];
+                handle?: string;
+            };
+        };
+    }>('/api/v1/ows/wallets/migrate', async (request, reply) => {
+        try {
+            const { name, localStorageExport } = request.body;
+            const hexKey = Buffer.from(localStorageExport.secretKey).toString('hex');
+            const wallet = bridge.importFromPrivateKey(name, hexKey, 'solana');
+            return {
+                wallet,
+                solanaAddress: bridge.getSolanaAddress(wallet),
+                migrated: true,
+                handle: localStorageExport.handle ?? null,
+            };
+        } catch (err: any) {
+            logger.error({ err }, 'Migration from localStorage failed');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.delete<{
+        Params: { id: string };
+        Querystring: { revokeKeys?: string };
+    }>('/api/v1/ows/wallets/:id/cascade', async (request, reply) => {
+        try {
+            const walletId = request.params.id;
+            const revokeKeys = (request.query as any)?.revokeKeys !== 'false';
+
+            if (revokeKeys) {
+                const keys = bridge.listAgentApiKeys();
+                for (const key of keys) {
+                    if (key.walletIds.includes(walletId)) {
+                        bridge.revokeAgentApiKey(key.id);
+                    }
+                }
+            }
+
+            bridge.deleteAgentWallet(walletId);
+            return { ok: true, walletDeleted: true, keysRevoked: revokeKeys };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    app.post<{
+        Body: { keyId: string; passphrase: string; policyIds?: string[] };
+    }>('/api/v1/ows/keys/rotate', async (request, reply) => {
+        try {
+            const { keyId, passphrase, policyIds } = request.body;
+            const keys = bridge.listAgentApiKeys();
+            const oldKey = keys.find((k) => k.id === keyId);
+            if (!oldKey) {
+                return reply.code(404).send({ error: 'Key not found' });
+            }
+
+            const newKey = bridge.createAgentApiKey(
+                oldKey.name,
+                oldKey.walletIds,
+                policyIds ?? oldKey.policyIds,
+                passphrase,
+            );
+
+            bridge.revokeAgentApiKey(keyId);
+
+            return {
+                oldKeyRevoked: keyId,
+                newKey: { id: newKey.id, name: newKey.name, token: newKey.token },
+            };
+        } catch (err: any) {
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    // ── GRA-225c: Reputation Endpoints ──
+
+    /**
+     * GET /api/v1/ows/wallets/:id/reputation
+     * Get reputation for a specific wallet
+     */
+    app.get<{
+        Params: { id: string };
+    }>('/api/v1/ows/wallets/:id/reputation', async (request, reply) => {
+        try {
+            const walletId = request.params.id;
+            const wallet = bridge.getAgentWallet(walletId);
+
+            if (!wallet) {
+                return reply.code(404).send({ error: 'Wallet not found' });
+            }
+
+            // Get reputation from wallet metadata or calculate from policy
+            const reputationScore = (wallet as any).reputationScore ?? 50;
+            const tier = getReputationTier(reputationScore);
+            const policy = (wallet as any).policy ?? calculatePolicy(reputationScore);
+
+            return {
+                walletId,
+                agentAddress: bridge.getSolanaAddress(wallet),
+                reputationScore,
+                tier,
+                completedTasks: (wallet as any).completedTasks ?? 0,
+                avgRating: (wallet as any).avgRating ?? 0,
+                policy: {
+                    dailyLimitUsd: policy.dailyLimit ?? reputationScore * 10,
+                    allowedChains: policy.allowedChains ?? ['solana'],
+                    autoApprove: !policy.requireApproval,
+                },
+                updatedAt: new Date().toISOString(),
+            };
+        } catch (err: any) {
+            logger.error({ err, walletId: request.params.id }, 'Failed to get wallet reputation');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    /**
+     * GET /api/v1/ows/wallets/master/:address/aggregate-reputation
+     * Get aggregate reputation for all wallets under a master wallet
+     */
+    app.get<{
+        Params: { address: string };
+    }>('/api/v1/ows/wallets/master/:address/aggregate-reputation', async (request, reply) => {
+        try {
+            const masterWallet = request.params.address;
+            const wallets = bridge.listAgentWallets();
+
+            // Filter wallets by parent (in real implementation, this would check parentWallet field)
+            const agentWallets = wallets.map((w) => {
+                const score = (w as any).reputationScore ?? 50;
+                return {
+                    walletId: w.id,
+                    address: bridge.getSolanaAddress(w),
+                    handle: w.name,
+                    reputationScore: score,
+                    tier: getReputationTier(score),
+                    completedTasks: (w as any).completedTasks ?? 0,
+                    weight: Math.max((w as any).completedTasks ?? 1, 1),
+                };
+            });
+
+            // Calculate aggregate score (weighted by completed tasks)
+            const totalWeight = agentWallets.reduce((sum, a) => sum + a.weight, 0);
+            const weightedScore = agentWallets.reduce((sum, a) => {
+                return sum + a.reputationScore * (a.weight / totalWeight);
+            }, 0);
+            const aggregateScore = Math.round(weightedScore);
+            const tier = getReputationTier(aggregateScore);
+
+            // Calculate derived policy
+            const derivedPolicy = calculatePolicy(aggregateScore);
+
+            return {
+                masterWallet,
+                aggregateScore,
+                tier,
+                agentCount: agentWallets.length,
+                totalCompletedTasks: agentWallets.reduce((sum, a) => sum + a.completedTasks, 0),
+                agents: agentWallets,
+                derivedPolicy: {
+                    dailyLimitUsd: derivedPolicy.dailyLimit,
+                    allowedChains: derivedPolicy.allowedChains,
+                    autoApprove: !derivedPolicy.requireApproval,
+                },
+            };
+        } catch (err: any) {
+            logger.error({ err, masterWallet: request.params.address }, 'Failed to get aggregate reputation');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    /**
+     * POST /api/v1/ows/wallets/:id/sync-reputation
+     * Sync reputation from Chain Hub
+     */
+    app.post<{
+        Params: { id: string };
+    }>('/api/v1/ows/wallets/:id/sync-reputation', async (request, reply) => {
+        try {
+            const walletId = request.params.id;
+            const wallet = bridge.getAgentWallet(walletId);
+
+            if (!wallet) {
+                return reply.code(404).send({ error: 'Wallet not found' });
+            }
+
+            // In real implementation, this would call ChainHubReputationClient
+            // For now, return current reputation with sync timestamp
+            const reputationScore = (wallet as any).reputationScore ?? 50;
+
+            logger.info({ walletId, reputationScore }, 'Reputation sync requested');
+
+            return {
+                walletId,
+                synced: true,
+                reputationScore,
+                tier: getReputationTier(reputationScore),
+                syncedAt: new Date().toISOString(),
+            };
+        } catch (err: any) {
+            logger.error({ err, walletId: request.params.id }, 'Failed to sync reputation');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    logger.info('OWS routes registered: /api/v1/ows/*');
 }

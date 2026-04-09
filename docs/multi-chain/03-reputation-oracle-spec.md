@@ -49,14 +49,14 @@
 
 ### 2.2 组件职责
 
-| 组件 | 职责 | 技术栈 |
-|------|------|--------|
-| **Data Adapter** | 从各链读取原始 reputation 数据 | `@solana/web3.js`, `ethers.js`, Subgraph queries |
-| **Aggregation Engine** | 计算统一分数、处理冲突、去重 | Node.js / Rust |
-| **Proof Generator** | 生成可验证的密码学证明 | `noble-ed25519`, `ethers.utils`, 未来 `risc0` |
-| **ERC-8004 Submitter** | 将数据提交到 ERC-8004 合约 | `ethers.js` + 托管私钥 |
-| **On-Chain Feed Writer** | 更新链上声誉 feed 合约 | EVM transaction builder |
-| **API Gateway** | 对外暴露 REST/GraphQL 查询 | Fastify / Apollo |
+| 组件                     | 职责                           | 技术栈                                           |
+| ------------------------ | ------------------------------ | ------------------------------------------------ |
+| **Data Adapter**         | 从各链读取原始 reputation 数据 | `@solana/web3.js`, `ethers.js`, Subgraph queries |
+| **Aggregation Engine**   | 计算统一分数、处理冲突、去重   | Node.js / Rust                                   |
+| **Proof Generator**      | 生成可验证的密码学证明         | `noble-ed25519`, `ethers.utils`, 未来 `risc0`    |
+| **ERC-8004 Submitter**   | 将数据提交到 ERC-8004 合约     | `ethers.js` + 托管私钥                           |
+| **On-Chain Feed Writer** | 更新链上声誉 feed 合约         | EVM transaction builder                          |
+| **API Gateway**          | 对外暴露 REST/GraphQL 查询     | Fastify / Apollo                                 |
 
 ---
 
@@ -113,24 +113,24 @@ Step 5: Distribution
 
 ```typescript
 interface ChainReputationData {
-  chainId: string;           // "solana", "base", "arbitrum"
-  agentAddress: string;      // 链原生地址格式
-  totalApplied: number;
-  completed: number;
-  won: number;
-  avgScoreBps: number;       // 0-10000
-  totalEarned: bigint;
-  totalStaked: bigint;
-  categoryStats: CategoryStat[];
-  lastActivityAt: number;
+    chainId: string; // "solana", "base", "arbitrum"
+    agentAddress: string; // 链原生地址格式
+    totalApplied: number;
+    completed: number;
+    won: number;
+    avgScoreBps: number; // 0-10000
+    totalEarned: bigint;
+    totalStaked: bigint;
+    categoryStats: CategoryStat[];
+    lastActivityAt: number;
 }
 
 interface CategoryStat {
-  categoryId: number;        // 0-7
-  applied: number;
-  completed: number;
-  won: number;
-  avgScoreBps: number;       // 0-10000
+    categoryId: number; // 0-7
+    applied: number;
+    completed: number;
+    won: number;
+    avgScoreBps: number; // 0-10000
 }
 ```
 
@@ -198,13 +198,13 @@ Where:
 
 ```typescript
 {
-  agentId: string;           // 从 Identity Registry 查询
-  value: number;             // globalScore (e.g., 8750 for 87.50)
-  valueDecimals: 2;
-  tags: ["gradience-v1", "global"];
-  endpoint: "https://oracle.gradience.io/v1";
-  feedbackURI: "ipfs://QmXyz...";  // 指向完整 attestation JSON
-  feedbackHash: "0xabc123...";     // Merkle Root
+    agentId: string; // 从 Identity Registry 查询
+    value: number; // globalScore (e.g., 8750 for 87.50)
+    valueDecimals: 2;
+    tags: ['gradience-v1', 'global'];
+    endpoint: 'https://oracle.gradience.io/v1';
+    feedbackURI: 'ipfs://QmXyz...'; // 指向完整 attestation JSON
+    feedbackHash: '0xabc123...'; // Merkle Root
 }
 ```
 
@@ -212,13 +212,13 @@ Where:
 
 ```typescript
 {
-  agentId: string;
-  value: number;             // categoryScore[i]
-  valueDecimals: 2;
-  tags: ["gradience-v1", CATEGORY_NAMES[i]];
-  endpoint: "https://oracle.gradience.io/v1";
-  feedbackURI: "ipfs://QmXyz.../category/{i}";
-  feedbackHash: "0xabc123...";
+    agentId: string;
+    value: number; // categoryScore[i]
+    valueDecimals: 2;
+    tags: ['gradience-v1', CATEGORY_NAMES[i]];
+    endpoint: 'https://oracle.gradience.io/v1';
+    feedbackURI: 'ipfs://QmXyz.../category/{i}';
+    feedbackHash: '0xabc123...';
 }
 ```
 
@@ -226,38 +226,38 @@ Where:
 
 ```json
 {
-  "version": "gradience-reputation-v1",
-  "agentId": "12345",
-  "agentAddress": {
-    "solana": "8oR...",
-    "evm": "0xabc..."
-  },
-  "calculatedAt": 1712390400000,
-  "globalScore": 8750,
-  "confidence": 0.94,
-  "categoryScores": [9200, 8500, 0, 0, 8800, 0, 0, 7600],
-  "sourceData": [
-    {
-      "chain": "solana",
-      "completed": 120,
-      "avgScoreBps": 8900,
-      "lastActivityAt": 1712380000000,
-      "proof": "solana-tx-signature-or-pda-proof"
+    "version": "gradience-reputation-v1",
+    "agentId": "12345",
+    "agentAddress": {
+        "solana": "8oR...",
+        "evm": "0xabc..."
     },
-    {
-      "chain": "base",
-      "completed": 45,
-      "avgScoreBps": 8600,
-      "lastActivityAt": 1712390000000,
-      "proof": "evm-block-number-and-log-index"
+    "calculatedAt": 1712390400000,
+    "globalScore": 8750,
+    "confidence": 0.94,
+    "categoryScores": [9200, 8500, 0, 0, 8800, 0, 0, 7600],
+    "sourceData": [
+        {
+            "chain": "solana",
+            "completed": 120,
+            "avgScoreBps": 8900,
+            "lastActivityAt": 1712380000000,
+            "proof": "solana-tx-signature-or-pda-proof"
+        },
+        {
+            "chain": "base",
+            "completed": 45,
+            "avgScoreBps": 8600,
+            "lastActivityAt": 1712390000000,
+            "proof": "evm-block-number-and-log-index"
+        }
+    ],
+    "merkleRoot": "0xabc123...",
+    "oracleSignature": {
+        "r": "0x...",
+        "s": "0x...",
+        "v": 27
     }
-  ],
-  "merkleRoot": "0xabc123...",
-  "oracleSignature": {
-    "r": "0x...",
-    "s": "0x...",
-    "v": 27
-  }
 }
 ```
 
@@ -326,12 +326,12 @@ interface IGradienceReputationFeed {
 
 ### 6.3 部署策略
 
-| 链 | 优先级 | 用途 |
-|----|--------|------|
-| Base | P0 | 主要消费链，低成本 |
-| Arbitrum | P1 | DeFi 生态丰富 |
-| Solana | P1 | 原生用户基础 |
-| Ethereum L1 | P2 | 高安全性需求场景 |
+| 链          | 优先级 | 用途               |
+| ----------- | ------ | ------------------ |
+| Base        | P0     | 主要消费链，低成本 |
+| Arbitrum    | P1     | DeFi 生态丰富      |
+| Solana      | P1     | 原生用户基础       |
+| Ethereum L1 | P2     | 高安全性需求场景   |
 
 ---
 
@@ -353,50 +353,50 @@ GET  /api/v1/oracle/health                            # 健康检查
 
 ```json
 {
-  "agentAddress": "0x1234...",
-  "reputation": {
-    "overallScore": 87.5,
-    "tier": "platinum",
-    "confidence": 0.94,
-    "calculatedAt": "2026-04-06T12:00:00Z"
-  },
-  "components": {
-    "taskScore": 92.0,
-    "qualityScore": 85.0,
-    "consistencyScore": 88.0,
-    "stakingScore": 76.0
-  },
-  "metrics": {
-    "completedTasks": 165,
-    "totalEarned": "1000000000000000000",
-    "avgRating": 4.5,
-    "disputeRate": 0.02
-  },
-  "categoryScores": {
-    "smart-contract-audit": 92.0,
-    "defi-strategy": 85.0,
-    "data-analysis": 88.0
-  },
-  "sources": [
-    { "chain": "solana", "score": 89.0, "tasks": 120, "lastActivity": "2026-04-05T10:00:00Z" },
-    { "chain": "base", "score": 86.0, "tasks": 45, "lastActivity": "2026-04-06T08:00:00Z" }
-  ],
-  "proofs": {
-    "merkleRoot": "0xabc123...",
-    "signature": "0xdef456...",
-    "attestationURI": "ipfs://QmXyz..."
-  },
-  "erc8004": {
-    "agentId": "12345",
-    "feedbackCount": 47,
-    "lastUpdateTx": "0x789abc...",
-    "registryUrl": "https://8004scan.io/agents/12345"
-  },
-  "syncStatus": {
-    "solana": true,
-    "base": true,
-    "lastSyncAt": "2026-04-06T12:00:00Z"
-  }
+    "agentAddress": "0x1234...",
+    "reputation": {
+        "overallScore": 87.5,
+        "tier": "platinum",
+        "confidence": 0.94,
+        "calculatedAt": "2026-04-06T12:00:00Z"
+    },
+    "components": {
+        "taskScore": 92.0,
+        "qualityScore": 85.0,
+        "consistencyScore": 88.0,
+        "stakingScore": 76.0
+    },
+    "metrics": {
+        "completedTasks": 165,
+        "totalEarned": "1000000000000000000",
+        "avgRating": 4.5,
+        "disputeRate": 0.02
+    },
+    "categoryScores": {
+        "smart-contract-audit": 92.0,
+        "defi-strategy": 85.0,
+        "data-analysis": 88.0
+    },
+    "sources": [
+        { "chain": "solana", "score": 89.0, "tasks": 120, "lastActivity": "2026-04-05T10:00:00Z" },
+        { "chain": "base", "score": 86.0, "tasks": 45, "lastActivity": "2026-04-06T08:00:00Z" }
+    ],
+    "proofs": {
+        "merkleRoot": "0xabc123...",
+        "signature": "0xdef456...",
+        "attestationURI": "ipfs://QmXyz..."
+    },
+    "erc8004": {
+        "agentId": "12345",
+        "feedbackCount": 47,
+        "lastUpdateTx": "0x789abc...",
+        "registryUrl": "https://8004scan.io/agents/12345"
+    },
+    "syncStatus": {
+        "solana": true,
+        "base": true,
+        "lastSyncAt": "2026-04-06T12:00:00Z"
+    }
 }
 ```
 
@@ -412,25 +412,28 @@ GET  /api/v1/oracle/health                            # 健康检查
 
 ### 8.1 威胁模型
 
-| 威胁 | 描述 | 缓解方案 |
-|------|------|----------|
-| **Oracle 造假** | Oracle 节点伪造声誉数据 | 多签阈值 + 链上验证 + 惩罚机制 |
-| **数据延迟** | 链上数据未及时同步 | TTL 过期机制 + 强制刷新 API |
-| **DDoS** | 高频 API 查询耗尽资源 | Rate Limiting + API Key + CDN |
-| **链重组** | EVM 链重组导致 reputation 回滚 | 等待 12 个确认块后再提交 |
-| **地址冒充** | 攻击者冒充高声誉 Agent | 地址验证 + 链上绑定关系 |
+| 威胁            | 描述                           | 缓解方案                       |
+| --------------- | ------------------------------ | ------------------------------ |
+| **Oracle 造假** | Oracle 节点伪造声誉数据        | 多签阈值 + 链上验证 + 惩罚机制 |
+| **数据延迟**    | 链上数据未及时同步             | TTL 过期机制 + 强制刷新 API    |
+| **DDoS**        | 高频 API 查询耗尽资源          | Rate Limiting + API Key + CDN  |
+| **链重组**      | EVM 链重组导致 reputation 回滚 | 等待 12 个确认块后再提交       |
+| **地址冒充**    | 攻击者冒充高声誉 Agent         | 地址验证 + 链上绑定关系        |
 
 ### 8.2 签名方案
 
 **Phase 1-2 (托管/联盟节点)**:
+
 - Oracle 使用 ECDSA (secp256k1) 签名
 - 链上合约验证 signer 是否在白名单
 
 **Phase 3 (去中心化网络)**:
+
 - 采用阈值签名 (TSS) 或 BLS 聚合签名
 - 5 个节点中至少 3 个同意才能生成有效签名
 
 **Phase 4 (ZK Proof)**:
+
 - 使用 RISC Zero / SP1 生成 ZK proof
 - 链上只需验证 proof，无需信任任何 signer
 
@@ -439,6 +442,7 @@ GET  /api/v1/oracle/health                            # 健康检查
 ## 9. 实施路线图
 
 ### Phase 1: MVP (4-6 周)
+
 - [ ] 实现 Data Adapter (Solana + Base)
 - [ ] 实现 Aggregation Engine (基础算法)
 - [ ] 集成现有 `erc8004-client.ts`，打通自动提交
@@ -446,6 +450,7 @@ GET  /api/v1/oracle/health                            # 健康检查
 - [ ] 上线基础 API (`/reputation/{address}`, `/leaderboard`)
 
 ### Phase 2: 生产化 (6-8 周)
+
 - [ ] 支持 Arbitrum 数据源
 - [ ] 实现 Merkle Proof 和签名验证
 - [ ] 引入 PostgreSQL + Redis 缓存
@@ -453,12 +458,14 @@ GET  /api/v1/oracle/health                            # 健康检查
 - [ ] 与 Chainlink Functions 集成（可选）
 
 ### Phase 3: 去中心化 (3-6 个月)
+
 - [ ] 设计并部署 EigenLayer AVS
 - [ ] 开放无许可节点注册
 - [ ] 经济模型上线（质押、惩罚、奖励）
 - [ ] 引入 ZK Proof（长期研究）
 
 ### Phase 4: 生态扩展 (6-12 个月)
+
 - [ ] 与 Lending / Insurance / DAO 协议集成
 - [ ] 推出企业级 API 和 SLA
 - [ ] 建立 Reputation Oracle 开发者生态
@@ -469,16 +476,16 @@ GET  /api/v1/oracle/health                            # 健康检查
 
 ### A. Category ID 映射表
 
-| ID | Category Name | 中文名 |
-|----|---------------|--------|
-| 0 | `smart-contract-audit` | 智能合约审计 |
-| 1 | `defi-strategy` | DeFi 策略 |
-| 2 | `data-analysis` | 数据分析 |
-| 3 | `code-optimization` | 代码优化 |
-| 4 | `security-research` | 安全研究 |
-| 5 | `ui-ux-design` | UI/UX 设计 |
-| 6 | `content-creation` | 内容创作 |
-| 7 | `general-task` | 通用任务 |
+| ID  | Category Name          | 中文名       |
+| --- | ---------------------- | ------------ |
+| 0   | `smart-contract-audit` | 智能合约审计 |
+| 1   | `defi-strategy`        | DeFi 策略    |
+| 2   | `data-analysis`        | 数据分析     |
+| 3   | `code-optimization`    | 代码优化     |
+| 4   | `security-research`    | 安全研究     |
+| 5   | `ui-ux-design`         | UI/UX 设计   |
+| 6   | `content-creation`     | 内容创作     |
+| 7   | `general-task`         | 通用任务     |
 
 ### B. 相关代码文件
 

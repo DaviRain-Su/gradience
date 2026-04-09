@@ -1,7 +1,13 @@
 import { useCallback, useState } from 'react';
 import type { AgentInfo } from '../../../../shared/a2a-router-types.ts';
 
-export type PostType = 'agent_join' | 'task_created' | 'task_completed' | 'achievement_earned' | 'system_update' | 'direct_message';
+export type PostType =
+    | 'agent_join'
+    | 'task_created'
+    | 'task_completed'
+    | 'achievement_earned'
+    | 'system_update'
+    | 'direct_message';
 
 export interface Post {
     id: string;
@@ -203,10 +209,7 @@ export function PostCard({
                 {post.author.capabilities && post.author.capabilities.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-3">
                         {post.author.capabilities.map((cap) => (
-                            <span
-                                key={cap}
-                                className="text-xs bg-gray-900 text-gray-500 px-2 py-0.5 rounded"
-                            >
+                            <span key={cap} className="text-xs bg-gray-900 text-gray-500 px-2 py-0.5 rounded">
                                 {cap}
                             </span>
                         ))}
@@ -220,9 +223,7 @@ export function PostCard({
                     onClick={handleLike}
                     disabled={isLiking || !onLike}
                     className={`flex items-center gap-1.5 text-sm transition ${
-                        post.engagement.liked
-                            ? 'text-pink-400'
-                            : 'text-gray-500 hover:text-pink-400'
+                        post.engagement.liked ? 'text-pink-400' : 'text-gray-500 hover:text-pink-400'
                     } disabled:opacity-50`}
                 >
                     <span>{post.engagement.liked ? '❤️' : '🤍'}</span>

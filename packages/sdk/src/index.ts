@@ -35,11 +35,7 @@ import type {
     ReputationOnChain,
 } from '@gradiences/arena-sdk';
 import type { ReputationData } from '@gradiences/chain-hub-sdk';
-import type {
-    GradienceClientOptions,
-    PostTaskOptions,
-    PostTaskResult,
-} from './types';
+import type { GradienceClientOptions, PostTaskOptions, PostTaskResult } from './types';
 
 // ── Re-exports ────────────────────────────────────────────────────────────────
 
@@ -47,21 +43,14 @@ export * from './types';
 export * from './wallet';
 
 // Selectively re-export arena SDK to avoid name collisions with chain-hub
-export {
-    GradienceSDK,
-    GRADIENCE_PROGRAM_ADDRESS,
-} from '@gradiences/arena-sdk';
+export { GradienceSDK, GRADIENCE_PROGRAM_ADDRESS } from '@gradiences/arena-sdk';
 
 // Chain Hub — re-export from the sub-path to keep this entry-point slim
 export { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
 export type { ChainHubClientConfig, ReputationData, AgentInfo, SqlQueryResult } from '@gradiences/chain-hub-sdk';
 
 // EVM Multicall3 — batch operations without native contract batch functions
-export {
-    MULTICALL3_ADDRESS,
-    MULTICALL3_ABI,
-    encodeAggregate3Value,
-} from './evm/multicall';
+export { MULTICALL3_ADDRESS, MULTICALL3_ABI, encodeAggregate3Value } from './evm/multicall';
 export type { Call3Value, Aggregate3ValuePayload } from './evm/multicall';
 
 // EVM Adapter & Task Client (GRA-256)
@@ -120,7 +109,7 @@ export class Gradience {
         if (!signer) {
             throw new Error(
                 'A wallet is required for postTask. ' +
-                'Pass one to new Gradience({ wallet }) or as the second argument.',
+                    'Pass one to new Gradience({ wallet }) or as the second argument.',
             );
         }
         const result: PostTaskSimpleResult = await this.arena.task.postSimple(signer, {
@@ -140,10 +129,7 @@ export class Gradience {
     /**
      * Apply for an existing open task (staking the required minimum).
      */
-    async applyTask(
-        taskId: number | bigint,
-        wallet?: WalletAdapter,
-    ): Promise<string> {
+    async applyTask(taskId: number | bigint, wallet?: WalletAdapter): Promise<string> {
         const signer = wallet ?? this.defaultWallet;
         if (!signer) throw new Error('A wallet is required for applyTask.');
         return this.arena.task.apply(signer, { taskId });
@@ -152,10 +138,7 @@ export class Gradience {
     /**
      * Submit a result for a task the calling agent applied to.
      */
-    async submitResult(
-        options: SubmitTaskResultRequest,
-        wallet?: WalletAdapter,
-    ): Promise<string> {
+    async submitResult(options: SubmitTaskResultRequest, wallet?: WalletAdapter): Promise<string> {
         const signer = wallet ?? this.defaultWallet;
         if (!signer) throw new Error('A wallet is required for submitResult.');
         return this.arena.task.submit(signer, options);
@@ -164,10 +147,7 @@ export class Gradience {
     /**
      * Judge a task and settle rewards to the winner.
      */
-    async judgeTask(
-        options: JudgeTaskRequest,
-        wallet?: WalletAdapter,
-    ): Promise<string> {
+    async judgeTask(options: JudgeTaskRequest, wallet?: WalletAdapter): Promise<string> {
         const signer = wallet ?? this.defaultWallet;
         if (!signer) throw new Error('A wallet is required for judgeTask.');
         return this.arena.task.judge(signer, options);
@@ -176,10 +156,7 @@ export class Gradience {
     /**
      * Cancel a task and refund the poster.
      */
-    async cancelTask(
-        options: CancelTaskRequest,
-        wallet?: WalletAdapter,
-    ): Promise<string> {
+    async cancelTask(options: CancelTaskRequest, wallet?: WalletAdapter): Promise<string> {
         const signer = wallet ?? this.defaultWallet;
         if (!signer) throw new Error('A wallet is required for cancelTask.');
         return this.arena.task.cancel(signer, options);

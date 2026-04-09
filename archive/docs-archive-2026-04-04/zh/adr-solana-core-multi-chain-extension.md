@@ -12,6 +12,7 @@
 **核心决策**: 保持 Solana 作为 Gradience 协议核心，Kite/0G/Tempo 作为辅助扩展层。
 
 **理由**:
+
 - Solana: 高吞吐、低费用、DeFi 成熟、已跑通 live MVP
 - 新链: 早期阶段，适合特定场景（支付/计算/隐私），不适合承载核心经济机制
 - 风险: 核心迁移成本高、流动性不足、生态不成熟
@@ -24,22 +25,22 @@
 
 ### 1.1 考虑的选项
 
-| 选项 | 描述 | 评估 |
-|------|------|------|
-| **A. Solana 核心** | 保持现状 | ✅ 推荐 |
-| **B. 迁移到 Kite** | 新链，testnet 活跃 | ❌ 太早 |
-| **C. 迁移到 0G** | 主网 live，全栈 AI | ❌ 非最佳 |
-| **D. 迁移到 Tempo** | Stripe 背书，MPP | ❌ 非最佳 |
+| 选项                     | 描述               | 评估        |
+| ------------------------ | ------------------ | ----------- |
+| **A. Solana 核心**       | 保持现状           | ✅ 推荐     |
+| **B. 迁移到 Kite**       | 新链，testnet 活跃 | ❌ 太早     |
+| **C. 迁移到 0G**         | 主网 live，全栈 AI | ❌ 非最佳   |
+| **D. 迁移到 Tempo**      | Stripe 背书，MPP   | ❌ 非最佳   |
 | **E. Solana + 多链扩展** | 核心不变，上层扩展 | ✅ 最终选择 |
 
 ### 1.2 各链现状（2026-04）
 
-| 链 | 状态 | 强项 | 弱项 |
-|----|------|------|------|
-| **Solana** | 主网成熟 | 高吞吐、低费、DeFi、用户基础 | - |
-| **Kite** | Testnet 活跃，主网即将 | Agent Passports、x402、近零 gas | 主网未完全上线 |
-| **0G** | Aristotle Mainnet 7月+ | TEE、持久内存、链上结算 | 经济竞争非强项 |
-| **Tempo** | Mainnet 刚上线 (3月) | Stripe、MPP、企业支付 | 生态早期、隐私完善中 |
+| 链         | 状态                   | 强项                            | 弱项                 |
+| ---------- | ---------------------- | ------------------------------- | -------------------- |
+| **Solana** | 主网成熟               | 高吞吐、低费、DeFi、用户基础    | -                    |
+| **Kite**   | Testnet 活跃，主网即将 | Agent Passports、x402、近零 gas | 主网未完全上线       |
+| **0G**     | Aristotle Mainnet 7月+ | TEE、持久内存、链上结算         | 经济竞争非强项       |
+| **Tempo**  | Mainnet 刚上线 (3月)   | Stripe、MPP、企业支付           | 生态早期、隐私完善中 |
 
 ---
 
@@ -58,24 +59,24 @@ Kernel (~300 lines) 需要:
 
 ### 2.2 Solana 的匹配度
 
-| 需求 | Solana | 评估 |
-|------|--------|------|
-| 高吞吐 | ✅ 并行执行、65k+ TPS | 完美匹配 |
-| 低费用 | ✅ ~$0.0001/tx | 完美匹配 |
-| 确定性 | ✅ sub-second finality | 完美匹配 |
-| 流动性 | ✅ 成熟 DeFi 生态 | 完美匹配 |
+| 需求     | Solana                        | 评估     |
+| -------- | ----------------------------- | -------- |
+| 高吞吐   | ✅ 并行执行、65k+ TPS         | 完美匹配 |
+| 低费用   | ✅ ~$0.0001/tx                | 完美匹配 |
+| 确定性   | ✅ sub-second finality        | 完美匹配 |
+| 流动性   | ✅ 成熟 DeFi 生态             | 完美匹配 |
 | 可组合性 | ✅ Token-2022、ZK Compression | 完美匹配 |
-| 执行力 | ✅ Live MVP 已跑通 | 完美匹配 |
+| 执行力   | ✅ Live MVP 已跑通            | 完美匹配 |
 
 ### 2.3 新链为什么不合适承载核心
 
-| 风险 | 说明 | 影响 |
-|------|------|------|
-| **流动性不足** | 新链 DeFi 深度不够 | 95/3/2 分成难以执行 |
-| **用户基础小** | 早期采用者有限 | Agent Arena 难以获得反馈 |
-| **维护成本高** | 需要单独测试、监控 | 分散开发资源 |
-| **生态不成熟** | 工具、文档、社区不完善 | 开发体验差 |
-| **不确定性** | 主网早期可能出问题 | 协议风险 |
+| 风险           | 说明                   | 影响                     |
+| -------------- | ---------------------- | ------------------------ |
+| **流动性不足** | 新链 DeFi 深度不够     | 95/3/2 分成难以执行      |
+| **用户基础小** | 早期采用者有限         | Agent Arena 难以获得反馈 |
+| **维护成本高** | 需要单独测试、监控     | 分散开发资源             |
+| **生态不成熟** | 工具、文档、社区不完善 | 开发体验差               |
+| **不确定性**   | 主网早期可能出问题     | 协议风险                 |
 
 **结论**: 新链适合做**特定功能扩展**，不适合承载**核心经济机制**。
 
@@ -127,17 +128,17 @@ Kernel (~300 lines) 需要:
 
 ### 3.2 功能分配
 
-| 功能 | Solana (核心) | 扩展链 (辅助) | 说明 |
-|------|--------------|--------------|------|
-| **Agent Arena 核心** | ✅ 主要 | ✅ 轻量版 | 双链部署，Solana 为主 |
-| **高频竞争** | ✅ | ❌ | Solana 性能最优 |
-| **主要 Reputation** | ✅ | 同步 | Solana 积累，跨链证明 |
-| **DeFi 集成** | ✅ | ❌ | Solana 流动性更好 |
-| **Agent Passport** | ❌ | ✅ Kite | Kite 原生优势 |
-| **TEE 计算** | ❌ | ✅ 0G | 0G 可验证推理 |
-| **流式支付** | ❌ | ✅ Tempo | MPP 原生支持 |
-| **近零 gas** | ❌ | ✅ Kite | 适合微支付 |
-| **企业支付** | ❌ | ✅ Tempo | Stripe 生态 |
+| 功能                 | Solana (核心) | 扩展链 (辅助) | 说明                  |
+| -------------------- | ------------- | ------------- | --------------------- |
+| **Agent Arena 核心** | ✅ 主要       | ✅ 轻量版     | 双链部署，Solana 为主 |
+| **高频竞争**         | ✅            | ❌            | Solana 性能最优       |
+| **主要 Reputation**  | ✅            | 同步          | Solana 积累，跨链证明 |
+| **DeFi 集成**        | ✅            | ❌            | Solana 流动性更好     |
+| **Agent Passport**   | ❌            | ✅ Kite       | Kite 原生优势         |
+| **TEE 计算**         | ❌            | ✅ 0G         | 0G 可验证推理         |
+| **流式支付**         | ❌            | ✅ Tempo      | MPP 原生支持          |
+| **近零 gas**         | ❌            | ✅ Kite       | 适合微支付            |
+| **企业支付**         | ❌            | ✅ Tempo      | Stripe 生态           |
 
 ### 3.3 数据流
 
@@ -174,22 +175,22 @@ interface ChainProvider {
   readonly chainId: string;
   readonly name: string;
   readonly type: 'core' | 'extension';
-  
+
   // 核心功能
   connect(): Promise<Connection>;
   disconnect(): Promise<void>;
-  
+
   // Agent Arena 功能
   createTask(config: TaskConfig): Promise<TaskId>;
   bidOnTask(taskId: string, bid: Bid): Promise<BidId>;
   submitResult(taskId: string, result: Result): Promise<SubmissionId>;
   judgeTask(taskId: string, score: number): Promise<JudgeResult>;
   settleTask(taskId: string): Promise<SettlementResult>;
-  
+
   // Reputation
   getReputation(agentId: string): Promise<ReputationScore>;
   updateReputation(agentId: string, delta: ReputationDelta): Promise<void>;
-  
+
   // 跨链桥接
   bridgeReputation(toChain: string): Promise<BridgeResult>;
   syncAttestation(attestation: Attestation): Promise<void>;
@@ -200,15 +201,15 @@ class SolanaProvider implements ChainProvider {
   readonly chainId = 'solana';
   readonly name = 'Solana';
   readonly type = 'core';
-  
+
   private connection: Connection;
   private program: Program<AgentLayer>;
-  
+
   constructor(config: SolanaConfig) {
     this.connection = new Connection(config.rpc);
     this.program = new Program(idl, config.programId, provider);
   }
-  
+
   // 完整实现所有功能
   async createTask(config: TaskConfig): Promise<TaskId> {
     return await this.program.methods
@@ -216,7 +217,7 @@ class SolanaProvider implements ChainProvider {
       .accounts({...})
       .rpc();
   }
-  
+
   // ... 其他方法
 }
 
@@ -225,17 +226,17 @@ class KiteProvider implements ChainProvider {
   readonly chainId = 'kite';
   readonly name = 'Kite';
   readonly type = 'extension';
-  
+
   // Kite 特有功能
   async createAgentPassport(agentData: AgentData): Promise<PassportId>;
   async payWithX402(payment: X402Payment): Promise<PaymentResult>;
-  
+
   // 轻量版 Arena 功能
   async createTask(config: TaskConfig): Promise<TaskId> {
     // 代理到 Solana，或在 Kite 上轻量部署
     return await this.proxyToSolana('createTask', config);
   }
-  
+
   // ... 其他方法
 }
 
@@ -244,12 +245,12 @@ class ZeroGProvider implements ChainProvider {
   readonly chainId = '0g';
   readonly name = '0G';
   readonly type = 'extension';
-  
+
   // 0G 特有功能
   async executeTEEComputation(program: TEEProgram): Promise<TEEResult>;
   async storePersistentMemory(data: MemoryData): Promise<StorageId>;
   async verifyInference(model: Model, input: Input): Promise<VerifiedOutput>;
-  
+
   // Arena 功能代理到 Solana
   // ...
 }
@@ -259,12 +260,12 @@ class TempoProvider implements ChainProvider {
   readonly chainId = 'tempo';
   readonly name = 'Tempo';
   readonly type = 'extension';
-  
+
   // Tempo 特有功能
   async createMPPSession(config: MPPConfig): Promise<SessionId>;
   async streamPayment(session: SessionId, amount: BN): Promise<StreamId>;
   async settleConfidential(taskId: string): Promise<ConfidentialSettlement>;
-  
+
   // Arena 功能代理到 Solana
   // ...
 }
@@ -276,131 +277,130 @@ class TempoProvider implements ChainProvider {
 // Chain Hub SDK 主入口
 
 interface GradienceHubConfig {
-  primaryProvider: 'solana';  // 必须是 Solana
-  extensionProviders?: ('kite' | '0g' | 'tempo')[];
-  bridgeConfig?: BridgeConfig;
+    primaryProvider: 'solana'; // 必须是 Solana
+    extensionProviders?: ('kite' | '0g' | 'tempo')[];
+    bridgeConfig?: BridgeConfig;
 }
 
 class GradienceHub {
-  private providers: Map<string, ChainProvider>;
-  private primary: SolanaProvider;
-  private extensions: ChainProvider[];
-  
-  constructor(config: GradienceHubConfig) {
-    // 核心链必须是 Solana
-    this.primary = new SolanaProvider(solanaConfig);
-    this.providers.set('solana', this.primary);
-    
-    // 初始化扩展链
-    config.extensionProviders?.forEach(chain => {
-      const provider = this.createProvider(chain);
-      this.providers.set(chain, provider);
-      this.extensions.push(provider);
-    });
-  }
-  
-  private createProvider(chain: string): ChainProvider {
-    switch(chain) {
-      case 'kite': return new KiteProvider(kiteConfig);
-      case '0g': return new ZeroGProvider(zeroGConfig);
-      case 'tempo': return new TempoProvider(tempoConfig);
-      default: throw new Error(`Unknown chain: ${chain}`);
+    private providers: Map<string, ChainProvider>;
+    private primary: SolanaProvider;
+    private extensions: ChainProvider[];
+
+    constructor(config: GradienceHubConfig) {
+        // 核心链必须是 Solana
+        this.primary = new SolanaProvider(solanaConfig);
+        this.providers.set('solana', this.primary);
+
+        // 初始化扩展链
+        config.extensionProviders?.forEach((chain) => {
+            const provider = this.createProvider(chain);
+            this.providers.set(chain, provider);
+            this.extensions.push(provider);
+        });
     }
-  }
-  
-  // 获取 Provider
-  getProvider(chainId: string): ChainProvider {
-    return this.providers.get(chainId) || this.primary;
-  }
-  
-  // 核心链快捷访问
-  get solana(): SolanaProvider {
-    return this.primary;
-  }
-  
-  // 扩展链快捷访问
-  get kite(): KiteProvider | undefined {
-    return this.providers.get('kite') as KiteProvider;
-  }
-  
-  get zeroG(): ZeroGProvider | undefined {
-    return this.providers.get('0g') as ZeroGProvider;
-  }
-  
-  get tempo(): TempoProvider | undefined {
-    return this.providers.get('tempo') as TempoProvider;
-  }
-  
-  // 跨链 Reputation 同步
-  async syncReputationAcrossChains(
-    agentId: string,
-    targetChains: string[]
-  ): Promise<SyncResult> {
-    const primaryRep = await this.primary.getReputation(agentId);
-    
-    for (const chain of targetChains) {
-      const provider = this.getProvider(chain);
-      await provider.syncAttestation({
-        agentId,
-        reputation: primaryRep,
-        proof: await this.generateCrossChainProof(agentId, primaryRep)
-      });
+
+    private createProvider(chain: string): ChainProvider {
+        switch (chain) {
+            case 'kite':
+                return new KiteProvider(kiteConfig);
+            case '0g':
+                return new ZeroGProvider(zeroGConfig);
+            case 'tempo':
+                return new TempoProvider(tempoConfig);
+            default:
+                throw new Error(`Unknown chain: ${chain}`);
+        }
     }
-    
-    return { success: true, syncedChains: targetChains };
-  }
-  
-  // 智能路由：根据任务类型选择最优链
-  async executeTaskWithOptimalChain(
-    taskConfig: TaskConfig
-  ): Promise<TaskResult> {
-    const optimalChain = this.selectOptimalChain(taskConfig);
-    const provider = this.getProvider(optimalChain);
-    
-    return await provider.createTask(taskConfig);
-  }
-  
-  private selectOptimalChain(config: TaskConfig): string {
-    // 任务类型决定链选择
-    if (config.requiresTEE) return '0g';
-    if (config.requiresStreaming) return 'tempo';
-    if (config.requiresMicroPayments) return 'kite';
-    if (config.requiresPrivacy) return 'tempo'; // or 'kite'
-    
-    // 默认 Solana
-    return 'solana';
-  }
+
+    // 获取 Provider
+    getProvider(chainId: string): ChainProvider {
+        return this.providers.get(chainId) || this.primary;
+    }
+
+    // 核心链快捷访问
+    get solana(): SolanaProvider {
+        return this.primary;
+    }
+
+    // 扩展链快捷访问
+    get kite(): KiteProvider | undefined {
+        return this.providers.get('kite') as KiteProvider;
+    }
+
+    get zeroG(): ZeroGProvider | undefined {
+        return this.providers.get('0g') as ZeroGProvider;
+    }
+
+    get tempo(): TempoProvider | undefined {
+        return this.providers.get('tempo') as TempoProvider;
+    }
+
+    // 跨链 Reputation 同步
+    async syncReputationAcrossChains(agentId: string, targetChains: string[]): Promise<SyncResult> {
+        const primaryRep = await this.primary.getReputation(agentId);
+
+        for (const chain of targetChains) {
+            const provider = this.getProvider(chain);
+            await provider.syncAttestation({
+                agentId,
+                reputation: primaryRep,
+                proof: await this.generateCrossChainProof(agentId, primaryRep),
+            });
+        }
+
+        return { success: true, syncedChains: targetChains };
+    }
+
+    // 智能路由：根据任务类型选择最优链
+    async executeTaskWithOptimalChain(taskConfig: TaskConfig): Promise<TaskResult> {
+        const optimalChain = this.selectOptimalChain(taskConfig);
+        const provider = this.getProvider(optimalChain);
+
+        return await provider.createTask(taskConfig);
+    }
+
+    private selectOptimalChain(config: TaskConfig): string {
+        // 任务类型决定链选择
+        if (config.requiresTEE) return '0g';
+        if (config.requiresStreaming) return 'tempo';
+        if (config.requiresMicroPayments) return 'kite';
+        if (config.requiresPrivacy) return 'tempo'; // or 'kite'
+
+        // 默认 Solana
+        return 'solana';
+    }
 }
 
 // 使用示例
 const hub = new GradienceHub({
-  primaryProvider: 'solana',
-  extensionProviders: ['kite', '0g', 'tempo']
+    primaryProvider: 'solana',
+    extensionProviders: ['kite', '0g', 'tempo'],
 });
 
 // Solana 核心操作
 const task = await hub.solana.createTask({
-  reward: new BN(1000000000),
-  deadline: 3600
+    reward: new BN(1000000000),
+    deadline: 3600,
 });
 
 // Kite 支付
 await hub.kite?.payWithX402({
-  amount: new BN(1000000),
-  recipient: toolProvider
+    amount: new BN(1000000),
+    recipient: toolProvider,
 });
 
 // 0G TEE 计算
 const result = await hub.zeroG?.executeTEEComputation({
-  program: verificationProgram,
-  input: taskSubmission
+    program: verificationProgram,
+    input: taskSubmission,
 });
 
 // Tempo 流式结算
 await hub.tempo?.createMPPSession({
-  agentId: 'agent-123',
-  spendingCap: new BN(10000000000),
-  duration: 7 * 24 * 60 * 60
+    agentId: 'agent-123',
+    spendingCap: new BN(10000000000),
+    duration: 7 * 24 * 60 * 60,
 });
 
 // 跨链同步
@@ -520,7 +520,7 @@ This is how AI Agents do business everywhere.
 
 ### Thread（技术深度）
 
-```
+````
 1/ Solana is our anchor chain.
 
 Why?
@@ -558,7 +558,7 @@ await hub.zeroG.executeTEE(...)
 
 // Tempo for MPP streaming
 await hub.tempo.createMPPSession(...)
-```
+````
 
 4/ Reputation stays unified.
 
@@ -570,26 +570,31 @@ Your Reputation is portable across chains.
 5/ This isn't chain maximalism.
 
 This is pragmatism:
+
 - Use the best chain for each job
 - Keep core economics on the most proven infra
 - Let developers choose their tradeoffs
 
 Gradience: The trust layer for AI Agents, everywhere.
+
 ```
 
 ### 回复特定链
 
 **回复 Kite:**
 ```
+
 @Kite 我们正在集成 Kite 作为扩展链！
 
 Agent Passports + x402 + near-zero gas = perfect for Agent tooling payments.
 
 Solana core + Kite extension = 🔥
+
 ```
 
 **回复 0G:**
 ```
+
 @0G 0G 的 TEE 可验证计算完美补充我们的 Solana 核心。
 
 Agent 在 Solana 上竞争，
@@ -597,15 +602,18 @@ Agent 在 Solana 上竞争，
 Reputation 跨链同步。
 
 这才是完整的 Agent 栈。
+
 ```
 
 **回复 Tempo:**
 ```
+
 @usetempo MPP 流式支付是 Agent 经济的游戏规则改变者。
 
 Solana 核心 + Tempo 支付扩展 = Agent 能实时获得并使用资金。
 
 期待集成！
+
 ```
 
 ---
@@ -651,5 +659,6 @@ Solana 核心 + Tempo 支付扩展 = Agent 能实时获得并使用资金。
 
 ---
 
-*架构决策确认: 2026-04-03*  
+*架构决策确认: 2026-04-03*
 *状态: ✅ 已确认，开始执行*
+```

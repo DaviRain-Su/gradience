@@ -6,34 +6,34 @@
 graph TD
     %% 合约层
     GP[gradience-protocol<br/>智能合约] --> IDL[IDL/Types 生成]
-    
+
     %% SDK 层
     IDL --> SDK_RUST[SDK Rust]
     IDL --> SDK_TS[SDK TypeScript]
-    
+
     %% 应用层
     SDK_RUST --> IDX[Agent Arena Indexer]
     SDK_RUST --> CH[Chain Hub]
-    
+
     SDK_TS --> FE[Agent Arena Frontend]
     SDK_TS --> AE[AgentM Clients]
     SDK_TS --> CLI[Agent Arena CLI]
-    
+
     %% 服务层
     IDX --> API1[Agent Arena API]
     CH --> API2[Chain Hub API]
-    
+
     %% 文档
     GP -.-> DOC[dev-docs]
     AE -.-> DOC
-    
+
     %% 样式
     classDef contract fill:#f9f,stroke:#333,stroke-width:2px
     classDef sdk fill:#bbf,stroke:#333,stroke-width:2px
     classDef app fill:#bfb,stroke:#333,stroke-width:2px
     classDef service fill:#fbb,stroke:#333,stroke-width:2px
     classDef docs fill:#fff,stroke:#333,stroke-width:2px
-    
+
     class GP contract
     class SDK_RUST,SDK_TS sdk
     class FE,AE,CLI app
@@ -45,22 +45,22 @@ graph TD
 
 ### 当前状态 (Monorepo)
 
-| 依赖 | 版本 | 位置 | 说明 |
-|------|------|------|------|
-| pinocchio | 0.10.1 | workspace | Solana 框架 |
-| pinocchio-token | 0.5 | workspace | Token 程序 |
-| borsh | 1.6.0 | workspace | 序列化 |
+| 依赖            | 版本   | 位置      | 说明        |
+| --------------- | ------ | --------- | ----------- |
+| pinocchio       | 0.10.1 | workspace | Solana 框架 |
+| pinocchio-token | 0.5    | workspace | Token 程序  |
+| borsh           | 1.6.0  | workspace | 序列化      |
 
 ### 目标状态 (Multi-Repo)
 
-| 仓库 | 依赖 | 来源 | 版本策略 |
-|------|------|------|----------|
-| gradience-protocol | pinocchio | crates.io | ^0.10 |
-| agent-arena | @gradience/protocol | npm | ^0.5.0 |
-| agent-arena | gradience-protocol | crates.io | ^0.5.0 |
-| chain-hub | @gradience/protocol | npm | ^0.5.0 |
-| chain-hub | gradience-protocol | crates.io | ^0.5.0 |
-| agentm | @gradience/protocol | npm | ^0.5.0 |
+| 仓库               | 依赖                | 来源      | 版本策略 |
+| ------------------ | ------------------- | --------- | -------- |
+| gradience-protocol | pinocchio           | crates.io | ^0.10    |
+| agent-arena        | @gradience/protocol | npm       | ^0.5.0   |
+| agent-arena        | gradience-protocol  | crates.io | ^0.5.0   |
+| chain-hub          | @gradience/protocol | npm       | ^0.5.0   |
+| chain-hub          | gradience-protocol  | crates.io | ^0.5.0   |
+| agentm             | @gradience/protocol | npm       | ^0.5.0   |
 
 ## 发布流程
 

@@ -42,7 +42,11 @@ export function Sidebar({
 
             {mobileOpen && (
                 <div className="md:hidden fixed inset-0 z-40">
-                    <button data-testid="mobile-overlay-close" className="absolute inset-0 bg-black/60" onClick={onCloseMobile} />
+                    <button
+                        data-testid="mobile-overlay-close"
+                        className="absolute inset-0 bg-black/60"
+                        onClick={onCloseMobile}
+                    />
                     <aside
                         data-testid="mobile-sidebar"
                         role="dialog"
@@ -91,9 +95,7 @@ function SidebarContent({
                         data-testid={`nav-${item.key}`}
                         onClick={() => onViewChange(item.key)}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                            activeView === item.key
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-400 hover:bg-gray-800'
+                            activeView === item.key ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800'
                         }`}
                     >
                         {item.label}

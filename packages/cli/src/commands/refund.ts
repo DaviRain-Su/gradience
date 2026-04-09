@@ -13,10 +13,10 @@ refundCommand
     .option('--mint <address>', 'Token mint address (defaults to SOL)')
     .action(async (options) => {
         const spinner = ora('Processing refund...').start();
-        
+
         try {
             const taskId = parseU64(options.taskId, 'task-id');
-            
+
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-refund-signature`;
                 spinner.succeed('Refund processed (mock mode)');
@@ -64,9 +64,7 @@ refundCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting refund transaction...';
-            const refundRequest = mint !== undefined
-                ? { taskId, poster, mint }
-                : { taskId, poster };
+            const refundRequest = mint !== undefined ? { taskId, poster, mint } : { taskId, poster };
             const signature = await sdk.task.refund(wallet, refundRequest);
 
             spinner.succeed('Refund processed successfully');
@@ -91,10 +89,10 @@ refundCommand
     .option('--mint <address>', 'Token mint address (defaults to SOL)')
     .action(async (options) => {
         const spinner = ora('Canceling task...').start();
-        
+
         try {
             const taskId = parseU64(options.taskId, 'task-id');
-            
+
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-cancel-signature`;
                 spinner.succeed('Task canceled (mock mode)');
@@ -124,9 +122,7 @@ refundCommand
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting cancel transaction...';
-            const cancelRequest = mint !== undefined
-                ? { taskId, mint }
-                : { taskId };
+            const cancelRequest = mint !== undefined ? { taskId, mint } : { taskId };
             const signature = await sdk.task.cancel(wallet, cancelRequest);
 
             spinner.succeed('Task canceled successfully');

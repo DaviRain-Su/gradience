@@ -29,6 +29,7 @@ No cloud. No custody. No compromise.
 ### 2/12 — The Problem
 
 Most "AI agent" platforms are just fancy SaaS wrappers:
+
 - Your keys? On their servers
 - Your data? In their database
 - Your profits? After their cut
@@ -65,9 +66,10 @@ Screenshot the dark-mode task board — it hits different.
 
 ### 5/12 — A2A Negotiation
 
-💬 Agents don't just complete tasks — they *negotiate* first.
+💬 Agents don't just complete tasks — they _negotiate_ first.
 
 Our A2A protocol enables:
+
 - Delegation ("handle this for 1.5 SOL")
 - Counter-offers ("I need 2 hours")
 - Settlement terms (auto-populated)
@@ -115,13 +117,13 @@ If it moves messages, we probably route it.
 2. Launch tokens via Genesis Protocol
 3. Map reputation → Metaplex benefits
 
-| Tier | Benefit |
-|------|---------|
-| Bronze | Basic NFT minting |
-| Silver | Premium drops access |
-| Gold | Creator royalties boost |
-| Platinum | Early feature access |
-| Diamond | Governance voting |
+| Tier     | Benefit                 |
+| -------- | ----------------------- |
+| Bronze   | Basic NFT minting       |
+| Silver   | Premium drops access    |
+| Gold     | Creator royalties boost |
+| Platinum | Early feature access    |
+| Diamond  | Governance voting       |
 
 ---
 
@@ -190,6 +192,7 @@ Thank you @metaplex for pushing agent ownership forward.
 ## 📋 Publishing Checklist
 
 ### Before Publishing
+
 - [ ] All links tested (agentm.gradiences.xyz, GitHub, docs)
 - [ ] Screenshots ready (task market, A2A chat, Metaplex modal)
 - [ ] Demo video uploaded (link ready for quote tweet)
@@ -197,11 +200,13 @@ Thank you @metaplex for pushing agent ownership forward.
 - [ ] Metaplex tagged (@metaplex)
 
 ### Thread Settings
+
 - [ ] Schedule for peak engagement (9-11 AM EST or 5-7 PM EST)
 - [ ] First tweet standalone (works as quote tweet)
 - [ ] Last tweet includes CTA + hashtags
 
 ### Post-Publish
+
 - [ ] Pin thread to profile
 - [ ] Quote tweet with demo video
 - [ ] Engage with early replies
@@ -212,22 +217,27 @@ Thank you @metaplex for pushing agent ownership forward.
 ## 🖼️ Suggested Media
 
 ### Tweet 1 (Hook)
+
 - Screenshot: Landing page with "Connect Wallet" CTA
 - Alt: Gradience logo animation GIF
 
 ### Tweet 4 (Task Market)
+
 - Screenshot: Task list with bounty amounts and reputation scores
 - Dark mode UI, highlight the aesthetic
 
 ### Tweet 5 (A2A Chat)
+
 - Screenshot: Chat thread showing negotiation + settlement terms
 - Show the 95/3/2 breakdown
 
 ### Tweet 8 (Metaplex)
+
 - Screenshot: Metaplex registration modal with NFT mint
 - Tier → benefits table graphic
 
 ### Tweet 12 (CTA)
+
 - Video: 30s clip of wallet connect → task browse → settlement
 - Or: Carousel of all screenshots
 
@@ -246,12 +256,14 @@ No cloud. No custody. No compromise.
 🔗 https://agentm.gradiences.xyz
 
 **2/** What makes it different:
+
 - 3 Solana programs (Pinocchio, no Anchor)
 - 9 A2A transport adapters
 - Agent Daemon with local keypair storage
 - Metaplex NFT identity + Genesis token launch
 
 **3/** The fee split is hardcoded:
+
 - 95% → Agent
 - 3% → Judge
 - 2% → Protocol
@@ -276,16 +288,19 @@ No admin key. No governance vote. Like Bitcoin's 21M cap.
 ## 📊 Hashtag Strategy
 
 **Primary (always include):**
+
 - #MetaplexHackathon
 - #Solana
 
 **Secondary (rotate):**
+
 - #AIAgents
 - #Web3
 - #DeFi
 - #Crypto
 
 **Discovery (for reach):**
+
 - #BuildOnSolana
 - #SolanaEcosystem
 - #AI
@@ -294,15 +309,15 @@ No admin key. No governance vote. Like Bitcoin's 21M cap.
 
 **Submission for Metaplex Agents Track**
 
-| Field | Value |
-|-------|-------|
-| Project | Gradience Protocol |
-| Track | Metaplex Agents Track ($5,000) |
-| Demo | https://agentm.gradiences.xyz |
-| Repo | https://github.com/gradiences/gradience |
-| Docs | https://docs.gradiences.xyz |
-| Contact | @gradience_labs |
+| Field   | Value                                   |
+| ------- | --------------------------------------- |
+| Project | Gradience Protocol                      |
+| Track   | Metaplex Agents Track ($5,000)          |
+| Demo    | https://agentm.gradiences.xyz           |
+| Repo    | https://github.com/gradiences/gradience |
+| Docs    | https://docs.gradiences.xyz             |
+| Contact | @gradience_labs                         |
 
 ---
 
-*X article finalized for Metaplex Agents Track — April 2026*
+_X article finalized for Metaplex Agents Track — April 2026_

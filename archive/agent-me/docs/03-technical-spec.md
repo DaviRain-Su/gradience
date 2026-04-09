@@ -16,6 +16,7 @@ Agent Me 是**面向普通用户的个人 Agent 门户**：
 - （规划中）持久记忆系统
 
 **不做**（MVP 范围内）：
+
 - 发布或申请任务（跳转到 Agent Arena 前端）
 - 链上写操作（只读展示）
 - 语音处理（Phase 2 规划）
@@ -24,13 +25,13 @@ Agent Me 是**面向普通用户的个人 Agent 门户**：
 
 ## 2. 技术栈
 
-| 项目 | 版本 | 说明 |
-|------|------|------|
-| Next.js | 16.2.1 | React 服务端框架 |
-| React | 19.2.4 | UI |
-| `@solana/kit` | 5.5.1 | 地址解析、Keypair 工具 |
-| `@gradiences/sdk` | workspace | GradienceSDK（查询声誉、任务） |
-| Node.js test runner | 内置 | 测试（无第三方框架） |
+| 项目                | 版本      | 说明                           |
+| ------------------- | --------- | ------------------------------ |
+| Next.js             | 16.2.1    | React 服务端框架               |
+| React               | 19.2.4    | UI                             |
+| `@solana/kit`       | 5.5.1     | 地址解析、Keypair 工具         |
+| `@gradiences/sdk`   | workspace | GradienceSDK（查询声誉、任务） |
+| Node.js test runner | 内置      | 测试（无第三方框架）           |
 
 ---
 
@@ -65,11 +66,11 @@ agent-me/
 
 ```typescript
 interface WalletProfile {
-  id: string          // `${type}-${timestamp}-${random}`
-  type: 'openwallet' | 'local_keypair'
-  label: string       // 用户自定义名称，默认 "OpenWallet" / "Local keypair"
-  address: string     // Solana base58 公钥
-  createdAt: number   // Unix timestamp ms
+    id: string; // `${type}-${timestamp}-${random}`
+    type: 'openwallet' | 'local_keypair';
+    label: string; // 用户自定义名称，默认 "OpenWallet" / "Local keypair"
+    address: string; // Solana base58 公钥
+    createdAt: number; // Unix timestamp ms
 }
 ```
 
@@ -77,10 +78,10 @@ interface WalletProfile {
 
 ```typescript
 interface ReputationOnChain {
-  avgScore: number        // 平均得分（0–100）
-  winRate: number         // 胜率（BPS，除以 100 得百分比）
-  completed: number       // 完成任务数
-  byCategory: CategoryStat[]
+    avgScore: number; // 平均得分（0–100）
+    winRate: number; // 胜率（BPS，除以 100 得百分比）
+    completed: number; // 完成任务数
+    byCategory: CategoryStat[];
 }
 ```
 
@@ -91,8 +92,8 @@ interface ReputationOnChain {
 ### WalletManager
 
 - 支持两种 Profile 类型：
-  - `openwallet`：仅输入地址字符串（无私钥）
-  - `local_keypair`：输入 64 字节 JSON 数组，解析后存 address
+    - `openwallet`：仅输入地址字符串（无私钥）
+    - `local_keypair`：输入 64 字节 JSON 数组，解析后存 address
 - Profile 列表持久化到 `localStorage`（key: `gradience_profiles`）
 - 活跃 Profile ID 持久化（key: `gradience_active_profile`）
 - 切换活跃 Profile → 触发 `onActiveAddressChange(address)` 回调
@@ -140,12 +141,15 @@ gradience_active_profile → string: profile.id
 ## 8. 接口契约
 
 ### → GradienceSDK（只读）
+
 - `sdk.getReputation(address)` → `ReputationOnChain | null`
 - `sdk.getTasks(filter)` → `Task[]`
 
 ### → Indexer（间接，通过 SDK）
+
 - SDK 若配置了 `indexerEndpoint`，优先走 Indexer REST API 查询
 
 ### → 用户浏览器
+
 - 所有状态存 localStorage（无服务端持久化）
 - 无需钱包签名（MVP 只读）

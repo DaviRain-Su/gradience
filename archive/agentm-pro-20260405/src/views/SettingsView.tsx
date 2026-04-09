@@ -3,27 +3,13 @@
 import { useMemo, useState } from 'react';
 import type { ReputationData } from '@/types';
 import { isOWSAvailable, useOWS } from '@/hooks/useOWS';
-import {
-    computeCounterpartyTrustScore,
-    type CounterpartyTrustScore,
-} from '@/lib/goldrush/trust-score';
-import {
-    fetchReputationForIdentity,
-    reputationToCredential,
-} from '@/lib/ows/reputation';
+import { computeCounterpartyTrustScore, type CounterpartyTrustScore } from '@/lib/goldrush/trust-score';
+import { fetchReputationForIdentity, reputationToCredential } from '@/lib/ows/reputation';
 
 export function SettingsView() {
     const available = useMemo(() => isOWSAvailable(), []);
-    const {
-        connected,
-        connecting,
-        identity,
-        error,
-        connect,
-        disconnect,
-        signTaskAgreement,
-        getReputationCredential,
-    } = useOWS();
+    const { connected, connecting, identity, error, connect, disconnect, signTaskAgreement, getReputationCredential } =
+        useOWS();
 
     const [signature, setSignature] = useState<string | null>(null);
     const [credentialSummary, setCredentialSummary] = useState<string | null>(null);
@@ -83,8 +69,8 @@ export function SettingsView() {
             const credential = reputationToCredential(reputation, identity.address);
             setCredentialSummary(
                 `Derived credential (${credential.type}) avg_score=${String(
-                    credential.data.avg_score ?? 0
-                )}, completed=${String(credential.data.completed ?? 0)}`
+                    credential.data.avg_score ?? 0,
+                )}, completed=${String(credential.data.completed ?? 0)}`,
             );
         } catch (err) {
             setIntegrationError(err instanceof Error ? err.message : 'Failed to load reputation');
@@ -121,9 +107,7 @@ export function SettingsView() {
     return (
         <div className="space-y-6" data-testid="settings-ows-panel">
             <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-gray-400">
-                OWS integration status and wallet-based reputation checks.
-            </p>
+            <p className="text-gray-400">OWS integration status and wallet-based reputation checks.</p>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
                 <p className="text-sm text-gray-400">OWS Wallet</p>
@@ -187,9 +171,7 @@ export function SettingsView() {
             {integrationError && <p className="text-sm text-red-400">Integration error: {integrationError}</p>}
             {credentialSummary && <p className="text-sm text-blue-300">{credentialSummary}</p>}
             {signature && (
-                <p className="text-xs text-gray-400 break-all">
-                    Signature preview: {signature.slice(0, 40)}...
-                </p>
+                <p className="text-xs text-gray-400 break-all">Signature preview: {signature.slice(0, 40)}...</p>
             )}
             {liveReputation && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm">

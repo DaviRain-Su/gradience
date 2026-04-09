@@ -7,30 +7,30 @@
  */
 
 import {
-  combineCodec,
-  getEnumDecoder,
-  getEnumEncoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getEnumDecoder,
+    getEnumEncoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export enum TaskState {
-  Open,
-  Completed,
-  Refunded,
+    Open,
+    Completed,
+    Refunded,
 }
 
 export type TaskStateArgs = TaskState;
 
 export function getTaskStateEncoder(): FixedSizeEncoder<TaskStateArgs> {
-  return getEnumEncoder(TaskState);
+    return getEnumEncoder(TaskState);
 }
 
 export function getTaskStateDecoder(): FixedSizeDecoder<TaskState> {
-  return getEnumDecoder(TaskState);
+    return getEnumDecoder(TaskState);
 }
 
 export function getTaskStateCodec(): FixedSizeCodec<TaskStateArgs, TaskState> {
-  return combineCodec(getTaskStateEncoder(), getTaskStateDecoder());
+    return combineCodec(getTaskStateEncoder(), getTaskStateDecoder());
 }

@@ -30,15 +30,9 @@
  * @module @gradiences/google-a2a-adapter
  */
 
-export {
-    GoogleA2AAdapter,
-    type GoogleA2AAdapterOptions,
-} from './google-a2a-adapter.js';
+export { GoogleA2AAdapter, type GoogleA2AAdapterOptions } from './google-a2a-adapter.js';
 
-export {
-    GOOGLE_A2A_CONFIG,
-    GOOGLE_A2A_ERROR_CODES,
-} from './constants.js';
+export { GOOGLE_A2A_CONFIG, GOOGLE_A2A_ERROR_CODES } from './constants.js';
 
 export type {
     GoogleA2AAgentCard,

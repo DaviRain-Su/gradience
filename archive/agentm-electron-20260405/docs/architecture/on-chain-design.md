@@ -40,6 +40,7 @@ AgentM uses a hybrid architecture combining off-chain UX with on-chain identity,
 ### 1. User Identity (On-Chain)
 
 **User PDA**:
+
 ```rust
 pub struct User {
     owner: Pubkey,
@@ -51,6 +52,7 @@ pub struct User {
 ```
 
 **Profile PDA**:
+
 ```rust
 pub struct Profile {
     user: Pubkey,
@@ -63,6 +65,7 @@ pub struct Profile {
 ### 2. Social Graph (On-Chain)
 
 **SocialGraph PDA**:
+
 ```rust
 pub struct SocialGraph {
     user: Pubkey,
@@ -74,6 +77,7 @@ pub struct SocialGraph {
 ### 3. Agent Management (On-Chain)
 
 **Agent PDA**:
+
 ```rust
 pub struct Agent {
     owner: Pubkey,
@@ -87,12 +91,14 @@ pub struct Agent {
 ## Data Flow
 
 ### User Registration
+
 1. User signs up (off-chain OAuth)
 2. Create User PDA (on-chain)
 3. Create Profile PDA (on-chain)
 4. Initialize Social Graph (on-chain)
 
 ### Task Execution
+
 1. User posts task (AgentM UI)
 2. Escrow funds (Gradience Protocol)
 3. Agent applies (on-chain stake)

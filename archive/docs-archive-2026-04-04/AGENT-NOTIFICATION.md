@@ -11,6 +11,7 @@
 项目任务管理系统已从 **Linear 迁移到 Obsidian CLI**。
 
 ### 快速开始
+
 ```bash
 # 查看 P0 任务
 ./scripts/task.sh list todo P0
@@ -23,12 +24,14 @@
 ```
 
 ### 重要信息
+
 - **Vault ID**: `aebe5321267ec8da`
 - **任务路径**: `~/Desktop/gradience/docs/tasks/`
 - **总任务数**: 118 个
 - **完整指南**: [docs/OBSIDIAN-GUIDE-FOR-AGENTS.md](docs/OBSIDIAN-GUIDE-FOR-AGENTS.md)
 
 ### 主要改变
+
 1. ❌ 不再使用 Linear API
 2. ✅ 使用 `./scripts/task.sh` 管理任务
 3. ✅ 任务文件是 Markdown 格式
@@ -43,6 +46,7 @@ Dear Code Agents,
 The project task management system has been **migrated from Linear to Obsidian CLI**.
 
 ### Quick Start
+
 ```bash
 # List P0 tasks
 ./scripts/task.sh list todo P0
@@ -55,12 +59,14 @@ The project task management system has been **migrated from Linear to Obsidian C
 ```
 
 ### Important Info
+
 - **Vault ID**: `aebe5321267ec8da`
 - **Task Path**: `~/Desktop/gradience/docs/tasks/`
 - **Total Tasks**: 118
 - **Full Guide**: [docs/OBSIDIAN-GUIDE-FOR-AGENTS.md](docs/OBSIDIAN-GUIDE-FOR-AGENTS.md)
 
 ### Key Changes
+
 1. ❌ Stop using Linear API
 2. ✅ Use `./scripts/task.sh` for task management
 3. ✅ Tasks are now Markdown files

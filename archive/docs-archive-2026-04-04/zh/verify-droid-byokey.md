@@ -40,6 +40,7 @@ sudo tcpdump -i lo0 port 8018 -n
 ```
 
 或者用 `lsof`:
+
 ```bash
 # 查看哪些进程连接了 8018
 lsof -i :8018
@@ -81,7 +82,7 @@ echo ""
 echo "检查 BYOKEY:"
 if curl -s http://localhost:8018/v1/models > /dev/null; then
     echo "✅ BYOKEY 运行在 localhost:8018"
-    
+
     # 获取可用模型
     echo ""
     echo "可用模型:"
@@ -142,6 +143,7 @@ DEBUG=* droid "Hello"
 **原因**: 环境变量未生效，或 Droid 配置覆盖了环境变量
 
 **解决**:
+
 ```bash
 # 1. 确认环境变量已设置
 echo $OPENAI_BASE_URL  # 应该输出 http://localhost:8018/v1
@@ -160,6 +162,7 @@ droid "Hello"
 **症状**: BYOKEY 收到请求但返回错误
 
 **查看详细日志**:
+
 ```bash
 # 带调试启动 BYOKEY
 RUST_LOG=debug byokey serve --port 8018
@@ -169,6 +172,7 @@ byokey serve --port 8018 -v
 ```
 
 **常见错误**:
+
 - `401 Unauthorized`: Token 过期，重新 `byokey login claude`
 - `404 Model not found`: 模型名称错误，检查可用模型列表
 - `429 Rate Limited`: 订阅额度用完
@@ -180,6 +184,7 @@ byokey serve --port 8018 -v
 **原因**: Droid 可能使用不同的 provider 配置
 
 **检查**:
+
 ```bash
 # 查看 Droid 完整配置
 droid config --show
@@ -238,16 +243,16 @@ class TestHandler(BaseHTTPRequestHandler):
     def do_post(self):
         print(f"\n🎉 收到请求: {self.path}")
         print(f"Headers: {dict(self.headers)}")
-        
+
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
         print(f"Body: {body.decode()[:200]}")
-        
+
         # 返回测试响应
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
-        
+
         response = {
             "id": "test-123",
             "object": "chat.completion",

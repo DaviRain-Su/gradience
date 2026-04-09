@@ -6,11 +6,7 @@ import { ReputationScore } from '@/components/stats/ReputationScore';
 import { useAuth } from '@/hooks/useAuth';
 import { useOWS } from '@/hooks/useOWS';
 import { evaluateWalletSecurity } from '@/lib/goldrush/security-monitor';
-import {
-    getWhaleTrackingFeed,
-    summarizeWhaleFeed,
-    type WhaleTransferEvent,
-} from '@/lib/goldrush/whale-tracker';
+import { getWhaleTrackingFeed, summarizeWhaleFeed, type WhaleTransferEvent } from '@/lib/goldrush/whale-tracker';
 import {
     createGridlessAgentIdentity,
     deriveMarketSnapshotFromWhaleFeed,
@@ -18,10 +14,7 @@ import {
     generateDexTradingSignal,
     type DexTradingSignal,
 } from '@/lib/goldrush/trading-bot';
-import {
-    probeGoldRushCapabilities,
-    type GoldRushCapabilityProbeResult,
-} from '@/lib/goldrush/capability-probe';
+import { probeGoldRushCapabilities, type GoldRushCapabilityProbeResult } from '@/lib/goldrush/capability-probe';
 import { buildMetaplexReputationBridge } from '@/lib/metaplex/reputation-bridge';
 import {
     buildAgentTokenLaunchPlan,
@@ -93,10 +86,7 @@ export function OWSView() {
         }
     }, [address, whaleWatchlist]);
 
-    const securityAlerts = useMemo(
-        () => (riskReport ? evaluateWalletSecurity(riskReport) : []),
-        [riskReport]
-    );
+    const securityAlerts = useMemo(() => (riskReport ? evaluateWalletSecurity(riskReport) : []), [riskReport]);
     const whaleSummary = useMemo(() => summarizeWhaleFeed(whaleEvents), [whaleEvents]);
     const metaplexBridge = useMemo(() => {
         if (!reputation || !address) return null;
@@ -252,7 +242,10 @@ export function OWSView() {
                 </div>
             </div>
 
-            <div data-testid="wallet-risk-panel" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div
+                data-testid="wallet-risk-panel"
+                className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4"
+            >
                 <div>
                     <p className="text-lg font-semibold">Wallet Risk Scoring Agent</p>
                     <p className="text-xs text-gray-500 mt-1">
@@ -333,7 +326,13 @@ export function OWSView() {
                                         data-testid={`wallet-security-alert-${alert.code}`}
                                         className="border border-gray-800 rounded-md p-3"
                                     >
-                                        <p className={alert.severity === 'critical' ? 'text-red-400 font-medium' : 'text-yellow-400 font-medium'}>
+                                        <p
+                                            className={
+                                                alert.severity === 'critical'
+                                                    ? 'text-red-400 font-medium'
+                                                    : 'text-yellow-400 font-medium'
+                                            }
+                                        >
                                             [{alert.severity}] {alert.message}
                                         </p>
                                         <p className="text-xs text-gray-400 mt-1">{alert.recommendation}</p>
@@ -391,11 +390,10 @@ export function OWSView() {
                             className="bg-gray-950 border border-gray-800 rounded-lg p-3 text-sm"
                         >
                             <p className="font-medium">
-                                [{event.signal}] {event.wallet.slice(0, 8)}... {event.direction} ${event.amountUsd.toLocaleString()} {event.token}
+                                [{event.signal}] {event.wallet.slice(0, 8)}... {event.direction} $
+                                {event.amountUsd.toLocaleString()} {event.token}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {new Date(event.timestamp).toLocaleString()}
-                            </p>
+                            <p className="text-xs text-gray-500 mt-1">{new Date(event.timestamp).toLocaleString()}</p>
                         </div>
                     ))}
                     {!whaleLoading && whaleEvents.length === 0 && (
@@ -414,7 +412,10 @@ export function OWSView() {
                             CodeRush Agent runs on top of ChainHub reputation and Gridless network trust.
                         </p>
                     </div>
-                    <span data-testid="dex-bot-gridless-badge" className="text-xs px-2 py-1 bg-emerald-900 text-emerald-300 rounded">
+                    <span
+                        data-testid="dex-bot-gridless-badge"
+                        className="text-xs px-2 py-1 bg-emerald-900 text-emerald-300 rounded"
+                    >
                         Gridless Reputation Enabled
                     </span>
                 </div>
@@ -441,7 +442,10 @@ export function OWSView() {
                 {tradingSignal && (
                     <div data-testid="dex-bot-result" className="bg-gray-950 rounded-lg p-4 space-y-2 text-sm">
                         <p>
-                            action: <span data-testid="dex-bot-action" className="font-semibold">{tradingSignal.action}</span>
+                            action:{' '}
+                            <span data-testid="dex-bot-action" className="font-semibold">
+                                {tradingSignal.action}
+                            </span>
                         </p>
                         <p>
                             confidence:{' '}
@@ -460,7 +464,10 @@ export function OWSView() {
                 )}
             </div>
 
-            <div data-testid="goldrush-probe-panel" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div
+                data-testid="goldrush-probe-panel"
+                className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4"
+            >
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-lg font-semibold">GoldRush API Capability Probe</p>
@@ -481,7 +488,10 @@ export function OWSView() {
                 {probeResult && (
                     <div data-testid="goldrush-probe-result" className="bg-gray-950 rounded-lg p-4 space-y-2 text-sm">
                         <p>
-                            source: <span data-testid="goldrush-probe-source" className="font-semibold">{probeResult.source}</span>
+                            source:{' '}
+                            <span data-testid="goldrush-probe-source" className="font-semibold">
+                                {probeResult.source}
+                            </span>
                         </p>
                         <p>
                             balances_v2: <span>{String(probeResult.supportsBalances)}</span>
@@ -501,7 +511,10 @@ export function OWSView() {
                 )}
             </div>
 
-            <div data-testid="metaplex-reputation-panel" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div
+                data-testid="metaplex-reputation-panel"
+                className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4"
+            >
                 <div>
                     <p className="text-lg font-semibold">Metaplex × ChainHub Reputation Bridge</p>
                     <p className="text-xs text-gray-500 mt-1">
@@ -510,7 +523,10 @@ export function OWSView() {
                 </div>
 
                 {metaplexBridge ? (
-                    <div data-testid="metaplex-reputation-result" className="bg-gray-950 rounded-lg p-4 space-y-2 text-sm">
+                    <div
+                        data-testid="metaplex-reputation-result"
+                        className="bg-gray-950 rounded-lg p-4 space-y-2 text-sm"
+                    >
                         <p>
                             metaplex_agent_id:{' '}
                             <span data-testid="metaplex-agent-id" className="font-semibold">
@@ -529,9 +545,7 @@ export function OWSView() {
                                 {String(metaplexBridge.highReputationBadge)}
                             </span>
                         </p>
-                        <p className="text-xs text-gray-400">
-                            verification_ref: {metaplexBridge.verificationRef}
-                        </p>
+                        <p className="text-xs text-gray-400">verification_ref: {metaplexBridge.verificationRef}</p>
                         <p className="text-xs text-gray-500">
                             cross_protocol_identity: {metaplexBridge.crossProtocolIdentity.metaplexHandle}
                         </p>
@@ -543,11 +557,15 @@ export function OWSView() {
                 )}
             </div>
 
-            <div data-testid="metaplex-token-launch-panel" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div
+                data-testid="metaplex-token-launch-panel"
+                className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4"
+            >
                 <div>
                     <p className="text-lg font-semibold">Metaplex Genesis Agent Token</p>
                     <p className="text-xs text-gray-500 mt-1">
-                        Configure token launch plan for staking reputation weight, service fee payments, and governance voting.
+                        Configure token launch plan for staking reputation weight, service fee payments, and governance
+                        voting.
                     </p>
                 </div>
 
@@ -600,12 +618,20 @@ export function OWSView() {
                 )}
 
                 {tokenLaunchPlan && (
-                    <div data-testid="token-launch-plan-result" className="bg-gray-950 rounded-lg p-4 space-y-1 text-sm">
+                    <div
+                        data-testid="token-launch-plan-result"
+                        className="bg-gray-950 rounded-lg p-4 space-y-1 text-sm"
+                    >
                         <p>
-                            token: <span className="font-semibold">{tokenLaunchPlan.name}</span> ({tokenLaunchPlan.symbol})
+                            token: <span className="font-semibold">{tokenLaunchPlan.name}</span> (
+                            {tokenLaunchPlan.symbol})
                         </p>
                         <p>total_supply: {tokenLaunchPlan.totalSupply.toLocaleString()}</p>
-                        <p>distribution: community {tokenLaunchPlan.distribution.community}% · team {tokenLaunchPlan.distribution.team}% · treasury {tokenLaunchPlan.distribution.treasury}% · liquidity {tokenLaunchPlan.distribution.liquidity}%</p>
+                        <p>
+                            distribution: community {tokenLaunchPlan.distribution.community}% · team{' '}
+                            {tokenLaunchPlan.distribution.team}% · treasury {tokenLaunchPlan.distribution.treasury}% ·
+                            liquidity {tokenLaunchPlan.distribution.liquidity}%
+                        </p>
                         <p className="text-xs text-gray-500">metadata_uri: {tokenLaunchPlan.metadataUri}</p>
                     </div>
                 )}

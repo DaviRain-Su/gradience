@@ -1,17 +1,18 @@
 ---
 linear-id: GRA-M6
-title: "[Evaluator] Design Off-Chain Evaluator Runtime"
+title: '[Evaluator] Design Off-Chain Evaluator Runtime'
 status: done
 priority: P0
-project: "Mid-Term Integration"
+project: 'Mid-Term Integration'
 created: 2026-04-04
-assignee: "Code Agent"
+assignee: 'Code Agent'
 tags: [task, p0, mid-term, evaluator, harness]
 ---
 
 # GRA-M6: [Evaluator] Design Off-Chain Evaluator Runtime
 
 ## Description
+
 Design independent Evaluator runtime for long-running task evaluation.
 
 Inspired by Anthropic's approach: Evaluator is independent from Generator, with no shared state.
@@ -47,14 +48,15 @@ Inspired by Anthropic's approach: Evaluator is independent from Generator, with 
 
 ## Evaluation Types
 
-| Type | Method | Use Case |
-|------|--------|----------|
-| Code | Test execution + coverage | Workflow functions |
-| UI | Playwright screenshots | Frontend tasks |
-| API | Request/response validation | Service integrations |
-| Content | LLM-as-judge | Creative tasks |
+| Type    | Method                      | Use Case             |
+| ------- | --------------------------- | -------------------- |
+| Code    | Test execution + coverage   | Workflow functions   |
+| UI      | Playwright screenshots      | Frontend tasks       |
+| API     | Request/response validation | Service integrations |
+| Content | LLM-as-judge                | Creative tasks       |
 
 ## Acceptance Criteria
+
 - [ ] Evaluator runtime architecture document
 - [ ] Sandbox isolation design (Docker/git-worktree)
 - [ ] Playwright integration plan
@@ -63,12 +65,15 @@ Inspired by Anthropic's approach: Evaluator is independent from Generator, with 
 - [ ] Cost budgeting system
 
 ## Dependencies
+
 - Agent Daemon (for task execution)
 - Workflow Engine schema
 
 ## Related
+
 - GRA-M7: Playwright verification harness
 - GRA-M8: Evaluator → Chain Hub bridge
 
 ## Log
+
 - 2026-04-04: Created as part of mid-term integration planning

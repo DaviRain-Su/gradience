@@ -16,18 +16,18 @@ judgeTaskCommand
     .option('--mint <address>', 'Token mint address (defaults to SOL)')
     .action(async (options) => {
         const spinner = ora('Judging task...').start();
-        
+
         try {
             const taskId = parseU64(options.taskId, 'task-id');
             const scoreBig = parseU64(options.score, 'score');
-            
+
             if (scoreBig > 10_000n) {
                 throw new Error('Score must be <= 10000');
             }
-            
+
             const winner = parseAddress(options.winner, 'winner');
             const poster = parseAddress(options.poster, 'poster');
-            
+
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-judge-signature`;
                 spinner.succeed('Task judged (mock mode)');
@@ -89,7 +89,7 @@ judgeTaskCommand
 export const judgeCommand = {
     async register(options: { category: string; stakeAmount?: string }) {
         const spinner = ora('Registering as judge...').start();
-        
+
         try {
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-judge-register-signature`;
@@ -121,10 +121,9 @@ export const judgeCommand = {
             const stakeAmount = options.stakeAmount ? parseU64(options.stakeAmount, 'stake-amount') : undefined;
 
             spinner.text = 'Submitting judge registration...';
-            
+
             // Note: This will need to be implemented in the SDK
             throw new Error('Judge registration not yet implemented in SDK');
-            
         } catch (error) {
             spinner.fail('Failed to register as judge');
             outputError(error, 'JUDGE_REGISTER_ERROR');
@@ -134,7 +133,7 @@ export const judgeCommand = {
 
     async unstake() {
         const spinner = ora('Unstaking judge...').start();
-        
+
         try {
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-judge-unstake-signature`;
@@ -160,10 +159,9 @@ export const judgeCommand = {
             const sdk = new GradienceSDK({ rpcEndpoint: rpcUrl });
 
             spinner.text = 'Submitting unstake transaction...';
-            
+
             // Note: This will need to be implemented in the SDK
             throw new Error('Judge unstaking not yet implemented in SDK');
-            
         } catch (error) {
             spinner.fail('Failed to unstake judge');
             outputError(error, 'JUDGE_UNSTAKE_ERROR');
@@ -183,22 +181,22 @@ function parseCategories(raw: string): number[] {
         ['compute', 6],
         ['gov', 7],
     ]);
-    
+
     const chunks = raw
         .split(',')
-        .map(item => item.trim())
+        .map((item) => item.trim())
         .filter(Boolean);
-        
+
     if (chunks.length === 0) {
         throw new Error('At least one category is required');
     }
-    
-    const categories = chunks.map(item => {
+
+    const categories = chunks.map((item) => {
         const lower = item.toLowerCase();
         if (CATEGORY_NAME_TO_ID.has(lower)) {
             return CATEGORY_NAME_TO_ID.get(lower)!;
         }
-        
+
         const numeric = Number(item);
         if (!Number.isInteger(numeric) || numeric < 0 || numeric >= 8) {
             throw new Error(
@@ -207,11 +205,11 @@ function parseCategories(raw: string): number[] {
         }
         return numeric;
     });
-    
+
     const unique = [...new Set(categories)];
     if (unique.length !== categories.length) {
         throw new Error('Duplicate categories are not allowed');
     }
-    
+
     return unique;
 }

@@ -138,6 +138,6 @@ function isReputationInteropSignal(value: unknown): value is {
         typeof signal.judgedAt === 'number' &&
         typeof signal.judgeMode === 'string' &&
         (typeof signal.participants === 'undefined' ||
-            (Array.isArray(signal.participants) && signal.participants.every((p) => typeof p === 'string')))
+            (Array.isArray(signal.participants) && signal.participants.every(p => typeof p === 'string')))
     );
 }

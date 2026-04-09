@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { useConnection } from '../../lib/connection/ConnectionContext';
 
 const c = {
-    bg: '#F3F3F8', surface: '#FFFFFF', ink: '#16161A',
-    lavender: '#C6BBFF', lime: '#CDFF4D',
+    bg: '#F3F3F8',
+    surface: '#FFFFFF',
+    ink: '#16161A',
+    lavender: '#C6BBFF',
+    lime: '#CDFF4D',
 };
 
 export function ConnectionPanel() {
-    const { isConnected, isConnecting, sessionToken, walletAddress, daemonUrl, mode, connectToDaemon } = useConnection();
+    const { isConnected, isConnecting, sessionToken, walletAddress, daemonUrl, mode, connectToDaemon } =
+        useConnection();
     const [localDetected, setLocalDetected] = useState<boolean | null>(null);
     const [showRemote, setShowRemote] = useState(false);
     const [remoteUrl, setRemoteUrl] = useState('');
@@ -19,25 +23,49 @@ export function ConnectionPanel() {
     useEffect(() => {
         let cancelled = false;
         fetch('http://localhost:7420/health', { signal: AbortSignal.timeout(2000) })
-            .then(r => { if (!cancelled && r.ok) setLocalDetected(true); })
-            .catch(() => { if (!cancelled) setLocalDetected(false); });
-        return () => { cancelled = true; };
+            .then((r) => {
+                if (!cancelled && r.ok) setLocalDetected(true);
+            })
+            .catch(() => {
+                if (!cancelled) setLocalDetected(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     if (isConnecting) {
         return (
-            <div style={{ background: c.lavender, borderRadius: '16px', padding: '12px 16px', border: `1.5px solid ${c.ink}`, fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>
+            <div
+                style={{
+                    background: c.lavender,
+                    borderRadius: '16px',
+                    padding: '12px 16px',
+                    border: `1.5px solid ${c.ink}`,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                }}
+            >
                 Connecting to daemon...
             </div>
         );
     }
 
     if (isConnected && sessionToken) {
-        const label = mode === 'local'
-            ? `Local Daemon (${daemonUrl.replace(/^https?:\/\//, '')})`
-            : daemonUrl.replace(/^https?:\/\//, '');
+        const label =
+            mode === 'local'
+                ? `Local Daemon (${daemonUrl.replace(/^https?:\/\//, '')})`
+                : daemonUrl.replace(/^https?:\/\//, '');
         return (
-            <div style={{ background: c.lime, borderRadius: '16px', padding: '12px 16px', border: `1.5px solid ${c.ink}` }}>
+            <div
+                style={{
+                    background: c.lime,
+                    borderRadius: '16px',
+                    padding: '12px 16px',
+                    border: `1.5px solid ${c.ink}`,
+                }}
+            >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }} />
                     <div>
@@ -55,7 +83,17 @@ export function ConnectionPanel() {
     // Still probing
     if (localDetected === null) {
         return (
-            <div style={{ background: c.surface, borderRadius: '16px', padding: '12px 16px', border: `1.5px solid ${c.ink}`, fontSize: '12px', opacity: 0.5, textAlign: 'center' }}>
+            <div
+                style={{
+                    background: c.surface,
+                    borderRadius: '16px',
+                    padding: '12px 16px',
+                    border: `1.5px solid ${c.ink}`,
+                    fontSize: '12px',
+                    opacity: 0.5,
+                    textAlign: 'center',
+                }}
+            >
                 Checking for local daemon...
             </div>
         );
@@ -64,7 +102,14 @@ export function ConnectionPanel() {
     // Local daemon found but not yet authenticated
     if (localDetected) {
         return (
-            <div style={{ background: c.surface, borderRadius: '16px', padding: '12px 16px', border: `1.5px solid ${c.ink}` }}>
+            <div
+                style={{
+                    background: c.surface,
+                    borderRadius: '16px',
+                    padding: '12px 16px',
+                    border: `1.5px solid ${c.ink}`,
+                }}
+            >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }} />
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>Local daemon detected on localhost:7420</span>
@@ -84,10 +129,17 @@ export function ConnectionPanel() {
                 <span style={{ fontSize: '12px', fontWeight: 600 }}>No local daemon detected</span>
             </div>
 
-            <div style={{
-                background: c.bg, borderRadius: '8px', padding: '12px',
-                fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.8, marginBottom: '10px',
-            }}>
+            <div
+                style={{
+                    background: c.bg,
+                    borderRadius: '8px',
+                    padding: '12px',
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    lineHeight: 1.8,
+                    marginBottom: '10px',
+                }}
+            >
                 <div style={{ opacity: 0.5 }}># Install and start your agent daemon</div>
                 <div style={{ userSelect: 'all' }}>npx @gradiences/agent-daemon start</div>
             </div>
@@ -100,9 +152,14 @@ export function ConnectionPanel() {
                 <button
                     onClick={() => setShowRemote(true)}
                     style={{
-                        width: '100%', padding: '8px', background: 'transparent',
-                        border: `1px solid ${c.ink}`, borderRadius: '8px',
-                        fontSize: '11px', cursor: 'pointer', opacity: 0.6,
+                        width: '100%',
+                        padding: '8px',
+                        background: 'transparent',
+                        border: `1px solid ${c.ink}`,
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        opacity: 0.6,
                     }}
                 >
                     Connect to Remote Daemon
@@ -110,13 +167,19 @@ export function ConnectionPanel() {
             ) : (
                 <div style={{ display: 'flex', gap: '6px' }}>
                     <input
-                        type="text" value={remoteUrl}
-                        onChange={e => setRemoteUrl(e.target.value)}
+                        type="text"
+                        value={remoteUrl}
+                        onChange={(e) => setRemoteUrl(e.target.value)}
                         placeholder="http://my-server:7420"
                         style={{
-                            flex: 1, padding: '8px 10px', background: c.bg,
-                            border: `1.5px solid ${c.ink}`, borderRadius: '8px',
-                            fontSize: '11px', fontFamily: 'monospace', outline: 'none',
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: c.bg,
+                            border: `1.5px solid ${c.ink}`,
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            outline: 'none',
                         }}
                     />
                     <button
@@ -131,8 +194,11 @@ export function ConnectionPanel() {
                             padding: '8px 14px',
                             background: remoteUrl.trim() && !connecting ? c.ink : '#E5E5E5',
                             color: remoteUrl.trim() && !connecting ? c.surface : '#999',
-                            border: 'none', borderRadius: '8px', fontSize: '11px',
-                            fontWeight: 600, cursor: remoteUrl.trim() && !connecting ? 'pointer' : 'not-allowed',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: remoteUrl.trim() && !connecting ? 'pointer' : 'not-allowed',
                         }}
                     >
                         {connecting ? '...' : 'Connect'}

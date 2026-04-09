@@ -8,14 +8,14 @@
 
 ## 测试结果摘要
 
-| 测试项 | 状态 | 详情 |
-|--------|------|------|
-| **A2A 单元测试** | ✅ 通过 | 113 个测试全部通过 |
-| **LayerZero 跨链** | ✅ 通过 | 2分钟确认，费用 0.00112 ETH |
-| **Wormhole 跨链** | ✅ 通过 | 15分钟确认，VAA 生成成功 |
-| **Debridge 跨链** | ✅ 通过 | 5分钟确认，费用 0.00151 ETH |
-| **智能桥策略** | ✅ 通过 | 4种策略自动选择正确 |
-| **ChainHub 部署** | ✅ 成功 | Program ID: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` |
+| 测试项             | 状态    | 详情                                                       |
+| ------------------ | ------- | ---------------------------------------------------------- |
+| **A2A 单元测试**   | ✅ 通过 | 113 个测试全部通过                                         |
+| **LayerZero 跨链** | ✅ 通过 | 2分钟确认，费用 0.00112 ETH                                |
+| **Wormhole 跨链**  | ✅ 通过 | 15分钟确认，VAA 生成成功                                   |
+| **Debridge 跨链**  | ✅ 通过 | 5分钟确认，费用 0.00151 ETH                                |
+| **智能桥策略**     | ✅ 通过 | 4种策略自动选择正确                                        |
+| **ChainHub 部署**  | ✅ 成功 | Program ID: `6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec` |
 
 ---
 
@@ -75,12 +75,12 @@ Balance: 0.751158 SOL
 
 ## 智能桥策略测试
 
-| 优先级 | 选择桥 | 原因 |
-|--------|--------|------|
+| 优先级 | 选择桥    | 原因             |
+| ------ | --------- | ---------------- |
 | Urgent | LayerZero | 速度最快 (2分钟) |
-| High | Debridge | 平衡选择 |
-| Normal | Debridge | 平衡选择 |
-| Low | LayerZero | 成本考虑 |
+| High   | Debridge  | 平衡选择         |
+| Normal | Debridge  | 平衡选择         |
+| Low    | LayerZero | 成本考虑         |
 
 ---
 
@@ -103,8 +103,8 @@ RPC URL: https://api.devnet.solana.com
 
 ### 已部署合约
 
-| 合约 | Program ID | 状态 |
-|------|------------|------|
+| 合约     | Program ID                                   | 状态      |
+| -------- | -------------------------------------------- | --------- |
 | ChainHub | 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec | ✅ 已部署 |
 
 ---
@@ -114,6 +114,7 @@ RPC URL: https://api.devnet.solana.com
 ### 1. 界面测试 ✅ 可用
 
 访问 http://localhost:5199 测试:
+
 - 导航菜单
 - 钱包连接
 - 设置页面
@@ -121,12 +122,13 @@ RPC URL: https://api.devnet.solana.com
 ### 2. 合约交互测试 ⚠️ 需要 SDK
 
 需要 ChainHub SDK 来测试合约交互:
+
 ```typescript
 import { ChainHub } from '@gradiences/chain-hub-sdk';
 
 const chainHub = new ChainHub({
-  programId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
-  connection: new Connection('https://api.devnet.solana.com'),
+    programId: '6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec',
+    connection: new Connection('https://api.devnet.solana.com'),
 });
 ```
 
@@ -180,4 +182,5 @@ npx tsx src/main/a2a-router/test-cross-chain.ts all
 ---
 
 **Explorer 链接**:
+
 - ChainHub: https://explorer.solana.com/address/6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec?cluster=devnet

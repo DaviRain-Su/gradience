@@ -654,9 +654,7 @@ export class TasksResource {
             treasuryAta: request.treasuryAta,
             treasury,
         });
-        const judgePools = await Promise.all(
-            request.judgeCategories.map(category => this.findJudgePoolPda(category)),
-        );
+        const judgePools = await Promise.all(request.judgeCategories.map(category => this.findJudgePoolPda(category)));
         const judgePoolMetas: AccountMeta[] = judgePools.map(([pool]) => ({
             address: pool,
             role: AccountRole.WRITABLE,

@@ -38,24 +38,36 @@ const SORT_OPTIONS: { value: FeedSortType; label: string }[] = [
 export function FilterBar({ filters, onChange, agentOptions = [], disabled = false }: FilterBarProps) {
     const [showAgentDropdown, setShowAgentDropdown] = useState(false);
 
-    const handleTypeChange = useCallback((type: FeedFilterType) => {
-        onChange({ ...filters, type });
-    }, [filters, onChange]);
+    const handleTypeChange = useCallback(
+        (type: FeedFilterType) => {
+            onChange({ ...filters, type });
+        },
+        [filters, onChange],
+    );
 
-    const handleSortChange = useCallback((sort: FeedSortType) => {
-        onChange({ ...filters, sort });
-    }, [filters, onChange]);
+    const handleSortChange = useCallback(
+        (sort: FeedSortType) => {
+            onChange({ ...filters, sort });
+        },
+        [filters, onChange],
+    );
 
-    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        onChange({ ...filters, searchQuery: e.target.value || undefined });
-    }, [filters, onChange]);
+    const handleSearchChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            onChange({ ...filters, searchQuery: e.target.value || undefined });
+        },
+        [filters, onChange],
+    );
 
-    const handleAgentSelect = useCallback((address: string | undefined) => {
-        onChange({ ...filters, agentAddress: address });
-        setShowAgentDropdown(false);
-    }, [filters, onChange]);
+    const handleAgentSelect = useCallback(
+        (address: string | undefined) => {
+            onChange({ ...filters, agentAddress: address });
+            setShowAgentDropdown(false);
+        },
+        [filters, onChange],
+    );
 
-    const selectedAgentName = agentOptions.find(a => a.address === filters.agentAddress)?.displayName;
+    const selectedAgentName = agentOptions.find((a) => a.address === filters.agentAddress)?.displayName;
 
     return (
         <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 p-3 space-y-3">

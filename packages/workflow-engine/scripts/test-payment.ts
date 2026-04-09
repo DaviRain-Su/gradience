@@ -4,12 +4,12 @@
  */
 
 import {
-  createX402PaymentHandler,
-  createMPPStreamRewardHandler,
-  createTEEPrivateSettleHandler,
-  createZeroGasExecuteHandler,
-  createPaymentHandlers,
-  createRealPaymentHandlers,
+    createX402PaymentHandler,
+    createMPPStreamRewardHandler,
+    createTEEPrivateSettleHandler,
+    createZeroGasExecuteHandler,
+    createPaymentHandlers,
+    createRealPaymentHandlers,
 } from '../src/handlers/payment.js';
 
 console.log('🧪 Testing Payment Handlers Implementation\n');
@@ -26,14 +26,14 @@ console.log(`   createRealPaymentHandlers: ${typeof createRealPaymentHandlers}`)
 // Test 2: Verify handler creation
 console.log('\n✅ Test 2: Handler creation');
 const handlers = [
-  ['x402Payment', createX402PaymentHandler()],
-  ['mppStreamReward', createMPPStreamRewardHandler()],
-  ['teePrivateSettle', createTEEPrivateSettleHandler()],
-  ['zeroGasExecute', createZeroGasExecuteHandler()],
+    ['x402Payment', createX402PaymentHandler()],
+    ['mppStreamReward', createMPPStreamRewardHandler()],
+    ['teePrivateSettle', createTEEPrivateSettleHandler()],
+    ['zeroGasExecute', createZeroGasExecuteHandler()],
 ];
 
 for (const [name, handler] of handlers) {
-  console.log(`   ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
+    console.log(`   ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
 }
 
 // Test 3: createPaymentHandlers Map
@@ -41,7 +41,7 @@ console.log('\n✅ Test 3: createPaymentHandlers');
 const paymentHandlers = createPaymentHandlers();
 console.log(`   Total handlers: ${paymentHandlers.size}`);
 for (const [name, handler] of paymentHandlers) {
-  console.log(`   - ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
+    console.log(`   - ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
 }
 
 // Test 4: createRealPaymentHandlers Map
@@ -49,7 +49,7 @@ console.log('\n✅ Test 4: createRealPaymentHandlers');
 const realHandlers = createRealPaymentHandlers();
 console.log(`   Total handlers: ${realHandlers.size}`);
 for (const [name, handler] of realHandlers) {
-  console.log(`   - ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
+    console.log(`   - ${name}: ${typeof handler.execute === 'function' ? '✓' : '✗'}`);
 }
 
 // Test 5: SDK Requirements

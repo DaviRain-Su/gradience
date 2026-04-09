@@ -59,7 +59,7 @@ describe('ConnectionManager', () => {
         const states = cm.getPeerStates();
         expect(states.has('test-peer')).toBe(true);
         expect(states.get('test-peer')).toBe('disconnected');
-        
+
         cm.removePeer('test-peer');
         const statesAfterRemove = cm.getPeerStates();
         expect(statesAfterRemove.has('test-peer')).toBe(false);
@@ -69,7 +69,7 @@ describe('ConnectionManager', () => {
         cm.addPeer('test-peer', 'wss://example.com/ws');
         const metrics = cm.getHealthMetrics();
         expect(metrics.has('test-peer')).toBe(true);
-        
+
         const peerMetrics = metrics.get('test-peer')!;
         expect(peerMetrics.latency).toBe(0);
         expect(peerMetrics.reconnectCount).toBe(0);
@@ -91,7 +91,7 @@ describe('ConnectionManager', () => {
                 resolve();
             });
         });
-        
+
         // Simulate receiving a task event message
         const taskEventMessage = {
             type: 'task_event',
@@ -100,13 +100,13 @@ describe('ConnectionManager', () => {
                 type: 'test-task',
                 payload: { data: 'test' },
                 priority: 1,
-                timestamp: Date.now()
-            }
+                timestamp: Date.now(),
+            },
         };
-        
+
         // Trigger message handling directly since we can't easily mock WebSocket connection in unit tests
         (cm as any).handleMessage('test-peer', taskEventMessage);
-        
+
         await taskEventPromise;
     });
 
@@ -119,7 +119,7 @@ describe('ConnectionManager', () => {
                 resolve();
             });
         });
-        
+
         const messageEventMessage = {
             type: 'message_event',
             message: {
@@ -128,12 +128,12 @@ describe('ConnectionManager', () => {
                 to: 'agent-b',
                 type: 'test-message',
                 payload: { content: 'hello' },
-                timestamp: Date.now()
-            }
+                timestamp: Date.now(),
+            },
         };
-        
+
         (cm as any).handleMessage('test-peer', messageEventMessage);
-        
+
         await messageEventPromise;
     });
 
@@ -144,10 +144,10 @@ describe('ConnectionManager', () => {
                 resolve();
             });
         });
-        
+
         // Trigger fallback mode
         (cm as any).startRestFallback();
-        
+
         await fallbackPromise;
     });
 
@@ -155,7 +155,7 @@ describe('ConnectionManager', () => {
         const backoff1 = (cm as any).calculateBackoff(0);
         const backoff2 = (cm as any).calculateBackoff(1);
         const backoff3 = (cm as any).calculateBackoff(5);
-        
+
         expect(backoff1).toBeGreaterThanOrEqual(500); // base delay
         expect(backoff2).toBeGreaterThan(backoff1);
         // Note: backoff3 can be slightly above max due to jitter (up to 20% more)

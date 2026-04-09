@@ -73,11 +73,11 @@ export class SessionManager {
         return { challenge, message, expiresAt };
     }
 
-    verifyAndCreateSession(params: {
+    verifyAndCreateSession(params: { walletAddress: string; challenge: string; signature: string }): {
+        token: string;
         walletAddress: string;
-        challenge: string;
-        signature: string;
-    }): { token: string; walletAddress: string; expiresAt: number } {
+        expiresAt: number;
+    } {
         // Validate wallet address
         let pubkeyBytes: Uint8Array;
         try {
@@ -146,29 +146,17 @@ export class SessionManager {
     private static prepareStatements(db: DatabaseInstance): SessionStatements {
         return {
             insertChallenge: db.prepare(
-                'INSERT INTO session_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)'
+                'INSERT INTO session_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)',
             ),
-            getChallenge: db.prepare(
-                'SELECT * FROM session_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1'
-            ),
-            deleteChallenge: db.prepare(
-                'DELETE FROM session_challenges WHERE challenge = ?'
-            ),
-            pruneExpiredChallenges: db.prepare(
-                'DELETE FROM session_challenges WHERE expires_at <= ?'
-            ),
+            getChallenge: db.prepare('SELECT * FROM session_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1'),
+            deleteChallenge: db.prepare('DELETE FROM session_challenges WHERE challenge = ?'),
+            pruneExpiredChallenges: db.prepare('DELETE FROM session_challenges WHERE expires_at <= ?'),
             insertSession: db.prepare(
-                'INSERT INTO sessions (token, wallet_address, created_at, expires_at) VALUES (?, ?, ?, ?)'
+                'INSERT INTO sessions (token, wallet_address, created_at, expires_at) VALUES (?, ?, ?, ?)',
             ),
-            getSession: db.prepare(
-                'SELECT * FROM sessions WHERE token = ? AND expires_at > ? LIMIT 1'
-            ),
-            deleteSession: db.prepare(
-                'DELETE FROM sessions WHERE token = ?'
-            ),
-            pruneExpiredSessions: db.prepare(
-                'DELETE FROM sessions WHERE expires_at <= ?'
-            ),
+            getSession: db.prepare('SELECT * FROM sessions WHERE token = ? AND expires_at > ? LIMIT 1'),
+            deleteSession: db.prepare('DELETE FROM sessions WHERE token = ?'),
+            pruneExpiredSessions: db.prepare('DELETE FROM sessions WHERE expires_at <= ?'),
         };
     }
 }

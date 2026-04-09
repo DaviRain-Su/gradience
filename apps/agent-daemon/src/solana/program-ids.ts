@@ -1,7 +1,6 @@
 import { address, type Address } from '@solana/kit';
 
-const ARENA_PROGRAM_ID_STR =
-    process.env.AGENTD_ARENA_PROGRAM_ID ?? '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
+const ARENA_PROGRAM_ID_STR = process.env.AGENTD_ARENA_PROGRAM_ID ?? '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
 const AGENTM_CORE_PROGRAM_ID_STR =
     process.env.AGENTD_AGENTM_CORE_PROGRAM_ID ?? '2stkfkFaFLUvSR9yydmfQ7pZReo2M38zcVtL1QffCyDA';
 

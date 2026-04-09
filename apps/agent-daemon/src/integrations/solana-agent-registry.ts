@@ -1,25 +1,25 @@
 /**
  * Solana Agent Registry Client - GRA-228a
- * 
+ *
  * Integration with Solana's official Agent Registry protocol.
- * 
+ *
  * Note: Uses the official Metaplex MPL Agent Registry program address.
  * See: https://www.metaplex.com/docs/smart-contracts/mpl-agent
- * 
+ *
  * This client implements the expected interface based on:
  * - Solana Agent Registry documentation
  * - ERC-8004 compatible structures
  * - Metaplex Core integration patterns
  */
 
-import { 
-  Connection, 
-  PublicKey, 
-  Transaction, 
-  SystemProgram,
-  SYSVAR_RENT_PUBKEY,
-  ComputeBudgetProgram,
-  Keypair,
+import {
+    Connection,
+    PublicKey,
+    Transaction,
+    SystemProgram,
+    SYSVAR_RENT_PUBKEY,
+    ComputeBudgetProgram,
+    Keypair,
 } from '@solana/web3.js';
 import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
 import { logger } from '../utils/logger.js';
@@ -29,14 +29,14 @@ import { logger } from '../utils/logger.js';
 // ============================================================================
 
 const SOLANA_AGENT_REGISTRY_ADDRESSES = {
-  // Metaplex MPL Agent Registry — same address on mainnet and devnet
-  // Source: https://www.metaplex.com/docs/smart-contracts/mpl-agent
-  mainnet: {
-    programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
-  },
-  devnet: {
-    programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
-  },
+    // Metaplex MPL Agent Registry — same address on mainnet and devnet
+    // Source: https://www.metaplex.com/docs/smart-contracts/mpl-agent
+    mainnet: {
+        programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
+    },
+    devnet: {
+        programId: '1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p',
+    },
 };
 
 // ============================================================================
@@ -44,128 +44,126 @@ const SOLANA_AGENT_REGISTRY_ADDRESSES = {
 // ============================================================================
 
 export const SOLANA_AGENT_REGISTRY_IDL = {
-  version: '0.1.0',
-  name: 'solana_agent_registry',
-  instructions: [
-    {
-      name: 'registerAgent',
-      accounts: [
-        { name: 'agent', isMut: true, isSigner: false },
-        { name: 'agentPda', isMut: true, isSigner: false },
-        { name: 'owner', isMut: true, isSigner: true },
-        { name: 'systemProgram', isMut: false, isSigner: false },
-        { name: 'rent', isMut: false, isSigner: false },
-      ],
-      args: [
-        { name: 'name', type: 'string' },
-        { name: 'description', type: 'string' },
-        { name: 'avatar', type: { option: 'string' } },
-        { name: 'website', type: { option: 'string' } },
-        { name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } },
-      ],
-    },
-    {
-      name: 'updateAgentMetadata',
-      accounts: [
-        { name: 'agent', isMut: true, isSigner: false },
-        { name: 'owner', isMut: false, isSigner: true },
-      ],
-      args: [
-        { name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } },
-      ],
-    },
-    {
-      name: 'submitReputation',
-      accounts: [
-        { name: 'reputation', isMut: true, isSigner: false },
-        { name: 'agent', isMut: false, isSigner: false },
-        { name: 'oracle', isMut: false, isSigner: true },
-        { name: 'systemProgram', isMut: false, isSigner: false },
-      ],
-      args: [
-        { name: 'score', type: 'u8' }, // 0-100
-        { name: 'category', type: 'string' },
-        { name: 'proof', type: 'string' },
-        { name: 'timestamp', type: 'i64' },
-      ],
-    },
-    {
-      name: 'updateReputation',
-      accounts: [
-        { name: 'reputation', isMut: true, isSigner: false },
-        { name: 'oracle', isMut: false, isSigner: true },
-      ],
-      args: [
-        { name: 'score', type: 'u8' },
-        { name: 'proof', type: 'string' },
-      ],
-    },
-  ],
-  accounts: [
-    {
-      name: 'Agent',
-      type: {
-        kind: 'struct',
-        fields: [
-          { name: 'owner', type: 'publicKey' },
-          { name: 'name', type: 'string' },
-          { name: 'description', type: 'string' },
-          { name: 'avatar', type: { option: 'string' } },
-          { name: 'website', type: { option: 'string' } },
-          { name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } },
-          { name: 'createdAt', type: 'i64' },
-          { name: 'updatedAt', type: 'i64' },
-          { name: 'bump', type: 'u8' },
-        ],
-      },
-    },
-    {
-      name: 'Reputation',
-      type: {
-        kind: 'struct',
-        fields: [
-          { name: 'agent', type: 'publicKey' },
-          { name: 'overallScore', type: 'u8' },
-          { name: 'feedbackCount', type: 'u32' },
-          { name: 'lastUpdated', type: 'i64' },
-          { name: 'history', type: { vec: { defined: 'ReputationEntry' } } },
-          { name: 'bump', type: 'u8' },
-        ],
-      },
-    },
-  ],
-  types: [
-    {
-      name: 'MetadataEntry',
-      type: {
-        kind: 'struct',
-        fields: [
-          { name: 'key', type: 'string' },
-          { name: 'value', type: 'string' },
-        ],
-      },
-    },
-    {
-      name: 'ReputationEntry',
-      type: {
-        kind: 'struct',
-        fields: [
-          { name: 'score', type: 'u8' },
-          { name: 'category', type: 'string' },
-          { name: 'proof', type: 'string' },
-          { name: 'timestamp', type: 'i64' },
-          { name: 'oracle', type: 'publicKey' },
-        ],
-      },
-    },
-  ],
-  errors: [
-    { code: 6000, name: 'InvalidScore', msg: 'Score must be between 0 and 100' },
-    { code: 6001, name: 'InvalidName', msg: 'Name too long' },
-    { code: 6002, name: 'InvalidDescription', msg: 'Description too long' },
-    { code: 6003, name: 'UnauthorizedOracle', msg: 'Not an authorized oracle' },
-    { code: 6004, name: 'AgentNotFound', msg: 'Agent not found' },
-  ],
+    version: '0.1.0',
+    name: 'solana_agent_registry',
+    instructions: [
+        {
+            name: 'registerAgent',
+            accounts: [
+                { name: 'agent', isMut: true, isSigner: false },
+                { name: 'agentPda', isMut: true, isSigner: false },
+                { name: 'owner', isMut: true, isSigner: true },
+                { name: 'systemProgram', isMut: false, isSigner: false },
+                { name: 'rent', isMut: false, isSigner: false },
+            ],
+            args: [
+                { name: 'name', type: 'string' },
+                { name: 'description', type: 'string' },
+                { name: 'avatar', type: { option: 'string' } },
+                { name: 'website', type: { option: 'string' } },
+                { name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } },
+            ],
+        },
+        {
+            name: 'updateAgentMetadata',
+            accounts: [
+                { name: 'agent', isMut: true, isSigner: false },
+                { name: 'owner', isMut: false, isSigner: true },
+            ],
+            args: [{ name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } }],
+        },
+        {
+            name: 'submitReputation',
+            accounts: [
+                { name: 'reputation', isMut: true, isSigner: false },
+                { name: 'agent', isMut: false, isSigner: false },
+                { name: 'oracle', isMut: false, isSigner: true },
+                { name: 'systemProgram', isMut: false, isSigner: false },
+            ],
+            args: [
+                { name: 'score', type: 'u8' }, // 0-100
+                { name: 'category', type: 'string' },
+                { name: 'proof', type: 'string' },
+                { name: 'timestamp', type: 'i64' },
+            ],
+        },
+        {
+            name: 'updateReputation',
+            accounts: [
+                { name: 'reputation', isMut: true, isSigner: false },
+                { name: 'oracle', isMut: false, isSigner: true },
+            ],
+            args: [
+                { name: 'score', type: 'u8' },
+                { name: 'proof', type: 'string' },
+            ],
+        },
+    ],
+    accounts: [
+        {
+            name: 'Agent',
+            type: {
+                kind: 'struct',
+                fields: [
+                    { name: 'owner', type: 'publicKey' },
+                    { name: 'name', type: 'string' },
+                    { name: 'description', type: 'string' },
+                    { name: 'avatar', type: { option: 'string' } },
+                    { name: 'website', type: { option: 'string' } },
+                    { name: 'metadata', type: { vec: { defined: 'MetadataEntry' } } },
+                    { name: 'createdAt', type: 'i64' },
+                    { name: 'updatedAt', type: 'i64' },
+                    { name: 'bump', type: 'u8' },
+                ],
+            },
+        },
+        {
+            name: 'Reputation',
+            type: {
+                kind: 'struct',
+                fields: [
+                    { name: 'agent', type: 'publicKey' },
+                    { name: 'overallScore', type: 'u8' },
+                    { name: 'feedbackCount', type: 'u32' },
+                    { name: 'lastUpdated', type: 'i64' },
+                    { name: 'history', type: { vec: { defined: 'ReputationEntry' } } },
+                    { name: 'bump', type: 'u8' },
+                ],
+            },
+        },
+    ],
+    types: [
+        {
+            name: 'MetadataEntry',
+            type: {
+                kind: 'struct',
+                fields: [
+                    { name: 'key', type: 'string' },
+                    { name: 'value', type: 'string' },
+                ],
+            },
+        },
+        {
+            name: 'ReputationEntry',
+            type: {
+                kind: 'struct',
+                fields: [
+                    { name: 'score', type: 'u8' },
+                    { name: 'category', type: 'string' },
+                    { name: 'proof', type: 'string' },
+                    { name: 'timestamp', type: 'i64' },
+                    { name: 'oracle', type: 'publicKey' },
+                ],
+            },
+        },
+    ],
+    errors: [
+        { code: 6000, name: 'InvalidScore', msg: 'Score must be between 0 and 100' },
+        { code: 6001, name: 'InvalidName', msg: 'Name too long' },
+        { code: 6002, name: 'InvalidDescription', msg: 'Description too long' },
+        { code: 6003, name: 'UnauthorizedOracle', msg: 'Not an authorized oracle' },
+        { code: 6004, name: 'AgentNotFound', msg: 'Agent not found' },
+    ],
 };
 
 // ============================================================================
@@ -173,58 +171,58 @@ export const SOLANA_AGENT_REGISTRY_IDL = {
 // ============================================================================
 
 export interface SolanaAgentRegistryConfig {
-  network: 'mainnet' | 'devnet';
-  rpcUrl: string;
-  oracleKeypair: web3.Keypair;
-  programId?: string;
+    network: 'mainnet' | 'devnet';
+    rpcUrl: string;
+    oracleKeypair: web3.Keypair;
+    programId?: string;
 }
 
 export interface AgentRegistrationParams {
-  name: string;
-  description: string;
-  avatar?: string;
-  website?: string;
-  metadata?: Record<string, string>;
-  owner: PublicKey;
+    name: string;
+    description: string;
+    avatar?: string;
+    website?: string;
+    metadata?: Record<string, string>;
+    owner: PublicKey;
 }
 
 export interface AgentRegistrationResult {
-  agentPDA: string;
-  signature: string;
-  timestamp: number;
+    agentPDA: string;
+    signature: string;
+    timestamp: number;
 }
 
 export interface ReputationSubmissionParams {
-  agentPDA: string;
-  score: number; // 0-100
-  category: string;
-  proof: string;
-  timestamp?: number;
+    agentPDA: string;
+    score: number; // 0-100
+    category: string;
+    proof: string;
+    timestamp?: number;
 }
 
 export interface ReputationData {
-  agentPDA: string;
-  overallScore: number;
-  feedbackCount: number;
-  lastUpdated: number;
-  history: Array<{
-    score: number;
-    category: string;
-    proof: string;
-    timestamp: number;
-    oracle: string;
-  }>;
+    agentPDA: string;
+    overallScore: number;
+    feedbackCount: number;
+    lastUpdated: number;
+    history: Array<{
+        score: number;
+        category: string;
+        proof: string;
+        timestamp: number;
+        oracle: string;
+    }>;
 }
 
 export interface AgentData {
-  owner: string;
-  name: string;
-  description: string;
-  avatar: string | null;
-  website: string | null;
-  metadata: Record<string, string>;
-  createdAt: number;
-  updatedAt: number;
+    owner: string;
+    name: string;
+    description: string;
+    avatar: string | null;
+    website: string | null;
+    metadata: Record<string, string>;
+    createdAt: number;
+    updatedAt: number;
 }
 
 // ============================================================================
@@ -232,350 +230,326 @@ export interface AgentData {
 // ============================================================================
 
 export class SolanaAgentRegistryClient {
-  private connection: Connection;
-  private provider: AnchorProvider;
-  private program: Program;
-  private oracleKeypair: web3.Keypair;
-  private config: SolanaAgentRegistryConfig;
+    private connection: Connection;
+    private provider: AnchorProvider;
+    private program: Program;
+    private oracleKeypair: web3.Keypair;
+    private config: SolanaAgentRegistryConfig;
 
-  constructor(config: SolanaAgentRegistryConfig) {
-    this.config = config;
-    this.oracleKeypair = config.oracleKeypair;
+    constructor(config: SolanaAgentRegistryConfig) {
+        this.config = config;
+        this.oracleKeypair = config.oracleKeypair;
 
-    // Initialize connection
-    this.connection = new Connection(config.rpcUrl, 'confirmed');
+        // Initialize connection
+        this.connection = new Connection(config.rpcUrl, 'confirmed');
 
-    // Initialize provider
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.provider = new AnchorProvider(
-      this.connection,
-      {
-        publicKey: this.oracleKeypair.publicKey,
-        signTransaction: async (tx: any) => {
-          tx.partialSign(this.oracleKeypair);
-          return tx;
-        },
-        signAllTransactions: async (txs: any[]) => {
-          txs.forEach(tx => tx.partialSign(this.oracleKeypair));
-          return txs;
-        },
-      } as any,
-      { commitment: 'confirmed' }
-    );
+        // Initialize provider
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.provider = new AnchorProvider(
+            this.connection,
+            {
+                publicKey: this.oracleKeypair.publicKey,
+                signTransaction: async (tx: any) => {
+                    tx.partialSign(this.oracleKeypair);
+                    return tx;
+                },
+                signAllTransactions: async (txs: any[]) => {
+                    txs.forEach((tx) => tx.partialSign(this.oracleKeypair));
+                    return txs;
+                },
+            } as any,
+            { commitment: 'confirmed' },
+        );
 
-    // Get program ID
-    const addresses = config.network === 'mainnet' 
-      ? SOLANA_AGENT_REGISTRY_ADDRESSES.mainnet 
-      : SOLANA_AGENT_REGISTRY_ADDRESSES.devnet;
+        // Get program ID
+        const addresses =
+            config.network === 'mainnet'
+                ? SOLANA_AGENT_REGISTRY_ADDRESSES.mainnet
+                : SOLANA_AGENT_REGISTRY_ADDRESSES.devnet;
 
-    const programId = new PublicKey(
-      config.programId || addresses.programId
-    );
+        const programId = new PublicKey(config.programId || addresses.programId);
 
-    // Initialize program
-    this.program = new Program(
-      SOLANA_AGENT_REGISTRY_IDL as any,
-      programId as any,
-      this.provider as any
-    ) as any;
+        // Initialize program
+        this.program = new Program(SOLANA_AGENT_REGISTRY_IDL as any, programId as any, this.provider as any) as any;
 
-    logger.info(
-      {
-        network: config.network,
-        programId: programId.toBase58(),
-        oracle: this.oracleKeypair.publicKey.toBase58(),
-      },
-      'Solana Agent Registry client initialized'
-    );
-  }
-
-  /**
-   * Register a new agent on Solana Agent Registry
-   */
-  async registerAgent(params: AgentRegistrationParams): Promise<AgentRegistrationResult> {
-    try {
-      // Derive agent PDA
-      const [agentPDA, bump] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from('agent'),
-          params.owner.toBuffer(),
-          Buffer.from(params.name),
-        ],
-        this.program.programId
-      );
-
-      // Convert metadata to program format
-      const metadataEntries = Object.entries(params.metadata || {}).map(([key, value]) => ({
-        key,
-        value,
-      }));
-
-      logger.info(
-        { name: params.name, owner: params.owner.toBase58(), agentPDA: agentPDA.toBase58() },
-        'Registering agent on Solana Agent Registry'
-      );
-
-      // Build transaction
-      const tx = await this.program.methods
-        .registerAgent(
-          params.name,
-          params.description,
-          params.avatar || null,
-          params.website || null,
-          metadataEntries
-        )
-        .accounts({
-          agent: this.oracleKeypair.publicKey, // Placeholder - actual account structure may differ
-          agentPda: agentPDA,
-          owner: params.owner,
-          systemProgram: SystemProgram.programId,
-          rent: SYSVAR_RENT_PUBKEY,
-        })
-        .transaction();
-
-      // Add compute budget
-      tx.add(
-        ComputeBudgetProgram.setComputeUnitLimit({ units: 200000 })
-      );
-
-      // Send transaction
-      const signature = await this.provider.sendAndConfirm(tx);
-
-      logger.info(
-        { agentPDA: agentPDA.toBase58(), signature },
-        'Agent registered on Solana Agent Registry'
-      );
-
-      return {
-        agentPDA: agentPDA.toBase58(),
-        signature,
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      logger.error({ error, params }, 'Failed to register agent on Solana Agent Registry');
-      throw error;
+        logger.info(
+            {
+                network: config.network,
+                programId: programId.toBase58(),
+                oracle: this.oracleKeypair.publicKey.toBase58(),
+            },
+            'Solana Agent Registry client initialized',
+        );
     }
-  }
 
-  /**
-   * Submit reputation score for an agent
-   */
-  async submitReputation(params: ReputationSubmissionParams): Promise<string> {
-    try {
-      const agentPDA = new PublicKey(params.agentPDA);
-      const timestamp = params.timestamp || Math.floor(Date.now() / 1000);
+    /**
+     * Register a new agent on Solana Agent Registry
+     */
+    async registerAgent(params: AgentRegistrationParams): Promise<AgentRegistrationResult> {
+        try {
+            // Derive agent PDA
+            const [agentPDA, bump] = PublicKey.findProgramAddressSync(
+                [Buffer.from('agent'), params.owner.toBuffer(), Buffer.from(params.name)],
+                this.program.programId,
+            );
 
-      // Derive reputation PDA
-      const [reputationPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from('reputation'), agentPDA.toBuffer()],
-        this.program.programId
-      );
+            // Convert metadata to program format
+            const metadataEntries = Object.entries(params.metadata || {}).map(([key, value]) => ({
+                key,
+                value,
+            }));
 
-      logger.info(
-        {
-          agentPDA: params.agentPDA,
-          score: params.score,
-          category: params.category,
-        },
-        'Submitting reputation to Solana Agent Registry'
-      );
+            logger.info(
+                { name: params.name, owner: params.owner.toBase58(), agentPDA: agentPDA.toBase58() },
+                'Registering agent on Solana Agent Registry',
+            );
 
-      // Build transaction
-      const tx = await this.program.methods
-        .submitReputation(
-          params.score,
-          params.category,
-          params.proof,
-          new BN(timestamp)
-        )
-        .accounts({
-          reputation: reputationPDA,
-          agent: agentPDA,
-          oracle: this.oracleKeypair.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .transaction();
+            // Build transaction
+            const tx = await this.program.methods
+                .registerAgent(
+                    params.name,
+                    params.description,
+                    params.avatar || null,
+                    params.website || null,
+                    metadataEntries,
+                )
+                .accounts({
+                    agent: this.oracleKeypair.publicKey, // Placeholder - actual account structure may differ
+                    agentPda: agentPDA,
+                    owner: params.owner,
+                    systemProgram: SystemProgram.programId,
+                    rent: SYSVAR_RENT_PUBKEY,
+                })
+                .transaction();
 
-      // Send transaction
-      const signature = await this.provider.sendAndConfirm(tx);
+            // Add compute budget
+            tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 200000 }));
 
-      logger.info(
-        { agentPDA: params.agentPDA, signature, score: params.score },
-        'Reputation submitted to Solana Agent Registry'
-      );
+            // Send transaction
+            const signature = await this.provider.sendAndConfirm(tx);
 
-      return signature;
-    } catch (error) {
-      logger.error({ error, params }, 'Failed to submit reputation');
-      throw error;
+            logger.info({ agentPDA: agentPDA.toBase58(), signature }, 'Agent registered on Solana Agent Registry');
+
+            return {
+                agentPDA: agentPDA.toBase58(),
+                signature,
+                timestamp: Date.now(),
+            };
+        } catch (error) {
+            logger.error({ error, params }, 'Failed to register agent on Solana Agent Registry');
+            throw error;
+        }
     }
-  }
 
-  /**
-   * Get agent data from registry
-   */
-  async getAgent(agentPDA: string): Promise<AgentData | null> {
-    try {
-      const pda = new PublicKey(agentPDA);
-      const account = await (this.program.account as any).agent.fetch(pda);
+    /**
+     * Submit reputation score for an agent
+     */
+    async submitReputation(params: ReputationSubmissionParams): Promise<string> {
+        try {
+            const agentPDA = new PublicKey(params.agentPDA);
+            const timestamp = params.timestamp || Math.floor(Date.now() / 1000);
 
-      if (!account) {
-        return null;
-      }
+            // Derive reputation PDA
+            const [reputationPDA] = PublicKey.findProgramAddressSync(
+                [Buffer.from('reputation'), agentPDA.toBuffer()],
+                this.program.programId,
+            );
 
-      // Convert metadata entries to record
-      const metadata: Record<string, string> = {};
-      for (const entry of (account.metadata as any[]) || []) {
-        metadata[entry.key] = entry.value;
-      }
+            logger.info(
+                {
+                    agentPDA: params.agentPDA,
+                    score: params.score,
+                    category: params.category,
+                },
+                'Submitting reputation to Solana Agent Registry',
+            );
 
-      return {
-        owner: (account.owner as PublicKey).toBase58(),
-        name: account.name as string,
-        description: account.description as string,
-        avatar: account.avatar as string | null,
-        website: account.website as string | null,
-        metadata,
-        createdAt: (account.createdAt as BN).toNumber() * 1000,
-        updatedAt: (account.updatedAt as BN).toNumber() * 1000,
-      };
-    } catch (error) {
-      logger.error({ error, agentPDA }, 'Failed to fetch agent data');
-      return null;
+            // Build transaction
+            const tx = await this.program.methods
+                .submitReputation(params.score, params.category, params.proof, new BN(timestamp))
+                .accounts({
+                    reputation: reputationPDA,
+                    agent: agentPDA,
+                    oracle: this.oracleKeypair.publicKey,
+                    systemProgram: SystemProgram.programId,
+                })
+                .transaction();
+
+            // Send transaction
+            const signature = await this.provider.sendAndConfirm(tx);
+
+            logger.info(
+                { agentPDA: params.agentPDA, signature, score: params.score },
+                'Reputation submitted to Solana Agent Registry',
+            );
+
+            return signature;
+        } catch (error) {
+            logger.error({ error, params }, 'Failed to submit reputation');
+            throw error;
+        }
     }
-  }
 
-  /**
-   * Get reputation data for an agent
-   */
-  async getReputation(agentPDA: string): Promise<ReputationData | null> {
-    try {
-      const pda = new PublicKey(agentPDA);
-      
-      // Derive reputation PDA
-      const [reputationPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from('reputation'), pda.toBuffer()],
-        this.program.programId
-      );
+    /**
+     * Get agent data from registry
+     */
+    async getAgent(agentPDA: string): Promise<AgentData | null> {
+        try {
+            const pda = new PublicKey(agentPDA);
+            const account = await (this.program.account as any).agent.fetch(pda);
 
-      const account = await (this.program.account as any).reputation.fetch(reputationPDA);
+            if (!account) {
+                return null;
+            }
 
-      if (!account) {
-        return null;
-      }
+            // Convert metadata entries to record
+            const metadata: Record<string, string> = {};
+            for (const entry of (account.metadata as any[]) || []) {
+                metadata[entry.key] = entry.value;
+            }
 
-      return {
-        agentPDA,
-        overallScore: account.overallScore as number,
-        feedbackCount: account.feedbackCount as number,
-        lastUpdated: (account.lastUpdated as BN).toNumber() * 1000,
-        history: ((account.history as any[]) || []).map((entry) => ({
-          score: entry.score,
-          category: entry.category,
-          proof: entry.proof,
-          timestamp: (entry.timestamp as BN).toNumber() * 1000,
-          oracle: (entry.oracle as PublicKey).toBase58(),
-        })),
-      };
-    } catch (error) {
-      logger.error({ error, agentPDA }, 'Failed to fetch reputation data');
-      return null;
+            return {
+                owner: (account.owner as PublicKey).toBase58(),
+                name: account.name as string,
+                description: account.description as string,
+                avatar: account.avatar as string | null,
+                website: account.website as string | null,
+                metadata,
+                createdAt: (account.createdAt as BN).toNumber() * 1000,
+                updatedAt: (account.updatedAt as BN).toNumber() * 1000,
+            };
+        } catch (error) {
+            logger.error({ error, agentPDA }, 'Failed to fetch agent data');
+            return null;
+        }
     }
-  }
 
-  /**
-   * Check if agent is registered
-   */
-  async isRegistered(agentPDA: string): Promise<boolean> {
-    try {
-      const pda = new PublicKey(agentPDA);
-      const account = await this.connection.getAccountInfo(pda);
-      return account !== null;
-    } catch {
-      return false;
+    /**
+     * Get reputation data for an agent
+     */
+    async getReputation(agentPDA: string): Promise<ReputationData | null> {
+        try {
+            const pda = new PublicKey(agentPDA);
+
+            // Derive reputation PDA
+            const [reputationPDA] = PublicKey.findProgramAddressSync(
+                [Buffer.from('reputation'), pda.toBuffer()],
+                this.program.programId,
+            );
+
+            const account = await (this.program.account as any).reputation.fetch(reputationPDA);
+
+            if (!account) {
+                return null;
+            }
+
+            return {
+                agentPDA,
+                overallScore: account.overallScore as number,
+                feedbackCount: account.feedbackCount as number,
+                lastUpdated: (account.lastUpdated as BN).toNumber() * 1000,
+                history: ((account.history as any[]) || []).map((entry) => ({
+                    score: entry.score,
+                    category: entry.category,
+                    proof: entry.proof,
+                    timestamp: (entry.timestamp as BN).toNumber() * 1000,
+                    oracle: (entry.oracle as PublicKey).toBase58(),
+                })),
+            };
+        } catch (error) {
+            logger.error({ error, agentPDA }, 'Failed to fetch reputation data');
+            return null;
+        }
     }
-  }
 
-  /**
-   * Update agent metadata
-   */
-  async updateAgentMetadata(
-    agentPDA: string,
-    metadata: Record<string, string>
-  ): Promise<string> {
-    try {
-      const pda = new PublicKey(agentPDA);
-      
-      // Convert metadata to program format
-      const metadataEntries = Object.entries(metadata).map(([key, value]) => ({
-        key,
-        value,
-      }));
-
-      logger.info({ agentPDA, metadataKeys: Object.keys(metadata) }, 'Updating agent metadata');
-
-      // Build transaction
-      const tx = await this.program.methods
-        .updateAgentMetadata(metadataEntries)
-        .accounts({
-          agent: pda,
-          owner: this.oracleKeypair.publicKey,
-        })
-        .transaction();
-
-      // Send transaction
-      const signature = await this.provider.sendAndConfirm(tx);
-
-      logger.info({ agentPDA, signature }, 'Agent metadata updated');
-
-      return signature;
-    } catch (error) {
-      logger.error({ error, agentPDA }, 'Failed to update agent metadata');
-      throw error;
+    /**
+     * Check if agent is registered
+     */
+    async isRegistered(agentPDA: string): Promise<boolean> {
+        try {
+            const pda = new PublicKey(agentPDA);
+            const account = await this.connection.getAccountInfo(pda);
+            return account !== null;
+        } catch {
+            return false;
+        }
     }
-  }
 
-  /**
-   * Health check
-   */
-  async healthCheck(): Promise<{
-    healthy: boolean;
-    network: string;
-    programId: string;
-    slot: number;
-    oracle: string;
-  }> {
-    try {
-      const slot = await this.connection.getSlot();
-      const programAccount = await this.connection.getAccountInfo(this.program.programId);
+    /**
+     * Update agent metadata
+     */
+    async updateAgentMetadata(agentPDA: string, metadata: Record<string, string>): Promise<string> {
+        try {
+            const pda = new PublicKey(agentPDA);
 
-      return {
-        healthy: programAccount !== null && slot > 0,
-        network: this.config.network,
-        programId: this.program.programId.toBase58(),
-        slot,
-        oracle: this.oracleKeypair.publicKey.toBase58(),
-      };
-    } catch (error) {
-      return {
-        healthy: false,
-        network: this.config.network,
-        programId: this.program.programId.toBase58(),
-        slot: 0,
-        oracle: this.oracleKeypair.publicKey.toBase58(),
-      };
+            // Convert metadata to program format
+            const metadataEntries = Object.entries(metadata).map(([key, value]) => ({
+                key,
+                value,
+            }));
+
+            logger.info({ agentPDA, metadataKeys: Object.keys(metadata) }, 'Updating agent metadata');
+
+            // Build transaction
+            const tx = await this.program.methods
+                .updateAgentMetadata(metadataEntries)
+                .accounts({
+                    agent: pda,
+                    owner: this.oracleKeypair.publicKey,
+                })
+                .transaction();
+
+            // Send transaction
+            const signature = await this.provider.sendAndConfirm(tx);
+
+            logger.info({ agentPDA, signature }, 'Agent metadata updated');
+
+            return signature;
+        } catch (error) {
+            logger.error({ error, agentPDA }, 'Failed to update agent metadata');
+            throw error;
+        }
     }
-  }
+
+    /**
+     * Health check
+     */
+    async healthCheck(): Promise<{
+        healthy: boolean;
+        network: string;
+        programId: string;
+        slot: number;
+        oracle: string;
+    }> {
+        try {
+            const slot = await this.connection.getSlot();
+            const programAccount = await this.connection.getAccountInfo(this.program.programId);
+
+            return {
+                healthy: programAccount !== null && slot > 0,
+                network: this.config.network,
+                programId: this.program.programId.toBase58(),
+                slot,
+                oracle: this.oracleKeypair.publicKey.toBase58(),
+            };
+        } catch (error) {
+            return {
+                healthy: false,
+                network: this.config.network,
+                programId: this.program.programId.toBase58(),
+                slot: 0,
+                oracle: this.oracleKeypair.publicKey.toBase58(),
+            };
+        }
+    }
 }
 
 // ============================================================================
 // Factory
 // ============================================================================
 
-export function createSolanaAgentRegistryClient(
-  config: SolanaAgentRegistryConfig
-): SolanaAgentRegistryClient {
-  return new SolanaAgentRegistryClient(config);
+export function createSolanaAgentRegistryClient(config: SolanaAgentRegistryConfig): SolanaAgentRegistryClient {
+    return new SolanaAgentRegistryClient(config);
 }
 
 // ============================================================================
@@ -583,6 +557,6 @@ export function createSolanaAgentRegistryClient(
 // ============================================================================
 
 logger.warn(
-  'Solana Agent Registry integration uses PLACEHOLDER contract addresses. ' +
-  'Real integration requires official program IDs from https://solana.com/agent-registry'
+    'Solana Agent Registry integration uses PLACEHOLDER contract addresses. ' +
+        'Real integration requires official program IDs from https://solana.com/agent-registry',
 );

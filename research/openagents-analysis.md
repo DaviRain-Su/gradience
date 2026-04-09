@@ -1,7 +1,7 @@
 # OpenAgents 项目分析：与 Gradience/Agent Arena 的对比
 
 > **核心发现：OpenAgents 与 Gradience 高度相似，但设计理念和技术栈有所不同**
-> 
+>
 > 分析日期：2026-03-29
 
 ---
@@ -68,65 +68,65 @@ OpenAgents Marketplace（五市场联动）：
 
 ### 2.1 架构对比
 
-| 维度 | OpenAgents | Gradience/Agent Arena |
-|------|-----------|----------------------|
-| **定位** | 机器工作的经济基础设施 | AI Agent 的通用验证层 |
-| **核心市场** | 5 个市场（Compute/Data/Labor/Liquidity/Risk） | 1 个市场（Task Competition） |
-| **Agent 形态** | Autopilot（本地桌面 App） | AgentM（语音 App 连接器） |
-| **验证机制** | Risk Market + Verification tiers | GAN 对抗 + 评判员机制 |
-| **支付网络** | Bitcoin Lightning | OKB（X-Layer）/ 多链 |
-| **协调协议** | Nostr | 自定义协议 / Nostr |
-| **任务分配** | 市场匹配 | 竞争机制 |
-| **代码** | Rust | Solidity + TypeScript |
+| 维度           | OpenAgents                                    | Gradience/Agent Arena        |
+| -------------- | --------------------------------------------- | ---------------------------- |
+| **定位**       | 机器工作的经济基础设施                        | AI Agent 的通用验证层        |
+| **核心市场**   | 5 个市场（Compute/Data/Labor/Liquidity/Risk） | 1 个市场（Task Competition） |
+| **Agent 形态** | Autopilot（本地桌面 App）                     | AgentM（语音 App 连接器）    |
+| **验证机制**   | Risk Market + Verification tiers              | GAN 对抗 + 评判员机制        |
+| **支付网络**   | Bitcoin Lightning                             | OKB（X-Layer）/ 多链         |
+| **协调协议**   | Nostr                                         | 自定义协议 / Nostr           |
+| **任务分配**   | 市场匹配                                      | 竞争机制                     |
+| **代码**       | Rust                                          | Solidity + TypeScript        |
 
 ### 2.2 核心差异
 
 ```yaml
 Risk Market vs GAN 对抗:
-  OpenAgents:
-    - Risk Market 定价失败概率
-    - 预测市场机制
-    - 承保和保险
-    - "不确定性作为可交易信号"
-    
-  Gradience:
-    - GAN 对抗（提交者 vs 验证者）
-    - 竞争机制
-    - 评判员评分
-    - "质量在对抗中提升"
+    OpenAgents:
+        - Risk Market 定价失败概率
+        - 预测市场机制
+        - 承保和保险
+        - '不确定性作为可交易信号'
+
+    Gradience:
+        - GAN 对抗（提交者 vs 验证者）
+        - 竞争机制
+        - 评判员评分
+        - '质量在对抗中提升'
 
 任务分配:
-  OpenAgents:
-    - Compute Market: 买卖算力
-    - Labor Market: Agent 完成工作
-    - 市场匹配机制
-    
-  Gradience:
-    - Agent Arena: 任务竞争
-    - 多个 Agent 同时提交
-    - 评判选出最佳
+    OpenAgents:
+        - Compute Market: 买卖算力
+        - Labor Market: Agent 完成工作
+        - 市场匹配机制
+
+    Gradience:
+        - Agent Arena: 任务竞争
+        - 多个 Agent 同时提交
+        - 评判选出最佳
 
 Agent 入口:
-  OpenAgents:
-    - Autopilot: 本地桌面应用
-    - 可以出售算力赚比特币
-    - Rust 实现
-    
-  Gradience:
-    - AgentM: 语音 App 连接器
-    - 连接本地 OpenClaw
-    - 移动端优先
+    OpenAgents:
+        - Autopilot: 本地桌面应用
+        - 可以出售算力赚比特币
+        - Rust 实现
+
+    Gradience:
+        - AgentM: 语音 App 连接器
+        - 连接本地 OpenClaw
+        - 移动端优先
 
 经济模型:
-  OpenAgents:
-    - Bitcoin Lightning 支付
-    - 算力提供者赚 BTC
-    - 风险市场定价
-    
-  Gradience:
-    - OKB 代币（X-Layer）
-    - 任务奖励
-    - 信誉系统
+    OpenAgents:
+        - Bitcoin Lightning 支付
+        - 算力提供者赚 BTC
+        - 风险市场定价
+
+    Gradience:
+        - OKB 代币（X-Layer）
+        - 任务奖励
+        - 信誉系统
 ```
 
 ---
@@ -188,19 +188,19 @@ Risk Market 定价和承保风险
 
 ```yaml
 实现语言:
-  - Rust（主要）
-  - Swift（macOS bridge）
-  
+    - Rust（主要）
+    - Swift（macOS bridge）
+
 关键技术:
-  - Nostr: 去中心化协调
-  - Lightning: 比特币支付
-  - Spacetime: 数据同步
-  - GPT-OSS: 本地模型
-  
+    - Nostr: 去中心化协调
+    - Lightning: 比特币支付
+    - Spacetime: 数据同步
+    - GPT-OSS: 本地模型
+
 架构特点:
-  - 本地优先（Autopilot 运行在用户机器）
-  - 内核权威（backend services）
-  - 桌面客户端（Rust GUI）
+    - 本地优先（Autopilot 运行在用户机器）
+    - 内核权威（backend services）
+    - 桌面客户端（Rust GUI）
 ```
 
 ---
@@ -282,26 +282,25 @@ Gradience 的独特叙事：
 ### 5.2 合作可能性
 
 ```yaml
-可以合作的点:
-  1. Risk Market 集成
-     - OpenAgents 的风险定价机制
-     - 可以应用到 Gradience 的任务验证
-     - 高风险任务需要更多抵押
-     
-  2. Nostr 协议
-     - 双方都提到 Nostr
-     - 可以互通消息
-     - 跨平台 Agent 通信
-     
-  3. 标准制定
-     - Agent 身份标准（ERC-8004）
-     - 任务格式标准
-     - 验证证明标准
-     
-  4. 互补功能
-     - OpenAgents 提供算力市场
-     - Gradience 提供任务竞争市场
-     - Agent 可以同时使用两者
+可以合作的点: 1. Risk Market 集成
+    - OpenAgents 的风险定价机制
+    - 可以应用到 Gradience 的任务验证
+    - 高风险任务需要更多抵押
+
+    2. Nostr 协议
+    - 双方都提到 Nostr
+    - 可以互通消息
+    - 跨平台 Agent 通信
+
+    3. 标准制定
+    - Agent 身份标准（ERC-8004）
+    - 任务格式标准
+    - 验证证明标准
+
+    4. 互补功能
+    - OpenAgents 提供算力市场
+    - Gradience 提供任务竞争市场
+    - Agent 可以同时使用两者
 ```
 
 ### 5.3 借鉴价值
@@ -406,13 +405,13 @@ Gradience 可以从 OpenAgents 借鉴：
 
 ### 7.2 关键差异表
 
-| 维度 | OpenAgents | Gradience |
-|------|-----------|-----------|
-| **验证哲学** | Risk Market（预测市场） | GAN 对抗（竞争机制） |
-| **技术栈** | Rust + Bitcoin + Nostr | TS/Solidity + 多链 |
-| **Agent 入口** | Autopilot（桌面） | AgentM（语音 App） |
-| **经济模型** | 五市场联动 | 任务竞争 + 信誉 |
-| **叙事** | 工程化/西方 | 修仙/东方 |
+| 维度           | OpenAgents              | Gradience            |
+| -------------- | ----------------------- | -------------------- |
+| **验证哲学**   | Risk Market（预测市场） | GAN 对抗（竞争机制） |
+| **技术栈**     | Rust + Bitcoin + Nostr  | TS/Solidity + 多链   |
+| **Agent 入口** | Autopilot（桌面）       | AgentM（语音 App）   |
+| **经济模型**   | 五市场联动              | 任务竞争 + 信誉      |
+| **叙事**       | 工程化/西方             | 修仙/东方            |
 
 ### 7.3 行动建议
 
@@ -435,4 +434,4 @@ Gradience 可以从 OpenAgents 借鉴：
 
 ---
 
-*"伟大的想法往往在相近的时间被不同的人独立发现。OpenAgents 和 Gradience 都在探索 Agent 经济的未来，殊途同归。"*
+_"伟大的想法往往在相近的时间被不同的人独立发现。OpenAgents 和 Gradience 都在探索 Agent 经济的未来，殊途同归。"_

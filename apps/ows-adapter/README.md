@@ -28,9 +28,9 @@ import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 // Create adapter
 const adapter = new OWSWalletAdapter({
-  network: 'devnet',
-  defaultChain: 'solana',
-  rpcEndpoint: 'https://api.devnet.solana.com'
+    network: 'devnet',
+    defaultChain: 'solana',
+    rpcEndpoint: 'https://api.devnet.solana.com',
 });
 
 // Connect to OWS Wallet
@@ -50,10 +50,10 @@ const signedTx = await adapter.signTransaction(transaction);
 
 // Sign an authentication message
 const auth = await adapter.signAuthMessage({
-  domain: 'example.com',
-  address: wallet.address,
-  nonce: crypto.randomUUID(),
-  issuedAt: Date.now()
+    domain: 'example.com',
+    address: wallet.address,
+    nonce: crypto.randomUUID(),
+    issuedAt: Date.now(),
 });
 
 // Check balance
@@ -74,6 +74,7 @@ new OWSWalletAdapter(config: OWSAgentConfig)
 ```
 
 **Config options:**
+
 - `network`: `'mainnet' | 'devnet'`
 - `defaultChain`: `'solana' | 'ethereum'`
 - `apiKey?`: Optional API key
@@ -135,10 +136,10 @@ Standalone utilities for Solana transaction signing.
 
 ```typescript
 import {
-  signSolanaTransaction,
-  createSignTransactionHandler,
-  serializeTransaction,
-  deserializeTransaction
+    signSolanaTransaction,
+    createSignTransactionHandler,
+    serializeTransaction,
+    deserializeTransaction,
 } from '@gradiences/ows-adapter';
 
 // Sign a transaction with an OWS wallet
@@ -156,18 +157,18 @@ Standalone utilities for message signing.
 
 ```typescript
 import {
-  createAuthMessage,
-  signAuthenticationMessage,
-  signRawMessage,
-  verifySignedMessageFormat
+    createAuthMessage,
+    signAuthenticationMessage,
+    signRawMessage,
+    verifySignedMessageFormat,
 } from '@gradiences/ows-adapter';
 
 // Create a SIWS-like auth message
 const message = createAuthMessage({
-  domain: 'example.com',
-  address: wallet.address,
-  nonce: 'abc123',
-  issuedAt: Date.now()
+    domain: 'example.com',
+    address: wallet.address,
+    nonce: 'abc123',
+    issuedAt: Date.now(),
 });
 
 // Sign it
@@ -203,35 +204,35 @@ Key types exported from the package:
 
 ```typescript
 interface OWSWallet {
-  address: string;
-  publicKey: string;
-  signMessage(message: string): Promise<string>;
-  signTransaction(tx: any): Promise<any>;
+    address: string;
+    publicKey: string;
+    signMessage(message: string): Promise<string>;
+    signTransaction(tx: any): Promise<any>;
 }
 
 interface OWSIdentity {
-  did: string;
-  wallet: OWSWallet;
-  credentials: OWSCredential[];
+    did: string;
+    wallet: OWSWallet;
+    credentials: OWSCredential[];
 }
 
 interface AuthMessagePayload {
-  domain: string;
-  address: string;
-  nonce: string;
-  issuedAt: number;
-  statement?: string;
-  uri?: string;
-  chainId?: string;
-  expiration?: number;
+    domain: string;
+    address: string;
+    nonce: string;
+    issuedAt: number;
+    statement?: string;
+    uri?: string;
+    chainId?: string;
+    expiration?: number;
 }
 
 interface BalanceInfo {
-  address: string;
-  balance: number;
-  uiBalance: number;
-  decimals: number;
-  mint: string | null;
+    address: string;
+    balance: number;
+    uiBalance: number;
+    decimals: number;
+    mint: string | null;
 }
 ```
 

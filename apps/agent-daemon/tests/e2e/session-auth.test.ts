@@ -44,7 +44,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
         it('should return challenge without auth (public endpoint)', async () => {
             const res = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.challenge).toBeTruthy();
             expect(body.message).toContain('Sign in to Gradience');
             expect(body.message).toContain(body.challenge);
@@ -54,8 +54,8 @@ describe('Session Auth (Wallet Connect) E2E', () => {
         it('should return unique challenges each time', async () => {
             const res1 = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
             const res2 = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-            const body1 = await res1.json() as any;
-            const body2 = await res2.json() as any;
+            const body1 = (await res1.json()) as any;
+            const body2 = (await res2.json()) as any;
             expect(body1.challenge).not.toBe(body2.challenge);
         });
     });
@@ -79,7 +79,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
 
         it('step 2: sign challenge and verify -> get session token', async () => {
             const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-            const { challenge, message } = await challengeRes.json() as any;
+            const { challenge, message } = (await challengeRes.json()) as any;
 
             const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);
 
@@ -93,7 +93,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
                 }),
             });
             expect(verifyRes.status).toBe(200);
-            const body = await verifyRes.json() as any;
+            const body = (await verifyRes.json()) as any;
             expect(body.token).toBeTruthy();
             expect(body.walletAddress).toBe(walletAddress);
             expect(body.expiresAt).toBeGreaterThan(Date.now());
@@ -105,7 +105,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
                 headers: { Authorization: `Bearer ${sessionToken}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.status).toBe('running');
         });
 
@@ -114,7 +114,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
                 headers: { Authorization: `Bearer ${sessionToken}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.walletAddress).toBe(walletAddress);
         });
 
@@ -150,7 +150,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
             const address = bs58.encode(kp.publicKey);
 
             const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-            const { challenge } = await challengeRes.json() as any;
+            const { challenge } = (await challengeRes.json()) as any;
 
             // Sign with wrong message
             const wrongSig = nacl.sign.detached(Buffer.from('wrong message', 'utf-8'), kp.secretKey);
@@ -165,7 +165,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
                 }),
             });
             expect(res.status).toBe(401);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.error).toBe('AUTH_FAILED');
         });
 
@@ -193,7 +193,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
             const address = bs58.encode(kp.publicKey);
 
             const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-            const { challenge, message } = await challengeRes.json() as any;
+            const { challenge, message } = (await challengeRes.json()) as any;
             const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);
             const sigB64 = Buffer.from(sig).toString('base64');
 
@@ -216,7 +216,7 @@ describe('Session Auth (Wallet Connect) E2E', () => {
 
         it('should reject invalid wallet address format', async () => {
             const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-            const { challenge, message } = await challengeRes.json() as any;
+            const { challenge, message } = (await challengeRes.json()) as any;
 
             const kp = nacl.sign.keyPair();
             const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);

@@ -312,9 +312,10 @@ export function SearchBar({
                             onClick={() => handleModeChange(m)}
                             className={`
                                 px-3 py-1.5 text-xs font-medium rounded transition
-                                ${mode === m
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                                ${
+                                    mode === m
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                                 }
                             `}
                         >
@@ -343,9 +344,10 @@ export function SearchBar({
                                     onClick={() => handleSortChange(option)}
                                     className={`
                                         w-full px-3 py-2 text-left text-xs transition
-                                        ${sortBy === option
-                                            ? 'bg-blue-600/20 text-blue-400'
-                                            : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                                        ${
+                                            sortBy === option
+                                                ? 'bg-blue-600/20 text-blue-400'
+                                                : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
                                         }
                                         first:rounded-t-lg last:rounded-b-lg
                                     `}
@@ -419,9 +421,10 @@ export function SearchBar({
                         disabled={isSearching || !value.trim()}
                         className={`
                             px-3 py-1 text-xs font-medium rounded-lg transition
-                            ${value.trim() && !isSearching
-                                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            ${
+                                value.trim() && !isSearching
+                                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                             }
                         `}
                     >
@@ -434,38 +437,62 @@ export function SearchBar({
             <div className="flex flex-wrap gap-2">
                 {mode === 'domain' && (
                     <>
-                        <SearchHint label=".sol" example="agent.sol" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
-                        <SearchHint label=".eth" example="vitalik.eth" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
+                        <SearchHint
+                            label=".sol"
+                            example="agent.sol"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
+                        <SearchHint
+                            label=".eth"
+                            example="vitalik.eth"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
                     </>
                 )}
                 {mode === 'reputation' && (
                     <>
-                        <SearchHint label="90+" example="Top performers" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
-                        <SearchHint label="50-80" example="Mid-tier" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
+                        <SearchHint
+                            label="90+"
+                            example="Top performers"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
+                        <SearchHint
+                            label="50-80"
+                            example="Mid-tier"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
                     </>
                 )}
                 {mode === 'capabilities' && (
                     <>
-                        <SearchHint label="coding" example="Developers" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
-                        <SearchHint label="design" example="Designers" onClick={(v) => {
-                            if (controlledValue === undefined) setInternalValue(v);
-                            onChange?.(v);
-                        }} />
+                        <SearchHint
+                            label="coding"
+                            example="Developers"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
+                        <SearchHint
+                            label="design"
+                            example="Designers"
+                            onClick={(v) => {
+                                if (controlledValue === undefined) setInternalValue(v);
+                                onChange?.(v);
+                            }}
+                        />
                     </>
                 )}
             </div>
@@ -539,9 +566,7 @@ export function CompactSearchBar({
 
     return (
         <form onSubmit={handleSubmit} className={`relative ${className}`}>
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-                🔍
-            </span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
             <input
                 type="text"
                 value={value}

@@ -83,17 +83,11 @@ export function MobileMenuButton() {
 
             {open && (
                 <div className="fixed inset-0 z-[60] lg:hidden">
-                    <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={() => setOpen(false)}
-                    />
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
                     <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a0a0f] border-r border-gray-800/50 overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b border-gray-800/50">
                             <span className="font-semibold">Navigation</span>
-                            <button
-                                onClick={() => setOpen(false)}
-                                className="p-1 text-gray-400 hover:text-white"
-                            >
+                            <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-white">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -137,13 +131,21 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
             ))}
 
             <div className="pt-4 border-t border-gray-800/50">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
-                    Language
-                </p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Language</p>
                 <div className="flex gap-2 text-sm px-2">
-                    <a href="/" className={pathname.startsWith('/zh') ? 'text-gray-400 hover:text-white' : 'text-white'}>EN</a>
+                    <a
+                        href="/"
+                        className={pathname.startsWith('/zh') ? 'text-gray-400 hover:text-white' : 'text-white'}
+                    >
+                        EN
+                    </a>
                     <span className="text-gray-600">|</span>
-                    <a href="/zh" className={pathname.startsWith('/zh') ? 'text-white' : 'text-gray-400 hover:text-white'}>u4e2du6587</a>
+                    <a
+                        href="/zh"
+                        className={pathname.startsWith('/zh') ? 'text-white' : 'text-gray-400 hover:text-white'}
+                    >
+                        u4e2du6587
+                    </a>
                 </div>
             </div>
         </nav>

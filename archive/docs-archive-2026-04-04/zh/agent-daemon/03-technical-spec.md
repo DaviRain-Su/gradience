@@ -131,49 +131,49 @@ interface AgentProcess {
 
 interface DaemonConfig {
     /** REST API 监听端口 */
-    port: number;                        // default: 7420
+    port: number; // default: 7420
     /** REST API 绑定地址 */
-    host: string;                        // default: '127.0.0.1'
+    host: string; // default: '127.0.0.1'
     /** Chain Hub Indexer WebSocket URL */
-    chainHubUrl: string;                 // default: 'wss://indexer.gradiences.xyz/ws'
+    chainHubUrl: string; // default: 'wss://indexer.gradiences.xyz/ws'
     /** Solana RPC endpoint */
-    solanaRpcUrl: string;                // default: 'https://api.devnet.solana.com'
+    solanaRpcUrl: string; // default: 'https://api.devnet.solana.com'
     /** SQLite 数据库路径 */
-    dbPath: string;                      // default: '~/.agentd/data.db'
+    dbPath: string; // default: '~/.agentd/data.db'
     /** 日志级别 */
     logLevel: 'debug' | 'info' | 'warn' | 'error'; // default: 'info'
     /** 最大并发 Agent 进程 */
-    maxAgentProcesses: number;           // default: 8
+    maxAgentProcesses: number; // default: 8
     /** WebSocket 心跳间隔 ms */
-    heartbeatInterval: number;           // default: 30000
+    heartbeatInterval: number; // default: 30000
     /** WebSocket 重连初始延迟 ms */
-    reconnectBaseDelay: number;          // default: 1000
+    reconnectBaseDelay: number; // default: 1000
     /** WebSocket 重连最大延迟 ms */
-    reconnectMaxDelay: number;           // default: 30000
+    reconnectMaxDelay: number; // default: 30000
     /** WebSocket 最大重连尝试 (0=无限) */
-    reconnectMaxAttempts: number;        // default: 0
+    reconnectMaxAttempts: number; // default: 0
     /** API 认证 token (启动时自动生成) */
-    authToken: string;                   // auto-generated
+    authToken: string; // auto-generated
     /** 密钥存储方式 */
-    keyStorage: 'keychain' | 'file';     // default: 'keychain'
+    keyStorage: 'keychain' | 'file'; // default: 'keychain'
 }
 ```
 
 ### 3.1.3 常量
 
-| 常量名 | 值 | 类型 | 说明 | 可变性 |
-|--------|----|----|------|--------|
-| DEFAULT_PORT | 7420 | number | API 端口 | configurable |
-| DEFAULT_HOST | '127.0.0.1' | string | 仅本地访问 | configurable |
-| HEARTBEAT_INTERVAL_MS | 30000 | number | WS 心跳间隔 | configurable |
-| RECONNECT_BASE_DELAY_MS | 1000 | number | 重连初始延迟 | configurable |
-| RECONNECT_MAX_DELAY_MS | 30000 | number | 重连最大延迟 | configurable |
-| TASK_DEFAULT_MAX_RETRIES | 3 | number | 任务默认最大重试 | configurable |
-| AGENT_HEALTH_CHECK_INTERVAL_MS | 10000 | number | Agent 健康检查间隔 | configurable |
-| AGENT_HEALTH_CHECK_TIMEOUT_MS | 5000 | number | Agent 健康检查超时 | configurable |
-| MAX_AGENT_PROCESSES | 8 | number | 最大并发 Agent | configurable |
-| DB_FILENAME | 'data.db' | string | SQLite 文件名 | configurable |
-| AUTH_TOKEN_BYTES | 32 | number | token 随机字节数 | immutable |
+| 常量名                         | 值          | 类型   | 说明               | 可变性       |
+| ------------------------------ | ----------- | ------ | ------------------ | ------------ |
+| DEFAULT_PORT                   | 7420        | number | API 端口           | configurable |
+| DEFAULT_HOST                   | '127.0.0.1' | string | 仅本地访问         | configurable |
+| HEARTBEAT_INTERVAL_MS          | 30000       | number | WS 心跳间隔        | configurable |
+| RECONNECT_BASE_DELAY_MS        | 1000        | number | 重连初始延迟       | configurable |
+| RECONNECT_MAX_DELAY_MS         | 30000       | number | 重连最大延迟       | configurable |
+| TASK_DEFAULT_MAX_RETRIES       | 3           | number | 任务默认最大重试   | configurable |
+| AGENT_HEALTH_CHECK_INTERVAL_MS | 10000       | number | Agent 健康检查间隔 | configurable |
+| AGENT_HEALTH_CHECK_TIMEOUT_MS  | 5000        | number | Agent 健康检查超时 | configurable |
+| MAX_AGENT_PROCESSES            | 8           | number | 最大并发 Agent     | configurable |
+| DB_FILENAME                    | 'data.db'   | string | SQLite 文件名      | configurable |
+| AUTH_TOKEN_BYTES               | 32          | number | token 随机字节数   | immutable    |
 
 ## 3.2 接口定义
 
@@ -375,61 +375,61 @@ interface DaemonEvent {
 }
 ```
 
-| 事件名 | 触发时机 | data 格式 |
-|--------|---------|-----------|
-| `connection.changed` | 连接状态变更 | `{ state: ConnectionState, endpoint: string }` |
-| `task.queued` | 新任务入队 | `Task` |
-| `task.started` | 任务开始执行 | `{ taskId: string, agentId: string }` |
-| `task.progress` | 任务进度更新 | `{ taskId: string, progress: number }` |
-| `task.completed` | 任务完成 | `Task` |
-| `task.failed` | 任务失败 | `Task` |
-| `agent.started` | Agent 进程启动 | `AgentProcess` |
-| `agent.stopped` | Agent 进程停止 | `{ agentId: string, exitCode: number }` |
-| `agent.crashed` | Agent 进程崩溃 | `{ agentId: string, error: string }` |
-| `message.received` | 收到 A2A 消息 | `A2AMessage` |
+| 事件名               | 触发时机       | data 格式                                      |
+| -------------------- | -------------- | ---------------------------------------------- |
+| `connection.changed` | 连接状态变更   | `{ state: ConnectionState, endpoint: string }` |
+| `task.queued`        | 新任务入队     | `Task`                                         |
+| `task.started`       | 任务开始执行   | `{ taskId: string, agentId: string }`          |
+| `task.progress`      | 任务进度更新   | `{ taskId: string, progress: number }`         |
+| `task.completed`     | 任务完成       | `Task`                                         |
+| `task.failed`        | 任务失败       | `Task`                                         |
+| `agent.started`      | Agent 进程启动 | `AgentProcess`                                 |
+| `agent.stopped`      | Agent 进程停止 | `{ agentId: string, exitCode: number }`        |
+| `agent.crashed`      | Agent 进程崩溃 | `{ agentId: string, error: string }`           |
+| `message.received`   | 收到 A2A 消息  | `A2AMessage`                                   |
 
 ## 3.3 错误码定义
 
-| 错误码 | 名称 | 触发条件 | HTTP 状态码 |
-|--------|------|---------|------------|
-| AUTH_REQUIRED | 未提供认证 token | 请求无 Authorization header | 401 |
-| AUTH_INVALID | token 无效 | token 不匹配 | 401 |
-| TASK_NOT_FOUND | 任务不存在 | 查询/操作不存在的 task ID | 404 |
-| TASK_NOT_CANCELLABLE | 任务不可取消 | 任务已在 completed/dead/cancelled 状态 | 409 |
-| AGENT_NOT_FOUND | Agent 不存在 | 查询/操作不存在的 agent ID | 404 |
-| AGENT_ALREADY_EXISTS | Agent 已注册 | 注册重复 ID 的 agent | 409 |
-| AGENT_ALREADY_RUNNING | Agent 已在运行 | 启动已在运行的 agent | 409 |
-| AGENT_LIMIT_REACHED | Agent 数量达上限 | 启动超过 maxAgentProcesses | 429 |
-| SEND_FAILED | 消息发送失败 | 无可用协议或所有协议失败 | 502 |
-| KEY_LOCKED | 密钥链锁定 | OS keychain 需要解锁 | 403 |
-| KEY_NOT_FOUND | 密钥不存在 | 尚未生成或导入密钥 | 404 |
-| CONNECTION_LOST | 连接断开 | WebSocket 未连接 | 503 |
-| INVALID_REQUEST | 请求格式错误 | zod 校验失败 | 400 |
+| 错误码                | 名称             | 触发条件                               | HTTP 状态码 |
+| --------------------- | ---------------- | -------------------------------------- | ----------- |
+| AUTH_REQUIRED         | 未提供认证 token | 请求无 Authorization header            | 401         |
+| AUTH_INVALID          | token 无效       | token 不匹配                           | 401         |
+| TASK_NOT_FOUND        | 任务不存在       | 查询/操作不存在的 task ID              | 404         |
+| TASK_NOT_CANCELLABLE  | 任务不可取消     | 任务已在 completed/dead/cancelled 状态 | 409         |
+| AGENT_NOT_FOUND       | Agent 不存在     | 查询/操作不存在的 agent ID             | 404         |
+| AGENT_ALREADY_EXISTS  | Agent 已注册     | 注册重复 ID 的 agent                   | 409         |
+| AGENT_ALREADY_RUNNING | Agent 已在运行   | 启动已在运行的 agent                   | 409         |
+| AGENT_LIMIT_REACHED   | Agent 数量达上限 | 启动超过 maxAgentProcesses             | 429         |
+| SEND_FAILED           | 消息发送失败     | 无可用协议或所有协议失败               | 502         |
+| KEY_LOCKED            | 密钥链锁定       | OS keychain 需要解锁                   | 403         |
+| KEY_NOT_FOUND         | 密钥不存在       | 尚未生成或导入密钥                     | 404         |
+| CONNECTION_LOST       | 连接断开         | WebSocket 未连接                       | 503         |
+| INVALID_REQUEST       | 请求格式错误     | zod 校验失败                           | 400         |
 
 ## 3.4 状态机精确定义
 
 ### 连接状态
 
-| 当前状态 | 触发动作 | 条件 | 新状态 | 副作用 |
-|---------|---------|------|--------|--------|
-| disconnected | connect() | — | connecting | 创建 WS 连接 |
-| connecting | WS 'open' | — | connected | 发送 heartbeat；emit event |
-| connecting | WS 'error' / timeout | — | reconnecting | 记录错误 |
-| connected | WS 'close' / 'error' | — | reconnecting | emit event；启动退避计时器 |
-| connected | disconnect() | — | disconnected | 关闭 WS；emit event |
-| reconnecting | 退避定时器触发 | attempts < max (or max=0) | connecting | attempts++ |
-| reconnecting | — | attempts >= max && max > 0 | disconnected | emit event；log error |
+| 当前状态     | 触发动作             | 条件                       | 新状态       | 副作用                     |
+| ------------ | -------------------- | -------------------------- | ------------ | -------------------------- |
+| disconnected | connect()            | —                          | connecting   | 创建 WS 连接               |
+| connecting   | WS 'open'            | —                          | connected    | 发送 heartbeat；emit event |
+| connecting   | WS 'error' / timeout | —                          | reconnecting | 记录错误                   |
+| connected    | WS 'close' / 'error' | —                          | reconnecting | emit event；启动退避计时器 |
+| connected    | disconnect()         | —                          | disconnected | 关闭 WS；emit event        |
+| reconnecting | 退避定时器触发       | attempts < max (or max=0)  | connecting   | attempts++                 |
+| reconnecting | —                    | attempts >= max && max > 0 | disconnected | emit event；log error      |
 
 ### 任务状态
 
-| 当前状态 | 触发动作 | 条件 | 新状态 | 副作用 |
-|---------|---------|------|--------|--------|
-| queued | executor dequeue | — | assigned | UPDATE tasks SET state='assigned' |
-| assigned | process spawned | — | running | UPDATE state='running' |
-| running | result received | success=true | completed | UPDATE state='completed', result=... |
-| running | error/timeout | retries < maxRetries | failed → queued | retries++; re-queue |
-| running | error/timeout | retries >= maxRetries | dead | UPDATE state='dead', error=... |
-| queued/assigned/running | cancel() | — | cancelled | UPDATE state='cancelled'; kill process if running |
+| 当前状态                | 触发动作         | 条件                  | 新状态          | 副作用                                            |
+| ----------------------- | ---------------- | --------------------- | --------------- | ------------------------------------------------- |
+| queued                  | executor dequeue | —                     | assigned        | UPDATE tasks SET state='assigned'                 |
+| assigned                | process spawned  | —                     | running         | UPDATE state='running'                            |
+| running                 | result received  | success=true          | completed       | UPDATE state='completed', result=...              |
+| running                 | error/timeout    | retries < maxRetries  | failed → queued | retries++; re-queue                               |
+| running                 | error/timeout    | retries >= maxRetries | dead            | UPDATE state='dead', error=...                    |
+| queued/assigned/running | cancel()         | —                     | cancelled       | UPDATE state='cancelled'; kill process if running |
 
 ## 3.5 算法与计算
 
@@ -472,15 +472,15 @@ for each running agent:
 
 ## 3.6 安全规则
 
-| 规则 | 实现方式 | 验证方法 |
-|------|---------|---------|
-| API 认证 | 启动时 crypto.randomBytes(32) 生成 token，写入 `~/.agentd/auth-token`（权限 0600），每个请求校验 | 单元测试 |
-| 仅本地访问 | 默认 bind 127.0.0.1 | 集成测试 |
-| 密钥不暴露 | KeyManager 接口只有 sign()，不提供 getPrivateKey() | API 审查 |
-| 进程隔离 | Agent 子进程 uid/gid 降权（Linux）；ulimit 资源限制 | 集成测试 |
-| 消息签名验证 | 入站 A2A 消息必须有有效 Ed25519 签名 | 单元测试 |
-| SQLite 文件权限 | 创建时 chmod 0600 | 启动检查 |
-| 无远程 API 暴露 | 严禁 host 配置为 0.0.0.0 | zod 校验 reject |
+| 规则            | 实现方式                                                                                         | 验证方法        |
+| --------------- | ------------------------------------------------------------------------------------------------ | --------------- |
+| API 认证        | 启动时 crypto.randomBytes(32) 生成 token，写入 `~/.agentd/auth-token`（权限 0600），每个请求校验 | 单元测试        |
+| 仅本地访问      | 默认 bind 127.0.0.1                                                                              | 集成测试        |
+| 密钥不暴露      | KeyManager 接口只有 sign()，不提供 getPrivateKey()                                               | API 审查        |
+| 进程隔离        | Agent 子进程 uid/gid 降权（Linux）；ulimit 资源限制                                              | 集成测试        |
+| 消息签名验证    | 入站 A2A 消息必须有有效 Ed25519 签名                                                             | 单元测试        |
+| SQLite 文件权限 | 创建时 chmod 0600                                                                                | 启动检查        |
+| 无远程 API 暴露 | 严禁 host 配置为 0.0.0.0                                                                         | zod 校验 reject |
 
 ## 3.7 目录结构
 
@@ -541,20 +541,20 @@ apps/agent-daemon/
 
 ## 3.8 边界条件清单
 
-| # | 边界条件 | 预期行为 |
-|---|---------|---------|
-| 1 | WebSocket 连接时 Chain Hub 不可达 | 进入 reconnecting，指数退避重试 |
-| 2 | SQLite 文件被外部删除 | 启动时检测并重建表结构 |
-| 3 | Agent 进程 OOM kill | ProcessManager 检测 exit code 137，标记 crashed，触发重启 |
-| 4 | 同时收到 100 个任务 | 全部入队 SQLite，executor 按优先级+FIFO 逐个执行 |
-| 5 | 取消一个正在运行的任务 | 发送 SIGTERM 给对应 agent 进程；等待 5s 后 SIGKILL |
-| 6 | API token 文件被删除 | 下次请求全部 401；需重启 daemon 重新生成 |
-| 7 | 配置文件不存在 | 使用默认配置，log warning |
-| 8 | 端口已被占用 | 启动失败，明确错误提示 |
-| 9 | Agent 启动命令不存在 | state → failed，log error，不重试 spawn 错误 |
-| 10 | 磁盘空间不足 SQLite 写入失败 | 任务入队返回错误，daemon 继续运行 |
-| 11 | 重复的消息 ID | 幂等处理，忽略重复 |
-| 12 | daemon 意外崩溃后重启 | 从 SQLite 恢复 queued/assigned/running 状态的任务，重新入队 |
+| #   | 边界条件                          | 预期行为                                                    |
+| --- | --------------------------------- | ----------------------------------------------------------- |
+| 1   | WebSocket 连接时 Chain Hub 不可达 | 进入 reconnecting，指数退避重试                             |
+| 2   | SQLite 文件被外部删除             | 启动时检测并重建表结构                                      |
+| 3   | Agent 进程 OOM kill               | ProcessManager 检测 exit code 137，标记 crashed，触发重启   |
+| 4   | 同时收到 100 个任务               | 全部入队 SQLite，executor 按优先级+FIFO 逐个执行            |
+| 5   | 取消一个正在运行的任务            | 发送 SIGTERM 给对应 agent 进程；等待 5s 后 SIGKILL          |
+| 6   | API token 文件被删除              | 下次请求全部 401；需重启 daemon 重新生成                    |
+| 7   | 配置文件不存在                    | 使用默认配置，log warning                                   |
+| 8   | 端口已被占用                      | 启动失败，明确错误提示                                      |
+| 9   | Agent 启动命令不存在              | state → failed，log error，不重试 spawn 错误                |
+| 10  | 磁盘空间不足 SQLite 写入失败      | 任务入队返回错误，daemon 继续运行                           |
+| 11  | 重复的消息 ID                     | 幂等处理，忽略重复                                          |
+| 12  | daemon 意外崩溃后重启             | 从 SQLite 恢复 queued/assigned/running 状态的任务，重新入队 |
 
 ---
 

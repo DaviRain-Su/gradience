@@ -1,7 +1,7 @@
 # Skill Protocol — 功法系统协议
 
 > **功法者，技艺之载体，经验之结晶。**
-> 
+>
 > 在 Gradience 网络中，Skill 是 Agent 能力的原子单位。
 > 可习得、可交易、可验证、可传承。
 
@@ -29,7 +29,7 @@ flowchart TB
         license["⚖️ license.yaml
         授权条款（买断/租赁/开源）"]
     end
-    
+
     SkillPackage -->|包含| manifest
     SkillPackage -->|包含| code
     SkillPackage -->|包含| prompts
@@ -42,10 +42,10 @@ flowchart TB
 
 ### 1.2 Skill 的三重属性
 
-| 属性 | 说明 | 类比 |
-|------|------|------|
-| **功能性** | 解决特定问题的能力 | 功法招式 |
-| **可验证性** | 可被客观测试和评分 | 试金石 |
+| 属性         | 说明                 | 类比     |
+| ------------ | -------------------- | -------- |
+| **功能性**   | 解决特定问题的能力   | 功法招式 |
+| **可验证性** | 可被客观测试和评分   | 试金石   |
 | **可交易性** | 可在市场上买卖或租赁 | 功法秘籍 |
 
 ---
@@ -62,23 +62,23 @@ flowchart TB
         b3["json-parser — 数据解析"]
         b4["git-operator — 版本控制"]
     end
-    
+
     subgraph Advanced["进阶功法（Licensed）"]
         a1["solidity-audit — 合约审计"]
         a2["react-builder — 前端构建"]
         a3["data-analyzer — 数据分析"]
         a4["defi-strategist — DeFi 策略"]
     end
-    
+
     subgraph Legendary["独门绝技（Rare/Legendary）"]
         l1["quant-trading — 量化交易"]
         l2["exploit-hunter — 漏洞挖掘"]
         l3["cross-chain-arb — 跨链套利"]
     end
-    
+
     Basic --"积累后"--> Advanced
     Advanced --"精通后"--> Legendary
-    
+
     style Basic fill:#e8f5e9
     style Advanced fill:#fff3e0
     style Legendary fill:#ffebee
@@ -86,13 +86,13 @@ flowchart TB
 
 ### 2.2 按领域分类
 
-| 领域 | 示例 Skill | 适用场景 |
-|------|-----------|---------|
-| **链上** | swap, lend, stake, bridge | DeFi 操作 |
-| **数据** | crawl, analyze, visualize | 信息处理 |
-| **安全** | audit, fuzz, monitor | 合约安全 |
-| **社交** | post, reply, analyze-sentiment | 社媒运营 |
-| **创作** | write, draw, compose | 内容生成 |
+| 领域     | 示例 Skill                     | 适用场景  |
+| -------- | ------------------------------ | --------- |
+| **链上** | swap, lend, stake, bridge      | DeFi 操作 |
+| **数据** | crawl, analyze, visualize      | 信息处理  |
+| **安全** | audit, fuzz, monitor           | 合约安全  |
+| **社交** | post, reply, analyze-sentiment | 社媒运营  |
+| **创作** | write, draw, compose           | 内容生成  |
 
 ---
 
@@ -109,6 +109,7 @@ flowchart TB
 ```
 
 **流程：**
+
 ```
 Agent A 浏览功法阁
   ↓
@@ -149,6 +150,7 @@ Skill 记录到 AgentSoul.md
 ```
 
 **师徒合约：**
+
 ```solidity
 struct Mentorship {
     address master;      // 师父
@@ -170,6 +172,7 @@ struct Mentorship {
 ```
 
 **自创路径：**
+
 ```
 Agent 掌握基础 Skill A + B
   ↓
@@ -199,6 +202,7 @@ Agent 掌握基础 Skill A + B
 ```
 
 **防复制设计：**
+
 - 核心逻辑在 TEE 中执行，外部不可见
 - 展示时使用降级版本（如限制处理规模）
 - 观摩者需自行复现，成功率取决于自身水平
@@ -214,6 +218,7 @@ Agent 掌握基础 Skill A + B
 ```
 
 **系统态度：**
+
 - 不禁止（无法禁止）
 - 不鼓励（成功率低，效率差）
 - 可通过提高 Skill 复杂度增加逆向难度
@@ -231,22 +236,22 @@ flowchart BT
         在 Agent Arena 任务中表现
         战绩决定 Skill 真实价值"]
     end
-    
+
     subgraph L2["基础门槛"]
         l2["🧪 测试验证
         通过 Skill 自带的测试套件
         确保功能正确"]
     end
-    
+
     subgraph L1["口碑参考"]
         l1["👥 社区验证
         其他使用者的评分和评价
         反映用户体验"]
     end
-    
+
     L1 --> L2
     L2 --> L3
-    
+
     style L3 fill:#ffd700
     style L2 fill:#c0c0c0
     style L1 fill:#cd7f32
@@ -254,14 +259,14 @@ flowchart BT
 
 ### 5.2 评级系统
 
-| 评级 | 标志 | 含义 | 获取方式 |
-|------|------|------|---------|
+| 评级  | 标志 | 含义                 | 获取方式            |
+| ----- | ---- | -------------------- | ------------------- |
 | ☆☆☆☆☆ | 传说 | 顶级 Skill，极难获得 | 限量发售 / 重大贡献 |
-| ★☆☆☆☆ | 史诗 | 高级 Skill，效果显著 | 高难度任务奖励 |
-| ★★☆☆☆ | 稀有 | 优质 Skill，有竞争力 | 购买 / 传承 |
-| ★★★☆☆ | 精良 | 标准 Skill，可靠实用 | 普通购买 |
-| ★★★★☆ | 普通 | 基础 Skill，功能完整 | 免费 / 低价 |
-| ★★★★★ | 破损 | 有缺陷或过时 | 废弃或待修复 |
+| ★☆☆☆☆ | 史诗 | 高级 Skill，效果显著 | 高难度任务奖励      |
+| ★★☆☆☆ | 稀有 | 优质 Skill，有竞争力 | 购买 / 传承         |
+| ★★★☆☆ | 精良 | 标准 Skill，可靠实用 | 普通购买            |
+| ★★★★☆ | 普通 | 基础 Skill，功能完整 | 免费 / 低价         |
+| ★★★★★ | 破损 | 有缺陷或过时         | 废弃或待修复        |
 
 ---
 
@@ -286,24 +291,24 @@ struct SkillLicense {
 
 ```yaml
 买断制（Buy Once, Use Forever）:
-  - 永久拥有
-  - 可转让/出售
-  - 原作者获得二次销售版税
+    - 永久拥有
+    - 可转让/出售
+    - 原作者获得二次销售版税
 
 订阅制（Subscription）:
-  - 按月/年付费
-  - 持续获得更新
-  - 过期后无法使用
+    - 按月/年付费
+    - 持续获得更新
+    - 过期后无法使用
 
 按量制（Pay Per Use）:
-  - 每次调用付费
-  - 无 upfront 成本
-  - 适合低频使用
+    - 每次调用付费
+    - 无 upfront 成本
+    - 适合低频使用
 
 混合制（Hybrid）:
-  - 基础功能买断
-  - 高级功能订阅
-  - 超额使用按量
+    - 基础功能买断
+    - 高级功能订阅
+    - 超额使用按量
 ```
 
 ---
@@ -320,17 +325,17 @@ flowchart TB
         platform["10% → 功法阁平台（Chain Hub）"]
         ecosystem["5% → 生态基金（基础 Skill 开发）"]
     end
-    
+
     subgraph Secondary["🔄 二手交易版税"]
         royalty["10% 版税"]
         seller["90% → 卖家"]
         original["10% → 原作者（终身）"]
     end
-    
+
     revenue --> creator
     revenue --> platform
     revenue --> ecosystem
-    
+
     style creator fill:#e8f5e9
     style platform fill:#e3f2fd
     style ecosystem fill:#fff3e0
@@ -348,23 +353,23 @@ flowchart LR
         i2["代码质量"]
         i3["文档完善度"]
     end
-    
+
     subgraph Extrinsic["🌟 外在价值"]
         e1["使用战绩（Agent Arena）"]
         e2["用户评价"]
         e3["稀缺程度"]
     end
-    
+
     subgraph Temporal["⏰ 时间价值"]
         t1["新 Skill 溢价"]
         t2["成熟 Skill 稳定价"]
         t3["过时 Skill 贬值"]
     end
-    
+
     Intrinsic --> Price["💰 Skill 价格"]
     Extrinsic --> Price
     Temporal --> Price
-    
+
     style Price fill:#ffd700
 ```
 
@@ -421,11 +426,11 @@ AgentM = 功法交流
 
 ### 9.1 Skill 安全分级
 
-| 分级 | 说明 | 执行环境 |
-|------|------|---------|
-| **安全** | 只读操作，无副作用 | 本地直接执行 |
-| **谨慎** | 有链下副作用（如发送请求） | 沙箱执行 |
-| **危险** | 有链上副作用（如转账） | TEE 执行 + 人工确认 |
+| 分级     | 说明                       | 执行环境            |
+| -------- | -------------------------- | ------------------- |
+| **安全** | 只读操作，无副作用         | 本地直接执行        |
+| **谨慎** | 有链下副作用（如发送请求） | 沙箱执行            |
+| **危险** | 有链上副作用（如转账）     | TEE 执行 + 人工确认 |
 
 ### 9.2 隐私保护
 
@@ -445,24 +450,28 @@ Skill 使用者：
 ## 十、路线图
 
 ### Phase 1（2026 Q2）— 基础功法阁
+
 - [ ] Skill Package 标准制定
 - [ ] 基础 Skill 注册与购买
 - [ ] 链上凭证合约（ERC-1155 扩展）
 - [ ] 10 个官方 Skill 上线
 
 ### Phase 2（2026 Q3）— 功法交流
+
 - [ ] 租赁模式上线
 - [ ] 师徒传承系统
 - [ ] Skill 评级系统
 - [ ] 观摩学习功能
 
 ### Phase 3（2026 Q4）— 自创与演化
+
 - [ ] Skill 组合工具
 - [ ] 自创 Skill 提交与审核
 - [ ] Skill DAO（社区治理 Skill 标准）
 - [ ] 100+ 社区 Skill
 
 ### Phase 4（2027）— 功法生态
+
 - [ ] AI 自动生成 Skill（从需求到代码）
 - [ ] Skill 之间自动组合优化
 - [ ] 跨链 Skill 互操作
@@ -472,18 +481,18 @@ Skill 使用者：
 
 ## 附录：术语对照
 
-| 修仙术语 | 技术术语 | 说明 |
-|---------|---------|------|
-| 功法 | Skill | 可执行的能力单元 |
-| 功法阁 | Skill Market | Skill 交易市场 |
-| 习得 | Acquisition | 获得 Skill 使用权 |
-| 传承 | Inheritance | 师徒间的 Skill 传递 |
-| 自创 | Creation | 组合现有 Skill 形成新 Skill |
-| 观摩 | Observation | 付费观看 Skill 使用效果 |
-| 逆向 | Reverse Engineering | 从效果反推实现 |
-| 心法 | Prompts | LLM 指令模板 |
-| 招式 | Code | 实际执行代码 |
-| 试金石 | Validation | Skill 验证测试 |
+| 修仙术语 | 技术术语            | 说明                        |
+| -------- | ------------------- | --------------------------- |
+| 功法     | Skill               | 可执行的能力单元            |
+| 功法阁   | Skill Market        | Skill 交易市场              |
+| 习得     | Acquisition         | 获得 Skill 使用权           |
+| 传承     | Inheritance         | 师徒间的 Skill 传递         |
+| 自创     | Creation            | 组合现有 Skill 形成新 Skill |
+| 观摩     | Observation         | 付费观看 Skill 使用效果     |
+| 逆向     | Reverse Engineering | 从效果反推实现              |
+| 心法     | Prompts             | LLM 指令模板                |
+| 招式     | Code                | 实际执行代码                |
+| 试金石   | Validation          | Skill 验证测试              |
 
 ---
 

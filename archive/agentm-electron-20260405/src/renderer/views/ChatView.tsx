@@ -173,9 +173,7 @@ export function ChatView() {
             closeWebSocket();
             setWebError(null);
             try {
-                const ws = new WebSocket(
-                    buildWebChatWsUrl(webEntryClient.getBaseUrl(), agentId),
-                );
+                const ws = new WebSocket(buildWebChatWsUrl(webEntryClient.getBaseUrl(), agentId));
                 webSocketRef.current = ws;
                 ws.addEventListener('open', () => {
                     setWebConnectedAgent(agentId);
@@ -186,8 +184,8 @@ export function ChatView() {
                         typeof event.data === 'string'
                             ? event.data
                             : 'text' in (event.data as object)
-                                ? await (event.data as { text: () => Promise<string> }).text()
-                                : String(event.data);
+                              ? await (event.data as { text: () => Promise<string> }).text()
+                              : String(event.data);
                     const parsed = parseWebChatInboundEvent(raw);
                     if (!parsed) {
                         return;
@@ -408,9 +406,7 @@ export function ChatView() {
                 {webPairCode && (
                     <p className="text-xs text-gray-300">
                         Pair code: <span className="font-mono">{webPairCode}</span>
-                        {webPairExpiresAt
-                            ? ` · expires ${new Date(webPairExpiresAt).toLocaleTimeString()}`
-                            : ''}
+                        {webPairExpiresAt ? ` · expires ${new Date(webPairExpiresAt).toLocaleTimeString()}` : ''}
                     </p>
                 )}
                 {webError && <p className="text-xs text-amber-400">{webError}</p>}
@@ -463,9 +459,7 @@ export function ChatView() {
                                 <option value="libp2p">libp2p (P2P)</option>
                             </select>
                             {a2aLoading && <span className="text-xs text-amber-400">Initializing...</span>}
-                            {a2aInitialized && (
-                                <span className="text-xs text-emerald-400">●</span>
-                            )}
+                            {a2aInitialized && <span className="text-xs text-emerald-400">●</span>}
                         </div>
                     )}
                 </div>
@@ -477,8 +471,8 @@ export function ChatView() {
                     <div className="text-center text-gray-500 mt-6">
                         <p className="text-xl mb-2">No conversation selected</p>
                         <p className="text-sm">
-                            Select a conversation from the sidebar, invite an agent from Discover,
-                            or connect an online Web Agent above.
+                            Select a conversation from the sidebar, invite an agent from Discover, or connect an online
+                            Web Agent above.
                         </p>
                     </div>
                 )}
@@ -489,16 +483,12 @@ export function ChatView() {
                     >
                         <div
                             className={`max-w-md rounded-xl px-4 py-2 ${
-                                msg.direction === 'outgoing'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-800 text-gray-200'
+                                msg.direction === 'outgoing' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-200'
                             }`}
                         >
                             <p className="text-sm">{msg.message}</p>
                             <div className="flex justify-between items-center mt-1 gap-4">
-                                <span className="text-xs opacity-60">
-                                    {msg.paymentMicrolamports} ul
-                                </span>
+                                <span className="text-xs opacity-60">{msg.paymentMicrolamports} ul</span>
                                 <span className="text-xs opacity-60">
                                     {new Date(msg.createdAt).toLocaleTimeString()}
                                 </span>
@@ -521,7 +511,12 @@ export function ChatView() {
                 <div className="p-4 border-t border-gray-800 bg-gray-950 space-y-2">
                     <div className="flex items-center justify-between">
                         <p className="text-sm font-medium">Post Task to {activeConversation.slice(0, 12)}...</p>
-                        <button onClick={() => setShowTaskForm(false)} className="text-xs text-gray-500 hover:text-white">Close</button>
+                        <button
+                            onClick={() => setShowTaskForm(false)}
+                            className="text-xs text-gray-500 hover:text-white"
+                        >
+                            Close
+                        </button>
                     </div>
                     <input
                         value={taskDescription}
@@ -562,14 +557,14 @@ export function ChatView() {
                                         agent.sendInvite({
                                             to: activeConversation,
                                             topic: 'task_posted',
-                                            message: `Task #${(data as {taskId?: number}).taskId ?? '?'} posted with reward ${taskReward} lamports. Apply now!`,
+                                            message: `Task #${(data as { taskId?: number }).taskId ?? '?'} posted with reward ${taskReward} lamports. Apply now!`,
                                         });
                                         const msg: ChatMessage = {
                                             id: `${Date.now()}-task-post`,
                                             peerAddress: activeConversation,
                                             direction: 'outgoing',
                                             topic: 'task_posted',
-                                            message: `Posted Task #${(data as {taskId?: number}).taskId ?? '?'} — reward: ${taskReward} lamports`,
+                                            message: `Posted Task #${(data as { taskId?: number }).taskId ?? '?'} — reward: ${taskReward} lamports`,
                                             paymentMicrolamports: 0,
                                             status: 'sent',
                                             createdAt: Date.now(),

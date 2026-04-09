@@ -7,47 +7,44 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU16Decoder,
-  getU16Encoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU16Decoder,
+    getU16Encoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type CategoryStats = {
-  category: number;
-  avgScore: number;
-  completed: number;
+    category: number;
+    avgScore: number;
+    completed: number;
 };
 
 export type CategoryStatsArgs = CategoryStats;
 
 export function getCategoryStatsEncoder(): FixedSizeEncoder<CategoryStatsArgs> {
-  return getStructEncoder([
-    ["category", getU8Encoder()],
-    ["avgScore", getU16Encoder()],
-    ["completed", getU32Encoder()],
-  ]);
+    return getStructEncoder([
+        ['category', getU8Encoder()],
+        ['avgScore', getU16Encoder()],
+        ['completed', getU32Encoder()],
+    ]);
 }
 
 export function getCategoryStatsDecoder(): FixedSizeDecoder<CategoryStats> {
-  return getStructDecoder([
-    ["category", getU8Decoder()],
-    ["avgScore", getU16Decoder()],
-    ["completed", getU32Decoder()],
-  ]);
+    return getStructDecoder([
+        ['category', getU8Decoder()],
+        ['avgScore', getU16Decoder()],
+        ['completed', getU32Decoder()],
+    ]);
 }
 
-export function getCategoryStatsCodec(): FixedSizeCodec<
-  CategoryStatsArgs,
-  CategoryStats
-> {
-  return combineCodec(getCategoryStatsEncoder(), getCategoryStatsDecoder());
+export function getCategoryStatsCodec(): FixedSizeCodec<CategoryStatsArgs, CategoryStats> {
+    return combineCodec(getCategoryStatsEncoder(), getCategoryStatsDecoder());
 }

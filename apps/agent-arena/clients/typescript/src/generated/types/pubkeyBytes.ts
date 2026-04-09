@@ -1,11 +1,4 @@
-import {
-    getArrayDecoder,
-    getArrayEncoder,
-    getU8Decoder,
-    getU8Encoder,
-    type Decoder,
-    type Encoder,
-} from '@solana/kit';
+import { getArrayDecoder, getArrayEncoder, getU8Decoder, getU8Encoder, type Decoder, type Encoder } from '@solana/kit';
 
 export type PubkeyBytes = number[];
 export type PubkeyBytesArgs = number[];

@@ -7,6 +7,7 @@
 ### ⚠️ 关于 "render-json"
 
 **没有找到名为 "render-json" 的仓库**，可能是以下情况之一：
+
 1. 名称记错了，实际想找的是 **`json-render`** (13.9k ⭐)
 2. 是其他组织的仓库
 3. 已被删除或私有化
@@ -29,6 +30,7 @@
 ```
 
 **特点**:
+
 - 🛡️ **Guardrailed**: AI 只能使用预定义组件（安全可控）
 - 🔮 **Predictable**: JSON 输出始终匹配 schema
 - ⚡ **Fast**: 流式渐进渲染
@@ -51,72 +53,72 @@ npm install @json-render/core @json-render/react @json-render/next
 #### 使用示例
 
 ```tsx
-import { defineCatalog } from "@json-render/core";
-import { schema } from "@json-render/react/schema";
-import { defineRegistry, Renderer } from "@json-render/react";
-import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
-import { shadcnComponents } from "@json-render/shadcn";
+import { defineCatalog } from '@json-render/core';
+import { schema } from '@json-render/react/schema';
+import { defineRegistry, Renderer } from '@json-render/react';
+import { shadcnComponentDefinitions } from '@json-render/shadcn/catalog';
+import { shadcnComponents } from '@json-render/shadcn';
 
 // 1. 定义组件库（声明 AI 可以使用的组件）
 const catalog = defineCatalog(schema, {
-  components: {
-    Card: shadcnComponentDefinitions.Card,
-    Button: shadcnComponentDefinitions.Button,
-    Input: shadcnComponentDefinitions.Input,
-    Select: shadcnComponentDefinitions.Select,
-    Slider: shadcnComponentDefinitions.Slider,
-    Table: shadcnComponentDefinitions.Table,
-    Chart: shadcnComponentDefinitions.Chart,
-  },
-  actions: {
-    submit: { description: "Submit form" },
-    cancel: { description: "Cancel operation" },
-  },
+    components: {
+        Card: shadcnComponentDefinitions.Card,
+        Button: shadcnComponentDefinitions.Button,
+        Input: shadcnComponentDefinitions.Input,
+        Select: shadcnComponentDefinitions.Select,
+        Slider: shadcnComponentDefinitions.Slider,
+        Table: shadcnComponentDefinitions.Table,
+        Chart: shadcnComponentDefinitions.Chart,
+    },
+    actions: {
+        submit: { description: 'Submit form' },
+        cancel: { description: 'Cancel operation' },
+    },
 });
 
 // 2. 创建 Registry（绑定实际组件实现）
 const { registry } = defineRegistry(catalog, {
-  components: {
-    Card: shadcnComponents.Card,
-    Button: shadcnComponents.Button,
-    Input: shadcnComponents.Input,
-    Select: shadcnComponents.Select,
-    Slider: shadcnComponents.Slider,
-    Table: shadcnComponents.Table,
-    Chart: shadcnComponents.Chart,
-  },
+    components: {
+        Card: shadcnComponents.Card,
+        Button: shadcnComponents.Button,
+        Input: shadcnComponents.Input,
+        Select: shadcnComponents.Select,
+        Slider: shadcnComponents.Slider,
+        Table: shadcnComponents.Table,
+        Chart: shadcnComponents.Chart,
+    },
 });
 
 // 3. AI 生成的 Spec
 const spec = {
-  root: "dashboard",
-  elements: {
-    dashboard: {
-      type: "Card",
-      props: { title: "Wallet Overview" },
-      children: ["balance", "chart", "actions"],
+    root: 'dashboard',
+    elements: {
+        dashboard: {
+            type: 'Card',
+            props: { title: 'Wallet Overview' },
+            children: ['balance', 'chart', 'actions'],
+        },
+        balance: {
+            type: 'Card',
+            props: { title: 'Balance', variant: 'metric' },
+            children: [],
+        },
+        chart: {
+            type: 'Chart',
+            props: { type: 'line', data: '${wallet.history}' },
+            children: [],
+        },
+        actions: {
+            type: 'Button',
+            props: { label: 'Send', action: 'openTransfer' },
+            children: [],
+        },
     },
-    balance: {
-      type: "Card",
-      props: { title: "Balance", variant: "metric" },
-      children: [],
-    },
-    chart: {
-      type: "Chart",
-      props: { type: "line", data: "${wallet.history}" },
-      children: [],
-    },
-    actions: {
-      type: "Button",
-      props: { label: "Send", action: "openTransfer" },
-      children: [],
-    },
-  },
 };
 
 // 4. 渲染
 function DynamicUI() {
-  return <Renderer spec={spec} registry={registry} />;
+    return <Renderer spec={spec} registry={registry} />;
 }
 ```
 
@@ -127,10 +129,12 @@ function DynamicUI() {
 **描述**: Browser automation CLI for AI agents
 
 **用途**:
+
 - 让 AI agent 自动化操作浏览器
 - 适合自动化测试和网页数据抓取
 
 **AgentM 应用场景**:
+
 ```bash
 # E2E 测试
 agent-browser test "Create a new Agent and verify it appears in the list"
@@ -146,6 +150,7 @@ agent-browser run "Setup a trading workflow from scratch"
 **描述**: Build generative UI chatbot with AI SDK + Google Gemini
 
 **与 json-render 结合**:
+
 - 聊天界面 + 富媒体内容生成
 - 用户可以用自然语言获取动态 UI 响应
 
@@ -176,7 +181,7 @@ agent-browser run "Setup a trading workflow from scratch"
     },
     "token": {
       "type": "Select",
-      "props": { 
+      "props": {
         "label": "Token",
         "value": "ETH",
         "options": ["ETH", "BTC", "SOL"]
@@ -211,6 +216,7 @@ agent-browser run "Setup a trading workflow from scratch"
 ```
 
 **优势**:
+
 - ✅ 简化用户操作
 - ✅ 减少配置错误
 - ✅ 支持复杂条件
@@ -273,31 +279,31 @@ agent-browser run "Setup a trading workflow from scratch"
 
 ```tsx
 function AIPlayground() {
-  const [userPrompt, setUserPrompt] = useState("");
-  const [spec, setSpec] = useState(null);
+    const [userPrompt, setUserPrompt] = useState('');
+    const [spec, setSpec] = useState(null);
 
-  const generateUI = async () => {
-    // 调用 AI API 生成 Spec
-    const response = await fetch('/api/generate-ui', {
-      method: 'POST',
-      body: JSON.stringify({ prompt: userPrompt })
-    });
-    const generatedSpec = await response.json();
-    setSpec(generatedSpec);
-  };
+    const generateUI = async () => {
+        // 调用 AI API 生成 Spec
+        const response = await fetch('/api/generate-ui', {
+            method: 'POST',
+            body: JSON.stringify({ prompt: userPrompt }),
+        });
+        const generatedSpec = await response.json();
+        setSpec(generatedSpec);
+    };
 
-  return (
-    <div>
-      <textarea
-        value={userPrompt}
-        onChange={(e) => setUserPrompt(e.target.value)}
-        placeholder="Describe the UI you want..."
-      />
-      <button onClick={generateUI}>Generate UI</button>
-      
-      {spec && <Renderer spec={spec} registry={registry} />}
-    </div>
-  );
+    return (
+        <div>
+            <textarea
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                placeholder="Describe the UI you want..."
+            />
+            <button onClick={generateUI}>Generate UI</button>
+
+            {spec && <Renderer spec={spec} registry={registry} />}
+        </div>
+    );
 }
 ```
 
@@ -308,21 +314,21 @@ function AIPlayground() {
 ### json-render 的限制
 
 1. **组件限制**
-   - 只能使用预定义的组件
-   - 不能随意使用自定义 HTML/CSS
-   - 需要提前定义所有可能用到的组件
+    - 只能使用预定义的组件
+    - 不能随意使用自定义 HTML/CSS
+    - 需要提前定义所有可能用到的组件
 
 2. **AI 成本**
-   - 每次生成 UI 都需要调用 AI API
-   - 需要考虑缓存策略
+    - 每次生成 UI 都需要调用 AI API
+    - 需要考虑缓存策略
 
 3. **学习曲线**
-   - 需要理解 Catalog/Registry/Spec 三层架构
-   - 调试 JSON spec 需要时间
+    - 需要理解 Catalog/Registry/Spec 三层架构
+    - 调试 JSON spec 需要时间
 
 4. **版本兼容**
-   - 与 shadcn/ui 版本绑定
-   - 升级可能需要同步更新
+    - 与 shadcn/ui 版本绑定
+    - 升级可能需要同步更新
 
 ---
 
@@ -353,28 +359,29 @@ Phase 3: 扩展应用 (1-2 月)
 - **Documentation**: https://json-render.com
 - **Playground**: 本地运行 `pnpm dev` 在 `json-render` 仓库
 - **其他优秀库**:
-  - agent-browser: https://github.com/vercel-labs/agent-browser
-  - agent-skills: https://github.com/vercel-labs/agent-skills
-  - gemini-chatbot: https://github.com/vercel-labs/gemini-chatbot
+    - agent-browser: https://github.com/vercel-labs/agent-browser
+    - agent-skills: https://github.com/vercel-labs/agent-skills
+    - gemini-chatbot: https://github.com/vercel-labs/gemini-chatbot
 
 ---
 
 ## 💬 下一步建议
 
 1. **先跑通 Demo**
-   ```bash
-   git clone https://github.com/vercel-labs/json-render
-   cd json-render
-   pnpm install
-   pnpm dev
-   ```
+
+    ```bash
+    git clone https://github.com/vercel-labs/json-render
+    cd json-render
+    pnpm install
+    pnpm dev
+    ```
 
 2. **评估与 AgentM 的契合度**
-   - 哪些功能最适合用动态 UI？
-   - 现有组件能否覆盖需求？
+    - 哪些功能最适合用动态 UI？
+    - 现有组件能否覆盖需求？
 
 3. **小范围试点**
-   - 选择一个简单功能做 PoC
-   - 验证用户体验和性能
+    - 选择一个简单功能做 PoC
+    - 验证用户体验和性能
 
 4. **决策是否全面采用**

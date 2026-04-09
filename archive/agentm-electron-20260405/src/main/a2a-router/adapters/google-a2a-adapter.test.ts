@@ -110,9 +110,7 @@ describe('GoogleA2AAdapter', () => {
                 name: 'Charlie Data',
                 description: 'Data analysis agent',
                 url: 'https://charlie.example.com/a2a',
-                capabilities: [
-                    { id: 'data', name: 'Data Analysis', description: 'Analyze data' },
-                ],
+                capabilities: [{ id: 'data', name: 'Data Analysis', description: 'Analyze data' }],
                 'x-gradience': {
                     solanaAddress: 'Charlie1111111111111111111111111',
                     reputationScore: 75,
@@ -227,7 +225,9 @@ describe('GoogleA2AAdapter', () => {
             await adapter.initialize();
 
             const received: A2AMessage[] = [];
-            await adapter.subscribe((msg) => { received.push(msg); });
+            await adapter.subscribe((msg) => {
+                received.push(msg);
+            });
 
             const response = await adapter.handleIncomingRequest({
                 jsonrpc: '2.0',

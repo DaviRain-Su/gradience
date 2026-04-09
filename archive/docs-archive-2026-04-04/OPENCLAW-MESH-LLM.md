@@ -14,6 +14,7 @@
 ```
 
 **关键点**：
+
 - ✅ 用户本地运行 Openclaw
 - ✅ 不需要改 Openclaw 服务器（没有服务器！）
 - ✅ 用户可以选择加入 Mesh-LLM 网络
@@ -30,26 +31,27 @@
 ```yaml
 # ~/.openclaw/config.yaml
 models:
-  # 商业 API（用户有 Token 时用）
-  openai:
-    api_key: ${OPENAI_API_KEY}
-    
-  # Mesh-LLM 网络（无 Token 时用）
-  mesh:
-    enabled: true
-    coordinator: "wss://mesh.clawsuite.com:9338"
-    # 或社区协调器
-    # coordinator: "wss://public-mesh.mesh-llm.org:9338"
-    
-    # 自动选择可用模型
-    auto_select: true
-    preferred_models:
-      - llama-3.1-70b
-      - qwen2.5-72b
-      - mixtral-8x22b
+    # 商业 API（用户有 Token 时用）
+    openai:
+        api_key: ${OPENAI_API_KEY}
+
+    # Mesh-LLM 网络（无 Token 时用）
+    mesh:
+        enabled: true
+        coordinator: 'wss://mesh.clawsuite.com:9338'
+        # 或社区协调器
+        # coordinator: "wss://public-mesh.mesh-llm.org:9338"
+
+        # 自动选择可用模型
+        auto_select: true
+        preferred_models:
+            - llama-3.1-70b
+            - qwen2.5-72b
+            - mixtral-8x22b
 ```
 
 **使用方式**：
+
 ```bash
 # 用户有 OpenAI Token → 使用 GPT-4
 openclaw chat --model gpt-4 "Hello"
@@ -69,23 +71,24 @@ openclaw chat --provider mesh "Hello"
 ```yaml
 # ~/.openclaw/config.yaml
 mesh_worker:
-  enabled: true
-  coordinator: "wss://mesh.clawsuite.com:9338"
-  
-  # 贡献的资源
-  gpu: 0                    # GPU 设备号
-  vram: "16GB"             # 可用显存
-  models:                  # 愿意托管的模型
-    - llama-3.1-70b-q4
-    - qwen2.5-72b-q4
-  
-  # 收益设置
-  rewards:
-    wallet: "0x..."        # 接收代币的钱包
-    share_ratio: 0.8       # 80% 收益给用户，20% 给网络
+    enabled: true
+    coordinator: 'wss://mesh.clawsuite.com:9338'
+
+    # 贡献的资源
+    gpu: 0 # GPU 设备号
+    vram: '16GB' # 可用显存
+    models: # 愿意托管的模型
+        - llama-3.1-70b-q4
+        - qwen2.5-72b-q4
+
+    # 收益设置
+    rewards:
+        wallet: '0x...' # 接收代币的钱包
+        share_ratio: 0.8 # 80% 收益给用户，20% 给网络
 ```
 
 **启动方式**：
+
 ```bash
 # 启动 Openclaw，同时作为 Mesh-LLM 节点
 openclaw daemon --mesh-worker
@@ -131,13 +134,13 @@ impl LLMProvider for MeshConfig {
     async fn chat(&self, req: ChatRequest) -> Result<ChatResponse> {
         // 连接 Mesh-LLM 协调器
         let client = MeshClient::connect(&self.coordinator_url).await?;
-        
+
         // 发现可用节点
         let nodes = client.discover_nodes().await?;
-        
+
         // 路由请求
         let response = client.route_chat(req, nodes).await?;
-        
+
         Ok(response)
     }
 }
@@ -194,6 +197,7 @@ Openclaw 新版本
 ### 用户使用流程
 
 **新用户（无 Token）**：
+
 ```bash
 # 1. 安装 Openclaw
 curl -fsSL https://openclaw.dev/install | sh
@@ -209,6 +213,7 @@ openclaw chat "帮我写一个 Python 函数"
 ```
 
 **老用户（有 Token，想省钱）**：
+
 ```bash
 # 配置 fallback
 openclaw config set provider openai
@@ -221,6 +226,7 @@ openclaw chat "简单任务"  # 如果 OpenAI 额度用完，自动用 Mesh-LLM
 ```
 
 **矿工用户（有 GPU，想赚取代币）**：
+
 ```bash
 # 1. 配置 GPU
 openclaw config set mesh.worker.enabled true
@@ -248,47 +254,47 @@ openclaw mesh earnings
 
 ```yaml
 # ~/.openclaw/config.yaml
-version: "2.0"
+version: '2.0'
 
 # 原有配置
 llm:
-  default_provider: openai
-  
-  providers:
-    openai:
-      api_key: sk-xxx
-      model: gpt-4
-      
-    # 新增 Mesh-LLM 配置
-    mesh:
-      enabled: true
-      coordinator: "wss://mesh.clawsuite.com:9338"
-      
-      # 客户端设置（用户使用网络）
-      client:
-        auto_select_model: true
-        preferred_models:
-          - llama-3.1-70b
-          - qwen2.5-72b
-        timeout: 120s
-        
-      # Worker 设置（用户贡献算力）
-      worker:
-        enabled: false
-        gpu: 0
-        vram: "16GB"
-        models:
-          - llama-3.1-70b-q4
-        rewards:
-          wallet: "0x..."
+    default_provider: openai
+
+    providers:
+        openai:
+            api_key: sk-xxx
+            model: gpt-4
+
+        # 新增 Mesh-LLM 配置
+        mesh:
+            enabled: true
+            coordinator: 'wss://mesh.clawsuite.com:9338'
+
+            # 客户端设置（用户使用网络）
+            client:
+                auto_select_model: true
+                preferred_models:
+                    - llama-3.1-70b
+                    - qwen2.5-72b
+                timeout: 120s
+
+            # Worker 设置（用户贡献算力）
+            worker:
+                enabled: false
+                gpu: 0
+                vram: '16GB'
+                models:
+                    - llama-3.1-70b-q4
+                rewards:
+                    wallet: '0x...'
 
 # 路由策略
 routing:
-  priority:
-    - openai      # 优先商业 API
-    - mesh        # 其次 Mesh-LLM
-  fallback_on_error: true
-  fallback_on_quota: true
+    priority:
+        - openai # 优先商业 API
+        - mesh # 其次 Mesh-LLM
+    fallback_on_error: true
+    fallback_on_quota: true
 ```
 
 ### 2. Openclaw 命令扩展
@@ -315,13 +321,13 @@ openclaw mesh leaderboard         # 查看贡献排行榜
 
 pub async fn chat(args: ChatArgs, config: Config) -> Result<()> {
     let provider = select_provider(&config, args.model)?;
-    
+
     let response = match provider {
         Provider::OpenAI(cfg) => openai_chat(cfg, args).await,
         Provider::Anthropic(cfg) => anthropic_chat(cfg, args).await,
         Provider::Mesh(cfg) => mesh_chat(cfg, args).await,  // 新增
     }?;
-    
+
     println!("{}", response);
     Ok(())
 }
@@ -329,18 +335,18 @@ pub async fn chat(args: ChatArgs, config: Config) -> Result<()> {
 async fn mesh_chat(cfg: MeshConfig, args: ChatArgs) -> Result<String> {
     // 1. 连接协调器
     let client = MeshClient::connect(&cfg.coordinator).await?;
-    
+
     // 2. 获取可用模型
     let models = client.list_models().await?;
     let model = select_best_model(models, args.model)?;
-    
+
     // 3. 发送请求
     let request = ChatRequest {
         model,
         messages: args.messages,
         stream: args.stream,
     };
-    
+
     let response = client.chat(request).await?;
     Ok(response.content)
 }
@@ -378,14 +384,17 @@ async fn mesh_chat(cfg: MeshConfig, args: ChatArgs) -> Result<String> {
 ## ⚠️ 风险和考虑
 
 ### 1. 隐私问题
+
 - 用户输入会发送到其他用户的节点
 - **解决方案**：端到端加密，或只发送给可信节点
 
 ### 2. 服务质量
+
 - 依赖社区节点的稳定性
 - **解决方案**：多节点冗余，自动切换
 
 ### 3. 法律合规
+
 - 某些地区可能限制 P2P 网络
 - **解决方案**：中心化协调器选项
 
@@ -394,16 +403,19 @@ async fn mesh_chat(cfg: MeshConfig, args: ChatArgs) -> Result<String> {
 ## 🎯 下一步
 
 ### 阶段 1：验证可行性（1 周）
+
 1. 部署公共 Mesh-LLM 协调器
 2. 测试 Openclaw 连接
 3. 验证延迟和质量
 
 ### 阶段 2：MVP 集成（2 周）
+
 1. Openclaw 添加 Mesh-LLM 客户端支持
 2. 实现基本聊天功能
 3. 发布 Beta 版本
 
 ### 阶段 3：Worker 模式（1 月）
+
 1. 实现 GPU 贡献功能
 2. 设计代币经济
 3. 启动激励计划

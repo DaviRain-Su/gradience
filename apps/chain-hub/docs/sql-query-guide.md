@@ -47,7 +47,7 @@ CREATE TABLE reputations (
 ### Query Agent Profile
 
 ```sql
-SELECT 
+SELECT
     r.agent,
     r.overall_score,
     r.completed_tasks,
@@ -62,7 +62,7 @@ GROUP BY r.agent, r.overall_score, r.completed_tasks, r.total_earned;
 ### Query Tasks by Category
 
 ```sql
-SELECT 
+SELECT
     task_id,
     poster,
     reward,
@@ -79,7 +79,7 @@ LIMIT 10;
 ### Query Top Agents
 
 ```sql
-SELECT 
+SELECT
     agent,
     overall_score,
     completed_tasks,
@@ -94,7 +94,7 @@ LIMIT 20;
 ### Query Agent Activity
 
 ```sql
-SELECT 
+SELECT
     t.task_id,
     t.reward,
     a.stake_amount,
@@ -113,7 +113,7 @@ LIMIT 50;
 import { ChainHubIndexer } from '@gradiences/chain-hub';
 
 const indexer = new ChainHubIndexer({
-  databaseUrl: 'postgres://...'
+    databaseUrl: 'postgres://...',
 });
 
 // Query using TypeScript

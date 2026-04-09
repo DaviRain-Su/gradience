@@ -8,36 +8,36 @@
 
 ### 已整合进 WHITEPAPER.md 的内容
 
-| Agent Arena 文档 | 整合到 WHITEPAPER 章节 | 主要内容 |
-|-----------------|----------------------|---------|
-| `vision.md` | 第三章、第九章 | 三层协议栈、终局愿景 |
-| `principles.md` | 第二章 | 竞争作为贪心算法、极简设计哲学 |
-| `vision-arena.md` | 第七章、第九章 | 从 MVP 到基础设施的演化路径 |
-| `ecosystem.md` | 第五章 | 与 Virtuals 等项目的定位关系 |
+| Agent Arena 文档  | 整合到 WHITEPAPER 章节 | 主要内容                       |
+| ----------------- | ---------------------- | ------------------------------ |
+| `vision.md`       | 第三章、第九章         | 三层协议栈、终局愿景           |
+| `principles.md`   | 第二章                 | 竞争作为贪心算法、极简设计哲学 |
+| `vision-arena.md` | 第七章、第九章         | 从 MVP 到基础设施的演化路径    |
+| `ecosystem.md`    | 第五章                 | 与 Virtuals 等项目的定位关系   |
 
 ### 保持独立的实现文档（留在 agent-arena）
 
-| 文档 | 保留位置 | 原因 |
-|------|---------|------|
-| `design/observability-design.md` | `agent-arena/docs/design/` | 具体实现细节 |
-| `design/observability-implementation.md` | `agent-arena/docs/design/` | 工程实现指南 |
-| `design/tighter-feedback-loop.md` | `agent-arena/docs/design/` | Sandbox 开发体验 |
-| `design/v2-tech-selection.md` | `agent-arena/docs/design/` | 技术选型分析 |
-| `design/absurd-sandbox-analysis.md` | `agent-arena/docs/design/` | 工具评估 |
-| `design/architecture.md` | `agent-arena/docs/design/` | 详细架构文档 |
-| `research/staking.md` | `agent-arena/docs/research/` | 质押机制研究 |
-| `API.md` | `agent-arena/docs/` | API 文档 |
-| `openapi.yaml` | `agent-arena/docs/` | OpenAPI 规范 |
-| `demo-day-script.md` | `agent-arena/docs/` | 演示脚本 |
+| 文档                                     | 保留位置                     | 原因             |
+| ---------------------------------------- | ---------------------------- | ---------------- |
+| `design/observability-design.md`         | `agent-arena/docs/design/`   | 具体实现细节     |
+| `design/observability-implementation.md` | `agent-arena/docs/design/`   | 工程实现指南     |
+| `design/tighter-feedback-loop.md`        | `agent-arena/docs/design/`   | Sandbox 开发体验 |
+| `design/v2-tech-selection.md`            | `agent-arena/docs/design/`   | 技术选型分析     |
+| `design/absurd-sandbox-analysis.md`      | `agent-arena/docs/design/`   | 工具评估         |
+| `design/architecture.md`                 | `agent-arena/docs/design/`   | 详细架构文档     |
+| `research/staking.md`                    | `agent-arena/docs/research/` | 质押机制研究     |
+| `API.md`                                 | `agent-arena/docs/`          | API 文档         |
+| `openapi.yaml`                           | `agent-arena/docs/`          | OpenAPI 规范     |
+| `demo-day-script.md`                     | `agent-arena/docs/`          | 演示脚本         |
 
 ### 已移动到 gradience/research/ 的研究文档
 
-| 文档 | 新位置 | 主题 |
-|------|--------|------|
-| `research/analysis.md` | `gradience/research/` | 竞品分析 |
-| `research/db9-analysis.md` | `gradience/research/` | DB9 项目分析 |
-| `research/change-review.md` | `gradience/research/` | 变更审查 |
-| `research/final-review.md` | `gradience/research/` | 最终审查 |
+| 文档                        | 新位置                | 主题         |
+| --------------------------- | --------------------- | ------------ |
+| `research/analysis.md`      | `gradience/research/` | 竞品分析     |
+| `research/db9-analysis.md`  | `gradience/research/` | DB9 项目分析 |
+| `research/change-review.md` | `gradience/research/` | 变更审查     |
+| `research/final-review.md`  | `gradience/research/` | 最终审查     |
 
 ## WHITEPAPER.md 结构
 
@@ -92,11 +92,13 @@
 ### 1. 为什么要整理？
 
 **之前的问题：**
+
 - `agent-arena/docs/design/` 有 10+ 个文档，分散且重复
 - 新读者不知道该从哪开始
 - 没有统一的叙事主线
 
 **现在的改进：**
+
 - 一个 `WHITEPAPER.md` 讲清楚整体愿景
 - 每个章节有明确主题，不重复
 - 类似比特币白皮书，简洁有力
@@ -104,12 +106,14 @@
 ### 2. 什么是"高层思考"？
 
 **保留在 WHITEPAPER 的（Why & What）：**
+
 - 为什么需要这个项目？
 - 核心设计哲学是什么？
 - 终局愿景是什么？
 - 与其他项目的关系？
 
 **保留在 agent-arena 的（How）：**
+
 - 具体怎么实现？
 - 技术选型细节
 - API 设计
@@ -180,6 +184,7 @@ agent-arena/                  ← 实现层（How）
 ## 总结
 
 通过这次整理：
+
 - ✅ 形成了清晰的"愿景-实现"分层
 - ✅ WHITEPAPER.md 类似比特币白皮书，简洁有力
 - ✅ Agent Arena 保留实现细节，便于开发
@@ -187,5 +192,5 @@ agent-arena/                  ← 实现层（How）
 
 ---
 
-*整理日期：2026-03-29*
-*整理者：OpenClaw Agent*
+_整理日期：2026-03-29_
+_整理者：OpenClaw Agent_

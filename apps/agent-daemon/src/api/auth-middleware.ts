@@ -3,13 +3,7 @@ import type { SessionManager } from '../auth/session-manager.js';
 import { OWSSdkBridge } from '../wallet/ows-sdk-bridge.js';
 
 // Routes that don't require any authentication
-const PUBLIC_ROUTES = [
-    '/api/v1/auth/challenge',
-    '/api/v1/auth/verify',
-    '/api/v1/domains',
-    '/health',
-    '/status',
-];
+const PUBLIC_ROUTES = ['/api/v1/auth/challenge', '/api/v1/auth/verify', '/api/v1/domains', '/health', '/status'];
 
 // Routes that accept session tokens (web users) OR daemon token
 const SESSION_ROUTES_PREFIX = '/api/';
@@ -19,7 +13,7 @@ export function createAuthHook(daemonToken: string, sessionManager: SessionManag
         const path = request.url.split('?')[0];
 
         // Public routes: no auth needed
-        if (PUBLIC_ROUTES.some(r => path === r || path.startsWith(r + '/'))) {
+        if (PUBLIC_ROUTES.some((r) => path === r || path.startsWith(r + '/'))) {
             return;
         }
 
@@ -49,7 +43,7 @@ export function createAuthHook(daemonToken: string, sessionManager: SessionManag
             try {
                 const owsBridge = new OWSSdkBridge();
                 const keys = owsBridge.listAgentApiKeys();
-                const keyInfo = keys.find(k => k.id === token.replace('ows_key_', ''));
+                const keyInfo = keys.find((k) => k.id === token.replace('ows_key_', ''));
                 if (keyInfo) {
                     (request as any).authType = 'ows_agent';
                     (request as any).owsKeyId = keyInfo.id;

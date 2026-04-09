@@ -18,7 +18,7 @@ User: "查看我的钱包"
 Naive Execution (Cold Path):
 ├── LLM: Understand intent (500ms)
 ├── Tool1: get_wallet_address() (200ms)
-├── Tool2: fetch_balance() (300ms)  
+├── Tool2: fetch_balance() (300ms)
 ├── Tool3: format_display() (100ms)
 └── Total: 1.1 seconds
 
@@ -202,12 +202,12 @@ pattern: {
 
 # Execution:
 user: "查看钱包"
-system: 
+system:
     show_balance()      # Immediate
     background_fetch(eth_price, gas_fee)  # Preload
 
 user: "ETH价格多少？"
-system: 
+system:
     show_cached_price()  # Instant!
 
 Optimization: Hide latency by predicting next request
@@ -248,19 +248,19 @@ learned_patterns:
     trigger:
       keywords: ["钱包", "balance", "查看", "多少"]
       intent_vector: [0.9, 0.1, 0.0]  # WALLET, TRADE, INFO
-    
+
     execution_plan:
       primary_tools: ["get_balance", "get_recent_transactions"]
       preload_tools: ["get_eth_price", "get_gas_fee"]
       execution_mode: "parallel"
       context_window: "minimal"  # Only pass wallet address
-    
+
     performance:
       avg_latency_ms: 180
       user_satisfaction: 4.8
       cache_hit_rate: 0.92
       last_optimized: "2026-03-29"
-    
+
     optimization_history:
       - date: "2026-03-25"
         change: "switched from sequential to parallel"
@@ -272,12 +272,12 @@ learned_patterns:
     trigger:
       keywords: ["创建", "任务", "提醒", "todo"]
       intent_vector: [0.0, 0.0, 0.95]  # TASK
-    
+
     execution_plan:
       primary_tools: ["create_task", "estimate_time"]
       auto_expand: true  # User always wants subtask breakdown
       default_project: "gradience"  # Most tasks are for this project
-    
+
     learned_defaults:
       - "solidity" → project: "gradience", priority: "high"
       - "meeting" → duration: "30min", type: "communication"
@@ -286,7 +286,7 @@ learned_patterns:
   - pattern_id: "quick_trade_v1"
     trigger:
       keywords: ["买", "卖", "swap", "trade"]
-    
+
     execution_plan:
       safety_checks: ["confirm_amount", "check_slippage"]
       require_confirmation: true  # Never auto-execute trades
@@ -298,7 +298,7 @@ meta_patterns:
     "09:00": high_energy_tasks    # Coding, complex analysis
     "15:00": admin_tasks           # Email, scheduling
     "22:00": learning_tasks        # Reading, research
-  
+
   context_switching:
     after_meeting: "need_5min_break"  # User needs transition time
     deep_work_block: "no_interruptions"  # Batch notifications
@@ -313,17 +313,17 @@ meta_patterns:
 ```python
 class ExecutionMetrics:
     """Metrics collected for every tool call"""
-    
+
     # Performance
     latency_ms: int              # Time to complete
     time_to_first_byte_ms: int   # Time to first display
     token_usage: int             # LLM tokens consumed
-    
+
     # Quality
     user_satisfaction: int       # 1-5 rating (explicit or implicit)
     error_rate: float            # % of failed calls
     retry_count: int             # How many retries needed
-    
+
     # Usage patterns
     follow_up_queries: List[str] # What user asks next
     cache_hit: bool              # Was pattern cache used?
@@ -335,53 +335,53 @@ class ExecutionMetrics:
 ```python
 class ToolChainOptimizer:
     """AutoResearch for tool execution"""
-    
+
     def generate_hypothesis(self, pattern: UserPattern) -> Hypothesis:
         """LLM generates optimization ideas based on metrics"""
-        
+
         prompt = f"""
         Pattern: {pattern.name}
         Current performance: {pattern.metrics}
         Tool chain: {pattern.tools}
-        
+
         Metrics show:
         - Latency: {pattern.metrics.latency_ms}ms
         - User satisfaction: {pattern.metrics.satisfaction}
         - Follow-up queries: {pattern.metrics.follow_ups}
-        
+
         What optimization should we test?
         Consider:
         1. Parallel vs sequential execution
         2. Data pre-fetching
         3. Context reduction
         4. Tool consolidation
-        
+
         Generate 3 testable hypotheses.
         """
-        
+
         return self.llm.generate(prompt)
-    
+
     def run_experiment(self, hypothesis: Hypothesis) -> Results:
         """A/B test the optimization"""
-        
+
         # 50/50 split for 100 interactions
         for interaction in range(100):
             user = get_next_user()
-            
+
             if random() < 0.5:
                 # Control: Current implementation
                 result = execute_control(pattern)
             else:
                 # Treatment: New optimization
                 result = execute_treatment(pattern, hypothesis)
-            
+
             record_result(result)
-        
+
         return analyze_results()
-    
+
     def update_pattern(self, pattern: UserPattern, results: Results):
         """Apply winning optimization"""
-        
+
         if results.treatment_better:
             pattern.apply_optimization(results.hypothesis)
             pattern.optimization_history.append({
@@ -500,52 +500,50 @@ OpenClaw Runtime
 ```typescript
 // OpenClaw message handler
 class OptimizedAgentRuntime {
-  private patternCache: UserPatternCache;
-  private metrics: MetricsCollector;
-  private optimizer: AutoResearchOptimizer;
+    private patternCache: UserPatternCache;
+    private metrics: MetricsCollector;
+    private optimizer: AutoResearchOptimizer;
 
-  async handleUserMessage(message: string, userId: string) {
-    // 1. Check for learned patterns
-    const pattern = await this.patternCache.match(message, userId);
-    
-    if (pattern && pattern.confidence > 0.8) {
-      // HOT PATH: Use optimized execution
-      return this.executeOptimized(pattern, userId);
-    }
-    
-    // COLD PATH: Full LLM reasoning
-    const result = await this.executeWithLLM(message, userId);
-    
-    // Record for learning
-    await this.metrics.record({
-      userId,
-      message,
-      tools_used: result.tools,
-      latency: result.latency,
-      pattern_matched: false
-    });
-    
-    // Trigger learning if no pattern found
-    if (this.shouldLearnPattern(userId, message)) {
-      await this.optimizer.analyzeAndOptimize(userId);
-    }
-    
-    return result;
-  }
+    async handleUserMessage(message: string, userId: string) {
+        // 1. Check for learned patterns
+        const pattern = await this.patternCache.match(message, userId);
 
-  async executeOptimized(pattern: UserPattern, userId: string) {
-    // Execute learned tool chain
-    const results = await Promise.all(
-      pattern.tools.map(tool => this.executeTool(tool, userId))
-    );
-    
-    // Preload predicted next tools
-    if (pattern.preloadTools) {
-      this.preloadInBackground(pattern.preloadTools, userId);
+        if (pattern && pattern.confidence > 0.8) {
+            // HOT PATH: Use optimized execution
+            return this.executeOptimized(pattern, userId);
+        }
+
+        // COLD PATH: Full LLM reasoning
+        const result = await this.executeWithLLM(message, userId);
+
+        // Record for learning
+        await this.metrics.record({
+            userId,
+            message,
+            tools_used: result.tools,
+            latency: result.latency,
+            pattern_matched: false,
+        });
+
+        // Trigger learning if no pattern found
+        if (this.shouldLearnPattern(userId, message)) {
+            await this.optimizer.analyzeAndOptimize(userId);
+        }
+
+        return result;
     }
-    
-    return this.formatResponse(results, pattern.responseTemplate);
-  }
+
+    async executeOptimized(pattern: UserPattern, userId: string) {
+        // Execute learned tool chain
+        const results = await Promise.all(pattern.tools.map((tool) => this.executeTool(tool, userId)));
+
+        // Preload predicted next tools
+        if (pattern.preloadTools) {
+            this.preloadInBackground(pattern.preloadTools, userId);
+        }
+
+        return this.formatResponse(results, pattern.responseTemplate);
+    }
 }
 ```
 
@@ -553,12 +551,12 @@ class OptimizedAgentRuntime {
 
 ## 8. Benefits Summary
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Response time** | 1000ms | 200ms | **5x faster** |
-| **Token usage** | 4000 | 100 | **40x less** |
-| **User satisfaction** | 4.2 | 4.8 | **+14%** |
-| **Cache hit rate** | 0% | 90%+ | **Always fast** |
+| Metric                | Before | After | Improvement     |
+| --------------------- | ------ | ----- | --------------- |
+| **Response time**     | 1000ms | 200ms | **5x faster**   |
+| **Token usage**       | 4000   | 100   | **40x less**    |
+| **User satisfaction** | 4.2    | 4.8   | **+14%**        |
+| **Cache hit rate**    | 0%     | 90%+  | **Always fast** |
 
 ---
 
@@ -589,7 +587,7 @@ class OptimizedAgentRuntime {
 ```
 User Request
     ↓
-Pattern Cache Match? 
+Pattern Cache Match?
     ↓ YES → Optimized Tool Chain (Fast)
     ↓ NO  → LLM Reasoning + Tool Calls (Slow)
     ↓

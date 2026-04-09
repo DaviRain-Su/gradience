@@ -9,16 +9,16 @@
 
 ## Test Summary
 
-| Instruction | Status | Signature | Notes |
-|------------|--------|-----------|-------|
-| 0: Initialize | ✅ Pass | `4iJcsbGjr8K2V3tHQj9EmpyNJ8fvKsuBFcpmjnnJ8aH8BgjaRgX5NRMHTbGgSQx18s1LNkWTmQJkZciCGLkDFepP` | Config + Treasury PDAs created |
-| 1: Create Workflow | ✅ Pass | `M983Tdfyaq3F2PJYxgd9Z7buzoqpGF2Rdh6mekLqk5CfZyNnPygwM6AwU3ShAdgpHb7EawXnctVufEoK5ZPJk57` | Workflow metadata created |
-| 2: Purchase Workflow | ✅ Pass | `F1MNwVPy74s3bubQwREwJA8H5k2dQuSMXtoiP29FPxAgpubh6Txp4j4nPTUT8qM5vXhqsYCaqExGJp3iCsFi6oZ` | Access PDA created, purchases++ |
-| 3: Review Workflow | ✅ Pass | `4y78QTwhXD3yyEf1SRVYB15dKggciNmZr6hpzidxFUPmQg2P35vf6rZzibRxGv8nDn6vyD1LC3rbPvzZ6nKGXWB9` | Review PDA created, rating updated |
-| 4: Update Workflow | ✅ Pass | `yhuq4jTN9dt87L897H6BF5SKBziJY8oCoig5kX3xyKGk9sfFSyFwporPHNhzh3C1LHeZkFynE1psERKiz5yrv64` | Content hash updated |
-| 5: Deactivate | ✅ Pass | `53GHAE97JXvYTHRVTYimprYuV1RfLNibVLumjb2FBEmczXy5LcwaUkhBaotJtZbDmVvgBdtQHKTzmyMzJxDzVAzh` | Workflow set to inactive |
-| 6: Activate | ✅ Pass | `P3C5LiwuugkPzAJiDzRkF4F3i34xHkbpbikorTbbWqZC1RHUbDtwr3gn886mZP6to692hoYrtn62GBWZXycdLca` | Workflow reactivated |
-| 7: Delete | ✅ Pass (Expected Fail) | Error `0x1778` | Correctly rejected (has purchases) |
+| Instruction          | Status                  | Signature                                                                                  | Notes                              |
+| -------------------- | ----------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------- |
+| 0: Initialize        | ✅ Pass                 | `4iJcsbGjr8K2V3tHQj9EmpyNJ8fvKsuBFcpmjnnJ8aH8BgjaRgX5NRMHTbGgSQx18s1LNkWTmQJkZciCGLkDFepP` | Config + Treasury PDAs created     |
+| 1: Create Workflow   | ✅ Pass                 | `M983Tdfyaq3F2PJYxgd9Z7buzoqpGF2Rdh6mekLqk5CfZyNnPygwM6AwU3ShAdgpHb7EawXnctVufEoK5ZPJk57`  | Workflow metadata created          |
+| 2: Purchase Workflow | ✅ Pass                 | `F1MNwVPy74s3bubQwREwJA8H5k2dQuSMXtoiP29FPxAgpubh6Txp4j4nPTUT8qM5vXhqsYCaqExGJp3iCsFi6oZ`  | Access PDA created, purchases++    |
+| 3: Review Workflow   | ✅ Pass                 | `4y78QTwhXD3yyEf1SRVYB15dKggciNmZr6hpzidxFUPmQg2P35vf6rZzibRxGv8nDn6vyD1LC3rbPvzZ6nKGXWB9` | Review PDA created, rating updated |
+| 4: Update Workflow   | ✅ Pass                 | `yhuq4jTN9dt87L897H6BF5SKBziJY8oCoig5kX3xyKGk9sfFSyFwporPHNhzh3C1LHeZkFynE1psERKiz5yrv64`  | Content hash updated               |
+| 5: Deactivate        | ✅ Pass                 | `53GHAE97JXvYTHRVTYimprYuV1RfLNibVLumjb2FBEmczXy5LcwaUkhBaotJtZbDmVvgBdtQHKTzmyMzJxDzVAzh` | Workflow set to inactive           |
+| 6: Activate          | ✅ Pass                 | `P3C5LiwuugkPzAJiDzRkF4F3i34xHkbpbikorTbbWqZC1RHUbDtwr3gn886mZP6to692hoYrtn62GBWZXycdLca`  | Workflow reactivated               |
+| 7: Delete            | ✅ Pass (Expected Fail) | Error `0x1778`                                                                             | Correctly rejected (has purchases) |
 
 ---
 
@@ -32,17 +32,18 @@
 
 ### Created PDAs
 
-| PDA Type | Address | Size | Status |
-|----------|---------|------|--------|
-| Config | `5ePc8pLxjD4qwTL4jtFeig7tf2rkN9VXgx5FYLUDMVFG` | 71 bytes | ✅ Created |
-| Treasury | `5uUKJGkXj1hgNue9a77vZ3anyEZDK2nPG33rp2Xu722w` | TBD | ✅ Created |
+| PDA Type | Address                                        | Size      | Status     |
+| -------- | ---------------------------------------------- | --------- | ---------- |
+| Config   | `5ePc8pLxjD4qwTL4jtFeig7tf2rkN9VXgx5FYLUDMVFG` | 71 bytes  | ✅ Created |
+| Treasury | `5uUKJGkXj1hgNue9a77vZ3anyEZDK2nPG33rp2Xu722w` | TBD       | ✅ Created |
 | Workflow | `DWKALLCkq8jopspkYdGhNRFJiCgjjjFHCKMFUyxkdeNB` | 218 bytes | ✅ Created |
-| Access | `7jJuBh4D5b55EwxpLp3gP3KQfuepsuQLTqrWyFmnaMw` | TBD | ✅ Created |
-| Review | `6C3dMbCUqece8b4oUL4anprwzWJAx4PbPu1b6RCGpWTH` | 113 bytes | ✅ Created |
+| Access   | `7jJuBh4D5b55EwxpLp3gP3KQfuepsuQLTqrWyFmnaMw`  | TBD       | ✅ Created |
+| Review   | `6C3dMbCUqece8b4oUL4anprwzWJAx4PbPu1b6RCGpWTH` | 113 bytes | ✅ Created |
 
 ### On-Chain Verification
 
 #### Config Account
+
 ```
 Public Key: 5ePc8pLxjD4qwTL4jtFeig7tf2rkN9VXgx5FYLUDMVFG
 Balance: 0.00138504 SOL
@@ -53,6 +54,7 @@ Version: 0x01
 ```
 
 #### Workflow Account
+
 ```
 Public Key: DWKALLCkq8jopspkYdGhNRFJiCgjjjFHCKMFUyxkdeNB
 Balance: 0.00240816 SOL
@@ -68,6 +70,7 @@ Is Active: true
 ```
 
 #### Review Account
+
 ```
 Public Key: 6C3dMbCUqece8b4oUL4anprwzWJAx4PbPu1b6RCGpWTH
 Balance: 0.00167736 SOL
@@ -88,17 +91,17 @@ Verified: true
 
 1. **Initialize** → Created config + treasury PDAs with fees (2% protocol, 3% judge)
 2. **Create Workflow** → Created workflow with:
-   - Free pricing model
-   - Public visibility
-   - Content hash (fake: 'aaa...')
-   - Version "1.0.0"
+    - Free pricing model
+    - Public visibility
+    - Content hash (fake: 'aaa...')
+    - Version "1.0.0"
 3. **Purchase** → Buyer purchased workflow:
-   - Access PDA created
-   - `total_purchases` incremented to 1
+    - Access PDA created
+    - `total_purchases` incremented to 1
 4. **Review** → Buyer left 5-star review:
-   - Review PDA created
-   - `avg_rating` updated to 10000 (5.0)
-   - Marked as verified purchase
+    - Review PDA created
+    - `avg_rating` updated to 10000 (5.0)
+    - Marked as verified purchase
 5. **Update** → Author updated content hash to 'ccc...'
 6. **Deactivate** → Author deactivated workflow (is_active = false)
 7. **Activate** → Author reactivated workflow (is_active = true)
@@ -128,24 +131,24 @@ Verified: true
 
 ### Error Code Verification
 
-| Error Code | Hex | Meaning | Test |
-|-----------|-----|---------|------|
-| 6008 | 0x1778 | HasPurchases | ✅ Triggered in Delete test |
+| Error Code | Hex    | Meaning      | Test                        |
+| ---------- | ------ | ------------ | --------------------------- |
+| 6008       | 0x1778 | HasPurchases | ✅ Triggered in Delete test |
 
 ---
 
 ## Performance Metrics
 
-| Instruction | Compute Units | Account Size | Rent (SOL) |
-|------------|---------------|--------------|-----------|
-| Initialize | ~5000 | 71 + treasury | 0.00138504 |
-| Create Workflow | ~5000 | 218 | 0.00240816 |
-| Purchase | ~3000 | access size | varies |
-| Review | ~4000 | 113 | 0.00167736 |
-| Update | ~2000 | 0 (in-place) | 0 |
-| Deactivate | ~2000 | 0 (in-place) | 0 |
-| Activate | ~2000 | 0 (in-place) | 0 |
-| Delete | ~2077 | -218 (closed) | rent refund |
+| Instruction     | Compute Units | Account Size  | Rent (SOL)  |
+| --------------- | ------------- | ------------- | ----------- |
+| Initialize      | ~5000         | 71 + treasury | 0.00138504  |
+| Create Workflow | ~5000         | 218           | 0.00240816  |
+| Purchase        | ~3000         | access size   | varies      |
+| Review          | ~4000         | 113           | 0.00167736  |
+| Update          | ~2000         | 0 (in-place)  | 0           |
+| Deactivate      | ~2000         | 0 (in-place)  | 0           |
+| Activate        | ~2000         | 0 (in-place)  | 0           |
+| Delete          | ~2077         | -218 (closed) | rent refund |
 
 ---
 

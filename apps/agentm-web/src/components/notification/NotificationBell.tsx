@@ -139,13 +139,7 @@ export function NotificationBell({
             aria-expanded={isOpen}
         >
             {/* Bell Icon */}
-            <svg
-                style={bellStyle}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-            >
+            <svg style={bellStyle} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -154,8 +148,8 @@ export function NotificationBell({
             </svg>
 
             {/* Badge */}
-            {hasUnread && (
-                dotOnly ? (
+            {hasUnread &&
+                (dotOnly ? (
                     <span
                         style={{
                             position: 'absolute',
@@ -192,8 +186,7 @@ export function NotificationBell({
                     >
                         {displayCount}
                     </span>
-                )
-            )}
+                ))}
         </button>
     );
 }
@@ -210,15 +203,7 @@ export function CompactNotificationBell({
     onClick?: () => void;
     className?: string;
 }) {
-    return (
-        <NotificationBell
-            notifications={notifications}
-            onClick={onClick}
-            size="sm"
-            dotOnly
-            className={className}
-        />
-    );
+    return <NotificationBell notifications={notifications} onClick={onClick} size="sm" dotOnly className={className} />;
 }
 
 /**

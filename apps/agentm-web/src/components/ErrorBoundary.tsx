@@ -28,12 +28,14 @@ export class ErrorBoundary extends Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{
-                    padding: '40px',
-                    textAlign: 'center',
-                    background: '#F3F3F8',
-                    minHeight: '100vh',
-                }}>
+                <div
+                    style={{
+                        padding: '40px',
+                        textAlign: 'center',
+                        background: '#F3F3F8',
+                        minHeight: '100vh',
+                    }}
+                >
                     <h1 style={{ color: '#16161A', marginBottom: '16px' }}>Something went wrong</h1>
                     <p style={{ color: '#DC2626', marginBottom: '24px' }}>
                         {this.state.error?.message || 'Unknown error'}

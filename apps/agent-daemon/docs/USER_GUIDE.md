@@ -17,19 +17,19 @@
 
 ### 必需依赖
 
-| 依赖项 | 最低版本 | 说明 |
-|--------|----------|------|
-| Node.js | 22.x | 运行时环境 |
-| pnpm | 9.x | 包管理器 (本项目使用 pnpm workspace) |
-| Git | 2.x | 克隆仓库 |
+| 依赖项  | 最低版本 | 说明                                 |
+| ------- | -------- | ------------------------------------ |
+| Node.js | 22.x     | 运行时环境                           |
+| pnpm    | 9.x      | 包管理器 (本项目使用 pnpm workspace) |
+| Git     | 2.x      | 克隆仓库                             |
 
 ### 可选依赖
 
-| 依赖项 | 说明 |
-|--------|------|
-| Solana CLI | 用于本地 Solana 开发 |
-| Docker & Docker Compose | 用于容器化部署 |
-| SQLite | 内置，无需单独安装 |
+| 依赖项                  | 说明                 |
+| ----------------------- | -------------------- |
+| Solana CLI              | 用于本地 Solana 开发 |
+| Docker & Docker Compose | 用于容器化部署       |
+| SQLite                  | 内置，无需单独安装   |
 
 ### 系统要求
 
@@ -77,6 +77,7 @@ pnpm dev register --master-wallet <MASTER_WALLET_PUBKEY>
 ```
 
 这会在 `~/.agentd/` 目录下生成：
+
 - `keypair` - Agent 的密钥对
 - `config.json` - 配置文件
 
@@ -99,41 +100,42 @@ Daemon 会按以下顺序查找配置：
 
 #### 必需配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_PORT` | `7420` | API 服务端口 |
+| 环境变量      | 默认值      | 说明                                        |
+| ------------- | ----------- | ------------------------------------------- |
+| `AGENTD_PORT` | `7420`      | API 服务端口                                |
 | `AGENTD_HOST` | `127.0.0.1` | 绑定地址 (生产环境 Docker 中设为 `0.0.0.0`) |
 
 #### Chain Hub 连接
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_CHAIN_HUB_URL` | `wss://indexer.gradiences.xyz/ws` | Chain Hub WebSocket 地址 |
-| `AGENTD_CHAIN_HUB_REST_URL` | `https://indexer.gradiences.xyz` | Chain Hub REST API 地址 |
+| 环境变量                    | 默认值                            | 说明                     |
+| --------------------------- | --------------------------------- | ------------------------ |
+| `AGENTD_CHAIN_HUB_URL`      | `wss://indexer.gradiences.xyz/ws` | Chain Hub WebSocket 地址 |
+| `AGENTD_CHAIN_HUB_REST_URL` | `https://indexer.gradiences.xyz`  | Chain Hub REST API 地址  |
 
 #### Solana 配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
+| 环境变量                | 默认值                          | 说明            |
+| ----------------------- | ------------------------------- | --------------- |
 | `AGENTD_SOLANA_RPC_URL` | `https://api.devnet.solana.com` | Solana RPC 端点 |
 
 #### 存储配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_DB_PATH` | `~/.agentd/data.db` | SQLite 数据库路径 |
-| `AGENTD_LOG_LEVEL` | `info` | 日志级别 (debug, info, warn, error) |
+| 环境变量           | 默认值              | 说明                                |
+| ------------------ | ------------------- | ----------------------------------- |
+| `AGENTD_DB_PATH`   | `~/.agentd/data.db` | SQLite 数据库路径                   |
+| `AGENTD_LOG_LEVEL` | `info`              | 日志级别 (debug, info, warn, error) |
 
 #### A2A 通信配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_A2A_ENABLED` | `true` | 启用 A2A 通信 |
-| `AGENTD_NOSTR_RELAYS` | 见下方 | Nostr 中继服务器列表，逗号分隔 |
-| `AGENTD_NOSTR_PRIVATE_KEY` | - | Nostr 私钥 (可选) |
-| `AGENTD_XMTP_ENABLED` | `false` | 启用 XMTP 通信 |
+| 环境变量                   | 默认值  | 说明                           |
+| -------------------------- | ------- | ------------------------------ |
+| `AGENTD_A2A_ENABLED`       | `true`  | 启用 A2A 通信                  |
+| `AGENTD_NOSTR_RELAYS`      | 见下方  | Nostr 中继服务器列表，逗号分隔 |
+| `AGENTD_NOSTR_PRIVATE_KEY` | -       | Nostr 私钥 (可选)              |
+| `AGENTD_XMTP_ENABLED`      | `false` | 启用 XMTP 通信                 |
 
 默认 Nostr 中继:
+
 - `wss://relay.damus.io`
 - `wss://relay.nostr.band`
 - `wss://nos.lol`
@@ -141,29 +143,29 @@ Daemon 会按以下顺序查找配置：
 
 #### Evaluator 配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_AUTO_JUDGE` | `true` | 自动评估任务 |
-| `AGENTD_JUDGE_PROVIDER` | `openai` | LLM 提供商 (openai, claude, moonshot) |
-| `AGENTD_JUDGE_MODEL` | `gpt-4` | 评估模型 |
-| `AGENTD_JUDGE_CONFIDENCE_THRESHOLD` | `0.7` | 置信度阈值 (0-1) |
+| 环境变量                            | 默认值   | 说明                                  |
+| ----------------------------------- | -------- | ------------------------------------- |
+| `AGENTD_AUTO_JUDGE`                 | `true`   | 自动评估任务                          |
+| `AGENTD_JUDGE_PROVIDER`             | `openai` | LLM 提供商 (openai, claude, moonshot) |
+| `AGENTD_JUDGE_MODEL`                | `gpt-4`  | 评估模型                              |
+| `AGENTD_JUDGE_CONFIDENCE_THRESHOLD` | `0.7`    | 置信度阈值 (0-1)                      |
 
 #### LLM Provider API Keys
 
-| 环境变量 | 说明 |
-|----------|------|
-| `OPENAI_API_KEY` | OpenAI API 密钥 |
-| `OPENAI_BASE_URL` | OpenAI 基础 URL (可选，用于自定义端点) |
-| `ANTHROPIC_API_KEY` | Claude API 密钥 |
-| `MOONSHOT_API_KEY` | Moonshot API 密钥 |
+| 环境变量            | 说明                                   |
+| ------------------- | -------------------------------------- |
+| `OPENAI_API_KEY`    | OpenAI API 密钥                        |
+| `OPENAI_BASE_URL`   | OpenAI 基础 URL (可选，用于自定义端点) |
+| `ANTHROPIC_API_KEY` | Claude API 密钥                        |
+| `MOONSHOT_API_KEY`  | Moonshot API 密钥                      |
 
 #### 高级配置
 
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `AGENTD_MAX_AGENT_PROCESSES` | `8` | 最大 Agent 进程数 |
-| `AGENTD_HEARTBEAT_INTERVAL` | `30000` | 心跳间隔 (毫秒) |
-| `AGENTD_ALLOW_ALL_INTERFACES` | - | 允许绑定到 0.0.0.0 (Docker 需要) |
+| 环境变量                      | 默认值  | 说明                             |
+| ----------------------------- | ------- | -------------------------------- |
+| `AGENTD_MAX_AGENT_PROCESSES`  | `8`     | 最大 Agent 进程数                |
+| `AGENTD_HEARTBEAT_INTERVAL`   | `30000` | 心跳间隔 (毫秒)                  |
+| `AGENTD_ALLOW_ALL_INTERFACES` | -       | 允许绑定到 0.0.0.0 (Docker 需要) |
 
 ### 配置文件示例
 
@@ -171,15 +173,15 @@ Daemon 会按以下顺序查找配置：
 
 ```json
 {
-  "port": 7420,
-  "host": "127.0.0.1",
-  "chainHubUrl": "wss://indexer.gradiences.xyz/ws",
-  "solanaRpcUrl": "https://api.devnet.solana.com",
-  "logLevel": "info",
-  "a2aEnabled": true,
-  "autoJudge": true,
-  "judgeProvider": "openai",
-  "judgeModel": "gpt-4"
+    "port": 7420,
+    "host": "127.0.0.1",
+    "chainHubUrl": "wss://indexer.gradiences.xyz/ws",
+    "solanaRpcUrl": "https://api.devnet.solana.com",
+    "logLevel": "info",
+    "a2aEnabled": true,
+    "autoJudge": true,
+    "judgeProvider": "openai",
+    "judgeModel": "gpt-4"
 }
 ```
 
@@ -369,6 +371,7 @@ Error: Port 7420 is already in use
 ```
 
 **解决方案:**
+
 ```bash
 # 查找占用端口的进程
 lsof -i :7420
@@ -384,6 +387,7 @@ Error: EACCES: permission denied, open '~/.agentd/keypair'
 ```
 
 **解决方案:**
+
 ```bash
 # 修复权限
 chmod 700 ~/.agentd
@@ -397,6 +401,7 @@ Connection error: WebSocket connection failed
 ```
 
 **解决方案:**
+
 - 检查网络连接
 - 验证 Chain Hub URL 是否正确
 - 检查防火墙设置
@@ -409,6 +414,7 @@ Error: Cannot find module 'better-sqlite3'
 ```
 
 **解决方案:**
+
 ```bash
 # 重新安装依赖
 pnpm install
@@ -424,6 +430,7 @@ Error: 401 Unauthorized
 ```
 
 **解决方案:**
+
 - 确保 Daemon 正在运行: `agentd status`
 - 检查 auth token: `cat ~/.agentd/auth-token`
 - 重启 Daemon 重新生成 token

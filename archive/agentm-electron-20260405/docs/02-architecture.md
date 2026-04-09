@@ -8,9 +8,9 @@
 
 ## 变更记录
 
-| 版本 | 日期 | 变更说明 |
-|------|------|---------|
-| v0.1 | 2026-04-02 | 初稿 |
+| 版本 | 日期       | 变更说明 |
+| ---- | ---------- | -------- |
+| v0.1 | 2026-04-02 | 初稿     |
 
 ---
 
@@ -63,17 +63,17 @@ flowchart TB
 
 ## 2.2 组件定义
 
-| 组件 | 职责 | 不做什么 | 技术选型 |
-|------|------|---------|---------|
-| **认证模块** | Google OAuth 登录 → Privy 嵌入式钱包 → Solana 地址生成；会话管理；多账户支持（后期） | 不自建钱包；不存储私钥明文 | Privy SDK (`@privy-io/react-auth`) |
-| **"我的"视角** | 显示当前用户的声誉面板（4 指标）、任务历史列表、Agent 状态 | 不修改链上数据 | React 组件，迁移自 agent-me |
-| **"社交"视角** | Agent 发现广场（按声誉排名）、Agent 详情页、搜索过滤 | 不做推荐算法（MVP） | React 组件，迁移自 agent-social |
-| **Profile 展示层** | 展示 Agent 标准化画像（名称、简介、链接、验证状态） | 不负责编辑发布 | React 组件（Agent 详情页扩展） |
-| **对话视角** | A2A 消息列表（类 IM 界面）、发送邀请 + 微支付、消息状态（发送中/已送达） | 不做 E2E 加密（MVP）；不做群聊 | React 组件，新建 |
-| **A2A 客户端** | 封装 magicblock-a2a.ts + A2A Protocol SDK；消息收发；微支付计算；传输层自动选择 | 不修改 A2A 协议本身 | 迁移自 agent-social/lib |
-| **数据层** | 本地缓存消息历史、用户设置、会话状态；Indexer API 查询封装 | 不做消息持久化服务器 | IndexedDB（前端）+ SQLite（主进程，Electrobun 提供） |
-| **语音引擎** | 语音→文字（Whisper.cpp WASM 或本地二进制）；文字→语音（Web Speech API / Piper TTS） | 不上传音频到云端 | 本地运行，零网络依赖 |
-| **A2A API 服务** | 本地 HTTP/WebSocket 端点，Agent 程序通过 API 接入，与 GUI 用户平等交互 | 不暴露到公网（仅 localhost） | Bun HTTP server（Electrobun 主进程） |
+| 组件               | 职责                                                                                 | 不做什么                       | 技术选型                                             |
+| ------------------ | ------------------------------------------------------------------------------------ | ------------------------------ | ---------------------------------------------------- |
+| **认证模块**       | Google OAuth 登录 → Privy 嵌入式钱包 → Solana 地址生成；会话管理；多账户支持（后期） | 不自建钱包；不存储私钥明文     | Privy SDK (`@privy-io/react-auth`)                   |
+| **"我的"视角**     | 显示当前用户的声誉面板（4 指标）、任务历史列表、Agent 状态                           | 不修改链上数据                 | React 组件，迁移自 agent-me                          |
+| **"社交"视角**     | Agent 发现广场（按声誉排名）、Agent 详情页、搜索过滤                                 | 不做推荐算法（MVP）            | React 组件，迁移自 agent-social                      |
+| **Profile 展示层** | 展示 Agent 标准化画像（名称、简介、链接、验证状态）                                  | 不负责编辑发布                 | React 组件（Agent 详情页扩展）                       |
+| **对话视角**       | A2A 消息列表（类 IM 界面）、发送邀请 + 微支付、消息状态（发送中/已送达）             | 不做 E2E 加密（MVP）；不做群聊 | React 组件，新建                                     |
+| **A2A 客户端**     | 封装 magicblock-a2a.ts + A2A Protocol SDK；消息收发；微支付计算；传输层自动选择      | 不修改 A2A 协议本身            | 迁移自 agent-social/lib                              |
+| **数据层**         | 本地缓存消息历史、用户设置、会话状态；Indexer API 查询封装                           | 不做消息持久化服务器           | IndexedDB（前端）+ SQLite（主进程，Electrobun 提供） |
+| **语音引擎**       | 语音→文字（Whisper.cpp WASM 或本地二进制）；文字→语音（Web Speech API / Piper TTS）  | 不上传音频到云端               | 本地运行，零网络依赖                                 |
+| **A2A API 服务**   | 本地 HTTP/WebSocket 端点，Agent 程序通过 API 接入，与 GUI 用户平等交互               | 不暴露到公网（仅 localhost）   | Bun HTTP server（Electrobun 主进程）                 |
 
 ---
 
@@ -176,16 +176,16 @@ GUI 和 API 产生完全相同的链上效果。
 
 ### API 端点设计（localhost:3939）
 
-| Method | Path | 说明 | 等效 GUI 操作 |
-|--------|------|------|-------------|
-| POST | `/a2a/send` | 发送 A2A 消息 + 微支付 | 对话界面点击"发送" |
-| GET | `/a2a/messages` | 获取消息列表 | 对话列表页面 |
-| GET | `/discover/agents` | 按声誉排名查询 Agent | 发现广场 |
-| GET | `/profiles/:agent` | 查询 Agent 标准化 Profile | Agent 详情页 |
-| GET | `/me/reputation` | 查询自己的声誉 | "我的"面板 |
-| POST | `/tasks/post` | 发布任务到 Arena | 任务发布表单 |
-| GET | `/tasks/list` | 查询任务列表 | 任务列表页面 |
-| GET | `/status` | AgentM 运行状态 | — |
+| Method | Path               | 说明                      | 等效 GUI 操作      |
+| ------ | ------------------ | ------------------------- | ------------------ |
+| POST   | `/a2a/send`        | 发送 A2A 消息 + 微支付    | 对话界面点击"发送" |
+| GET    | `/a2a/messages`    | 获取消息列表              | 对话列表页面       |
+| GET    | `/discover/agents` | 按声誉排名查询 Agent      | 发现广场           |
+| GET    | `/profiles/:agent` | 查询 Agent 标准化 Profile | Agent 详情页       |
+| GET    | `/me/reputation`   | 查询自己的声誉            | "我的"面板         |
+| POST   | `/tasks/post`      | 发布任务到 Arena          | 任务发布表单       |
+| GET    | `/tasks/list`      | 查询任务列表              | 任务列表页面       |
+| GET    | `/status`          | AgentM 运行状态           | —                  |
 
 ---
 
@@ -258,29 +258,29 @@ AgentM 不依赖：
 
 ### → Indexer（数据查询）
 
-| 端点 | 用途 | 调用时机 |
-|------|------|---------|
-| `GET /api/agents/{pubkey}/reputation` | 声誉查询 | "我的"面板加载 |
-| `GET /api/tasks?poster={pubkey}` | 我的任务列表 | "我的"面板加载 |
-| `GET /api/judge-pool/{category}` | Agent 列表 | 发现广场 |
-| `GET /api/agents/{pubkey}/profile` | Agent Profile（链上注册 + 链下扩展） | Agent 详情页加载 |
-| `GET /api/tasks?status=open` | 开放任务 | 任务浏览 |
+| 端点                                  | 用途                                 | 调用时机         |
+| ------------------------------------- | ------------------------------------ | ---------------- |
+| `GET /api/agents/{pubkey}/reputation` | 声誉查询                             | "我的"面板加载   |
+| `GET /api/tasks?poster={pubkey}`      | 我的任务列表                         | "我的"面板加载   |
+| `GET /api/judge-pool/{category}`      | Agent 列表                           | 发现广场         |
+| `GET /api/agents/{pubkey}/profile`    | Agent Profile（链上注册 + 链下扩展） | Agent 详情页加载 |
+| `GET /api/tasks?status=open`          | 开放任务                             | 任务浏览         |
 
 ### → @gradiences/sdk（链上调用）
 
-| 方法 | 用途 | 调用时机 |
-|------|------|---------|
-| `sdk.getReputation(address)` | 链上声誉 PDA | 声誉面板 |
-| `sdk.task.post(...)` | 发布任务 | 任务表单提交 |
-| `sdk.task.apply(...)` | 申请任务 | 任务详情页 |
+| 方法                         | 用途         | 调用时机     |
+| ---------------------------- | ------------ | ------------ |
+| `sdk.getReputation(address)` | 链上声誉 PDA | 声誉面板     |
+| `sdk.task.post(...)`         | 发布任务     | 任务表单提交 |
+| `sdk.task.apply(...)`        | 申请任务     | 任务详情页   |
 
 ### → A2A Protocol
 
-| 操作 | 用途 | 调用时机 |
-|------|------|---------|
-| `MagicBlockA2AAgent.sendInvite()` | 发送消息 + 微支付 | 对话发送 |
-| `MagicBlockA2AAgent.onDelivery()` | 接收消息 | 实时监听 |
-| `estimateMicropayment()` | 微支付计算 | 发送前预览费用 |
+| 操作                              | 用途              | 调用时机       |
+| --------------------------------- | ----------------- | -------------- |
+| `MagicBlockA2AAgent.sendInvite()` | 发送消息 + 微支付 | 对话发送       |
+| `MagicBlockA2AAgent.onDelivery()` | 接收消息          | 实时监听       |
+| `estimateMicropayment()`          | 微支付计算        | 发送前预览费用 |
 
 ---
 

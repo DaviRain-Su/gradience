@@ -7,18 +7,8 @@
  * @module components/wallet/ReputationWallet
  */
 
-import type {
-    ReputationWalletProps,
-    WalletInfo,
-    ReputationData,
-    ReputationTier,
-} from './types.ts';
-import {
-    getReputationTier,
-    getTierConfig,
-    formatUsdCents,
-    truncateAddress,
-} from './types.ts';
+import type { ReputationWalletProps, WalletInfo, ReputationData, ReputationTier } from './types.ts';
+import { getReputationTier, getTierConfig, formatUsdCents, truncateAddress } from './types.ts';
 
 // ============================================================================
 // Sub-components
@@ -82,9 +72,7 @@ function ReputationScoreCircle({
                     ${tierConfig.bgColor} ${tierConfig.borderColor} border
                 `}
             >
-                <span className={`${sizeConfig.text} font-bold ${tierConfig.color}`}>
-                    {score}
-                </span>
+                <span className={`${sizeConfig.text} font-bold ${tierConfig.color}`}>{score}</span>
                 <span className={sizeConfig.icon}>{tierConfig.icon}</span>
             </div>
         </div>
@@ -141,11 +129,7 @@ function WalletAddress({
                     />
                 </svg>
             </button>
-            {name && (
-                <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-800 rounded">
-                    {name}
-                </span>
-            )}
+            {name && <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-800 rounded">{name}</span>}
         </div>
     );
 }
@@ -153,13 +137,7 @@ function WalletAddress({
 /**
  * Policy limits display
  */
-function PolicyLimits({
-    wallet,
-    compact = false,
-}: {
-    wallet: WalletInfo;
-    compact?: boolean;
-}) {
+function PolicyLimits({ wallet, compact = false }: { wallet: WalletInfo; compact?: boolean }) {
     const { policy } = wallet;
 
     if (compact) {
@@ -171,9 +149,7 @@ function PolicyLimits({
                 <span>
                     Max TX: <span className="text-white">{formatUsdCents(policy.maxTransaction)}</span>
                 </span>
-                {policy.requireApproval && (
-                    <span className="text-yellow-400">⚠️ Approval required</span>
-                )}
+                {policy.requireApproval && <span className="text-yellow-400">⚠️ Approval required</span>}
             </div>
         );
     }
@@ -182,24 +158,17 @@ function PolicyLimits({
         <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-800/50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Daily Limit</p>
-                <p className="text-lg font-semibold text-white">
-                    {formatUsdCents(policy.dailyLimit)}
-                </p>
+                <p className="text-lg font-semibold text-white">{formatUsdCents(policy.dailyLimit)}</p>
             </div>
             <div className="bg-gray-800/50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Max Transaction</p>
-                <p className="text-lg font-semibold text-white">
-                    {formatUsdCents(policy.maxTransaction)}
-                </p>
+                <p className="text-lg font-semibold text-white">{formatUsdCents(policy.maxTransaction)}</p>
             </div>
             <div className="bg-gray-800/50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Allowed Chains</p>
                 <div className="flex flex-wrap gap-1">
                     {policy.allowedChains.map((chain) => (
-                        <span
-                            key={chain}
-                            className="text-xs px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded"
-                        >
+                        <span key={chain} className="text-xs px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded">
                             {chain}
                         </span>
                     ))}
@@ -237,9 +206,7 @@ function ReputationStats({ reputation }: { reputation: ReputationData }) {
                 <p className="text-xs text-gray-500">Completed</p>
             </div>
             <div>
-                <p className="text-lg font-semibold text-white">
-                    {(reputation.winRate * 100).toFixed(0)}%
-                </p>
+                <p className="text-lg font-semibold text-white">{(reputation.winRate * 100).toFixed(0)}%</p>
                 <p className="text-xs text-gray-500">Win Rate</p>
             </div>
             <div>
@@ -282,11 +249,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry?: () => void })
         <div className="bg-red-900/20 border border-red-800 rounded-xl p-4 text-center">
             <p className="text-red-400 mb-2">{error}</p>
             {onRetry && (
-                <button
-                    type="button"
-                    onClick={onRetry}
-                    className="text-sm text-red-300 hover:text-red-200 underline"
-                >
+                <button type="button" onClick={onRetry} className="text-sm text-red-300 hover:text-red-200 underline">
                     Retry
                 </button>
             )}
@@ -333,9 +296,7 @@ export function ReputationWallet({
         return (
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
                 <p className="text-gray-400 mb-2">No wallet connected</p>
-                <p className="text-sm text-gray-500">
-                    Connect a wallet to view reputation-based limits
-                </p>
+                <p className="text-sm text-gray-500">Connect a wallet to view reputation-based limits</p>
             </div>
         );
     }
@@ -366,9 +327,7 @@ export function ReputationWallet({
                 {/* Wallet info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className={`${sizeConfig.title} font-bold text-white`}>
-                            Reputation Wallet
-                        </h3>
+                        <h3 className={`${sizeConfig.title} font-bold text-white`}>Reputation Wallet</h3>
                         <span
                             className={`
                                 text-xs px-2 py-1 rounded-full
@@ -379,11 +338,7 @@ export function ReputationWallet({
                         </span>
                     </div>
 
-                    <WalletAddress
-                        address={wallet.address}
-                        name={wallet.name}
-                        onClick={onAddressClick}
-                    />
+                    <WalletAddress address={wallet.address} name={wallet.name} onClick={onAddressClick} />
 
                     {/* Compact policy display */}
                     {size === 'sm' && (
@@ -417,9 +372,7 @@ export function ReputationWallet({
             {wallet.policy.requireApproval && (
                 <div className="mt-4 p-3 bg-yellow-600/10 border border-yellow-600/20 rounded-lg flex items-center gap-2">
                     <span className="text-yellow-400">⚠️</span>
-                    <p className="text-sm text-yellow-300">
-                        Manual approval required for all transactions
-                    </p>
+                    <p className="text-sm text-yellow-300">Manual approval required for all transactions</p>
                 </div>
             )}
 
@@ -474,16 +427,12 @@ export function ReputationWalletCompact({
                     ${tierConfig.bgColor} ${tierConfig.borderColor} border
                 `}
             >
-                <span className={`text-lg font-bold ${tierConfig.color}`}>
-                    {wallet.reputationScore}
-                </span>
+                <span className={`text-lg font-bold ${tierConfig.color}`}>{wallet.reputationScore}</span>
             </div>
 
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{wallet.name}</p>
-                <p className="text-xs text-gray-500 font-mono truncate">
-                    {truncateAddress(wallet.address, 6)}
-                </p>
+                <p className="text-xs text-gray-500 font-mono truncate">{truncateAddress(wallet.address, 6)}</p>
             </div>
 
             <span

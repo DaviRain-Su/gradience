@@ -32,7 +32,7 @@ console.log(domain); // 'alice.sol'
 
 // Using resolver instance for more control
 const resolver = new DomainResolver({
-  cache: { maxSize: 1000, ttl: 5 * 60 * 1000 }, // 5 minutes
+    cache: { maxSize: 1000, ttl: 5 * 60 * 1000 }, // 5 minutes
 });
 
 const result = await resolver.resolve('bob.sol');
@@ -54,14 +54,14 @@ const resolver = new DomainResolver(config?: ResolverConfig);
 
 ```typescript
 interface ResolverConfig {
-  cache?: {
-    maxSize?: number;    // Maximum cache entries (default: 1000)
-    ttl?: number;        // Cache TTL in milliseconds (default: 5 minutes)
-  };
-  providers?: {
-    sns?: SNSProviderConfig;
-    ens?: ENSProviderConfig;
-  };
+    cache?: {
+        maxSize?: number; // Maximum cache entries (default: 1000)
+        ttl?: number; // Cache TTL in milliseconds (default: 5 minutes)
+    };
+    providers?: {
+        sns?: SNSProviderConfig;
+        ens?: ENSProviderConfig;
+    };
 }
 ```
 
@@ -93,9 +93,9 @@ console.log(domain); // 'alice.sol' or null if not found
 Validates domain format.
 
 ```typescript
-console.log(resolver.isValid('alice.sol'));    // true
-console.log(resolver.isValid('bob.eth'));      // true
-console.log(resolver.isValid('invalid'));      // false
+console.log(resolver.isValid('alice.sol')); // true
+console.log(resolver.isValid('bob.eth')); // true
+console.log(resolver.isValid('invalid')); // false
 ```
 
 ##### Cache Management
@@ -135,7 +135,7 @@ import { resolve, reverse, isValidDomain } from '@gradiences/domain-resolver';
 // Quick resolution
 const address = await resolve('alice.sol');
 
-// Quick reverse lookup  
+// Quick reverse lookup
 const domain = await reverse(address);
 
 // Quick validation
@@ -143,7 +143,7 @@ const valid = isValidDomain('bob.sol');
 
 // Use custom config for one-off calls
 const result = await resolve('alice.sol', {
-  cache: { ttl: 10 * 60 * 1000 } // 10 minutes
+    cache: { ttl: 10 * 60 * 1000 }, // 10 minutes
 });
 ```
 
@@ -157,8 +157,8 @@ Handles .sol domain resolution via Bonfida SNS.
 import { SNSProvider } from '@gradiences/domain-resolver';
 
 const snsProvider = new SNSProvider({
-  connection: 'https://api.mainnet-beta.solana.com', // or Connection object
-  timeout: 30000 // 30 seconds
+    connection: 'https://api.mainnet-beta.solana.com', // or Connection object
+    timeout: 30000, // 30 seconds
 });
 
 const address = await snsProvider.resolve('alice.sol');
@@ -185,21 +185,21 @@ Implement the `Provider` interface to add support for new domain systems:
 import { Provider } from '@gradiences/domain-resolver';
 
 class CustomProvider implements Provider {
-  name = 'CUSTOM';
-  
-  supports(domain: string): boolean {
-    return domain.endsWith('.custom');
-  }
-  
-  async resolve(domain: string): Promise<string | null> {
-    // Your resolution logic
-    return 'resolved-address';
-  }
-  
-  async reverse?(address: string): Promise<string | null> {
-    // Optional reverse lookup
-    return 'domain.custom';
-  }
+    name = 'CUSTOM';
+
+    supports(domain: string): boolean {
+        return domain.endsWith('.custom');
+    }
+
+    async resolve(domain: string): Promise<string | null> {
+        // Your resolution logic
+        return 'resolved-address';
+    }
+
+    async reverse?(address: string): Promise<string | null> {
+        // Optional reverse lookup
+        return 'domain.custom';
+    }
 }
 
 // Add to resolver
@@ -211,22 +211,18 @@ resolver.addProvider('custom', new CustomProvider());
 The library provides specific error types for different failure modes:
 
 ```typescript
-import { 
-  DomainResolverError, 
-  ProviderError, 
-  ValidationError 
-} from '@gradiences/domain-resolver';
+import { DomainResolverError, ProviderError, ValidationError } from '@gradiences/domain-resolver';
 
 try {
-  const result = await resolver.resolve('alice.sol');
+    const result = await resolver.resolve('alice.sol');
 } catch (error) {
-  if (error instanceof ValidationError) {
-    console.log('Invalid domain format:', error.domain);
-  } else if (error instanceof ProviderError) {
-    console.log('Provider error:', error.provider, error.message);
-  } else if (error instanceof DomainResolverError) {
-    console.log('Resolution error:', error.code, error.message);
-  }
+    if (error instanceof ValidationError) {
+        console.log('Invalid domain format:', error.domain);
+    } else if (error instanceof ProviderError) {
+        console.log('Provider error:', error.provider, error.message);
+    } else if (error instanceof DomainResolverError) {
+        console.log('Resolution error:', error.code, error.message);
+    }
 }
 ```
 
@@ -241,12 +237,12 @@ import { DomainResolver } from '@gradiences/domain-resolver';
 const customConnection = new Connection('https://your-rpc-endpoint.com');
 
 const resolver = new DomainResolver({
-  providers: {
-    sns: {
-      connection: customConnection,
-      timeout: 15000 // 15 seconds
-    }
-  }
+    providers: {
+        sns: {
+            connection: customConnection,
+            timeout: 15000, // 15 seconds
+        },
+    },
 });
 ```
 
@@ -255,20 +251,20 @@ const resolver = new DomainResolver({
 ```typescript
 // Mainnet resolver
 const mainnetResolver = new DomainResolver({
-  providers: {
-    sns: {
-      connection: 'https://api.mainnet-beta.solana.com'
-    }
-  }
+    providers: {
+        sns: {
+            connection: 'https://api.mainnet-beta.solana.com',
+        },
+    },
 });
 
 // Devnet resolver
 const devnetResolver = new DomainResolver({
-  providers: {
-    sns: {
-      connection: 'https://api.devnet.solana.com'
-    }
-  }
+    providers: {
+        sns: {
+            connection: 'https://api.devnet.solana.com',
+        },
+    },
 });
 ```
 
@@ -276,17 +272,20 @@ const devnetResolver = new DomainResolver({
 
 ```typescript
 const resolver = new DomainResolver({
-  cache: {
-    maxSize: 5000,           // Store up to 5000 entries
-    ttl: 15 * 60 * 1000     // 15 minute TTL
-  }
+    cache: {
+        maxSize: 5000, // Store up to 5000 entries
+        ttl: 15 * 60 * 1000, // 15 minute TTL
+    },
 });
 
 // Periodic cache cleanup
-setInterval(() => {
-  const removed = resolver.cleanupCache();
-  console.log(`Cleaned ${removed} expired entries`);
-}, 5 * 60 * 1000); // Every 5 minutes
+setInterval(
+    () => {
+        const removed = resolver.cleanupCache();
+        console.log(`Cleaned ${removed} expired entries`);
+    },
+    5 * 60 * 1000,
+); // Every 5 minutes
 ```
 
 ## Supported Domains
@@ -298,7 +297,7 @@ setInterval(() => {
 ## Dependencies
 
 - `@bonfida/spl-name-service`: SNS resolution
-- `@solana/web3.js`: Solana blockchain interaction  
+- `@solana/web3.js`: Solana blockchain interaction
 - `lru-cache`: Efficient caching with TTL
 
 ## Development
@@ -335,7 +334,7 @@ MIT License - see LICENSE file for details
 ## Roadmap
 
 - [ ] ENS (.eth) domain support
-- [ ] Unstoppable Domains support  
+- [ ] Unstoppable Domains support
 - [ ] ICANN DNS integration
 - [ ] WebAssembly build for browser optimization
 - [ ] Batch resolution for multiple domains

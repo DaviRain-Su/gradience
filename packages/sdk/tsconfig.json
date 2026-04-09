@@ -20,14 +20,6 @@
             "@gradience/chain-hub-sdk/*": ["../../apps/chain-hub/sdk/*"]
         }
     },
-    "include": [
-        "src/**/*",
-        "../../apps/chain-hub/sdk/**/*.ts"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist",
-        "src/**/*.test.ts",
-        "../../apps/chain-hub/sdk/**/*.test.ts"
-    ]
+    "include": ["src/**/*", "../../apps/chain-hub/sdk/**/*.ts"],
+    "exclude": ["node_modules", "dist", "src/**/*.test.ts", "../../apps/chain-hub/sdk/**/*.test.ts"]
 }

@@ -7,58 +7,52 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type TaskCancelledEvent = {
-  taskId: bigint;
-  poster: Array<number>;
-  refundAmount: bigint;
-  protocolFee: bigint;
+    taskId: bigint;
+    poster: Array<number>;
+    refundAmount: bigint;
+    protocolFee: bigint;
 };
 
 export type TaskCancelledEventArgs = {
-  taskId: number | bigint;
-  poster: Array<number>;
-  refundAmount: number | bigint;
-  protocolFee: number | bigint;
+    taskId: number | bigint;
+    poster: Array<number>;
+    refundAmount: number | bigint;
+    protocolFee: number | bigint;
 };
 
 export function getTaskCancelledEventEncoder(): FixedSizeEncoder<TaskCancelledEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["poster", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["refundAmount", getU64Encoder()],
-    ["protocolFee", getU64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['poster', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['refundAmount', getU64Encoder()],
+        ['protocolFee', getU64Encoder()],
+    ]);
 }
 
 export function getTaskCancelledEventDecoder(): FixedSizeDecoder<TaskCancelledEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["poster", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["refundAmount", getU64Decoder()],
-    ["protocolFee", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['poster', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['refundAmount', getU64Decoder()],
+        ['protocolFee', getU64Decoder()],
+    ]);
 }
 
-export function getTaskCancelledEventCodec(): FixedSizeCodec<
-  TaskCancelledEventArgs,
-  TaskCancelledEvent
-> {
-  return combineCodec(
-    getTaskCancelledEventEncoder(),
-    getTaskCancelledEventDecoder(),
-  );
+export function getTaskCancelledEventCodec(): FixedSizeCodec<TaskCancelledEventArgs, TaskCancelledEvent> {
+    return combineCodec(getTaskCancelledEventEncoder(), getTaskCancelledEventDecoder());
 }

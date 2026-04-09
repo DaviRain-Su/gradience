@@ -110,20 +110,14 @@ const FILTER_OPTIONS: FilterOption[] = [
  * - Keyboard accessible
  * - Responsive sizing
  */
-export function FilterBar({
-    activeFilter,
-    onFilterChange,
-    counts,
-    className = '',
-    size = 'md',
-}: FilterBarProps) {
+export function FilterBar({ activeFilter, onFilterChange, counts, className = '', size = 'md' }: FilterBarProps) {
     const handleFilterClick = useCallback(
         (filter: FeedFilter) => {
             if (filter !== activeFilter) {
                 onFilterChange(filter);
             }
         },
-        [activeFilter, onFilterChange]
+        [activeFilter, onFilterChange],
     );
 
     const sizeClasses = {
@@ -134,9 +128,12 @@ export function FilterBar({
     return (
         <div
             style={{
-                background: c.surface, border: `1.5px solid ${c.ink}`,
-                borderRadius: '16px', padding: '4px',
-                display: 'flex', gap: '4px',
+                background: c.surface,
+                border: `1.5px solid ${c.ink}`,
+                borderRadius: '16px',
+                padding: '4px',
+                display: 'flex',
+                gap: '4px',
             }}
             role="tablist"
             aria-label="Feed filter"
@@ -154,25 +151,34 @@ export function FilterBar({
                         onClick={() => handleFilterClick(option.value)}
                         style={{
                             flex: 1,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
                             padding: size === 'sm' ? '8px 10px' : '10px 14px',
                             borderRadius: '12px',
                             fontWeight: 600,
                             fontSize: size === 'sm' ? '12px' : '14px',
                             background: isActive ? c.ink : 'transparent',
                             color: isActive ? c.surface : c.ink,
-                            border: 'none', cursor: 'pointer',
+                            border: 'none',
+                            cursor: 'pointer',
                             transition: 'all 0.15s',
                         }}
                     >
                         {option.icon}
                         <span>{option.label}</span>
                         {count !== undefined && count > 0 && (
-                            <span style={{
-                                marginLeft: '4px', padding: '1px 6px', borderRadius: '999px', fontSize: '11px',
-                                background: isActive ? c.lavender : c.bg,
-                                color: c.ink,
-                            }}>
+                            <span
+                                style={{
+                                    marginLeft: '4px',
+                                    padding: '1px 6px',
+                                    borderRadius: '999px',
+                                    fontSize: '11px',
+                                    background: isActive ? c.lavender : c.bg,
+                                    color: c.ink,
+                                }}
+                            >
                                 {count > 99 ? '99+' : count}
                             </span>
                         )}
@@ -195,16 +201,12 @@ export interface FilterBarCompactProps {
     className?: string;
 }
 
-export function FilterBarCompact({
-    activeFilter,
-    onFilterChange,
-    className = '',
-}: FilterBarCompactProps) {
+export function FilterBarCompact({ activeFilter, onFilterChange, className = '' }: FilterBarCompactProps) {
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLSelectElement>) => {
             onFilterChange(e.target.value as FeedFilter);
         },
-        [onFilterChange]
+        [onFilterChange],
     );
 
     const activeOption = FILTER_OPTIONS.find((opt) => opt.value === activeFilter);
@@ -216,9 +218,14 @@ export function FilterBarCompact({
                 onChange={handleChange}
                 style={{
                     appearance: 'none' as const,
-                    background: c.surface, border: `1.5px solid ${c.ink}`,
-                    borderRadius: '12px', padding: '8px 32px 8px 12px',
-                    fontSize: '14px', color: c.ink, cursor: 'pointer', outline: 'none',
+                    background: c.surface,
+                    border: `1.5px solid ${c.ink}`,
+                    borderRadius: '12px',
+                    padding: '8px 32px 8px 12px',
+                    fontSize: '14px',
+                    color: c.ink,
+                    cursor: 'pointer',
+                    outline: 'none',
                 }}
                 aria-label="Filter feed"
             >
@@ -228,7 +235,17 @@ export function FilterBarCompact({
                     </option>
                 ))}
             </select>
-            <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c.ink, opacity: 0.5 }}>
+            <div
+                style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    color: c.ink,
+                    opacity: 0.5,
+                }}
+            >
                 ▼
             </div>
         </div>

@@ -13,11 +13,13 @@
 这是 v1.2 最重要的新增内容，直接将 Sequoia 的分析转化为 Gradience 的设计哲学。
 
 #### 4.1 The Paradigm Shift
+
 - **传统软件设计** (Human-Centric): 为人设计界面
 - **Agent-First 设计** (Agent-Centric): 为自主执行设计协议
 - 核心引用: "Sell the work, not the tool"
 
 #### 4.2 Design Implications
+
 对比表格展示6个设计维度的差异:
 | 维度 | 传统方式 | Agent-First 方式 |
 |------|---------|-----------------|
@@ -29,6 +31,7 @@
 | Trust | 平台担保 | 经济激励 |
 
 #### 4.3 The Sequoia Matrix
+
 将 Sequoia 的四象限分析映射到 Gradience 功能:
 
 ```
@@ -50,11 +53,14 @@
 - **Zone D** (创意、战略): 未来扩展
 
 #### 4.4 Protocol as Agent Runtime
+
 - 将 Gradience 比作 Agent 的 "Economic OS"
 - Agent 生命周期: Discover → Compete → Execute → Settle → Improve
 
 #### 4.5 Design Principles
+
 **5个 Agent-First 设计原则:**
+
 1. **Autonomy by Default** - 默认自主执行
 2. **Verifiable Over Explainable** - 可验证优于可解释
 3. **Composability is Key** - 可组合性是关键
@@ -62,6 +68,7 @@
 5. **Fail Fast, Recover Gracefully** - 快速失败，优雅恢复
 
 #### 4.6 Gradience as "HTTP for Agent Services"
+
 - 类比: HTTP 标准化了 Web 请求/响应
 - Gradience 标准化了 Agent 服务提供/消费
 - 基础设施层定位
@@ -71,38 +78,46 @@
 ## 📝 其他章节增强
 
 ### Abstract (摘要)
+
 - 添加 Sequoia $1T 市场分析引用
 - 明确 Gradience 作为 "Services Revolution" 结算层的定位
 
 ### Chapter 1: Introduction (重构)
+
 - **1.1** The Agent Economy Opportunity - 引入 Sequoia 预测
 - **1.2** Existing Approaches Fall Short - 现有方案不足
 - **1.3** The Gradience Approach - Bitcoin 类比框架
 
 ### Chapter 2: The Services Revolution (保持)
+
 - 完整的 Sequoia 叙事
 - Intelligence vs Judgement 框架
 - $1T+ 市场机会图
 - The Wedge 战略
 
 ### Chapter 9: Roadmap (扩展)
+
 新增 **Market Expansion Strategy (8.2)**:
+
 - Phase 1 (Q2 2026): 基础设施 + 开发者采用
 - Phase 2 (Q3 2026): 首个服务垂直领域 (内容/设计/数据)
 - Phase 3 (Q4 2026): 专业服务 (会计/法律/保险)
 - Phase 4 (2027): 企业 + 复杂服务 (供应链/招聘/IT)
 
 新增 **The Wedge Strategy (8.3)**:
+
 - 从外包市场切入的理由
 - 关键成功指标
 
 ### Chapter 10: Conclusion (扩展)
+
 - **10.1** The Three-Primitive Thesis
 - **10.2** The Services Revolution
 - **10.3** New Primitives, New Possibilities
 - **10.4** The Path Forward - 具体市场例子
 
 ### References (大幅扩展)
+
 - Foundational Works: Bitcoin, Andreessen
 - Market Analysis: Sequoia Capital (重点引用)
 - Protocol Standards: ERC-8183
@@ -134,6 +149,7 @@ Abstract                               Abstract (expanded)
 ## 🔑 关键洞察整合
 
 ### 来自 Sequoia 的核心洞见
+
 1. ✅ **"Sell the work, not the tool"** - 第4章核心理念
 2. ✅ **Copilot → Autopilot 转变** - 第2章完整论述
 3. ✅ **Intelligence vs Judgement** - 第2章框架 + 第4章映射
@@ -141,6 +157,7 @@ Abstract                               Abstract (expanded)
 5. ✅ **$1T 市场机会** - 贯穿全文
 
 ### 原始框架保留
+
 - ✅ Bitcoin 极简主义哲学
 - ✅ Escrow + Judge + Reputation 三元组
 - ✅ Race model 机制
@@ -151,29 +168,32 @@ Abstract                               Abstract (expanded)
 
 ## 📈 统计
 
-| 指标 | v1.1 | v1.2 | 变化 |
-|------|------|------|------|
-| **章节数** | 9 | 10 | +1 |
-| **总字数** | ~15,000 | ~18,000 | +3,000 |
-| **新增内容** | - | 349 行 | - |
-| **引用数** | 6 | 15 | +9 |
-| **图表数** | 12 | 15 | +3 |
+| 指标         | v1.1    | v1.2    | 变化   |
+| ------------ | ------- | ------- | ------ |
+| **章节数**   | 9       | 10      | +1     |
+| **总字数**   | ~15,000 | ~18,000 | +3,000 |
+| **新增内容** | -       | 349 行  | -      |
+| **引用数**   | 6       | 15      | +9     |
+| **图表数**   | 12      | 15      | +3     |
 
 ---
 
 ## 🚀 使用建议
 
 ### 立即行动
+
 - [ ] 用新版白皮书更新官网
 - [ ] 发布推文强调 Agent-First 设计哲学
 - [ ] 联系 Sequoia 团队分享我们的实现
 
 ### 短期行动
+
 - [ ] 基于第4章制作演示文稿
 - [ ] 制作 Sequoia Matrix 信息图
 - [ ] 撰写 "HTTP for Agent Services" 博客文章
 
 ### 长期战略
+
 - [ ] 按第9章路线图推进开发
 - [ ] 与 Sequoia 提到的公司合作
 - [ ] 建立 Agent-First 设计标准

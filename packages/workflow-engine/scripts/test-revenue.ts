@@ -4,13 +4,13 @@
  */
 
 import {
-  MockRevenueDistributor,
-  SolanaRevenueDistributor,
-  createRevenueSystem,
-  calculateDistribution,
-  DEFAULT_REVENUE_SHARE,
-  PROTOCOL_SHARE_BPS,
-  JUDGE_SHARE_BPS,
+    MockRevenueDistributor,
+    SolanaRevenueDistributor,
+    createRevenueSystem,
+    calculateDistribution,
+    DEFAULT_REVENUE_SHARE,
+    PROTOCOL_SHARE_BPS,
+    JUDGE_SHARE_BPS,
 } from '../src/revenue-share.js';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 
@@ -27,9 +27,9 @@ console.log('\n✅ Test 2: SolanaRevenueDistributor');
 const mockKeypair = Keypair.generate();
 const mockConnection = {} as Connection; // Mock connection for type check
 const solanaDist = new SolanaRevenueDistributor({
-  connection: mockConnection,
-  authority: mockKeypair,
-  autoCreateATA: true,
+    connection: mockConnection,
+    authority: mockKeypair,
+    autoCreateATA: true,
 });
 console.log(`   Name: ${solanaDist.name}`);
 console.log(`   Has distribute method: ${typeof solanaDist.distribute === 'function'}`);
@@ -39,29 +39,28 @@ console.log(`   Has getAuthority method: ${typeof solanaDist.getAuthority === 'f
 // Test 3: Calculate Distribution
 console.log('\n✅ Test 3: calculateDistribution');
 const distribution = calculateDistribution(
-  { amount: '1000000000', mint: 'SOL' }, // 1 SOL
-  DEFAULT_REVENUE_SHARE,
-  {
-    creatorAddress: 'Creator111111111111111111111111111111111111111',
-    userAddress: 'User1111111111111111111111111111111111111111',
-    agentAddress: 'Agent111111111111111111111111111111111111111',
-    protocolAddress: 'Protocol111111111111111111111111111111111111',
-    judgeAddress: 'Judge111111111111111111111111111111111111111',
-  }
+    { amount: '1000000000', mint: 'SOL' }, // 1 SOL
+    DEFAULT_REVENUE_SHARE,
+    {
+        creatorAddress: 'Creator111111111111111111111111111111111111111',
+        userAddress: 'User1111111111111111111111111111111111111111',
+        agentAddress: 'Agent111111111111111111111111111111111111111',
+        protocolAddress: 'Protocol111111111111111111111111111111111111',
+        judgeAddress: 'Judge111111111111111111111111111111111111111',
+    },
 );
 
 console.log(`   Total: ${distribution.totalRevenue.amount} lamports`);
 console.log(`   Distributions:`);
 for (const d of distribution.distributions) {
-  console.log(`     ${d.type}: ${d.amount} (${d.shareBps / 100}%) -> ${d.address.slice(0, 20)}...`);
+    console.log(`     ${d.type}: ${d.amount} (${d.shareBps / 100}%) -> ${d.address.slice(0, 20)}...`);
 }
 
 // Verify percentages
-const totalDistributed = distribution.distributions.reduce(
-  (sum, d) => sum + BigInt(d.amount),
-  BigInt(0)
+const totalDistributed = distribution.distributions.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+console.log(
+    `   Sum: ${totalDistributed} (matches total: ${totalDistributed === BigInt(distribution.totalRevenue.amount)})`,
 );
-console.log(`   Sum: ${totalDistributed} (matches total: ${totalDistributed === BigInt(distribution.totalRevenue.amount)})`);
 
 // Test 4: Constants
 console.log('\n✅ Test 4: Constants');

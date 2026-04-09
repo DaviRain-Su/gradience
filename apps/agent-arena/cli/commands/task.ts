@@ -11,12 +11,7 @@ import {
     type Instruction,
 } from '@solana/kit';
 
-import {
-    GRADIENCE_PROGRAM_ADDRESS,
-    GradienceSDK,
-    KeypairAdapter,
-    findEventAuthorityPda,
-} from '@gradiences/arena-sdk';
+import { GRADIENCE_PROGRAM_ADDRESS, GradienceSDK, KeypairAdapter, findEventAuthorityPda } from '@gradiences/arena-sdk';
 
 import {
     type TaskCommand,
@@ -48,17 +43,9 @@ import {
     fetchStakeCategories,
 } from '../types.js';
 
-import {
-    loadConfig,
-    createSdk,
-    printJson,
-} from '../utils/index.js';
+import { loadConfig, createSdk, printJson } from '../utils/index.js';
 
-export async function handleTaskCommand(
-    taskArgs: string[],
-    env: NodeJS.ProcessEnv,
-    noDna: boolean,
-): Promise<void> {
+export async function handleTaskCommand(taskArgs: string[], env: NodeJS.ProcessEnv, noDna: boolean): Promise<void> {
     const command = taskArgs[0];
     if (!command || !isTaskCommand(command)) {
         throw new CliError('INVALID_ARGUMENT', 'Usage: gradience task <post|apply|submit|status> ...');
@@ -175,7 +162,10 @@ export async function handleTaskCommand(
         const poster = parseAddress(requiredFlag(flags, 'poster'), 'poster');
         const scoreBig = parseU64(flags.get('score'), 'score');
         if (scoreBig > 100n) {
-            throw new CliError('INVALID_ARGUMENT', 'score must be <= 100 (u8 on-chain, MIN_SCORE=60 for valid completion)');
+            throw new CliError(
+                'INVALID_ARGUMENT',
+                'score must be <= 100 (u8 on-chain, MIN_SCORE=60 for valid completion)',
+            );
         }
         const reasonRef = requiredFlag(flags, 'reason-ref');
         const signature = await sdk.task.judge(wallet, {
@@ -253,7 +243,13 @@ export function emitStatus(taskId: number, state: string, submissionCount: bigin
     process.stdout.write(`task ${taskId}: state=${state}, submissionCount=${submissionCount.toString()}\n`);
 }
 
-export function emitJudgeSignature(signature: string, taskId: number, winner: string, score: number, noDna: boolean): void {
+export function emitJudgeSignature(
+    signature: string,
+    taskId: number,
+    winner: string,
+    score: number,
+    noDna: boolean,
+): void {
     if (noDna) {
         printJson({ signature, taskId, winner, score });
         return;

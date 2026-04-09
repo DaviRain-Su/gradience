@@ -5,6 +5,7 @@ Agent Daemon 的支付模块，支持 MPP（多方支付）和 X402 支付协议
 ## 功能特性
 
 ### MPP (Multi-Party Payment) - 多方支付
+
 - 创建多方支付协议
 - 链上托管账户（Escrow）
 - 支持多个参与者和法官
@@ -12,12 +13,14 @@ Agent Daemon 的支付模块，支持 MPP（多方支付）和 X402 支付协议
 - 链上资金释放和退款
 
 ### X402 Payment Protocol
+
 - x402 支付协议支持
 - HTTP 402 支付要求生成
 - 支付授权创建和处理
 - 链上交易确认
 
 ### Direct Transfer
+
 - 简单的 SOL 转账
 - 支持 SPL Token 转账（计划中）
 
@@ -65,17 +68,17 @@ AGENTD_PAYMENTS_AUTO_CONFIRM=true
 
 ```typescript
 const payment = await paymentManager.createMPPPayment({
-  taskId: 'task-123',
-  totalAmount: BigInt(1000000), // 0.001 SOL
-  token: 'So11111111111111111111111111111111111111112',
-  tokenSymbol: 'SOL',
-  decimals: 9,
-  participants: [
-    { address: '...', shareBps: 7000, role: 'agent' },
-    { address: '...', shareBps: 3000, role: 'contributor' },
-  ],
-  judges: [{ address: '...', weight: 1 }],
-  releaseConditions: { type: 'majority', requiredJudges: 1 },
+    taskId: 'task-123',
+    totalAmount: BigInt(1000000), // 0.001 SOL
+    token: 'So11111111111111111111111111111111111111112',
+    tokenSymbol: 'SOL',
+    decimals: 9,
+    participants: [
+        { address: '...', shareBps: 7000, role: 'agent' },
+        { address: '...', shareBps: 3000, role: 'contributor' },
+    ],
+    judges: [{ address: '...', weight: 1 }],
+    releaseConditions: { type: 'majority', requiredJudges: 1 },
 });
 ```
 
@@ -83,9 +86,9 @@ const payment = await paymentManager.createMPPPayment({
 
 ```typescript
 const requirements = paymentManager.createX402Requirements({
-  amount: '100000',
-  token: 'So11111111111111111111111111111111111111112',
-  description: 'Service payment',
+    amount: '100000',
+    token: 'So11111111111111111111111111111111111111112',
+    description: 'Service payment',
 });
 ```
 
@@ -93,8 +96,8 @@ const requirements = paymentManager.createX402Requirements({
 
 ```typescript
 const result = await paymentManager.executeTransfer({
-  to: 'recipient-address',
-  amount: BigInt(1000000),
+    to: 'recipient-address',
+    amount: BigInt(1000000),
 });
 ```
 

@@ -65,21 +65,15 @@ function getNotificationTitle(notification: AppNotification): string {
 
     switch (notification.type) {
         case 'follow':
-            return notification.actorName
-                ? `${notification.actorName} started following you`
-                : 'New follower';
+            return notification.actorName ? `${notification.actorName} started following you` : 'New follower';
         case 'message':
-            return notification.actorName
-                ? `New message from ${notification.actorName}`
-                : 'New message';
+            return notification.actorName ? `New message from ${notification.actorName}` : 'New message';
         case 'task_update':
             return notification.metadata?.taskTitle
                 ? `Task update: ${notification.metadata.taskTitle}`
                 : 'Task status changed';
         case 'mention':
-            return notification.actorName
-                ? `${notification.actorName} mentioned you`
-                : 'You were mentioned';
+            return notification.actorName ? `${notification.actorName} mentioned you` : 'You were mentioned';
         default:
             return 'Notification';
     }
@@ -240,16 +234,12 @@ export function NotificationItem({
             aria-label={`${notification.read ? 'Read' : 'Unread'} notification: ${title}`}
         >
             {/* Icon */}
-            <div style={iconStyle}>
-                {icon}
-            </div>
+            <div style={iconStyle}>{icon}</div>
 
             {/* Content */}
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                    <p style={titleStyle}>
-                        {title}
-                    </p>
+                    <p style={titleStyle}>{title}</p>
                     {!notification.read && (
                         <span
                             style={{
@@ -265,18 +255,12 @@ export function NotificationItem({
                     )}
                 </div>
 
-                {notification.message && (
-                    <p style={messageStyle}>
-                        {notification.message}
-                    </p>
-                )}
+                {notification.message && <p style={messageStyle}>{notification.message}</p>}
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                    {showTimestamp && (
-                        <span style={timestampStyle}>
-                            {formatRelativeTime(notification.createdAt)}
-                        </span>
-                    )}
+                <div
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}
+                >
+                    {showTimestamp && <span style={timestampStyle}>{formatRelativeTime(notification.createdAt)}</span>}
 
                     {/* Action buttons */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -362,14 +346,8 @@ function NotificationMetadataDisplay({
             if (metadata.taskState || metadata.taskReward) {
                 return (
                     <div style={metaStyle}>
-                        {metadata.taskState && (
-                            <span style={tagStyle}>
-                                {metadata.taskState}
-                            </span>
-                        )}
-                        {metadata.taskReward !== undefined && (
-                            <span>🏆 {metadata.taskReward} SOL</span>
-                        )}
+                        {metadata.taskState && <span style={tagStyle}>{metadata.taskState}</span>}
+                        {metadata.taskReward !== undefined && <span>🏆 {metadata.taskReward} SOL</span>}
                     </div>
                 );
             }
@@ -377,18 +355,22 @@ function NotificationMetadataDisplay({
 
         case 'follow':
             if (metadata.followerCount !== undefined) {
-                return (
-                    <div style={metaStyle}>
-                        {metadata.followerCount} followers
-                    </div>
-                );
+                return <div style={metaStyle}>{metadata.followerCount} followers</div>;
             }
             return null;
 
         case 'message':
             if (metadata.messagePreview) {
                 return (
-                    <div style={{ ...metaStyle, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div
+                        style={{
+                            ...metaStyle,
+                            fontStyle: 'italic',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
                         &ldquo;{metadata.messagePreview}&rdquo;
                     </div>
                 );
@@ -450,8 +432,8 @@ export function FollowNotificationItem({
     };
 
     return (
-        <div 
-            className={className} 
+        <div
+            className={className}
             style={containerStyle}
             onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'rgba(55, 65, 81, 0.5)';
@@ -460,16 +442,18 @@ export function FollowNotificationItem({
                 e.currentTarget.style.backgroundColor = 'transparent';
             }}
         >
-            <div style={{
-                width: '32px',
-                height: '32px',
-                backgroundColor: '#3B82F6',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-            }}>
+            <div
+                style={{
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#3B82F6',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                }}
+            >
                 👤
             </div>
             <div style={{ flex: 1 }}>
@@ -497,9 +481,7 @@ export function FollowNotificationItem({
                     </button>
                     {' started following you'}
                 </p>
-                <span style={{ fontSize: '12px', color: '#6B7280' }}>
-                    {formatRelativeTime(notification.createdAt)}
-                </span>
+                <span style={{ fontSize: '12px', color: '#6B7280' }}>{formatRelativeTime(notification.createdAt)}</span>
             </div>
             {onFollow && notification.actorAddress && (
                 <button

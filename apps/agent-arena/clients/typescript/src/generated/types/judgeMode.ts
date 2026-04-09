@@ -7,29 +7,29 @@
  */
 
 import {
-  combineCodec,
-  getEnumDecoder,
-  getEnumEncoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getEnumDecoder,
+    getEnumEncoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export enum JudgeMode {
-  Designated,
-  Pool,
+    Designated,
+    Pool,
 }
 
 export type JudgeModeArgs = JudgeMode;
 
 export function getJudgeModeEncoder(): FixedSizeEncoder<JudgeModeArgs> {
-  return getEnumEncoder(JudgeMode);
+    return getEnumEncoder(JudgeMode);
 }
 
 export function getJudgeModeDecoder(): FixedSizeDecoder<JudgeMode> {
-  return getEnumDecoder(JudgeMode);
+    return getEnumDecoder(JudgeMode);
 }
 
 export function getJudgeModeCodec(): FixedSizeCodec<JudgeModeArgs, JudgeMode> {
-  return combineCodec(getJudgeModeEncoder(), getJudgeModeDecoder());
+    return combineCodec(getJudgeModeEncoder(), getJudgeModeDecoder());
 }

@@ -15,52 +15,47 @@ import { getConnection } from './utils.js';
  * Placeholder for Solend/Jet integration
  */
 export function createRealBorrowHandler(
-  config: {
-    connection?: Connection;
-  } = {}
+    config: {
+        connection?: Connection;
+    } = {},
 ): ActionHandler {
-  const { connection = getConnection() } = config;
+    const { connection = getConnection() } = config;
 
-  return {
-    async execute(
-      chain: SupportedChain,
-      params: Record<string, unknown>,
-      context: ExecutionContext
-    ): Promise<Record<string, unknown>> {
-      if (chain !== 'solana') {
-        throw new Error(`Borrowing on ${chain} not yet implemented`);
-      }
+    return {
+        async execute(
+            chain: SupportedChain,
+            params: Record<string, unknown>,
+            context: ExecutionContext,
+        ): Promise<Record<string, unknown>> {
+            if (chain !== 'solana') {
+                throw new Error(`Borrowing on ${chain} not yet implemented`);
+            }
 
-      const {
-        token,
-        amount,
-        collateral,
-        signer,
-      } = params as {
-        token: string;
-        amount: string;
-        collateral?: string;
-        signer: Signer;
-      };
+            const { token, amount, collateral, signer } = params as {
+                token: string;
+                amount: string;
+                collateral?: string;
+                signer: Signer;
+            };
 
-      if (!signer) {
-        throw new Error('Signer is required for borrowing');
-      }
+            if (!signer) {
+                throw new Error('Signer is required for borrowing');
+            }
 
-      try {
-        // Note: Real implementation would use Solend SDK
-        // npm install @solendprotocol/solend-sdk
+            try {
+                // Note: Real implementation would use Solend SDK
+                // npm install @solendprotocol/solend-sdk
 
-        console.log(`[Borrow] Token: ${token}, Amount: ${amount}`);
-        console.log(`[Borrow] Collateral: ${collateral || 'auto'}`);
+                console.log(`[Borrow] Token: ${token}, Amount: ${amount}`);
+                console.log(`[Borrow] Collateral: ${collateral || 'auto'}`);
 
-        throw new Error(
-          'Borrowing requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
-          'Install with: npm install @solendprotocol/solend-sdk. ' +
-          'See: https://docs.solend.fi/ or https://docs.jetprotocol.io/'
-        );
+                throw new Error(
+                    'Borrowing requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
+                        'Install with: npm install @solendprotocol/solend-sdk. ' +
+                        'See: https://docs.solend.fi/ or https://docs.jetprotocol.io/',
+                );
 
-        /*
+                /*
         // Example Solend implementation:
         import { SolendMarket, SolendAction } from '@solendprotocol/solend-sdk';
 
@@ -80,10 +75,10 @@ export function createRealBorrowHandler(
           [signer, ...borrowAction.signers]
         );
         */
-      } catch (error) {
-        console.error('[Borrow] Error:', error);
-        throw error;
-      }
-    },
-  };
+            } catch (error) {
+                console.error('[Borrow] Error:', error);
+                throw error;
+            }
+        },
+    };
 }

@@ -15,11 +15,11 @@
 
 ### 1. 战略方向不一致
 
-| 文档 | 身份层 | 消息层 |
-|------|--------|--------|
-| **白皮书** | Agent Layer (Solana-native) | A2A Protocol (libp2p/WebSocket) |
-| **当前 README** | Agent Layer (Solana-native) | A2A Protocol (libp2p/WebSocket) |
-| **战略方向 (OWS)** | OWS Wallet (multi-chain) | XMTP via OWS Agent Kit |
+| 文档               | 身份层                      | 消息层                          |
+| ------------------ | --------------------------- | ------------------------------- |
+| **白皮书**         | Agent Layer (Solana-native) | A2A Protocol (libp2p/WebSocket) |
+| **当前 README**    | Agent Layer (Solana-native) | A2A Protocol (libp2p/WebSocket) |
+| **战略方向 (OWS)** | OWS Wallet (multi-chain)    | XMTP via OWS Agent Kit          |
 
 **问题**: README 未反映 OWS 整合决策
 
@@ -29,18 +29,20 @@
 
 ### 2. 命名不一致
 
-| 组件 | 白皮书 | README | 代码仓库 | 建议 |
-|------|--------|--------|----------|------|
-| 用户入口 | AgentM | AgentM | `apps/agentm/` | ✅ 一致 |
-| Agent 运行时 | AgentM Pro | AgentM Pro | `apps/agentm-pro/` | ✅ 一致 |
-| 结算层 | Agent Layer | Agent Arena | `apps/agent-arena/` | ⚠️ 不一致 |
-| 工具层 | Chain Hub | Chain Hub | `apps/chain-hub/` | ✅ 一致 |
+| 组件         | 白皮书      | README      | 代码仓库            | 建议      |
+| ------------ | ----------- | ----------- | ------------------- | --------- |
+| 用户入口     | AgentM      | AgentM      | `apps/agentm/`      | ✅ 一致   |
+| Agent 运行时 | AgentM Pro  | AgentM Pro  | `apps/agentm-pro/`  | ✅ 一致   |
+| 结算层       | Agent Layer | Agent Arena | `apps/agent-arena/` | ⚠️ 不一致 |
+| 工具层       | Chain Hub   | Chain Hub   | `apps/chain-hub/`   | ✅ 一致   |
 
-**问题**: 
+**问题**:
+
 - 白皮书使用 "Agent Layer"，README 使用 "Agent Arena"
 - 代码仓库使用 `agent-arena`
 
-**建议**: 
+**建议**:
+
 - 协议层统一使用 "Agent Layer" (白皮书为准)
 - 实现层使用 "Agent Arena" (代码实现)
 - README 中明确区分：Agent Layer (协议) = Agent Arena (实现)
@@ -52,6 +54,7 @@
 #### 3.1 协议层描述
 
 **白皮书 (Layer 1 Core)**:
+
 ```
 Agent Layer Program (Escrow + Judge + Reputation)
 - ~300 lines
@@ -60,6 +63,7 @@ Agent Layer Program (Escrow + Judge + Reputation)
 ```
 
 **README**:
+
 ```
 Agent Arena — Protocol Kernel Implementation
 - Race model
@@ -72,6 +76,7 @@ Agent Arena — Protocol Kernel Implementation
 #### 3.2 三层价值栈
 
 **白皮书**:
+
 ```
 Layer 1: Gradience Core (Escrow + Judge + Reputation)
 Layer 2: Agent Lending (future)
@@ -79,6 +84,7 @@ Layer 3: gUSD Stablecoin (future)
 ```
 
 **README**:
+
 - 有相同描述 ✅
 - 但缺少与实现组件的清晰映射
 
@@ -86,11 +92,11 @@ Layer 3: gUSD Stablecoin (future)
 
 ### 4. 技术栈描述不一致
 
-| 项目 | 白皮书 | README |
-|------|--------|--------|
+| 项目     | 白皮书                      | README        |
+| -------- | --------------------------- | ------------- |
 | 智能合约 | Solana Program (~300 lines) | "Solidity" ❌ |
-| 前端 | 未指定 | Next.js 14 ✅ |
-| 索引器 | Cloudflare Workers + D1 | ✅ |
+| 前端     | 未指定                      | Next.js 14 ✅ |
+| 索引器   | Cloudflare Workers + D1     | ✅            |
 
 **问题**: README 中 Agent Arena 技术栈写 "Solidity" 是错误的
 
@@ -101,16 +107,19 @@ Layer 3: gUSD Stablecoin (future)
 #### 5.1 Bitcoin 哲学
 
 **白皮书**:
+
 - 强调 "Bitcoin-inspired minimalism"
 - 明确对比 UTXO + Script + PoW vs Escrow + Judge + Reputation
 
 **README**:
+
 - 提到 "Bitcoin-inspired minimalism"
 - 但缺少系统性的哲学阐述
 
 #### 5.2 核心指标
 
 **白皮书强调**:
+
 - ~300 lines of code
 - 4 states / 5 transitions
 - 95/3/2 fee split
@@ -122,6 +131,7 @@ Layer 3: gUSD Stablecoin (future)
 ### 6. 生态合作不一致
 
 **战略决策**: 与 OWS (Open Wallet Standard) 生态合作
+
 - MoonPay
 - PayPal
 - Ethereum Foundation
@@ -136,28 +146,28 @@ Layer 3: gUSD Stablecoin (future)
 ### 优先级 P0 (立即修复)
 
 1. **修正技术栈错误**
-   - Agent Arena: Solidity → Solana Program / Rust
+    - Agent Arena: Solidity → Solana Program / Rust
 
 2. **统一命名**
-   - 明确 "Agent Layer (协议) = Agent Arena (实现)"
+    - 明确 "Agent Layer (协议) = Agent Arena (实现)"
 
 3. **添加 OWS 战略方向**
-   - 在 Architecture 部分添加 OWS 整合计划
+    - 在 Architecture 部分添加 OWS 整合计划
 
 ### 优先级 P1 (本周完成)
 
 4. **简化核心描述**
-   - 突出 ~300 lines, 3/4 states 等关键指标
-   - 与白皮书关键数字保持一致
+    - 突出 ~300 lines, 3/4 states 等关键指标
+    - 与白皮书关键数字保持一致
 
 5. **添加生态合作**
-   - Partners: OWS, MoonPay, XMTP
+    - Partners: OWS, MoonPay, XMTP
 
 ### 优先级 P2 (可选)
 
 6. **架构图更新**
-   - 添加 OWS 作为 Identity 层选项
-   - 显示现有架构 → 目标架构演进
+    - 添加 OWS 作为 Identity 层选项
+    - 显示现有架构 → 目标架构演进
 
 ---
 
@@ -166,11 +176,13 @@ Layer 3: gUSD Stablecoin (future)
 ### 修改 1: 修正技术栈 (Line 357)
 
 **Before**:
+
 ```
 **Tech stack:** Solidity · Next.js 14 · TypeScript SDK · CLI · Judge Daemon
 ```
 
 **After**:
+
 ```
 **Tech stack:** Solana Program (Rust) · Next.js 14 · TypeScript SDK · CLI · Judge Daemon
 ```
@@ -180,11 +192,13 @@ Layer 3: gUSD Stablecoin (future)
 ### 修改 2: 统一命名 (Line 345)
 
 **Before**:
+
 ```
 ### 🏟️ Agent Arena — Protocol Kernel Implementation (✅ Live)
 ```
 
 **After**:
+
 ```
 ### 🏟️ Agent Arena — Agent Layer Implementation (✅ Live)
 
@@ -221,11 +235,13 @@ This integration enables Gradience Agents to seamlessly interact with other OWS-
 ### 修改 4: 突出核心指标 (Line 251)
 
 **Before**:
+
 ```
 **Three states. Four transitions. Bitcoin-inspired minimalism for the Agent economy.**
 ```
 
 **After**:
+
 ```
 **Three primitives. Four transitions. ~300 lines. Bitcoin-inspired minimalism for the Agent economy.**
 
@@ -242,6 +258,6 @@ Compare: Bitcoin has UTXO + Script + PoW. Gradience has Escrow + Judge + Reputat
 
 ---
 
-*审计日期: 2026-04-03*  
-*审计人: Hermes Agent*  
-*版本: v1.0*
+_审计日期: 2026-04-03_  
+_审计人: Hermes Agent_  
+_版本: v1.0_

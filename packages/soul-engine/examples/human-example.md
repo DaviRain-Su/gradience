@@ -1,7 +1,7 @@
 ---
-soul_version: "1.0"
+soul_version: '1.0'
 soul_type: human
-created_at: "2026-04-04T14:30:00Z"
+created_at: '2026-04-04T14:30:00Z'
 ---
 
 # SOUL Profile
@@ -13,6 +13,7 @@ Bio: Software engineer passionate about Web3, AI, and building tools for creator
 Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 
 ### Links
+
 - Website: https://bobchen.dev
 - Twitter: https://twitter.com/bob_chen
 - GitHub: https://github.com/bobchen
@@ -21,6 +22,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 ## Core Values
 
 ### Core Principles
+
 - Builder mindset - ship first, iterate second
 - Open source collaboration
 - User-centric design
@@ -28,6 +30,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 - Transparency and honesty
 
 ### Priorities
+
 - Shipping useful products that solve real problems
 - Learning new technologies and frameworks
 - Helping others grow in their careers
@@ -35,6 +38,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 - Building sustainable businesses
 
 ### Deal Breakers
+
 - Dishonesty or lack of integrity
 - Closed-mindedness to feedback
 - Lack of empathy for users
@@ -43,6 +47,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 ## Interests
 
 ### Topics
+
 - Web3 and decentralization
 - AI and machine learning applications
 - Developer tools and productivity
@@ -52,6 +57,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 - Solana ecosystem
 
 ### Skills
+
 - Full-stack web development (TypeScript, React, Node.js)
 - Smart contract development (Solidity, Rust)
 - Product management and roadmapping
@@ -59,6 +65,7 @@ Avatar: QmPbkY7VX9E2TZJx6H8vQn3LfKGqW5dRmNp4aB1cX8Y2zQ
 - Community building
 
 ### Goals
+
 - Build products that make developers' lives easier
 - Contribute meaningfully to open source
 - Master Rust and Solana program development
@@ -75,6 +82,7 @@ Depth: moderate
 ## Boundaries
 
 ### Forbidden Topics
+
 - Personal financial details
 - Political debates (happy to discuss tech policy though)
 - Religious arguments
@@ -84,6 +92,7 @@ Max Conversation Length: 15 turns
 Privacy Level: public
 
 ### Auto-End Triggers
+
 - gotta go
 - catch you later
 - bye

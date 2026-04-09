@@ -8,13 +8,13 @@
 import type { ArenaTaskClient } from './gateway.js';
 
 export interface AgentAutoApplicant {
-  apply(taskId: bigint): Promise<string>;
+    apply(taskId: bigint): Promise<string>;
 }
 
 export class DefaultAgentAutoApplicant implements AgentAutoApplicant {
-  constructor(private readonly arenaClient: ArenaTaskClient) {}
+    constructor(private readonly arenaClient: ArenaTaskClient) {}
 
-  async apply(taskId: bigint): Promise<string> {
-    return this.arenaClient.apply(taskId);
-  }
+    async apply(taskId: bigint): Promise<string> {
+        return this.arenaClient.apply(taskId);
+    }
 }

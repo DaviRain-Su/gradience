@@ -11,13 +11,10 @@ import { SOUL_VERSION } from './types.js';
 describe('SoulParser', () => {
     describe('parse()', () => {
         it('should parse agent example successfully', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
-            
+
             expect(profile.soulType).toBe('agent');
             expect(profile.version).toBe(SOUL_VERSION);
             expect(profile.identity.displayName).toBe('Alice AI');
@@ -30,30 +27,24 @@ describe('SoulParser', () => {
             expect(profile.boundaries.privacyLevel).toBe('public');
             expect(profile.boundaries.maxConversationLength).toBe(20);
         });
-        
+
         it('should parse human example successfully', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/human-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/human-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
-            
+
             expect(profile.soulType).toBe('human');
             expect(profile.identity.displayName).toBe('Bob Chen');
             expect(profile.communication.tone).toBe('casual');
             expect(profile.communication.pace).toBe('fast');
             expect(profile.boundaries.maxConversationLength).toBe(15);
         });
-        
+
         it('should parse complex example successfully', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/complex-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/complex-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
-            
+
             expect(profile.identity.displayName).toBe('Sage - The Philosophy AI');
             expect(profile.communication.tone).toBe('formal');
             expect(profile.communication.pace).toBe('slow');
@@ -61,7 +52,7 @@ describe('SoulParser', () => {
             expect(profile.boundaries.maxConversationLength).toBe(30);
             expect(profile.interests.topics.length).toBeGreaterThan(10);
         });
-        
+
         it('should handle optional fields', () => {
             const markdown = `---
 soul_version: "1.0"
@@ -103,9 +94,9 @@ Depth: moderate
 Max Conversation Length: 10 turns
 Privacy Level: public
 `;
-            
+
             const profile = SoulParser.parse(markdown);
-            
+
             expect(profile.identity.displayName).toBe('Test Agent');
             expect(profile.identity.avatarCID).toBeUndefined();
             expect(profile.identity.links).toBeUndefined();
@@ -114,7 +105,7 @@ Privacy Level: public
             expect(profile.boundaries.forbiddenTopics).toEqual([]);
             expect(profile.boundaries.autoEndTriggers).toBeUndefined();
         });
-        
+
         it('should throw error for missing soul_version', () => {
             const markdown = `---
 soul_type: agent
@@ -122,10 +113,10 @@ soul_type: agent
 
 # SOUL Profile
 `;
-            
+
             expect(() => SoulParser.parse(markdown)).toThrow('soul_version');
         });
-        
+
         it('should throw error for missing soul_type', () => {
             const markdown = `---
 soul_version: "1.0"
@@ -133,60 +124,51 @@ soul_version: "1.0"
 
 # SOUL Profile
 `;
-            
+
             expect(() => SoulParser.parse(markdown)).toThrow('soul_type');
         });
     });
-    
+
     describe('stringify()', () => {
         it('should stringify profile to valid markdown', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
             const regenerated = SoulParser.stringify(profile);
-            
+
             // Parse again to verify
             const reparsed = SoulParser.parse(regenerated);
-            
+
             expect(reparsed.identity.displayName).toBe(profile.identity.displayName);
             expect(reparsed.soulType).toBe(profile.soulType);
             expect(reparsed.communication.tone).toBe(profile.communication.tone);
         });
-        
+
         it('should generate valid YAML frontmatter', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
             const regenerated = SoulParser.stringify(profile);
-            
+
             expect(regenerated).toContain('---');
             expect(regenerated).toMatch(/soul_version:\s+['"]1\.0['"]/);
             expect(regenerated).toContain('soul_type: agent');
             expect(regenerated).toContain('created_at:');
         });
-        
+
         it('should include all sections', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
             const regenerated = SoulParser.stringify(profile);
-            
+
             expect(regenerated).toContain('## Identity');
             expect(regenerated).toContain('## Core Values');
             expect(regenerated).toContain('## Interests');
             expect(regenerated).toContain('## Communication Style');
             expect(regenerated).toContain('## Boundaries');
         });
-        
+
         it('should handle optional fields correctly', () => {
             const profile = {
                 id: crypto.randomUUID(),
@@ -225,9 +207,9 @@ soul_version: "1.0"
                     cid: 'QmTest',
                 },
             };
-            
+
             const markdown = SoulParser.stringify(profile);
-            
+
             // Should not include empty sections
             expect(markdown).not.toContain('### Deal Breakers');
             expect(markdown).not.toContain('### Goals');
@@ -235,7 +217,7 @@ soul_version: "1.0"
             expect(markdown).not.toContain('### Auto-End Triggers');
         });
     });
-    
+
     describe('validate()', () => {
         it.skip('should validate correct profile', () => {
             // TODO: Fix subsection parsing for Priorities and Skills
@@ -285,9 +267,9 @@ Depth: moderate
 Max Conversation Length: 20 turns
 Privacy Level: public
 `;
-            
+
             const profile = SoulParser.parse(markdown);
-            
+
             // Fill in storage fields for validation
             profile.storage = {
                 contentHash: 'test-hash',
@@ -295,17 +277,17 @@ Privacy Level: public
                 storageType: 'ipfs',
                 cid: 'QmTest123',
             };
-            
+
             const result = SoulParser.validate(profile);
-            
+
             if (!result.valid) {
                 console.log('Validation errors:', result.errors);
             }
-            
+
             expect(result.valid).toBe(true);
             expect(result.errors).toEqual([]);
         });
-        
+
         it('should detect missing required fields', () => {
             const profile: any = {
                 id: crypto.randomUUID(),
@@ -314,11 +296,11 @@ Privacy Level: public
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
                 identity: {
-                    displayName: '',  // Empty - should fail
+                    displayName: '', // Empty - should fail
                     bio: 'Test',
                 },
                 values: {
-                    core: [],  // Empty - should fail
+                    core: [], // Empty - should fail
                     priorities: ['test'],
                     dealBreakers: [],
                 },
@@ -344,18 +326,18 @@ Privacy Level: public
                     cid: 'test',
                 },
             };
-            
+
             const result = SoulParser.validate(profile);
-            
+
             expect(result.valid).toBe(false);
             expect(result.errors.length).toBeGreaterThan(0);
         });
-        
+
         it('should detect invalid enums', () => {
             const profile: any = {
                 id: crypto.randomUUID(),
                 version: '1.0',
-                soulType: 'invalid',  // Invalid enum
+                soulType: 'invalid', // Invalid enum
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
                 identity: {
@@ -373,7 +355,7 @@ Privacy Level: public
                     goals: [],
                 },
                 communication: {
-                    tone: 'invalid',  // Invalid enum
+                    tone: 'invalid', // Invalid enum
                     pace: 'moderate',
                     depth: 'moderate',
                 },
@@ -389,14 +371,14 @@ Privacy Level: public
                     cid: 'test',
                 },
             };
-            
+
             const result = SoulParser.validate(profile);
-            
+
             expect(result.valid).toBe(false);
-            expect(result.errors.some(e => e.includes('soulType'))).toBe(true);
-            expect(result.errors.some(e => e.includes('tone'))).toBe(true);
+            expect(result.errors.some((e) => e.includes('soulType'))).toBe(true);
+            expect(result.errors.some((e) => e.includes('tone'))).toBe(true);
         });
-        
+
         it('should detect updatedAt before createdAt', () => {
             const now = Date.now();
             const profile: any = {
@@ -404,7 +386,7 @@ Privacy Level: public
                 version: '1.0',
                 soulType: 'agent',
                 createdAt: now,
-                updatedAt: now - 10000,  // Before createdAt
+                updatedAt: now - 10000, // Before createdAt
                 identity: {
                     displayName: 'Test',
                     bio: 'Test bio',
@@ -436,41 +418,35 @@ Privacy Level: public
                     cid: 'test',
                 },
             };
-            
+
             const result = SoulParser.validate(profile);
-            
+
             expect(result.valid).toBe(false);
-            expect(result.errors.some(e => e.includes('updatedAt'))).toBe(true);
+            expect(result.errors.some((e) => e.includes('updatedAt'))).toBe(true);
         });
-        
+
         it('should generate warnings for suboptimal profiles', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile = SoulParser.parse(markdown);
             // Make bio very short
             profile.identity.bio = 'Short bio';
-            
+
             const result = SoulParser.validate(profile);
-            
+
             expect(result.warnings).toBeDefined();
             expect(result.warnings!.length).toBeGreaterThan(0);
         });
     });
-    
+
     describe('round-trip conversion', () => {
         it('should maintain data through parse -> stringify -> parse cycle', () => {
-            const markdown = readFileSync(
-                join(__dirname, '../examples/agent-example.md'),
-                'utf-8'
-            );
-            
+            const markdown = readFileSync(join(__dirname, '../examples/agent-example.md'), 'utf-8');
+
             const profile1 = SoulParser.parse(markdown);
             const regenerated = SoulParser.stringify(profile1);
             const profile2 = SoulParser.parse(regenerated);
-            
+
             // Compare key fields
             expect(profile2.identity.displayName).toBe(profile1.identity.displayName);
             expect(profile2.identity.bio).toBe(profile1.identity.bio);

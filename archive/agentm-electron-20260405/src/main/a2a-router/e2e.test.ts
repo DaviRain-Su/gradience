@@ -79,7 +79,6 @@ describe('A2A E2E', () => {
             assert.ok(adapter);
             assert.strictEqual(adapter.protocol, 'nostr');
         });
-
     });
 });
 

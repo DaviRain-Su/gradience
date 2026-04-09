@@ -1,36 +1,36 @@
 {
-  "name": "@gradiences/a2a-runtime",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "start": "tsx ./main.ts",
-    "start:local": "A2A_RELAY_PROFILE=local tsx ./main.ts",
-    "start:devnet": "A2A_RELAY_PROFILE=devnet tsx ./main.ts",
-    "start:prod": "A2A_RELAY_PROFILE=prod tsx ./main.ts",
-    "release:devnet": "./scripts/release-relay.sh devnet",
-    "release:devnet:postgres": "A2A_RELAY_STORE_MODE=postgres ./scripts/release-relay.sh devnet",
-    "release:devnet:postgres:hosted": "A2A_RELAY_STORE_MODE=postgres A2A_RELAY_POSTGRES_REQUIRE_EXPLICIT=true A2A_RELAY_POSTGRES_EXTERNAL=true ./scripts/release-relay.sh devnet",
-    "release:prod": "./scripts/release-relay.sh prod",
-    "release:local": "./scripts/release-relay.sh local",
-    "release:down": "docker compose down",
-    "smoke": "./scripts/smoke-relay.sh",
-    "smoke:postgres": "./scripts/smoke-postgres-persistence.sh",
-    "postgres:migrate:file": "./scripts/migrate-file-store-to-postgres.sh",
-    "postgres:preflight:hosted": "./scripts/preflight-hosted-postgres.sh",
-    "postgres:rehearse-hosted-cutover": "./scripts/rehearse-hosted-postgres-cutover.sh",
-    "alert:drill": "./scripts/trigger-alert-drill.sh",
-    "alert:drill:db-fault": "./scripts/drill-postgres-db-alert-lifecycle.sh",
-    "alert:replay-failed": "./scripts/replay-failed-alerts.sh",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test ./config.test.ts ./alert-sink.test.ts ./alert-integration.test.ts ./relay.test.ts ./persistent-store.test.ts ./postgres-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./coordinator.test.ts ./adapters/arena-chainhub.test.ts"
-  },
-  "dependencies": {
-    "pg": "^8.16.3"
-  },
-  "devDependencies": {
-    "@types/node": "^20.19.37",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.3"
-  }
+    "name": "@gradiences/a2a-runtime",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "tsx ./main.ts",
+        "start:local": "A2A_RELAY_PROFILE=local tsx ./main.ts",
+        "start:devnet": "A2A_RELAY_PROFILE=devnet tsx ./main.ts",
+        "start:prod": "A2A_RELAY_PROFILE=prod tsx ./main.ts",
+        "release:devnet": "./scripts/release-relay.sh devnet",
+        "release:devnet:postgres": "A2A_RELAY_STORE_MODE=postgres ./scripts/release-relay.sh devnet",
+        "release:devnet:postgres:hosted": "A2A_RELAY_STORE_MODE=postgres A2A_RELAY_POSTGRES_REQUIRE_EXPLICIT=true A2A_RELAY_POSTGRES_EXTERNAL=true ./scripts/release-relay.sh devnet",
+        "release:prod": "./scripts/release-relay.sh prod",
+        "release:local": "./scripts/release-relay.sh local",
+        "release:down": "docker compose down",
+        "smoke": "./scripts/smoke-relay.sh",
+        "smoke:postgres": "./scripts/smoke-postgres-persistence.sh",
+        "postgres:migrate:file": "./scripts/migrate-file-store-to-postgres.sh",
+        "postgres:preflight:hosted": "./scripts/preflight-hosted-postgres.sh",
+        "postgres:rehearse-hosted-cutover": "./scripts/rehearse-hosted-postgres-cutover.sh",
+        "alert:drill": "./scripts/trigger-alert-drill.sh",
+        "alert:drill:db-fault": "./scripts/drill-postgres-db-alert-lifecycle.sh",
+        "alert:replay-failed": "./scripts/replay-failed-alerts.sh",
+        "typecheck": "tsc --noEmit",
+        "test": "tsx --test ./config.test.ts ./alert-sink.test.ts ./alert-integration.test.ts ./relay.test.ts ./persistent-store.test.ts ./postgres-store.test.ts ./monitor.test.ts ./server.test.ts ./orchestrator.test.ts ./coordinator.test.ts ./adapters/arena-chainhub.test.ts"
+    },
+    "dependencies": {
+        "pg": "^8.16.3"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.37",
+        "tsx": "^4.20.5",
+        "typescript": "^5.9.3"
+    }
 }

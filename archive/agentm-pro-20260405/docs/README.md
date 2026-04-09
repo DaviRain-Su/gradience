@@ -4,15 +4,15 @@
 
 ## 文档导航
 
-| 阶段 | 文档 | 状态 | 说明 |
-|------|------|------|------|
-| Phase 1 | [01-prd.md](./01-prd.md) | ✅ Draft | 需求定义 |
-| Phase 2 | [02-architecture.md](./02-architecture.md) | ✅ Draft | 架构设计 |
+| 阶段    | 文档                                           | 状态     | 说明     |
+| ------- | ---------------------------------------------- | -------- | -------- |
+| Phase 1 | [01-prd.md](./01-prd.md)                       | ✅ Draft | 需求定义 |
+| Phase 2 | [02-architecture.md](./02-architecture.md)     | ✅ Draft | 架构设计 |
 | Phase 3 | [03-technical-spec.md](./03-technical-spec.md) | ✅ Draft | 技术规格 |
 | Phase 4 | [04-task-breakdown.md](./04-task-breakdown.md) | ✅ Draft | 任务拆解 |
-| Phase 5 | [05-test-spec.md](./05-test-spec.md) | ✅ Draft | 测试规格 |
+| Phase 5 | [05-test-spec.md](./05-test-spec.md)           | ✅ Draft | 测试规格 |
 | Phase 6 | [06-implementation.md](./06-implementation.md) | ✅ Draft | 实现指南 |
-| Phase 7 | [07-review-deploy.md](./07-review-deploy.md) | ✅ Draft | 审查部署 |
+| Phase 7 | [07-review-deploy.md](./07-review-deploy.md)   | ✅ Draft | 审查部署 |
 
 ## 快速开始
 
@@ -66,4 +66,5 @@
 - [AgentM Web Bug 记录](../../docs/experience-reports/2026-04-03-agentm-web-white-screen.md)
 
 ---
-*最后更新: 2026-04-03*
+
+_最后更新: 2026-04-03_

@@ -1,7 +1,7 @@
 # 贪心算法设计哲学：简单高效的 Agent 经济
 
 > **核心洞察：用贪心算法的局部最优选择，替代复杂的博弈机制**
-> 
+>
 > 日期：2026-03-29
 
 ---
@@ -125,37 +125,35 @@ ERC-8183 流程（复杂）：
 // 贪心算法任务分配
 
 interface Task {
-  id: string;
-  requirements: Requirement[];
-  reward: TokenAmount;
+    id: string;
+    requirements: Requirement[];
+    reward: TokenAmount;
 }
 
 interface Agent {
-  did: string;
-  reputation: number;
-  skills: string[];
-  currentLoad: number;
+    did: string;
+    reputation: number;
+    skills: string[];
+    currentLoad: number;
 }
 
 // 贪心选择：为任务选择当前最佳 Agent
 function greedyAssignAgent(task: Task, agents: Agent[]): Agent {
-  // 过滤：有能力完成的 Agent
-  const capableAgents = agents.filter(agent => 
-    task.requirements.every(req => agent.skills.includes(req.skill))
-  );
-  
-  // 贪心选择：信誉最高且负载最低的
-  return capableAgents.sort((a, b) => {
-    const scoreA = a.reputation * (1 / (1 + a.currentLoad));
-    const scoreB = b.reputation * (1 / (1 + b.currentLoad));
-    return scoreB - scoreA;
-  })[0];
+    // 过滤：有能力完成的 Agent
+    const capableAgents = agents.filter((agent) => task.requirements.every((req) => agent.skills.includes(req.skill)));
+
+    // 贪心选择：信誉最高且负载最低的
+    return capableAgents.sort((a, b) => {
+        const scoreA = a.reputation * (1 / (1 + a.currentLoad));
+        const scoreB = b.reputation * (1 / (1 + b.currentLoad));
+        return scoreB - scoreA;
+    })[0];
 }
 
 // 贪心验证：立即评判，无需等待
 function greedyEvaluate(submissions: Submission[]): Submission {
-  // 使用评判标准立即评分
-  return submissions.sort((a, b) => b.score - a.score)[0];
+    // 使用评判标准立即评分
+    return submissions.sort((a, b) => b.score - a.score)[0];
 }
 ```
 
@@ -166,11 +164,11 @@ function greedyEvaluate(submissions: Submission[]): Submission {
   1. 能力匹配
      - 选择具备所需技能的 Agent
      - 不满足条件的直接排除
-     
+
   2. 信誉优先
      - 在满足条件的 Agent 中
      - 选择信誉分数最高的
-     
+
   3. 负载均衡
      - 信誉相同时
      - 选择当前任务较少的 Agent
@@ -178,11 +176,11 @@ function greedyEvaluate(submissions: Submission[]): Submission {
 任务结算贪心规则:
   1. 质量优先
      - 评判分数最高的获胜
-     
+
   2. 速度优先
      - 分数相同时
      - 先提交的先获胜
-     
+
   3. 一次决策
      - 不回头，不修改
      - 立即结算
@@ -287,65 +285,65 @@ contract GreedyTaskAllocation {
         address assignedAgent;
         bool completed;
     }
-    
+
     struct Agent {
         address addr;
         uint256 reputation;
         bytes32[] skills;
         uint256 currentTasks;
     }
-    
+
     mapping(uint256 => Task) public tasks;
     mapping(address => Agent) public agents;
-    
+
     // 贪心分配：选择当前最佳 Agent
     function assignAgent(uint256 taskId) public {
         Task storage task = tasks[taskId];
         require(task.assignedAgent == address(0), "Already assigned");
-        
+
         address bestAgent = address(0);
         uint256 bestScore = 0;
-        
+
         // 遍历所有 Agent（实际可用更优数据结构）
         for (uint i = 0; i < agentList.length; i++) {
             Agent memory agent = agents[agentList[i]];
-            
+
             // 检查技能匹配
             if (!hasSkill(agent, task.requiredSkill)) continue;
-            
+
             // 计算贪心分数：信誉 / (负载 + 1)
             uint256 score = agent.reputation / (agent.currentTasks + 1);
-            
+
             // 贪心选择
             if (score > bestScore) {
                 bestScore = score;
                 bestAgent = agent.addr;
             }
         }
-        
+
         require(bestAgent != address(0), "No capable agent");
-        
+
         // 立即分配
         task.assignedAgent = bestAgent;
         agents[bestAgent].currentTasks++;
-        
+
         emit AgentAssigned(taskId, bestAgent);
     }
-    
+
     // 简单评判：提交即结算
     function submitResult(uint256 taskId, bytes calldata result) public {
         Task storage task = tasks[taskId];
         require(task.assignedAgent == msg.sender, "Not assigned");
         require(!task.completed, "Already completed");
-        
+
         // 这里可以添加简单的自动验证
         // 或者立即结算，依赖后续评判
-        
+
         // 立即结算（贪心：相信 Agent）
         payable(msg.sender).transfer(task.reward);
         task.completed = true;
         agents[msg.sender].currentTasks--;
-        
+
         emit TaskCompleted(taskId, msg.sender, result);
     }
 }
@@ -382,20 +380,20 @@ contract GreedyTaskAllocation {
 
 ```yaml
 迭代优化:
-  - 每次任务都更新信誉
-  - 历史表现影响未来选择
-  - 贪心 + 学习 = 接近最优
+    - 每次任务都更新信誉
+    - 历史表现影响未来选择
+    - 贪心 + 学习 = 接近最优
 
 多层贪心:
-  - 第一层：选择 Agent（贪心）
-  - 第二层：评判质量（贪心）
-  - 第三层：分配奖励（贪心）
-  - 组合起来效果良好
+    - 第一层：选择 Agent（贪心）
+    - 第二层：评判质量（贪心）
+    - 第三层：分配奖励（贪心）
+    - 组合起来效果良好
 
 异常处理:
-  - 贪心失败时，转为人工处理
-  - 记录失败案例，优化规则
-  - 大部分情况贪心，少数情况特殊处理
+    - 贪心失败时，转为人工处理
+    - 记录失败案例，优化规则
+    - 大部分情况贪心，少数情况特殊处理
 ```
 
 ---
@@ -466,4 +464,4 @@ Agent 经济设计原则：
 
 ---
 
-*"计算机科学中，我们学到的第一个算法往往是贪心的。因为它简单、优雅、实用。区块链设计也应该如此。"*
+_"计算机科学中，我们学到的第一个算法往往是贪心的。因为它简单、优雅、实用。区块链设计也应该如此。"_

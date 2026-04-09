@@ -211,16 +211,7 @@ test('NO_DNA profile show returns structured payload', () => {
 
 test('NO_DNA profile update returns ok payload', () => {
     const result = runCli(
-        [
-            'profile',
-            'update',
-            '--display-name',
-            'Alice',
-            '--bio',
-            'Builder',
-            '--website',
-            'https://alice.example',
-        ],
+        ['profile', 'update', '--display-name', 'Alice', '--bio', 'Builder', '--website', 'https://alice.example'],
         {
             NO_DNA: '1',
             GRADIENCE_CLI_MOCK: '1',
@@ -237,13 +228,10 @@ test('NO_DNA profile update returns ok payload', () => {
 });
 
 test('NO_DNA profile publish returns tx payload', () => {
-    const result = runCli(
-        ['profile', 'publish', '--mode', 'git-sync', '--content-ref', 'sha256:abc'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-        },
-    );
+    const result = runCli(['profile', 'publish', '--mode', 'git-sync', '--content-ref', 'sha256:abc'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+    });
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim()) as {
         ok: boolean;
@@ -257,13 +245,10 @@ test('NO_DNA profile publish returns tx payload', () => {
 });
 
 test('profile publish rejects invalid mode', () => {
-    const result = runCli(
-        ['profile', 'publish', '--mode', 'invalid-mode'],
-        {
-            NO_DNA: '1',
-            GRADIENCE_CLI_MOCK: '1',
-        },
-    );
+    const result = runCli(['profile', 'publish', '--mode', 'invalid-mode'], {
+        NO_DNA: '1',
+        GRADIENCE_CLI_MOCK: '1',
+    });
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stderr.trim()) as {
         ok: boolean;

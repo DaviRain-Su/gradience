@@ -21,10 +21,10 @@ Gradience Reputation Oracle 采用 **最终一致性（Eventual Consistency）**
 
 ### 1.2 为什么不选择强一致性？
 
-| 方案 | 优点 | 缺点 | 结论 |
-|------|------|------|------|
-| **强一致性**（跨链共识） | 数据零差异 | 需要 L2 消息桥或 ZK 同步层，延迟高、成本高 | 过度工程 |
-| **最终一致性** | 低延迟、低成本、水平可扩展 | 短时间窗口内多链读数可能不一致 | **选中** |
+| 方案                     | 优点                       | 缺点                                       | 结论     |
+| ------------------------ | -------------------------- | ------------------------------------------ | -------- |
+| **强一致性**（跨链共识） | 数据零差异                 | 需要 L2 消息桥或 ZK 同步层，延迟高、成本高 | 过度工程 |
+| **最终一致性**           | 低延迟、低成本、水平可扩展 | 短时间窗口内多链读数可能不一致             | **选中** |
 
 ---
 
@@ -86,17 +86,17 @@ export interface ReputationApi {
 function calculateFreshness(lastUpdatedAt?: number): 'fresh' | 'stale' | 'unknown' {
     if (lastUpdatedAt == null) return 'unknown';
     const ageSeconds = Date.now() / 1000 - lastUpdatedAt;
-    if (ageSeconds <= 600) return 'fresh';   // ≤ 10 min
+    if (ageSeconds <= 600) return 'fresh'; // ≤ 10 min
     return 'stale';
 }
 ```
 
 ### 3.3 UI 提示建议
 
-| freshness | 颜色 | 提示文案 |
-|-----------|------|---------|
-| `fresh` | 绿色 | "Reputation up-to-date" |
-| `stale` | 橙色 | "Reputation data is >10 min old" |
+| freshness | 颜色 | 提示文案                           |
+| --------- | ---- | ---------------------------------- |
+| `fresh`   | 绿色 | "Reputation up-to-date"            |
+| `stale`   | 橙色 | "Reputation data is >10 min old"   |
 | `unknown` | 灰色 | "Reputation freshness unavailable" |
 
 ---
@@ -137,12 +137,12 @@ function calculateFreshness(lastUpdatedAt?: number): 'fresh' | 'stale' | 'unknow
 
 ## 5. 超时与降级策略
 
-| 场景 | 策略 |
-|------|------|
-| Oracle 5 分钟未更新 | 标记 `freshness = 'fresh'`，但 UI 可显示 "Syncing..." |
+| 场景                  | 策略                                                      |
+| --------------------- | --------------------------------------------------------- |
+| Oracle 5 分钟未更新   | 标记 `freshness = 'fresh'`，但 UI 可显示 "Syncing..."     |
 | Oracle >10 分钟未更新 | 标记 `freshness = 'stale'`，并触发 PagerDuty/Datadog 告警 |
-| Oracle 私钥泄露/异常 | `owner`（Multisig）调用 `setOracle()` 轮换到新地址 |
-| 某条链 RPC 不可用 | 跳过该链更新，其他链继续；等 RPC 恢复后补同步 |
+| Oracle 私钥泄露/异常  | `owner`（Multisig）调用 `setOracle()` 轮换到新地址        |
+| 某条链 RPC 不可用     | 跳过该链更新，其他链继续；等 RPC 恢复后补同步             |
 
 ---
 
@@ -159,6 +159,7 @@ function calculateFreshness(lastUpdatedAt?: number): 'fresh' | 'stale' | 'unknow
 ### 8.1 chainId 验证
 
 `GradienceReputationFeed.updateReputation()` 要求调用者传入 `chainId`，合约内验证 `chainId == block.chainid`。这防止以下两类错误：
+
 - Oracle 配置错误，将测试网签名数据提交到主网；
 - 同一条链上的重复提交不会跨链生效。
 
@@ -173,9 +174,9 @@ Reputation proof **不是一次性凭证**，而是**可验证的声明（attest
 
 ## 7. 监控指标
 
-| 指标 | 目标 |
-|------|------|
-| `oracle_update_lag_seconds` | < 600s (p99) |
+| 指标                        | 目标                     |
+| --------------------------- | ------------------------ |
+| `oracle_update_lag_seconds` | < 600s (p99)             |
 | `cross_chain_address_match` | 100% (通过 CREATE2 保证) |
-| `reputation_feed_hit_rate` | > 99.9% |
-| `oracle_tx_failure_rate` | < 0.1% |
+| `reputation_feed_hit_rate`  | > 99.9%                  |
+| `oracle_tx_failure_rate`    | < 0.1%                   |

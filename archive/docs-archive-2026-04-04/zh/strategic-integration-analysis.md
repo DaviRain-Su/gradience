@@ -32,14 +32,14 @@
 
 ### 1.2 与 Gradience 的映射
 
-| 外部输入 | Gradience 现状 | 差距 | 机会 |
-|---------|---------------|------|------|
-| **OWS Track 02** | Reputation + Judge | 钱包集成 | Agent 信用层 |
-| **OWS Track 04** | Agent Arena + A2A | 多 Agent 编排 | Agent 经济体 |
-| **时间 Scaling** | Judge 机制 | 长时间运行评估 | Evaluator 升级 |
-| **空间 Scaling** | Workflow 功法 | 并行执行架构 | 递归 Planner-Worker |
-| **交互 Scaling** | Hermes + Linear | Ticket 驱动 | Symphony 集成 |
-| **自主进化** | 文档体系 | 自动优化 | 进化型 SDK |
+| 外部输入         | Gradience 现状     | 差距           | 机会                |
+| ---------------- | ------------------ | -------------- | ------------------- |
+| **OWS Track 02** | Reputation + Judge | 钱包集成       | Agent 信用层        |
+| **OWS Track 04** | Agent Arena + A2A  | 多 Agent 编排  | Agent 经济体        |
+| **时间 Scaling** | Judge 机制         | 长时间运行评估 | Evaluator 升级      |
+| **空间 Scaling** | Workflow 功法      | 并行执行架构   | 递归 Planner-Worker |
+| **交互 Scaling** | Hermes + Linear    | Ticket 驱动    | Symphony 集成       |
+| **自主进化**     | 文档体系           | 自动优化       | 进化型 SDK          |
 
 ---
 
@@ -53,32 +53,33 @@
 ```typescript
 // 当前 Judge
 const judge = {
-  type: 'rule-based' | 'simple-llm',
-  criteria: ['success_rate', 'output_quality'],
-  score: (task) => number
+    type: 'rule-based' | 'simple-llm',
+    criteria: ['success_rate', 'output_quality'],
+    score: (task) => number,
 };
 
 // 增强后 Evaluator
 const evaluator = {
-  type: 'independent-agent',
-  model: 'opus-4.6', // 专门评估模型
-  independence: true, // 与 Generator 无共享状态
-  verification: {
-    type: 'playwright', // 实际操作验证
-    env: 'isolated-runtime'
-  },
-  driftDetection: {
-    contextWindow: 128000,
-    resetStrategy: 'sprint-boundary'
-  },
-  cost: {
-    budget: 100, // $100 per evaluation
-    timeLimit: '4h'
-  }
+    type: 'independent-agent',
+    model: 'opus-4.6', // 专门评估模型
+    independence: true, // 与 Generator 无共享状态
+    verification: {
+        type: 'playwright', // 实际操作验证
+        env: 'isolated-runtime',
+    },
+    driftDetection: {
+        contextWindow: 128000,
+        resetStrategy: 'sprint-boundary',
+    },
+    cost: {
+        budget: 100, // $100 per evaluation
+        timeLimit: '4h',
+    },
 };
 ```
 
 **应用场景**:
+
 - Workflow 功法长时间执行评估
 - Agent Arena Battle 结果验证
 - A2A Commerce 交易质量确认
@@ -91,42 +92,43 @@ const evaluator = {
 ```typescript
 // 当前 Workflow
 const workflow = {
-  steps: [step1, step2, step3],
-  execution: 'sequential'
+    steps: [step1, step2, step3],
+    execution: 'sequential',
 };
 
 // 增强后递归 Workflow
 const recursiveWorkflow = {
-  type: 'recursive-planner-worker',
-  
-  planner: {
-    maxScope: 1000, // 超过则生成子 Planner
-    decomposition: 'automatic',
-    subPlanner: 'self', // 递归调用
-    handoff: {
-      format: 'structured-markdown',
-      content: ['done', 'discovered', 'concerns']
-    }
-  },
-  
-  worker: {
-    isolation: 'git-worktree', // 完全隔离
-    resources: {
-      cpu: '2 cores',
-      memory: '4gb',
-      timeout: '1h'
+    type: 'recursive-planner-worker',
+
+    planner: {
+        maxScope: 1000, // 超过则生成子 Planner
+        decomposition: 'automatic',
+        subPlanner: 'self', // 递归调用
+        handoff: {
+            format: 'structured-markdown',
+            content: ['done', 'discovered', 'concerns'],
+        },
     },
-    output: 'handoff-document'
-  },
-  
-  aggregator: {
-    type: 'llm-merge',
-    conflictResolution: 're-plan'
-  }
+
+    worker: {
+        isolation: 'git-worktree', // 完全隔离
+        resources: {
+            cpu: '2 cores',
+            memory: '4gb',
+            timeout: '1h',
+        },
+        output: 'handoff-document',
+    },
+
+    aggregator: {
+        type: 'llm-merge',
+        conflictResolution: 're-plan',
+    },
 };
 ```
 
 **应用场景**:
+
 - 复杂 Workflow 功法并行开发
 - Agent Arena 多 Battle 同时评估
 - Chain Hub 跨链操作并行执行
@@ -139,50 +141,51 @@ const recursiveWorkflow = {
 ```typescript
 // 当前 Hermes
 const hermes = {
-  role: 'coordinator',
-  tools: ['linear', 'github'],
-  workflow: '7-phase-manual'
+    role: 'coordinator',
+    tools: ['linear', 'github'],
+    workflow: '7-phase-manual',
 };
 
 // 增强后 Symphony-Style
 const symphonyGradience = {
-  trigger: 'linear-ticket-status',
-  
-  onTicketMove: {
-    'Todo': {
-      action: 'create-workspace',
-      config: {
-        type: 'fresh-clone',
-        isolation: 'docker-container'
-      }
+    trigger: 'linear-ticket-status',
+
+    onTicketMove: {
+        Todo: {
+            action: 'create-workspace',
+            config: {
+                type: 'fresh-clone',
+                isolation: 'docker-container',
+            },
+        },
+        'In Progress': {
+            action: 'dispatch-agent',
+            agent: 'coding-specialist',
+            harness: 'embedded-knowledge',
+        },
     },
-    'In Progress': {
-      action: 'dispatch-agent',
-      agent: 'coding-specialist',
-      harness: 'embedded-knowledge'
-    }
-  },
-  
-  proofOfWork: {
-    required: ['ci-pass', 'walkthrough', 'demo-recording'],
-    format: 'pr-description'
-  },
-  
-  failure: {
-    handling: 'supervision-tree', // BEAM 风格
-    retry: 'exponential-backoff',
-    escalation: 'human-review'
-  },
-  
-  humanInterface: {
-    upstream: 'write-ticket-and-harness',
-    downstream: 'review-pow-and-merge',
-    sparse: true // 最小介入
-  }
+
+    proofOfWork: {
+        required: ['ci-pass', 'walkthrough', 'demo-recording'],
+        format: 'pr-description',
+    },
+
+    failure: {
+        handling: 'supervision-tree', // BEAM 风格
+        retry: 'exponential-backoff',
+        escalation: 'human-review',
+    },
+
+    humanInterface: {
+        upstream: 'write-ticket-and-harness',
+        downstream: 'review-pow-and-merge',
+        sparse: true, // 最小介入
+    },
 };
 ```
 
 **应用场景**:
+
 - Workflow 功法自动开发
 - Agent Arena 新 Battle 自动部署
 - Chain Hub 新链集成自动实现
@@ -200,7 +203,7 @@ Track 02: Agent Spend Governance & Identity
 ├── Gradience Escrow → 资金托管
 └── OWS Wallet → 钱包基础设施
 
-Track 04: Multi-Agent Systems  
+Track 04: Multi-Agent Systems
 ├── Gradience A2A Commerce → Agent 间交易
 ├── Gradience Workflow → Agent 供应链
 ├── Gradience Agent Arena → 竞技声誉
@@ -213,100 +216,91 @@ Track 04: Multi-Agent Systems
 // Gradience × OWS 核心集成
 
 class GradienceOWSAdapter {
-  // 1. 用户登录 (Privy)
-  async login() {
-    const user = await privy.login();
-    return user;
-  }
-  
-  // 2. 创建 OWS 主钱包
-  async createMasterWallet(user: User) {
-    const wallet = await ows.wallet.create({
-      name: `gradience-${user.id}`,
-      owner: user.id
-    });
-    
-    // 注册 ENS (可选)
-    await ows.domains.register({
-      name: `${user.id}.ows.eth`,
-      addresses: wallet.multiChainAddresses
-    });
-    
-    return wallet;
-  }
-  
-  // 3. 为 Agent 创建子钱包 (核心创新)
-  async createAgentWallet(params: {
-    parentWallet: OWSWallet;
-    agentId: string;
-    reputation: ReputationScore;
-  }) {
-    // 获取 Gradience Reputation
-    const rep = await gradience.getReputation(params.agentId);
-    
-    const agentWallet = await ows.wallet.create({
-      parent: params.parentWallet,
-      name: `${params.agentId}.sub`,
-      // 声誉决定策略
-      policy: {
-        dailyLimit: rep.score * 10, // 声誉 = 额度
-        maxTransaction: rep.score * 2,
-        allowedChains: this.getChainsByReputation(rep),
-        requireApproval: (amount) => amount > rep.score * 5
-      }
-    });
-    
-    // 绑定 Reputation 到 ENS 文本记录
-    await ows.domains.setText({
-      name: agentWallet.ensName,
-      key: 'gradience.reputation',
-      value: JSON.stringify({
-        score: rep.score,
-        battles: rep.battleCount,
-        judgeAvg: rep.judgeAverage
-      })
-    });
-    
-    return agentWallet;
-  }
-  
-  // 4. Agent 间支付 (x402 + Gradience Judge)
-  async agentPayment(params: {
-    from: AgentWallet;
-    to: AgentWallet;
-    amount: number;
-    service: string;
-  }) {
-    // 先走 Gradience Judge 验证服务质量
-    const quality = await gradience.judge.evaluate({
-      agent: params.to.agentId,
-      service: params.service
-    });
-    
-    if (quality.score < 60) {
-      throw new Error('Service quality below threshold');
+    // 1. 用户登录 (Privy)
+    async login() {
+        const user = await privy.login();
+        return user;
     }
-    
-    // 再走 OWS x402 支付
-    return await ows.pay({
-      from: params.from,
-      to: params.to,
-      amount: params.amount,
-      protocol: 'x402'
-    });
-  }
-  
-  // 5. 声誉更新触发策略调整
-  async onReputationUpdate(agentId: string, newRep: Reputation) {
-    const wallet = await this.getAgentWallet(agentId);
-    
-    // 自动调整钱包策略
-    await ows.wallet.updatePolicy(wallet, {
-      dailyLimit: newRep.score * 10,
-      // 高声誉 Agent 获得更宽松策略
-      requireApproval: newRep.score < 80
-    });
-  }
+
+    // 2. 创建 OWS 主钱包
+    async createMasterWallet(user: User) {
+        const wallet = await ows.wallet.create({
+            name: `gradience-${user.id}`,
+            owner: user.id,
+        });
+
+        // 注册 ENS (可选)
+        await ows.domains.register({
+            name: `${user.id}.ows.eth`,
+            addresses: wallet.multiChainAddresses,
+        });
+
+        return wallet;
+    }
+
+    // 3. 为 Agent 创建子钱包 (核心创新)
+    async createAgentWallet(params: { parentWallet: OWSWallet; agentId: string; reputation: ReputationScore }) {
+        // 获取 Gradience Reputation
+        const rep = await gradience.getReputation(params.agentId);
+
+        const agentWallet = await ows.wallet.create({
+            parent: params.parentWallet,
+            name: `${params.agentId}.sub`,
+            // 声誉决定策略
+            policy: {
+                dailyLimit: rep.score * 10, // 声誉 = 额度
+                maxTransaction: rep.score * 2,
+                allowedChains: this.getChainsByReputation(rep),
+                requireApproval: (amount) => amount > rep.score * 5,
+            },
+        });
+
+        // 绑定 Reputation 到 ENS 文本记录
+        await ows.domains.setText({
+            name: agentWallet.ensName,
+            key: 'gradience.reputation',
+            value: JSON.stringify({
+                score: rep.score,
+                battles: rep.battleCount,
+                judgeAvg: rep.judgeAverage,
+            }),
+        });
+
+        return agentWallet;
+    }
+
+    // 4. Agent 间支付 (x402 + Gradience Judge)
+    async agentPayment(params: { from: AgentWallet; to: AgentWallet; amount: number; service: string }) {
+        // 先走 Gradience Judge 验证服务质量
+        const quality = await gradience.judge.evaluate({
+            agent: params.to.agentId,
+            service: params.service,
+        });
+
+        if (quality.score < 60) {
+            throw new Error('Service quality below threshold');
+        }
+
+        // 再走 OWS x402 支付
+        return await ows.pay({
+            from: params.from,
+            to: params.to,
+            amount: params.amount,
+            protocol: 'x402',
+        });
+    }
+
+    // 5. 声誉更新触发策略调整
+    async onReputationUpdate(agentId: string, newRep: Reputation) {
+        const wallet = await this.getAgentWallet(agentId);
+
+        // 自动调整钱包策略
+        await ows.wallet.updatePolicy(wallet, {
+            dailyLimit: newRep.score * 10,
+            // 高声誉 Agent 获得更宽松策略
+            requireApproval: newRep.score < 80,
+        });
+    }
 }
 ```
 
@@ -360,12 +354,12 @@ const gradienceEvolvingSDK = {
     'chain-hub-schema.json': chainHubSchema,
     'workflow-spec.md': workflowSpec,
     'reputation-formula.ts': reputationFormula,
-    
+
     // 最佳实践
     'solana-optimization.md': solanaBestPractices,
     'cross-chain-patterns.md': crossChainPatterns
   },
-  
+
   // See: 感知运行时
   observe: {
     // SDK 性能指标
@@ -374,21 +368,21 @@ const gradienceEvolvingSDK = {
       treeShaking: number,
       initTime: number
     }),
-    
+
     // 使用遥测 (opt-in)
     telemetry: () => ({
       mostUsedAPIs: string[],
       errorPatterns: string[],
       chainDistribution: Record<Chain, number>
     }),
-    
+
     // 测试覆盖
     coverage: () => ({
       overall: number,
       byModule: Record<string, number>
     })
   },
-  
+
   // Control: 执行控制
   control: {
     build: (opts) => sdkBuild(opts),
@@ -396,26 +390,26 @@ const gradienceEvolvingSDK = {
     benchmark: () => sdkBenchmark(),
     publish: (version) => sdkPublish(version)
   },
-  
+
   // Evolve: 进化循环
   async evolve() {
     while (true) {
       // 1. 读取进化目标
       const goal = await this.readProgramMd();
       // e.g., "Reduce bundle size by 15%, keep coverage > 90%"
-      
+
       // 2. 感知现状
       const state = await this.observe.performance();
-      
+
       // 3. 生成假设
       const hypothesis = await this.generateImprovement(goal, state);
-      
+
       // 4. 应用修改 (仅 core/)
       await this.applyChange(hypothesis);
-      
+
       // 5. 运行评估
       const score = await this.runEvaluator();
-      
+
       // 6. 决策
       if (score > baseline) {
         await this.commit(hypothesis, score);
@@ -434,10 +428,12 @@ const gradienceEvolvingSDK = {
 # Gradience SDK Evolution Program
 
 ## Goal
-Optimize cross-chain transaction latency by 20% while maintaining 
+
+Optimize cross-chain transaction latency by 20% while maintaining
 99.9% reliability across all supported chains.
 
 ## Constraints (Hard)
+
 - MUST NOT break public API
 - MUST maintain backward compatibility
 - Test coverage MUST NOT drop below 90%
@@ -445,10 +441,12 @@ Optimize cross-chain transaction latency by 20% while maintaining
 
 ## Metrics (Evaluator Formula)
 ```
-score = (latency_improvement * 50) + 
-        (reliability * 100) + 
-        (coverage * 30) + 
-        (bundle_size_reduction * 10)
+
+score = (latency_improvement _ 50) +
+(reliability _ 100) +
+(coverage _ 30) +
+(bundle_size_reduction _ 10)
+
 ```
 
 ## Allowed Modifications
@@ -533,30 +531,33 @@ Week 4: 验证迭代
 
 ## 6. 核心决策总结
 
-| 决策 | 选择 | 理由 |
-|------|------|------|
-| **OWS 赛道** | Track 02 + 04 | Reputation + Multi-Agent 完美匹配 |
-| **Harness 维度** | 三维度全部增强 | 时间/空间/交互互补 |
-| **Agent 模型** | 专用模型 per 角色 | Planner/Worker/Evaluator 分离 |
-| **进化策略** | 夜间自动运行 | 低成本持续优化 |
-| **人机边界** | Human: Ticket/Review; Agent: Execution | 稀疏交互 |
+| 决策             | 选择                                   | 理由                              |
+| ---------------- | -------------------------------------- | --------------------------------- |
+| **OWS 赛道**     | Track 02 + 04                          | Reputation + Multi-Agent 完美匹配 |
+| **Harness 维度** | 三维度全部增强                         | 时间/空间/交互互补                |
+| **Agent 模型**   | 专用模型 per 角色                      | Planner/Worker/Evaluator 分离     |
+| **进化策略**     | 夜间自动运行                           | 低成本持续优化                    |
+| **人机边界**     | Human: Ticket/Review; Agent: Execution | 稀疏交互                          |
 
 ---
 
 ## 7. 立即行动清单
 
 ### 今天 (OWS Hackathon)
+
 - [ ] 报名 Track 02 + Track 04
 - [ ] 实现 Wallet-per-Agent MVP
 - [ ] 录制 Demo 视频
 - [ ] 提交作品
 
 ### 下周 (Harness 增强)
+
 - [ ] 升级 Judge → Evaluator
 - [ ] 设计递归 Workflow 架构
 - [ ] 集成 Symphony 式调度
 
 ### 下月 (自主进化)
+
 - [ ] 实现 SDK 知识嵌入
 - [ ] 部署进化循环
 - [ ] 首轮自动优化实验

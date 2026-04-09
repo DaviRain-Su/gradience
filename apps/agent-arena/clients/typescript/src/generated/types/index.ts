@@ -6,20 +6,20 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./category";
-export * from "./categoryStats";
-export * from "./judgeMode";
-export * from "./judgePoolEntry";
-export * from "./judgeRegisteredEvent";
-export * from "./judgeUnstakedEvent";
-export * from "./reputationStats";
-export * from "./runtimeEnv";
-export * from "./runtimeEnvInput";
-export * from "./submissionReceivedEvent";
-export * from "./taskAppliedEvent";
-export * from "./taskCancelledEvent";
-export * from "./taskCreatedEvent";
-export * from "./taskJudgedEvent";
-export * from "./taskRefundedEvent";
-export * from "./taskState";
-export * from "./pubkeyBytes";
+export * from './category';
+export * from './categoryStats';
+export * from './judgeMode';
+export * from './judgePoolEntry';
+export * from './judgeRegisteredEvent';
+export * from './judgeUnstakedEvent';
+export * from './reputationStats';
+export * from './runtimeEnv';
+export * from './runtimeEnvInput';
+export * from './submissionReceivedEvent';
+export * from './taskAppliedEvent';
+export * from './taskCancelledEvent';
+export * from './taskCreatedEvent';
+export * from './taskJudgedEvent';
+export * from './taskRefundedEvent';
+export * from './taskState';
+export * from './pubkeyBytes';

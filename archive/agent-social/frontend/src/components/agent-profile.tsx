@@ -70,23 +70,19 @@ export function AgentProfile({ agent }: AgentProfileProps) {
                         ) : (
                             <div>
                                 <p>
-                                    <strong>Avg score:</strong>{' '}
-                                    {indexerReputation.global_avg_score / 100}
+                                    <strong>Avg score:</strong> {indexerReputation.global_avg_score / 100}
                                 </p>
                                 <p>
-                                    <strong>Win rate:</strong>{' '}
-                                    {indexerReputation.global_win_rate / 100}%
+                                    <strong>Win rate:</strong> {indexerReputation.global_win_rate / 100}%
                                 </p>
                                 <p>
                                     <strong>Completed:</strong> {indexerReputation.global_completed}
                                 </p>
                                 <p>
-                                    <strong>Total applied:</strong>{' '}
-                                    {indexerReputation.global_total_applied}
+                                    <strong>Total applied:</strong> {indexerReputation.global_total_applied}
                                 </p>
                                 <p>
-                                    <strong>Total earned:</strong>{' '}
-                                    {indexerReputation.total_earned}
+                                    <strong>Total earned:</strong> {indexerReputation.total_earned}
                                 </p>
                             </div>
                         )}

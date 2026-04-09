@@ -1,6 +1,6 @@
 /**
  * Solana Transaction Manager
- * 
+ *
  * NOTE: All publicKey references in this file are Solana PUBLIC KEYS (addresses),
  * not private keys. Private keys are managed securely by KeyManager and never
  * exposed in this file.
@@ -109,9 +109,18 @@ export class TransactionManager implements ITransactionManager {
             taskIdBuf.writeBigUInt64LE(taskId, 0);
 
             // Derive PDAs
-            const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
-            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [configPda] = PublicKey.findProgramAddressSync(
+                [CONFIG_SEED],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
+            const [taskPda] = PublicKey.findProgramAddressSync(
+                [TASK_SEED, taskIdBuf],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
+            const [escrowPda] = PublicKey.findProgramAddressSync(
+                [ESCROW_SEED, taskIdBuf],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
             const [permissionPda] = PublicKey.findProgramAddressSync(
                 [PERMISSION_SEED, taskPda.toBuffer()],
                 MAGICBLOCK_PERMISSION_PROGRAM_ID,
@@ -120,7 +129,10 @@ export class TransactionManager implements ITransactionManager {
                 [JUDGE_POOL_SEED, Buffer.from([params.category])],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync(
+                [EVENT_AUTHORITY_SEED],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
 
             // Prepare mint and judge bytes
             const mintBytes = params.mint ? this.parsePubkeyToBytes(params.mint) : new Uint8Array(32).fill(0);
@@ -190,8 +202,14 @@ export class TransactionManager implements ITransactionManager {
             taskIdBuf.writeBigUInt64LE(taskIdBigInt, 0);
 
             // Derive PDAs
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
-            const [escrowPda] = PublicKey.findProgramAddressSync([ESCROW_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [taskPda] = PublicKey.findProgramAddressSync(
+                [TASK_SEED, taskIdBuf],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
+            const [escrowPda] = PublicKey.findProgramAddressSync(
+                [ESCROW_SEED, taskIdBuf],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
             const [applicationPda] = PublicKey.findProgramAddressSync(
                 [APPLICATION_SEED, taskIdBuf, this.publicKey.toBytes()],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
@@ -200,7 +218,10 @@ export class TransactionManager implements ITransactionManager {
                 [REPUTATION_SEED, this.publicKey.toBytes()],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync(
+                [EVENT_AUTHORITY_SEED],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
 
             // Build instruction data (just discriminator for ApplyForTask)
             const data = Buffer.from([APPLY_FOR_TASK_DISCRIMINATOR]);
@@ -239,19 +260,17 @@ export class TransactionManager implements ITransactionManager {
     /**
      * Submit work result for a task
      */
-    async submitResult(
-        taskId: string,
-        resultCid: string,
-        traceCid?: string,
-        runtimeEnv?: RuntimeEnv,
-    ): Promise<string> {
+    async submitResult(taskId: string, resultCid: string, traceCid?: string, runtimeEnv?: RuntimeEnv): Promise<string> {
         try {
             const taskIdBigInt = BigInt(taskId);
             const taskIdBuf = Buffer.alloc(8);
             taskIdBuf.writeBigUInt64LE(taskIdBigInt, 0);
 
             // Derive PDAs
-            const [taskPda] = PublicKey.findProgramAddressSync([TASK_SEED, taskIdBuf], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [taskPda] = PublicKey.findProgramAddressSync(
+                [TASK_SEED, taskIdBuf],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
             const [applicationPda] = PublicKey.findProgramAddressSync(
                 [APPLICATION_SEED, taskIdBuf, this.publicKey.toBytes()],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
@@ -260,7 +279,10 @@ export class TransactionManager implements ITransactionManager {
                 [SUBMISSION_SEED, taskIdBuf, this.publicKey.toBytes()],
                 addressToPublicKey(ARENA_PROGRAM_ADDRESS),
             );
-            const [eventAuthorityPda] = PublicKey.findProgramAddressSync([EVENT_AUTHORITY_SEED], addressToPublicKey(ARENA_PROGRAM_ADDRESS));
+            const [eventAuthorityPda] = PublicKey.findProgramAddressSync(
+                [EVENT_AUTHORITY_SEED],
+                addressToPublicKey(ARENA_PROGRAM_ADDRESS),
+            );
 
             // Use defaults for optional params
             const finalTraceCid = traceCid ?? resultCid;
@@ -311,12 +333,7 @@ export class TransactionManager implements ITransactionManager {
     /**
      * Judge a task and settle rewards (SOL path).
      */
-    async judgeAndPay(params: {
-        taskId: string;
-        winner: string;
-        score: number;
-        reasonRef?: string;
-    }): Promise<string> {
+    async judgeAndPay(params: { taskId: string; winner: string; score: number; reasonRef?: string }): Promise<string> {
         try {
             const taskIdBigInt = BigInt(params.taskId);
             const taskIdBuf = Buffer.alloc(8);
@@ -341,14 +358,8 @@ export class TransactionManager implements ITransactionManager {
                 [SUBMISSION_SEED, taskIdBuf, winnerBytes],
                 programId,
             );
-            const [winnerReputationPda] = PublicKey.findProgramAddressSync(
-                [REPUTATION_SEED, winnerBytes],
-                programId,
-            );
-            const [judgeStakePda] = PublicKey.findProgramAddressSync(
-                [STAKE_SEED, this.publicKey.toBytes()],
-                programId,
-            );
+            const [winnerReputationPda] = PublicKey.findProgramAddressSync([REPUTATION_SEED, winnerBytes], programId);
+            const [judgeStakePda] = PublicKey.findProgramAddressSync([STAKE_SEED, this.publicKey.toBytes()], programId);
 
             // Read task account to verify judge and path
             const taskAccount = await this.connection.getAccountInfo(taskPda, 'confirmed');
@@ -413,7 +424,10 @@ export class TransactionManager implements ITransactionManager {
             });
 
             const signature = await this.signAndSendTransaction(instruction);
-            logger.info({ signature, taskId: params.taskId, winner: params.winner }, 'Task judged and settled successfully');
+            logger.info(
+                { signature, taskId: params.taskId, winner: params.winner },
+                'Task judged and settled successfully',
+            );
             return signature;
         } catch (error) {
             if (error instanceof DaemonError) throw error;
@@ -580,11 +594,7 @@ export class TransactionManager implements ITransactionManager {
         return Buffer.concat(parts);
     }
 
-    private encodeSubmitResultData(params: {
-        resultRef: string;
-        traceRef: string;
-        runtimeEnv: RuntimeEnv;
-    }): Buffer {
+    private encodeSubmitResultData(params: { resultRef: string; traceRef: string; runtimeEnv: RuntimeEnv }): Buffer {
         const parts: Buffer[] = [];
 
         // discriminator (u8)
@@ -605,11 +615,7 @@ export class TransactionManager implements ITransactionManager {
         return Buffer.concat(parts);
     }
 
-    private encodeJudgeAndPayData(params: {
-        winner: number[];
-        score: number;
-        reasonRef?: string;
-    }): Buffer {
+    private encodeJudgeAndPayData(params: { winner: number[]; score: number; reasonRef?: string }): Buffer {
         const parts: Buffer[] = [];
 
         // discriminator (u8)

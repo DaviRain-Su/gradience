@@ -11,18 +11,18 @@ import { PublicKey } from '@solana/web3.js';
 // ============================================================================
 
 export interface DistributionConfig {
-  /** Chain Hub program ID */
-  chainHubProgramId: PublicKey;
-  /** Protocol treasury address */
-  protocolTreasury: PublicKey;
-  /** Judge pool address */
-  judgePool: PublicKey;
-  /** Distribution percentages (basis points: 10000 = 100%) */
-  percentages: {
-    agent: number;    // 9500 = 95%
-    judge: number;    // 300 = 3%
-    protocol: number; // 200 = 2%
-  };
+    /** Chain Hub program ID */
+    chainHubProgramId: PublicKey;
+    /** Protocol treasury address */
+    protocolTreasury: PublicKey;
+    /** Judge pool address */
+    judgePool: PublicKey;
+    /** Distribution percentages (basis points: 10000 = 100%) */
+    percentages: {
+        agent: number; // 9500 = 95%
+        judge: number; // 300 = 3%
+        protocol: number; // 200 = 2%
+    };
 }
 
 // ============================================================================
@@ -30,43 +30,43 @@ export interface DistributionConfig {
 // ============================================================================
 
 export interface DistributionRequest {
-  /** Payment ID */
-  paymentId: string;
-  /** Task ID */
-  taskId: string;
-  /** Agent receiving payment */
-  agentAddress: PublicKey;
-  /** Judge receiving evaluation fee */
-  judgeAddress: PublicKey;
-  /** Token mint (USDC, SOL, etc.) */
-  tokenMint: PublicKey;
-  /** Total amount in smallest unit */
-  totalAmount: bigint;
-  /** Escrow account holding funds */
-  escrowAccount: PublicKey;
-  /** Authority that can release escrow */
-  escrowAuthority: PublicKey;
+    /** Payment ID */
+    paymentId: string;
+    /** Task ID */
+    taskId: string;
+    /** Agent receiving payment */
+    agentAddress: PublicKey;
+    /** Judge receiving evaluation fee */
+    judgeAddress: PublicKey;
+    /** Token mint (USDC, SOL, etc.) */
+    tokenMint: PublicKey;
+    /** Total amount in smallest unit */
+    totalAmount: bigint;
+    /** Escrow account holding funds */
+    escrowAccount: PublicKey;
+    /** Authority that can release escrow */
+    escrowAuthority: PublicKey;
 }
 
 export interface DistributionResult {
-  /** Distribution ID */
-  distributionId: string;
-  /** Transaction signature */
-  txSignature: string;
-  /** Block time */
-  blockTime: number;
-  /** Slot */
-  slot: number;
-  /** Distribution breakdown */
-  breakdown: {
-    agent: { address: string; amount: bigint };
-    judge: { address: string; amount: bigint };
-    protocol: { address: string; amount: bigint };
-  };
-  /** Status */
-  status: 'confirmed' | 'failed';
-  /** Error message (if failed) */
-  error?: string;
+    /** Distribution ID */
+    distributionId: string;
+    /** Transaction signature */
+    txSignature: string;
+    /** Block time */
+    blockTime: number;
+    /** Slot */
+    slot: number;
+    /** Distribution breakdown */
+    breakdown: {
+        agent: { address: string; amount: bigint };
+        judge: { address: string; amount: bigint };
+        protocol: { address: string; amount: bigint };
+    };
+    /** Status */
+    status: 'confirmed' | 'failed';
+    /** Error message (if failed) */
+    error?: string;
 }
 
 // ============================================================================
@@ -74,17 +74,17 @@ export interface DistributionResult {
 // ============================================================================
 
 export interface TokenAccountInfo {
-  address: PublicKey;
-  mint: PublicKey;
-  owner: PublicKey;
-  balance: bigint;
+    address: PublicKey;
+    mint: PublicKey;
+    owner: PublicKey;
+    balance: bigint;
 }
 
 export interface TokenAccounts {
-  escrow: PublicKey;
-  agent: PublicKey;
-  judge: PublicKey;
-  protocol: PublicKey;
+    escrow: PublicKey;
+    agent: PublicKey;
+    judge: PublicKey;
+    protocol: PublicKey;
 }
 
 // ============================================================================
@@ -92,9 +92,9 @@ export interface TokenAccounts {
 // ============================================================================
 
 export interface DistributionBreakdown {
-  agent: { address: PublicKey; amount: bigint };
-  judge: { address: PublicKey; amount: bigint };
-  protocol: { address: PublicKey; amount: bigint };
+    agent: { address: PublicKey; amount: bigint };
+    judge: { address: PublicKey; amount: bigint };
+    protocol: { address: PublicKey; amount: bigint };
 }
 
 // ============================================================================
@@ -102,7 +102,7 @@ export interface DistributionBreakdown {
 // ============================================================================
 
 export interface DistributionBuilderOptions {
-  config: DistributionConfig;
+    config: DistributionConfig;
 }
 
 // ============================================================================
@@ -110,15 +110,15 @@ export interface DistributionBuilderOptions {
 // ============================================================================
 
 export interface DistributorOptions {
-  chainHubProgramId?: PublicKey;
-  protocolTreasury?: PublicKey;
-  judgePool?: PublicKey;
-  rpcEndpoint?: string;
-  percentages?: {
-    agent?: number;
-    judge?: number;
-    protocol?: number;
-  };
+    chainHubProgramId?: PublicKey;
+    protocolTreasury?: PublicKey;
+    judgePool?: PublicKey;
+    rpcEndpoint?: string;
+    percentages?: {
+        agent?: number;
+        judge?: number;
+        protocol?: number;
+    };
 }
 
 // ============================================================================
@@ -126,6 +126,6 @@ export interface DistributorOptions {
 // ============================================================================
 
 export interface VerificationResult {
-  valid: boolean;
-  error?: string;
+    valid: boolean;
+    error?: string;
 }

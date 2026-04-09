@@ -88,12 +88,20 @@ function Avatar({
             type="button"
             onClick={onClick}
             style={{
-                width: px, height: px, borderRadius: '50%',
-                background: c.lavender, border: `1.5px solid ${c.ink}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, cursor: 'pointer', padding: 0,
+                width: px,
+                height: px,
+                borderRadius: '50%',
+                background: c.lavender,
+                border: `1.5px solid ${c.ink}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                cursor: 'pointer',
+                padding: 0,
                 fontSize: size === 'sm' ? '11px' : size === 'lg' ? '16px' : '13px',
-                fontWeight: 700, color: c.ink,
+                fontWeight: 700,
+                color: c.ink,
             }}
         >
             {author.avatarUrl ? (
@@ -121,27 +129,65 @@ function TaskContent({ data }: { data: TaskPostData }) {
     const sc = stateColors[data.state ?? ''] ?? stateColors.default;
 
     return (
-        <div style={{ marginTop: '12px', padding: '12px', background: c.bg, borderRadius: '12px', border: `1px solid ${c.ink}` }}>
+        <div
+            style={{
+                marginTop: '12px',
+                padding: '12px',
+                background: c.bg,
+                borderRadius: '12px',
+                border: `1px solid ${c.ink}`,
+            }}
+        >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: c.lavender }}>Task #{data.taskId}</span>
                 {data.state && (
-                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: sc.bg, color: sc.color, fontWeight: 600 }}>
+                    <span
+                        style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: sc.bg,
+                            color: sc.color,
+                            fontWeight: 600,
+                        }}
+                    >
                         {data.state}
                     </span>
                 )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', color: c.ink, opacity: 0.7 }}>
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '8px',
+                    fontSize: '12px',
+                    color: c.ink,
+                    opacity: 0.7,
+                }}
+            >
                 {data.reward !== undefined && (
-                    <div><span style={{ opacity: 0.5 }}>Reward: </span><span style={{ color: '#059669', fontWeight: 600 }}>{formatReward(data.reward)}</span></div>
+                    <div>
+                        <span style={{ opacity: 0.5 }}>Reward: </span>
+                        <span style={{ color: '#059669', fontWeight: 600 }}>{formatReward(data.reward)}</span>
+                    </div>
                 )}
                 {data.submissionCount !== undefined && (
-                    <div><span style={{ opacity: 0.5 }}>Submissions: </span><span>{data.submissionCount}</span></div>
+                    <div>
+                        <span style={{ opacity: 0.5 }}>Submissions: </span>
+                        <span>{data.submissionCount}</span>
+                    </div>
                 )}
                 {data.deadline && (
-                    <div><span style={{ opacity: 0.5 }}>Deadline: </span><span>{new Date(data.deadline).toLocaleDateString()}</span></div>
+                    <div>
+                        <span style={{ opacity: 0.5 }}>Deadline: </span>
+                        <span>{new Date(data.deadline).toLocaleDateString()}</span>
+                    </div>
                 )}
                 {data.winner && (
-                    <div><span style={{ opacity: 0.5 }}>Winner: </span><span style={{ fontFamily: 'monospace', color: '#D97706' }}>{truncate(data.winner, 12)}</span></div>
+                    <div>
+                        <span style={{ opacity: 0.5 }}>Winner: </span>
+                        <span style={{ fontFamily: 'monospace', color: '#D97706' }}>{truncate(data.winner, 12)}</span>
+                    </div>
                 )}
             </div>
         </div>
@@ -163,23 +209,47 @@ function AchievementContent({ data }: { data: AchievementPostData }) {
     const icon = data.icon || achievementIcons[data.type];
 
     return (
-        <div style={{ marginTop: '12px', padding: '16px', background: `${c.lime}30`, borderRadius: '12px', border: `1px solid ${c.lime}` }}>
+        <div
+            style={{
+                marginTop: '12px',
+                padding: '16px',
+                background: `${c.lime}30`,
+                borderRadius: '12px',
+                border: `1px solid ${c.lime}`,
+            }}
+        >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '24px' }}>{icon}</span>
                 <div>
                     <h4 style={{ fontWeight: 700, color: c.ink, fontSize: '14px', margin: 0 }}>{data.title}</h4>
                     {data.description && (
-                        <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '2px' }}>{data.description}</p>
+                        <p style={{ fontSize: '13px', color: c.ink, opacity: 0.6, marginTop: '2px' }}>
+                            {data.description}
+                        </p>
                     )}
                 </div>
             </div>
             {(data.taskId !== undefined || data.value !== undefined) && (
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px', color: c.ink, opacity: 0.7 }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '16px',
+                        marginTop: '12px',
+                        fontSize: '12px',
+                        color: c.ink,
+                        opacity: 0.7,
+                    }}
+                >
                     {data.taskId !== undefined && (
-                        <span><span style={{ opacity: 0.5 }}>Task: </span>#{data.taskId}</span>
+                        <span>
+                            <span style={{ opacity: 0.5 }}>Task: </span>#{data.taskId}
+                        </span>
                     )}
                     {data.value !== undefined && (
-                        <span><span style={{ opacity: 0.5 }}>Value: </span><span style={{ color: '#D97706', fontWeight: 600 }}>{data.value}</span></span>
+                        <span>
+                            <span style={{ opacity: 0.5 }}>Value: </span>
+                            <span style={{ color: '#D97706', fontWeight: 600 }}>{data.value}</span>
+                        </span>
                     )}
                 </div>
             )}
@@ -200,14 +270,29 @@ function PostActions({
     onCommentClick?: (post: FeedPost) => void;
 }) {
     const actionStyle: React.CSSProperties = {
-        display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '6px 12px', background: 'transparent', border: 'none',
-        borderRadius: '8px', fontSize: '13px', cursor: 'pointer',
-        color: c.ink, opacity: 0.6,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        background: 'transparent',
+        border: 'none',
+        borderRadius: '8px',
+        fontSize: '13px',
+        cursor: 'pointer',
+        color: c.ink,
+        opacity: 0.6,
     };
 
     return (
-        <div style={{ display: 'flex', gap: '16px', marginTop: '12px', paddingTop: '12px', borderTop: `1px dashed ${c.ink}` }}>
+        <div
+            style={{
+                display: 'flex',
+                gap: '16px',
+                marginTop: '12px',
+                paddingTop: '12px',
+                borderTop: `1px dashed ${c.ink}`,
+            }}
+        >
             <button
                 type="button"
                 onClick={() => onLikeToggle?.(post.id, !post.isLiked)}
@@ -215,11 +300,7 @@ function PostActions({
             >
                 {post.isLiked ? 'u2764ufe0f' : 'ud83eude76'} {post.likeCount > 0 ? post.likeCount : ''}
             </button>
-            <button
-                type="button"
-                onClick={() => onCommentClick?.(post)}
-                style={actionStyle}
-            >
+            <button type="button" onClick={() => onCommentClick?.(post)} style={actionStyle}>
                 ud83dudcac {post.commentCount > 0 ? post.commentCount : ''}
             </button>
         </div>
@@ -250,29 +331,49 @@ export function PostCard({
     return (
         <article
             style={{
-                background: c.surface, border: `1.5px solid ${c.ink}`,
-                borderRadius: '20px', padding: '20px', cursor: 'pointer',
+                background: c.surface,
+                border: `1.5px solid ${c.ink}`,
+                borderRadius: '20px',
+                padding: '20px',
+                cursor: 'pointer',
                 transition: 'box-shadow 0.15s',
             }}
             onClick={() => onPostClick?.(post)}
             role="article"
         >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Avatar
-                    author={post.author}
-                    onClick={() => onAuthorClick?.(post.author)}
-                />
+                <Avatar author={post.author} onClick={() => onAuthorClick?.(post.author)} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); onAuthorClick?.(post.author); }}
-                            style={{ fontWeight: 700, fontSize: '14px', color: c.ink, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAuthorClick?.(post.author);
+                            }}
+                            style={{
+                                fontWeight: 700,
+                                fontSize: '14px',
+                                color: c.ink,
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 0,
+                            }}
                         >
                             {displayName}
                         </button>
                         {indicator.label && (
-                            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: indicator.bg, color: indicator.color, fontWeight: 600 }}>
+                            <span
+                                style={{
+                                    fontSize: '11px',
+                                    padding: '2px 8px',
+                                    borderRadius: '999px',
+                                    background: indicator.bg,
+                                    color: indicator.color,
+                                    fontWeight: 600,
+                                }}
+                            >
                                 {indicator.label}
                             </span>
                         )}
@@ -281,7 +382,15 @@ export function PostCard({
                         </span>
                     </div>
                     {post.author.displayName && (
-                        <p style={{ fontSize: '12px', color: c.ink, opacity: 0.5, fontFamily: 'monospace', margin: '2px 0 0' }}>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                color: c.ink,
+                                opacity: 0.5,
+                                fontFamily: 'monospace',
+                                margin: '2px 0 0',
+                            }}
+                        >
                             {truncate(post.author.address, 16)}
                         </p>
                     )}
@@ -289,9 +398,13 @@ export function PostCard({
             </div>
 
             <div style={{ marginTop: '12px' }}>
-                <p style={{ fontSize: '14px', color: c.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{post.content}</p>
+                <p style={{ fontSize: '14px', color: c.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                    {post.content}
+                </p>
                 {post.type === 'task' && post.taskData && <TaskContent data={post.taskData} />}
-                {post.type === 'achievement' && post.achievementData && <AchievementContent data={post.achievementData} />}
+                {post.type === 'achievement' && post.achievementData && (
+                    <AchievementContent data={post.achievementData} />
+                )}
             </div>
 
             <PostActions post={post} onLikeToggle={onLikeToggle} onCommentClick={onCommentClick} />

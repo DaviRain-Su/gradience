@@ -16,7 +16,7 @@ export interface SigningPolicy {
 }
 
 export const DEFAULT_POLICY: Readonly<SigningPolicy> = {
-    dailyLimitLamports: 1_000_000,       // 0.001 SOL
+    dailyLimitLamports: 1_000_000, // 0.001 SOL
     requireMasterApprovalAbove: 100_000_000, // 0.1 SOL
     allowedPrograms: [],
     expiresAt: null,
@@ -245,11 +245,7 @@ export class AuthorizationManager {
      * Record the lamport cost of a successfully submitted transaction.
      * Must be called after every transaction that passes checkTransaction().
      */
-    recordSpend(params: {
-        amountLamports: number;
-        program: string;
-        txSignature: string;
-    }): void {
+    recordSpend(params: { amountLamports: number; program: string; txSignature: string }): void {
         const id = randomBytes(16).toString('hex');
         this.stmts.insertSpend.run(id, params.amountLamports, params.program, params.txSignature, Date.now());
     }
@@ -301,10 +297,7 @@ export class AuthorizationManager {
 
     /** Returns the message that must be signed verbatim by the Solana wallet adapter. */
     private buildChallengeMessage(challenge: string): string {
-        return (
-            `Authorize agent ${this.agentWallet} as your signing delegate.\n` +
-            `Challenge: ${challenge}`
-        );
+        return `Authorize agent ${this.agentWallet} as your signing delegate.\n` + `Challenge: ${challenge}`;
     }
 
     private decodePubkey(pubkey: string, fieldName: string): Uint8Array {
@@ -315,7 +308,11 @@ export class AuthorizationManager {
             throw new DaemonError(ErrorCodes.INVALID_REQUEST, `Invalid ${fieldName}: not valid base58`, 400);
         }
         if (bytes.length !== 32) {
-            throw new DaemonError(ErrorCodes.INVALID_REQUEST, `Invalid ${fieldName}: expected 32-byte ed25519 pubkey`, 400);
+            throw new DaemonError(
+                ErrorCodes.INVALID_REQUEST,
+                `Invalid ${fieldName}: expected 32-byte ed25519 pubkey`,
+                400,
+            );
         }
         return bytes;
     }
@@ -328,7 +325,11 @@ export class AuthorizationManager {
             throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid signature: not valid base64', 400);
         }
         if (bytes.length !== 64) {
-            throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'Invalid signature: expected 64-byte ed25519 signature', 400);
+            throw new DaemonError(
+                ErrorCodes.INVALID_REQUEST,
+                'Invalid signature: expected 64-byte ed25519 signature',
+                400,
+            );
         }
         return bytes;
     }
@@ -340,26 +341,42 @@ export class AuthorizationManager {
             throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'dailyLimitLamports must be a non-negative integer', 400);
         }
         if (!Number.isInteger(base.requireMasterApprovalAbove) || base.requireMasterApprovalAbove < 0) {
-            throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'requireMasterApprovalAbove must be a non-negative integer', 400);
+            throw new DaemonError(
+                ErrorCodes.INVALID_REQUEST,
+                'requireMasterApprovalAbove must be a non-negative integer',
+                400,
+            );
         }
         if (!Array.isArray(base.allowedPrograms)) {
             throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'allowedPrograms must be an array', 400);
         }
         for (const p of base.allowedPrograms) {
             if (typeof p !== 'string' || p.length === 0) {
-                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'allowedPrograms entries must be non-empty strings', 400);
+                throw new DaemonError(
+                    ErrorCodes.INVALID_REQUEST,
+                    'allowedPrograms entries must be non-empty strings',
+                    400,
+                );
             }
             // Validate each entry is a plausible base58 pubkey.
             try {
                 const decoded = bs58.decode(p);
                 if (decoded.length !== 32) throw new Error();
             } catch {
-                throw new DaemonError(ErrorCodes.INVALID_REQUEST, `allowedPrograms entry "${p}" is not a valid base58 pubkey`, 400);
+                throw new DaemonError(
+                    ErrorCodes.INVALID_REQUEST,
+                    `allowedPrograms entry "${p}" is not a valid base58 pubkey`,
+                    400,
+                );
             }
         }
         if (base.expiresAt !== null) {
             if (!Number.isInteger(base.expiresAt) || base.expiresAt <= Date.now()) {
-                throw new DaemonError(ErrorCodes.INVALID_REQUEST, 'expiresAt must be a future Unix millisecond timestamp', 400);
+                throw new DaemonError(
+                    ErrorCodes.INVALID_REQUEST,
+                    'expiresAt must be a future Unix millisecond timestamp',
+                    400,
+                );
             }
         }
 
@@ -389,29 +406,19 @@ export class AuthorizationManager {
                     authorized_at = excluded.authorized_at,
                     expires_at = excluded.expires_at
             `),
-            getAuth: db.prepare(
-                `SELECT * FROM wallet_authorizations WHERE agent_wallet = ? LIMIT 1`
-            ),
-            revokeAuth: db.prepare(
-                `UPDATE wallet_authorizations SET authorized = 0 WHERE agent_wallet = ?`
-            ),
+            getAuth: db.prepare(`SELECT * FROM wallet_authorizations WHERE agent_wallet = ? LIMIT 1`),
+            revokeAuth: db.prepare(`UPDATE wallet_authorizations SET authorized = 0 WHERE agent_wallet = ?`),
             insertChallenge: db.prepare(
-                `INSERT INTO wallet_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)`
+                `INSERT INTO wallet_challenges (challenge, created_at, expires_at) VALUES (?, ?, ?)`,
             ),
-            getChallenge: db.prepare(
-                `SELECT * FROM wallet_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1`
-            ),
-            deleteChallenge: db.prepare(
-                `DELETE FROM wallet_challenges WHERE challenge = ?`
-            ),
-            pruneExpiredChallenges: db.prepare(
-                `DELETE FROM wallet_challenges WHERE expires_at <= ?`
-            ),
+            getChallenge: db.prepare(`SELECT * FROM wallet_challenges WHERE challenge = ? AND expires_at > ? LIMIT 1`),
+            deleteChallenge: db.prepare(`DELETE FROM wallet_challenges WHERE challenge = ?`),
+            pruneExpiredChallenges: db.prepare(`DELETE FROM wallet_challenges WHERE expires_at <= ?`),
             insertSpend: db.prepare(
-                `INSERT INTO wallet_spend_log (id, amount_lamports, program, tx_signature, created_at) VALUES (?, ?, ?, ?, ?)`
+                `INSERT INTO wallet_spend_log (id, amount_lamports, program, tx_signature, created_at) VALUES (?, ?, ?, ?, ?)`,
             ),
             getDailySpend: db.prepare(
-                `SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM wallet_spend_log WHERE created_at >= ?`
+                `SELECT COALESCE(SUM(amount_lamports), 0) AS total FROM wallet_spend_log WHERE created_at >= ?`,
             ),
         };
     }

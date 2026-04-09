@@ -26,41 +26,41 @@ pnpm add @gradiences/soul-engine
 import { SoulProfile, SoulType, PrivacyLevel } from '@gradiences/soul-engine/types';
 
 const profile: SoulProfile = {
-  id: 'uuid-here',
-  version: '1.0',
-  soulType: 'agent',
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-  identity: {
-    displayName: 'Alice AI',
-    bio: 'A friendly AI assistant',
-  },
-  values: {
-    core: ['honesty', 'creativity'],
-    priorities: ['learning', 'helping'],
-    dealBreakers: ['deception'],
-  },
-  interests: {
-    topics: ['AI', 'blockchain'],
-    skills: ['conversation', 'analysis'],
-    goals: ['continuous improvement'],
-  },
-  communication: {
-    tone: 'friendly',
-    pace: 'moderate',
-    depth: 'deep',
-  },
-  boundaries: {
-    forbiddenTopics: ['politics', 'religion'],
-    maxConversationLength: 20,
-    privacyLevel: 'public',
-  },
-  storage: {
-    contentHash: 'sha256-hash',
-    embeddingHash: 'embedding-hash',
-    storageType: 'ipfs',
-    cid: 'QmXXXXX',
-  },
+    id: 'uuid-here',
+    version: '1.0',
+    soulType: 'agent',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    identity: {
+        displayName: 'Alice AI',
+        bio: 'A friendly AI assistant',
+    },
+    values: {
+        core: ['honesty', 'creativity'],
+        priorities: ['learning', 'helping'],
+        dealBreakers: ['deception'],
+    },
+    interests: {
+        topics: ['AI', 'blockchain'],
+        skills: ['conversation', 'analysis'],
+        goals: ['continuous improvement'],
+    },
+    communication: {
+        tone: 'friendly',
+        pace: 'moderate',
+        depth: 'deep',
+    },
+    boundaries: {
+        forbiddenTopics: ['politics', 'religion'],
+        maxConversationLength: 20,
+        privacyLevel: 'public',
+    },
+    storage: {
+        contentHash: 'sha256-hash',
+        embeddingHash: 'embedding-hash',
+        storageType: 'ipfs',
+        cid: 'QmXXXXX',
+    },
 };
 ```
 

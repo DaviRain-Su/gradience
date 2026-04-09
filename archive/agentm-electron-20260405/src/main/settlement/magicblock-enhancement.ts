@@ -157,10 +157,7 @@ export class MagicBlockExecutionEngine {
     /**
      * Execute operations in Ephemeral Rollup
      */
-    async execute(
-        sessionId: string,
-        operations: unknown[]
-    ): Promise<ExecutionResult> {
+    async execute(sessionId: string, operations: unknown[]): Promise<ExecutionResult> {
         const session = this.sessions.get(sessionId);
         if (!session) {
             return {
@@ -309,11 +306,7 @@ export class MagicBlockExecutionEngine {
      * Generate random selection using VRF
      * Used by Judge to select agents randomly for task evaluation
      */
-    generateVRFSelection(
-        candidates: string[],
-        count: number,
-        seed?: Uint8Array
-    ): string[] {
+    generateVRFSelection(candidates: string[], count: number, seed?: Uint8Array): string[] {
         if (!this.vrf.enabled) {
             console.warn('[MagicBlock] VRF not enabled, using pseudo-random selection');
             return this.pseudoRandomSelection(candidates, count);
@@ -364,7 +357,7 @@ export class MagicBlockExecutionEngine {
      */
     async linkToContractCall(
         sessionId: string,
-        contractCall: { method: string; params: unknown[] }
+        contractCall: { method: string; params: unknown[] },
     ): Promise<ExecutionResult> {
         const session = this.sessions.get(sessionId);
         if (!session) {
@@ -406,9 +399,7 @@ export class MagicBlockExecutionEngine {
      * Get active sessions
      */
     getActiveSessions(): ExecutionSession[] {
-        return this.listSessions().filter(
-            (s) => s.state !== 'idle' && s.state !== 'committed' && s.state !== 'error'
-        );
+        return this.listSessions().filter((s) => s.state !== 'idle' && s.state !== 'committed' && s.state !== 'error');
     }
 
     // ============ Private Methods ============

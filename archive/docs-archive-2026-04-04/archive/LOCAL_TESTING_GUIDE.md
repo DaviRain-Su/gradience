@@ -10,12 +10,12 @@
 
 ### ✅ 已就绪
 
-| 组件 | 状态 | 访问地址 |
-|------|------|----------|
-| **AgentM 桌面** | ✅ 运行中 | http://localhost:5199 |
-| **ChainHub 合约** | ✅ 已构建 | 待部署到 devnet |
-| **Solana CLI** | ✅ 已配置 | devnet |
-| **A2A 多协议** | ✅ 83 测试通过 | 本地测试可用 |
+| 组件              | 状态           | 访问地址              |
+| ----------------- | -------------- | --------------------- |
+| **AgentM 桌面**   | ✅ 运行中      | http://localhost:5199 |
+| **ChainHub 合约** | ✅ 已构建      | 待部署到 devnet       |
+| **Solana CLI**    | ✅ 已配置      | devnet                |
+| **A2A 多协议**    | ✅ 83 测试通过 | 本地测试可用          |
 
 ### ⚠️ 需要完成
 
@@ -32,6 +32,7 @@
 **打开浏览器访问**: http://localhost:5199
 
 **可测试功能**:
+
 - 界面布局和导航
 - 钱包连接 (Privy)
 - 设置页面
@@ -45,6 +46,7 @@ pnpm test
 ```
 
 **测试结果**:
+
 - 83 个单元测试
 - 覆盖 Nostr/libp2p/MagicBlock/WebRTC
 - 跨链桥适配器测试
@@ -56,8 +58,8 @@ MagicBlock 适配器支持内存模式，无需真实链:
 ```typescript
 // 在浏览器控制台测试
 const magicblock = new MagicBlockAdapter({
-  agentId: 'test-agent-1',
-  endpoint: 'memory', // 内存模式
+    agentId: 'test-agent-1',
+    endpoint: 'memory', // 内存模式
 });
 await magicblock.initialize();
 ```
@@ -184,6 +186,7 @@ solana program deploy target/deploy/chain_hub.so
 ### Q: 我们测试 Solana 上的所有内容吗？
 
 **A**: 是的，主要测试 Solana 生态:
+
 - ChainHub 合约 (Solana)
 - Agent 身份 (Solana)
 - 声誉系统 (Solana)
@@ -192,6 +195,7 @@ solana program deploy target/deploy/chain_hub.so
 ### Q: 可以连接本地 Agent 吗？
 
 **A**: 目前需要:
+
 1. 部署合约到 devnet
 2. 启动 indexer 服务
 3. 然后可以连接本地测试 agent
@@ -232,13 +236,13 @@ pnpm test
 
 ## 状态总结
 
-| 功能 | 本地测试 | Devnet 测试 | 生产环境 |
-|------|----------|-------------|----------|
-| AgentM 界面 | ✅ 可用 | N/A | N/A |
-| A2A 协议 | ✅ 单元测试 | ⚠️ 需部署 | ❌ |
-| ChainHub 合约 | ⚠️ 模拟 | ⚠️ 需部署 | ❌ |
-| Agent 发现 | ⚠️ 需 indexer | ⚠️ 需部署 | ❌ |
-| 跨链桥 | ✅ 单元测试 | ⚠️ 需配置 | ❌ |
+| 功能          | 本地测试      | Devnet 测试 | 生产环境 |
+| ------------- | ------------- | ----------- | -------- |
+| AgentM 界面   | ✅ 可用       | N/A         | N/A      |
+| A2A 协议      | ✅ 单元测试   | ⚠️ 需部署   | ❌       |
+| ChainHub 合约 | ⚠️ 模拟       | ⚠️ 需部署   | ❌       |
+| Agent 发现    | ⚠️ 需 indexer | ⚠️ 需部署   | ❌       |
+| 跨链桥        | ✅ 单元测试   | ⚠️ 需配置   | ❌       |
 
 ---
 

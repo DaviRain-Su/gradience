@@ -82,25 +82,25 @@ Agent C-N (投资型): "我分析了这个 Token 的基本面，决定投资"
 
 ```yaml
 Local-First Token 平台:
-  私钥管理:
-    - 用户本地生成和存储私钥
-    - 平台永远接触不到用户私钥
-    - 支持 TEE 保护 (OKX OnchainOS)
-  
-  数据索引:
-    - 本地运行索引器 (类似 The Graph 但本地)
-    - 无需依赖第三方 RPC
-    - P2P 同步数据
-  
-  发射能力:
-    - 用户本地构建和签名交易
-    - 平台只提供模板和验证
-    - 发射后数据本地存储
-  
-  可验证性:
-    - 所有逻辑开源可审计
-    - 本地可运行完整节点
-    - 不依赖平台诚实性
+    私钥管理:
+        - 用户本地生成和存储私钥
+        - 平台永远接触不到用户私钥
+        - 支持 TEE 保护 (OKX OnchainOS)
+
+    数据索引:
+        - 本地运行索引器 (类似 The Graph 但本地)
+        - 无需依赖第三方 RPC
+        - P2P 同步数据
+
+    发射能力:
+        - 用户本地构建和签名交易
+        - 平台只提供模板和验证
+        - 发射后数据本地存储
+
+    可验证性:
+        - 所有逻辑开源可审计
+        - 本地可运行完整节点
+        - 不依赖平台诚实性
 ```
 
 ---
@@ -112,60 +112,60 @@ Local-First Token 平台:
 ```typescript
 // Agent 可以通过 API 程序化发射 Token
 interface TokenLaunchRequest {
-  // 基础信息
-  name: string;           // Token 名称
-  symbol: string;         // Token 符号
-  totalSupply: bigint;    // 总供应量
-  
-  // Agent-Native 特性
-  creatorAgent: {
-    did: string;          // Agent DID (ERC-8004)
-    reputation: number;   // Arena 信誉分数
-    proof: string;        // 零知识证明
-  };
-  
-  // 自动化参数
-  liquidity: {
-    autoLock: boolean;    // 自动锁仓
-    lockPeriod: number;   // 锁仓时长
-    veToken: boolean;     // 是否启用 veToken 机制
-  };
-  
-  // 治理参数 (可选)
-  governance: {
-    type: 'agent-council' | 'dao';
-    minReputation: number; // 参与治理的最小信誉
-  };
-  
-  // 实战验证要求
-  battleTest: {
-    required: boolean;
-    minHolders: number;   // 最小持有者数
-    minVolume: bigint;    // 最小交易量
-    duration: number;     // 验证期时长
-  };
+    // 基础信息
+    name: string; // Token 名称
+    symbol: string; // Token 符号
+    totalSupply: bigint; // 总供应量
+
+    // Agent-Native 特性
+    creatorAgent: {
+        did: string; // Agent DID (ERC-8004)
+        reputation: number; // Arena 信誉分数
+        proof: string; // 零知识证明
+    };
+
+    // 自动化参数
+    liquidity: {
+        autoLock: boolean; // 自动锁仓
+        lockPeriod: number; // 锁仓时长
+        veToken: boolean; // 是否启用 veToken 机制
+    };
+
+    // 治理参数 (可选)
+    governance: {
+        type: 'agent-council' | 'dao';
+        minReputation: number; // 参与治理的最小信誉
+    };
+
+    // 实战验证要求
+    battleTest: {
+        required: boolean;
+        minHolders: number; // 最小持有者数
+        minVolume: bigint; // 最小交易量
+        duration: number; // 验证期时长
+    };
 }
 
 // 发射流程
 async function launchToken(request: TokenLaunchRequest): Promise<LaunchResult> {
-  // 1. 验证 Agent 身份和信誉
-  const agentProfile = await verifyAgent(request.creatorAgent);
-  
-  // 2. 本地构建合约
-  const contract = await buildTokenContract(request);
-  
-  // 3. 本地签名
-  const signedTx = await localWallet.sign(contract.deployTx);
-  
-  // 4. 广播交易
-  const receipt = await broadcast(signedTx);
-  
-  // 5. 启动实战验证期
-  if (request.battleTest.required) {
-    await startBattleTest(receipt.tokenAddress, request.battleTest);
-  }
-  
-  return receipt;
+    // 1. 验证 Agent 身份和信誉
+    const agentProfile = await verifyAgent(request.creatorAgent);
+
+    // 2. 本地构建合约
+    const contract = await buildTokenContract(request);
+
+    // 3. 本地签名
+    const signedTx = await localWallet.sign(contract.deployTx);
+
+    // 4. 广播交易
+    const receipt = await broadcast(signedTx);
+
+    // 5. 启动实战验证期
+    if (request.battleTest.required) {
+        await startBattleTest(receipt.tokenAddress, request.battleTest);
+    }
+
+    return receipt;
 }
 ```
 
@@ -208,9 +208,9 @@ contract BattleTest {
         uint256 minVolume;
         bool passed;
     }
-    
+
     mapping(address => TestPeriod) public tokenTests;
-    
+
     // Token 发射后进入实战验证期
     function startBattleTest(
         address token,
@@ -226,20 +226,20 @@ contract BattleTest {
             passed: false
         });
     }
-    
+
     // 任何人可以触发验证结算
     function finalizeBattleTest(address token) external {
         TestPeriod storage test = tokenTests[token];
         require(block.timestamp >= test.endTime, "Test ongoing");
-        
+
         // 获取实际数据
         uint256 actualHolders = getHolderCount(token);
         uint256 actualVolume = getTradingVolume(token);
-        
+
         // 判断是否通过
-        test.passed = (actualHolders >= test.minHolders) && 
+        test.passed = (actualHolders >= test.minHolders) &&
                       (actualVolume >= test.minVolume);
-        
+
         if (test.passed) {
             // 解锁流动性奖励
             unlockLiquidityRewards(token);
@@ -315,16 +315,16 @@ Token 发射生态中的 Agent 角色:
 
 ### 4.2 与传统发射平台的对比
 
-| 维度 | 传统平台 (Pump.fun) | AgentToken (Local-First) |
-|------|-------------------|-------------------------|
-| **用户** | 人类 | Agent (也可人类)
-| **发射** | 网页表单 | API + 代码
-| **验证** | 无 | 实战验证 (Battle Test)
-| **身份** | 匿名钱包 | DID + 信誉
-| **流动性** | 手动添加 | 自动化 + 锁仓
-| **数据** | 平台控制 | 本地索引 + P2P
-| **私钥** | 平台托管风险 | 用户本地控制
-| **Rug Pull** | 频繁 | 机制抑制 |
+| 维度         | 传统平台 (Pump.fun) | AgentToken (Local-First) |
+| ------------ | ------------------- | ------------------------ |
+| **用户**     | 人类                | Agent (也可人类)         |
+| **发射**     | 网页表单            | API + 代码               |
+| **验证**     | 无                  | 实战验证 (Battle Test)   |
+| **身份**     | 匿名钱包            | DID + 信誉               |
+| **流动性**   | 手动添加            | 自动化 + 锁仓            |
+| **数据**     | 平台控制            | 本地索引 + P2P           |
+| **私钥**     | 平台托管风险        | 用户本地控制             |
+| **Rug Pull** | 频繁                | 机制抑制                 |
 
 ---
 
@@ -368,7 +368,7 @@ contract AgentTokenFactory {
         bytes32 indexed agentDID,
         uint256 launchTime
     );
-    
+
     struct LaunchParams {
         string name;
         string symbol;
@@ -379,27 +379,27 @@ contract AgentTokenFactory {
         bool requireBattleTest;
         uint256 battleTestDuration;
     }
-    
-    function launchToken(LaunchParams calldata params) 
-        external 
-        returns (address tokenAddress) 
+
+    function launchToken(LaunchParams calldata params)
+        external
+        returns (address tokenAddress)
     {
         // 验证 Agent 身份
         require(verifyAgent(params.agentDID, params.agentProof), "Invalid agent");
-        
+
         // 根据信誉调整发射限额
         uint256 maxSupply = calculateMaxSupply(params.reputationScore);
         require(params.totalSupply <= maxSupply, "Exceeds limit");
-        
+
         // 创建 Token 合约
         AgentToken token = new AgentToken(params);
         tokenAddress = address(token);
-        
+
         // 启动实战验证
         if (params.requireBattleTest) {
             battleTest.startBattleTest(tokenAddress, params.battleTestDuration);
         }
-        
+
         emit TokenLaunched(tokenAddress, msg.sender, params.agentDID, block.timestamp);
     }
 }
@@ -409,18 +409,18 @@ contract AgentToken is ERC20 {
     bytes32 public agentDID;
     uint256 public launchTime;
     bool public battleTestPassed;
-    
+
     modifier onlyAfterBattleTest() {
         require(battleTestPassed, "Battle test not passed");
         _;
     }
-    
+
     // 只有实战验证通过后才能大额转账
-    function transfer(address to, uint256 amount) 
-        public 
-        override 
-        onlyAfterBattleTest 
-        returns (bool) 
+    function transfer(address to, uint256 amount)
+        public
+        override
+        onlyAfterBattleTest
+        returns (bool)
     {
         return super.transfer(to, amount);
     }
@@ -479,13 +479,13 @@ AgentToken + Gradience = 完整的 Agent 经济闭环
 
 ### 7.2 与现有平台的关键差异
 
-| 方面 | 现有平台 | AgentToken |
-|------|---------|------------|
-| 设计假设 | 人类用户 | AI Agent |
-| 发射方式 | 网页表单 | API/代码 |
+| 方面     | 现有平台 | AgentToken |
+| -------- | -------- | ---------- |
+| 设计假设 | 人类用户 | AI Agent   |
+| 发射方式 | 网页表单 | API/代码   |
 | 身份验证 | 钱包地址 | DID + 信誉 |
-| 质量保证 | 无 | 实战验证 |
-| 数据控制 | 平台控制 | 用户本地 |
+| 质量保证 | 无       | 实战验证   |
+| 数据控制 | 平台控制 | 用户本地   |
 
 ### 7.3 一句话定义
 
@@ -493,4 +493,4 @@ AgentToken + Gradience = 完整的 Agent 经济闭环
 
 ---
 
-*"当 Agent 成为经济参与者，Token 发射也需要 Agent-Native 的基础设施。"*
+_"当 Agent 成为经济参与者，Token 发射也需要 Agent-Native 的基础设施。"_

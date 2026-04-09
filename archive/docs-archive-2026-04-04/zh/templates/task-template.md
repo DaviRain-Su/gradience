@@ -1,12 +1,12 @@
 ---
-linear-id: {{ID}}
-title: "{{TITLE}}"
+linear-id: { { ID } }
+title: '{{TITLE}}'
 status: todo
-priority: {{PRIORITY}}
-project: "{{PROJECT}}"
-created: {{DATE}}
-assignee: "Code Agent"
-tags: [task, {{PRIORITY_LOWER}}, {{PROJECT_LOWER}}]
+priority: { { PRIORITY } }
+project: '{{PROJECT}}'
+created: { { DATE } }
+assignee: 'Code Agent'
+tags: [task, { { PRIORITY_LOWER } }, { { PROJECT_LOWER } }]
 ---
 
 # {{ID}}: {{TITLE}}
@@ -14,11 +14,13 @@ tags: [task, {{PRIORITY_LOWER}}, {{PROJECT_LOWER}}]
 ## Description
 
 ## Acceptance Criteria
-- [ ] 
+
+- [ ]
 
 ## Related Tasks
 
 ## Notes
 
 ## Log
+
 - {{DATE}}: Created

@@ -24,9 +24,9 @@ GitHub Repo (main branch) ──► Vercel Production Deployment
 
 - **触发条件**: 针对 `main` 分支的 Pull Request
 - **特性**:
-  - 每个 PR 自动创建预览环境
-  - PR 评论中自动发布预览链接
-  - 支持视觉回归测试
+    - 每个 PR 自动创建预览环境
+    - PR 评论中自动发布预览链接
+    - 支持视觉回归测试
 
 ## 配置步骤
 
@@ -37,9 +37,9 @@ GitHub Repo (main branch) ──► Vercel Production Deployment
 3. 选择项目根目录为 `website`
 4. 框架预设选择 `Next.js`
 5. 构建设置：
-   - Build Command: `cd .. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/website build`
-   - Output Directory: `.next`
-   - Install Command: `cd .. && pnpm install --frozen-lockfile`
+    - Build Command: `cd .. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/website build`
+    - Output Directory: `.next`
+    - Install Command: `cd .. && pnpm install --frozen-lockfile`
 
 ### 第二步：配置环境变量
 
@@ -73,11 +73,11 @@ NEXT_TELEMETRY_DISABLED=1
 
 在 GitHub Repository > Settings > Secrets and variables > Actions 中添加：
 
-| Secret Name | Description | How to Get |
-|------------|-------------|------------|
-| `VERCEL_TOKEN` | Vercel API Token | Vercel Dashboard > Settings > Tokens |
-| `VERCEL_ORG_ID` | Vercel Organization ID | Vercel Project Settings > General |
-| `VERCEL_PROJECT_ID_WEBSITE` | Vercel Project ID | Vercel Project Settings > General |
+| Secret Name                 | Description            | How to Get                           |
+| --------------------------- | ---------------------- | ------------------------------------ |
+| `VERCEL_TOKEN`              | Vercel API Token       | Vercel Dashboard > Settings > Tokens |
+| `VERCEL_ORG_ID`             | Vercel Organization ID | Vercel Project Settings > General    |
+| `VERCEL_PROJECT_ID_WEBSITE` | Vercel Project ID      | Vercel Project Settings > General    |
 
 获取方式：
 
@@ -101,29 +101,29 @@ vercel link
 1. GitHub Repository > Settings > Environments
 2. 创建 `production` 环境
 3. 配置保护规则：
-   - **Required reviewers**: 添加审核人员
-   - **Wait timer**: 设置等待时间
-   - **Deployment branches**: 限制为 `main` 分支
+    - **Required reviewers**: 添加审核人员
+    - **Wait timer**: 设置等待时间
+    - **Deployment branches**: 限制为 `main` 分支
 
 ## 环境变量说明
 
 ### 必需变量
 
-| 变量名 | 用途 | 来源 |
-|-------|------|------|
-| `RESEND_API_KEY` | 邮件服务 API | [Resend](https://resend.com) |
-| `ADMIN_EMAIL` | 管理员邮箱通知 | 自定义 |
-| `KV_URL` | Redis 连接 URL | Vercel KV Dashboard |
-| `KV_REST_API_URL` | KV REST API 端点 | Vercel KV Dashboard |
-| `KV_REST_API_TOKEN` | KV 读写 Token | Vercel KV Dashboard |
-| `KV_REST_API_READ_ONLY_TOKEN` | KV 只读 Token | Vercel KV Dashboard |
+| 变量名                        | 用途             | 来源                         |
+| ----------------------------- | ---------------- | ---------------------------- |
+| `RESEND_API_KEY`              | 邮件服务 API     | [Resend](https://resend.com) |
+| `ADMIN_EMAIL`                 | 管理员邮箱通知   | 自定义                       |
+| `KV_URL`                      | Redis 连接 URL   | Vercel KV Dashboard          |
+| `KV_REST_API_URL`             | KV REST API 端点 | Vercel KV Dashboard          |
+| `KV_REST_API_TOKEN`           | KV 读写 Token    | Vercel KV Dashboard          |
+| `KV_REST_API_READ_ONLY_TOKEN` | KV 只读 Token    | Vercel KV Dashboard          |
 
 ### 可选变量
 
-| 变量名 | 用途 | 默认值 |
-|-------|------|-------|
-| `NEXT_TELEMETRY_DISABLED` | 禁用 Next.js 遥测 | `1` |
-| `ADMIN_API_KEY` | 管理 API 访问密钥 | - |
+| 变量名                    | 用途              | 默认值 |
+| ------------------------- | ----------------- | ------ |
+| `NEXT_TELEMETRY_DISABLED` | 禁用 Next.js 遥测 | `1`    |
+| `ADMIN_API_KEY`           | 管理 API 访问密钥 | -      |
 
 ## 手动部署
 

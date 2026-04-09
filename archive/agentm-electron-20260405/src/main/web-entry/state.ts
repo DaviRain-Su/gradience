@@ -1,9 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import {
-    BRIDGE_TIMEOUT_MS,
-    PAIR_CODE_LEN,
-    PAIR_CODE_TTL_MS,
-} from './constants.ts';
+import { BRIDGE_TIMEOUT_MS, PAIR_CODE_LEN, PAIR_CODE_TTL_MS } from './constants.ts';
 import type { AgentPresence, BridgeSession, PairCodeRecord } from './types.ts';
 
 const PAIR_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -44,10 +40,7 @@ export function createWebEntryState(config: Partial<WebEntryConfig> = {}): WebEn
     };
 }
 
-export function issuePairCode(
-    state: WebEntryState,
-    input: { userId: string; sessionId: string; now: number },
-) {
+export function issuePairCode(state: WebEntryState, input: { userId: string; sessionId: string; now: number }) {
     let pairCode = generatePairCode();
     while (state.pairCodes.has(pairCode)) {
         pairCode = generatePairCode();
@@ -69,10 +62,7 @@ export function issuePairCode(
     };
 }
 
-export function consumePairCode(
-    state: WebEntryState,
-    input: { pairCode: string; machineName: string; now: number },
-) {
+export function consumePairCode(state: WebEntryState, input: { pairCode: string; machineName: string; now: number }) {
     const pairCode = input.pairCode.trim().toUpperCase();
     if (!/^[A-Z0-9]{8}$/.test(pairCode)) {
         throw new WebEntryError(400, 'WB-1002', 'Pair code invalid');
@@ -118,10 +108,7 @@ export function consumePairCode(
     };
 }
 
-export function setBridgeOnline(
-    state: WebEntryState,
-    input: { bridgeId: string; now: number },
-) {
+export function setBridgeOnline(state: WebEntryState, input: { bridgeId: string; now: number }) {
     const bridge = state.bridges.get(input.bridgeId);
     if (!bridge) return;
     bridge.status = 'online';
@@ -138,10 +125,7 @@ export function setBridgeOffline(state: WebEntryState, bridgeId: string, now: nu
     state.agentPresenceByBridge.set(bridgeId, new Map());
 }
 
-export function recordHeartbeat(
-    state: WebEntryState,
-    input: { bridgeId: string; now: number },
-) {
+export function recordHeartbeat(state: WebEntryState, input: { bridgeId: string; now: number }) {
     const bridge = state.bridges.get(input.bridgeId);
     if (!bridge) return;
     bridge.lastHeartbeatAt = input.now;
@@ -186,10 +170,7 @@ export function upsertAgentPresence(
     state.bridges.set(input.bridgeId, bridge);
 }
 
-export function listAgentsForSession(
-    state: WebEntryState,
-    input: { sessionId: string; now: number },
-) {
+export function listAgentsForSession(state: WebEntryState, input: { sessionId: string; now: number }) {
     sweepTimeouts(state, input.now);
     const items: AgentPresence[] = [];
     for (const [bridgeId, bridge] of state.bridges.entries()) {
@@ -221,10 +202,7 @@ export function findBridgeForSessionAgent(
     return null;
 }
 
-export function hasOnlineBridgeForSession(
-    state: WebEntryState,
-    input: { sessionId: string; now: number },
-) {
+export function hasOnlineBridgeForSession(state: WebEntryState, input: { sessionId: string; now: number }) {
     sweepTimeouts(state, input.now);
     for (const bridge of state.bridges.values()) {
         if (bridge.sessionId === input.sessionId && bridge.status === 'online') {

@@ -18,12 +18,8 @@ interface ProfileDraft {
 export function MeView() {
     const publicKey = useAppStore((s) => s.auth.publicKey);
     const email = useAppStore((s) => s.auth.email);
-    const identityRegistration = useAppStore((s) =>
-        publicKey ? s.getIdentityRegistrationStatus(publicKey) : null,
-    );
-    const interopStatus = useAppStore((s) =>
-        publicKey ? s.getInteropStatus(publicKey) : null,
-    );
+    const identityRegistration = useAppStore((s) => (publicKey ? s.getIdentityRegistrationStatus(publicKey) : null));
+    const interopStatus = useAppStore((s) => (publicKey ? s.getInteropStatus(publicKey) : null));
     const trackedTasks = useAppStore((s) => s.trackedTasks);
     const taskFlowHistory = useAppStore((s) => s.getTaskFlowHistory());
     const { reputation, loading, error, refresh } = useReputation(publicKey);
@@ -169,17 +165,13 @@ export function MeView() {
                 </div>
                 <input
                     value={profileDraft.displayName}
-                    onChange={(event) =>
-                        setProfileDraft((prev) => ({ ...prev, displayName: event.target.value }))
-                    }
+                    onChange={(event) => setProfileDraft((prev) => ({ ...prev, displayName: event.target.value }))}
                     placeholder="Display name"
                     className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-sm"
                 />
                 <textarea
                     value={profileDraft.bio}
-                    onChange={(event) =>
-                        setProfileDraft((prev) => ({ ...prev, bio: event.target.value }))
-                    }
+                    onChange={(event) => setProfileDraft((prev) => ({ ...prev, bio: event.target.value }))}
                     placeholder="Short bio"
                     rows={3}
                     className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-sm"
@@ -187,25 +179,19 @@ export function MeView() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <input
                         value={profileDraft.website}
-                        onChange={(event) =>
-                            setProfileDraft((prev) => ({ ...prev, website: event.target.value }))
-                        }
+                        onChange={(event) => setProfileDraft((prev) => ({ ...prev, website: event.target.value }))}
                         placeholder="Website URL"
                         className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
                     />
                     <input
                         value={profileDraft.github}
-                        onChange={(event) =>
-                            setProfileDraft((prev) => ({ ...prev, github: event.target.value }))
-                        }
+                        onChange={(event) => setProfileDraft((prev) => ({ ...prev, github: event.target.value }))}
                         placeholder="GitHub URL"
                         className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
                     />
                     <input
                         value={profileDraft.x}
-                        onChange={(event) =>
-                            setProfileDraft((prev) => ({ ...prev, x: event.target.value }))
-                        }
+                        onChange={(event) => setProfileDraft((prev) => ({ ...prev, x: event.target.value }))}
                         placeholder="X URL"
                         className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-xs"
                     />
@@ -246,9 +232,7 @@ export function MeView() {
                 {profileOnchainRef && (
                     <p className="text-xs text-gray-500 break-all">onchain_ref: {profileOnchainRef}</p>
                 )}
-                {profileOnchainTx && (
-                    <p className="text-xs text-gray-500 break-all">tx: {profileOnchainTx}</p>
-                )}
+                {profileOnchainTx && <p className="text-xs text-gray-500 break-all">tx: {profileOnchainTx}</p>}
                 {profileMessage && <p className="text-xs text-emerald-400">{profileMessage}</p>}
                 {profileError && <p className="text-xs text-red-400">{profileError}</p>}
             </div>
@@ -266,15 +250,16 @@ export function MeView() {
                     </button>
                 </div>
 
-                {error && (
-                    <p className="text-red-400 text-sm mb-3">Error: {error}</p>
-                )}
+                {error && <p className="text-red-400 text-sm mb-3">Error: {error}</p>}
 
                 <div className="grid grid-cols-2 gap-4">
                     <StatCard label="Avg Score" value={reputation?.global_avg_score?.toFixed(1) ?? '--'} />
                     <StatCard label="Completed" value={reputation?.global_completed?.toString() ?? '--'} />
                     <StatCard label="Submitted" value={reputation?.global_total_applied?.toString() ?? '--'} />
-                    <StatCard label="Win Rate" value={reputation?.win_rate ? `${(reputation.win_rate * 100).toFixed(0)}%` : '--'} />
+                    <StatCard
+                        label="Win Rate"
+                        value={reputation?.win_rate ? `${(reputation.win_rate * 100).toFixed(0)}%` : '--'}
+                    />
                 </div>
 
                 {!reputation && !loading && !error && (
@@ -296,14 +281,10 @@ export function MeView() {
                     state: <span className="font-mono">{identityRegistration?.state ?? 'unknown'}</span>
                 </p>
                 {identityRegistration?.agentId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                        agent_id: {identityRegistration.agentId}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">agent_id: {identityRegistration.agentId}</p>
                 )}
                 {identityRegistration?.txHash && (
-                    <p className="text-xs text-gray-500 mt-1 break-all">
-                        tx: {identityRegistration.txHash}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1 break-all">tx: {identityRegistration.txHash}</p>
                 )}
                 {identityRegistration?.error && (
                     <p className="text-xs text-amber-400 mt-1">{identityRegistration.error}</p>
@@ -314,12 +295,7 @@ export function MeView() {
             {interopStatus && <InteropStatusPanel status={interopStatus} />}
 
             {/* Attestations */}
-            <AttestationsPanel
-                attestations={attestations}
-                loading={attLoading}
-                error={attError}
-                refresh={attRefresh}
-            />
+            <AttestationsPanel attestations={attestations} loading={attLoading} error={attError} refresh={attRefresh} />
 
             {/* Task history */}
             <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -347,9 +323,7 @@ export function MeView() {
                                         {record.winner ? ` · winner=${record.winner}` : ''}
                                     </p>
                                     {record.resultRef && (
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            result_ref: {record.resultRef}
-                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">result_ref: {record.resultRef}</p>
                                     )}
                                     <p className="text-xs text-gray-500 mt-1">
                                         updated_at: {new Date(record.updatedAt).toLocaleString()}
@@ -382,7 +356,13 @@ function MiniStat({ label, value }: { label: string; value: number }) {
     );
 }
 
-function RoleBar({ label, counts }: { label: string; counts: { winner: number; poster: number; judge: number; loser: number } }) {
+function RoleBar({
+    label,
+    counts,
+}: {
+    label: string;
+    counts: { winner: number; poster: number; judge: number; loser: number };
+}) {
     const total = counts.winner + counts.poster + counts.judge + counts.loser;
     return (
         <div className="space-y-1">
@@ -448,9 +428,7 @@ function AttestationsPanel({
                                 {' · '}
                                 completed={new Date(att.completedAt * 1000).toLocaleDateString()}
                             </p>
-                            <p className="text-xs text-gray-600 mt-1 truncate">
-                                credential: {att.credential}
-                            </p>
+                            <p className="text-xs text-gray-600 mt-1 truncate">credential: {att.credential}</p>
                         </div>
                     ))}
                 </div>
@@ -483,9 +461,7 @@ function InteropStatusPanel({ status }: { status: InteropStatusSnapshot }) {
                 </div>
             )}
 
-            <p className="text-xs text-gray-600 mt-3">
-                updated: {new Date(status.updatedAt).toLocaleString()}
-            </p>
+            <p className="text-xs text-gray-600 mt-3">updated: {new Date(status.updatedAt).toLocaleString()}</p>
         </div>
     );
 }

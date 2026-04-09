@@ -24,9 +24,7 @@ export default function HomePage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">AgentM Pro</h1>
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Agent deployment and management dashboard
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-400">Agent deployment and management dashboard</p>
                 </div>
                 <button
                     onClick={signerAddress ? handleDisconnect : handleConnect}

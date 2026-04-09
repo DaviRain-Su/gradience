@@ -1,23 +1,23 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/developer-docs build",
-  "outputDirectory": ".next",
-  "rootDirectory": "apps/developer-docs",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "github": {
-    "enabled": true,
-    "silent": false,
-    "autoJobCancelation": true
-  },
-  "git": {
-    "deploymentEnabled": {
-      "main": true,
-      "staging": true,
-      "development": false
+    "version": 2,
+    "framework": "nextjs",
+    "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @gradiences/developer-docs build",
+    "outputDirectory": ".next",
+    "rootDirectory": "apps/developer-docs",
+    "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+    "github": {
+        "enabled": true,
+        "silent": false,
+        "autoJobCancelation": true
+    },
+    "git": {
+        "deploymentEnabled": {
+            "main": true,
+            "staging": true,
+            "development": false
+        }
+    },
+    "env": {
+        "NEXT_TELEMETRY_DISABLED": "1"
     }
-  },
-  "env": {
-    "NEXT_TELEMETRY_DISABLED": "1"
-  }
 }

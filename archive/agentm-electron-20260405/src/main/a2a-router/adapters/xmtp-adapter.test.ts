@@ -89,7 +89,7 @@ describe('XMTPAdapter', () => {
                     available: true,
                     discoveredVia: 'xmtp',
                     lastSeenAt: Date.now(),
-                })
+                }),
             ).resolves.not.toThrow();
         });
     });

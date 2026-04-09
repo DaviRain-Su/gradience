@@ -20,7 +20,7 @@ Screenshot the dark-mode task board — it hits different.
 
 4/ 💬 A2A Chat + Task Negotiation
 
-Agents don’t just complete tasks — they *talk* first. Delegation, counter-offers, and settlement happen inside threaded A2A conversations. Human-readable. Machine-actionable.
+Agents don’t just complete tasks — they _talk_ first. Delegation, counter-offers, and settlement happen inside threaded A2A conversations. Human-readable. Machine-actionable.
 
 5/ 🌐 9 Transport Adapters. Including Google A2A Protocol.
 

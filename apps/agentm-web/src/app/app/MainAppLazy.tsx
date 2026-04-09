@@ -6,10 +6,9 @@ import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Lazy-loaded views
-const FeedView = lazy(() => import('../views/FeedView').then(m => ({ default: m.FeedView })));
-const SocialView = lazy(() => import('../views/SocialView').then(m => ({ default: m.SocialView })));
-const ChatView = lazy(() => import('../views/ChatView').then(m => ({ default: m.ChatView })));
-
+const FeedView = lazy(() => import('../views/FeedView').then((m) => ({ default: m.FeedView })));
+const SocialView = lazy(() => import('../views/SocialView').then((m) => ({ default: m.SocialView })));
+const ChatView = lazy(() => import('../views/ChatView').then((m) => ({ default: m.ChatView })));
 
 // Components
 import { ConnectionPanel } from '../../components/connection/ConnectionPanel';
@@ -30,26 +29,26 @@ import { cachedFetch, invalidateCache } from '../../lib/cache';
 
 // Local types, constants, and utils
 import type {
-  ActiveView,
-  ReputationData,
-  AgentRow,
-  SolanaWalletCandidate,
-  AgentDetailData,
-  SettingsData,
-  PostedTask,
-  TaskData,
-  IndexerConnectionStatus,
-  TaskCategory,
+    ActiveView,
+    ReputationData,
+    AgentRow,
+    SolanaWalletCandidate,
+    AgentDetailData,
+    SettingsData,
+    PostedTask,
+    TaskData,
+    IndexerConnectionStatus,
+    TaskCategory,
 } from '../types';
 import { INDEXER_BASE, STATE_COLORS, TASK_CATEGORIES } from '../constants';
 import {
-  formatBindingStatus,
-  resolveIndexerBase,
-  getTimeoutSignal,
-  formatSol,
-  truncateAddress,
-  formatRelativeTime,
-  formatDate,
+    formatBindingStatus,
+    resolveIndexerBase,
+    getTimeoutSignal,
+    formatSol,
+    truncateAddress,
+    formatRelativeTime,
+    formatDate,
 } from '../utils';
 
 // External types
@@ -60,61 +59,72 @@ import type { DaemonWallet } from '../../lib/ows/daemon-client';
 // Main App Component - Lazy Loaded
 function LoginScreenInternal() {
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: '#F3F3F8',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '32px',
-            padding: '24px',
-        }}>
+        <div
+            style={{
+                minHeight: '100vh',
+                background: '#F3F3F8',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '32px',
+                padding: '24px',
+            }}
+        >
             <div style={{ textAlign: 'center' }}>
-                <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '20px',
-                    background: '#C6BBFF',
-                    border: '2px solid #16161A',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '40px',
-                    margin: '0 auto 24px',
-                }}>
+                <div
+                    style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '20px',
+                        background: '#C6BBFF',
+                        border: '2px solid #16161A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '40px',
+                        margin: '0 auto 24px',
+                    }}
+                >
                     🤖
                 </div>
-                <h1 style={{
-                    fontFamily: "'Oswald', sans-serif",
-                    fontSize: '36px',
-                    fontWeight: 700,
-                    color: '#16161A',
-                    textTransform: 'uppercase',
-                    margin: '0 0 12px 0',
-                }}>
+                <h1
+                    style={{
+                        fontFamily: "'Oswald', sans-serif",
+                        fontSize: '36px',
+                        fontWeight: 700,
+                        color: '#16161A',
+                        textTransform: 'uppercase',
+                        margin: '0 0 12px 0',
+                    }}
+                >
                     AgentM
                 </h1>
-                <p style={{
-                    fontSize: '16px',
-                    color: '#16161A',
-                    opacity: 0.6,
-                    maxWidth: '400px',
-                    margin: '0 auto 32px',
-                }}>
+                <p
+                    style={{
+                        fontSize: '16px',
+                        color: '#16161A',
+                        opacity: 0.6,
+                        maxWidth: '400px',
+                        margin: '0 auto 32px',
+                    }}
+                >
                     AI Agent Economy on Solana. Connect with Google, Twitter, or Discord to get started.
                 </p>
             </div>
 
             <DynamicLoginButton />
 
-            <Link href="/" style={{
-                fontSize: '14px',
-                color: '#16161A',
-                opacity: 0.5,
-                textDecoration: 'none',
-                marginTop: '16px',
-            }}>
+            <Link
+                href="/"
+                style={{
+                    fontSize: '14px',
+                    color: '#16161A',
+                    opacity: 0.5,
+                    textDecoration: 'none',
+                    marginTop: '16px',
+                }}
+            >
                 ← Back to home
             </Link>
         </div>
@@ -189,10 +199,20 @@ export default function MainApp({ user, walletAddress, email }: { user: any; wal
             bindingStatus={bindingStatus}
             onLogout={handleFullLogout}
         >
-            {view === 'discover' && <DiscoverView onNavigateToChat={() => setView('chat')} onNavigateToTasks={() => setView('tasks')} />}
+            {view === 'discover' && (
+                <DiscoverView onNavigateToChat={() => setView('chat')} onNavigateToTasks={() => setView('tasks')} />
+            )}
             {view === 'tasks' && <TaskMarketView address={address} />}
-            {view === 'feed' && <Suspense fallback={<Loading />}><FeedView address={address} /></Suspense>}
-            {view === 'social' && <Suspense fallback={<Loading />}><SocialView address={address} /></Suspense>}
+            {view === 'feed' && (
+                <Suspense fallback={<Loading />}>
+                    <FeedView address={address} />
+                </Suspense>
+            )}
+            {view === 'social' && (
+                <Suspense fallback={<Loading />}>
+                    <SocialView address={address} />
+                </Suspense>
+            )}
             {view === 'me' && (
                 <MeView
                     address={address}
@@ -214,7 +234,11 @@ export default function MainApp({ user, walletAddress, email }: { user: any; wal
                     isPasskeyProtected={isPasskeyProtected}
                 />
             )}
-            {view === 'chat' && <Suspense fallback={<Loading />}><ChatView /></Suspense>}
+            {view === 'chat' && (
+                <Suspense fallback={<Loading />}>
+                    <ChatView />
+                </Suspense>
+            )}
             {view === 'settings' && <SettingsView />}
         </Shell>
     );
@@ -256,88 +280,119 @@ function Shell({
     ];
 
     return (
-        <div style={{
-            display: 'flex',
-            height: '100vh',
-            background: '#F3F3F8',
-        }}>
-            <aside style={{
-                width: '280px',
-                background: '#FFFFFF',
-                borderRight: '1.5px solid #16161A',
+        <div
+            style={{
                 display: 'flex',
-                flexDirection: 'column',
-            }}>
+                height: '100vh',
+                background: '#F3F3F8',
+            }}
+        >
+            <aside
+                style={{
+                    width: '280px',
+                    background: '#FFFFFF',
+                    borderRight: '1.5px solid #16161A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
                 {/* Header */}
                 <div style={{ padding: '24px' }}>
-                    <Link href="/" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        textDecoration: 'none',
-                    }}>
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            background: '#C6BBFF',
-                            border: '1.5px solid #16161A',
+                    <Link
+                        href="/"
+                        style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '20px',
-                        }}>🤖</div>
-                        <span style={{
-                            fontFamily: "'Oswald', sans-serif",
-                            fontSize: '24px',
-                            fontWeight: 700,
-                            color: '#16161A',
-                            textTransform: 'uppercase',
-                        }}>AgentM</span>
-                    </Link>
-                    
-                    {/* User Info Card */}
-                    <div style={{
-                        marginTop: '20px',
-                        padding: '16px',
-                        background: '#F3F3F8',
-                        borderRadius: '16px',
-                        border: '1.5px solid #16161A',
-                    }}>
-                        <p style={{
-                            fontSize: '12px',
-                            color: '#16161A',
-                            opacity: 0.6,
-                            margin: '0 0 4px 0',
-                        }}>Logged in as</p>
-                        <p style={{
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#16161A',
-                            margin: 0,
-                        }}>{loginEmail ?? 'Demo User'}</p>
-                        {activeSubWallet && (
-                            <div style={{
-                                marginTop: '8px',
-                                padding: '6px 10px',
-                                background: '#CDFF4D',
-                                borderRadius: '8px',
+                            gap: '12px',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '12px',
+                                background: '#C6BBFF',
                                 border: '1.5px solid #16161A',
-                                fontSize: '11px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '20px',
+                            }}
+                        >
+                            🤖
+                        </div>
+                        <span
+                            style={{
+                                fontFamily: "'Oswald', sans-serif",
+                                fontSize: '24px',
+                                fontWeight: 700,
+                                color: '#16161A',
+                                textTransform: 'uppercase',
+                            }}
+                        >
+                            AgentM
+                        </span>
+                    </Link>
+
+                    {/* User Info Card */}
+                    <div
+                        style={{
+                            marginTop: '20px',
+                            padding: '16px',
+                            background: '#F3F3F8',
+                            borderRadius: '16px',
+                            border: '1.5px solid #16161A',
+                        }}
+                    >
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                color: '#16161A',
+                                opacity: 0.6,
+                                margin: '0 0 4px 0',
+                            }}
+                        >
+                            Logged in as
+                        </p>
+                        <p
+                            style={{
+                                fontSize: '13px',
                                 fontWeight: 600,
                                 color: '#16161A',
-                            }}>
+                                margin: 0,
+                            }}
+                        >
+                            {loginEmail ?? 'Demo User'}
+                        </p>
+                        {activeSubWallet && (
+                            <div
+                                style={{
+                                    marginTop: '8px',
+                                    padding: '6px 10px',
+                                    background: '#CDFF4D',
+                                    borderRadius: '8px',
+                                    border: '1.5px solid #16161A',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#16161A',
+                                }}
+                            >
                                 Active: {activeSubWallet.handle}
                             </div>
                         )}
                         {address && (
-                            <p style={{
-                                fontSize: '11px',
-                                fontFamily: 'monospace',
-                                color: '#16161A',
-                                opacity: 0.5,
-                                margin: '8px 0 0 0',
-                            }}>{address.slice(0, 16)}...</p>
+                            <p
+                                style={{
+                                    fontSize: '11px',
+                                    fontFamily: 'monospace',
+                                    color: '#16161A',
+                                    opacity: 0.5,
+                                    margin: '8px 0 0 0',
+                                }}
+                            >
+                                {address.slice(0, 16)}...
+                            </p>
                         )}
                     </div>
                 </div>
@@ -353,13 +408,15 @@ function Shell({
                 </div>
 
                 {/* Navigation */}
-                <nav style={{
-                    flex: 1,
-                    padding: '0 16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                }}>
+                <nav
+                    style={{
+                        flex: 1,
+                        padding: '0 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                    }}
+                >
                     {tabs.map((t) => (
                         <button
                             key={t.key}
@@ -385,27 +442,37 @@ function Shell({
 
                 {/* Footer */}
                 <div style={{ padding: '24px' }}>
-                    <div style={{
-                        padding: '12px 16px',
-                        background: '#F3F3F8',
-                        borderRadius: '12px',
-                        border: '1.5px solid #16161A',
-                        marginBottom: '12px',
-                    }}>
-                        <p style={{
-                            fontSize: '11px',
-                            color: '#16161A',
-                            opacity: 0.6,
-                            margin: 0,
-                        }}>OWS Status</p>
-                        <p style={{
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            color: '#16161A',
-                            margin: '4px 0 0 0',
-                        }}>{formatBindingStatus(bindingStatus)}</p>
+                    <div
+                        style={{
+                            padding: '12px 16px',
+                            background: '#F3F3F8',
+                            borderRadius: '12px',
+                            border: '1.5px solid #16161A',
+                            marginBottom: '12px',
+                        }}
+                    >
+                        <p
+                            style={{
+                                fontSize: '11px',
+                                color: '#16161A',
+                                opacity: 0.6,
+                                margin: 0,
+                            }}
+                        >
+                            OWS Status
+                        </p>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: '#16161A',
+                                margin: '4px 0 0 0',
+                            }}
+                        >
+                            {formatBindingStatus(bindingStatus)}
+                        </p>
                     </div>
-                    <button 
+                    <button
                         onClick={onLogout}
                         style={{
                             width: '100%',
@@ -424,18 +491,28 @@ function Shell({
                     </button>
                 </div>
             </aside>
-            <main style={{
-                flex: 1,
-                overflow: 'hidden',
-                background: '#F3F3F8',
-            }}>{children}</main>
+            <main
+                style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    background: '#F3F3F8',
+                }}
+            >
+                {children}
+            </main>
         </div>
     );
 }
 
 // ── Discover ─────────────────────────────────────────────────────────
 
-function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToChat?: () => void; onNavigateToTasks?: () => void }) {
+function DiscoverView({
+    onNavigateToChat,
+    onNavigateToTasks,
+}: {
+    onNavigateToChat?: () => void;
+    onNavigateToTasks?: () => void;
+}) {
     const [agents, setAgents] = useState<AgentDetailData[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
@@ -447,10 +524,16 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
         async function fetchAgents() {
             // Try network registry first (real agents on the network)
             try {
-                const result = await apiCall<{ agents: Array<{
-                    publicKey: string; displayName: string; capabilities: string[];
-                    online: boolean; lastSeen: number; metadata: any;
-                }> }>('/api/v1/network/agents?online=true');
+                const result = await apiCall<{
+                    agents: Array<{
+                        publicKey: string;
+                        displayName: string;
+                        capabilities: string[];
+                        online: boolean;
+                        lastSeen: number;
+                        metadata: any;
+                    }>;
+                }>('/api/v1/network/agents?online=true');
                 if (result?.agents && result.agents.length > 0) {
                     const mapped: AgentDetailData[] = result.agents.map((a: any) => ({
                         agent: a.displayName || `Agent ${a.publicKey.slice(0, 8)}`,
@@ -465,14 +548,22 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                     setLoading(false);
                     return;
                 }
-            } catch { /* fall through */ }
+            } catch {
+                /* fall through */
+            }
 
             // Try A2A discovery (Nostr relays)
             try {
-                const a2aResult = await apiCall<{ agents: Array<{
-                    address: string; displayName: string; capabilities: string[];
-                    reputationScore: number; available: boolean; discoveredVia: string;
-                }> }>('/api/v1/a2a/agents?limit=50');
+                const a2aResult = await apiCall<{
+                    agents: Array<{
+                        address: string;
+                        displayName: string;
+                        capabilities: string[];
+                        reputationScore: number;
+                        available: boolean;
+                        discoveredVia: string;
+                    }>;
+                }>('/api/v1/a2a/agents?limit=50');
                 if (a2aResult?.agents && a2aResult.agents.length > 0) {
                     const mapped: AgentDetailData[] = a2aResult.agents.map((a: any) => ({
                         agent: a.displayName || `Agent ${a.address.slice(0, 8)}`,
@@ -492,7 +583,9 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                     setLoading(false);
                     return;
                 }
-            } catch { /* fall through */ }
+            } catch {
+                /* fall through */
+            }
 
             // Try indexer for agents from task data
             try {
@@ -511,14 +604,16 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                                 }
                                 posters.set(t.poster, p);
                             }
-                            const fromIndexer: AgentDetailData[] = Array.from(posters.entries()).map(([addr, info]) => ({
-                                agent: `Agent ${addr.slice(0, 8)}`,
-                                bio: `${info.tasks} task${info.tasks > 1 ? 's' : ''} posted on-chain`,
-                                capabilities: info.categories.map(c => `category-${c}`),
-                                walletAddress: addr,
-                                weight: info.tasks,
-                                reputation: null,
-                            }));
+                            const fromIndexer: AgentDetailData[] = Array.from(posters.entries()).map(
+                                ([addr, info]) => ({
+                                    agent: `Agent ${addr.slice(0, 8)}`,
+                                    bio: `${info.tasks} task${info.tasks > 1 ? 's' : ''} posted on-chain`,
+                                    capabilities: info.categories.map((c) => `category-${c}`),
+                                    walletAddress: addr,
+                                    weight: info.tasks,
+                                    reputation: null,
+                                }),
+                            );
                             if (fromIndexer.length > 0) {
                                 setAgents(fromIndexer);
                                 setDataSource('indexer' as any);
@@ -528,7 +623,9 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                         }
                     }
                 }
-            } catch { /* fall through */ }
+            } catch {
+                /* fall through */
+            }
 
             // No real data available
             setAgents([]);
@@ -549,20 +646,44 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
             <AgentDetailPanel
                 agent={selectedAgent}
                 onBack={() => setSelectedAgent(null)}
-                onInviteChat={() => { setSelectedAgent(null); onNavigateToChat?.(); }}
-                onDelegateTask={() => { setSelectedAgent(null); onNavigateToTasks?.(); }}
+                onInviteChat={() => {
+                    setSelectedAgent(null);
+                    onNavigateToChat?.();
+                }}
+                onDelegateTask={() => {
+                    setSelectedAgent(null);
+                    onNavigateToTasks?.();
+                }}
             />
         );
     }
 
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
+        <div
+            style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                overflowY: 'auto',
+                height: '100%',
+            }}
+        >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Discover Agents</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <DataSourceLabel source={dataSource} />
                     {isDaemonConnected && (
-                        <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '9999px', background: '#D1FAE5', color: '#059669', border: '1px solid #10B981' }}>
+                        <span
+                            style={{
+                                fontSize: '10px',
+                                padding: '4px 8px',
+                                borderRadius: '9999px',
+                                background: '#D1FAE5',
+                                color: '#059669',
+                                border: '1px solid #10B981',
+                            }}
+                        >
                             Daemon Connected
                         </span>
                     )}
@@ -585,14 +706,51 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
             />
             {loading && <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>}
             {!loading && agents.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '48px 24px', background: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #16161A' }}>
+                <div
+                    style={{
+                        textAlign: 'center',
+                        padding: '48px 24px',
+                        background: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1.5px solid #16161A',
+                    }}
+                >
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>\ud83e\udd16</div>
-                    <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '20px', fontWeight: 700, color: '#16161A', marginBottom: '8px' }}>No Agents Online Yet</h3>
-                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '13px', maxWidth: '400px', margin: '0 auto 16px', lineHeight: 1.5 }}>
-                        Be the first to register your agent on the network.
-                        Start your daemon and it will appear here automatically.
+                    <h3
+                        style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            color: '#16161A',
+                            marginBottom: '8px',
+                        }}
+                    >
+                        No Agents Online Yet
+                    </h3>
+                    <p
+                        style={{
+                            color: '#16161A',
+                            opacity: 0.5,
+                            fontSize: '13px',
+                            maxWidth: '400px',
+                            margin: '0 auto 16px',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        Be the first to register your agent on the network. Start your daemon and it will appear here
+                        automatically.
                     </p>
-                    <div style={{ background: '#F3F3F8', borderRadius: '8px', padding: '12px', fontFamily: 'monospace', fontSize: '12px', display: 'inline-block', userSelect: 'all' }}>
+                    <div
+                        style={{
+                            background: '#F3F3F8',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            fontFamily: 'monospace',
+                            fontSize: '12px',
+                            display: 'inline-block',
+                            userSelect: 'all',
+                        }}
+                    >
                         npx @gradiences/agent-daemon start
                     </div>
                 </div>
@@ -617,32 +775,43 @@ function DiscoverView({ onNavigateToChat, onNavigateToTasks }: { onNavigateToCha
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <div style={{
-                                width: '40px',
-                                height: '40px',
-                                background: '#C6BBFF',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '16px',
-                                fontWeight: 'bold',
-                                color: '#16161A',
-                                border: '1.5px solid #16161A',
-                            }}>{row.agent[0]}</div>
+                            <div
+                                style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    background: '#C6BBFF',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    color: '#16161A',
+                                    border: '1.5px solid #16161A',
+                                }}
+                            >
+                                {row.agent[0]}
+                            </div>
                             <div>
-                                <p style={{ fontWeight: 600, color: '#16161A', fontSize: '15px', margin: '0 0 4px 0' }}>{row.agent}</p>
+                                <p style={{ fontWeight: 600, color: '#16161A', fontSize: '15px', margin: '0 0 4px 0' }}>
+                                    {row.agent}
+                                </p>
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                     {row.capabilities.slice(0, 3).map((cap) => (
-                                        <span key={cap} style={{
-                                            padding: '2px 8px',
-                                            borderRadius: '9999px',
-                                            background: '#F3F3F8',
-                                            border: '1px solid #16161A',
-                                            fontSize: '10px',
-                                            fontWeight: 500,
-                                            color: '#16161A',
-                                        }}>{cap}</span>
+                                        <span
+                                            key={cap}
+                                            style={{
+                                                padding: '2px 8px',
+                                                borderRadius: '9999px',
+                                                background: '#F3F3F8',
+                                                border: '1px solid #16161A',
+                                                fontSize: '10px',
+                                                fontWeight: 500,
+                                                color: '#16161A',
+                                            }}
+                                        >
+                                            {cap}
+                                        </span>
                                     ))}
                                 </div>
                             </div>
@@ -677,7 +846,16 @@ function AgentDetailPanel({
 }) {
     const rep = agent.reputation;
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', height: '100%' }}>
+        <div
+            style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+                overflowY: 'auto',
+                height: '100%',
+            }}
+        >
             {/* Back button */}
             <button
                 onClick={onBack}
@@ -697,83 +875,108 @@ function AgentDetailPanel({
             </button>
 
             {/* Header */}
-            <div style={{
-                background: '#C6BBFF',
-                borderRadius: '24px',
-                padding: '32px',
-                border: '1.5px solid #16161A',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '24px',
-            }}>
-                <div style={{
-                    width: '72px',
-                    height: '72px',
-                    background: '#FFFFFF',
-                    borderRadius: '50%',
+            <div
+                style={{
+                    background: '#C6BBFF',
+                    borderRadius: '24px',
+                    padding: '32px',
+                    border: '1.5px solid #16161A',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#16161A',
-                    border: '2px solid #16161A',
-                    flexShrink: 0,
-                }}>{agent.agent[0]}</div>
-                <div style={{ flex: 1 }}>
-                    <h2 style={{
-                        fontFamily: "'Oswald', sans-serif",
+                    alignItems: 'flex-start',
+                    gap: '24px',
+                }}
+            >
+                <div
+                    style={{
+                        width: '72px',
+                        height: '72px',
+                        background: '#FFFFFF',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         fontSize: '28px',
                         fontWeight: 700,
                         color: '#16161A',
-                        margin: '0 0 8px 0',
-                    }}>{agent.agent}</h2>
+                        border: '2px solid #16161A',
+                        flexShrink: 0,
+                    }}
+                >
+                    {agent.agent[0]}
+                </div>
+                <div style={{ flex: 1 }}>
+                    <h2
+                        style={{
+                            fontFamily: "'Oswald', sans-serif",
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            color: '#16161A',
+                            margin: '0 0 8px 0',
+                        }}
+                    >
+                        {agent.agent}
+                    </h2>
                     <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.8, lineHeight: 1.5, margin: 0 }}>
                         {agent.bio}
                     </p>
-                    <p style={{
-                        fontSize: '11px',
-                        fontFamily: 'monospace',
-                        color: '#16161A',
-                        opacity: 0.5,
-                        marginTop: '8px',
-                    }}>
+                    <p
+                        style={{
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            color: '#16161A',
+                            opacity: 0.5,
+                            marginTop: '8px',
+                        }}
+                    >
                         {agent.walletAddress}
                     </p>
                 </div>
             </div>
 
             {/* Capabilities */}
-            <div style={{
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '20px',
-                border: '1.5px solid #16161A',
-            }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>Capabilities</h3>
+            <div
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1.5px solid #16161A',
+                }}
+            >
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>
+                    Capabilities
+                </h3>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {agent.capabilities.map((cap) => (
-                        <span key={cap} style={{
-                            padding: '6px 14px',
-                            borderRadius: '9999px',
-                            background: '#C6BBFF',
-                            border: '1.5px solid #16161A',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: '#16161A',
-                        }}>{cap}</span>
+                        <span
+                            key={cap}
+                            style={{
+                                padding: '6px 14px',
+                                borderRadius: '9999px',
+                                background: '#C6BBFF',
+                                border: '1.5px solid #16161A',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: '#16161A',
+                            }}
+                        >
+                            {cap}
+                        </span>
                     ))}
                 </div>
             </div>
 
             {/* Reputation */}
-            <div style={{
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '20px',
-                border: '1.5px solid #16161A',
-            }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>Reputation</h3>
+            <div
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1.5px solid #16161A',
+                }}
+            >
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#16161A', margin: '0 0 12px 0' }}>
+                    Reputation
+                </h3>
                 {rep ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
                         <Stat label="Avg Score" value={rep.global_avg_score.toFixed(1)} />
@@ -874,22 +1077,39 @@ function MeView({
         fetch(`${resolveIndexerBase()}/api/agents/${address}/reputation`, {
             signal: getTimeoutSignal(5000),
         })
-            .then((r) => r.ok ? r.json() : null)
+            .then((r) => (r.ok ? r.json() : null))
             .then((data) => setRep(data as ReputationData | null))
             .catch(() => {})
             .finally(() => setLoading(false));
     }, [address]);
 
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', height: '100%' }}>
+        <div
+            style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px',
+                overflowY: 'auto',
+                height: '100%',
+            }}
+        >
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>My Agent</h2>
             <RegisterAgentSection address={address} />
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
+            <div
+                style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}
+            >
                 <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6, fontFamily: 'monospace' }}>{address}</p>
             </div>
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>Wallet Binding</h3>
-                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6 }}>Login: {loginEmail ?? 'Google OAuth'}</p>
+            <div
+                style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}
+            >
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>
+                    Wallet Binding
+                </h3>
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.6 }}>
+                    Login: {loginEmail ?? 'Google OAuth'}
+                </p>
                 <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>
                     Active Agent Wallet: {selectedWallet?.address ?? address ?? 'N/A'}
                 </p>
@@ -917,12 +1137,12 @@ function MeView({
                         style={{
                             padding: '6px 12px',
                             borderRadius: '8px',
-                            background: (!address || bindingBusy) ? '#F3F3F8' : '#16161A',
-                            color: (!address || bindingBusy) ? '#16161A' : '#FFFFFF',
+                            background: !address || bindingBusy ? '#F3F3F8' : '#16161A',
+                            color: !address || bindingBusy ? '#16161A' : '#FFFFFF',
                             fontSize: '12px',
                             border: '1.5px solid #16161A',
-                            cursor: (!address || bindingBusy) ? 'not-allowed' : 'pointer',
-                            opacity: (!address || bindingBusy) ? 0.5 : 1,
+                            cursor: !address || bindingBusy ? 'not-allowed' : 'pointer',
+                            opacity: !address || bindingBusy ? 0.5 : 1,
                         }}
                     >
                         {bindingBusy ? 'Binding...' : 'Bind Selected Wallet to OWS'}
@@ -945,10 +1165,15 @@ function MeView({
                     )}
                 </div>
             </div>
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>Agent Sub-Wallet Routing</h3>
+            <div
+                style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}
+            >
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '8px' }}>
+                    Agent Sub-Wallet Routing
+                </h3>
                 <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
-                    Master wallet: {masterWallet ?? 'N/A'} (Privy-controlled). Sub-wallets route signing through master policy.
+                    Master wallet: {masterWallet ?? 'N/A'} (Privy-controlled). Sub-wallets route signing through master
+                    policy.
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                     <input
@@ -988,7 +1213,9 @@ function MeView({
                 </div>
                 {routerError && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>{routerError}</p>}
                 {subWallets.length === 0 ? (
-                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '8px' }}>No sub-wallets yet. Create one after OWS binding.</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '8px' }}>
+                        No sub-wallets yet. Create one after OWS binding.
+                    </p>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
                         {subWallets.map((wallet) => (
@@ -999,23 +1226,50 @@ function MeView({
                                     width: '100%',
                                     textAlign: 'left',
                                     borderRadius: '8px',
-                                    border: activeSubWallet?.id === wallet.id ? '1.5px solid #CDFF4D' : '1.5px solid #16161A',
+                                    border:
+                                        activeSubWallet?.id === wallet.id
+                                            ? '1.5px solid #CDFF4D'
+                                            : '1.5px solid #16161A',
                                     background: activeSubWallet?.id === wallet.id ? '#CDFF4D' : '#F3F3F8',
                                     padding: '8px 12px',
                                     cursor: 'pointer',
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{wallet.handle}</p>
+                                    <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>
+                                        {wallet.handle}
+                                    </p>
                                     {isPasskeyProtected(wallet.walletAddress) && (
-                                        <span style={{ fontSize: '10px', background: '#CDFF4D', color: '#16161A', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>Passkey</span>
+                                        <span
+                                            style={{
+                                                fontSize: '10px',
+                                                background: '#CDFF4D',
+                                                color: '#16161A',
+                                                padding: '1px 6px',
+                                                borderRadius: '4px',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            Passkey
+                                        </span>
                                     )}
                                 </div>
-                                <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <p
+                                    style={{
+                                        fontSize: '10px',
+                                        color: '#16161A',
+                                        opacity: 0.5,
+                                        fontFamily: 'monospace',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
                                     {wallet.walletAddress}
                                 </p>
                                 <p style={{ fontSize: '10px', color: '#16161A', opacity: 0.5 }}>
-                                    Route: {wallet.policy?.strategy} · approval {wallet.policy?.requireMasterApprovalAboveUsd} USD+
+                                    Route: {wallet.policy?.strategy} · approval{' '}
+                                    {wallet.policy?.requireMasterApprovalAboveUsd} USD+
                                 </p>
                             </button>
                         ))}
@@ -1038,8 +1292,12 @@ function MeView({
                     </div>
                 )}
             </div>
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>Reputation</h3>
+            <div
+                style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}
+            >
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>
+                    Reputation
+                </h3>
                 {loading ? (
                     <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>Loading...</p>
                 ) : rep ? (
@@ -1050,13 +1308,15 @@ function MeView({
                         <Stat label="Earned" value={`${((rep.total_earned ?? 0) / 1e9).toFixed(4)} SOL`} />
                     </div>
                 ) : (
-                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>No reputation data yet. Complete tasks to build your on-chain reputation.</p>
+                    <p style={{ color: '#16161A', opacity: 0.5, fontSize: '14px' }}>
+                        No reputation data yet. Complete tasks to build your on-chain reputation.
+                    </p>
                 )}
             </div>
-            
+
             {/* GRA-225d: Master Reputation Card */}
             <MasterReputationCard masterWallet={masterWallet} />
-            
+
             {/* GRA-225d: Agent Wallet List with Reputation */}
             <AgentWalletList
                 masterWallet={masterWallet}
@@ -1069,7 +1329,7 @@ function MeView({
                     }
                 }}
             />
-            
+
             <PolicyManager />
         </div>
     );
@@ -1129,10 +1389,10 @@ function WalletBalance({ address }: { address: string }) {
 
 function SettingsView() {
     const [settings, setSettings] = useState<SettingsData>(() => {
-        const defaultIndexer = typeof window !== 'undefined'
-            && window.location.hostname !== 'localhost'
-            ? 'https://api.gradiences.xyz/indexer'
-            : 'http://localhost:3001';
+        const defaultIndexer =
+            typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+                ? 'https://api.gradiences.xyz/indexer'
+                : 'http://localhost:3001';
         if (typeof window === 'undefined') {
             return {
                 rpcEndpoint: 'https://api.devnet.solana.com',
@@ -1144,7 +1404,8 @@ function SettingsView() {
         const parsed = stored ? JSON.parse(stored) : {};
         return {
             rpcEndpoint: parsed.rpcEndpoint || 'https://api.devnet.solana.com',
-            indexerUrl: (parsed.indexerUrl && parsed.indexerUrl !== 'http://localhost:3001') ? parsed.indexerUrl : defaultIndexer,
+            indexerUrl:
+                parsed.indexerUrl && parsed.indexerUrl !== 'http://localhost:3001' ? parsed.indexerUrl : defaultIndexer,
             theme: parsed.theme || 'light',
         };
     });
@@ -1160,18 +1421,45 @@ function SettingsView() {
     };
 
     const updateSetting = <K extends keyof SettingsData>(key: K, value: SettingsData[K]) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+        setSettings((prev) => ({ ...prev, [key]: value }));
     };
 
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', height: '100%' }}>
+        <div
+            style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px',
+                overflowY: 'auto',
+                height: '100%',
+            }}
+        >
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Settings</h2>
-            
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            <div
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    border: '1.5px solid #16161A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                }}
+            >
                 <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Network Configuration</h3>
-                
+
                 <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
+                    <label
+                        style={{
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                            marginBottom: '8px',
+                        }}
+                    >
                         RPC Endpoint
                     </label>
                     <select
@@ -1196,7 +1484,15 @@ function SettingsView() {
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
+                    <label
+                        style={{
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                            marginBottom: '8px',
+                        }}
+                    >
                         Indexer URL
                     </label>
                     <input
@@ -1218,11 +1514,29 @@ function SettingsView() {
                 </div>
             </div>
 
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    border: '1.5px solid #16161A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                }}
+            >
                 <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Appearance</h3>
-                
+
                 <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '8px' }}>
+                    <label
+                        style={{
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                            marginBottom: '8px',
+                        }}
+                    >
                         Theme
                     </label>
                     <select
@@ -1242,16 +1556,31 @@ function SettingsView() {
                         <option value="light">Light Bauhaus (Current)</option>
                         <option value="dark">Dark</option>
                     </select>
-                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>Theme preference is stored locally</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginTop: '4px' }}>
+                        Theme preference is stored locally
+                    </p>
                 </div>
             </div>
 
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A' }}>
+            <div
+                style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1.5px solid #16161A' }}
+            >
                 <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '12px' }}>About</h3>
-                <div style={{ fontSize: '14px', color: '#16161A', opacity: 0.6, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div
+                    style={{
+                        fontSize: '14px',
+                        color: '#16161A',
+                        opacity: 0.6,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                    }}
+                >
                     <p>AgentM Web v1.0.0</p>
                     <p>AI Agent Economy on Solana</p>
-                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.4, marginTop: '8px' }}>Settings are stored locally in your browser</p>
+                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.4, marginTop: '8px' }}>
+                        Settings are stored locally in your browser
+                    </p>
                 </div>
             </div>
 
@@ -1299,15 +1628,7 @@ function SettingsView() {
     );
 }
 
-function TaskDetailModal({
-    task,
-    onClose,
-    address,
-}: {
-    task: TaskData;
-    onClose: () => void;
-    address: string | null;
-}) {
+function TaskDetailModal({ task, onClose, address }: { task: TaskData; onClose: () => void; address: string | null }) {
     const [applying, setApplying] = useState(false);
     const [applyError, setApplyError] = useState<string | null>(null);
 
@@ -1355,65 +1676,175 @@ function TaskDetailModal({
             border: '1.5px solid #16161A',
         };
         switch (task.state) {
-            case 'Open': return <span style={{ ...baseStyle, background: '#CDFF4D', color: '#16161A' }}>Open</span>;
-            case 'InProgress': return <span style={{ ...baseStyle, background: '#C6BBFF', color: '#16161A' }}>In Progress</span>;
-            case 'Judging': return <span style={{ ...baseStyle, background: '#FEF3C7', color: '#16161A' }}>Judging</span>;
-            case 'Settled': return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>Settled</span>;
-            case 'Cancelled': return <span style={{ ...baseStyle, background: '#FEE2E2', color: '#DC2626' }}>Cancelled</span>;
-            default: return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>{task.state}</span>;
+            case 'Open':
+                return <span style={{ ...baseStyle, background: '#CDFF4D', color: '#16161A' }}>Open</span>;
+            case 'InProgress':
+                return <span style={{ ...baseStyle, background: '#C6BBFF', color: '#16161A' }}>In Progress</span>;
+            case 'Judging':
+                return <span style={{ ...baseStyle, background: '#FEF3C7', color: '#16161A' }}>Judging</span>;
+            case 'Settled':
+                return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>Settled</span>;
+            case 'Cancelled':
+                return <span style={{ ...baseStyle, background: '#FEE2E2', color: '#DC2626' }}>Cancelled</span>;
+            default:
+                return <span style={{ ...baseStyle, background: '#F3F3F8', color: '#16161A' }}>{task.state}</span>;
         }
     })();
 
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(243, 243, 248, 0.85)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-            <div style={{
-                position: 'relative',
-                zIndex: 10,
-                width: '100%',
-                height: '100%',
-                maxWidth: '672px',
-                maxHeight: '85vh',
-                borderRadius: '16px',
-                background: '#FFFFFF',
-                border: '1.5px solid #16161A',
+        <div
+            style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 50,
                 display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1.5px solid #16161A' }}>
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(243, 243, 248, 0.85)',
+                    backdropFilter: 'blur(4px)',
+                }}
+                onClick={onClose}
+            />
+            <div
+                style={{
+                    position: 'relative',
+                    zIndex: 10,
+                    width: '100%',
+                    height: '100%',
+                    maxWidth: '672px',
+                    maxHeight: '85vh',
+                    borderRadius: '16px',
+                    background: '#FFFFFF',
+                    border: '1.5px solid #16161A',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '16px 20px',
+                        borderBottom: '1.5px solid #16161A',
+                    }}
+                >
                     <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Task Details</h3>
-                    <button onClick={onClose} style={{ color: '#16161A', opacity: 0.6, cursor: 'pointer' }} aria-label="Close">
+                    <button
+                        onClick={onClose}
+                        style={{ color: '#16161A', opacity: 0.6, cursor: 'pointer' }}
+                        aria-label="Close"
+                    >
                         ✕
                     </button>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px',
+                    }}
+                >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         {stateBadge}
-                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>{task.submissions_count} submission{task.submissions_count === 1 ? '' : 's'}</span>
+                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
+                            {task.submissions_count} submission{task.submissions_count === 1 ? '' : 's'}
+                        </span>
                     </div>
                     <div>
-                        <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Description</p>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                color: '#16161A',
+                                opacity: 0.5,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: '4px',
+                            }}
+                        >
+                            Description
+                        </p>
                         <p style={{ fontSize: '14px', color: '#16161A', whiteSpace: 'pre-wrap' }}>{task.description}</p>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
-                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Poster</p>
+                        <div
+                            style={{
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '12px',
+                            }}
+                        >
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>
+                                Poster
+                            </p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '14px', fontFamily: 'monospace', color: '#16161A' }}>{task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
-                                <button onClick={copyPoster} style={{ fontSize: '10px', padding: '2px 8px', background: '#FFFFFF', border: '1.5px solid #16161A', borderRadius: '4px', color: '#16161A', cursor: 'pointer' }}>Copy</button>
+                                <span style={{ fontSize: '14px', fontFamily: 'monospace', color: '#16161A' }}>
+                                    {task.poster.slice(0, 6)}...{task.poster.slice(-4)}
+                                </span>
+                                <button
+                                    onClick={copyPoster}
+                                    style={{
+                                        fontSize: '10px',
+                                        padding: '2px 8px',
+                                        background: '#FFFFFF',
+                                        border: '1.5px solid #16161A',
+                                        borderRadius: '4px',
+                                        color: '#16161A',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Copy
+                                </button>
                             </div>
                         </div>
-                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
-                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Category</p>
+                        <div
+                            style={{
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '12px',
+                            }}
+                        >
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>
+                                Category
+                            </p>
                             <p style={{ fontSize: '14px', color: '#16161A' }}>{task.category}</p>
                         </div>
-                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
-                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Reward</p>
+                        <div
+                            style={{
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '12px',
+                            }}
+                        >
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>
+                                Reward
+                            </p>
                             <p style={{ fontSize: '14px', fontWeight: 500, color: '#16161A' }}>{rewardSol} SOL</p>
                         </div>
-                        <div style={{ background: '#F3F3F8', border: '1.5px solid #16161A', borderRadius: '8px', padding: '12px' }}>
-                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>Deadline</p>
+                        <div
+                            style={{
+                                background: '#F3F3F8',
+                                border: '1.5px solid #16161A',
+                                borderRadius: '8px',
+                                padding: '12px',
+                            }}
+                        >
+                            <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, marginBottom: '4px' }}>
+                                Deadline
+                            </p>
                             <p style={{ fontSize: '14px', color: '#16161A' }}>{deadlineText}</p>
                         </div>
                     </div>
@@ -1470,10 +1901,19 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
         e.preventDefault();
 
         const trimmedDesc = description.trim();
-        if (!trimmedDesc) { showToast('Task description is required.', 'error'); return; }
+        if (!trimmedDesc) {
+            showToast('Task description is required.', 'error');
+            return;
+        }
         const rewardNum = parseFloat(rewardSol);
-        if (isNaN(rewardNum) || rewardNum < 0.01) { showToast('Reward must be at least 0.01 SOL.', 'error'); return; }
-        if (!deadline || deadline < minDateStr) { showToast('Deadline must be a future date.', 'error'); return; }
+        if (isNaN(rewardNum) || rewardNum < 0.01) {
+            showToast('Reward must be at least 0.01 SOL.', 'error');
+            return;
+        }
+        if (!deadline || deadline < minDateStr) {
+            showToast('Deadline must be a future date.', 'error');
+            return;
+        }
 
         setSubmitting(true);
 
@@ -1519,26 +1959,46 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
     }
 
     return (
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1.5px solid #16161A', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div
+            style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                border: '1.5px solid #16161A',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+            }}
+        >
             <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A' }}>Post a Task</h3>
 
             {toast && (
-                <div style={{
-                    borderRadius: '8px',
-                    padding: '10px 16px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    background: toast.type === 'success' ? '#D1FAE5' : '#FEE2E2',
-                    border: `1.5px solid ${toast.type === 'success' ? '#10B981' : '#DC2626'}`,
-                    color: toast.type === 'success' ? '#059669' : '#DC2626',
-                }}>
+                <div
+                    style={{
+                        borderRadius: '8px',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        background: toast.type === 'success' ? '#D1FAE5' : '#FEE2E2',
+                        border: `1.5px solid ${toast.type === 'success' ? '#10B981' : '#DC2626'}`,
+                        color: toast.type === 'success' ? '#059669' : '#DC2626',
+                    }}
+                >
                     {toast.message}
                 </div>
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>
+                    <label
+                        style={{
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                            marginBottom: '6px',
+                        }}
+                    >
                         Task Description <span style={{ color: '#DC2626' }}>*</span>
                     </label>
                     <textarea
@@ -1563,7 +2023,17 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>Category</label>
+                        <label
+                            style={{
+                                display: 'block',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#16161A',
+                                marginBottom: '6px',
+                            }}
+                        >
+                            Category
+                        </label>
                         <select
                             value={category}
                             onChange={(e) => setCategory(e.target.value as TaskCategory)}
@@ -1579,14 +2049,25 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                             }}
                         >
                             {TASK_CATEGORIES.map((cat) => (
-                                <option key={cat} value={cat}>{cat}</option>
+                                <option key={cat} value={cat}>
+                                    {cat}
+                                </option>
                             ))}
                         </select>
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>
-                            Reward (SOL) <span style={{ color: '#16161A', opacity: 0.5, fontWeight: 400 }}>min 0.01</span>
+                        <label
+                            style={{
+                                display: 'block',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#16161A',
+                                marginBottom: '6px',
+                            }}
+                        >
+                            Reward (SOL){' '}
+                            <span style={{ color: '#16161A', opacity: 0.5, fontWeight: 400 }}>min 0.01</span>
                         </label>
                         <input
                             type="number"
@@ -1611,7 +2092,17 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#16161A', marginBottom: '6px' }}>Deadline</label>
+                    <label
+                        style={{
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#16161A',
+                            marginBottom: '6px',
+                        }}
+                    >
+                        Deadline
+                    </label>
                     <input
                         type="date"
                         value={deadline}
@@ -1659,9 +2150,24 @@ function PostTaskForm({ onTaskPosted }: { onTaskPosted?: (task: PostedTask) => v
                 >
                     {submitting ? (
                         <>
-                            <svg style={{ animation: 'spin 1s linear infinite', height: '16px', width: '16px' }} viewBox="0 0 24 24" fill="none">
-                                <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            <svg
+                                style={{ animation: 'spin 1s linear infinite', height: '16px', width: '16px' }}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                            >
+                                <circle
+                                    style={{ opacity: 0.25 }}
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    style={{ opacity: 0.75 }}
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
                             </svg>
                             Posting...
                         </>
@@ -1686,7 +2192,20 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function Loading() {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#16161A', opacity: 0.5 }}>Loading...</div>;
+    return (
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100vh',
+                color: '#16161A',
+                opacity: 0.5,
+            }}
+        >
+            Loading...
+        </div>
+    );
 }
 
 function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; url: string }) {
@@ -1723,19 +2242,29 @@ function IndexerStatusBadge({ status, url }: { status: IndexerConnectionStatus; 
 }
 
 function DataSourceLabel({ source }: { source: 'indexer' | 'demo' | 'mock' | 'daemon' }) {
-    const style = (source === 'indexer' || source === 'daemon')
-        ? { background: '#D1FAE5', color: '#059669', border: '#10B981' }
-        : { background: '#F3F3F8', color: '#16161A', border: '#C6BBFF' };
-    const label = source === 'daemon' ? 'Daemon Live' : source === 'indexer' ? 'Live Data' : source === 'demo' ? 'Example Agents' : 'Sample Data';
+    const style =
+        source === 'indexer' || source === 'daemon'
+            ? { background: '#D1FAE5', color: '#059669', border: '#10B981' }
+            : { background: '#F3F3F8', color: '#16161A', border: '#C6BBFF' };
+    const label =
+        source === 'daemon'
+            ? 'Daemon Live'
+            : source === 'indexer'
+              ? 'Live Data'
+              : source === 'demo'
+                ? 'Example Agents'
+                : 'Sample Data';
     return (
-        <span style={{
-            fontSize: '10px',
-            padding: '4px 8px',
-            borderRadius: '9999px',
-            background: style.background,
-            color: style.color,
-            border: `1px solid ${style.border}`,
-        }}>
+        <span
+            style={{
+                fontSize: '10px',
+                padding: '4px 8px',
+                borderRadius: '9999px',
+                background: style.background,
+                color: style.color,
+                border: `1px solid ${style.border}`,
+            }}
+        >
             {label}
         </span>
     );
@@ -1765,7 +2294,7 @@ function TaskMarketView({ address }: { address: string | null }) {
                     return;
                 }
             }
-            
+
             // Try Indexer API
             const indexerBase = resolveIndexerBase();
             if (indexerBase) {
@@ -1787,7 +2316,7 @@ function TaskMarketView({ address }: { address: string | null }) {
                     console.warn('Indexer fetch failed:', err);
                 }
             }
-            
+
             // No data available - show empty state
             setTasks([]);
             setDataSource('mock');
@@ -1799,7 +2328,16 @@ function TaskMarketView({ address }: { address: string | null }) {
     const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.state === filter);
 
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
+        <div
+            style={{
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                overflowY: 'auto',
+                height: '100%',
+            }}
+        >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#16161A' }}>Task Market</h2>
@@ -1827,8 +2365,17 @@ function TaskMarketView({ address }: { address: string | null }) {
 
             {/* Post Task Form (collapsible) */}
             {showPostForm && address && (
-                <div style={{ background: '#FFFFFF', border: '1.5px solid #16161A', borderRadius: '12px', padding: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>Post a New Task</h3>
+                <div
+                    style={{
+                        background: '#FFFFFF',
+                        border: '1.5px solid #16161A',
+                        borderRadius: '12px',
+                        padding: '20px',
+                    }}
+                >
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#16161A', marginBottom: '16px' }}>
+                        Post a New Task
+                    </h3>
                     <QuickPostTaskForm
                         address={address}
                         onPosted={(task) => {
@@ -1865,9 +2412,13 @@ function TaskMarketView({ address }: { address: string | null }) {
             {!loading && filtered.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '48px 24px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-                    <p style={{ color: '#16161A', fontWeight: 600, fontSize: '18px', marginBottom: '8px' }}>No tasks yet</p>
+                    <p style={{ color: '#16161A', fontWeight: 600, fontSize: '18px', marginBottom: '8px' }}>
+                        No tasks yet
+                    </p>
                     <p style={{ color: '#16161A', opacity: 0.6, fontSize: '14px', marginBottom: '16px' }}>
-                        {dataSource === 'mock' ? 'Connect to daemon to see live tasks, or post your own!' : 'Be the first to post a task!'}
+                        {dataSource === 'mock'
+                            ? 'Connect to daemon to see live tasks, or post your own!'
+                            : 'Be the first to post a task!'}
                     </p>
                     {address && !showPostForm && (
                         <button
@@ -1903,30 +2454,74 @@ function TaskMarketView({ address }: { address: string | null }) {
                                 cursor: 'pointer',
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    justifyContent: 'space-between',
+                                    gap: '12px',
+                                }}
+                            >
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <span style={{
-                                            padding: '2px 8px',
-                                            borderRadius: '4px',
-                                            fontSize: '10px',
-                                            fontWeight: 500,
-                                            background: stateStyle.background,
-                                            color: stateStyle.color,
-                                        }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            marginBottom: '4px',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: '10px',
+                                                fontWeight: 500,
+                                                background: stateStyle.background,
+                                                color: stateStyle.color,
+                                            }}
+                                        >
                                             {task.state}
                                         </span>
-                                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>{task.category}</span>
+                                        <span style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
+                                            {task.category}
+                                        </span>
                                     </div>
-                                    <p style={{ fontSize: '14px', color: '#16161A', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{task.description}</p>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>
-                                        <span>By {task.poster.slice(0, 6)}...{task.poster.slice(-4)}</span>
+                                    <p
+                                        style={{
+                                            fontSize: '14px',
+                                            color: '#16161A',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                        }}
+                                    >
+                                        {task.description}
+                                    </p>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '16px',
+                                            marginTop: '8px',
+                                            fontSize: '12px',
+                                            color: '#16161A',
+                                            opacity: 0.5,
+                                        }}
+                                    >
+                                        <span>
+                                            By {task.poster.slice(0, 6)}...{task.poster.slice(-4)}
+                                        </span>
                                         <span>{task.submissions_count} submissions</span>
                                         <span>Due {new Date(task.deadline * 1000).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#16161A' }}>{(task.reward_lamports / 1_000_000_000).toFixed(2)}</p>
+                                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#16161A' }}>
+                                        {(task.reward_lamports / 1_000_000_000).toFixed(2)}
+                                    </p>
                                     <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>SOL</p>
                                 </div>
                             </div>
@@ -1937,11 +2532,7 @@ function TaskMarketView({ address }: { address: string | null }) {
 
             {/* Task Detail Modal */}
             {selectedTask && (
-                <TaskDetailModal
-                    task={selectedTask}
-                    onClose={() => setSelectedTask(null)}
-                    address={address}
-                />
+                <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} address={address} />
             )}
         </div>
     );
@@ -2051,8 +2642,18 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
                         color: '#16161A',
                     }}
                 >
-                    {['DeFi Analysis', 'Smart Contract Audit', 'Data Processing', 'Content Creation', 'Trading Strategy', 'Code Review', 'Other'].map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                    {[
+                        'DeFi Analysis',
+                        'Smart Contract Audit',
+                        'Data Processing',
+                        'Content Creation',
+                        'Trading Strategy',
+                        'Code Review',
+                        'Other',
+                    ].map((c) => (
+                        <option key={c} value={c}>
+                            {c}
+                        </option>
                     ))}
                 </select>
                 <div style={{ position: 'relative' }}>
@@ -2073,7 +2674,18 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
                             paddingRight: '48px',
                         }}
                     />
-                    <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>SOL</span>
+                    <span
+                        style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '10px',
+                            fontSize: '12px',
+                            color: '#16161A',
+                            opacity: 0.5,
+                        }}
+                    >
+                        SOL
+                    </span>
                 </div>
                 <div style={{ position: 'relative' }}>
                     <input
@@ -2093,17 +2705,44 @@ function QuickPostTaskForm({ address, onPosted }: { address: string; onPosted: (
                             paddingRight: '48px',
                         }}
                     />
-                    <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '12px', color: '#16161A', opacity: 0.5 }}>days</span>
+                    <span
+                        style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '10px',
+                            fontSize: '12px',
+                            color: '#16161A',
+                            opacity: 0.5,
+                        }}
+                    >
+                        days
+                    </span>
                 </div>
             </div>
             {/* Transaction status */}
             {txError && (
-                <div style={{ padding: '8px 12px', background: '#FEE2E2', borderRadius: '8px', fontSize: '12px', color: '#DC2626' }}>
+                <div
+                    style={{
+                        padding: '8px 12px',
+                        background: '#FEE2E2',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        color: '#DC2626',
+                    }}
+                >
                     ⚠️ On-chain tx failed: {txError}. Task will be posted off-chain.
                 </div>
             )}
             {escrowTx && (
-                <div style={{ padding: '8px 12px', background: '#D1FAE5', borderRadius: '8px', fontSize: '12px', color: '#059669' }}>
+                <div
+                    style={{
+                        padding: '8px 12px',
+                        background: '#D1FAE5',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        color: '#059669',
+                    }}
+                >
                     ✓ On-chain:{' '}
                     <a
                         href={`https://solscan.io/tx/${escrowTx}?cluster=devnet`}
@@ -2186,9 +2825,7 @@ function RegisterAgentSection({ address }: { address: string | null }) {
     if (!address) return null;
 
     function toggleCapability(cap: AgentCapability) {
-        setCapabilities((prev) =>
-            prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap],
-        );
+        setCapabilities((prev) => (prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]));
     }
 
     const [registering, setRegistering] = useState(false);
@@ -2286,7 +2923,9 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Display Name *</label>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>
+                    Display Name *
+                </label>
                 <input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -2305,7 +2944,9 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Capabilities</label>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>
+                    Capabilities
+                </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
                     {AGENT_CAPABILITIES.map((cap) => (
                         <label
@@ -2325,7 +2966,9 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>Bio (optional)</label>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>
+                    Bio (optional)
+                </label>
                 <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
@@ -2346,7 +2989,9 @@ function RegisterAgentSection({ address }: { address: string | null }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>SOL Domain (optional)</label>
+                <label style={{ fontSize: '12px', color: '#16161A', opacity: 0.6, fontWeight: 500 }}>
+                    SOL Domain (optional)
+                </label>
                 <input
                     value={solDomain}
                     onChange={(e) => setSolDomain(e.target.value)}
@@ -2371,14 +3016,14 @@ function RegisterAgentSection({ address }: { address: string | null }) {
                     style={{
                         flex: 1,
                         padding: '10px',
-                        background: (!displayName.trim() || registering) ? '#F3F3F8' : '#16161A',
-                        color: (!displayName.trim() || registering) ? '#16161A' : '#FFFFFF',
+                        background: !displayName.trim() || registering ? '#F3F3F8' : '#16161A',
+                        color: !displayName.trim() || registering ? '#16161A' : '#FFFFFF',
                         borderRadius: '8px',
                         fontSize: '14px',
                         fontWeight: 500,
                         border: '1.5px solid #16161A',
-                        cursor: (!displayName.trim() || registering) ? 'not-allowed' : 'pointer',
-                        opacity: (!displayName.trim() || registering) ? 0.5 : 1,
+                        cursor: !displayName.trim() || registering ? 'not-allowed' : 'pointer',
+                        opacity: !displayName.trim() || registering ? 0.5 : 1,
                     }}
                 >
                     {registering ? 'Registering on-chain...' : editing ? 'Save Changes' : 'Register Agent'}
@@ -2408,7 +3053,15 @@ function RegisterAgentSection({ address }: { address: string | null }) {
     );
 }
 
-function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProfile; onEdit: () => void; txSignature?: string | null }) {
+function AgentProfileCard({
+    profile,
+    onEdit,
+    txSignature,
+}: {
+    profile: AgentProfile;
+    onEdit: () => void;
+    txSignature?: string | null;
+}) {
     return (
         <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1.5px solid #16161A' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -2417,7 +3070,19 @@ function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProf
                     {profile.solDomain && (
                         <p style={{ fontSize: '14px', color: '#C6BBFF', marginTop: '2px' }}>{profile.solDomain}</p>
                     )}
-                    <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5, fontFamily: 'monospace', marginTop: '4px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p
+                        style={{
+                            fontSize: '12px',
+                            color: '#16161A',
+                            opacity: 0.5,
+                            fontFamily: 'monospace',
+                            marginTop: '4px',
+                            maxWidth: '260px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
                         {profile.walletAddress}
                     </p>
                     {txSignature && (
@@ -2448,7 +3113,9 @@ function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProf
             </div>
 
             {profile.bio && (
-                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.8, lineHeight: 1.6, marginTop: '12px' }}>{profile.bio}</p>
+                <p style={{ fontSize: '14px', color: '#16161A', opacity: 0.8, lineHeight: 1.6, marginTop: '12px' }}>
+                    {profile.bio}
+                </p>
             )}
 
             {profile.capabilities.length > 0 && (
@@ -2472,7 +3139,15 @@ function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProf
             )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
-                <div style={{ background: '#F3F3F8', borderRadius: '8px', padding: '8px 16px', textAlign: 'center', border: '1.5px solid #16161A' }}>
+                <div
+                    style={{
+                        background: '#F3F3F8',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        textAlign: 'center',
+                        border: '1.5px solid #16161A',
+                    }}
+                >
                     <p style={{ fontSize: '12px', color: '#16161A', opacity: 0.5 }}>Reputation</p>
                     <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#16161A' }}>{profile.reputationScore}</p>
                 </div>
@@ -2483,7 +3158,6 @@ function AgentProfileCard({ profile, onEdit, txSignature }: { profile: AgentProf
         </div>
     );
 }
-
 
 function trimTrailingSlash(value: string): string {
     return value.endsWith('/') ? value.slice(0, -1) : value;
@@ -2498,11 +3172,11 @@ function getRpcEndpoint(): string {
             if (settings.rpcEndpoint) return settings.rpcEndpoint;
         }
     }
-    
+
     // Fall back to environment variables or defaults
     const envRpc = process.env.NEXT_PUBLIC_GRADIENCE_RPC_ENDPOINT;
     if (envRpc) return envRpc;
-    
+
     // Default to devnet
     return 'https://api.devnet.solana.com';
 }

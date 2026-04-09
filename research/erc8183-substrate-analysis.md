@@ -1,7 +1,7 @@
 # ERC-8183 定位分析：底板协议 vs 通用任务协议
 
 > **核心洞察：ERC-8183 是为特定底板场景设计，不是通用任务协议**
-> 
+>
 > 分析日期：2026-03-29
 
 ---
@@ -30,25 +30,25 @@
 
 ```yaml
 深度绑定 BNB Chain:
-  - 使用 BNB Chain 原生稳定币 $U
-  - 依赖 BNB Chain 生态项目 (UMA)
-  - 智能合约针对 BNB Chain 优化
-  
+    - 使用 BNB Chain 原生稳定币 $U
+    - 依赖 BNB Chain 生态项目 (UMA)
+    - 智能合约针对 BNB Chain 优化
+
 假设特定执行模型:
-  - 单一 Agent 执行任务
-  - 乐观验证 + 争议仲裁
-  - 适合：外包任务、简单工作
-  - 不适合：竞争、复杂协作
+    - 单一 Agent 执行任务
+    - 乐观验证 + 争议仲裁
+    - 适合：外包任务、简单工作
+    - 不适合：竞争、复杂协作
 
 固定工作流:
-  - 发布 → 托管 → 执行 → 挑战期 → 结算
-  - 无法跳过或修改步骤
-  - 每个任务都必须走完整流程
+    - 发布 → 托管 → 执行 → 挑战期 → 结算
+    - 无法跳过或修改步骤
+    - 每个任务都必须走完整流程
 
 与基础设施耦合:
-  - UMA Optimistic Oracle 必需
-  - 需要质押代币经济
-  - 依赖链上投票机制
+    - UMA Optimistic Oracle 必需
+    - 需要质押代币经济
+    - 依赖链上投票机制
 ```
 
 ---
@@ -57,14 +57,14 @@
 
 ### 2.1 设计目标对比
 
-| 维度 | ERC-8183 (底板) | Agent Arena (通用) |
-|------|-----------------|-------------------|
+| 维度         | ERC-8183 (底板)           | Agent Arena (通用)    |
+| ------------ | ------------------------- | --------------------- |
 | **设计目标** | BNB Chain 生态 Agent 任务 | 任意链 Agent 竞争市场 |
-| **执行模式** | 单一 Agent + 验证 | 多 Agent 竞争 |
-| **验证机制** | 乐观 + UMA 仲裁 | 评判/自动测试/混合 |
-| **链绑定** | BNB Chain 为主 | 多链 (Solana/X-Layer) |
-| **灵活性** | 低（固定流程） | 高（可配置） |
-| **适用场景** | 外包、确定性任务 | 竞争、创意、复杂任务 |
+| **执行模式** | 单一 Agent + 验证         | 多 Agent 竞争         |
+| **验证机制** | 乐观 + UMA 仲裁           | 评判/自动测试/混合    |
+| **链绑定**   | BNB Chain 为主            | 多链 (Solana/X-Layer) |
+| **灵活性**   | 低（固定流程）            | 高（可配置）          |
+| **适用场景** | 外包、确定性任务          | 竞争、创意、复杂任务  |
 
 ### 2.2 使用场景对比
 
@@ -146,18 +146,18 @@ ERC-8183 的锁定效应：
 简单任务：
   - "查天气" - 不需要仲裁
   - "算数学题" - 结果明确
-  
+
 创意任务：
   - "写首诗" - 主观评判
   - "设计 Logo" - 需要比较
-  
+
 复杂任务：
   - "开发功能" - 多步骤
   - "研究项目" - 长期协作
 
 ERC-8183 假设：
   所有任务都是：外包 → 执行 → 验证 → 结算
-  
+
 现实：
   任务类型千差万别，需要不同机制
 ```
@@ -173,7 +173,7 @@ BNB Chain 生态需求:
   - 需要 Agent 基础设施
   - 与现有生态项目整合 (UMA)
   - 推广 $U 稳定币使用
-  
+
 快速落地:
   - 复用现有组件 (UMA)
   - 不需要重新设计验证机制
@@ -242,46 +242,46 @@ Gradience 定位：通用任务平台
 // Gradience 的模块化任务系统
 
 interface TaskFramework {
-  // 基础层：链无关
-  identity: ERC8004Identity;  // 统一身份
-  escrow: EscrowContract;     // 多链托管
-  
-  // 执行层：可配置
-  execution: {
-    mode: 'competition' | 'single' | 'collaboration';
-    // competition: Agent Arena 竞争
-    // single: 单一 Agent (类似 ERC-8183)
-    // collaboration: 多 Agent 协作
-  };
-  
-  // 验证层：可插拔
-  verification: {
-    type: 'judge' | 'automated' | 'uma' | 'tee';
-    // judge: 人工/AI 评判
-    // automated: 自动测试
-    // uma: ERC-8183 式乐观验证
-    // tee: TEE 可信执行
-  };
-  
-  // 结算层：灵活
-  settlement: {
-    token: string;  // 任意代币
-    distribution: 'winner_takes_all' | 'proportional' | 'custom';
-  };
+    // 基础层：链无关
+    identity: ERC8004Identity; // 统一身份
+    escrow: EscrowContract; // 多链托管
+
+    // 执行层：可配置
+    execution: {
+        mode: 'competition' | 'single' | 'collaboration';
+        // competition: Agent Arena 竞争
+        // single: 单一 Agent (类似 ERC-8183)
+        // collaboration: 多 Agent 协作
+    };
+
+    // 验证层：可插拔
+    verification: {
+        type: 'judge' | 'automated' | 'uma' | 'tee';
+        // judge: 人工/AI 评判
+        // automated: 自动测试
+        // uma: ERC-8183 式乐观验证
+        // tee: TEE 可信执行
+    };
+
+    // 结算层：灵活
+    settlement: {
+        token: string; // 任意代币
+        distribution: 'winner_takes_all' | 'proportional' | 'custom';
+    };
 }
 
 // 示例：简单任务
 const simpleTask: TaskFramework = {
-  execution: { mode: 'competition' },
-  verification: { type: 'judge' },
-  settlement: { token: 'OKB', distribution: 'winner_takes_all' }
+    execution: { mode: 'competition' },
+    verification: { type: 'judge' },
+    settlement: { token: 'OKB', distribution: 'winner_takes_all' },
 };
 
 // 示例：复杂任务（可选 ERC-8183）
 const complexTask: TaskFramework = {
-  execution: { mode: 'single' },
-  verification: { type: 'uma' },  // 使用 ERC-8183
-  settlement: { token: 'USDC', distribution: 'custom' }
+    execution: { mode: 'single' },
+    verification: { type: 'uma' }, // 使用 ERC-8183
+    settlement: { token: 'USDC', distribution: 'custom' },
 };
 ```
 
@@ -367,4 +367,4 @@ ERC-8183 不是：
 
 ---
 
-*"底板提供确定性，平台提供可能性。Agent 经济需要两者，但平台更具长期价值。"*
+_"底板提供确定性，平台提供可能性。Agent 经济需要两者，但平台更具长期价值。"_

@@ -4,7 +4,8 @@ export default function BestPracticesPage() {
             <h1>SDK Best Practices</h1>
 
             <h2>Error Handling</h2>
-            <pre><code>{`import { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
+            <pre>
+                <code>{`import { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
 
 const client = new ChainHubClient();
 
@@ -18,10 +19,12 @@ try {
             console.log('Rate limited — retry after backoff');
         }
     }
-}`}</code></pre>
+}`}</code>
+            </pre>
 
             <h2>Batch Operations</h2>
-            <pre><code>{`// Use batch methods instead of sequential calls
+            <pre>
+                <code>{`// Use batch methods instead of sequential calls
 const agents = ['pubkey1', 'pubkey2', 'pubkey3'];
 
 // ❌ Slow: sequential
@@ -30,10 +33,12 @@ for (const agent of agents) {
 }
 
 // ✅ Fast: batch
-const reputations = await client.getReputationBatch(agents);`}</code></pre>
+const reputations = await client.getReputationBatch(agents);`}</code>
+            </pre>
 
             <h2>Caching</h2>
-            <pre><code>{`// Reputation data changes infrequently — cache for 60s
+            <pre>
+                <code>{`// Reputation data changes infrequently — cache for 60s
 const cache = new Map();
 
 async function getCachedReputation(agent: string) {
@@ -43,10 +48,12 @@ async function getCachedReputation(agent: string) {
     const data = await client.getReputation(agent);
     cache.set(agent, { data, ts: Date.now() });
     return data;
-}`}</code></pre>
+}`}</code>
+            </pre>
 
             <h2>SQL Query Safety</h2>
-            <pre><code>{`import { SqlPermissionGuard } from '@gradiences/chain-hub-sdk';
+            <pre>
+                <code>{`import { SqlPermissionGuard } from '@gradiences/chain-hub-sdk';
 
 // Always validate user-provided SQL
 const guard = new SqlPermissionGuard({
@@ -67,10 +74,12 @@ function safeQuery(userSql: string) {
 await client.query(
     'SELECT * FROM tasks WHERE poster = $1',
     [userInput]  // Never interpolate directly
-);`}</code></pre>
+);`}</code>
+            </pre>
 
             <h2>Network Selection</h2>
-            <pre><code>{`// Development
+            <pre>
+                <code>{`// Development
 const devClient = new ChainHubClient({
     baseUrl: 'http://localhost:3001',
     network: 'devnet',
@@ -81,10 +90,12 @@ const prodClient = new ChainHubClient({
     baseUrl: 'https://indexer.gradiences.xyz',
     network: 'mainnet',
     apiKey: process.env.CHAINHUB_API_KEY,
-});`}</code></pre>
+});`}</code>
+            </pre>
 
             <h2>TypeScript Tips</h2>
-            <pre><code>{`// Use strict null checks
+            <pre>
+                <code>{`// Use strict null checks
 const rep = await client.getReputation(agent);
 if (!rep) {
     // Handle missing reputation explicitly
@@ -96,7 +107,8 @@ const {
     globalAvgScore = 0,
     globalCompleted = 0,
     globalWinRate = 0,
-} = rep;`}</code></pre>
+} = rep;`}</code>
+            </pre>
 
             <h2>Performance</h2>
             <ul>

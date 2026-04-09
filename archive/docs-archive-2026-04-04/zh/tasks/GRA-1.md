@@ -1,18 +1,19 @@
 ---
 linear-id: GRA-1
-title: "Get familiar with Linear"
+title: 'Get familiar with Linear'
 status: todo
 priority: P0
-project: "General"
+project: 'General'
 created: 2026-04-03
-migrated-from: "Linear"
-assignee: "Code Agent"
+migrated-from: 'Linear'
+assignee: 'Code Agent'
 tags: [task, p0, general]
 ---
 
 # GRA-1: Get familiar with Linear
 
 ## Description
+
 Welcome to Linear! 
 
 Watch an introductory video and access a list of resources below.
@@ -21,18 +22,18 @@ Watch an introductory video and access a list of resources below.
 
 ### **Choose your setup guide** based on your company stage:
 
-* [Small teams](<https://linear.app/docs/how-to-use-linear-small-teams>)
+- [Small teams](https://linear.app/docs/how-to-use-linear-small-teams)
   For early-stage startups and projects
-* [Startups & mid-size companies](<https://linear.app/docs/how-to-use-linear-startups-mid-size-companies>)
+- [Startups & mid-size companies](https://linear.app/docs/how-to-use-linear-startups-mid-size-companies)
   For growing teams with cross-functional needs
-* [Large & scaling companies](<https://linear.app/docs/how-to-use-linear-large-scaling-companies>)
+- [Large & scaling companies](https://linear.app/docs/how-to-use-linear-large-scaling-companies)
   For enterprise and high-growth teams with complex workflows
 
 ### **Need help getting started?**
 
-* [Join our Slack community](<https://linear.app/join-slack>)
+- [Join our Slack community](https://linear.app/join-slack)
   Connect with other Linear users and get tips
-* [Join a live ](<https://lu.ma/welcome-to-linear?utm_source=docs>)[onboarding](<https://lu.ma/welcome-to-linear?utm_source=onboarding>)[ ](<https://lu.ma/welcome-to-linear?utm_source=docs>)[session](<https://lu.ma/welcome-to-linear?utm_source=onboarding>)
+- [Join a live ](https://lu.ma/welcome-to-linear?utm_source=docs)[onboarding](https://lu.ma/welcome-to-linear?utm_source=onboarding)[ ](https://lu.ma/welcome-to-linear?utm_source=docs)[session](https://lu.ma/welcome-to-linear?utm_source=onboarding)
   Learn the essentials and see demos of core workflows
 
 ---
@@ -42,16 +43,19 @@ If you have any questions hit `?` in the bottom left > Contact us.
 ![contactlinear (1).gif](https://uploads.linear.app/fe63b3e2-bf87-46c0-8784-cd7d639287c8/bc9bbf62-4192-411f-88f6-c89c9150503e/4df0346e-803b-4f58-8527-4aeb30d88411)
 
 ## Original Linear Info
+
 - **State**: Todo
 - **Project**: General
 - **Priority**: P0
 
 ## Acceptance Criteria
-- [ ] 
+
+- [ ]
 
 ## Related
 
 ## Notes
 
 ## Log
+
 - 2026-04-03: Migrated from Linear

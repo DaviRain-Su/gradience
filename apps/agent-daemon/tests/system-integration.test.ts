@@ -18,7 +18,7 @@ describe('System Integration Tests', () => {
         test('Agent Daemon should report healthy', async () => {
             const res = await fetch(`${DAEMON_URL}/health`);
             expect(res.status).toBe(200);
-            const body = await res.json() as { status: string };
+            const body = (await res.json()) as { status: string };
             expect(body.status).toBe('ok');
         });
 
@@ -31,7 +31,7 @@ describe('System Integration Tests', () => {
                     return;
                 }
                 expect(res.status).toBe(200);
-                const body = await res.json() as { ok: boolean };
+                const body = (await res.json()) as { ok: boolean };
                 expect(body.ok).toBe(true);
             } catch (err: any) {
                 if (err?.cause?.code === 'ECONNREFUSED' || err?.name === 'TimeoutError') {
@@ -55,7 +55,7 @@ describe('System Integration Tests', () => {
                 method: 'POST',
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { challenge: string; message: string };
+            const body = (await res.json()) as { challenge: string; message: string };
             expect(body.challenge).toBeDefined();
             expect(body.message).toContain('Sign in to Gradience');
             challenge = body.challenge;
@@ -72,7 +72,7 @@ describe('System Integration Tests', () => {
                 body: JSON.stringify({ walletAddress, challenge, signature }),
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { token: string; walletAddress: string };
+            const body = (await res.json()) as { token: string; walletAddress: string };
             expect(body.token).toBeDefined();
             expect(body.walletAddress).toBe(walletAddress);
             token = body.token;
@@ -83,7 +83,7 @@ describe('System Integration Tests', () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { walletAddress: string };
+            const body = (await res.json()) as { walletAddress: string };
             expect(body.walletAddress).toBe(walletAddress);
         });
     });
@@ -95,7 +95,7 @@ describe('System Integration Tests', () => {
 
         beforeAll(async () => {
             const challengeRes = await fetch(`${DAEMON_URL}/api/v1/auth/challenge`, { method: 'POST' });
-            const { challenge, message } = await challengeRes.json() as { challenge: string; message: string };
+            const { challenge, message } = (await challengeRes.json()) as { challenge: string; message: string };
             const messageBytes = Buffer.from(message, 'utf-8');
             const signature = Buffer.from(nacl.sign.detached(messageBytes, keypair.secretKey)).toString('base64');
             const verifyRes = await fetch(`${DAEMON_URL}/api/v1/auth/verify`, {
@@ -103,7 +103,7 @@ describe('System Integration Tests', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ walletAddress, challenge, signature }),
             });
-            const body = await verifyRes.json() as { token: string };
+            const body = (await verifyRes.json()) as { token: string };
             token = body.token;
         });
 
@@ -112,7 +112,7 @@ describe('System Integration Tests', () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { status: string; version: string };
+            const body = (await res.json()) as { status: string; version: string };
             expect(body.status).toBe('running');
         });
 
@@ -121,7 +121,7 @@ describe('System Integration Tests', () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { agents: unknown[] };
+            const body = (await res.json()) as { agents: unknown[] };
             expect(Array.isArray(body.agents)).toBe(true);
         });
 
@@ -146,7 +146,7 @@ describe('System Integration Tests', () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             expect(getRes.status).toBe(200);
-            const profile = await getRes.json() as { displayName: string; bio: string };
+            const profile = (await getRes.json()) as { displayName: string; bio: string };
             expect(profile.displayName).toBe(payload.displayName);
         });
 
@@ -155,7 +155,7 @@ describe('System Integration Tests', () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as { posts: unknown[]; hasMore: boolean };
+            const body = (await res.json()) as { posts: unknown[]; hasMore: boolean };
             expect(Array.isArray(body.posts)).toBe(true);
             expect(typeof body.hasMore).toBe('boolean');
         });

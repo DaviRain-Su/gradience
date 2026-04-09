@@ -7,202 +7,199 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getI64Decoder,
-  getI64Encoder,
-  getOptionDecoder,
-  getOptionEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU16Decoder,
-  getU16Encoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  type Account,
-  type Address,
-  type Codec,
-  type Decoder,
-  type EncodedAccount,
-  type Encoder,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-  type Option,
-  type OptionOrNullable,
-} from "@solana/kit";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    assertAccountExists,
+    assertAccountsExist,
+    combineCodec,
+    decodeAccount,
+    fetchEncodedAccount,
+    fetchEncodedAccounts,
+    getI64Decoder,
+    getI64Encoder,
+    getOptionDecoder,
+    getOptionEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU16Decoder,
+    getU16Encoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    type Account,
+    type Address,
+    type Codec,
+    type Decoder,
+    type EncodedAccount,
+    type Encoder,
+    type FetchAccountConfig,
+    type FetchAccountsConfig,
+    type MaybeAccount,
+    type MaybeEncodedAccount,
+    type Option,
+    type OptionOrNullable,
+} from '@solana/kit';
 import {
-  getJudgeModeDecoder,
-  getJudgeModeEncoder,
-  getPubkeyBytesDecoder,
-  getPubkeyBytesEncoder,
-  getTaskStateDecoder,
-  getTaskStateEncoder,
-  type JudgeMode,
-  type JudgeModeArgs,
-  type PubkeyBytes,
-  type PubkeyBytesArgs,
-  type TaskState,
-  type TaskStateArgs,
-} from "../types";
+    getJudgeModeDecoder,
+    getJudgeModeEncoder,
+    getPubkeyBytesDecoder,
+    getPubkeyBytesEncoder,
+    getTaskStateDecoder,
+    getTaskStateEncoder,
+    type JudgeMode,
+    type JudgeModeArgs,
+    type PubkeyBytes,
+    type PubkeyBytesArgs,
+    type TaskState,
+    type TaskStateArgs,
+} from '../types';
 
 export type Task = {
-  discriminator: number;
-  version: number;
-  taskId: bigint;
-  poster: PubkeyBytes;
-  judge: PubkeyBytes;
-  judgeMode: JudgeMode;
-  reward: bigint;
-  mint: PubkeyBytes;
-  minStake: bigint;
-  state: TaskState;
-  category: number;
-  evalRef: string;
-  deadline: bigint;
-  judgeDeadline: bigint;
-  submissionCount: number;
-  winner: Option<PubkeyBytes>;
-  createdAt: bigint;
-  bump: number;
+    discriminator: number;
+    version: number;
+    taskId: bigint;
+    poster: PubkeyBytes;
+    judge: PubkeyBytes;
+    judgeMode: JudgeMode;
+    reward: bigint;
+    mint: PubkeyBytes;
+    minStake: bigint;
+    state: TaskState;
+    category: number;
+    evalRef: string;
+    deadline: bigint;
+    judgeDeadline: bigint;
+    submissionCount: number;
+    winner: Option<PubkeyBytes>;
+    createdAt: bigint;
+    bump: number;
 };
 
 export type TaskArgs = {
-  discriminator: number;
-  version: number;
-  taskId: number | bigint;
-  poster: PubkeyBytesArgs;
-  judge: PubkeyBytesArgs;
-  judgeMode: JudgeModeArgs;
-  reward: number | bigint;
-  mint: PubkeyBytesArgs;
-  minStake: number | bigint;
-  state: TaskStateArgs;
-  category: number;
-  evalRef: string;
-  deadline: number | bigint;
-  judgeDeadline: number | bigint;
-  submissionCount: number;
-  winner: OptionOrNullable<PubkeyBytesArgs>;
-  createdAt: number | bigint;
-  bump: number;
+    discriminator: number;
+    version: number;
+    taskId: number | bigint;
+    poster: PubkeyBytesArgs;
+    judge: PubkeyBytesArgs;
+    judgeMode: JudgeModeArgs;
+    reward: number | bigint;
+    mint: PubkeyBytesArgs;
+    minStake: number | bigint;
+    state: TaskStateArgs;
+    category: number;
+    evalRef: string;
+    deadline: number | bigint;
+    judgeDeadline: number | bigint;
+    submissionCount: number;
+    winner: OptionOrNullable<PubkeyBytesArgs>;
+    createdAt: number | bigint;
+    bump: number;
 };
 
 /** Gets the encoder for {@link TaskArgs} account data. */
 export function getTaskEncoder(): Encoder<TaskArgs> {
-  return getStructEncoder([
-    ["discriminator", getU8Encoder()],
-    ["version", getU8Encoder()],
-    ["taskId", getU64Encoder()],
-    ["poster", getPubkeyBytesEncoder()],
-    ["judge", getPubkeyBytesEncoder()],
-    ["judgeMode", getJudgeModeEncoder()],
-    ["reward", getU64Encoder()],
-    ["mint", getPubkeyBytesEncoder()],
-    ["minStake", getU64Encoder()],
-    ["state", getTaskStateEncoder()],
-    ["category", getU8Encoder()],
-    ["evalRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["deadline", getI64Encoder()],
-    ["judgeDeadline", getI64Encoder()],
-    ["submissionCount", getU16Encoder()],
-    ["winner", getOptionEncoder(getPubkeyBytesEncoder())],
-    ["createdAt", getI64Encoder()],
-    ["bump", getU8Encoder()],
-  ]);
+    return getStructEncoder([
+        ['discriminator', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['taskId', getU64Encoder()],
+        ['poster', getPubkeyBytesEncoder()],
+        ['judge', getPubkeyBytesEncoder()],
+        ['judgeMode', getJudgeModeEncoder()],
+        ['reward', getU64Encoder()],
+        ['mint', getPubkeyBytesEncoder()],
+        ['minStake', getU64Encoder()],
+        ['state', getTaskStateEncoder()],
+        ['category', getU8Encoder()],
+        ['evalRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['deadline', getI64Encoder()],
+        ['judgeDeadline', getI64Encoder()],
+        ['submissionCount', getU16Encoder()],
+        ['winner', getOptionEncoder(getPubkeyBytesEncoder())],
+        ['createdAt', getI64Encoder()],
+        ['bump', getU8Encoder()],
+    ]);
 }
 
 /** Gets the decoder for {@link Task} account data. */
 export function getTaskDecoder(): Decoder<Task> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["taskId", getU64Decoder()],
-    ["poster", getPubkeyBytesDecoder()],
-    ["judge", getPubkeyBytesDecoder()],
-    ["judgeMode", getJudgeModeDecoder()],
-    ["reward", getU64Decoder()],
-    ["mint", getPubkeyBytesDecoder()],
-    ["minStake", getU64Decoder()],
-    ["state", getTaskStateDecoder()],
-    ["category", getU8Decoder()],
-    ["evalRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["deadline", getI64Decoder()],
-    ["judgeDeadline", getI64Decoder()],
-    ["submissionCount", getU16Decoder()],
-    ["winner", getOptionDecoder(getPubkeyBytesDecoder())],
-    ["createdAt", getI64Decoder()],
-    ["bump", getU8Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['version', getU8Decoder()],
+        ['taskId', getU64Decoder()],
+        ['poster', getPubkeyBytesDecoder()],
+        ['judge', getPubkeyBytesDecoder()],
+        ['judgeMode', getJudgeModeDecoder()],
+        ['reward', getU64Decoder()],
+        ['mint', getPubkeyBytesDecoder()],
+        ['minStake', getU64Decoder()],
+        ['state', getTaskStateDecoder()],
+        ['category', getU8Decoder()],
+        ['evalRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['deadline', getI64Decoder()],
+        ['judgeDeadline', getI64Decoder()],
+        ['submissionCount', getU16Decoder()],
+        ['winner', getOptionDecoder(getPubkeyBytesDecoder())],
+        ['createdAt', getI64Decoder()],
+        ['bump', getU8Decoder()],
+    ]);
 }
 
 /** Gets the codec for {@link Task} account data. */
 export function getTaskCodec(): Codec<TaskArgs, Task> {
-  return combineCodec(getTaskEncoder(), getTaskDecoder());
+    return combineCodec(getTaskEncoder(), getTaskDecoder());
 }
 
 export function decodeTask<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress>,
 ): Account<Task, TAddress>;
 export function decodeTask<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+    encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<Task, TAddress>;
 export function decodeTask<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<Task, TAddress> | MaybeAccount<Task, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getTaskDecoder(),
-  );
+    return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getTaskDecoder());
 }
 
 export async function fetchTask<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<Account<Task, TAddress>> {
-  const maybeAccount = await fetchMaybeTask(rpc, address, config);
-  assertAccountExists(maybeAccount);
-  return maybeAccount;
+    const maybeAccount = await fetchMaybeTask(rpc, address, config);
+    assertAccountExists(maybeAccount);
+    return maybeAccount;
 }
 
 export async function fetchMaybeTask<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<MaybeAccount<Task, TAddress>> {
-  const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeTask(maybeAccount);
+    const maybeAccount = await fetchEncodedAccount(rpc, address, config);
+    return decodeTask(maybeAccount);
 }
 
 export async function fetchAllTask(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<Account<Task>[]> {
-  const maybeAccounts = await fetchAllMaybeTask(rpc, addresses, config);
-  assertAccountsExist(maybeAccounts);
-  return maybeAccounts;
+    const maybeAccounts = await fetchAllMaybeTask(rpc, addresses, config);
+    assertAccountsExist(maybeAccounts);
+    return maybeAccounts;
 }
 
 export async function fetchAllMaybeTask(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<Task>[]> {
-  const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeTask(maybeAccount));
+    const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
+    return maybeAccounts.map(maybeAccount => decodeTask(maybeAccount));
 }

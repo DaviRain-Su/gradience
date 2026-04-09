@@ -6,10 +6,10 @@
  */
 
 export interface EVMAdapter {
-  /** EOA address */
-  address: `0x${string}`;
-  /** Underlying EIP-1193 provider or viem WalletClient */
-  provider: unknown;
-  /** Sign a message (for auth bridges) */
-  signMessage(message: string): Promise<`0x${string}`>;
+    /** EOA address */
+    address: `0x${string}`;
+    /** Underlying EIP-1193 provider or viem WalletClient */
+    provider: unknown;
+    /** Sign a message (for auth bridges) */
+    signMessage(message: string): Promise<`0x${string}`>;
 }

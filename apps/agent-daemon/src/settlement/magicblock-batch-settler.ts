@@ -55,24 +55,18 @@ export class MagicBlockBatchSettler {
     async batchJudgeInER(
         payer: PublicKey,
         tasks: JudgeTaskInput[],
-        buildJudgeAndPayIx: (t: JudgeTaskInput) => Promise<TransactionInstruction>
+        buildJudgeAndPayIx: (t: JudgeTaskInput) => Promise<TransactionInstruction>,
     ): Promise<BatchJudgeResult> {
         if (tasks.length === 0) {
             return { txSignatures: [], delegatedAccounts: [], count: 0 };
         }
 
-        const delegatedAccounts = tasks.flatMap((t) => [
-            t.taskPda,
-            t.escrowPda,
-            t.winnerPda,
-        ]);
+        const delegatedAccounts = tasks.flatMap((t) => [t.taskPda, t.escrowPda, t.winnerPda]);
         const uniqueDelegatedAccounts = [...new Set(delegatedAccounts.map((a) => a.toBase58()))].map(
-            (a) => new PublicKey(a)
+            (a) => new PublicKey(a),
         );
 
-        const judgeIxs = await Promise.all(
-            tasks.map((t) => buildJudgeAndPayIx(t))
-        );
+        const judgeIxs = await Promise.all(tasks.map((t) => buildJudgeAndPayIx(t)));
 
         // Step 1: delegate all accounts + append operations in a single tx envelope.
         // In production this would be split into setup tx (delegation on L1),
@@ -96,7 +90,7 @@ export class MagicBlockBatchSettler {
                 payer,
                 delegatedAccount: acc,
                 ownerProgram: new PublicKey(ownerProgram),
-            })
+            }),
         );
 
         return {

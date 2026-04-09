@@ -4,17 +4,17 @@
 
 ## Deployed Addresses (X Layer Testnet — chainId 1952)
 
-| Contract | Address |
-|----------|---------|
-| `AgentArenaEVM` (proxy) | `0xd9c087c9e8e0253c7ea315811d751b0586ec9179` |
-| `AgentMRegistry` | `0x377acc8a9af86e297fa54af1e148507130dfc040` |
+| Contract                          | Address                                      |
+| --------------------------------- | -------------------------------------------- |
+| `AgentArenaEVM` (proxy)           | `0xd9c087c9e8e0253c7ea315811d751b0586ec9179` |
+| `AgentMRegistry`                  | `0x377acc8a9af86e297fa54af1e148507130dfc040` |
 | `GradienceReputationFeed` (proxy) | `0x13fed43909e99a2caeae9cd8d4bb37d1b47cbf86` |
-| `SocialGraph` (proxy) | `0xeed4f9da0bca5fee9df72510e5f6f58d04b7f16d` |
-| `JudgeRegistry` | `0xbb78f0d62491853e7eb0e722bf0ee957c1b60508` |
-| `X402Settlement` | `0x1Af0E217d434323f428609a42Df36B3D93c2452a` |
+| `SocialGraph` (proxy)             | `0xeed4f9da0bca5fee9df72510e5f6f58d04b7f16d` |
+| `JudgeRegistry`                   | `0xbb78f0d62491853e7eb0e722bf0ee957c1b60508` |
+| `X402Settlement`                  | `0x1Af0E217d434323f428609a42Df36B3D93c2452a` |
 
-*Deployer:* `0x067abc270c4638869cd347530be34cbdd93d0ea1`  
-*Subgraph manifests already updated:* `subgraph/subgraph.yaml`
+_Deployer:_ `0x067abc270c4638869cd347530be34cbdd93d0ea1`  
+_Subgraph manifests already updated:_ `subgraph/subgraph.yaml`
 
 ## Prerequisites
 
@@ -46,13 +46,13 @@ cp .env.deploy.example .env.deploy
 
 After each deployment, Foundry prints broadcast receipts. Save the deployed proxy addresses:
 
-| Contract | Purpose |
-|----------|---------|
-| `AgentArenaEVM` (proxy) | Core task/escrow/judge logic |
-| `AgentMRegistry` | User/agent identity registry |
-| `GradienceReputationFeed` (proxy) | Cross-chain reputation oracle feed |
-| `SocialGraph` (proxy) | Follow/unfollow social graph |
-| `JudgeRegistry` | Judge registration and pool management |
+| Contract                          | Purpose                                |
+| --------------------------------- | -------------------------------------- |
+| `AgentArenaEVM` (proxy)           | Core task/escrow/judge logic           |
+| `AgentMRegistry`                  | User/agent identity registry           |
+| `GradienceReputationFeed` (proxy) | Cross-chain reputation oracle feed     |
+| `SocialGraph` (proxy)             | Follow/unfollow social graph           |
+| `JudgeRegistry`                   | Judge registration and pool management |
 
 ## 5. Update Frontend Configuration
 

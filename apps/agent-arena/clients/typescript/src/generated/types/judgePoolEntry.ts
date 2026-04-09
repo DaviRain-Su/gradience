@@ -7,43 +7,35 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  type Codec,
-  type Decoder,
-  type Encoder,
-} from "@solana/kit";
-import {
-  getPubkeyBytesDecoder,
-  getPubkeyBytesEncoder,
-  type PubkeyBytes,
-  type PubkeyBytesArgs,
-} from ".";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    type Codec,
+    type Decoder,
+    type Encoder,
+} from '@solana/kit';
+import { getPubkeyBytesDecoder, getPubkeyBytesEncoder, type PubkeyBytes, type PubkeyBytesArgs } from '.';
 
 export type JudgePoolEntry = { judge: PubkeyBytes; weight: number };
 
 export type JudgePoolEntryArgs = { judge: PubkeyBytesArgs; weight: number };
 
 export function getJudgePoolEntryEncoder(): Encoder<JudgePoolEntryArgs> {
-  return getStructEncoder([
-    ["judge", getPubkeyBytesEncoder()],
-    ["weight", getU32Encoder()],
-  ]);
+    return getStructEncoder([
+        ['judge', getPubkeyBytesEncoder()],
+        ['weight', getU32Encoder()],
+    ]);
 }
 
 export function getJudgePoolEntryDecoder(): Decoder<JudgePoolEntry> {
-  return getStructDecoder([
-    ["judge", getPubkeyBytesDecoder()],
-    ["weight", getU32Decoder()],
-  ]);
+    return getStructDecoder([
+        ['judge', getPubkeyBytesDecoder()],
+        ['weight', getU32Decoder()],
+    ]);
 }
 
-export function getJudgePoolEntryCodec(): Codec<
-  JudgePoolEntryArgs,
-  JudgePoolEntry
-> {
-  return combineCodec(getJudgePoolEntryEncoder(), getJudgePoolEntryDecoder());
+export function getJudgePoolEntryCodec(): Codec<JudgePoolEntryArgs, JudgePoolEntry> {
+    return combineCodec(getJudgePoolEntryEncoder(), getJudgePoolEntryDecoder());
 }

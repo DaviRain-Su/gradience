@@ -60,7 +60,9 @@ export function Sidebar({ onLogout }: { onLogout?: () => void | Promise<void> })
                             className="w-full text-left px-4 py-2 hover:bg-gray-800 transition"
                         >
                             <div className="flex justify-between items-center">
-                                <span className="text-sm truncate">{conv.peerName ?? conv.peerAddress.slice(0, 12) + '...'}</span>
+                                <span className="text-sm truncate">
+                                    {conv.peerName ?? conv.peerAddress.slice(0, 12) + '...'}
+                                </span>
                                 {conv.unreadCount > 0 && (
                                     <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
                                         {conv.unreadCount}

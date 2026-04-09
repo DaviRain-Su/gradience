@@ -53,7 +53,7 @@ export function useOWS(config?: Partial<OWSConfig>) {
                 return null;
             }
         },
-        [getAdapter]
+        [getAdapter],
     );
 
     const getReputationCredential = useCallback(async () => {

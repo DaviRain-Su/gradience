@@ -7,52 +7,46 @@
  */
 
 import {
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type TaskRefundedEvent = {
-  taskId: bigint;
-  reason: number;
-  amount: bigint;
+    taskId: bigint;
+    reason: number;
+    amount: bigint;
 };
 
 export type TaskRefundedEventArgs = {
-  taskId: number | bigint;
-  reason: number;
-  amount: number | bigint;
+    taskId: number | bigint;
+    reason: number;
+    amount: number | bigint;
 };
 
 export function getTaskRefundedEventEncoder(): FixedSizeEncoder<TaskRefundedEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["reason", getU8Encoder()],
-    ["amount", getU64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['reason', getU8Encoder()],
+        ['amount', getU64Encoder()],
+    ]);
 }
 
 export function getTaskRefundedEventDecoder(): FixedSizeDecoder<TaskRefundedEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["reason", getU8Decoder()],
-    ["amount", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['reason', getU8Decoder()],
+        ['amount', getU64Decoder()],
+    ]);
 }
 
-export function getTaskRefundedEventCodec(): FixedSizeCodec<
-  TaskRefundedEventArgs,
-  TaskRefundedEvent
-> {
-  return combineCodec(
-    getTaskRefundedEventEncoder(),
-    getTaskRefundedEventDecoder(),
-  );
+export function getTaskRefundedEventCodec(): FixedSizeCodec<TaskRefundedEventArgs, TaskRefundedEvent> {
+    return combineCodec(getTaskRefundedEventEncoder(), getTaskRefundedEventDecoder());
 }

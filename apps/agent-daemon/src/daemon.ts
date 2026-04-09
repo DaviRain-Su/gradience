@@ -9,11 +9,7 @@ import { EvmTransactionManager } from './evm/transaction-manager.js';
 import type { ITransactionManager } from './shared/transaction-manager.js';
 import { createAPIServer } from './api/server.js';
 import { logger } from './utils/logger.js';
-import {
-    initIdentityDomain,
-    stopIdentityDomain,
-    type IdentityDomainServices,
-} from './daemon/identity-domain.js';
+import { initIdentityDomain, stopIdentityDomain, type IdentityDomainServices } from './daemon/identity-domain.js';
 import {
     initCoordinatorDomain,
     startCoordinatorDomain,
@@ -38,11 +34,7 @@ import {
     stopEvaluationDomain,
     type EvaluationDomainServices,
 } from './daemon/evaluation-domain.js';
-import {
-    initGatewayDomain,
-    stopGatewayDomain,
-    type GatewayDomainServices,
-} from './daemon/gateway-domain.js';
+import { initGatewayDomain, stopGatewayDomain, type GatewayDomainServices } from './daemon/gateway-domain.js';
 import { ArenaAutoJudgeService } from './services/arena-auto-judge.js';
 import { runPaymentsHealthCheck } from './health/payments-health.js';
 
@@ -101,7 +93,8 @@ export class Daemon {
                 rpcUrl: this.config.evmRpcUrl,
                 chainId: this.config.evmChainId || 84532,
                 agentArenaAddress: this.config.agentArenaEvmAddress as `0x${string}`,
-                privateKey: (process.env.AGENTD_EVM_PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000') as `0x${string}`,
+                privateKey: (process.env.AGENTD_EVM_PRIVATE_KEY ||
+                    '0x0000000000000000000000000000000000000000000000000000000000000000') as `0x${string}`,
             });
             logger.info('Using EVM transaction manager');
         } else {
@@ -119,9 +112,10 @@ export class Daemon {
         // Note: PaymentManager and BridgeManager are currently Solana-specific.
         // For EVM mode they receive the EVM transaction manager but MPP/X402
         // modules are disabled to avoid Solana-only runtime errors.
-        const settlementConfig = this.config.defaultChain === 'evm'
-            ? { ...this.config, paymentsMppEnabled: false, paymentsX402Enabled: false, bridgeEnabled: false }
-            : this.config;
+        const settlementConfig =
+            this.config.defaultChain === 'evm'
+                ? { ...this.config, paymentsMppEnabled: false, paymentsX402Enabled: false, bridgeEnabled: false }
+                : this.config;
         const { paymentManager, bridgeManager } = await initSettlementDomain(
             settlementConfig,
             this.identity.keyManager,
@@ -157,11 +151,7 @@ export class Daemon {
 
         // 9. Gateway Domain (EVM-only for now)
         if (this.config.defaultChain === 'evm' && this.transactionManager instanceof EvmTransactionManager) {
-            this.gateway = initGatewayDomain(
-                this.config,
-                this.config.dbPath,
-                this.transactionManager,
-            );
+            this.gateway = initGatewayDomain(this.config, this.config.dbPath, this.transactionManager);
         }
 
         // 10. Wire cross-domain events on ConnectionManager

@@ -44,10 +44,7 @@ export function useArenaTasks() {
                 trackTasks(mapped.map((entry) => entry.task));
                 mapped.forEach((entry) => {
                     syncTaskOutcome(entry.task);
-                    if (
-                        (entry.role === 'participant' || entry.role === 'both') &&
-                        entry.latestSubmission
-                    ) {
+                    if ((entry.role === 'participant' || entry.role === 'both') && entry.latestSubmission) {
                         applyToTask(entry.task);
                         submitTaskResult(
                             entry.task.taskId,
@@ -112,35 +109,45 @@ export function useArenaTasks() {
     const setIdentityRegistrationStatus = useAppStore((s) => s.setIdentityRegistrationStatus);
     const email = useAppStore((s) => s.auth.email);
 
-    const apply = useCallback(async (task: ArenaTaskSummary) => {
-        setError(null);
-        try {
-            if (authPublicKey) {
-                // Ensure identity is registered on first participation
-                const idStatus = getIdentityRegistrationStatus(authPublicKey);
-                if (!idStatus || idStatus.state === 'unknown' || idStatus.state === 'failed') {
-                    setIdentityRegistrationStatus({
-                        agent: authPublicKey,
-                        state: 'pending',
-                        agentId: null,
-                        txHash: null,
-                        error: null,
-                        updatedAt: Date.now(),
-                    });
-                    registerIdentity({ agent: authPublicKey, email }).then((status) => {
-                        setIdentityRegistrationStatus(status);
-                    });
+    const apply = useCallback(
+        async (task: ArenaTaskSummary) => {
+            setError(null);
+            try {
+                if (authPublicKey) {
+                    // Ensure identity is registered on first participation
+                    const idStatus = getIdentityRegistrationStatus(authPublicKey);
+                    if (!idStatus || idStatus.state === 'unknown' || idStatus.state === 'failed') {
+                        setIdentityRegistrationStatus({
+                            agent: authPublicKey,
+                            state: 'pending',
+                            agentId: null,
+                            txHash: null,
+                            error: null,
+                            updatedAt: Date.now(),
+                        });
+                        registerIdentity({ agent: authPublicKey, email }).then((status) => {
+                            setIdentityRegistrationStatus(status);
+                        });
+                    }
+                    await getAgentImApiClient().applyToTask(task.taskId);
                 }
-                await getAgentImApiClient().applyToTask(task.taskId);
+                applyToTask(task);
+                syncTaskOutcome(task);
+                return true;
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Failed to apply task');
+                return false;
             }
-            applyToTask(task);
-            syncTaskOutcome(task);
-            return true;
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to apply task');
-            return false;
-        }
-    }, [applyToTask, authPublicKey, email, getIdentityRegistrationStatus, setIdentityRegistrationStatus, syncTaskOutcome]);
+        },
+        [
+            applyToTask,
+            authPublicKey,
+            email,
+            getIdentityRegistrationStatus,
+            setIdentityRegistrationStatus,
+            syncTaskOutcome,
+        ],
+    );
 
     const submit = useCallback(
         async (taskId: number, resultRef: string, traceRef?: string) => {

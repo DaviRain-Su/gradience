@@ -29,6 +29,7 @@ docker-compose logs -f indexer
 ```
 
 You should see output like:
+
 ```
 Starting Solana subscriber...
   Program ID: 6G39W7JGQz7A6L5dAvotFuRP9UbFdCJg2BqDuj6WJWec
@@ -65,45 +66,52 @@ cargo build --release
 ## API Endpoints
 
 ### Health & Metrics
+
 - `GET /healthz` - Health check
 - `GET /metrics` - Prometheus metrics
 
 ### Skills
+
 - `GET /api/skills` - List all skills
-  - Query params: `status`, `category`, `authority`, `limit`, `offset`, `page`
+    - Query params: `status`, `category`, `authority`, `limit`, `offset`, `page`
 - `GET /api/skills/{skill_id}` - Get skill by ID
 
 ### Protocols
+
 - `GET /api/protocols` - List all protocols
-  - Query params: `status`, `protocol_type`, `authority`, `limit`, `offset`, `page`
+    - Query params: `status`, `protocol_type`, `authority`, `limit`, `offset`, `page`
 - `GET /api/protocols/{protocol_id}` - Get protocol by ID
 
 ### Royalties
+
 - `GET /api/royalties/{agent}` - Get royalty info for an agent
 
 ### Invocations
+
 - `GET /api/invocations` - List invocations
-  - Query params: `agent`, `skill_id`, `protocol_id`, `status`, `limit`, `offset`, `page`
+    - Query params: `agent`, `skill_id`, `protocol_id`, `status`, `limit`, `offset`, `page`
 - `GET /api/invocations/{invocation_id}` - Get invocation by ID
 
 ### Webhooks
+
 - `POST /webhook/triton` - Triton webhook endpoint
 - `POST /webhook/helius` - Helius webhook endpoint
 - `POST /webhook/events` - Generic webhook endpoint
 
 ### WebSocket
+
 - `GET /ws` - WebSocket endpoint for real-time events
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `INDEXER_BIND_ADDR` | Server bind address | `0.0.0.0:8788` |
-| `DATABASE_URL` | PostgreSQL connection string | - |
-| `CHAIN_HUB_PROGRAM_ID` | Chain Hub program ID | `11111111111111111111111111111111` |
-| `SOLANA_WS_URL` | Solana WebSocket URL | `wss://api.devnet.solana.com` |
-| `SOLANA_SUBSCRIBE` | Enable Solana log subscription | `false` |
-| `TRITON_STALE_AFTER_SECONDS` | Triton webhook stale threshold | `30` |
+| Variable                     | Description                    | Default                            |
+| ---------------------------- | ------------------------------ | ---------------------------------- |
+| `INDEXER_BIND_ADDR`          | Server bind address            | `0.0.0.0:8788`                     |
+| `DATABASE_URL`               | PostgreSQL connection string   | -                                  |
+| `CHAIN_HUB_PROGRAM_ID`       | Chain Hub program ID           | `11111111111111111111111111111111` |
+| `SOLANA_WS_URL`              | Solana WebSocket URL           | `wss://api.devnet.solana.com`      |
+| `SOLANA_SUBSCRIBE`           | Enable Solana log subscription | `false`                            |
+| `TRITON_STALE_AFTER_SECONDS` | Triton webhook stale threshold | `30`                               |
 
 ## Events
 
@@ -119,6 +127,7 @@ The indexer processes the following events:
 ## Database Schema
 
 ### skills
+
 - `skill_id` (BIGINT, PK)
 - `authority` (VARCHAR)
 - `judge_category` (SMALLINT)
@@ -129,6 +138,7 @@ The indexer processes the following events:
 - `slot` (BIGINT)
 
 ### protocols
+
 - `protocol_id` (VARCHAR, PK)
 - `authority` (VARCHAR)
 - `protocol_type` (SMALLINT)
@@ -144,6 +154,7 @@ The indexer processes the following events:
 - `slot` (BIGINT)
 
 ### royalties
+
 - `agent` (VARCHAR, PK)
 - `total_earned` (BIGINT)
 - `total_paid` (BIGINT)
@@ -151,6 +162,7 @@ The indexer processes the following events:
 - `updated_slot` (BIGINT)
 
 ### invocations
+
 - `invocation_id` (BIGINT, PK)
 - `task_id` (BIGINT)
 - `requester` (VARCHAR)

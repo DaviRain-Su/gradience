@@ -38,13 +38,13 @@
 
 ### 2.1 智能合约威胁
 
-| 威胁 | 攻击方式 | 防护措施 | 严重度 |
-|------|---------|---------|--------|
-| 重入攻击 | `judgeAndPay` 发送 ETH/SOL 时回调 | CEI 模式 + ReentrancyGuard + Solana 原子性 | 🔴 Critical |
-| 整数溢出 | 费用计算溢出 | Solana 原生 checked_math / Rust 默认 panic on overflow | 🟡 Medium |
-| 权限绕过 | 非 Judge 调用 `judgeAndPay` | `require(msg.sender == task.judge)` 严格校验 | 🔴 Critical |
-| 状态篡改 | 绕过状态机转换 | 枚举状态 + 每个函数入口校验当前状态 | 🔴 Critical |
-| 资金锁死 | Task 创建后无法退出 | `refundExpired()` 无需许可 + `forceRefund()` 7天超时 | 🟡 Medium |
+| 威胁     | 攻击方式                          | 防护措施                                               | 严重度      |
+| -------- | --------------------------------- | ------------------------------------------------------ | ----------- |
+| 重入攻击 | `judgeAndPay` 发送 ETH/SOL 时回调 | CEI 模式 + ReentrancyGuard + Solana 原子性             | 🔴 Critical |
+| 整数溢出 | 费用计算溢出                      | Solana 原生 checked_math / Rust 默认 panic on overflow | 🟡 Medium   |
+| 权限绕过 | 非 Judge 调用 `judgeAndPay`       | `require(msg.sender == task.judge)` 严格校验           | 🔴 Critical |
+| 状态篡改 | 绕过状态机转换                    | 枚举状态 + 每个函数入口校验当前状态                    | 🔴 Critical |
+| 资金锁死 | Task 创建后无法退出               | `refundExpired()` 无需许可 + `forceRefund()` 7天超时   | 🟡 Medium   |
 
 ### 2.2 Solana 特有安全考量
 
@@ -61,7 +61,7 @@ pub struct JudgeAndPay<'info> {
     )]
     pub task: Account<'info, Task>,
     pub judge: Signer<'info>,               // 签名校验
-    
+
     /// CHECK: 验证为 task.agent
     #[account(
         mut,
@@ -103,12 +103,12 @@ pub struct JudgeAndPay<'info> {
 
 ### 2.4 审计策略
 
-| 阶段 | 时间 | 方法 |
-|------|------|------|
-| 开发期 | 持续 | 单元测试 100% 覆盖 + Anchor 测试框架 |
-| Alpha | 部署前 | Fuzzing（Trident/Honggfuzz） |
-| Beta | 主网前 | 第三方审计（OtterSec / Neodyme） |
-| 主网 | 上线后 | Bug Bounty 计划（Immunefi） |
+| 阶段   | 时间   | 方法                                 |
+| ------ | ------ | ------------------------------------ |
+| 开发期 | 持续   | 单元测试 100% 覆盖 + Anchor 测试框架 |
+| Alpha  | 部署前 | Fuzzing（Trident/Honggfuzz）         |
+| Beta   | 主网前 | 第三方审计（OtterSec / Neodyme）     |
+| 主网   | 上线后 | Bug Bounty 计划（Immunefi）          |
 
 ---
 
@@ -446,12 +446,12 @@ Skill 安全检查流程:
 
 ### 7.1 安全事件分级
 
-| 级别 | 定义 | 响应时间 | 示例 |
-|------|------|---------|------|
-| P0 | 资金直接风险 | 立即 | 合约漏洞被利用 |
-| P1 | 信誉系统被操纵 | 24h | 大规模洗分攻击 |
-| P2 | 功能异常 | 72h | Nostr Relay 数据不一致 |
-| P3 | 体验问题 | 1周 | 前端显示错误 |
+| 级别 | 定义           | 响应时间 | 示例                   |
+| ---- | -------------- | -------- | ---------------------- |
+| P0   | 资金直接风险   | 立即     | 合约漏洞被利用         |
+| P1   | 信誉系统被操纵 | 24h      | 大规模洗分攻击         |
+| P2   | 功能异常       | 72h      | Nostr Relay 数据不一致 |
+| P3   | 体验问题       | 1周      | 前端显示错误           |
 
 ### 7.2 P0 事件应对
 
@@ -478,13 +478,13 @@ Skill 安全检查流程:
 
 ## 8. 安全路线图
 
-| 阶段 | 时间 | 安全里程碑 |
-|------|------|-----------|
-| Phase 1 | 2026 Q2 | 合约审计 + Fuzzing + 单密钥 |
-| Phase 2 | 2026 Q3 | Session Key + Bug Bounty |
-| Phase 3 | 2026 Q4 | 多链部署安全审查 |
+| 阶段    | 时间    | 安全里程碑                                        |
+| ------- | ------- | ------------------------------------------------- |
+| Phase 1 | 2026 Q2 | 合约审计 + Fuzzing + 单密钥                       |
+| Phase 2 | 2026 Q3 | Session Key + Bug Bounty                          |
+| Phase 3 | 2026 Q4 | 多链部署安全审查                                  |
 | Phase 4 | 2027 H1 | XMTP 通信层安全审查 + MagicBlock 结算增强安全设计 |
-| Phase 5 | 2027 H2 | MPC 可选 + 全面安全审计 |
+| Phase 5 | 2027 H2 | MPC 可选 + 全面安全审计                           |
 
 ---
 
@@ -504,8 +504,8 @@ Skill 安全检查流程:
 
 ---
 
-*安全不是功能，是协议的基石。*
-*最安全的设计是最小的设计——攻击面 ∝ 代码量。*
-*~300 行代码 = 最小的攻击面。*
+_安全不是功能，是协议的基石。_
+_最安全的设计是最小的设计——攻击面 ∝ 代码量。_
+_~300 行代码 = 最小的攻击面。_
 
 _Gradience Security Architecture v0.2 · 2026-04-04_

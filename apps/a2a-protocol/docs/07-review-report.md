@@ -19,20 +19,20 @@
 
 ### 7.1.2 安全审查
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 权限校验完整 | ✅ | Program 指令包含 signer/owner/writable 校验 |
-| 无重入风险 | ✅ | Solana 账户模型 + 无外部可重入回调 |
-| 整数运算安全 | ✅ | 关键金额与时间使用边界校验/checked 分支 |
-| PDA 种子无碰撞 | ✅ | 线程/通道/子任务/竞标均按 spec 固定 seed 组合 |
-| 账户关闭后清零 | ⚠️ | 当前版本未实现统一 close path（后续优化项） |
-| 外部调用安全 | ✅ | relay 增加鉴权、payload 限制、信封校验 |
-| 输入验证完整 | ✅ | channel/subtask deadline、状态机转移、hash 校验已补齐 |
+| 检查项         | 状态 | 备注                                                  |
+| -------------- | ---- | ----------------------------------------------------- |
+| 权限校验完整   | ✅   | Program 指令包含 signer/owner/writable 校验           |
+| 无重入风险     | ✅   | Solana 账户模型 + 无外部可重入回调                    |
+| 整数运算安全   | ✅   | 关键金额与时间使用边界校验/checked 分支               |
+| PDA 种子无碰撞 | ✅   | 线程/通道/子任务/竞标均按 spec 固定 seed 组合         |
+| 账户关闭后清零 | ⚠️   | 当前版本未实现统一 close path（后续优化项）           |
+| 外部调用安全   | ✅   | relay 增加鉴权、payload 限制、信封校验                |
+| 输入验证完整   | ✅   | channel/subtask deadline、状态机转移、hash 校验已补齐 |
 
 ### 7.1.3 同行审查
 
-| 审查者 | 日期 | 发现问题 | 状态 |
-|--------|------|---------|------|
+| 审查者     | 日期       | 发现问题                                              | 状态   |
+| ---------- | ---------- | ----------------------------------------------------- | ------ |
 | Droid 自审 | 2026-04-02 | deadline/争议窗口、relay 鉴权、分页与重试等问题已修复 | 已修复 |
 
 ## 7.2 部署清单
@@ -61,32 +61,32 @@
 
 ## 7.3 版本发布
 
-| 属性 | 值 |
-|------|------|
-| 版本号 | v0.1.0-rc1 |
-| 发布日期 | 2026-04-02 |
-| 变更摘要 | 完成 AP01-AP24：Program(15 指令) + SDK + Runtime + Adapters + AP22/23 加固 |
-| 部署环境 | devnet（program）/ local runtime |
-| Git 提交 | `894857b`（Phase1-5 docs）, `a44433f`（实现） |
-| Program 地址 | `4F6KPoLY8cjC3ABSvVKhQevh5QqoLccqe2tFJR4MZL64` |
-| 部署交易 | `4C7Gj53z3DpvErtoEy6ciBSdNWyfpVVwAkDuc2VfYT51ajx6LZxtzzzTfBkrx6s3d1Utt3MyUyiUsC4uwDGUSiZ7` |
-| 验证命令 | `cargo test`、SDK/Runtime `tsc --noEmit`、`tsx --test`、devnet smoke 脚本 |
+| 属性         | 值                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| 版本号       | v0.1.0-rc1                                                                                 |
+| 发布日期     | 2026-04-02                                                                                 |
+| 变更摘要     | 完成 AP01-AP24：Program(15 指令) + SDK + Runtime + Adapters + AP22/23 加固                 |
+| 部署环境     | devnet（program）/ local runtime                                                           |
+| Git 提交     | `894857b`（Phase1-5 docs）, `a44433f`（实现）                                              |
+| Program 地址 | `4F6KPoLY8cjC3ABSvVKhQevh5QqoLccqe2tFJR4MZL64`                                             |
+| 部署交易     | `4C7Gj53z3DpvErtoEy6ciBSdNWyfpVVwAkDuc2VfYT51ajx6LZxtzzzTfBkrx6s3d1Utt3MyUyiUsC4uwDGUSiZ7` |
+| 验证命令     | `cargo test`、SDK/Runtime `tsc --noEmit`、`tsx --test`、devnet smoke 脚本                  |
 
 ## 7.4 已知问题
 
-| # | 问题 | 严重度 | 计划修复版本 |
-|---|------|--------|-------------|
-| 1 | `program/src/utils.rs` 存在 `rent.try_minimum_balance(space).unwrap()`，需改为显式错误分支 | P2 | v0.1.1 |
-| 2 | runtime 仍为本地进程，尚未完成云端部署与告警链路 | P1 | v0.1.0 |
-| 3 | relay 当前为内存存储，生产需接持久化后端（D1/Postgres/Redis） | P2 | v0.2.0 |
+| #   | 问题                                                                                       | 严重度 | 计划修复版本 |
+| --- | ------------------------------------------------------------------------------------------ | ------ | ------------ |
+| 1   | `program/src/utils.rs` 存在 `rent.try_minimum_balance(space).unwrap()`，需改为显式错误分支 | P2     | v0.1.1       |
+| 2   | runtime 仍为本地进程，尚未完成云端部署与告警链路                                           | P1     | v0.1.0       |
+| 3   | relay 当前为内存存储，生产需接持久化后端（D1/Postgres/Redis）                              | P2     | v0.2.0       |
 
 ## 7.5 后续任务
 
-| # | 描述 | 优先级 |
-|---|------|--------|
-| 1 | 修复 `unwrap` 并增加对应异常路径测试 | P1 |
-| 2 | 接入持久化 relay store 与监控告警 | P1 |
-| 3 | 完成 runtime 云端部署与运维发布流程 | P1 |
+| #   | 描述                                 | 优先级 |
+| --- | ------------------------------------ | ------ |
+| 1   | 修复 `unwrap` 并增加对应异常路径测试 | P1     |
+| 2   | 接入持久化 relay store 与监控告警    | P1     |
+| 3   | 完成 runtime 云端部署与运维发布流程  | P1     |
 
 ---
 

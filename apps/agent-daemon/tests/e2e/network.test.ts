@@ -57,7 +57,7 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
     async function getSessionToken(kp: nacl.SignKeyPair, address: string): Promise<string> {
         const challengeRes = await fetch(apiUrl('/api/v1/auth/challenge'), { method: 'POST' });
-        const { challenge, message } = await challengeRes.json() as any;
+        const { challenge, message } = (await challengeRes.json()) as any;
         const sig = nacl.sign.detached(Buffer.from(message, 'utf-8'), kp.secretKey);
         const verifyRes = await fetch(apiUrl('/api/v1/auth/verify'), {
             method: 'POST',
@@ -68,7 +68,7 @@ describe('Network (Agent Registry + Messages) E2E', () => {
                 signature: Buffer.from(sig).toString('base64'),
             }),
         });
-        const { token } = await verifyRes.json() as any;
+        const { token } = (await verifyRes.json()) as any;
         return token;
     }
 
@@ -90,31 +90,39 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
     describe('Agent Registry', () => {
         it('should register Agent A', async () => {
-            const res = await post('/api/v1/network/register', {
-                publicKey: addrA,
-                displayName: 'Agent Alpha',
-                capabilities: ['coding', 'analysis'],
-                version: '0.1.0',
-            }, tokenA);
+            const res = await post(
+                '/api/v1/network/register',
+                {
+                    publicKey: addrA,
+                    displayName: 'Agent Alpha',
+                    capabilities: ['coding', 'analysis'],
+                    version: '0.1.0',
+                },
+                tokenA,
+            );
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agentId).toBe(addrA);
             expect(body.registeredAt).toBeGreaterThan(0);
         });
 
         it('should register Agent B', async () => {
-            const res = await post('/api/v1/network/register', {
-                publicKey: addrB,
-                displayName: 'Agent Beta',
-                capabilities: ['design', 'coding'],
-            }, tokenB);
+            const res = await post(
+                '/api/v1/network/register',
+                {
+                    publicKey: addrB,
+                    displayName: 'Agent Beta',
+                    capabilities: ['design', 'coding'],
+                },
+                tokenB,
+            );
             expect(res.status).toBe(200);
         });
 
         it('should list both agents as online', async () => {
             const res = await get('/api/v1/network/agents', tokenA);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agents.length).toBe(2);
             expect(body.total).toBe(2);
             const keys = body.agents.map((a: any) => a.publicKey);
@@ -126,7 +134,7 @@ describe('Network (Agent Registry + Messages) E2E', () => {
         it('should get agent by publicKey', async () => {
             const res = await get(`/api/v1/network/agents/${addrA}`, tokenA);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.displayName).toBe('Agent Alpha');
             expect(body.capabilities).toContain('coding');
         });
@@ -138,14 +146,14 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
         it('should filter by capability', async () => {
             const res = await get('/api/v1/network/agents?capability=design', tokenA);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agents.length).toBe(1);
             expect(body.agents[0].publicKey).toBe(addrB);
         });
 
         it('should search by name', async () => {
             const res = await get('/api/v1/network/agents?q=Alpha', tokenA);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.agents.length).toBe(1);
             expect(body.agents[0].displayName).toBe('Agent Alpha');
         });
@@ -168,18 +176,22 @@ describe('Network (Agent Registry + Messages) E2E', () => {
             expect(res.status).toBe(200);
 
             const listRes = await get('/api/v1/network/agents', tokenA);
-            const body = await listRes.json() as any;
+            const body = (await listRes.json()) as any;
             expect(body.agents.length).toBe(1);
         });
 
         it('should re-register removed agent', async () => {
-            await post('/api/v1/network/register', {
-                publicKey: addrB,
-                displayName: 'Agent Beta v2',
-                capabilities: ['design'],
-            }, tokenB);
+            await post(
+                '/api/v1/network/register',
+                {
+                    publicKey: addrB,
+                    displayName: 'Agent Beta v2',
+                    capabilities: ['design'],
+                },
+                tokenB,
+            );
             const res = await get(`/api/v1/network/agents/${addrB}`, tokenA);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.displayName).toBe('Agent Beta v2');
         });
     });
@@ -188,21 +200,25 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
     describe('Message Relay', () => {
         it('Agent A sends message to Agent B', async () => {
-            const res = await post('/api/v1/network/messages', {
-                from: addrA,
-                to: addrB,
-                type: 'chat',
-                payload: { text: 'Hello from Alpha!' },
-            }, tokenA);
+            const res = await post(
+                '/api/v1/network/messages',
+                {
+                    from: addrA,
+                    to: addrB,
+                    type: 'chat',
+                    payload: { text: 'Hello from Alpha!' },
+                },
+                tokenA,
+            );
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.messageId).toBeTruthy();
         });
 
         it('Agent B fetches inbox and sees the message', async () => {
             const res = await get('/api/v1/network/messages/inbox', tokenB);
             expect(res.status).toBe(200);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.messages.length).toBe(1);
             expect(body.messages[0].from).toBe(addrA);
             expect(body.messages[0].type).toBe('chat');
@@ -211,34 +227,42 @@ describe('Network (Agent Registry + Messages) E2E', () => {
 
         it('delivered messages should not appear again', async () => {
             const res = await get('/api/v1/network/messages/inbox', tokenB);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.messages.length).toBe(0);
         });
 
         it('Agent B can use since param to get messages after timestamp', async () => {
             const beforeSend = Date.now() - 1; // -1ms to avoid race
-            await post('/api/v1/network/messages', {
-                from: addrA,
-                to: addrB,
-                type: 'ping',
-                payload: {},
-            }, tokenA);
+            await post(
+                '/api/v1/network/messages',
+                {
+                    from: addrA,
+                    to: addrB,
+                    type: 'ping',
+                    payload: {},
+                },
+                tokenA,
+            );
 
             const res = await get(`/api/v1/network/messages/inbox?since=${beforeSend}`, tokenB);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.messages.length).toBe(1);
             expect(body.messages[0].type).toBe('ping');
         });
 
         it('Agent B acks a message', async () => {
             // Send another
-            const sendRes = await post('/api/v1/network/messages', {
-                from: addrA,
-                to: addrB,
-                type: 'task_proposal',
-                payload: { taskId: '123' },
-            }, tokenA);
-            const { messageId } = await sendRes.json() as any;
+            const sendRes = await post(
+                '/api/v1/network/messages',
+                {
+                    from: addrA,
+                    to: addrB,
+                    type: 'task_proposal',
+                    payload: { taskId: '123' },
+                },
+                tokenA,
+            );
+            const { messageId } = (await sendRes.json()) as any;
 
             // Fetch it
             await get('/api/v1/network/messages/inbox', tokenB);
@@ -259,15 +283,19 @@ describe('Network (Agent Registry + Messages) E2E', () => {
         });
 
         it('bidirectional: B sends to A, A receives', async () => {
-            await post('/api/v1/network/messages', {
-                from: addrB,
-                to: addrA,
-                type: 'chat',
-                payload: { text: 'Hi Alpha from Beta!' },
-            }, tokenB);
+            await post(
+                '/api/v1/network/messages',
+                {
+                    from: addrB,
+                    to: addrA,
+                    type: 'chat',
+                    payload: { text: 'Hi Alpha from Beta!' },
+                },
+                tokenB,
+            );
 
             const res = await get('/api/v1/network/messages/inbox', tokenA);
-            const body = await res.json() as any;
+            const body = (await res.json()) as any;
             expect(body.messages.length).toBeGreaterThanOrEqual(1);
             const msg = body.messages.find((m: any) => m.payload.text === 'Hi Alpha from Beta!');
             expect(msg).toBeTruthy();

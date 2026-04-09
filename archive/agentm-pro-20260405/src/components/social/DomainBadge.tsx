@@ -2,18 +2,10 @@
 
 import { useDomain } from '@/hooks/useDomain';
 
-export function DomainBadge({
-    address,
-    linkedDomain,
-}: {
-    address: string;
-    linkedDomain?: string | null;
-}) {
+export function DomainBadge({ address, linkedDomain }: { address: string; linkedDomain?: string | null }) {
     const { resolution, displayName, loading } = useDomain(linkedDomain ? null : address);
     const label = linkedDomain ?? (loading ? 'Resolving...' : displayName);
-    const source = linkedDomain
-        ? 'linked'
-        : resolution?.source ?? (label.includes('...') ? 'address' : 'resolved');
+    const source = linkedDomain ? 'linked' : (resolution?.source ?? (label.includes('...') ? 'address' : 'resolved'));
 
     return (
         <span

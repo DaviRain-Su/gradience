@@ -1,72 +1,72 @@
 {
-  "name": "@gradiences/workflow-engine",
-  "version": "0.1.0",
-  "description": "Workflow Engine for Gradience Protocol — Composable, tradeable Agent skills",
-  "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    "name": "@gradiences/workflow-engine",
+    "version": "0.1.0",
+    "description": "Workflow Engine for Gradience Protocol — Composable, tradeable Agent skills",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./schema": {
+            "import": "./dist/schema/index.js",
+            "types": "./dist/schema/index.d.ts"
+        },
+        "./engine": {
+            "import": "./dist/engine/index.js",
+            "types": "./dist/engine/index.d.ts"
+        }
     },
-    "./schema": {
-      "import": "./dist/schema/index.js",
-      "types": "./dist/schema/index.d.ts"
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest --run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest --coverage"
     },
-    "./engine": {
-      "import": "./dist/engine/index.js",
-      "types": "./dist/engine/index.d.ts"
+    "dependencies": {
+        "@solana/kit": "^6.7.0",
+        "@solana/spl-token": "^0.4.14",
+        "@solana/web3.js": "^1.98.4",
+        "uuid": "^9.0.0",
+        "zod": "^3.23.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/uuid": "^9.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.9.0",
+        "vitest": "^1.6.0"
+    },
+    "peerDependencies": {
+        "@gradiences/sdk": "workspace:*"
+    },
+    "peerDependenciesMeta": {
+        "@gradiences/sdk": {
+            "optional": true
+        }
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "keywords": [
+        "gradience",
+        "workflow",
+        "agent",
+        "automation",
+        "multi-chain"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gradience-protocol/gradience.git",
+        "directory": "packages/workflow-engine"
     }
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest --run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest --coverage"
-  },
-  "dependencies": {
-    "@solana/kit": "^6.7.0",
-    "@solana/spl-token": "^0.4.14",
-    "@solana/web3.js": "^1.98.4",
-    "uuid": "^9.0.0",
-    "zod": "^3.23.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.9.0",
-    "vitest": "^1.6.0"
-  },
-  "peerDependencies": {
-    "@gradiences/sdk": "workspace:*"
-  },
-  "peerDependenciesMeta": {
-    "@gradiences/sdk": {
-      "optional": true
-    }
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "gradience",
-    "workflow",
-    "agent",
-    "automation",
-    "multi-chain"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/gradience-protocol/gradience.git",
-    "directory": "packages/workflow-engine"
-  }
 }

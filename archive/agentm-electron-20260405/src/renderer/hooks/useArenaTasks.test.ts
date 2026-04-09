@@ -18,45 +18,28 @@ const OPEN_TASK: ArenaTaskSummary = {
 
 describe('useArenaTasks capability helpers', () => {
     it('computeCanApply requires auth, open state, and non-poster', () => {
+        assert.equal(computeCanApply({ authenticatedAgent: null, task: OPEN_TASK, flowStatus: null }), false);
+        assert.equal(computeCanApply({ authenticatedAgent: 'poster-a', task: OPEN_TASK, flowStatus: null }), false);
         assert.equal(
-            computeCanApply({ authenticatedAgent: null, task: OPEN_TASK, flowStatus: null }),
+            computeCanApply({
+                authenticatedAgent: 'agent-a',
+                task: { ...OPEN_TASK, state: 'completed' },
+                flowStatus: null,
+            }),
             false,
         );
-        assert.equal(
-            computeCanApply({ authenticatedAgent: 'poster-a', task: OPEN_TASK, flowStatus: null }),
-            false,
-        );
-        assert.equal(
-            computeCanApply({ authenticatedAgent: 'agent-a', task: { ...OPEN_TASK, state: 'completed' }, flowStatus: null }),
-            false,
-        );
-        assert.equal(
-            computeCanApply({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: null }),
-            true,
-        );
-        assert.equal(
-            computeCanApply({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: 'applied' }),
-            false,
-        );
+        assert.equal(computeCanApply({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: null }), true);
+        assert.equal(computeCanApply({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: 'applied' }), false);
     });
 
     it('computeCanSubmit requires applied/submitted flow and non-poster', () => {
-        assert.equal(
-            computeCanSubmit({ authenticatedAgent: null, task: OPEN_TASK, flowStatus: 'applied' }),
-            false,
-        );
+        assert.equal(computeCanSubmit({ authenticatedAgent: null, task: OPEN_TASK, flowStatus: 'applied' }), false);
         assert.equal(
             computeCanSubmit({ authenticatedAgent: 'poster-a', task: OPEN_TASK, flowStatus: 'applied' }),
             false,
         );
-        assert.equal(
-            computeCanSubmit({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: null }),
-            false,
-        );
-        assert.equal(
-            computeCanSubmit({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: 'applied' }),
-            true,
-        );
+        assert.equal(computeCanSubmit({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: null }), false);
+        assert.equal(computeCanSubmit({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: 'applied' }), true);
         assert.equal(
             computeCanSubmit({ authenticatedAgent: 'agent-a', task: OPEN_TASK, flowStatus: 'submitted' }),
             true,

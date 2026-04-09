@@ -73,6 +73,7 @@ src/
 ## 3. 数据流
 
 ### 3.1 Profile 创建流程
+
 ```
 User Input → ProfileForm → useProfile.create() → SDK → Agent Layer
                 ↓
@@ -80,6 +81,7 @@ User Input → ProfileForm → useProfile.create() → SDK → Agent Layer
 ```
 
 ### 3.2 声誉查询流程
+
 ```
 Dashboard Mount → useStats.fetch() → SDK → ChainHub
                          ↓
@@ -89,32 +91,33 @@ Dashboard Mount → useStats.fetch() → SDK → ChainHub
 ## 4. 状态管理
 
 ### 4.1 Zustand Store
+
 ```typescript
 interface ProStore {
-  // Auth
-  auth: AuthState;
-  setAuth: (auth: AuthState) => void;
-  
-  // Profile
-  profiles: AgentProfile[];
-  currentProfile: AgentProfile | null;
-  setProfiles: (profiles: AgentProfile[]) => void;
-  setCurrentProfile: (profile: AgentProfile | null) => void;
-  
-  // UI
-  activeView: 'dashboard' | 'profiles' | 'stats' | 'settings';
-  setActiveView: (view: string) => void;
+    // Auth
+    auth: AuthState;
+    setAuth: (auth: AuthState) => void;
+
+    // Profile
+    profiles: AgentProfile[];
+    currentProfile: AgentProfile | null;
+    setProfiles: (profiles: AgentProfile[]) => void;
+    setCurrentProfile: (profile: AgentProfile | null) => void;
+
+    // UI
+    activeView: 'dashboard' | 'profiles' | 'stats' | 'settings';
+    setActiveView: (view: string) => void;
 }
 ```
 
 ## 5. 外部依赖
 
-| 依赖 | 用途 | 版本 |
-|------|------|------|
-| @gradiences/sdk | 与 Agent Layer 通信 | workspace:* |
-| @privy-io/react-auth | 身份验证 | ^3.18.0 |
-| zustand | 状态管理 | ^5.0.5 |
-| react-router-dom | 路由 | ^6.x |
+| 依赖                 | 用途                | 版本         |
+| -------------------- | ------------------- | ------------ |
+| @gradiences/sdk      | 与 Agent Layer 通信 | workspace:\* |
+| @privy-io/react-auth | 身份验证            | ^3.18.0      |
+| zustand              | 状态管理            | ^5.0.5       |
+| react-router-dom     | 路由                | ^6.x         |
 
 ## 6. 部署架构
 
@@ -123,6 +126,7 @@ interface ProStore {
 - **CI/CD**: Vercel Auto Deploy (Git integration)
 
 ---
+
 **Status:** Draft  
 **Created:** 2026-04-03  
 **Owner:** Product Manager

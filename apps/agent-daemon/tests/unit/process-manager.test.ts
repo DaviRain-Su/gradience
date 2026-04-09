@@ -73,7 +73,14 @@ describe('ProcessManager', () => {
     });
 
     it('E1: should fail for nonexistent command', async () => {
-        pm.register({ id: 'bad', name: 'Bad', command: 'this-command-does-not-exist-xyz', args: [], autoStart: false, maxRestarts: 0 });
+        pm.register({
+            id: 'bad',
+            name: 'Bad',
+            command: 'this-command-does-not-exist-xyz',
+            args: [],
+            autoStart: false,
+            maxRestarts: 0,
+        });
         // spawn of a nonexistent command will either throw or emit an error event
         await expect(pm.start('bad')).rejects.toThrow();
     });

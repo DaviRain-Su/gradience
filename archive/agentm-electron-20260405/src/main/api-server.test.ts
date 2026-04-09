@@ -3,11 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { createApiServer } from './api-server.ts';
 import { createAppStore } from '../renderer/lib/store.ts';
-import {
-    InMemoryMagicBlockHub,
-    InMemoryMagicBlockTransport,
-    MagicBlockA2AAgent,
-} from '../renderer/lib/a2a-client.ts';
+import { InMemoryMagicBlockHub, InMemoryMagicBlockTransport, MagicBlockA2AAgent } from '../renderer/lib/a2a-client.ts';
 import type { SubmissionApi, TaskApi } from '../renderer/lib/indexer-api.ts';
 
 const MOCK_TASKS: TaskApi[] = [
@@ -183,10 +179,7 @@ async function openWebSocket(wsUrl: string) {
     return ws;
 }
 
-async function waitForWebSocketMessage(
-    ws: WebSocket,
-    timeoutMs = 1000,
-): Promise<Record<string, unknown>> {
+async function waitForWebSocketMessage(ws: WebSocket, timeoutMs = 1000): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
             reject(new Error('Timed out waiting for websocket message'));
@@ -201,8 +194,8 @@ async function waitForWebSocketMessage(
                         typeof event.data === 'string'
                             ? event.data
                             : 'text' in (event.data as object)
-                                ? await (event.data as { text: () => Promise<string> }).text()
-                                : String(event.data);
+                              ? await (event.data as { text: () => Promise<string> }).text()
+                              : String(event.data);
                     resolve(JSON.parse(raw) as Record<string, unknown>);
                 } catch (error) {
                     reject(error);
@@ -311,7 +304,11 @@ describe('API Server', () => {
 
     it('GET /discover/agents — returns ranked list', async () => {
         store.getState().setDiscoveryRows([
-            { agent: 'alice', weight: 100, reputation: { global_avg_score: 90, global_completed: 10, global_total_applied: 12, win_rate: 0.83 } },
+            {
+                agent: 'alice',
+                weight: 100,
+                reputation: { global_avg_score: 90, global_completed: 10, global_total_applied: 12, win_rate: 0.83 },
+            },
             { agent: 'bob', weight: 50, reputation: null },
         ]);
 
@@ -597,10 +594,7 @@ describe('API Server', () => {
         const res = await fetch(url('/me/submissions?sort=bad_order'));
         assert.equal(res.status, 400);
         const data = await res.json();
-        assert.equal(
-            data.error,
-            'Invalid sort: expected submission_slot_desc|submission_slot_asc',
-        );
+        assert.equal(data.error, 'Invalid sort: expected submission_slot_desc|submission_slot_asc');
     });
 
     it('POST /me/tasks/:id/apply + /submit share task flow with GUI store', async () => {
@@ -834,9 +828,7 @@ describe('API Server web-entry (W1-W6)', () => {
             }),
         });
         const attachBody = await attachRes.json();
-        const ws = await openWebSocket(
-            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
-        );
+        const ws = await openWebSocket(`ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`);
 
         ws.send(JSON.stringify({ type: 'bridge.heartbeat' }));
         ws.send(
@@ -900,9 +892,7 @@ describe('API Server web-entry (W1-W6)', () => {
         });
         const attachBody = await attachRes.json();
 
-        const bridgeWs = await openWebSocket(
-            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
-        );
+        const bridgeWs = await openWebSocket(`ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`);
         bridgeWs.send(
             JSON.stringify({
                 type: 'bridge.agent.presence',
@@ -918,21 +908,14 @@ describe('API Server web-entry (W1-W6)', () => {
         );
         await new Promise((resolve) => setTimeout(resolve, 30));
 
-        const webWs = await openWebSocket(
-            `ws://127.0.0.1:${port}/web/chat/local-chat-agent`,
-        );
+        const webWs = await openWebSocket(`ws://127.0.0.1:${port}/web/chat/local-chat-agent`);
         webWs.send(JSON.stringify({ type: 'chat.message.send', text: 'hello bridge' }));
 
         const ackEvent = await waitForWebSocketMessage(webWs);
         assert.equal(ackEvent.type, 'chat.message.ack');
-        const requestId = String(
-            (ackEvent.payload as { messageId?: string } | undefined)?.messageId,
-        );
+        const requestId = String((ackEvent.payload as { messageId?: string } | undefined)?.messageId);
         assert.ok(requestId.length > 0);
-        assert.equal(
-            (ackEvent.payload as { messageId?: string } | undefined)?.messageId,
-            requestId,
-        );
+        assert.equal((ackEvent.payload as { messageId?: string } | undefined)?.messageId, requestId);
 
         bridgeWs.send(
             JSON.stringify({
@@ -944,10 +927,7 @@ describe('API Server web-entry (W1-W6)', () => {
         );
         const deltaEvent = await waitForWebSocketMessage(webWs);
         assert.equal(deltaEvent.type, 'chat.message.delta');
-        assert.equal(
-            (deltaEvent.payload as { delta?: string } | undefined)?.delta,
-            'partial',
-        );
+        assert.equal((deltaEvent.payload as { delta?: string } | undefined)?.delta, 'partial');
 
         bridgeWs.send(
             JSON.stringify({
@@ -960,10 +940,7 @@ describe('API Server web-entry (W1-W6)', () => {
         );
         const finalEvent = await waitForWebSocketMessage(webWs);
         assert.equal(finalEvent.type, 'chat.message.final');
-        assert.equal(
-            (finalEvent.payload as { text?: string } | undefined)?.text,
-            'final reply',
-        );
+        assert.equal((finalEvent.payload as { text?: string } | undefined)?.text, 'final reply');
 
         bridgeWs.close();
         webWs.close();
@@ -989,9 +966,7 @@ describe('API Server web-entry (W1-W6)', () => {
         });
         const attachBody = await attachRes.json();
 
-        const bridgeWs = await openWebSocket(
-            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
-        );
+        const bridgeWs = await openWebSocket(`ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`);
         bridgeWs.send(
             JSON.stringify({
                 type: 'bridge.agent.presence',
@@ -1063,9 +1038,7 @@ describe('API Server web-entry (W1-W6)', () => {
             }),
         });
         const attachBody = await attachRes.json();
-        const bridgeWs = await openWebSocket(
-            `ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`,
-        );
+        const bridgeWs = await openWebSocket(`ws://127.0.0.1:${port}/bridge/realtime?token=${attachBody.bridgeToken}`);
         bridgeWs.send(
             JSON.stringify({
                 type: 'bridge.agent.presence',
@@ -1123,10 +1096,7 @@ describe('API Server web-entry (W1-W6)', () => {
         );
         const partial = await waitForWebSocketMessage(webWs);
         assert.equal(partial.type, 'voice.transcript.partial');
-        assert.equal(
-            (partial.payload as { text?: string } | undefined)?.text,
-            'hel',
-        );
+        assert.equal((partial.payload as { text?: string } | undefined)?.text, 'hel');
 
         bridgeWs.send(
             JSON.stringify({
@@ -1139,10 +1109,7 @@ describe('API Server web-entry (W1-W6)', () => {
         );
         const final = await waitForWebSocketMessage(webWs);
         assert.equal(final.type, 'voice.transcript.final');
-        assert.equal(
-            (final.payload as { text?: string } | undefined)?.text,
-            'hello',
-        );
+        assert.equal((final.payload as { text?: string } | undefined)?.text, 'hello');
 
         const statusRes = await fetch(url('/status'));
         assert.equal(statusRes.status, 200);
@@ -1277,9 +1244,7 @@ describe('API Server interop signature verification', () => {
             assert.equal(badRes.status, 401);
 
             const ts = String(Math.floor(Date.now() / 1000));
-            const signature = createHmac('sha256', 'secret-interop')
-                .update(`${ts}.${payload}`)
-                .digest('hex');
+            const signature = createHmac('sha256', 'secret-interop').update(`${ts}.${payload}`).digest('hex');
             const okRes = await fetch(`http://127.0.0.1:${signedPort}/interop/events`, {
                 method: 'POST',
                 headers: {
@@ -1334,9 +1299,7 @@ describe('API Server profile git-sync webhook signature verification', () => {
             assert.equal(badRes.status, 401);
 
             const ts = String(Math.floor(Date.now() / 1000));
-            const signature = createHmac('sha256', 'secret-profile')
-                .update(`${ts}.${payload}`)
-                .digest('hex');
+            const signature = createHmac('sha256', 'secret-profile').update(`${ts}.${payload}`).digest('hex');
             const okRes = await fetch(`http://127.0.0.1:${signedPort}/webhooks/profile/git-sync`, {
                 method: 'POST',
                 headers: {

@@ -28,15 +28,15 @@ export function VoiceButton({ onTranscript }: VoiceButtonProps) {
                 recording
                     ? 'bg-red-600 text-white animate-pulse'
                     : supported
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                      : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
             title={
                 !supported
                     ? 'Voice unavailable in current environment'
                     : fallbackFrom === 'whisper'
-                        ? 'Whisper unavailable, using Web Speech fallback'
-                        : 'Hold to speak'
+                      ? 'Whisper unavailable, using Web Speech fallback'
+                      : 'Hold to speak'
             }
         >
             {recording ? 'Recording...' : provider === 'web_speech' ? 'Voice' : 'Voice Off'}

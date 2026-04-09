@@ -43,29 +43,30 @@ Classification  Estimation  Dependency
 ```
 
 **AI Processing Output**:
+
 ```yaml
 task:
-  id: "TASK-2026-001"
-  title: "Research Solana hackathon opportunities"
-  
-  classification:
-    type: "learning"           # learning/execution/reference
-    project: "gradience"        # work/personal/gradience
-    context: "research"         # deep/shallow/async
-  
-  estimation:
-    duration: "2h"
-    priority: "high"            # high/medium/low
-    energy: "high"              # high/medium/low
-    deadline: "2026-04-05"
-  
-  dependencies:
-    requires: ["TASK-2026-000"]  # prerequisites
-    blocks: ["TASK-2026-002"]    # what this unblocks
-  
-  scheduling:
-    suggested_slot: "2026-03-30 09:00"  # based on energy+priority
-    batch_group: "research-tasks"        # for context clustering
+    id: 'TASK-2026-001'
+    title: 'Research Solana hackathon opportunities'
+
+    classification:
+        type: 'learning' # learning/execution/reference
+        project: 'gradience' # work/personal/gradience
+        context: 'research' # deep/shallow/async
+
+    estimation:
+        duration: '2h'
+        priority: 'high' # high/medium/low
+        energy: 'high' # high/medium/low
+        deadline: '2026-04-05'
+
+    dependencies:
+        requires: ['TASK-2026-000'] # prerequisites
+        blocks: ['TASK-2026-002'] # what this unblocks
+
+    scheduling:
+        suggested_slot: '2026-03-30 09:00' # based on energy+priority
+        batch_group: 'research-tasks' # for context clustering
 ```
 
 ### Phase 3: Intelligent Scheduling (优化执行)
@@ -75,12 +76,12 @@ First Principles Applied:
 
 1. Energy Matching
    High Energy (09:00-12:00)  →  Deep Work tasks
-   Medium Energy (14:00-17:00) →  Execution tasks  
+   Medium Energy (14:00-17:00) →  Execution tasks
    Low Energy (20:00-22:00)   →  Learning/Review
 
 2. Automation First
    Manual steps identified → Delegation suggestions
-   
+
 3. Context Clustering
    Research tasks → Batch together
    Admin tasks    → Batch together
@@ -135,15 +136,15 @@ OpenClaw Agent:
 
 ### Efficiency Gains
 
-| Current Friction | Agent Solution | Time Saved |
-|-----------------|----------------|------------|
-| Context switching between apps | Unified inbox | 30min/day |
-| Manual task organization | Auto-classification | 20min/day |
-| Deciding what to do next | AI scheduling | 15min/day |
-| Manual research/comparison | Auto-research | 1-2h/task |
-| Information lost in bookmarks | Auto-processing | ∞ (knowledge preserved) |
-| **Daily Total** | | **~2 hours/day** |
-| **Monthly Value** | | **~40-60 hours** |
+| Current Friction               | Agent Solution      | Time Saved              |
+| ------------------------------ | ------------------- | ----------------------- |
+| Context switching between apps | Unified inbox       | 30min/day               |
+| Manual task organization       | Auto-classification | 20min/day               |
+| Deciding what to do next       | AI scheduling       | 15min/day               |
+| Manual research/comparison     | Auto-research       | 1-2h/task               |
+| Information lost in bookmarks  | Auto-processing     | ∞ (knowledge preserved) |
+| **Daily Total**                |                     | **~2 hours/day**        |
+| **Monthly Value**              |                     | **~40-60 hours**        |
 
 ### 2-5x Efficiency Claim: Validated
 
@@ -174,16 +175,16 @@ Total efficiency: ~2x improvement
 
 ### Target User Segments
 
-| Segment | Pain Level | Budget | Willingness to Pay |
-|---------|-----------|--------|-------------------|
-| **Knowledge Workers** | High | $50-200/mo tools | ⭐⭐⭐⭐⭐ |
-| (PMs, researchers, writers) | | | $20-50/mo |
-| **Founders/Executives** | Very High | $500+/mo tools | ⭐⭐⭐⭐⭐ |
-| | | | $50-100/mo |
-| **Developers** | High | $30-100/mo tools | ⭐⭐⭐⭐ |
-| | | | $15-30/mo |
-| **Students** | Medium | Limited | ⭐⭐⭐ |
-| | | | $5-10/mo |
+| Segment                     | Pain Level | Budget           | Willingness to Pay |
+| --------------------------- | ---------- | ---------------- | ------------------ |
+| **Knowledge Workers**       | High       | $50-200/mo tools | ⭐⭐⭐⭐⭐         |
+| (PMs, researchers, writers) |            |                  | $20-50/mo          |
+| **Founders/Executives**     | Very High  | $500+/mo tools   | ⭐⭐⭐⭐⭐         |
+|                             |            |                  | $50-100/mo         |
+| **Developers**              | High       | $30-100/mo tools | ⭐⭐⭐⭐           |
+|                             |            |                  | $15-30/mo          |
+| **Students**                | Medium     | Limited          | ⭐⭐⭐             |
+|                             |            |                  | $5-10/mo           |
 
 ### Pricing Tiers (Recommended)
 
@@ -243,21 +244,21 @@ This is an excellent value proposition.
 
 ### Existing Solutions
 
-| Product | Price | Strengths | Weaknesses |
-|---------|-------|-----------|------------|
-| **Notion AI** | $10/mo | Integrated | Limited sources |
-| **Mem.ai** | $8/mo | Good capture | Weak execution |
-| **Readwise** | $8/mo | Reading focus | No task management |
-| **Todoist** | $4/mo | Tasks only | No AI processing |
-| **Reclaim.ai** | $10/mo | Scheduling | Limited capture |
-| **Otter.ai** | $17/mo | Meetings only | Narrow scope |
+| Product        | Price  | Strengths     | Weaknesses         |
+| -------------- | ------ | ------------- | ------------------ |
+| **Notion AI**  | $10/mo | Integrated    | Limited sources    |
+| **Mem.ai**     | $8/mo  | Good capture  | Weak execution     |
+| **Readwise**   | $8/mo  | Reading focus | No task management |
+| **Todoist**    | $4/mo  | Tasks only    | No AI processing   |
+| **Reclaim.ai** | $10/mo | Scheduling    | Limited capture    |
+| **Otter.ai**   | $17/mo | Meetings only | Narrow scope       |
 
 ### Differentiation
 
 ```
 Current tools: Single function
 ├── Notion = Notes
-├── Todoist = Tasks  
+├── Todoist = Tasks
 ├── Readwise = Reading
 ├── Twitter = Ideas
 └── Problem: Fragmented
@@ -422,20 +423,20 @@ To validate pricing, ask potential users:
 2. **Time value**: "What's your hourly rate (or estimated value of your time)?"
 3. **Pain level**: "How frustrated are you with current task management? (1-10)"
 4. **Willingness to pay**:
-   - "Would you pay $15/month for this?"
-   - "Would you pay $30/month?"
-   - "What features would justify $50/month?"
+    - "Would you pay $15/month for this?"
+    - "Would you pay $30/month?"
+    - "What features would justify $50/month?"
 
 ### Expected Responses
 
-| Question | Expected Answer | Implication |
-|----------|----------------|-------------|
-| Current spend | $30-100/month | Market exists |
-| Hourly value | $50-200/hr | High willingness to pay |
-| Pain level | 7-8/10 | Problem is real |
-| $15/mo | 60% yes | Good entry price |
-| $30/mo | 30% yes | Segment for Pro |
-| $50/mo | 10% yes | Enterprise tier |
+| Question      | Expected Answer | Implication             |
+| ------------- | --------------- | ----------------------- |
+| Current spend | $30-100/month   | Market exists           |
+| Hourly value  | $50-200/hr      | High willingness to pay |
+| Pain level    | 7-8/10          | Problem is real         |
+| $15/mo        | 60% yes         | Good entry price        |
+| $30/mo        | 30% yes         | Segment for Pro         |
+| $50/mo        | 10% yes         | Enterprise tier         |
 
 ---
 
@@ -448,6 +449,7 @@ To validate pricing, ask potential users:
 > **$199+/month for enterprise**
 
 **Rationale**:
+
 - Creates 2-5x efficiency gain
 - Saves 40-60 hours/month
 - Value created: $2,000-3,000/month

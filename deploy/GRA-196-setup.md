@@ -1,6 +1,7 @@
 # GRA-196: Production Deployment & DNS Setup
 
 ## Prerequisites
+
 - Server IP: `64.23.248.73`
 - Docker & Docker Compose installed
 - DNS management access for `gradiences.xyz`
@@ -9,10 +10,10 @@
 
 At your DNS provider, create/update the following A records:
 
-| Record | Type | Value |
-|--------|------|-------|
-| `api.gradiences.xyz` | A | `64.23.248.73` |
-| `indexer.gradiences.xyz` | A | `64.23.248.73` |
+| Record                   | Type | Value          |
+| ------------------------ | ---- | -------------- |
+| `api.gradiences.xyz`     | A    | `64.23.248.73` |
+| `indexer.gradiences.xyz` | A    | `64.23.248.73` |
 
 Wait for DNS propagation (use `dig indexer.gradiences.xyz` to verify).
 

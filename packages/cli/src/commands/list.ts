@@ -16,7 +16,7 @@ listCommand
     .option('--offset <number>', 'Number of tasks to skip', '0')
     .action(async (options) => {
         const spinner = ora('Fetching tasks...').start();
-        
+
         try {
             if (isMockMode()) {
                 const mockTasks = generateMockTasks(options);
@@ -28,7 +28,7 @@ listCommand
             const config = new ConfigManager();
             const rpcUrl = await config.get('rpc');
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-            
+
             const sdkOptions = {
                 ...(rpcUrl !== undefined && { rpcEndpoint: rpcUrl }),
                 ...(indexerEndpoint !== undefined && { indexerEndpoint }),
@@ -36,14 +36,14 @@ listCommand
             const sdk = new GradienceSDK(sdkOptions);
 
             const params: any = {};
-            
+
             if (options.status) {
                 if (!['open', 'completed', 'refunded'].includes(options.status)) {
                     throw new Error('Status must be one of: open, completed, refunded');
                 }
                 params.status = options.status;
             }
-            
+
             if (options.category) {
                 const category = Number(options.category);
                 if (!Number.isInteger(category) || category < 0 || category > 7) {
@@ -51,15 +51,15 @@ listCommand
                 }
                 params.category = category;
             }
-            
+
             if (options.poster) {
                 params.poster = options.poster;
             }
-            
+
             if (options.mint) {
                 params.mint = options.mint;
             }
-            
+
             if (options.limit) {
                 const limit = Number(options.limit);
                 if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
@@ -67,7 +67,7 @@ listCommand
                 }
                 params.limit = limit;
             }
-            
+
             if (options.offset) {
                 const offset = Number(options.offset);
                 if (!Number.isInteger(offset) || offset < 0) {
@@ -96,13 +96,13 @@ listCommand
     .option('--sort <field>', 'Sort by: score, slot', 'slot')
     .action(async (taskIdStr: string, options) => {
         const spinner = ora('Fetching submissions...').start();
-        
+
         try {
             const taskId = Number(taskIdStr);
             if (!Number.isInteger(taskId) || taskId < 0) {
                 throw new Error('Task ID must be a non-negative integer');
             }
-            
+
             if (isMockMode()) {
                 const mockSubmissions = generateMockSubmissions(taskId);
                 spinner.succeed('Submissions fetched (mock mode)');
@@ -113,7 +113,7 @@ listCommand
             const config = new ConfigManager();
             const rpcUrl = await config.get('rpc');
             const indexerEndpoint = process.env.GRADIENCE_INDEXER_ENDPOINT;
-            
+
             const sdkOptions2 = {
                 ...(rpcUrl !== undefined && { rpcEndpoint: rpcUrl }),
                 ...(indexerEndpoint !== undefined && { indexerEndpoint }),
@@ -153,7 +153,7 @@ function emitTaskList(tasks: any[]): void {
     }
 
     console.log(chalk.bold(`\nTasks (${tasks.length}):\n`));
-    
+
     for (const task of tasks) {
         const statusColor = getStatusColor(task.state);
         console.log(`${chalk.bold(`Task #${task.task_id}`)} - ${statusColor(task.state)}`);
@@ -181,7 +181,7 @@ function emitSubmissionList(submissions: any[]): void {
     }
 
     console.log(chalk.bold(`\nSubmissions (${submissions.length}):\n`));
-    
+
     for (const submission of submissions) {
         console.log(`${chalk.bold(`Agent:`)} ${submission.agent}`);
         console.log(`  Result: ${submission.result_ref}`);
@@ -208,7 +208,7 @@ function getStatusColor(status: string) {
 function generateMockTasks(options: any): any[] {
     const count = Math.min(Number(options.limit) || 10, 5);
     const tasks = [];
-    
+
     for (let i = 0; i < count; i++) {
         tasks.push({
             task_id: 1000 + i,
@@ -229,14 +229,14 @@ function generateMockTasks(options: any): any[] {
             slot: 1000 + i,
         });
     }
-    
+
     return tasks;
 }
 
 function generateMockSubmissions(taskId: number): any[] {
     const count = Math.floor(Math.random() * 3) + 1;
     const submissions = [];
-    
+
     for (let i = 0; i < count; i++) {
         submissions.push({
             task_id: taskId,
@@ -251,6 +251,6 @@ function generateMockSubmissions(taskId: number): any[] {
             submitted_at: Math.floor(Date.now() / 1000) - 3600 * i,
         });
     }
-    
+
     return submissions;
 }

@@ -64,25 +64,25 @@ Agent 列表
 ```typescript
 // Agent 数据结构扩展
 interface Agent {
-  id: string;
-  name: string;
-  ownerId: string;  // ← Privy User ID
-  wallet: OWSWallet;
-  reputation: Reputation;
+    id: string;
+    name: string;
+    ownerId: string; // ← Privy User ID
+    wallet: OWSWallet;
+    reputation: Reputation;
 }
 
 // 创建 Agent 时需要登录
 const createAgent = async (user: PrivyUser, name: string) => {
-  return await agentService.register({
-    ownerId: user.id,  // 绑定到 Privy 用户
-    name,
-    // ...
-  });
+    return await agentService.register({
+        ownerId: user.id, // 绑定到 Privy 用户
+        name,
+        // ...
+    });
 };
 
 // 查询用户的 Agents
 const getMyAgents = async (user: PrivyUser) => {
-  return await agentService.findByOwner(user.id);
+    return await agentService.findByOwner(user.id);
 };
 ```
 
@@ -91,22 +91,22 @@ const getMyAgents = async (user: PrivyUser) => {
 ```typescript
 // 用户系统
 interface User {
-  id: string;              // Privy ID
-  email?: string;
-  googleId?: string;
-  privyWallet?: Wallet;    // Privy 自动创建的钱包
-  agents: string[];        // 拥有的 Agent IDs
-  createdAt: Date;
+    id: string; // Privy ID
+    email?: string;
+    googleId?: string;
+    privyWallet?: Wallet; // Privy 自动创建的钱包
+    agents: string[]; // 拥有的 Agent IDs
+    createdAt: Date;
 }
 
 // Agent 系统
 interface Agent {
-  id: string;
-  ownerId: string;         // 关联到 User
-  name: string;
-  owsWallet: OWSWallet;    // Agent 专用钱包
-  reputation: Reputation;
-  policy: Policy;
+    id: string;
+    ownerId: string; // 关联到 User
+    name: string;
+    owsWallet: OWSWallet; // Agent 专用钱包
+    reputation: Reputation;
+    policy: Policy;
 }
 ```
 
@@ -119,36 +119,35 @@ interface Agent {
 ```typescript
 // src/core/agent.ts
 export interface Agent {
-  id: string;
-  ownerId: string;  // ← 新增
-  name: string;
-  wallet: OWSWallet;
-  reputation: Reputation;
-  policy: Policy;
-  createdAt: Date;
+    id: string;
+    ownerId: string; // ← 新增
+    name: string;
+    wallet: OWSWallet;
+    reputation: Reputation;
+    policy: Policy;
+    createdAt: Date;
 }
 
 export class AgentService {
-  async register(params: {
-    ownerId: string;  // ← 新增
-    name: string;
-    wallet: OWSWallet;
-  }): Promise<Agent> {
-    const agent: Agent = {
-      id: uuidv4(),
-      ownerId: params.ownerId,  // ← 保存所有者
-      name: params.name,
-      // ...
-    };
-    agents.set(params.name, agent);
-    return agent;
-  }
+    async register(params: {
+        ownerId: string; // ← 新增
+        name: string;
+        wallet: OWSWallet;
+    }): Promise<Agent> {
+        const agent: Agent = {
+            id: uuidv4(),
+            ownerId: params.ownerId, // ← 保存所有者
+            name: params.name,
+            // ...
+        };
+        agents.set(params.name, agent);
+        return agent;
+    }
 
-  // 查询用户的所有 Agents
-  async findByOwner(ownerId: string): Promise<Agent[]> {
-    return Array.from(agents.values())
-      .filter(agent => agent.ownerId === ownerId);
-  }
+    // 查询用户的所有 Agents
+    async findByOwner(ownerId: string): Promise<Agent[]> {
+        return Array.from(agents.values()).filter((agent) => agent.ownerId === ownerId);
+    }
 }
 ```
 
@@ -194,20 +193,17 @@ export default function MyAgents() {
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AgentService } from '../../../src/core/agent';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { ownerId } = req.query;
-  
-  if (!ownerId) {
-    return res.status(400).json({ error: 'ownerId required' });
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const { ownerId } = req.query;
 
-  const agentService = new AgentService();
-  const agents = await agentService.findByOwner(ownerId as string);
-  
-  res.json(agents);
+    if (!ownerId) {
+        return res.status(400).json({ error: 'ownerId required' });
+    }
+
+    const agentService = new AgentService();
+    const agents = await agentService.findByOwner(ownerId as string);
+
+    res.json(agents);
 }
 ```
 

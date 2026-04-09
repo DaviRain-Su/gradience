@@ -199,7 +199,7 @@ export function isMockTaskMode(env: NodeJS.ProcessEnv): boolean {
  */
 export function parseCategories(raw: string): number[] {
     if (!raw) return [];
-    const parts = raw.split(',').map((p) => p.trim().toLowerCase());
+    const parts = raw.split(',').map(p => p.trim().toLowerCase());
     const ids: number[] = [];
     for (const part of parts) {
         const id = CATEGORY_NAME_TO_ID.get(part) ?? parseInt(part, 10);
@@ -214,10 +214,7 @@ export function parseCategories(raw: string): number[] {
 /**
  * Append remaining accounts to an instruction
  */
-export function appendRemainingAccounts(
-    instruction: InstructionLike,
-    remaining: AccountMeta[],
-): InstructionLike {
+export function appendRemainingAccounts(instruction: InstructionLike, remaining: AccountMeta[]): InstructionLike {
     return {
         ...instruction,
         accounts: [...instruction.accounts, ...remaining],

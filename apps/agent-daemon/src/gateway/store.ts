@@ -32,19 +32,23 @@ CREATE INDEX IF NOT EXISTS idx_task_id ON gateway_purchases(task_id);
 `;
 
 export class GatewayStore {
-  private db: Database.Database;
+    private db: Database.Database;
 
-  constructor(dbPath: string) {
-    try {
-      this.db = new Database(dbPath);
-      this.db.exec(CREATE_TABLE_SQL);
-    } catch (err) {
-      throw new GatewayError(GW_STORE_ERROR, `Failed to initialize gateway store: ${err instanceof Error ? err.message : String(err)}`, err);
+    constructor(dbPath: string) {
+        try {
+            this.db = new Database(dbPath);
+            this.db.exec(CREATE_TABLE_SQL);
+        } catch (err) {
+            throw new GatewayError(
+                GW_STORE_ERROR,
+                `Failed to initialize gateway store: ${err instanceof Error ? err.message : String(err)}`,
+                err,
+            );
+        }
     }
-  }
 
-  insert(record: GatewayPurchaseRecord): void {
-    const sql = `
+    insert(record: GatewayPurchaseRecord): void {
+        const sql = `
       INSERT INTO gateway_purchases (
         purchase_id, buyer, workflow_id, amount, tx_signature, block_time,
         preferred_agent, status, task_id, agent_id, result_hash, settlement_tx,
@@ -52,77 +56,105 @@ export class GatewayStore {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(purchase_id) DO NOTHING
     `;
-    try {
-      this.db.prepare(sql).run(
-        record.purchaseId,
-        record.buyer,
-        record.workflowId,
-        record.amount,
-        record.txSignature,
-        record.blockTime,
-        record.preferredAgent ?? null,
-        record.status,
-        record.taskId ?? null,
-        record.agentId ?? null,
-        record.resultHash ?? null,
-        record.settlementTx ?? null,
-        record.score ?? null,
-        record.attempts,
-        record.createdAt,
-        record.updatedAt
-      );
-    } catch (err) {
-      throw new GatewayError(GW_STORE_ERROR, `Insert failed: ${err instanceof Error ? err.message : String(err)}`, err);
+        try {
+            this.db
+                .prepare(sql)
+                .run(
+                    record.purchaseId,
+                    record.buyer,
+                    record.workflowId,
+                    record.amount,
+                    record.txSignature,
+                    record.blockTime,
+                    record.preferredAgent ?? null,
+                    record.status,
+                    record.taskId ?? null,
+                    record.agentId ?? null,
+                    record.resultHash ?? null,
+                    record.settlementTx ?? null,
+                    record.score ?? null,
+                    record.attempts,
+                    record.createdAt,
+                    record.updatedAt,
+                );
+        } catch (err) {
+            throw new GatewayError(
+                GW_STORE_ERROR,
+                `Insert failed: ${err instanceof Error ? err.message : String(err)}`,
+                err,
+            );
+        }
     }
-  }
 
-  update(purchaseId: string, patch: Partial<GatewayPurchaseRecord>): void {
-    const allowedKeys = [
-      'buyer', 'workflowId', 'amount', 'txSignature', 'blockTime',
-      'preferredAgent', 'status', 'taskId', 'agentId', 'resultHash',
-      'settlementTx', 'score', 'attempts', 'createdAt', 'updatedAt'
-    ] as const;
+    update(purchaseId: string, patch: Partial<GatewayPurchaseRecord>): void {
+        const allowedKeys = [
+            'buyer',
+            'workflowId',
+            'amount',
+            'txSignature',
+            'blockTime',
+            'preferredAgent',
+            'status',
+            'taskId',
+            'agentId',
+            'resultHash',
+            'settlementTx',
+            'score',
+            'attempts',
+            'createdAt',
+            'updatedAt',
+        ] as const;
 
-    const entries = Object.entries(patch).filter(([k]) =>
-      allowedKeys.includes(k as typeof allowedKeys[number])
-    );
+        const entries = Object.entries(patch).filter(([k]) => allowedKeys.includes(k as (typeof allowedKeys)[number]));
 
-    if (entries.length === 0) return;
+        if (entries.length === 0) return;
 
-    const setClause = entries.map(([k]) => `${snakeCase(k)} = ?`).join(', ');
-    const values = entries.map(([, v]) => (v === undefined ? null : v));
+        const setClause = entries.map(([k]) => `${snakeCase(k)} = ?`).join(', ');
+        const values = entries.map(([, v]) => (v === undefined ? null : v));
 
-    const sql = `UPDATE gateway_purchases SET ${setClause} WHERE purchase_id = ?`;
-    try {
-      this.db.prepare(sql).run(...values, purchaseId);
-    } catch (err) {
-      throw new GatewayError(GW_STORE_ERROR, `Update failed: ${err instanceof Error ? err.message : String(err)}`, err);
+        const sql = `UPDATE gateway_purchases SET ${setClause} WHERE purchase_id = ?`;
+        try {
+            this.db.prepare(sql).run(...values, purchaseId);
+        } catch (err) {
+            throw new GatewayError(
+                GW_STORE_ERROR,
+                `Update failed: ${err instanceof Error ? err.message : String(err)}`,
+                err,
+            );
+        }
     }
-  }
 
-  getByPurchaseId(purchaseId: string): GatewayPurchaseRecord | null {
-    const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE purchase_id = ?').get(purchaseId) as RawRow | undefined;
-    return row ? toRecord(row) : null;
-  }
+    getByPurchaseId(purchaseId: string): GatewayPurchaseRecord | null {
+        const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE purchase_id = ?').get(purchaseId) as
+            | RawRow
+            | undefined;
+        return row ? toRecord(row) : null;
+    }
 
-  getByTxSignature(txSignature: string): GatewayPurchaseRecord | null {
-    const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE tx_signature = ?').get(txSignature) as RawRow | undefined;
-    return row ? toRecord(row) : null;
-  }
+    getByTxSignature(txSignature: string): GatewayPurchaseRecord | null {
+        const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE tx_signature = ?').get(txSignature) as
+            | RawRow
+            | undefined;
+        return row ? toRecord(row) : null;
+    }
 
-  getByTaskId(taskId: string): GatewayPurchaseRecord | null {
-    const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE task_id = ?').get(taskId) as RawRow | undefined;
-    return row ? toRecord(row) : null;
-  }
+    getByTaskId(taskId: string): GatewayPurchaseRecord | null {
+        const row = this.db.prepare('SELECT * FROM gateway_purchases WHERE task_id = ?').get(taskId) as
+            | RawRow
+            | undefined;
+        return row ? toRecord(row) : null;
+    }
 
-  listByStatus(status: PurchaseStatus, limit = 100): GatewayPurchaseRecord[] {
-    const rows = this.db.prepare('SELECT * FROM gateway_purchases WHERE status = ? LIMIT ?').all(status, limit) as RawRow[];
-    return rows.map(toRecord);
-  }
+    listByStatus(status: PurchaseStatus, limit = 100): GatewayPurchaseRecord[] {
+        const rows = this.db
+            .prepare('SELECT * FROM gateway_purchases WHERE status = ? LIMIT ?')
+            .all(status, limit) as RawRow[];
+        return rows.map(toRecord);
+    }
 
-  close(): void {
-    this.db.close();
-  }
+    close(): void {
+        this.db.close();
+    }
 }
 
 // ------------------------------------------------------------------
@@ -130,45 +162,45 @@ export class GatewayStore {
 // ------------------------------------------------------------------
 
 function snakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 interface RawRow {
-  purchase_id: string;
-  buyer: string;
-  workflow_id: string;
-  amount: string;
-  tx_signature: string;
-  block_time: number;
-  preferred_agent: string | null;
-  status: PurchaseStatus;
-  task_id: string | null;
-  agent_id: string | null;
-  result_hash: string | null;
-  settlement_tx: string | null;
-  score: number | null;
-  attempts: number;
-  created_at: string;
-  updated_at: string;
+    purchase_id: string;
+    buyer: string;
+    workflow_id: string;
+    amount: string;
+    tx_signature: string;
+    block_time: number;
+    preferred_agent: string | null;
+    status: PurchaseStatus;
+    task_id: string | null;
+    agent_id: string | null;
+    result_hash: string | null;
+    settlement_tx: string | null;
+    score: number | null;
+    attempts: number;
+    created_at: string;
+    updated_at: string;
 }
 
 function toRecord(row: RawRow): GatewayPurchaseRecord {
-  return {
-    purchaseId: row.purchase_id,
-    buyer: row.buyer,
-    workflowId: row.workflow_id,
-    amount: row.amount,
-    txSignature: row.tx_signature,
-    blockTime: row.block_time,
-    preferredAgent: row.preferred_agent ?? undefined,
-    status: row.status,
-    taskId: row.task_id ?? undefined,
-    agentId: row.agent_id ?? undefined,
-    resultHash: row.result_hash ?? undefined,
-    settlementTx: row.settlement_tx ?? undefined,
-    score: row.score ?? undefined,
-    attempts: row.attempts,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+    return {
+        purchaseId: row.purchase_id,
+        buyer: row.buyer,
+        workflowId: row.workflow_id,
+        amount: row.amount,
+        txSignature: row.tx_signature,
+        blockTime: row.block_time,
+        preferredAgent: row.preferred_agent ?? undefined,
+        status: row.status,
+        taskId: row.task_id ?? undefined,
+        agentId: row.agent_id ?? undefined,
+        resultHash: row.result_hash ?? undefined,
+        settlementTx: row.settlement_tx ?? undefined,
+        score: row.score ?? undefined,
+        attempts: row.attempts,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
 }

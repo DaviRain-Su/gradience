@@ -1,7 +1,7 @@
 # Obsidian as Agent Me Dashboard：轻量级实现方案
 
 > **核心洞察：不造轮子，用 Obsidian 作为 Agent Me 的监控面板 + 语音插件作为入口**
-> 
+>
 > 日期：2026-03-29
 
 ---
@@ -12,40 +12,40 @@
 
 ```yaml
 本地优先 (Local-First):
-  - 所有数据存储在用户本地
-  - 纯文本 Markdown，用户完全控制
-  - 无需云端，隐私最大化
-  - 与 Gradience 理念完全一致
+    - 所有数据存储在用户本地
+    - 纯文本 Markdown，用户完全控制
+    - 无需云端，隐私最大化
+    - 与 Gradience 理念完全一致
 
 插件生态 (Plugin Ecosystem):
-  - 强大的 API 支持
-  - 社区活跃，数千插件
-  - 开发门槛低 (TypeScript)
-  - 热更新，无需重启
+    - 强大的 API 支持
+    - 社区活跃，数千插件
+    - 开发门槛低 (TypeScript)
+    - 热更新，无需重启
 
 知识管理 (Knowledge Management):
-  - 双向链接 [[ ]]
-  - 图谱视图 (Graph View)
-  - 标签系统 #tag
-  - Mermaid 图表支持
-  - 完美承载 AgentSoul.md
+    - 双向链接 [[ ]]
+    - 图谱视图 (Graph View)
+    - 标签系统 #tag
+    - Mermaid 图表支持
+    - 完美承载 AgentSoul.md
 
 用户基础 (User Base):
-  - 数百万知识工作者已使用
-  - 高粘性用户群体
-  - 付费意愿强 (Cult Following)
-  - 不需要教育成本
+    - 数百万知识工作者已使用
+    - 高粘性用户群体
+    - 付费意愿强 (Cult Following)
+    - 不需要教育成本
 ```
 
 ### 1.2 与 Gradience 理念的契合
 
-| Gradience 理念 | Obsidian 特性 | 契合度 |
-|---------------|--------------|--------|
-| Local-First | 本地存储，无云端依赖 | ✅ 完美 |
-| 数据主权 | 用户拥有所有文件 | ✅ 完美 |
-| 可扩展性 | 插件系统 | ✅ 完美 |
-| 开放格式 | Markdown 标准 | ✅ 完美 |
-| 长期保存 | 纯文本，30年后仍可读 | ✅ 完美 |
+| Gradience 理念 | Obsidian 特性        | 契合度  |
+| -------------- | -------------------- | ------- |
+| Local-First    | 本地存储，无云端依赖 | ✅ 完美 |
+| 数据主权       | 用户拥有所有文件     | ✅ 完美 |
+| 可扩展性       | 插件系统             | ✅ 完美 |
+| 开放格式       | Markdown 标准        | ✅ 完美 |
+| 长期保存       | 纯文本，30年后仍可读 | ✅ 完美 |
 
 ---
 
@@ -112,17 +112,17 @@ class AgentMePlugin extends Plugin {
       VIEW_TYPE_VOICE,
       (leaf) => new VoiceControlView(leaf, this)
     );
-    
+
     // 2. 注册命令
     this.addCommand({
       id: 'toggle-voice',
       name: 'Toggle Voice Control',
       callback: () => this.toggleVoice()
     });
-    
+
     // 3. 连接 OpenClaw
     this.wsClient = new WSClient('ws://localhost:18789/ws');
-    
+
     // 4. 初始化语音
     this.voiceManager = new VoiceManager({
       stt: 'whisper-local',  // 或 'gemini-live'
@@ -151,15 +151,15 @@ class VoiceControlView extends ItemView {
           {this.state === 'speaking' && '◐ Speaking...'}
           {this.state === 'idle' && '○ Click to speak'}
         </div>
-        
+
         {/* 语音按钮 */}
-        <button 
+        <button
           className="voice-btn"
           onClick={() => this.toggleListening()}
         >
           {this.isListening ? '🎙️' : '🎤'}
         </button>
-        
+
         {/* 最近对话 */}
         <div className="recent-chats">
           {this.recentMessages.map(msg => (
@@ -168,7 +168,7 @@ class VoiceControlView extends ItemView {
             </div>
           ))}
         </div>
-        
+
         {/* 快捷命令 */}
         <div className="quick-actions">
           <button onClick={() => this.sendCommand('pause')}>⏸️</button>
@@ -183,7 +183,7 @@ class VoiceControlView extends ItemView {
 
 ### 3.2 Dashboard 面板（Obsidian 风格）
 
-```markdown
+````markdown
 # Agent Me Dashboard
 
 ## 当前状态
@@ -204,6 +204,7 @@ dv.table(
   ]
 );
 ```
+````
 
 ## 今日任务
 
@@ -226,7 +227,8 @@ LIMIT 10
 - [[Start Voice Chat|🎤 开始语音对话]]
 - [[View All Tasks|📋 查看所有任务]]
 - [[Agent Settings|⚙️ 设置]]
-```
+
+````
 
 ### 3.3 自动笔记同步
 
@@ -235,7 +237,7 @@ LIMIT 10
 class NoteSync {
   async syncExecutionResult(result: ExecutionResult) {
     const fileName = `Agent/Executions/${result.timestamp}.md`;
-    
+
     const content = `---
 timestamp: ${result.timestamp}
 task: ${result.taskName}
@@ -258,14 +260,14 @@ ${result.decisions.map(d => `- ${d.timestamp}: ${d.reason}`).join('\n')}
 - [[AgentSoul|返回 AgentSoul]]
 - [[Dashboard|查看 Dashboard]]
 `;
-    
+
     await this.app.vault.create(fileName, content);
-    
+
     // 更新图谱
     await this.updateGraph(result);
   }
 }
-```
+````
 
 ---
 
@@ -273,24 +275,24 @@ ${result.decisions.map(d => `- ${d.timestamp}: ${d.reason}`).join('\n')}
 
 ### 4.1 开发成本对比
 
-| 维度 | 自建 APP (React Native) | Obsidian 插件 |
-|------|------------------------|--------------|
-| **开发时间** | 3-6 个月 | 2-4 周 |
-| **代码量** | 20K+ 行 | 3K-5K 行 |
-| **团队规模** | 3-5 人 | 1-2 人 |
-| **维护成本** | 高 (多平台适配) | 低 (Obsidian 处理跨平台) |
-| **UI 设计** | 从零设计 | 复用 Obsidian 设计系统 |
-| **知识管理** | 自建系统 | 复用 Obsidian 双链 |
+| 维度         | 自建 APP (React Native) | Obsidian 插件            |
+| ------------ | ----------------------- | ------------------------ |
+| **开发时间** | 3-6 个月                | 2-4 周                   |
+| **代码量**   | 20K+ 行                 | 3K-5K 行                 |
+| **团队规模** | 3-5 人                  | 1-2 人                   |
+| **维护成本** | 高 (多平台适配)         | 低 (Obsidian 处理跨平台) |
+| **UI 设计**  | 从零设计                | 复用 Obsidian 设计系统   |
+| **知识管理** | 自建系统                | 复用 Obsidian 双链       |
 
 ### 4.2 用户体验对比
 
-| 维度 | 自建 APP | Obsidian 插件 |
-|------|---------|--------------|
-| **启动成本** | 下载新 APP，学习界面 | 安装插件，已有熟悉环境 |
-| **数据可见性** | 封闭在 APP 内 | 完全开放，Markdown 格式 |
-| **扩展性** | 依赖官方更新 | 与其他插件组合使用 |
-| **长期保存** | APP 可能停止维护 | 纯文本，永久可读 |
-| **跨平台** | 需单独开发 iOS/Android | Obsidian 已覆盖全平台 |
+| 维度           | 自建 APP               | Obsidian 插件           |
+| -------------- | ---------------------- | ----------------------- |
+| **启动成本**   | 下载新 APP，学习界面   | 安装插件，已有熟悉环境  |
+| **数据可见性** | 封闭在 APP 内          | 完全开放，Markdown 格式 |
+| **扩展性**     | 依赖官方更新           | 与其他插件组合使用      |
+| **长期保存**   | APP 可能停止维护       | 纯文本，永久可读        |
+| **跨平台**     | 需单独开发 iOS/Android | Obsidian 已覆盖全平台   |
 
 ### 4.3 功能完整性对比
 
@@ -322,42 +324,42 @@ Obsidian 插件能做到但自建 APP 做不到的：
 
 ```yaml
 Week 1:
-  - Obsidian 插件框架搭建
-  - WebSocket 客户端连接 OpenClaw
-  - 基础语音按钮组件
-  - 简单命令发送/接收
+    - Obsidian 插件框架搭建
+    - WebSocket 客户端连接 OpenClaw
+    - 基础语音按钮组件
+    - 简单命令发送/接收
 
 Week 2:
-  - 语音转文字 (STT)
-  - 文字转语音 (TTS)
-  - 基础 Dashboard 视图
-  - 笔记自动同步
+    - 语音转文字 (STT)
+    - 文字转语音 (TTS)
+    - 基础 Dashboard 视图
+    - 笔记自动同步
 
 Deliverable:
-  - 可以在 Obsidian 中语音对话
-  - 可以看到 OpenClaw 状态
-  - 可以查看执行日志
+    - 可以在 Obsidian 中语音对话
+    - 可以看到 OpenClaw 状态
+    - 可以查看执行日志
 ```
 
 ### 5.2 完整版本（1个月）
 
 ```yaml
 Week 3:
-  - 语音流优化 (WebRTC)
-  - 打断功能实现
-  - Dashboard 数据可视化
-  - 快捷命令面板
+    - 语音流优化 (WebRTC)
+    - 打断功能实现
+    - Dashboard 数据可视化
+    - 快捷命令面板
 
 Week 4:
-  - 与 AgentSoul.md 整合
-  - 图谱视图展示 Agent 关系
-  - 设置面板
-  - 社区文档
+    - 与 AgentSoul.md 整合
+    - 图谱视图展示 Agent 关系
+    - 设置面板
+    - 社区文档
 
 Deliverable:
-  - 生产可用的 Obsidian 插件
-  - 发布到社区插件市场
-  - 完整文档和示例
+    - 生产可用的 Obsidian 插件
+    - 发布到社区插件市场
+    - 完整文档和示例
 ```
 
 ---
@@ -446,21 +448,21 @@ OpenClaw 负责:
 
 ```yaml
 免费版 (Obsidian 插件):
-  - 基础语音对话
-  - 基础 Dashboard
-  - 本地 Whisper
-  - 社区支持
+    - 基础语音对话
+    - 基础 Dashboard
+    - 本地 Whisper
+    - 社区支持
 
 付费版 (Pro 订阅):
-  - Gemini Live API 集成
-  - 高级 Dashboard 视图
-  - 云同步备份
-  - 优先技术支持
+    - Gemini Live API 集成
+    - 高级 Dashboard 视图
+    - 云同步备份
+    - 优先技术支持
 
 企业版:
-  - 私有化部署
-  - 定制开发
-  - SLA 保障
+    - 私有化部署
+    - 定制开发
+    - SLA 保障
 ```
 
 ### 7.2 与 Obsidian 的关系
@@ -512,7 +514,7 @@ Obsidian + 语音插件方案：
 ### 8.3 一句话定位
 
 > **Agent Me = Obsidian 插件（监控面板）+ 语音入口 + 本地 OpenClaw**
-> 
+>
 > 利用 Obsidian 的本地优先特性和强大生态，以最小开发成本实现 Agent-Native 的用户体验。
 
 ---
@@ -525,4 +527,4 @@ Obsidian + 语音插件方案：
 
 ---
 
-*"不造轮子，站在巨人肩膀上。Obsidian 是完美的 Agent Me 底座。"*
+_"不造轮子，站在巨人肩膀上。Obsidian 是完美的 Agent Me 底座。"_

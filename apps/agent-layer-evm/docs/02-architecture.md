@@ -7,14 +7,14 @@
 
 ## 1. 架构设计决策
 
-| 决策项 | 选择 | 理由 |
-|--------|------|------|
-| **部署模式** | **Multi-Home** | 任务 escrow 和结算必须本地化，跨链 escrow 会引入桥风险和高延迟 |
-| **首发链** | **XLayer** | 零 Gas、TEE Agentic Wallet、原生 Solana 支持、Polygon CDK 技术成熟 |
-| **扩展链** | **Base / Arbitrum / Ethereum L1** | 合约和 SDK 完全通用，后续只需配置网络参数和地址映射 |
-| **声誉策略** | **全局统一 + Oracle 桥接** | Agent 的核心资产是声誉，必须在所有 EVM 链间可验证、可携带 |
-| **SDK 策略** | **Unified SDK（链抽象层）** | 前端和开发者无需为每条链写独立逻辑 |
-| **Solana 定位** | **同级核心链** | 与 EVM 长期并行支持，新功能同步规划，不因 EVM 扩展而降级 |
+| 决策项          | 选择                              | 理由                                                               |
+| --------------- | --------------------------------- | ------------------------------------------------------------------ |
+| **部署模式**    | **Multi-Home**                    | 任务 escrow 和结算必须本地化，跨链 escrow 会引入桥风险和高延迟     |
+| **首发链**      | **XLayer**                        | 零 Gas、TEE Agentic Wallet、原生 Solana 支持、Polygon CDK 技术成熟 |
+| **扩展链**      | **Base / Arbitrum / Ethereum L1** | 合约和 SDK 完全通用，后续只需配置网络参数和地址映射                |
+| **声誉策略**    | **全局统一 + Oracle 桥接**        | Agent 的核心资产是声誉，必须在所有 EVM 链间可验证、可携带          |
+| **SDK 策略**    | **Unified SDK（链抽象层）**       | 前端和开发者无需为每条链写独立逻辑                                 |
+| **Solana 定位** | **同级核心链**                    | 与 EVM 长期并行支持，新功能同步规划，不因 EVM 扩展而降级           |
 
 ---
 
@@ -100,24 +100,24 @@
 
 ### 3.1 P0 核心合约
 
-| 合约 | 职责 | 依赖 |
-|------|------|------|
-| `AgentArenaEVM` | 任务发布/申请/提交/评判/退款 | `JudgeRegistry`, `GradienceReputationFeed` |
-| `JudgeRegistry` | Judge 注册/质押/解押/分类/分配 | OpenZeppelin Ownable |
-| `AgentMRegistry` | 用户注册/Agent 创建/Profile 管理 | OpenZeppelin UUPS |
-| `SocialGraph` | 关注/取关关系 | `AgentMRegistry` |
-| `ReputationVerifier` | 跨链声誉 proof 验证与存储 | `Ed25519.sol`, `Sha512.sol` |
-| `GradienceReputationFeed` | Oracle 更新的权威跨链声誉数据库 | OpenZeppelin Ownable |
+| 合约                      | 职责                             | 依赖                                       |
+| ------------------------- | -------------------------------- | ------------------------------------------ |
+| `AgentArenaEVM`           | 任务发布/申请/提交/评判/退款     | `JudgeRegistry`, `GradienceReputationFeed` |
+| `JudgeRegistry`           | Judge 注册/质押/解押/分类/分配   | OpenZeppelin Ownable                       |
+| `AgentMRegistry`          | 用户注册/Agent 创建/Profile 管理 | OpenZeppelin UUPS                          |
+| `SocialGraph`             | 关注/取关关系                    | `AgentMRegistry`                           |
+| `ReputationVerifier`      | 跨链声誉 proof 验证与存储        | `Ed25519.sol`, `Sha512.sol`                |
+| `GradienceReputationFeed` | Oracle 更新的权威跨链声誉数据库  | OpenZeppelin Ownable                       |
 
 ### 3.2 P1 扩展合约
 
-| 合约 | 职责 | 依赖 |
-|------|------|------|
-| `ChainHubRegistry` | Protocol/Skill 注册与查询 | OpenZeppelin UUPS |
-| `DelegationManager` | 委托任务创建与权限执行 | `ChainHubRegistry` |
-| `A2AChannelRegistry` | 链上通道状态注册 | OpenZeppelin UUPS |
-| `SubtaskMarket` | 子任务竞标与支付通道 | `A2AChannelRegistry` |
-| `WorkflowMarket` | Workflow NFT 发行与交易 | OpenZeppelin UUPS |
+| 合约                 | 职责                      | 依赖                 |
+| -------------------- | ------------------------- | -------------------- |
+| `ChainHubRegistry`   | Protocol/Skill 注册与查询 | OpenZeppelin UUPS    |
+| `DelegationManager`  | 委托任务创建与权限执行    | `ChainHubRegistry`   |
+| `A2AChannelRegistry` | 链上通道状态注册          | OpenZeppelin UUPS    |
+| `SubtaskMarket`      | 子任务竞标与支付通道      | `A2AChannelRegistry` |
+| `WorkflowMarket`     | Workflow NFT 发行与交易   | OpenZeppelin UUPS    |
 
 ---
 

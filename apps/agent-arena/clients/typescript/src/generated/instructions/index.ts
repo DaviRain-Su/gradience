@@ -6,14 +6,14 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./applyForTask";
-export * from "./cancelTask";
-export * from "./forceRefund";
-export * from "./initialize";
-export * from "./judgeAndPay";
-export * from "./postTask";
-export * from "./refundExpired";
-export * from "./registerJudge";
-export * from "./submitResult";
-export * from "./unstakeJudge";
-export * from "./upgradeConfig";
+export * from './applyForTask';
+export * from './cancelTask';
+export * from './forceRefund';
+export * from './initialize';
+export * from './judgeAndPay';
+export * from './postTask';
+export * from './refundExpired';
+export * from './registerJudge';
+export * from './submitResult';
+export * from './unstakeJudge';
+export * from './upgradeConfig';

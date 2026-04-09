@@ -61,38 +61,57 @@ function parseSoulRow(row: Record<string, unknown>): SoulProfileData {
 // ── Matching Engine ──
 
 function intersect(a: string[], b: string[]): string[] {
-    const setB = new Set(b.map(s => s.toLowerCase()));
-    return a.filter(v => setB.has(v.toLowerCase()));
+    const setB = new Set(b.map((s) => s.toLowerCase()));
+    return a.filter((v) => setB.has(v.toLowerCase()));
 }
 
 function jaccardSimilarity(a: string[], b: string[]): number {
     if (a.length === 0 && b.length === 0) return 1;
-    const setA = new Set(a.map(s => s.toLowerCase()));
-    const setB = new Set(b.map(s => s.toLowerCase()));
-    const intersection = [...setA].filter(x => setB.has(x)).length;
+    const setA = new Set(a.map((s) => s.toLowerCase()));
+    const setB = new Set(b.map((s) => s.toLowerCase()));
+    const intersection = [...setA].filter((x) => setB.has(x)).length;
     const union = new Set([...setA, ...setB]).size;
     return union === 0 ? 0 : intersection / union;
 }
 
 const TONE_SIM: Record<string, number> = {
-    'formal-formal': 1, 'formal-technical': 0.7, 'formal-friendly': 0.3, 'formal-casual': 0.2,
-    'technical-technical': 1, 'technical-friendly': 0.5, 'technical-casual': 0.3,
-    'friendly-friendly': 1, 'friendly-casual': 0.8, 'casual-casual': 1,
+    'formal-formal': 1,
+    'formal-technical': 0.7,
+    'formal-friendly': 0.3,
+    'formal-casual': 0.2,
+    'technical-technical': 1,
+    'technical-friendly': 0.5,
+    'technical-casual': 0.3,
+    'friendly-friendly': 1,
+    'friendly-casual': 0.8,
+    'casual-casual': 1,
 };
 const PACE_SIM: Record<string, number> = {
-    'fast-fast': 1, 'fast-moderate': 0.6, 'fast-slow': 0.2,
-    'moderate-moderate': 1, 'moderate-slow': 0.6, 'slow-slow': 1,
+    'fast-fast': 1,
+    'fast-moderate': 0.6,
+    'fast-slow': 0.2,
+    'moderate-moderate': 1,
+    'moderate-slow': 0.6,
+    'slow-slow': 1,
 };
 const DEPTH_SIM: Record<string, number> = {
-    'deep-deep': 1, 'deep-moderate': 0.6, 'deep-surface': 0.2,
-    'moderate-moderate': 1, 'moderate-surface': 0.5, 'surface-surface': 1,
+    'deep-deep': 1,
+    'deep-moderate': 0.6,
+    'deep-surface': 0.2,
+    'moderate-moderate': 1,
+    'moderate-surface': 0.5,
+    'surface-surface': 1,
 };
 
 function lookupSim(key: string, map: Record<string, number>): number {
     return map[key] ?? map[key.split('-').reverse().join('-')] ?? 0.5;
 }
 
-interface MatchBreakdown { values: number; interests: number; communication: number; }
+interface MatchBreakdown {
+    values: number;
+    interests: number;
+    communication: number;
+}
 interface FullMatchResult {
     score: number;
     breakdown: MatchBreakdown;
@@ -102,13 +121,15 @@ interface FullMatchResult {
 }
 
 function computeMatch(me: SoulProfileData, other: SoulProfileData): FullMatchResult {
-    const valScore = jaccardSimilarity(me.values_core, other.values_core) * 0.6
-        + jaccardSimilarity(me.values_priorities, other.values_priorities) * 0.3
-        + (intersect(me.values_deal_breakers, other.values_deal_breakers).length > 0 ? 0.1 : 0);
+    const valScore =
+        jaccardSimilarity(me.values_core, other.values_core) * 0.6 +
+        jaccardSimilarity(me.values_priorities, other.values_priorities) * 0.3 +
+        (intersect(me.values_deal_breakers, other.values_deal_breakers).length > 0 ? 0.1 : 0);
 
-    const intScore = jaccardSimilarity(me.interests_topics, other.interests_topics) * 0.5
-        + jaccardSimilarity(me.interests_skills, other.interests_skills) * 0.3
-        + jaccardSimilarity(me.interests_goals, other.interests_goals) * 0.2;
+    const intScore =
+        jaccardSimilarity(me.interests_topics, other.interests_topics) * 0.5 +
+        jaccardSimilarity(me.interests_skills, other.interests_skills) * 0.3 +
+        jaccardSimilarity(me.interests_goals, other.interests_goals) * 0.2;
 
     const tone = lookupSim(`${me.comm_tone}-${other.comm_tone}`, TONE_SIM);
     const pace = lookupSim(`${me.comm_pace}-${other.comm_pace}`, PACE_SIM);
@@ -121,14 +142,22 @@ function computeMatch(me: SoulProfileData, other: SoulProfileData): FullMatchRes
     const sharedInterests = intersect(me.interests_topics, other.interests_topics);
 
     const conflictAreas: string[] = [];
-    const myBreakers = new Set(me.values_deal_breakers.map(s => s.toLowerCase()));
-    for (const v of other.values_core) { if (myBreakers.has(v.toLowerCase())) conflictAreas.push(v); }
-    const theirBreakers = new Set(other.values_deal_breakers.map(s => s.toLowerCase()));
-    for (const v of me.values_core) { if (theirBreakers.has(v.toLowerCase())) conflictAreas.push(v); }
+    const myBreakers = new Set(me.values_deal_breakers.map((s) => s.toLowerCase()));
+    for (const v of other.values_core) {
+        if (myBreakers.has(v.toLowerCase())) conflictAreas.push(v);
+    }
+    const theirBreakers = new Set(other.values_deal_breakers.map((s) => s.toLowerCase()));
+    for (const v of me.values_core) {
+        if (theirBreakers.has(v.toLowerCase())) conflictAreas.push(v);
+    }
 
     return {
         score: Math.round(overall * 10) / 10,
-        breakdown: { values: Math.round(valScore * 100), interests: Math.round(intScore * 100), communication: Math.round(commScore * 100) },
+        breakdown: {
+            values: Math.round(valScore * 100),
+            interests: Math.round(intScore * 100),
+            communication: Math.round(commScore * 100),
+        },
         sharedValues,
         sharedInterests,
         conflictAreas,
@@ -287,7 +316,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
             WHERE p.id = ?
         `),
         insertPost: db.prepare(
-            'INSERT INTO posts (id, author_address, content, media, likes, comments, shares, created_at) VALUES (?, ?, ?, ?, 0, 0, 0, ?)'
+            'INSERT INTO posts (id, author_address, content, media, likes, comments, shares, created_at) VALUES (?, ?, ?, ?, 0, 0, 0, ?)',
         ),
         hasLiked: db.prepare('SELECT 1 FROM post_likes WHERE post_id = ? AND address = ?'),
         insertLike: db.prepare('INSERT OR IGNORE INTO post_likes (post_id, address, created_at) VALUES (?, ?, ?)'),
@@ -358,7 +387,10 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         '/api/profile',
         async (request, reply) => {
             const wallet = getWallet(request);
-            if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+            if (!wallet) {
+                reply.code(401).send({ error: 'AUTH_REQUIRED' });
+                return;
+            }
 
             const { displayName, bio, avatar, domain, metadata } = request.body;
             const now = Date.now();
@@ -373,7 +405,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
                 now,
             );
             return { success: true };
-        }
+        },
     );
 
     // ── Feed ──
@@ -395,12 +427,15 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
                 limit,
                 hasMore,
             };
-        }
+        },
     );
 
     app.get<{ Params: { id: string } }>('/api/posts/:id', async (request, reply) => {
         const row = stmts.getPost.get(request.params.id);
-        if (!row) { reply.code(404).send({ error: 'Post not found' }); return; }
+        if (!row) {
+            reply.code(404).send({ error: 'Post not found' });
+            return;
+        }
         return formatPost(row);
     });
 
@@ -408,21 +443,30 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         '/api/posts',
         async (request, reply) => {
             const wallet = getWallet(request);
-            if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+            if (!wallet) {
+                reply.code(401).send({ error: 'AUTH_REQUIRED' });
+                return;
+            }
 
             const { content, media } = request.body;
-            if (!content?.trim()) { reply.code(400).send({ error: 'Content required' }); return; }
+            if (!content?.trim()) {
+                reply.code(400).send({ error: 'Content required' });
+                return;
+            }
 
             const id = randomBytes(16).toString('hex');
             stmts.insertPost.run(id, wallet, content.trim(), JSON.stringify(media || []), Date.now());
 
             return { id, success: true };
-        }
+        },
     );
 
     app.post<{ Params: { id: string } }>('/api/posts/:id/like', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
 
         const { id } = request.params;
         const already = stmts.hasLiked.get(id, wallet);
@@ -445,7 +489,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
             const limit = Math.min(50, parseInt(request.query.limit || '20'));
             const followers = stmts.getFollowers.all(request.params.address, limit, (page - 1) * limit);
             return {
-                followers: followers.map(r => ({
+                followers: followers.map((r) => ({
                     address: r.address,
                     displayName: r.display_name || `Agent ${String(r.address).slice(0, 6)}`,
                     bio: r.bio || '',
@@ -453,7 +497,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
                     domain: r.domain,
                 })),
             };
-        }
+        },
     );
 
     app.get<{ Params: { address: string }; Querystring: { page?: string; limit?: string } }>(
@@ -463,7 +507,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
             const limit = Math.min(50, parseInt(request.query.limit || '20'));
             const following = stmts.getFollowing.all(request.params.address, limit, (page - 1) * limit);
             return {
-                following: following.map(r => ({
+                following: following.map((r) => ({
                     address: r.address,
                     displayName: r.display_name || `Agent ${String(r.address).slice(0, 6)}`,
                     bio: r.bio || '',
@@ -471,24 +515,39 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
                     domain: r.domain,
                 })),
             };
-        }
+        },
     );
 
     app.post<{ Body: { targetAddress: string } }>('/api/follow', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
         const { targetAddress } = request.body;
-        if (!targetAddress) { reply.code(400).send({ error: 'targetAddress required' }); return; }
-        if (wallet === targetAddress) { reply.code(400).send({ error: 'Cannot follow yourself' }); return; }
+        if (!targetAddress) {
+            reply.code(400).send({ error: 'targetAddress required' });
+            return;
+        }
+        if (wallet === targetAddress) {
+            reply.code(400).send({ error: 'Cannot follow yourself' });
+            return;
+        }
         stmts.insertFollow.run(wallet, targetAddress, Date.now());
         return { success: true };
     });
 
     app.post<{ Body: { targetAddress: string } }>('/api/unfollow', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
         const { targetAddress } = request.body;
-        if (!targetAddress) { reply.code(400).send({ error: 'targetAddress required' }); return; }
+        if (!targetAddress) {
+            reply.code(400).send({ error: 'targetAddress required' });
+            return;
+        }
         stmts.removeFollow.run(wallet, targetAddress);
         return { success: true };
     });
@@ -501,7 +560,10 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
 
     app.delete<{ Params: { id: string } }>('/api/posts/:id', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
         const { id } = request.params;
         const result = stmts.deletePost.run(id, wallet);
         if (result.changes === 0) {
@@ -532,7 +594,10 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
 
     app.post<{ Params: { address: string } }>('/api/notifications/:address/read', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
         stmts.markNotificationsRead.run(request.params.address);
         return { success: true };
     });
@@ -571,16 +636,24 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
     };
 
     // Save/update my soul profile
-    app.post<{ Body: {
-        soulType?: string; displayName?: string; bio?: string; avatar?: string;
-        values?: { core?: string[]; priorities?: string[]; dealBreakers?: string[] };
-        interests?: { topics?: string[]; skills?: string[]; goals?: string[] };
-        communication?: { tone?: string; pace?: string; depth?: string };
-        privacyLevel?: PrivacyLevel;
-        forbiddenTopics?: string[];
-    } }>('/api/soul-profile', async (request, reply) => {
+    app.post<{
+        Body: {
+            soulType?: string;
+            displayName?: string;
+            bio?: string;
+            avatar?: string;
+            values?: { core?: string[]; priorities?: string[]; dealBreakers?: string[] };
+            interests?: { topics?: string[]; skills?: string[]; goals?: string[] };
+            communication?: { tone?: string; pace?: string; depth?: string };
+            privacyLevel?: PrivacyLevel;
+            forbiddenTopics?: string[];
+        };
+    }>('/api/soul-profile', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
 
         const b = request.body;
         const now = Date.now();
@@ -601,7 +674,8 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
             b.communication?.depth || 'moderate',
             b.privacyLevel || 'public',
             JSON.stringify(b.forbiddenTopics || []),
-            now, now,
+            now,
+            now,
         );
         return { success: true };
     });
@@ -609,7 +683,10 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
     // Get my own soul profile (full, no filtering)
     app.get('/api/soul-profile', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
         const row = soulStmts.get.get(wallet);
         if (!row) return { profile: null };
         const p = parseSoulRow(row);
@@ -632,7 +709,10 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
     // Get matches -- server-side computation, privacy-filtered
     app.get('/api/matches', async (request, reply) => {
         const wallet = getWallet(request);
-        if (!wallet) { reply.code(401).send({ error: 'AUTH_REQUIRED' }); return; }
+        if (!wallet) {
+            reply.code(401).send({ error: 'AUTH_REQUIRED' });
+            return;
+        }
 
         const myRow = soulStmts.get.get(wallet);
         if (!myRow) {
@@ -641,7 +721,7 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         const me = parseSoulRow(myRow);
 
         const otherRows = soulStmts.getAllExcept.all(wallet);
-        const results = otherRows.map(row => {
+        const results = otherRows.map((row) => {
             const other = parseSoulRow(row);
             const match = computeMatch(me, other);
             return { ...filterByPrivacy(other, match), score: match.score };
@@ -656,8 +736,8 @@ export function registerSocialRoutes(app: FastifyInstance, db: Database): void {
         const wallet = getWallet(request);
         const rows = soulStmts.getAll.all();
         const profiles = rows
-            .filter(row => String(row.address) !== wallet)
-            .map(row => {
+            .filter((row) => String(row.address) !== wallet)
+            .map((row) => {
                 const p = parseSoulRow(row);
                 if (p.privacy_level === 'private') {
                     return {

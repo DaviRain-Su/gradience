@@ -10,12 +10,12 @@
 
 GuiBibeau 是 Solana 生态的资深开发者，这套 gist 是他整理的**现代 Solana 开发栈模板**，包含 5 个场景：
 
-| 模板 | 用途 | Gradience 相关性 |
-|------|------|------------------|
-| **Application Layer** | 前端应用开发 | ⭐⭐ 中等 |
-| **Protocol Layer** | 智能合约开发 | ⭐⭐⭐ 高 |
-| **Trading Bot** | 交易机器人 | ⭐ 低 |
-| **Prediction Market** | 预测市场 | ⭐ 低 |
+| 模板                           | 用途                | Gradience 相关性    |
+| ------------------------------ | ------------------- | ------------------- |
+| **Application Layer**          | 前端应用开发        | ⭐⭐ 中等           |
+| **Protocol Layer**             | 智能合约开发        | ⭐⭐⭐ 高           |
+| **Trading Bot**                | 交易机器人          | ⭐ 低               |
+| **Prediction Market**          | 预测市场            | ⭐ 低               |
 | **Agents With Solana Wallets** | **AI Agent + 钱包** | ⭐⭐⭐⭐⭐ **极高** |
 
 ---
@@ -34,13 +34,13 @@ GuiBibeau 模板 = AI Agents + Solana 钱包 + 链上操作
 
 ### 2.2 模板中的关键选择（与 Gradience 对比）
 
-| 组件 | GuiBibeau 推荐选项 | Gradience 当前状态 | 建议 |
-|------|-------------------|-------------------|------|
-| **Agent Framework** | Solana Agent Kit / Eliza / GOAT | 自研 SDK | 评估 Solana Agent Kit |
-| **Runtime** | OpenClaw / Hermes | OpenClaw ✅ | 已对齐！ |
-| **Wallet Provider** | lobster.cash / Crossmint / Privy / Turnkey / Para | OKX OnchainOS (X-Layer) | 需评估 Solana 方案 |
-| **Payments** | x402 on Solana / USDC | OKB (X-Layer) | 需迁移到 SOL/USDC |
-| **Monetization** | ClawPump / none | Skill Market | 可借鉴 |
+| 组件                | GuiBibeau 推荐选项                                | Gradience 当前状态      | 建议                  |
+| ------------------- | ------------------------------------------------- | ----------------------- | --------------------- |
+| **Agent Framework** | Solana Agent Kit / Eliza / GOAT                   | 自研 SDK                | 评估 Solana Agent Kit |
+| **Runtime**         | OpenClaw / Hermes                                 | OpenClaw ✅             | 已对齐！              |
+| **Wallet Provider** | lobster.cash / Crossmint / Privy / Turnkey / Para | OKX OnchainOS (X-Layer) | 需评估 Solana 方案    |
+| **Payments**        | x402 on Solana / USDC                             | OKB (X-Layer)           | 需迁移到 SOL/USDC     |
+| **Monetization**    | ClawPump / none                                   | Skill Market            | 可借鉴                |
 
 ---
 
@@ -57,25 +57,25 @@ flowchart TB
         Me["AgentM<br/>个人分身"]
         Hub["Chain Hub<br/>工具市场"]
     end
-    
+
     subgraph GuiBibeauStack["GuiBibeau 推荐栈"]
         Framework["Solana Agent Kit<br/>Agent 框架"]
         Runtime["OpenClaw<br/>运行时"]
         Wallet["Turnkey / Privy<br/>MPC 钱包"]
         Payment["x402 on Solana<br/>微支付"]
     end
-    
+
     subgraph SolanaInfra["Solana 基础设施"]
         RPC["Helius / QuickNode<br/>RPC"]
         Indexer["Helius API<br/>索引"]
         MCP["Solana Developer MCP<br/>AI 工具"]
     end
-    
+
     Agent --> Framework
     Agent --> Payment
     Me --> Wallet
     Hub --> Framework
-    
+
     Framework --> Runtime
     Runtime --> SolanaInfra
 ```
@@ -127,6 +127,7 @@ gradience-solana/
 **目标**: 将 Agent Arena MVP 移植到 Solana
 
 **技术栈**:
+
 ```bash
 # 1. 使用 GuiBibeau 模板初始化
 npx create-solana-dapp gradience-solana-arena
@@ -145,6 +146,7 @@ npx create-solana-dapp gradience-solana-arena
 ```
 
 **合约架构**:
+
 ```rust
 // programs/agent_arena/src/lib.rs
 use anchor_lang::prelude::*;
@@ -152,7 +154,7 @@ use anchor_lang::prelude::*;
 #[program]
 pub mod agent_arena {
     use super::*;
-    
+
     // 发布任务
     pub fn post_task(
         ctx: Context<PostTask>,
@@ -162,12 +164,12 @@ pub mod agent_arena {
     ) -> Result<()> {
         // ...
     }
-    
+
     // Agent 申请任务
     pub fn apply_for_task(ctx: Context<ApplyForTask>, task_id: u64) -> Result<()> {
         // ...
     }
-    
+
     // 提交结果
     pub fn submit_result(
         ctx: Context<SubmitResult>,
@@ -176,7 +178,7 @@ pub mod agent_arena {
     ) -> Result<()> {
         // ...
     }
-    
+
     // Judge 评分
     pub fn judge_task(ctx: Context<JudgeTask>, task_id: u64, score: u8) -> Result<()> {
         // ...
@@ -190,40 +192,41 @@ pub mod agent_arena {
 
 **关键决策**:
 
-| 组件 | X-Layer 方案 | Solana 方案 | 建议 |
-|------|-------------|-------------|------|
-| **合约语言** | Solidity | Rust + Anchor | 学习成本，但生态更好 |
-| **支付代币** | OKB | SOL / USDC | USDC 更稳定 |
-| **钱包** | OKX OnchainOS | Turnkey/Privy | MPC 方案一致 |
-| **Indexer** | Cloudflare Workers | Helius | Helius 更强大 |
-| **存储** | IPFS | IPFS + Arweave | Arweave 永久存储 |
+| 组件         | X-Layer 方案       | Solana 方案    | 建议                 |
+| ------------ | ------------------ | -------------- | -------------------- |
+| **合约语言** | Solidity           | Rust + Anchor  | 学习成本，但生态更好 |
+| **支付代币** | OKB                | SOL / USDC     | USDC 更稳定          |
+| **钱包**     | OKX OnchainOS      | Turnkey/Privy  | MPC 方案一致         |
+| **Indexer**  | Cloudflare Workers | Helius         | Helius 更强大        |
+| **存储**     | IPFS               | IPFS + Arweave | Arweave 永久存储     |
 
 ### 4.3 长期：多链部署 (3-6 个月)
 
 **目标**: 同时支持 X-Layer + Solana
 
 **架构**:
+
 ```mermaid
 flowchart TB
     subgraph Frontend["前端"]
         Web["Web App"]
     end
-    
+
     subgraph Backend["后端"]
         API["API Gateway"]
         Sync["Cross-Chain<br/>Sync Service"]
     end
-    
+
     subgraph XLayer["X-Layer (EVM)"]
         XContract["AgentArena.sol"]
         XRegistry["ERC-8004 Registry"]
     end
-    
+
     subgraph Solana["Solana (SVM)"]
         SContract["agent_arena.so"]
         SRegistry["Solana Agent Registry"]
     end
-    
+
     Web --> API
     API --> XLayer
     API --> Solana
@@ -238,11 +241,13 @@ flowchart TB
 ### 5.1 Solana Developer MCP
 
 GuiBibeau 强调安装 **Solana Developer MCP**:
+
 ```
 https://mcp.solana.com/mcp
 ```
 
-**价值**: 
+**价值**:
+
 - AI 可以直接查询 Solana 文档
 - 自动生成合约代码
 - 调试和优化建议
@@ -250,23 +255,26 @@ https://mcp.solana.com/mcp
 ### 5.2 x402 on Solana
 
 GuiBibeau 推荐 **x402** 作为支付方案：
+
 - 微支付协议
 - HTTP 402 Payment Required 状态码
 - 适合 Agent 间自动结算
 
 **与 Gradience 的契合**:
+
 ```typescript
 // Agent 间自动支付
 const payment = await x402.pay({
-  recipient: agentB.wallet,
-  amount: "0.01", // SOL
-  reason: "Task #123 completion",
+    recipient: agentB.wallet,
+    amount: '0.01', // SOL
+    reason: 'Task #123 completion',
 });
 ```
 
 ### 5.3 Surfpool
 
 GuiBibeau 推荐 **Surfpool** 作为本地开发加速器：
+
 - 比 solana-test-validator 更快
 - 支持分叉主网状态
 - 适合开发和测试
@@ -299,18 +307,18 @@ GuiBibeau 推荐 **Surfpool** 作为本地开发加速器：
 
 ### 7.1 技术风险
 
-| 风险 | 说明 | 缓解 |
-|------|------|------|
-| **Rust 学习曲线** | 团队主要用 Solidity | 使用 Anchor 框架，简化开发 |
-| **Solana 账户模型** | 与 EVM 完全不同 | 预留学习时间，从简单合约开始 |
-| **交易失败处理** | Solana 失败交易也扣费 | 使用 simulateTransaction 预检查 |
+| 风险                | 说明                  | 缓解                            |
+| ------------------- | --------------------- | ------------------------------- |
+| **Rust 学习曲线**   | 团队主要用 Solidity   | 使用 Anchor 框架，简化开发      |
+| **Solana 账户模型** | 与 EVM 完全不同       | 预留学习时间，从简单合约开始    |
+| **交易失败处理**    | Solana 失败交易也扣费 | 使用 simulateTransaction 预检查 |
 
 ### 7.2 生态风险
 
-| 风险 | 说明 | 缓解 |
-|------|------|------|
+| 风险             | 说明                     | 缓解                        |
+| ---------------- | ------------------------ | --------------------------- |
 | **钱包生态差异** | Solana 钱包与 EVM 不兼容 | 使用 Turnkey/Privy 抽象差异 |
-| **索引服务依赖** | Helius 是中心化服务 | 保留自建索引能力 |
+| **索引服务依赖** | Helius 是中心化服务      | 保留自建索引能力            |
 
 ---
 
@@ -330,6 +338,7 @@ GuiBibeau 的这套模板**对 Gradience 参加 Solana 黑客松非常有帮助*
 > **建议：使用 GuiBibeau 模板作为 Solana Hackathon 的起点**
 
 **具体配置**:
+
 - **Agent Framework**: Solana Agent Kit
 - **Runtime**: OpenClaw (我们已有经验)
 - **Wallet**: Turnkey (MPC，与 OKX OnchainOS 类似)
@@ -338,6 +347,7 @@ GuiBibeau 的这套模板**对 Gradience 参加 Solana 黑客松非常有帮助*
 - **Contract**: Anchor (Rust)
 
 **时间规划**:
+
 - **Week 1**: 环境搭建 + 合约开发
 - **Week 2**: 前端 + 集成测试 + 演示准备
 
@@ -353,5 +363,5 @@ GuiBibeau 的这套模板**对 Gradience 参加 Solana 黑客松非常有帮助*
 
 ---
 
-*文档版本: v1.0*  
-*最后更新: 2026-03-28*
+_文档版本: v1.0_  
+_最后更新: 2026-03-28_

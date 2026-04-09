@@ -141,9 +141,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         <div className="h-screen flex items-center justify-center px-6">
             <div className="max-w-md text-center space-y-6">
                 <h1 className="text-4xl font-bold">AgentM Pro</h1>
-                <p className="text-gray-400">
-                    Sign in to manage agent profiles, versions, and protocol integrations.
-                </p>
+                <p className="text-gray-400">Sign in to manage agent profiles, versions, and protocol integrations.</p>
                 <button
                     onClick={onLogin}
                     className="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-lg font-medium transition"

@@ -22,7 +22,11 @@ export function TableOfContents() {
         const items: Heading[] = [];
         els.forEach((el) => {
             if (!el.id) {
-                el.id = el.textContent?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') ?? '';
+                el.id =
+                    el.textContent
+                        ?.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '') ?? '';
             }
             items.push({
                 id: el.id,
@@ -45,7 +49,7 @@ export function TableOfContents() {
                     }
                 }
             },
-            { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
+            { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
         );
 
         headings.forEach(({ id }) => {
@@ -60,20 +64,14 @@ export function TableOfContents() {
 
     return (
         <aside className="hidden xl:block w-56 shrink-0 fixed right-0 top-16 bottom-0 overflow-y-auto p-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                On this page
-            </p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">On this page</p>
             <ul className="space-y-1">
                 {headings.map((h) => (
                     <li key={h.id}>
                         <a
                             href={`#${h.id}`}
-                            className={`block text-xs py-1 transition-colors ${
-                                h.level === 3 ? 'pl-3' : ''
-                            } ${
-                                activeId === h.id
-                                    ? 'text-indigo-400'
-                                    : 'text-gray-500 hover:text-gray-300'
+                            className={`block text-xs py-1 transition-colors ${h.level === 3 ? 'pl-3' : ''} ${
+                                activeId === h.id ? 'text-indigo-400' : 'text-gray-500 hover:text-gray-300'
                             }`}
                         >
                             {h.text}

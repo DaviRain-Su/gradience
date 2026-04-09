@@ -12,6 +12,7 @@
 **核心洞察**: dev-lifecycle 解决"AI 写代码容易乱"的问题，Linear 解决"人如何高效执行和跟踪"的问题。
 
 **搭配效果**: 1 + 1 > 2
+
 - dev-lifecycle = **灵魂** (流程 rigor + 文档规范)
 - Linear = **身体** (可视化跟踪 + 团队协作)
 
@@ -31,13 +32,13 @@ dev-lifecycle 档案:
 
 ### 1.2 核心原则
 
-| 原则 | 说明 |
-|------|------|
-| **Search Before Building** | 三层知识检索 |
+| 原则                             | 说明               |
+| -------------------------------- | ------------------ |
+| **Search Before Building**       | 三层知识检索       |
 | **Processize before Productize** | 先定义流程再做产品 |
-| **强制 TDD** | 测试驱动开发 |
-| **≤4 小时任务拆分** | 防止任务过大 |
-| **Coordinator 模式** | 并行执行任务 |
+| **强制 TDD**                     | 测试驱动开发       |
+| **≤4 小时任务拆分**              | 防止任务过大       |
+| **Coordinator 模式**             | 并行执行任务       |
 
 ### 1.3 7 个阶段
 
@@ -90,17 +91,17 @@ Linear 档案:
 
 ### 2.2 核心功能
 
-| 功能 | 说明 |
-|------|------|
-| **Issues** | 任务跟踪的核心单元 |
-| **Projects** | 项目/特性级别的组织 |
-| **Cycles** | Sprint 时间盒管理 |
-| **Initiatives** | 战略级目标 |
-| **Roadmaps** | 可视化规划 |
-| **Templates** | 快速创建标准化 Issue |
-| **Custom Fields** | 自定义字段扩展 |
-| **Approvals** | 内置审批流程 |
-| **Git 集成** | 自动关联 PR/Branch |
+| 功能              | 说明                 |
+| ----------------- | -------------------- |
+| **Issues**        | 任务跟踪的核心单元   |
+| **Projects**      | 项目/特性级别的组织  |
+| **Cycles**        | Sprint 时间盒管理    |
+| **Initiatives**   | 战略级目标           |
+| **Roadmaps**      | 可视化规划           |
+| **Templates**     | 快速创建标准化 Issue |
+| **Custom Fields** | 自定义字段扩展       |
+| **Approvals**     | 内置审批流程         |
+| **Git 集成**      | 自动关联 PR/Branch   |
 
 ---
 
@@ -108,16 +109,16 @@ Linear 档案:
 
 ### 3.1 效果对比表
 
-| 方面 | 单独用 dev-lifecycle | + Linear 后提升 |
-|------|---------------------|----------------|
-| **阶段把控** | 纯 Markdown，手动检查 | Workflow 强制顺序 (Phase 1 Approved → 才能开 Phase 2) |
-| **任务执行** | Phase 4 任务手动管理 | 子 Issue + 估时 + Cycles 时间盒，Coordinator 模式支持 |
-| **模板使用** | 手动复制 docs/ 里的 .md | Issue Template 一键创建每个阶段模板 |
-| **Review & 审批** | Phase 7 多专家 adversarial review | 内置 Approvals + Review 字段 + @ 通知 |
-| **可视化 & 进度** | 只能看文件夹 | Projects / Roadmaps / Dashboard / Analytics |
-| **AI Agent 协作** | Agent 读 repo 里的 docs/ | 文档链接 attach 到 Issue，Agent 通过 API 读取 |
-| **知识沉淀** | APPENDIX-knowledge-management.md | Comments + 搜索 + 链接外部 docs，双保险 |
-| **团队规模** | 适合 solo / 小团队 | 轻松扩展到 10 人以上团队 |
+| 方面              | 单独用 dev-lifecycle              | + Linear 后提升                                       |
+| ----------------- | --------------------------------- | ----------------------------------------------------- |
+| **阶段把控**      | 纯 Markdown，手动检查             | Workflow 强制顺序 (Phase 1 Approved → 才能开 Phase 2) |
+| **任务执行**      | Phase 4 任务手动管理              | 子 Issue + 估时 + Cycles 时间盒，Coordinator 模式支持 |
+| **模板使用**      | 手动复制 docs/ 里的 .md           | Issue Template 一键创建每个阶段模板                   |
+| **Review & 审批** | Phase 7 多专家 adversarial review | 内置 Approvals + Review 字段 + @ 通知                 |
+| **可视化 & 进度** | 只能看文件夹                      | Projects / Roadmaps / Dashboard / Analytics           |
+| **AI Agent 协作** | Agent 读 repo 里的 docs/          | 文档链接 attach 到 Issue，Agent 通过 API 读取         |
+| **知识沉淀**      | APPENDIX-knowledge-management.md  | Comments + 搜索 + 链接外部 docs，双保险               |
+| **团队规模**      | 适合 solo / 小团队                | 轻松扩展到 10 人以上团队                              |
 
 ### 3.2 互补关系图
 
@@ -190,38 +191,38 @@ Backlog
 
 ```yaml
 # Linear Issue Template: Phase 1 - PRD
-name: "Phase 1: PRD"
+name: 'Phase 1: PRD'
 description: Product Requirements Document
 fields:
-  - name: Title
-    type: text
-    required: true
-    placeholder: "[Feature] Brief description"
-    
-  - name: Phase
-    type: dropdown
-    required: true
-    options:
-      - "Phase 1: PRD Draft"
-      - "Phase 1: PRD Approved"
-      
-  - name: PRD Content
-    type: textarea
-    required: true
-    placeholder: |
-      ## Copy from docs/methodology/01-prd.md
-      
-      ### 1. Problem Statement
-      
-      ### 2. Target Users
-      
-      ### 3. Solution Overview
-      
-      ### 4. Success Metrics
-      
-  - name: Related Docs
-    type: url
-    placeholder: "Link to external PRD if any"
+    - name: Title
+      type: text
+      required: true
+      placeholder: '[Feature] Brief description'
+
+    - name: Phase
+      type: dropdown
+      required: true
+      options:
+          - 'Phase 1: PRD Draft'
+          - 'Phase 1: PRD Approved'
+
+    - name: PRD Content
+      type: textarea
+      required: true
+      placeholder: |
+          ## Copy from docs/methodology/01-prd.md
+
+          ### 1. Problem Statement
+
+          ### 2. Target Users
+
+          ### 3. Solution Overview
+
+          ### 4. Success Metrics
+
+    - name: Related Docs
+      type: url
+      placeholder: 'Link to external PRD if any'
 ```
 
 #### 4.2.3 Projects 组织
@@ -309,10 +310,10 @@ Custom Fields 配置:
 interface AgentContext {
   // 1. 读 repo 里的方法论
   methodology: readFile('docs/methodology/README.md');
-  
+
   // 2. 读当前 Linear Issue
   issue: fetchLinearIssue(issueId);
-  
+
   // 3. 读 attach 的文档
   relatedDoc: fetchUrl(issue.relatedDocUrl);
 }
@@ -320,7 +321,7 @@ interface AgentContext {
 // Agent 工作流
 async function agentWorkflow(issueId: string) {
   const context = await gatherContext(issueId);
-  
+
   // 根据 Phase 执行对应模板
   switch(context.issue.phase) {
     case 'Phase 1':
@@ -385,12 +386,12 @@ Done! 🎉
 
 ### 6.1 适用场景
 
-| 场景 | 推荐程度 | 原因 |
-|------|---------|------|
-| **Solo 开发者 + 极简** | ⭐⭐⭐ | 可能觉得 Linear 有点重，GitHub Issues + Markdown 也够 |
-| **2+ 人协作** | ⭐⭐⭐⭐⭐ | Linear 价值非常明显 |
-| **长期项目** | ⭐⭐⭐⭐⭐ | 知识库积累价值巨大 |
-| **AI Agent 协作** | ⭐⭐⭐⭐⭐ | 流程 rigor 防止混乱 |
+| 场景                   | 推荐程度   | 原因                                                  |
+| ---------------------- | ---------- | ----------------------------------------------------- |
+| **Solo 开发者 + 极简** | ⭐⭐⭐     | 可能觉得 Linear 有点重，GitHub Issues + Markdown 也够 |
+| **2+ 人协作**          | ⭐⭐⭐⭐⭐ | Linear 价值非常明显                                   |
+| **长期项目**           | ⭐⭐⭐⭐⭐ | 知识库积累价值巨大                                    |
+| **AI Agent 协作**      | ⭐⭐⭐⭐⭐ | 流程 rigor 防止混乱                                   |
 
 ### 6.2 磨合期
 
@@ -403,12 +404,12 @@ Done! 🎉
 
 ### 6.3 常见陷阱
 
-| 陷阱 | 解决方案 |
-|------|---------|
-| Phase 跳过 | Linear Workflow 强制顺序 |
-| 任务过大 | Custom Field 限制 ≤4h |
+| 陷阱       | 解决方案                      |
+| ---------- | ----------------------------- |
+| Phase 跳过 | Linear Workflow 强制顺序      |
+| 任务过大   | Custom Field 限制 ≤4h         |
 | 文档不同步 | Issue 中 attach Markdown 链接 |
-| AI 幻觉 | 强制 TDD + Review 流程 |
+| AI 幻觉    | 强制 TDD + Review 流程        |
 
 ---
 
@@ -437,38 +438,38 @@ import { LinearClient } from '@linear/sdk';
 const linear = new LinearClient({ apiKey: process.env.LINEAR_API_KEY });
 
 async function setupDevLifecycle() {
-  // 创建 Workflow States
-  const states = [
-    { name: 'Phase 1: PRD Draft', color: '#FFD700' },
-    { name: 'Phase 1: PRD Approved', color: '#32CD32' },
-    { name: 'Phase 2: Arch Draft', color: '#FFD700' },
-    // ... 其他 Phase
-  ];
-  
-  for (const state of states) {
-    await linear.workflowStateCreate({
-      name: state.name,
-      color: state.color,
-      teamId: TEAM_ID
-    });
-  }
-  
-  // 创建 Issue Templates
-  const templates = [
-    { name: 'Phase 1: PRD', file: '01-prd.md' },
-    { name: 'Phase 2: Architecture', file: '02-architecture.md' },
-    // ... 其他 Phase
-  ];
-  
-  for (const template of templates) {
-    await linear.issueTemplateCreate({
-      name: template.name,
-      description: `Please follow ${template.file}`,
-      teamId: TEAM_ID
-    });
-  }
-  
-  console.log('dev-lifecycle setup complete!');
+    // 创建 Workflow States
+    const states = [
+        { name: 'Phase 1: PRD Draft', color: '#FFD700' },
+        { name: 'Phase 1: PRD Approved', color: '#32CD32' },
+        { name: 'Phase 2: Arch Draft', color: '#FFD700' },
+        // ... 其他 Phase
+    ];
+
+    for (const state of states) {
+        await linear.workflowStateCreate({
+            name: state.name,
+            color: state.color,
+            teamId: TEAM_ID,
+        });
+    }
+
+    // 创建 Issue Templates
+    const templates = [
+        { name: 'Phase 1: PRD', file: '01-prd.md' },
+        { name: 'Phase 2: Architecture', file: '02-architecture.md' },
+        // ... 其他 Phase
+    ];
+
+    for (const template of templates) {
+        await linear.issueTemplateCreate({
+            name: template.name,
+            description: `Please follow ${template.file}`,
+            teamId: TEAM_ID,
+        });
+    }
+
+    console.log('dev-lifecycle setup complete!');
 }
 
 setupDevLifecycle();
@@ -486,13 +487,13 @@ setupDevLifecycle();
 
 ### 立即行动
 
-| 优先级 | 行动 | 时间 |
-|--------|------|------|
-| P0 | 添加 dev-lifecycle 为 git submodule | 今天 |
-| P0 | 配置 Linear Workflow (7 Phases) | 今天 |
-| P1 | 创建 7 个 Issue Templates | 本周 |
-| P1 | 测试第一个完整 Initiative | 本周 |
-| P2 | 优化 Custom Fields | 下周 |
+| 优先级 | 行动                                | 时间 |
+| ------ | ----------------------------------- | ---- |
+| P0     | 添加 dev-lifecycle 为 git submodule | 今天 |
+| P0     | 配置 Linear Workflow (7 Phases)     | 今天 |
+| P1     | 创建 7 个 Issue Templates           | 本周 |
+| P1     | 测试第一个完整 Initiative           | 本周 |
+| P2     | 优化 Custom Fields                  | 下周 |
 
 ### 推荐程度
 
@@ -502,5 +503,5 @@ setupDevLifecycle();
 
 ---
 
-*最后更新: 2026-04-03*  
-*方法论确认: ✅ dev-lifecycle + Linear = 最佳实践*
+_最后更新: 2026-04-03_  
+_方法论确认: ✅ dev-lifecycle + Linear = 最佳实践_

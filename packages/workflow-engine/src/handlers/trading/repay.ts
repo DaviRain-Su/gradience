@@ -14,45 +14,41 @@ import { getConnection } from './utils.js';
  * Placeholder for Solend/Jet integration
  */
 export function createRealRepayHandler(
-  config: {
-    connection?: Connection;
-  } = {}
+    config: {
+        connection?: Connection;
+    } = {},
 ): ActionHandler {
-  const { connection = getConnection() } = config;
+    const { connection = getConnection() } = config;
 
-  return {
-    async execute(
-      chain: SupportedChain,
-      params: Record<string, unknown>,
-      context: ExecutionContext
-    ): Promise<Record<string, unknown>> {
-      if (chain !== 'solana') {
-        throw new Error(`Repaying on ${chain} not yet implemented`);
-      }
+    return {
+        async execute(
+            chain: SupportedChain,
+            params: Record<string, unknown>,
+            context: ExecutionContext,
+        ): Promise<Record<string, unknown>> {
+            if (chain !== 'solana') {
+                throw new Error(`Repaying on ${chain} not yet implemented`);
+            }
 
-      const {
-        token,
-        amount,
-        signer,
-      } = params as RepayParams;
+            const { token, amount, signer } = params as RepayParams;
 
-      if (!signer) {
-        throw new Error('Signer is required for repaying');
-      }
+            if (!signer) {
+                throw new Error('Signer is required for repaying');
+            }
 
-      try {
-        // Note: Real implementation would use Solend SDK
-        // npm install @solendprotocol/solend-sdk
+            try {
+                // Note: Real implementation would use Solend SDK
+                // npm install @solendprotocol/solend-sdk
 
-        console.log(`[Repay] Token: ${token}, Amount: ${amount}`);
+                console.log(`[Repay] Token: ${token}, Amount: ${amount}`);
 
-        throw new Error(
-          'Repaying requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
-          'Install with: npm install @solendprotocol/solend-sdk. ' +
-          'See: https://docs.solend.fi/'
-        );
+                throw new Error(
+                    'Repaying requires @solendprotocol/solend-sdk or @jet-lab/jet-engine. ' +
+                        'Install with: npm install @solendprotocol/solend-sdk. ' +
+                        'See: https://docs.solend.fi/',
+                );
 
-        /*
+                /*
         // Example Solend implementation:
         import { SolendMarket, SolendAction } from '@solendprotocol/solend-sdk';
 
@@ -71,10 +67,10 @@ export function createRealRepayHandler(
           [signer, ...repayAction.signers]
         );
         */
-      } catch (error) {
-        console.error('[Repay] Error:', error);
-        throw error;
-      }
-    },
-  };
+            } catch (error) {
+                console.error('[Repay] Error:', error);
+                throw error;
+            }
+        },
+    };
 }

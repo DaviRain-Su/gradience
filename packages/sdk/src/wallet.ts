@@ -12,12 +12,6 @@
  * const signer = await createKeyPairSignerFromBytes(secretKeyBytes);
  * const wallet = new KeypairAdapter({ signer, rpcEndpoint });
  */
-export {
-    KeypairAdapter,
-    OpenWalletAdapter,
-    OKXAdapter,
-    PrivyAdapter,
-    KiteAdapter,
-} from '@gradiences/arena-sdk';
+export { KeypairAdapter, OpenWalletAdapter, OKXAdapter, PrivyAdapter, KiteAdapter } from '@gradiences/arena-sdk';
 
 export type { KeypairAdapterOptions } from '@gradiences/arena-sdk';

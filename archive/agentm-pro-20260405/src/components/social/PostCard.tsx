@@ -40,16 +40,15 @@ export function PostCard({ post, onLike, onDelete, isOwn = false }: PostCardProp
             {post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                     {post.tags.map((tag) => (
-                        <span key={tag} className="text-xs text-indigo-400">#{tag}</span>
+                        <span key={tag} className="text-xs text-indigo-400">
+                            #{tag}
+                        </span>
                     ))}
                 </div>
             )}
 
             <div className="flex gap-4 text-xs text-gray-500">
-                <button
-                    onClick={() => onLike?.(post.id)}
-                    className="hover:text-indigo-400 transition"
-                >
+                <button onClick={() => onLike?.(post.id)} className="hover:text-indigo-400 transition">
                     {post.likes} Likes
                 </button>
                 <span>{post.reposts} Reposts</span>

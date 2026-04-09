@@ -82,8 +82,12 @@ export class InMemoryMagicBlockHub {
 export class InMemoryMagicBlockTransport implements MagicBlockTransport {
     readonly name = 'magicblock-inmemory';
     constructor(private readonly hub: InMemoryMagicBlockHub) {}
-    publish(envelope: A2AEnvelope): void { this.hub.publish(envelope); }
-    subscribe(handler: (e: A2AEnvelope) => void): () => void { return this.hub.subscribe(handler); }
+    publish(envelope: A2AEnvelope): void {
+        this.hub.publish(envelope);
+    }
+    subscribe(handler: (e: A2AEnvelope) => void): () => void {
+        return this.hub.subscribe(handler);
+    }
 }
 
 export class MagicBlockA2AAgent {
@@ -101,11 +105,20 @@ export class MagicBlockA2AAgent {
         if (this.unsub) return;
         this.unsub = this.transport.subscribe((envelope) => {
             if (envelope.to !== this.agentId) return;
-            this.emit({ envelope, direction: 'incoming', latencyMs: Math.max(0, this.now() - envelope.createdAt), channel: this.transport.name, receivedAt: this.now() });
+            this.emit({
+                envelope,
+                direction: 'incoming',
+                latencyMs: Math.max(0, this.now() - envelope.createdAt),
+                channel: this.transport.name,
+                receivedAt: this.now(),
+            });
         });
     }
 
-    stop(): void { this.unsub?.(); this.unsub = null; }
+    stop(): void {
+        this.unsub?.();
+        this.unsub = null;
+    }
 
     onDelivery(fn: (d: A2ADelivery) => void): () => void {
         this.listeners.add(fn);
@@ -124,7 +137,13 @@ export class MagicBlockA2AAgent {
             paymentMicrolamports: payment,
         };
         this.transport.publish(envelope);
-        this.emit({ envelope, direction: 'outgoing', latencyMs: 0, channel: this.transport.name, receivedAt: this.now() });
+        this.emit({
+            envelope,
+            direction: 'outgoing',
+            latencyMs: 0,
+            channel: this.transport.name,
+            receivedAt: this.now(),
+        });
         return envelope;
     }
 
@@ -150,7 +169,7 @@ export interface AgentDiscoveryRow {
 
 export function sortAndFilterAgents(rows: AgentDiscoveryRow[], query: string): AgentDiscoveryRow[] {
     const q = query.trim().toLowerCase();
-    const filtered = q ? rows.filter(r => r.agent.toLowerCase().includes(q)) : rows;
+    const filtered = q ? rows.filter((r) => r.agent.toLowerCase().includes(q)) : rows;
     return [...filtered].sort((a, b) => {
         const sA = a.reputation?.global_avg_score ?? 0;
         const sB = b.reputation?.global_avg_score ?? 0;
@@ -166,7 +185,7 @@ export function toDiscoveryRows(
     pool: Array<{ judge: string; stake: number; weight: number }>,
     reputations: Map<string, AgentDiscoveryRow['reputation']>,
 ): AgentDiscoveryRow[] {
-    return pool.map(r => ({
+    return pool.map((r) => ({
         agent: r.judge,
         weight: r.weight,
         reputation: reputations.get(r.judge) ?? null,

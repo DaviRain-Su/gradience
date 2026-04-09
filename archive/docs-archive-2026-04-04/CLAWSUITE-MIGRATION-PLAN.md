@@ -7,6 +7,7 @@
 ## 📊 现状分析
 
 ### Clawsuite 技术栈
+
 ```
 Electron + React 19 + Vite + TypeScript
 ├── UI: Tailwind CSS + Base UI + HugeIcons
@@ -17,16 +18,17 @@ Electron + React 19 + Vite + TypeScript
 ```
 
 ### 核心功能模块
-| 模块 | 说明 | 保留/改造 |
-|------|------|----------|
-| Chat | AI 聊天界面 | ✅ 保留 |
-| Dashboard | 主控制台 | 🔄 改造为 Economic Dashboard |
-| Agent Hub | Agent 管理 | 🔄 添加 Reputation |
-| Mission Control | 任务编排 | 🔄 添加 Payment |
-| File Explorer | 文件浏览器 | ✅ 保留 |
-| Terminal | 嵌入式终端 | ✅ 保留 |
-| Costs | 成本分析 | 🔄 改为 Wallet |
-| Settings | 设置 | ✅ 保留 |
+
+| 模块            | 说明        | 保留/改造                    |
+| --------------- | ----------- | ---------------------------- |
+| Chat            | AI 聊天界面 | ✅ 保留                      |
+| Dashboard       | 主控制台    | 🔄 改造为 Economic Dashboard |
+| Agent Hub       | Agent 管理  | 🔄 添加 Reputation           |
+| Mission Control | 任务编排    | 🔄 添加 Payment              |
+| File Explorer   | 文件浏览器  | ✅ 保留                      |
+| Terminal        | 嵌入式终端  | ✅ 保留                      |
+| Costs           | 成本分析    | 🔄 改为 Wallet               |
+| Settings        | 设置        | ✅ 保留                      |
 
 ---
 
@@ -49,50 +51,54 @@ Gradience Economic Hub
 ## 📋 五阶段计划
 
 ### Phase 1: 品牌改造 (1 周)
+
 **任务**: GRA-125
 
-| 工作项 | 文件 |
-|--------|------|
-| Logo/图标替换 | `public/`, `assets/` |
-| 应用名称修改 | `package.json`, `electron/main.ts` |
-| 主题色更新 | `src/styles.css`, Tailwind 配置 |
-| 文案替换 | `README.md`, 各页面 |
+| 工作项        | 文件                               |
+| ------------- | ---------------------------------- |
+| Logo/图标替换 | `public/`, `assets/`               |
+| 应用名称修改  | `package.json`, `electron/main.ts` |
+| 主题色更新    | `src/styles.css`, Tailwind 配置    |
+| 文案替换      | `README.md`, 各页面                |
 
 **产出**: 品牌化版本，界面显示 Gradience Hub
 
 ---
 
 ### Phase 2: 后端改造 (2 周)
+
 **任务**: GRA-126
 
-| 工作项 | 新建/修改 |
-|--------|----------|
-| 移除 Gateway 依赖 | 修改 `src/server/gateway.ts` |
-| Solana 连接 | 新建 `src/server/solana/` |
-| Wallet Adapter | 新建 `src/server/wallet/` |
-| Chain Hub 客户端 | 新建 `src/server/chain-hub/` |
-| Marketplace 集成 | 新建 `src/server/marketplace/` |
+| 工作项            | 新建/修改                      |
+| ----------------- | ------------------------------ |
+| 移除 Gateway 依赖 | 修改 `src/server/gateway.ts`   |
+| Solana 连接       | 新建 `src/server/solana/`      |
+| Wallet Adapter    | 新建 `src/server/wallet/`      |
+| Chain Hub 客户端  | 新建 `src/server/chain-hub/`   |
+| Marketplace 集成  | 新建 `src/server/marketplace/` |
 
 **产出**: 后端可连接 Solana，支持钱包和链上程序调用
 
 ---
 
 ### Phase 3: 核心功能 (3 周)
+
 **任务**: GRA-127
 
-| 页面 | 改造内容 |
-|------|---------|
-| Wallet (原 Costs) | 余额、转账、Reputation |
+| 页面               | 改造内容                  |
+| ------------------ | ------------------------- |
+| Wallet (原 Costs)  | 余额、转账、Reputation    |
 | Marketplace (新增) | Workflow 浏览、购买、执行 |
-| Task | 添加支付设置、Escrow |
-| Agent | 显示链上 Reputation |
-| Dashboard | 链上数据统计 |
+| Task               | 添加支付设置、Escrow      |
+| Agent              | 显示链上 Reputation       |
+| Dashboard          | 链上数据统计              |
 
 **产出**: 核心经济功能可用
 
 ---
 
 ### Phase 4: UI 组件 (2 周)
+
 **任务**: GRA-128
 
 ```
@@ -119,6 +125,7 @@ src/components/
 ---
 
 ### Phase 5: 测试发布 (1 周)
+
 **任务**: GRA-129
 
 - 功能测试
@@ -166,6 +173,7 @@ GRA-129: Phase 5 - 测试发布
 ## 🚀 快速开始
 
 ### 1. Fork 项目
+
 ```bash
 cd ~/dev/active
 git clone https://github.com/DaviRain-Su/clawsuite.git gradience-hub
@@ -173,17 +181,20 @@ cd gradience-hub
 ```
 
 ### 2. 安装依赖
+
 ```bash
 npm install
 ```
 
 ### 3. 启动开发
+
 ```bash
 npm run dev          # Web 模式
 npm run electron:dev # Electron 模式
 ```
 
 ### 4. 开始 Phase 1
+
 参考 `docs/tasks/GRA-125.md`
 
 ---

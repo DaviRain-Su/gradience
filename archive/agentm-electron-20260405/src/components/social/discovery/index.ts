@@ -34,20 +34,10 @@ export {
 } from './types.ts';
 
 // SearchBar
-export {
-    SearchBar,
-    CompactSearchBar,
-    type SearchBarProps,
-    type CompactSearchBarProps,
-} from './SearchBar.tsx';
+export { SearchBar, CompactSearchBar, type SearchBarProps, type CompactSearchBarProps } from './SearchBar.tsx';
 
 // AgentCard
-export {
-    AgentCard,
-    CompactAgentCard,
-    type AgentCardProps,
-    type CompactAgentCardProps,
-} from './AgentCard.tsx';
+export { AgentCard, CompactAgentCard, type AgentCardProps, type CompactAgentCardProps } from './AgentCard.tsx';
 
 // FilterPanel
 export {

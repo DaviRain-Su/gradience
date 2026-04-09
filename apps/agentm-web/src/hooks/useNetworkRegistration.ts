@@ -24,20 +24,25 @@ export function useNetworkRegistration(params: {
 
     const agentPublicKey = activeSubWallet?.walletAddress ?? masterWallet;
     const agentDisplayName = activeSubWallet?.handle ?? displayName;
-    const capabilities = activeSubWallet
-        ? ['chat', 'social', 'agent-sub-wallet']
-        : ['chat', 'social'];
+    const capabilities = activeSubWallet ? ['chat', 'social', 'agent-sub-wallet'] : ['chat', 'social'];
 
     // Reverse-lookup .sol domain for the active wallet
     useEffect(() => {
-        if (!agentPublicKey) { setSolDomain(null); return; }
+        if (!agentPublicKey) {
+            setSolDomain(null);
+            return;
+        }
         let cancelled = false;
-        reverse(agentPublicKey).then(d => {
-            if (!cancelled) setSolDomain(d ?? null);
-        }).catch(() => {
-            if (!cancelled) setSolDomain(null);
-        });
-        return () => { cancelled = true; };
+        reverse(agentPublicKey)
+            .then((d) => {
+                if (!cancelled) setSolDomain(d ?? null);
+            })
+            .catch(() => {
+                if (!cancelled) setSolDomain(null);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [agentPublicKey]);
 
     // Register on network
@@ -74,7 +79,7 @@ export function useNetworkRegistration(params: {
                     solDomain: solDomain ?? undefined,
                 },
             }),
-        }).catch(err => {
+        }).catch((err) => {
             console.warn('Network registration failed:', err);
             registeredKeyRef.current = null;
         });
@@ -94,7 +99,17 @@ export function useNetworkRegistration(params: {
                 heartbeatRef.current = null;
             }
         };
-    }, [sessionToken, agentPublicKey, agentDisplayName, solDomain, masterWallet, activeSubWallet, subWallets.length, capabilities, fetchApi]);
+    }, [
+        sessionToken,
+        agentPublicKey,
+        agentDisplayName,
+        solDomain,
+        masterWallet,
+        activeSubWallet,
+        subWallets.length,
+        capabilities,
+        fetchApi,
+    ]);
 
     return { registeredAs: agentPublicKey, registeredName: solDomain || agentDisplayName, solDomain };
 }

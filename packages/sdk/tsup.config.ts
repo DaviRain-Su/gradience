@@ -13,11 +13,7 @@ export default defineConfig({
     clean: true,
     // Chain Hub SDK has no external deps — bundle it inline.
     // Arena SDK and Solana Kit are proper packages — keep external.
-    external: [
-        '@gradiences/arena-sdk',
-        '@solana/kit',
-        '@solana-program/address-lookup-table',
-    ],
+    external: ['@gradiences/arena-sdk', '@solana/kit', '@solana-program/address-lookup-table'],
     treeshake: true,
     sourcemap: true,
 });

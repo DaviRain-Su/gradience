@@ -13,5 +13,3 @@ export * from './types.js';
 export { MPPPaymentManager } from './payment-manager.js';
 export { MPPVoting } from './voting.js';
 export { MPPRefund } from './refund.js';
-
-

@@ -1,11 +1,11 @@
 ---
 linear-id: GRA-225d
-title: "[Web] Reputation Wallet UI Integration"
+title: '[Web] Reputation Wallet UI Integration'
 status: todo
 priority: P1
-project: "AgentM Web"
+project: 'AgentM Web'
 created: 2026-04-05
-assignee: ""
+assignee: ''
 tags: [task, p1, web, reputation, ui]
 ---
 
@@ -22,6 +22,7 @@ tags: [task, p1, web, reputation, ui]
 **文件**: `apps/agentm-web/src/components/wallet/MasterReputationCard.tsx`
 
 显示:
+
 - 聚合声誉分数
 - 等级徽章 (Bronze/Silver/Gold/Platinum)
 - Agent 数量
@@ -50,6 +51,7 @@ tags: [task, p1, web, reputation, ui]
 **文件**: 更新 `apps/agentm-web/src/app/app/page.tsx` MeView
 
 在 Agent Wallet 列表中显示:
+
 - 每个 wallet 的声誉分数
 - 等级图标
 - 完成的任务数

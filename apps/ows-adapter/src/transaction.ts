@@ -13,10 +13,10 @@ import { OWSWallet } from './types';
  * Transaction sign result
  */
 export interface SignTransactionResult {
-  /** Signed transaction (base64 serialized) */
-  serializedTx: string;
-  /** Transaction signatures */
-  signatures: string[];
+    /** Signed transaction (base64 serialized) */
+    serializedTx: string;
+    /** Transaction signatures */
+    signatures: string[];
 }
 
 /**
@@ -28,14 +28,14 @@ export type SolanaTransaction = Transaction | VersionedTransaction;
  * Check if a value is a Solana Transaction
  */
 export function isTransaction(tx: unknown): tx is Transaction {
-  return tx instanceof Transaction;
+    return tx instanceof Transaction;
 }
 
 /**
  * Check if a value is a Solana VersionedTransaction
  */
 export function isVersionedTransaction(tx: unknown): tx is VersionedTransaction {
-  return tx instanceof VersionedTransaction;
+    return tx instanceof VersionedTransaction;
 }
 
 /**
@@ -45,13 +45,13 @@ export function isVersionedTransaction(tx: unknown): tx is VersionedTransaction 
  * @returns Base64-encoded serialized transaction
  */
 export function serializeTransaction(tx: SolanaTransaction): string {
-  if (isTransaction(tx)) {
-    return Buffer.from(tx.serialize({ requireAllSignatures: false })).toString('base64');
-  }
-  if (isVersionedTransaction(tx)) {
-    return Buffer.from(tx.serialize()).toString('base64');
-  }
-  throw new Error('Unsupported transaction type');
+    if (isTransaction(tx)) {
+        return Buffer.from(tx.serialize({ requireAllSignatures: false })).toString('base64');
+    }
+    if (isVersionedTransaction(tx)) {
+        return Buffer.from(tx.serialize()).toString('base64');
+    }
+    throw new Error('Unsupported transaction type');
 }
 
 /**
@@ -62,11 +62,11 @@ export function serializeTransaction(tx: SolanaTransaction): string {
  * @returns Deserialized transaction
  */
 export function deserializeTransaction(serialized: string, versioned: boolean = false): SolanaTransaction {
-  const buffer = Buffer.from(serialized, 'base64');
-  if (versioned) {
-    return VersionedTransaction.deserialize(buffer);
-  }
-  return Transaction.from(buffer);
+    const buffer = Buffer.from(serialized, 'base64');
+    if (versioned) {
+        return VersionedTransaction.deserialize(buffer);
+    }
+    return Transaction.from(buffer);
 }
 
 /**
@@ -80,36 +80,36 @@ export function deserializeTransaction(serialized: string, versioned: boolean = 
  * @returns Signed transaction result with base64 serialization
  */
 export async function signSolanaTransaction(
-  wallet: OWSWallet,
-  transaction: SolanaTransaction
+    wallet: OWSWallet,
+    transaction: SolanaTransaction,
 ): Promise<SignTransactionResult> {
-  if (!wallet) {
-    throw new Error('Wallet is required');
-  }
-  if (!transaction) {
-    throw new Error('Transaction is required');
-  }
+    if (!wallet) {
+        throw new Error('Wallet is required');
+    }
+    if (!transaction) {
+        throw new Error('Transaction is required');
+    }
 
-  // Serialize the transaction for the OWS wallet
-  const serializedTx = serializeTransaction(transaction);
+    // Serialize the transaction for the OWS wallet
+    const serializedTx = serializeTransaction(transaction);
 
-  // Request signature from the wallet
-  const signed = await wallet.signTransaction({
-    chain: 'solana',
-    serializedTx
-  });
+    // Request signature from the wallet
+    const signed = await wallet.signTransaction({
+        chain: 'solana',
+        serializedTx,
+    });
 
-  // Validate response
-  if (!signed || typeof signed !== 'object') {
-    throw new Error('Invalid transaction signature response from wallet');
-  }
+    // Validate response
+    if (!signed || typeof signed !== 'object') {
+        throw new Error('Invalid transaction signature response from wallet');
+    }
 
-  const signatures: string[] = signed.signatures || [];
+    const signatures: string[] = signed.signatures || [];
 
-  return {
-    serializedTx: signed.serializedTx || serializedTx,
-    signatures
-  };
+    return {
+        serializedTx: signed.serializedTx || serializedTx,
+        signatures,
+    };
 }
 
 /**
@@ -119,9 +119,9 @@ export async function signSolanaTransaction(
  * @returns Function that signs Solana transactions
  */
 export function createSignTransactionHandler(
-  wallet: OWSWallet
+    wallet: OWSWallet,
 ): (transaction: SolanaTransaction) => Promise<SignTransactionResult> {
-  return (transaction: SolanaTransaction) => signSolanaTransaction(wallet, transaction);
+    return (transaction: SolanaTransaction) => signSolanaTransaction(wallet, transaction);
 }
 
 /**
@@ -134,9 +134,9 @@ export function createSignTransactionHandler(
  * @returns Updated transaction with partial signatures
  */
 export async function partialSignSolanaTransaction(
-  wallet: OWSWallet,
-  transaction: SolanaTransaction
+    wallet: OWSWallet,
+    transaction: SolanaTransaction,
 ): Promise<SolanaTransaction> {
-  const result = await signSolanaTransaction(wallet, transaction);
-  return deserializeTransaction(result.serializedTx, isVersionedTransaction(transaction));
+    const result = await signSolanaTransaction(wallet, transaction);
+    return deserializeTransaction(result.serializedTx, isVersionedTransaction(transaction));
 }

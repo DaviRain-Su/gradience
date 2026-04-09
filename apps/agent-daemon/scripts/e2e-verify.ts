@@ -15,12 +15,12 @@ import { tmpdir } from 'node:os';
 
 // Mock implementations for E2E verification
 const mockDb = {
-  exec: () => {},
-  prepare: () => ({
-    run: (...args: any[]) => ({ lastInsertRowid: 1, changes: 1 }),
-    get: (...args: any[]) => null,
-    all: (...args: any[]) => [],
-  }),
+    exec: () => {},
+    prepare: () => ({
+        run: (...args: any[]) => ({ lastInsertRowid: 1, changes: 1 }),
+        get: (...args: any[]) => null,
+        all: (...args: any[]) => [],
+    }),
 };
 
 console.log('🚀 E2E Workflow Verification');

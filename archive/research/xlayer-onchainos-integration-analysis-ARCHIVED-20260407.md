@@ -11,13 +11,13 @@
 
 **核心结论**: OKX X Layer 是 Gradience 扩展链的**优质选项**，与 Tempo 形成**互补**。
 
-| 维度 | OKX X Layer | Tempo | 策略 |
-|------|-------------|-------|------|
-| **核心优势** | 零 Gas + TEE Wallet | MPP 流式支付 | 两者都用 |
-| **Agent 体验** | 自然语言执行 | 自主流式资金 | 互补 |
-| **成本** | 零 Gas (X Layer) | 稳定币 Gas | X Layer 更优 |
-| **安全** | TEE 私钥保护 | 智能账户 | X Layer 更优 |
-| **多链** | 原生 Solana 支持 | 主要是自身 L1 | X Layer 更优 |
+| 维度           | OKX X Layer         | Tempo         | 策略         |
+| -------------- | ------------------- | ------------- | ------------ |
+| **核心优势**   | 零 Gas + TEE Wallet | MPP 流式支付  | 两者都用     |
+| **Agent 体验** | 自然语言执行        | 自主流式资金  | 互补         |
+| **成本**       | 零 Gas (X Layer)    | 稳定币 Gas    | X Layer 更优 |
+| **安全**       | TEE 私钥保护        | 智能账户      | X Layer 更优 |
+| **多链**       | 原生 Solana 支持    | 主要是自身 L1 | X Layer 更优 |
 
 **推荐策略**: Solana (核心) + X Layer (零 Gas 执行) + Tempo (流式支付) = 三层架构
 
@@ -73,13 +73,13 @@ Agentic Wallet 核心特性:
 
 ### 1.3 与 Gradience 的契合点
 
-| Gradience 需求 | X Layer 方案 | 优势 |
-|---------------|-------------|------|
-| 降低 Agent 成本 | 零 Gas | 几乎免费运行 |
-| 安全私钥管理 | TEE Wallet | Agent 无法泄露私钥 |
-| 自主支付 | x402 + 自然语言 | 极简交互 |
-| Solana 互通 | 原生支持 | 无缝跨链 |
-| 高频结算 | 5000+ TPS | 快速确认 |
+| Gradience 需求  | X Layer 方案    | 优势               |
+| --------------- | --------------- | ------------------ |
+| 降低 Agent 成本 | 零 Gas          | 几乎免费运行       |
+| 安全私钥管理    | TEE Wallet      | Agent 无法泄露私钥 |
+| 自主支付        | x402 + 自然语言 | 极简交互           |
+| Solana 互通     | 原生支持        | 无缝跨链           |
+| 高频结算        | 5000+ TPS       | 快速确认           |
 
 ---
 
@@ -87,19 +87,19 @@ Agentic Wallet 核心特性:
 
 ### 2.1 功能对比表
 
-| 维度 | OKX X Layer + Onchain OS | Tempo | 胜者 |
-|------|-------------------------|-------|------|
-| **技术基础** | Polygon CDK ZK Rollup | Simplex L1 | 平手 |
-| **EVM 兼容** | ✅ | ✅ | 平手 |
-| **Agent 支付** | x402 + gas-free | MPP streaming | 各有优势 |
-| **私钥安全** | TEE (硬件级) | 智能账户 | X Layer |
-| **执行方式** | 自然语言 | 程序化 | X Layer 更友好 |
-| **Gas 成本** | 零 (X Layer) | 稳定币 | X Layer |
-| **多链支持** | Solana + 20+ 链 | 主要是自身 | X Layer |
-| **背书** | OKX (千万用户) | Stripe (支付巨头) | 平手 |
-| **隐私** | ZKP (L2 原生) | Confidential (规划中) | X Layer |
-| **企业场景** | OKX 生态 | Stripe 生态 | 各有侧重 |
-| **去中心化** | 相对中心化 (OKX) | 更去中心化 | Tempo |
+| 维度           | OKX X Layer + Onchain OS | Tempo                 | 胜者           |
+| -------------- | ------------------------ | --------------------- | -------------- |
+| **技术基础**   | Polygon CDK ZK Rollup    | Simplex L1            | 平手           |
+| **EVM 兼容**   | ✅                       | ✅                    | 平手           |
+| **Agent 支付** | x402 + gas-free          | MPP streaming         | 各有优势       |
+| **私钥安全**   | TEE (硬件级)             | 智能账户              | X Layer        |
+| **执行方式**   | 自然语言                 | 程序化                | X Layer 更友好 |
+| **Gas 成本**   | 零 (X Layer)             | 稳定币                | X Layer        |
+| **多链支持**   | Solana + 20+ 链          | 主要是自身            | X Layer        |
+| **背书**       | OKX (千万用户)           | Stripe (支付巨头)     | 平手           |
+| **隐私**       | ZKP (L2 原生)            | Confidential (规划中) | X Layer        |
+| **企业场景**   | OKX 生态                 | Stripe 生态           | 各有侧重       |
+| **去中心化**   | 相对中心化 (OKX)         | 更去中心化            | Tempo          |
 
 ### 2.2 场景适配
 
@@ -121,12 +121,12 @@ Tempo 更适合:
 
 ### 2.3 与 Solana 的集成度
 
-| 链 | Solana 互通 | 集成难度 | Reputation 同步 |
-|----|------------|----------|----------------|
-| **X Layer** | 原生支持 | ⭐ (最简单) | 直接桥接 |
-| **Tempo** | 需跨链桥 | ⭐⭐⭐ (中等) | 需额外开发 |
-| **Kite** | 需跨链桥 | ⭐⭐⭐⭐ (较复杂) | 需额外开发 |
-| **0G** | 需跨链桥 | ⭐⭐⭐⭐ (较复杂) | 需额外开发 |
+| 链          | Solana 互通 | 集成难度          | Reputation 同步 |
+| ----------- | ----------- | ----------------- | --------------- |
+| **X Layer** | 原生支持    | ⭐ (最简单)       | 直接桥接        |
+| **Tempo**   | 需跨链桥    | ⭐⭐⭐ (中等)     | 需额外开发      |
+| **Kite**    | 需跨链桥    | ⭐⭐⭐⭐ (较复杂) | 需额外开发      |
+| **0G**      | 需跨链桥    | ⭐⭐⭐⭐ (较复杂) | 需额外开发      |
 
 **结论**: X Layer 的 Solana 原生支持是**巨大优势**。
 
@@ -178,18 +178,18 @@ Gradience Multi-Chain Architecture:
 ```typescript
 // 智能链选择策略
 function selectOptimalChain(taskConfig: TaskConfig): string {
-  // 优先级 1: X Layer (零 Gas + 高频)
-  if (taskConfig.highFrequency && taskConfig.smallAmount) {
-    return 'xlayer';  // 零 Gas 优势
-  }
-  
-  // 优先级 2: Tempo (流式 + 企业)
-  if (taskConfig.streamingPayment || taskConfig.enterpriseContext) {
-    return 'tempo';  // MPP 优势
-  }
-  
-  // 优先级 3: Solana (默认)
-  return 'solana';  // 核心链
+    // 优先级 1: X Layer (零 Gas + 高频)
+    if (taskConfig.highFrequency && taskConfig.smallAmount) {
+        return 'xlayer'; // 零 Gas 优势
+    }
+
+    // 优先级 2: Tempo (流式 + 企业)
+    if (taskConfig.streamingPayment || taskConfig.enterpriseContext) {
+        return 'tempo'; // MPP 优势
+    }
+
+    // 优先级 3: Solana (默认)
+    return 'solana'; // 核心链
 }
 ```
 
@@ -206,152 +206,135 @@ import { ethers } from 'ethers';
 import { ChainProvider, TaskConfig } from '../types';
 
 interface XLayerConfig {
-  rpcUrl: string;
-  // X Layer 上零 Gas，不需要私钥
-  // 使用 Agentic Wallet 的 TEE 管理
-  agenticWalletEndpoint: string;
-  apiKey: string;
+    rpcUrl: string;
+    // X Layer 上零 Gas，不需要私钥
+    // 使用 Agentic Wallet 的 TEE 管理
+    agenticWalletEndpoint: string;
+    apiKey: string;
 }
 
 interface AgenticWallet {
-  address: string;
-  execute: (intent: string) => Promise<TransactionResult>;
+    address: string;
+    execute: (intent: string) => Promise<TransactionResult>;
 }
 
 interface X402Payment {
-  recipient: string;
-  amount: string;
-  reason: string;
-  stream?: boolean;
+    recipient: string;
+    amount: string;
+    reason: string;
+    stream?: boolean;
 }
 
 export class XLayerProvider implements ChainProvider {
-  readonly chainId = 'xlayer';
-  readonly name = 'X Layer';
-  readonly type = 'extension';
-  
-  private provider: ethers.JsonRpcProvider;
-  private agenticWallet: AgenticWallet;
-  
-  constructor(config: XLayerConfig) {
-    this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
-    
-    // 初始化 Agentic Wallet
-    this.agenticWallet = {
-      address: '', // 从 TEE 获取
-      execute: async (intent: string) => {
-        // 调用 Onchain OS API
-        const response = await fetch(
-          `${config.agenticWalletEndpoint}/execute`,
-          {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${config.apiKey}` },
-            body: JSON.stringify({ intent, chain: 'xlayer' })
-          }
-        );
-        return response.json();
-      }
-    };
-  }
-  
-  // ========== X Layer 特有功能 ==========
-  
-  /**
-   * 零 Gas 结算
-   * 在 X Layer 上执行交易，无需支付 Gas
-   */
-  async settleZeroGas(
-    taskId: string,
-    winner: string,
-    amount: bigint
-  ): Promise<SettlementResult> {
-    // 使用 Agentic Wallet 自然语言执行
-    const intent = `Settle task ${taskId} by sending ${amount} USDC to ${winner}`;
-    
-    const result = await this.agenticWallet.execute(intent);
-    
-    return {
-      taskId,
-      txHash: result.txHash,
-      chain: 'xlayer',
-      gasCost: 0,  // 零 Gas！
-      timestamp: Date.now()
-    };
-  }
-  
-  /**
-   * x402 微支付
-   * Agent 自主发起 pay-per-use 支付
-   */
-  async x402Payment(
-    payment: X402Payment
-  ): Promise<PaymentResult> {
-    const intent = payment.stream
-      ? `Start x402 stream to ${payment.recipient} for ${payment.amount} USDC per use: ${payment.reason}`
-      : `Pay ${payment.amount} USDC to ${payment.recipient} via x402 for: ${payment.reason}`;
-    
-    return await this.agenticWallet.execute(intent);
-  }
-  
-  /**
-   * 跨链到 Solana
-   * X Layer 原生支持 Solana 跨链
-   */
-  async bridgeToSolana(
-    amount: bigint,
-    recipient: string  // Solana address
-  ): Promise<BridgeResult> {
-    const intent = `Bridge ${amount} USDC from X Layer to Solana address ${recipient}`;
-    
-    return await this.agenticWallet.execute(intent);
-  }
-  
-  /**
-   * 批量结算（零 Gas 优势）
-   * 一次性结算多个任务，无额外成本
-   */
-  async batchSettle(
-    settlements: Array<{
-      taskId: string;
-      winner: string;
-      amount: bigint;
-    }>
-  ): Promise<BatchResult> {
-    const intents = settlements.map(s => 
-      `Send ${s.amount} USDC to ${s.winner} for task ${s.taskId}`
-    );
-    
-    const intent = `Execute batch: ${intents.join('; ')}`;
-    
-    return await this.agenticWallet.execute(intent);
-  }
-  
-  // ========== ChainProvider 标准接口 ==========
-  
-  async connect(): Promise<void> {
-    // 验证 Agentic Wallet 连接
-    const health = await fetch(
-      `${this.config.agenticWalletEndpoint}/health`
-    );
-    console.log('X Layer Agentic Wallet connected');
-  }
-  
-  async settleTask(taskId: string): Promise<any> {
-    // 获取 Solana 任务结果
-    const taskResult = await this.fetchFromSolana(taskId);
-    
-    // 在 X Layer 零 Gas 结算
-    return await this.settleZeroGas(
-      taskId,
-      taskResult.winner,
-      BigInt(taskResult.reward)
-    );
-  }
-  
-  // 其他方法代理到 Solana 或抛出错误
-  async createTask() {
-    throw new Error('Tasks created on Solana. Use solana.createTask()');
-  }
+    readonly chainId = 'xlayer';
+    readonly name = 'X Layer';
+    readonly type = 'extension';
+
+    private provider: ethers.JsonRpcProvider;
+    private agenticWallet: AgenticWallet;
+
+    constructor(config: XLayerConfig) {
+        this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+
+        // 初始化 Agentic Wallet
+        this.agenticWallet = {
+            address: '', // 从 TEE 获取
+            execute: async (intent: string) => {
+                // 调用 Onchain OS API
+                const response = await fetch(`${config.agenticWalletEndpoint}/execute`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${config.apiKey}` },
+                    body: JSON.stringify({ intent, chain: 'xlayer' }),
+                });
+                return response.json();
+            },
+        };
+    }
+
+    // ========== X Layer 特有功能 ==========
+
+    /**
+     * 零 Gas 结算
+     * 在 X Layer 上执行交易，无需支付 Gas
+     */
+    async settleZeroGas(taskId: string, winner: string, amount: bigint): Promise<SettlementResult> {
+        // 使用 Agentic Wallet 自然语言执行
+        const intent = `Settle task ${taskId} by sending ${amount} USDC to ${winner}`;
+
+        const result = await this.agenticWallet.execute(intent);
+
+        return {
+            taskId,
+            txHash: result.txHash,
+            chain: 'xlayer',
+            gasCost: 0, // 零 Gas！
+            timestamp: Date.now(),
+        };
+    }
+
+    /**
+     * x402 微支付
+     * Agent 自主发起 pay-per-use 支付
+     */
+    async x402Payment(payment: X402Payment): Promise<PaymentResult> {
+        const intent = payment.stream
+            ? `Start x402 stream to ${payment.recipient} for ${payment.amount} USDC per use: ${payment.reason}`
+            : `Pay ${payment.amount} USDC to ${payment.recipient} via x402 for: ${payment.reason}`;
+
+        return await this.agenticWallet.execute(intent);
+    }
+
+    /**
+     * 跨链到 Solana
+     * X Layer 原生支持 Solana 跨链
+     */
+    async bridgeToSolana(
+        amount: bigint,
+        recipient: string, // Solana address
+    ): Promise<BridgeResult> {
+        const intent = `Bridge ${amount} USDC from X Layer to Solana address ${recipient}`;
+
+        return await this.agenticWallet.execute(intent);
+    }
+
+    /**
+     * 批量结算（零 Gas 优势）
+     * 一次性结算多个任务，无额外成本
+     */
+    async batchSettle(
+        settlements: Array<{
+            taskId: string;
+            winner: string;
+            amount: bigint;
+        }>,
+    ): Promise<BatchResult> {
+        const intents = settlements.map((s) => `Send ${s.amount} USDC to ${s.winner} for task ${s.taskId}`);
+
+        const intent = `Execute batch: ${intents.join('; ')}`;
+
+        return await this.agenticWallet.execute(intent);
+    }
+
+    // ========== ChainProvider 标准接口 ==========
+
+    async connect(): Promise<void> {
+        // 验证 Agentic Wallet 连接
+        const health = await fetch(`${this.config.agenticWalletEndpoint}/health`);
+        console.log('X Layer Agentic Wallet connected');
+    }
+
+    async settleTask(taskId: string): Promise<any> {
+        // 获取 Solana 任务结果
+        const taskResult = await this.fetchFromSolana(taskId);
+
+        // 在 X Layer 零 Gas 结算
+        return await this.settleZeroGas(taskId, taskResult.winner, BigInt(taskResult.reward));
+    }
+
+    // 其他方法代理到 Solana 或抛出错误
+    async createTask() {
+        throw new Error('Tasks created on Solana. Use solana.createTask()');
+    }
 }
 ```
 
@@ -361,59 +344,62 @@ export class XLayerProvider implements ChainProvider {
 // GradienceHub 支持 X Layer
 
 class GradienceHub {
-  solana: SolanaProvider;
-  xlayer?: XLayerProvider;  // 新增
-  tempo?: TempoProvider;
-  
-  constructor(config: {
-    solana: SolanaConfig;
-    xlayer?: XLayerConfig;   // 可选
-    tempo?: TempoConfig;     // 可选
-  }) {
-    this.solana = new SolanaProvider(config.solana);
-    
-    if (config.xlayer) {
-      this.xlayer = new XLayerProvider(config.xlayer);
+    solana: SolanaProvider;
+    xlayer?: XLayerProvider; // 新增
+    tempo?: TempoProvider;
+
+    constructor(config: {
+        solana: SolanaConfig;
+        xlayer?: XLayerConfig; // 可选
+        tempo?: TempoConfig; // 可选
+    }) {
+        this.solana = new SolanaProvider(config.solana);
+
+        if (config.xlayer) {
+            this.xlayer = new XLayerProvider(config.xlayer);
+        }
+
+        if (config.tempo) {
+            this.tempo = new TempoProvider(config.tempo);
+        }
     }
-    
-    if (config.tempo) {
-      this.tempo = new TempoProvider(config.tempo);
+
+    /**
+     * 智能结算（三层决策）
+     */
+    async settleTaskSmart(
+        taskId: string,
+        options?: {
+            preferZeroGas?: boolean;
+            preferStreaming?: boolean;
+        },
+    ): Promise<SettlementResult> {
+        const task = await this.solana.getTask(taskId);
+
+        // 决策树
+        if (options?.preferZeroGas && this.xlayer) {
+            // 优先零 Gas
+            return await this.xlayer.settleTask(taskId);
+        }
+
+        if (options?.preferStreaming && this.tempo) {
+            // 优先流式支付
+            return await this.tempo.settleTask(taskId);
+        }
+
+        if (task.reward < 10000000 && this.xlayer) {
+            // 小额奖励 → X Layer 零 Gas
+            return await this.xlayer.settleTask(taskId);
+        }
+
+        if (task.streamingPreferred && this.tempo) {
+            // 需要流式 → Tempo
+            return await this.tempo.settleTask(taskId);
+        }
+
+        // 默认 Solana
+        return await this.solana.settleTask(taskId);
     }
-  }
-  
-  /**
-   * 智能结算（三层决策）
-   */
-  async settleTaskSmart(taskId: string, options?: {
-    preferZeroGas?: boolean;
-    preferStreaming?: boolean;
-  }): Promise<SettlementResult> {
-    const task = await this.solana.getTask(taskId);
-    
-    // 决策树
-    if (options?.preferZeroGas && this.xlayer) {
-      // 优先零 Gas
-      return await this.xlayer.settleTask(taskId);
-    }
-    
-    if (options?.preferStreaming && this.tempo) {
-      // 优先流式支付
-      return await this.tempo.settleTask(taskId);
-    }
-    
-    if (task.reward < 10000000 && this.xlayer) {
-      // 小额奖励 → X Layer 零 Gas
-      return await this.xlayer.settleTask(taskId);
-    }
-    
-    if (task.streamingPreferred && this.tempo) {
-      // 需要流式 → Tempo
-      return await this.tempo.settleTask(taskId);
-    }
-    
-    // 默认 Solana
-    return await this.solana.settleTask(taskId);
-  }
 }
 ```
 
@@ -424,12 +410,14 @@ class GradienceHub {
 ### Phase 1: X Layer 基础集成（2 周）
 
 **Week 1**: 环境 + Wallet
+
 - [ ] 申请 Onchain OS API 访问
 - [ ] 设置 X Layer testnet 环境
 - [ ] 集成 Agentic Wallet SDK
 - [ ] 测试自然语言执行
 
 **Week 2**: 核心功能
+
 - [ ] 实现 XLayerProvider
 - [ ] 零 Gas 结算测试
 - [ ] x402 支付集成
@@ -577,25 +565,25 @@ await hub.settleTaskSmart(taskId);
 
 ### 立即行动
 
-| 优先级 | 行动 | 时间 |
-|--------|------|------|
-| P0 | 申请 Onchain OS API | 今天 |
-| P0 | 发 X 宣布多链扩展计划 | 本周 |
-| P1 | 启动 X Layer 集成 | 下周 |
-| P1 | 联系 OKX 团队 | 本周 |
-| P2 | 并行启动 Tempo 集成 | 下周 |
+| 优先级 | 行动                  | 时间 |
+| ------ | --------------------- | ---- |
+| P0     | 申请 Onchain OS API   | 今天 |
+| P0     | 发 X 宣布多链扩展计划 | 本周 |
+| P1     | 启动 X Layer 集成     | 下周 |
+| P1     | 联系 OKX 团队         | 本周 |
+| P2     | 并行启动 Tempo 集成   | 下周 |
 
 ### 最终架构
 
 ```
-Gradience = Solana (核心) 
+Gradience = Solana (核心)
           + X Layer (零 Gas 执行)
           + Tempo (流式支付)
-          
+
 = 最完整的 Agent 经济基础设施
 ```
 
 ---
 
-*最后更新: 2026-04-03*  
-*建议: 立即启动 X Layer 和 Tempo 双集成*
+_最后更新: 2026-04-03_  
+_建议: 立即启动 X Layer 和 Tempo 双集成_

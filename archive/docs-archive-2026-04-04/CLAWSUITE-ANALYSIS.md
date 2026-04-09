@@ -2,14 +2,14 @@
 
 ## 📊 项目概况
 
-| 属性 | 详情 |
-|------|------|
-| **技术栈** | Electron + React 19 + Vite + TypeScript |
-| **UI 框架** | Tailwind CSS + Base UI |
-| **路由** | TanStack Router |
-| **状态管理** | Zustand |
-| **构建工具** | Vite |
-| **后端** | Express-like API (集成在 Vite 中) |
+| 属性         | 详情                                    |
+| ------------ | --------------------------------------- |
+| **技术栈**   | Electron + React 19 + Vite + TypeScript |
+| **UI 框架**  | Tailwind CSS + Base UI                  |
+| **路由**     | TanStack Router                         |
+| **状态管理** | Zustand                                 |
+| **构建工具** | Vite                                    |
+| **后端**     | Express-like API (集成在 Vite 中)       |
 
 ---
 
@@ -33,16 +33,16 @@ clawsuite/
 
 ### 2. 核心模块
 
-| 模块 | 路径 | 功能 |
-|------|------|------|
-| **Chat** | `src/screens/chat/` | AI 聊天界面 |
-| **Dashboard** | `src/screens/dashboard/` | 主控制台 |
-| **Agent Hub** | `src/screens/agents/` | Agent 管理 |
-| **Mission Control** | `src/screens/` | 任务编排 |
-| **File Explorer** | `src/screens/files/` | 文件浏览器 |
-| **Terminal** | `src/server/terminal-sessions.ts` | 嵌入式终端 |
-| **Cost Analytics** | `src/screens/costs/` | 成本分析 |
-| **Settings** | `src/screens/settings/` | 设置 |
+| 模块                | 路径                              | 功能        |
+| ------------------- | --------------------------------- | ----------- |
+| **Chat**            | `src/screens/chat/`               | AI 聊天界面 |
+| **Dashboard**       | `src/screens/dashboard/`          | 主控制台    |
+| **Agent Hub**       | `src/screens/agents/`             | Agent 管理  |
+| **Mission Control** | `src/screens/`                    | 任务编排    |
+| **File Explorer**   | `src/screens/files/`              | 文件浏览器  |
+| **Terminal**        | `src/server/terminal-sessions.ts` | 嵌入式终端  |
+| **Cost Analytics**  | `src/screens/costs/`              | 成本分析    |
+| **Settings**        | `src/screens/settings/`           | 设置        |
 
 ### 3. Store 结构
 
@@ -87,51 +87,51 @@ clawsuite/
 
 ### Phase 1: 品牌改造 (1 周)
 
-| 任务 | 文件 | 工作量 |
-|------|------|--------|
-| 替换 Logo 和图标 | `public/`, `assets/` | ⭐ |
-| 修改应用名称 | `package.json`, `electron/main.ts` | ⭐ |
-| 更新颜色主题 | `src/styles.css`, Tailwind 配置 | ⭐⭐ |
-| 修改文档和文案 | `README.md`, `index.html` | ⭐ |
+| 任务             | 文件                               | 工作量 |
+| ---------------- | ---------------------------------- | ------ |
+| 替换 Logo 和图标 | `public/`, `assets/`               | ⭐     |
+| 修改应用名称     | `package.json`, `electron/main.ts` | ⭐     |
+| 更新颜色主题     | `src/styles.css`, Tailwind 配置    | ⭐⭐   |
+| 修改文档和文案   | `README.md`, `index.html`          | ⭐     |
 
 ### Phase 2: 后端改造 (2 周)
 
-| 任务 | 文件 | 工作量 |
-|------|------|--------|
-| 移除 OpenClaw Gateway 依赖 | `src/server/gateway.ts` | ⭐⭐ |
-| 添加 Solana 链连接 | 新建 `src/server/solana/` | ⭐⭐⭐ |
-| 集成 Wallet Adapter | 新建 `src/server/wallet/` | ⭐⭐⭐ |
-| 添加 Chain Hub API 客户端 | 新建 `src/server/chain-hub/` | ⭐⭐⭐ |
-| 集成 Workflow Marketplace | 新建 `src/server/marketplace/` | ⭐⭐⭐ |
+| 任务                       | 文件                           | 工作量 |
+| -------------------------- | ------------------------------ | ------ |
+| 移除 OpenClaw Gateway 依赖 | `src/server/gateway.ts`        | ⭐⭐   |
+| 添加 Solana 链连接         | 新建 `src/server/solana/`      | ⭐⭐⭐ |
+| 集成 Wallet Adapter        | 新建 `src/server/wallet/`      | ⭐⭐⭐ |
+| 添加 Chain Hub API 客户端  | 新建 `src/server/chain-hub/`   | ⭐⭐⭐ |
+| 集成 Workflow Marketplace  | 新建 `src/server/marketplace/` | ⭐⭐⭐ |
 
 ### Phase 3: 核心功能改造 (3 周)
 
-| 任务 | 说明 | 工作量 |
-|------|------|--------|
-| **Wallet Panel** | 替换 Costs 页面为 Wallet | ⭐⭐⭐ |
-| **Workflow Market** | 新增 Workflow 市场页面 | ⭐⭐⭐ |
-| **Task Payment** | 任务创建添加支付流程 | ⭐⭐⭐ |
-| **Reputation System** | Agent 声誉显示 | ⭐⭐ |
-| **Escrow Management** | 托管管理界面 | ⭐⭐⭐ |
+| 任务                  | 说明                     | 工作量 |
+| --------------------- | ------------------------ | ------ |
+| **Wallet Panel**      | 替换 Costs 页面为 Wallet | ⭐⭐⭐ |
+| **Workflow Market**   | 新增 Workflow 市场页面   | ⭐⭐⭐ |
+| **Task Payment**      | 任务创建添加支付流程     | ⭐⭐⭐ |
+| **Reputation System** | Agent 声誉显示           | ⭐⭐   |
+| **Escrow Management** | 托管管理界面             | ⭐⭐⭐ |
 
 ### Phase 4: UI 组件开发 (2 周)
 
-| 组件 | 路径 | 说明 |
-|------|------|------|
-| WalletCard | `src/components/wallet/` | 钱包卡片 |
-| WorkflowCard | `src/components/workflow/` | Workflow 卡片 |
-| PaymentModal | `src/components/payment/` | 支付弹窗 |
-| ReputationBadge | `src/components/reputation/` | 声誉徽章 |
-| EscrowList | `src/components/escrow/` | 托管列表 |
+| 组件            | 路径                         | 说明          |
+| --------------- | ---------------------------- | ------------- |
+| WalletCard      | `src/components/wallet/`     | 钱包卡片      |
+| WorkflowCard    | `src/components/workflow/`   | Workflow 卡片 |
+| PaymentModal    | `src/components/payment/`    | 支付弹窗      |
+| ReputationBadge | `src/components/reputation/` | 声誉徽章      |
+| EscrowList      | `src/components/escrow/`     | 托管列表      |
 
 ### Phase 5: 集成测试 (1 周)
 
-| 任务 | 说明 |
-|------|------|
-| 端到端测试 | 完整用户流程测试 |
-| 链上交互测试 | Solana 交易测试 |
-| 性能优化 | 打包大小、启动速度 |
-| 文档更新 | 部署文档、API 文档 |
+| 任务         | 说明               |
+| ------------ | ------------------ |
+| 端到端测试   | 完整用户流程测试   |
+| 链上交互测试 | Solana 交易测试    |
+| 性能优化     | 打包大小、启动速度 |
+| 文档更新     | 部署文档、API 文档 |
 
 ---
 
@@ -144,8 +144,8 @@ clawsuite/
 import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 export const solanaConnection = new Connection(
-  clusterApiUrl('devnet'), // 或 mainnet-beta
-  'confirmed'
+    clusterApiUrl('devnet'), // 或 mainnet-beta
+    'confirmed',
 );
 ```
 
@@ -169,26 +169,26 @@ import { Program, AnchorProvider } from '@coral-xyz/anchor';
 
 ## 📁 关键文件映射
 
-| Clawsuite 原功能 | Gradience 改造后 | 修改文件 |
-|-----------------|-----------------|---------|
-| Costs 页面 | Wallet 页面 | `src/screens/costs/` → `src/screens/wallet/` |
-| Agent Hub | Agent Profile | `src/screens/agents/` + Reputation |
-| Mission | Task + Payment | `src/screens/` + Escrow |
-| Chat | 保留 | `src/screens/chat/` |
-| Dashboard | Economic Dashboard | `src/screens/dashboard/` + 链上数据 |
-| Settings | + Wallet Settings | `src/screens/settings/` |
+| Clawsuite 原功能 | Gradience 改造后   | 修改文件                                     |
+| ---------------- | ------------------ | -------------------------------------------- |
+| Costs 页面       | Wallet 页面        | `src/screens/costs/` → `src/screens/wallet/` |
+| Agent Hub        | Agent Profile      | `src/screens/agents/` + Reputation           |
+| Mission          | Task + Payment     | `src/screens/` + Escrow                      |
+| Chat             | 保留               | `src/screens/chat/`                          |
+| Dashboard        | Economic Dashboard | `src/screens/dashboard/` + 链上数据          |
+| Settings         | + Wallet Settings  | `src/screens/settings/`                      |
 
 ---
 
 ## ⏱️ 总时间估算
 
-| Phase | 时间 | 关键产出 |
-|-------|------|---------|
-| Phase 1 | 1 周 | 品牌化版本 |
-| Phase 2 | 2 周 | 后端 API 完成 |
-| Phase 3 | 3 周 | 核心功能完成 |
-| Phase 4 | 2 周 | UI 组件完成 |
-| Phase 5 | 1 周 | 可发布版本 |
+| Phase    | 时间     | 关键产出                   |
+| -------- | -------- | -------------------------- |
+| Phase 1  | 1 周     | 品牌化版本                 |
+| Phase 2  | 2 周     | 后端 API 完成              |
+| Phase 3  | 3 周     | 核心功能完成               |
+| Phase 4  | 2 周     | UI 组件完成                |
+| Phase 5  | 1 周     | 可发布版本                 |
 | **总计** | **9 周** | **Gradience Desktop v1.0** |
 
 ---

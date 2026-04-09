@@ -44,6 +44,7 @@ docker compose -f deploy/docker-compose.prod.yml up -d indexer
 ## 📝 配置更新
 
 已更新 `apps/agentm-web/.env.local`:
+
 ```diff
 -NEXT_PUBLIC_INDEXER_URL=http://127.0.0.1:3001
 +NEXT_PUBLIC_INDEXER_URL=http://64.23.248.73:3001

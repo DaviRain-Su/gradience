@@ -138,8 +138,8 @@ export function NotificationBell({
             </svg>
 
             {/* Badge */}
-            {hasUnread && (
-                dotOnly ? (
+            {hasUnread &&
+                (dotOnly ? (
                     <span
                         className={`
                             absolute rounded-full bg-red-500
@@ -160,8 +160,7 @@ export function NotificationBell({
                     >
                         {displayCount}
                     </span>
-                )
-            )}
+                ))}
         </button>
     );
 }
@@ -178,15 +177,7 @@ export function CompactNotificationBell({
     onClick?: () => void;
     className?: string;
 }) {
-    return (
-        <NotificationBell
-            notifications={notifications}
-            onClick={onClick}
-            size="sm"
-            dotOnly
-            className={className}
-        />
-    );
+    return <NotificationBell notifications={notifications} onClick={onClick} size="sm" dotOnly className={className} />;
 }
 
 /**

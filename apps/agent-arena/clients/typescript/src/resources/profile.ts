@@ -21,9 +21,7 @@ export class ProfileResource {
      * Returns `null` when not found.
      */
     async get(agent: string): Promise<AgentProfileApi | null> {
-        return this.getJsonOrNull<AgentProfileApi>(
-            `/api/agents/${encodeURIComponent(agent)}/profile`,
-        );
+        return this.getJsonOrNull<AgentProfileApi>(`/api/agents/${encodeURIComponent(agent)}/profile`);
     }
 
     /**

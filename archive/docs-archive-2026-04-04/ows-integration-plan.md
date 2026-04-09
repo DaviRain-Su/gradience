@@ -11,6 +11,7 @@
 ## 📋 当前状态
 
 ### 已有代码 (hackathon-ows)
+
 ```
 apps/hackathon-ows/
 ├── src/cli/commands/      # CLI 命令
@@ -26,6 +27,7 @@ apps/hackathon-ows/
 ```
 
 ### 目标项目结构
+
 ```
 apps/agentm/ (或 agentm-pro/)
 ├── src/
@@ -57,42 +59,40 @@ import { registerAgentCommands } from './commands/agent';
 import { registerReputationCommands } from './commands/reputation';
 import { registerWalletCommands } from './commands/wallet';
 
-program
-  .command('agent')
-  .description('Agent identity management')
-  // ...
+program.command('agent').description('Agent identity management');
+// ...
 
-program
-  .command('reputation')
-  .description('Reputation system')
-  // ...
+program.command('reputation').description('Reputation system');
+// ...
 ```
 
 ### 步骤 3: 与现有系统集成
 
 **与 Settings 集成**:
+
 ```typescript
 // 用户设置中添加 OWS 配置
 interface UserSettings {
-  // ... 现有配置
-  ows: {
-    enabled: boolean;
-    defaultAgent?: string;
-    reputationThreshold: number;
-  };
+    // ... 现有配置
+    ows: {
+        enabled: boolean;
+        defaultAgent?: string;
+        reputationThreshold: number;
+    };
 }
 ```
 
 **与 Wallet 集成**:
+
 ```typescript
 // 使用 OWS 钱包作为默认钱包
 class WalletManager {
-  async getDefaultWallet() {
-    if (settings.ows.enabled) {
-      return await owsWallet.getWallet();
+    async getDefaultWallet() {
+        if (settings.ows.enabled) {
+            return await owsWallet.getWallet();
+        }
+        return await legacyWallet.getWallet();
     }
-    return await legacyWallet.getWallet();
-  }
 }
 ```
 
@@ -121,23 +121,23 @@ AgentM UI
 提交 `apps/agentm` 项目，包含：
 
 1. **OWS 身份系统**
-   - Agent ENS 注册 (`agent-name.ows.eth`)
-   - 多链钱包 (ETH, SOL, BTC)
+    - Agent ENS 注册 (`agent-name.ows.eth`)
+    - 多链钱包 (ETH, SOL, BTC)
 
 2. **声誉系统**
-   - 任务完成评分
-   - 声誉分数 (0-100)
-   - 等级系统 (Bronze/Silver/Gold/Platinum)
+    - 任务完成评分
+    - 声誉分数 (0-100)
+    - 等级系统 (Bronze/Silver/Gold/Platinum)
 
 3. **策略引擎**
-   - 基于声誉的钱包限额
-   - 子钱包继承策略
-   - 权限控制
+    - 基于声誉的钱包限额
+    - 子钱包继承策略
+    - 权限控制
 
 4. **CLI 工具**
-   - `agentm agent register`
-   - `agentm reputation check`
-   - `agentm wallet create-sub`
+    - `agentm agent register`
+    - `agentm reputation check`
+    - `agentm wallet create-sub`
 
 ### 演示流程
 

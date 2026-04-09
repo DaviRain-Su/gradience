@@ -49,7 +49,7 @@ export class NostrClient {
         this.privateKey = options.privateKey ? fromHex(options.privateKey) : generateSecretKey();
         this.pubkey = getPublicKey(this.privateKey);
 
-        this.relays.forEach(url => {
+        this.relays.forEach((url) => {
             this.relayStatus.set(url, {
                 url,
                 connected: false,
@@ -66,10 +66,14 @@ export class NostrClient {
             this.relays.map(async (url) => {
                 const start = Date.now();
                 try {
-                    const sub = this.pool!.subscribeMany([url], { kinds: [1], limit: 1 }, {
-                        onevent: () => {},
-                        onclose: () => {},
-                    });
+                    const sub = this.pool!.subscribeMany(
+                        [url],
+                        { kinds: [1], limit: 1 },
+                        {
+                            onevent: () => {},
+                            onclose: () => {},
+                        },
+                    );
                     setTimeout(() => sub.close(), 100);
                     const latency = Date.now() - start;
                     this.updateRelayStatus(url, { connected: true, latencyMs: latency });
@@ -79,7 +83,7 @@ export class NostrClient {
                         errorCount: this.relayStatus.get(url)!.errorCount + 1,
                     });
                 }
-            })
+            }),
         );
 
         const connectedCount = this.getConnectedRelayCount();
@@ -110,7 +114,7 @@ export class NostrClient {
     }
 
     getConnectedRelayCount(): number {
-        return Array.from(this.relayStatus.values()).filter(r => r.connected).length;
+        return Array.from(this.relayStatus.values()).filter((r) => r.connected).length;
     }
 
     // ============ Presence ============
@@ -131,7 +135,7 @@ export class NostrClient {
 
     async subscribePresence(
         filter: PresenceFilter,
-        callback: (event: AgentPresenceEvent) => void
+        callback: (event: AgentPresenceEvent) => void,
     ): Promise<NostrSubscription> {
         this.ensureConnected();
         const subId = `presence-${Date.now()}`;
@@ -147,14 +151,15 @@ export class NostrClient {
                         const content: AgentPresenceContent = JSON.parse(event.content);
                         if (filter.availableOnly && !content.available) return;
                         if (filter.minReputation && content.reputation_score < filter.minReputation) return;
-                        if (filter.capabilities && !filter.capabilities.some(c => content.capabilities.includes(c))) return;
+                        if (filter.capabilities && !filter.capabilities.some((c) => content.capabilities.includes(c)))
+                            return;
                         callback(event as unknown as AgentPresenceEvent);
                     } catch {}
                 },
                 onclose: () => {
                     this.activeSubscriptions.delete(subId);
                 },
-            }
+            },
         );
 
         return {
@@ -179,14 +184,18 @@ export class NostrClient {
                             const content: AgentPresenceContent = JSON.parse(event.content);
                             if (filter.availableOnly && !content.available) return;
                             if (filter.minReputation && content.reputation_score < filter.minReputation) return;
-                            if (filter.capabilities && !filter.capabilities.some(c => content.capabilities.includes(c))) return;
+                            if (
+                                filter.capabilities &&
+                                !filter.capabilities.some((c) => content.capabilities.includes(c))
+                            )
+                                return;
                             events.push(event as unknown as AgentPresenceEvent);
                         } catch {}
                     },
                     onclose: () => {
                         resolve(events.slice(0, limit));
                     },
-                }
+                },
             );
 
             setTimeout(() => {
@@ -200,9 +209,12 @@ export class NostrClient {
 
     async publishHandler(handlerId: string, content: NIP89HandlerContent): Promise<string> {
         this.ensureConnected();
-        const tags: string[][] = [['d', handlerId], ['t', 'gradience-dvm']];
+        const tags: string[][] = [
+            ['d', handlerId],
+            ['t', 'gradience-dvm'],
+        ];
         if (content.kinds) {
-            content.kinds.forEach(kind => tags.push(['k', kind.toString()]));
+            content.kinds.forEach((kind) => tags.push(['k', kind.toString()]));
         }
         const event = {
             kind: NOSTR_CONFIG.KINDS.HANDLER_ANNOUNCEMENT,
@@ -259,7 +271,7 @@ export class NostrClient {
 
     async subscribeJobRequests(
         kinds: number[],
-        callback: (event: NIP90JobRequest) => void
+        callback: (event: NIP90JobRequest) => void,
     ): Promise<NostrSubscription> {
         this.ensureConnected();
         const subId = `job-requests-${Date.now()}`;
@@ -276,7 +288,7 @@ export class NostrClient {
                 onclose: () => {
                     this.activeSubscriptions.delete(subId);
                 },
-            }
+            },
         );
 
         return {
@@ -308,7 +320,7 @@ export class NostrClient {
     }
 
     private getConnectedRelays(): string[] {
-        return this.relays.filter(url => this.relayStatus.get(url)?.connected);
+        return this.relays.filter((url) => this.relayStatus.get(url)?.connected);
     }
 
     private updateRelayStatus(url: string, update: Partial<RelayStatus>): void {
@@ -346,13 +358,13 @@ export class NostrClient {
                         return;
                     } catch (error) {
                         if (attempt === NOSTR_CONFIG.RETRY.MAX_ATTEMPTS) throw error;
-                        await new Promise(r => setTimeout(r, NOSTR_CONFIG.RETRY.BACKOFF_MS * attempt));
+                        await new Promise((r) => setTimeout(r, NOSTR_CONFIG.RETRY.BACKOFF_MS * attempt));
                     }
                 }
-            })
+            }),
         );
 
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const successCount = results.filter((r) => r.status === 'fulfilled').length;
         if (successCount === 0) {
             throw new Error('[NostrClient] Failed to publish to all relays');
         }

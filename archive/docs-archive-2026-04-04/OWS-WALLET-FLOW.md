@@ -74,20 +74,21 @@ const owsAdapter = new OWSAdapter();
 
 // 用户点击 "Login with Privy"
 const authResult = await owsAdapter.authenticate({
-  provider: 'privy',
-  method: 'email', // or 'google', 'twitter', etc.
+    provider: 'privy',
+    method: 'email', // or 'google', 'twitter', etc.
 });
 
 // 返回主控钱包信息
 const masterWallet = {
-  address: '5Y3d...7xKp',
-  publicKey: '<Ed25519 public key>',
-  provider: 'privy',
-  chain: 'solana',
+    address: '5Y3d...7xKp',
+    publicKey: '<Ed25519 public key>',
+    provider: 'privy',
+    chain: 'solana',
 };
 ```
 
 **关键点：**
+
 - 用户通过 Privy OAuth 登录
 - Privy 生成/恢复 Solana 钱包
 - 用户获得主控钱包地址
@@ -99,10 +100,10 @@ const masterWallet = {
 ```typescript
 // 用户在 AgentM UI 中创建 Agent
 const agentConfig = {
-  name: 'Trading Bot Alpha',
-  description: 'Automated trading agent for Solana DEX',
-  capabilities: ['swap', 'stake', 'transfer'],
-  initialReputation: 50, // 默认银级
+    name: 'Trading Bot Alpha',
+    description: 'Automated trading agent for Solana DEX',
+    capabilities: ['swap', 'stake', 'transfer'],
+    initialReputation: 50, // 默认银级
 };
 
 // 调用 Agent Daemon API
@@ -117,24 +118,21 @@ const agent = await agentDaemon.createAgent(agentConfig);
 ```typescript
 // OWS SDK 内部实现
 class OWSSubWalletDeriver {
-  deriveSubWallet(
-    masterKey: Uint8Array,
-    agentId: string,
-    index: number
-  ): Keypair {
-    // 使用 SLIP-0010 派生路径
-    // m/44'/501'/agentIndex'/subWalletIndex'
-    
-    const path = this.buildDerivationPath(agentId, index);
-    // 例如: m/44'/501'/123456'/0'
-    
-    const derivedKey = ed25519.derivePath(path, masterKey);
-    return Keypair.fromSeed(derivedKey.key);
-  }
+    deriveSubWallet(masterKey: Uint8Array, agentId: string, index: number): Keypair {
+        // 使用 SLIP-0010 派生路径
+        // m/44'/501'/agentIndex'/subWalletIndex'
+
+        const path = this.buildDerivationPath(agentId, index);
+        // 例如: m/44'/501'/123456'/0'
+
+        const derivedKey = ed25519.derivePath(path, masterKey);
+        return Keypair.fromSeed(derivedKey.key);
+    }
 }
 ```
 
 **派生路径结构：**
+
 ```
 m / 44' / 501' / {agentIndex}' / {subWalletIndex}'
 │   │     │         │              └─ 子钱包序号 (0, 1, 2...)
@@ -151,15 +149,16 @@ m / 44' / 501' / {agentIndex}' / {subWalletIndex}'
 ```typescript
 // 生成的子钱包信息
 const subWallet = {
-  address: 'ows_a1b2c3d4e5f6...', // 派生后的 Solana 地址
-  publicKey: '<derived public key>',
-  privateKey: '<encrypted derived private key>', // 由 Privy 托管
-  parentAddress: '5Y3d...7xKp', // 主控钱包
-  derivationPath: "m/44'/501'/123456'/0'",
+    address: 'ows_a1b2c3d4e5f6...', // 派生后的 Solana 地址
+    publicKey: '<derived public key>',
+    privateKey: '<encrypted derived private key>', // 由 Privy 托管
+    parentAddress: '5Y3d...7xKp', // 主控钱包
+    derivationPath: "m/44'/501'/123456'/0'",
 };
 ```
 
 **地址格式：**
+
 - 标准 Solana 地址 (Base58)
 - 前缀 `ows_` 用于标识 OWS 子钱包
 
@@ -170,30 +169,30 @@ const subWallet = {
 ```typescript
 // 前端 LocalStorage
 interface OWSAgentWalletBinding {
-  accountKey: string;           // 用户账户标识
-  loginEmail: string | null;    // 登录邮箱
-  provider: 'privy';            // 钱包提供商
-  chain: 'solana';              // 链类型
-  masterWallet: string;         // 主控钱包地址
-  owsDid: string;               // DID: did:ows:solana:{address}
-  agentWalletId: string;        // Agent 子钱包 ID
-  source: 'local_persistence';  // 存储来源
-  boundAt: number;              // 绑定时间
-  updatedAt: number;            // 更新时间
+    accountKey: string; // 用户账户标识
+    loginEmail: string | null; // 登录邮箱
+    provider: 'privy'; // 钱包提供商
+    chain: 'solana'; // 链类型
+    masterWallet: string; // 主控钱包地址
+    owsDid: string; // DID: did:ows:solana:{address}
+    agentWalletId: string; // Agent 子钱包 ID
+    source: 'local_persistence'; // 存储来源
+    boundAt: number; // 绑定时间
+    updatedAt: number; // 更新时间
 }
 
 // 存储示例
 const binding: OWSAgentWalletBinding = {
-  accountKey: 'user@example.com',
-  loginEmail: 'user@example.com',
-  provider: 'privy',
-  chain: 'solana',
-  masterWallet: '5Y3d...7xKp',
-  owsDid: 'did:ows:solana:ows_a1b2c3d4...',
-  agentWalletId: 'ows-agent:a1b2c3d4',
-  source: 'local_persistence',
-  boundAt: 1704067200000,
-  updatedAt: 1704067200000,
+    accountKey: 'user@example.com',
+    loginEmail: 'user@example.com',
+    provider: 'privy',
+    chain: 'solana',
+    masterWallet: '5Y3d...7xKp',
+    owsDid: 'did:ows:solana:ows_a1b2c3d4...',
+    agentWalletId: 'ows-agent:a1b2c3d4',
+    source: 'local_persistence',
+    boundAt: 1704067200000,
+    updatedAt: 1704067200000,
 };
 
 localStorage.setItem('agentm:ows:binding', JSON.stringify(binding));
@@ -206,40 +205,36 @@ localStorage.setItem('agentm:ows:binding', JSON.stringify(binding));
 ```typescript
 // Agent Daemon: OWSWalletManager
 class OWSWalletManager {
-  async createWallet(params: {
-    agentId: string;
-    parentWallet: string;
-    name: string;
-    initialReputation?: number;
-  }): Promise<OWSWallet> {
-    
-    // 1. 生成子钱包地址
-    const subWalletAddress = this.generateSubWalletAddress(
-      params.parentWallet,
-      params.agentId
-    );
-    
-    // 2. 计算初始声誉策略
-    const reputationScore = params.initialReputation ?? 50;
-    const policy = calculatePolicy(reputationScore);
-    // Silver tier: dailyLimit=500, maxTransaction=100, requireApproval=true
-    
-    // 3. 存入 SQLite
-    const wallet: OWSWallet = {
-      id: crypto.randomUUID(),
-      agentId: params.agentId,
-      parentWallet: params.parentWallet,
-      address: subWalletAddress,
-      name: params.name,
-      reputationScore,
-      policy,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    
-    await this.db.insertWallet(wallet);
-    return wallet;
-  }
+    async createWallet(params: {
+        agentId: string;
+        parentWallet: string;
+        name: string;
+        initialReputation?: number;
+    }): Promise<OWSWallet> {
+        // 1. 生成子钱包地址
+        const subWalletAddress = this.generateSubWalletAddress(params.parentWallet, params.agentId);
+
+        // 2. 计算初始声誉策略
+        const reputationScore = params.initialReputation ?? 50;
+        const policy = calculatePolicy(reputationScore);
+        // Silver tier: dailyLimit=500, maxTransaction=100, requireApproval=true
+
+        // 3. 存入 SQLite
+        const wallet: OWSWallet = {
+            id: crypto.randomUUID(),
+            agentId: params.agentId,
+            parentWallet: params.parentWallet,
+            address: subWalletAddress,
+            name: params.name,
+            reputationScore,
+            policy,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        };
+
+        await this.db.insertWallet(wallet);
+        return wallet;
+    }
 }
 ```
 
@@ -250,45 +245,45 @@ class OWSWalletManager {
 ```typescript
 // 声誉 → 策略映射
 function calculatePolicy(reputationScore: number): WalletPolicy {
-  const score = Math.max(0, Math.min(100, reputationScore));
-  
-  if (score >= 81) {
-    // Platinum: 高信任，最小限制
-    return {
-      dailyLimit: score * 10,      // $810+
-      maxTransaction: score * 2,   // $162+
-      requireApproval: false,
-      allowedChains: ['solana', 'ethereum', 'base', 'arbitrum'],
-      allowedTokens: null, // 所有代币
-    };
-  } else if (score >= 51) {
-    // Gold: 中等信任
-    return {
-      dailyLimit: score * 10,      // $510-800
-      maxTransaction: score * 2,   // $102-160
-      requireApproval: false,
-      allowedChains: ['solana', 'ethereum', 'base'],
-      allowedTokens: ['USDC', 'USDT', 'ETH', 'SOL'],
-    };
-  } else if (score >= 31) {
-    // Silver: 低-中等信任
-    return {
-      dailyLimit: score * 10,      // $310-500
-      maxTransaction: score * 2,   // $62-100
-      requireApproval: true,       // 需要审批
-      allowedChains: ['solana', 'ethereum'],
-      allowedTokens: ['USDC', 'USDT', 'ETH'],
-    };
-  } else {
-    // Bronze: 低信任，最大限制
-    return {
-      dailyLimit: Math.max(300, score * 10),  // $300
-      maxTransaction: Math.max(60, score * 2), // $60
-      requireApproval: true,
-      allowedChains: ['solana'],
-      allowedTokens: ['USDC', 'USDT'],
-    };
-  }
+    const score = Math.max(0, Math.min(100, reputationScore));
+
+    if (score >= 81) {
+        // Platinum: 高信任，最小限制
+        return {
+            dailyLimit: score * 10, // $810+
+            maxTransaction: score * 2, // $162+
+            requireApproval: false,
+            allowedChains: ['solana', 'ethereum', 'base', 'arbitrum'],
+            allowedTokens: null, // 所有代币
+        };
+    } else if (score >= 51) {
+        // Gold: 中等信任
+        return {
+            dailyLimit: score * 10, // $510-800
+            maxTransaction: score * 2, // $102-160
+            requireApproval: false,
+            allowedChains: ['solana', 'ethereum', 'base'],
+            allowedTokens: ['USDC', 'USDT', 'ETH', 'SOL'],
+        };
+    } else if (score >= 31) {
+        // Silver: 低-中等信任
+        return {
+            dailyLimit: score * 10, // $310-500
+            maxTransaction: score * 2, // $62-100
+            requireApproval: true, // 需要审批
+            allowedChains: ['solana', 'ethereum'],
+            allowedTokens: ['USDC', 'USDT', 'ETH'],
+        };
+    } else {
+        // Bronze: 低信任，最大限制
+        return {
+            dailyLimit: Math.max(300, score * 10), // $300
+            maxTransaction: Math.max(60, score * 2), // $60
+            requireApproval: true,
+            allowedChains: ['solana'],
+            allowedTokens: ['USDC', 'USDT'],
+        };
+    }
 }
 ```
 
@@ -326,29 +321,29 @@ User    AgentM Web    OWS SDK    Privy    Agent Daemon    Solana
 
 ## 数据流总结
 
-| 阶段 | 数据 | 存储位置 |
-|------|------|----------|
-| 登录 | Master Wallet | Privy (托管) |
-| 派生 | Sub-wallet Key | Privy (派生) |
-| 绑定 | Binding Record | LocalStorage |
+| 阶段 | 数据            | 存储位置              |
+| ---- | --------------- | --------------------- |
+| 登录 | Master Wallet   | Privy (托管)          |
+| 派生 | Sub-wallet Key  | Privy (派生)          |
+| 绑定 | Binding Record  | LocalStorage          |
 | 策略 | Wallet + Policy | Agent Daemon (SQLite) |
-| 交易 | Tx History | Agent Daemon (SQLite) |
+| 交易 | Tx History      | Agent Daemon (SQLite) |
 
 ---
 
 ## 安全要点
 
 1. **私钥管理**
-   - 主控钱包私钥：Privy 托管 (MPC)
-   - 子钱包私钥：派生后由 Privy 托管
-   - Agent Daemon 不存储私钥
+    - 主控钱包私钥：Privy 托管 (MPC)
+    - 子钱包私钥：派生后由 Privy 托管
+    - Agent Daemon 不存储私钥
 
 2. **权限控制**
-   - 子钱包权限由声誉分数动态计算
-   - 高价值交易需要主控钱包签名
-   - 每日/单笔限额防止滥用
+    - 子钱包权限由声誉分数动态计算
+    - 高价值交易需要主控钱包签名
+    - 每日/单笔限额防止滥用
 
 3. **审计追踪**
-   - 所有交易记录在 Agent Daemon
-   - 声誉变化历史可追溯
-   - 策略变更记录完整
+    - 所有交易记录在 Agent Daemon
+    - 声誉变化历史可追溯
+    - 策略变更记录完整

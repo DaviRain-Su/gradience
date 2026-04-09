@@ -14,11 +14,7 @@ import { createLogger } from './logger.js';
 import { getMetrics, A2A_METRICS } from './metrics.js';
 import { getCircuitBreakerRegistry, type CircuitStats } from './circuit-breaker.js';
 import { getRateLimiterRegistry, type RateLimiterStats } from './rate-limiter.js';
-import type {
-    ProtocolType,
-    RouterHealthStatus,
-    ProtocolHealthStatus,
-} from '../../shared/a2a-router-types.js';
+import type { ProtocolType, RouterHealthStatus, ProtocolHealthStatus } from '../../shared/a2a-router-types.js';
 
 const logger = createLogger('HealthMonitor');
 const metrics = getMetrics();
@@ -281,7 +277,7 @@ export class HealthMonitor {
 
         // Get router health if available
         const routerHealth = this.routerHealthFn?.();
-        const protocols = routerHealth?.protocolStatus ?? {} as Record<ProtocolType, ProtocolHealthStatus>;
+        const protocols = routerHealth?.protocolStatus ?? ({} as Record<ProtocolType, ProtocolHealthStatus>);
 
         // Get circuit breaker stats
         const circuits = getCircuitBreakerRegistry().getAllStats();
@@ -338,7 +334,7 @@ export class HealthMonitor {
             Array.from(this.checks.values()).map(async (registration) => {
                 const result = await this.executeCheck(registration);
                 results[registration.name] = result;
-            })
+            }),
         );
 
         return results;
@@ -417,10 +413,7 @@ export class HealthMonitor {
         this.executeCheck(registration);
 
         // Schedule periodic checks
-        const interval = setInterval(
-            () => this.executeCheck(registration),
-            registration.intervalMs
-        );
+        const interval = setInterval(() => this.executeCheck(registration), registration.intervalMs);
 
         this.checkIntervals.set(name, interval);
     }
@@ -435,7 +428,7 @@ export class HealthMonitor {
                 new Promise<HealthCheckResult>((_, reject) => {
                     setTimeout(
                         () => reject(new Error(`Health check timeout after ${registration.timeoutMs}ms`)),
-                        registration.timeoutMs
+                        registration.timeoutMs,
                     );
                 }),
             ]);
@@ -516,7 +509,7 @@ export class HealthMonitor {
 
     private calculateOverallStatus(
         checks: Record<string, HealthCheckResult>,
-        circuits: Record<string, CircuitStats>
+        circuits: Record<string, CircuitStats>,
     ): HealthStatus {
         // Check for any critical failures
         for (const [name, registration] of this.checks) {
@@ -554,19 +547,17 @@ export class HealthMonitor {
     private getMemoryInfo(): MemoryInfo {
         const memUsage = process.memoryUsage();
         return {
-            heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024 * 100) / 100,
-            heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024 * 100) / 100,
-            externalMB: Math.round(memUsage.external / 1024 / 1024 * 100) / 100,
-            rssMB: Math.round(memUsage.rss / 1024 / 1024 * 100) / 100,
+            heapUsedMB: Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100,
+            heapTotalMB: Math.round((memUsage.heapTotal / 1024 / 1024) * 100) / 100,
+            externalMB: Math.round((memUsage.external / 1024 / 1024) * 100) / 100,
+            rssMB: Math.round((memUsage.rss / 1024 / 1024) * 100) / 100,
         };
     }
 
     private checkErrorAlerts(errorInfo: ErrorInfo): void {
         // Count recent errors from same component
         const recentSameComponent = this.recentErrors.filter(
-            (e) =>
-                e.component === errorInfo.component &&
-                Date.now() - e.timestamp < 60000 // Last minute
+            (e) => e.component === errorInfo.component && Date.now() - e.timestamp < 60000, // Last minute
         );
 
         if (recentSameComponent.length >= 5) {
@@ -614,7 +605,7 @@ export class HealthMonitor {
  */
 export function createProtocolHealthCheck(
     protocol: ProtocolType,
-    getHealth: () => ProtocolHealthStatus
+    getHealth: () => ProtocolHealthStatus,
 ): HealthCheckFn {
     return async (): Promise<HealthCheckResult> => {
         const startTime = Date.now();
@@ -661,11 +652,7 @@ export function createMemoryHealthCheck(thresholdMB: number = 512): HealthCheckF
         const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
 
         const status: HealthStatus =
-            heapUsedMB > thresholdMB * 1.5
-                ? 'unhealthy'
-                : heapUsedMB > thresholdMB
-                    ? 'degraded'
-                    : 'healthy';
+            heapUsedMB > thresholdMB * 1.5 ? 'unhealthy' : heapUsedMB > thresholdMB ? 'degraded' : 'healthy';
 
         return {
             name: 'memory',
@@ -686,7 +673,7 @@ export function createMemoryHealthCheck(thresholdMB: number = 512): HealthCheckF
 export function createExternalServiceCheck(
     name: string,
     checkFn: () => Promise<boolean>,
-    timeoutMs: number = 5000
+    timeoutMs: number = 5000,
 ): HealthCheckFn {
     return async (): Promise<HealthCheckResult> => {
         const startTime = Date.now();

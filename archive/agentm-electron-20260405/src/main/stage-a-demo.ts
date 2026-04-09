@@ -6,11 +6,7 @@ import { fileURLToPath } from 'node:url';
 import type { AgentDiscoveryRow, InteropSyncEvent } from '../shared/types.ts';
 import { createApiServer } from './api-server.ts';
 import { createAppStore } from '../renderer/lib/store.ts';
-import {
-    InMemoryMagicBlockHub,
-    InMemoryMagicBlockTransport,
-    MagicBlockA2AAgent,
-} from '../renderer/lib/a2a-client.ts';
+import { InMemoryMagicBlockHub, InMemoryMagicBlockTransport, MagicBlockA2AAgent } from '../renderer/lib/a2a-client.ts';
 
 export interface StageADemoStep {
     name: string;
@@ -71,10 +67,7 @@ export async function runStageADemo(env: NodeJS.ProcessEnv = process.env): Promi
     const a2aAgent = new MagicBlockA2AAgent('demo-controller', transport);
     a2aAgent.start();
 
-    const api = createApiServer(
-        { store, a2aAgent },
-        { port: 0, interopSigningSecret },
-    );
+    const api = createApiServer({ store, a2aAgent }, { port: 0, interopSigningSecret });
     const apiPort = await api.start();
     const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
     const steps: StageADemoStep[] = [];
@@ -146,10 +139,7 @@ export async function runStageADemo(env: NodeJS.ProcessEnv = process.env): Promi
             actual: `HTTP ${interopRes.status}`,
         });
 
-        const interopStatusRes = await getJson(
-            apiBaseUrl,
-            `/interop/status?agent=${encodeURIComponent(demoAgent)}`,
-        );
+        const interopStatusRes = await getJson(apiBaseUrl, `/interop/status?agent=${encodeURIComponent(demoAgent)}`);
         assert.equal(interopStatusRes.status, 200);
         const interopStatusBody = interopStatusRes.json as {
             status: { evmReputationCount: number; erc8004FeedbackCount: number; identityRegistered: boolean };
@@ -166,10 +156,7 @@ export async function runStageADemo(env: NodeJS.ProcessEnv = process.env): Promi
             )}, evmReputationCount=${interopStatusBody.status.evmReputationCount}`,
         });
 
-        const dashboardRes = await getText(
-            apiBaseUrl,
-            `/interop/dashboard?agent=${encodeURIComponent(demoAgent)}`,
-        );
+        const dashboardRes = await getText(apiBaseUrl, `/interop/dashboard?agent=${encodeURIComponent(demoAgent)}`);
         assert.equal(dashboardRes.status, 200);
         assert.ok(dashboardRes.text.includes('AgentM Interop Dashboard'));
         steps.push({
@@ -184,11 +171,7 @@ export async function runStageADemo(env: NodeJS.ProcessEnv = process.env): Promi
         const indexerStep = await validateIndexerTaskAndReputation(indexerBaseUrl, demoAgent);
         steps.push(indexerStep);
     } catch (error) {
-        if (
-            error instanceof Error &&
-            error.message.startsWith('indexer:') &&
-            !requireIndexer
-        ) {
+        if (error instanceof Error && error.message.startsWith('indexer:') && !requireIndexer) {
             steps.push({
                 name: 'Task/Reputation (Indexer)',
                 command: `curl -s "${indexerBaseUrl}/api/tasks?limit=3"`,
@@ -218,10 +201,9 @@ async function validateIndexerTaskAndReputation(
     const tasks = (await tasksRes.json()) as Array<{ judge?: string }>;
     const agent = tasks.find((task) => typeof task.judge === 'string')?.judge ?? fallbackAgent;
 
-    const reputationRes = await fetch(
-        `${indexerBaseUrl}/api/reputation/${encodeURIComponent(agent)}`,
-        { signal: AbortSignal.timeout(5000) },
-    ).catch(() => null);
+    const reputationRes = await fetch(`${indexerBaseUrl}/api/reputation/${encodeURIComponent(agent)}`, {
+        signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
     if (!reputationRes || !reputationRes.ok) {
         throw new Error(`indexer: reputation endpoint unavailable for ${agent}`);
     }
@@ -231,9 +213,7 @@ async function validateIndexerTaskAndReputation(
         name: 'Task/Reputation (Indexer)',
         command: `curl -s "${indexerBaseUrl}/api/tasks?limit=3" && curl -s "${indexerBaseUrl}/api/reputation/${agent}"`,
         expected: 'HTTP 200 for tasks and reputation endpoints',
-        actual: `tasks=${tasks.length}, reputation.global_avg_score=${String(
-            reputation.global_avg_score ?? 'N/A',
-        )}`,
+        actual: `tasks=${tasks.length}, reputation.global_avg_score=${String(reputation.global_avg_score ?? 'N/A')}`,
     };
 }
 
@@ -241,19 +221,13 @@ function buildInteropHeaders(payload: string, secret: string | undefined): Recor
     const headers: Record<string, string> = { 'content-type': 'application/json' };
     if (!secret) return headers;
     const ts = String(Math.floor(Date.now() / 1000));
-    const signature = createHmac('sha256', secret)
-        .update(`${ts}.${payload}`)
-        .digest('hex');
+    const signature = createHmac('sha256', secret).update(`${ts}.${payload}`).digest('hex');
     headers['x-gradience-signature-ts'] = ts;
     headers['x-gradience-signature'] = signature;
     return headers;
 }
 
-async function postJson(
-    apiBaseUrl: string,
-    path: string,
-    body: unknown,
-): Promise<{ status: number; json: unknown }> {
+async function postJson(apiBaseUrl: string, path: string, body: unknown): Promise<{ status: number; json: unknown }> {
     return postRaw(apiBaseUrl, path, JSON.stringify(body), { 'content-type': 'application/json' });
 }
 
@@ -281,9 +255,7 @@ async function getText(apiBaseUrl: string, path: string): Promise<{ status: numb
     return { status: response.status, text: await response.text() };
 }
 
-const isMainEntry =
-    typeof process.argv[1] === 'string' &&
-    fileURLToPath(import.meta.url) === process.argv[1];
+const isMainEntry = typeof process.argv[1] === 'string' && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainEntry) {
     runStageADemo(process.env)

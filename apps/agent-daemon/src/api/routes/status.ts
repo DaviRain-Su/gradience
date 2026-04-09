@@ -33,10 +33,13 @@ export function registerStatusRoutes(app: FastifyInstance, deps: StatusDeps): vo
                     totalPeers: a2aHealth.totalPeers,
                     activeSubscriptions: a2aHealth.activeSubscriptions,
                     systemStatus: systemHealth.status,
-                    circuits: Object.keys(systemHealth.circuits).reduce((acc, key) => {
-                        acc[key] = systemHealth.circuits[key]?.state ?? 'unknown';
-                        return acc;
-                    }, {} as Record<string, string>),
+                    circuits: Object.keys(systemHealth.circuits).reduce(
+                        (acc, key) => {
+                            acc[key] = systemHealth.circuits[key]?.state ?? 'unknown';
+                            return acc;
+                        },
+                        {} as Record<string, string>,
+                    ),
                 },
             };
         }

@@ -34,12 +34,9 @@ const DaemonConfigSchema = z.object({
     keyStorage: z.enum(['keychain', 'file']).default('file'),
     // A2A communication
     a2aEnabled: z.boolean().default(true),
-    nostrRelays: z.array(z.string().url()).default([
-        'wss://relay.damus.io',
-        'wss://relay.nostr.band',
-        'wss://nos.lol',
-        'wss://relay.snort.social',
-    ]),
+    nostrRelays: z
+        .array(z.string().url())
+        .default(['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol', 'wss://relay.snort.social']),
     nostrPrivateKey: z.string().optional(),
     xmtpEnabled: z.boolean().default(false),
     // Unified LLM configuration (for soul-engine and evaluator)
@@ -67,7 +64,11 @@ const DaemonConfigSchema = z.object({
     // Payments configuration
     paymentsMppEnabled: z.boolean().default(true),
     paymentsX402Enabled: z.boolean().default(true),
-    paymentsTimeoutMs: z.number().int().min(1000).default(5 * 60 * 1000), // 5 minutes
+    paymentsTimeoutMs: z
+        .number()
+        .int()
+        .min(1000)
+        .default(5 * 60 * 1000), // 5 minutes
     paymentsAutoConfirm: z.boolean().default(true),
     // Bridge settlement configuration
     bridgeEnabled: z.boolean().default(true),
@@ -102,10 +103,7 @@ export function getDataDir(): string {
 export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfig {
     let fileConfig: Record<string, unknown> = {};
 
-    const configPaths = [
-        join(process.cwd(), 'agentd.json'),
-        join(getDataDir(), 'config.json'),
-    ];
+    const configPaths = [join(process.cwd(), 'agentd.json'), join(getDataDir(), 'config.json')];
 
     for (const configPath of configPaths) {
         if (existsSync(configPath)) {
@@ -126,10 +124,12 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_SOLANA_RPC_URL) envConfig.solanaRpcUrl = process.env.AGENTD_SOLANA_RPC_URL;
     if (process.env.AGENTD_EVM_RPC_URL) envConfig.evmRpcUrl = process.env.AGENTD_EVM_RPC_URL;
     if (process.env.AGENTD_EVM_CHAIN_ID) envConfig.evmChainId = Number(process.env.AGENTD_EVM_CHAIN_ID);
-    if (process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS) envConfig.x402EvmSettlementAddress = process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS;
+    if (process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS)
+        envConfig.x402EvmSettlementAddress = process.env.AGENTD_X402_EVM_SETTLEMENT_ADDRESS;
     if (process.env.AGENTD_X402_EVM_PRIVATE_KEY) envConfig.x402EvmPrivateKey = process.env.AGENTD_X402_EVM_PRIVATE_KEY;
     if (process.env.AGENTD_ARENA_EVM_ADDRESS) envConfig.agentArenaEvmAddress = process.env.AGENTD_ARENA_EVM_ADDRESS;
-    if (process.env.AGENTD_REGISTRY_EVM_ADDRESS) envConfig.agentMRegistryEvmAddress = process.env.AGENTD_REGISTRY_EVM_ADDRESS;
+    if (process.env.AGENTD_REGISTRY_EVM_ADDRESS)
+        envConfig.agentMRegistryEvmAddress = process.env.AGENTD_REGISTRY_EVM_ADDRESS;
     if (process.env.AGENTD_DEFAULT_CHAIN) envConfig.defaultChain = process.env.AGENTD_DEFAULT_CHAIN as any;
     if (process.env.AGENTD_DB_PATH) envConfig.dbPath = process.env.AGENTD_DB_PATH;
     if (process.env.AGENTD_LOG_LEVEL) envConfig.logLevel = process.env.AGENTD_LOG_LEVEL;

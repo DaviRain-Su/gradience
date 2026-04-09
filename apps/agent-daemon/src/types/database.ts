@@ -27,8 +27,10 @@ export type DatabaseInstance = Database.Database;
  * const stmt: TypedStatement<[string, number], UserRow> = db.prepare('SELECT * FROM users WHERE name = ? AND age > ?');
  * ```
  */
-export type TypedStatement<BindParameters extends unknown[] = unknown[], Result = unknown> =
-    Database.Statement<BindParameters, Result>;
+export type TypedStatement<BindParameters extends unknown[] = unknown[], Result = unknown> = Database.Statement<
+    BindParameters,
+    Result
+>;
 
 /**
  * Transaction type for wrapping functions in transactions
@@ -104,11 +106,7 @@ export type PragmaOptions = Database.PragmaOptions;
  * Type guard to check if an error is a SqliteError
  */
 export function isSqliteError(error: unknown): error is SqliteError {
-    return (
-        error instanceof Error &&
-        'code' in error &&
-        typeof error.code === 'string'
-    );
+    return error instanceof Error && 'code' in error && typeof error.code === 'string';
 }
 
 /**

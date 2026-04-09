@@ -81,13 +81,13 @@ src/
 
 ## 页面路由
 
-| 路由 | 描述 | 认证 |
-|------|------|------|
-| `/` | Landing 页面 | 否 |
-| `/app` | Dashboard | 是 |
-| `/app/profiles` | Profile 管理 | 是 |
-| `/app/social` | Social 发现 | 是 |
-| `/app/settings` | 设置 | 是 |
+| 路由            | 描述         | 认证 |
+| --------------- | ------------ | ---- |
+| `/`             | Landing 页面 | 否   |
+| `/app`          | Dashboard    | 是   |
+| `/app/profiles` | Profile 管理 | 是   |
+| `/app/social`   | Social 发现  | 是   |
+| `/app/settings` | 设置         | 是   |
 
 ## 与 AgentM (Desktop) 的关系
 
@@ -95,6 +95,7 @@ src/
 - **AgentM Pro**: 面向开发者的 Web 控制台 (Next.js)
 
 两者共享：
+
 - 相同的 Gradience SDK
 - 相同的链上协议
 - 相同的 OWS 身份系统

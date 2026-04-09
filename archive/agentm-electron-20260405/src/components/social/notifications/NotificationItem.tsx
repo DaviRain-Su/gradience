@@ -65,21 +65,15 @@ function getNotificationTitle(notification: Notification): string {
 
     switch (notification.type) {
         case 'follow':
-            return notification.actorName
-                ? `${notification.actorName} started following you`
-                : 'New follower';
+            return notification.actorName ? `${notification.actorName} started following you` : 'New follower';
         case 'message':
-            return notification.actorName
-                ? `New message from ${notification.actorName}`
-                : 'New message';
+            return notification.actorName ? `New message from ${notification.actorName}` : 'New message';
         case 'task_update':
             return notification.metadata?.taskTitle
                 ? `Task update: ${notification.metadata.taskTitle}`
                 : 'Task status changed';
         case 'mention':
-            return notification.actorName
-                ? `${notification.actorName} mentioned you`
-                : 'You were mentioned';
+            return notification.actorName ? `${notification.actorName} mentioned you` : 'You were mentioned';
         default:
             return 'Notification';
     }
@@ -203,10 +197,7 @@ export function NotificationItem({
                         {title}
                     </p>
                     {!notification.read && (
-                        <span
-                            className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"
-                            aria-label="Unread"
-                        />
+                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5" aria-label="Unread" />
                     )}
                 </div>
 
@@ -271,13 +262,7 @@ export function NotificationItem({
 /**
  * Type-specific metadata display
  */
-function NotificationMetadataDisplay({
-    notification,
-    size,
-}: {
-    notification: Notification;
-    size: 'sm' | 'md' | 'lg';
-}) {
+function NotificationMetadataDisplay({ notification, size }: { notification: Notification; size: 'sm' | 'md' | 'lg' }) {
     const config = sizeConfig[size];
     const { type, metadata } = notification;
 
@@ -293,9 +278,7 @@ function NotificationMetadataDisplay({
                                 {metadata.taskState}
                             </span>
                         )}
-                        {metadata.taskReward !== undefined && (
-                            <span>🏆 {metadata.taskReward} SOL</span>
-                        )}
+                        {metadata.taskReward !== undefined && <span>🏆 {metadata.taskReward} SOL</span>}
                     </div>
                 );
             }
@@ -304,9 +287,7 @@ function NotificationMetadataDisplay({
         case 'follow':
             if (metadata.followerCount !== undefined) {
                 return (
-                    <div className={`${config.timestamp} text-gray-500 mt-1`}>
-                        {metadata.followerCount} followers
-                    </div>
+                    <div className={`${config.timestamp} text-gray-500 mt-1`}>{metadata.followerCount} followers</div>
                 );
             }
             return null;
@@ -368,23 +349,15 @@ export function FollowNotificationItem({
 
     return (
         <div className={`flex items-center gap-3 p-3 hover:bg-gray-700/50 rounded-lg ${className}`}>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                👤
-            </div>
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">👤</div>
             <div className="flex-1">
                 <p className="text-sm text-gray-100">
-                    <button
-                        type="button"
-                        onClick={handleViewProfile}
-                        className="font-medium hover:underline"
-                    >
+                    <button type="button" onClick={handleViewProfile} className="font-medium hover:underline">
                         {notification.actorName || notification.actorAddress?.slice(0, 8)}
                     </button>
                     {' started following you'}
                 </p>
-                <span className="text-xs text-gray-500">
-                    {formatRelativeTime(notification.createdAt)}
-                </span>
+                <span className="text-xs text-gray-500">{formatRelativeTime(notification.createdAt)}</span>
             </div>
             {onFollow && notification.actorAddress && (
                 <button

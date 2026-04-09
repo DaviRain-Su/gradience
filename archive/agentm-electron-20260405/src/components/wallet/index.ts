@@ -22,13 +22,7 @@ export type {
 } from './types.ts';
 
 // Utility functions
-export {
-    getReputationTier,
-    getTierConfig,
-    calculatePolicy,
-    formatUsdCents,
-    truncateAddress,
-} from './types.ts';
+export { getReputationTier, getTierConfig, calculatePolicy, formatUsdCents, truncateAddress } from './types.ts';
 
 // Components
 export { ReputationWallet, ReputationWalletCompact } from './ReputationWallet.tsx';

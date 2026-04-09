@@ -5,15 +5,18 @@
 ## 测试场景
 
 ### 1. 核心任务生命周期 ✅ 已实现
+
 **文件**: `tests/task-lifecycle.spec.ts`
 
 覆盖白皮书定义的三状态四转换：
+
 - `postTask` - 创建任务并锁定资金
 - `submitResult` - Agent 提交结果
 - `judgeAndPay` - Judge 评判并触发结算
 - 验证 95/3/2 费用分配
 
 ### 2. 状态边界测试 ✅ 已实现
+
 **文件**: `tests/task-states.spec.ts`
 
 - Open → Completed (正常评判)
@@ -24,6 +27,7 @@
 - 最大奖励上限
 
 ### 3. 其他场景 (WIP)
+
 - Agent 生命周期 (注册/登录/声誉)
 - Chain Hub 集成
 - A2A 消息流程
@@ -56,6 +60,7 @@ pnpm test:ui
 ## 环境要求
 
 测试运行在 **Solana Devnet**:
+
 - Devnet RPC: `https://api.devnet.solana.com`
 - Indexer API: `https://api.gradiences.xyz/indexer/`
 - 自动为测试钱包空投 SOL
@@ -74,4 +79,4 @@ e2e/
 
 ---
 
-*测试实现日期: 2026-04-07*
+_测试实现日期: 2026-04-07_

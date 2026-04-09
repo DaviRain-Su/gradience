@@ -19,8 +19,8 @@ npm install @gradiences/ows-adapter
 import { OWSWalletAdapter } from '@gradiences/ows-adapter';
 
 const adapter = new OWSWalletAdapter({
-  network: 'devnet', // or 'mainnet'
-  defaultChain: 'solana'
+    network: 'devnet', // or 'mainnet'
+    defaultChain: 'solana',
 });
 
 const wallet = await adapter.connect();
@@ -52,9 +52,9 @@ await agent.initialize();
 
 // Use in task negotiation
 const task = await agent.createTask({
-  title: 'Data Analysis',
-  budget: 100,
-  deadline: Date.now() + 86400000
+    title: 'Data Analysis',
+    budget: 100,
+    deadline: Date.now() + 86400000,
 });
 ```
 

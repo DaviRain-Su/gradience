@@ -3,6 +3,7 @@
 ## ⚡ 5 分钟启动
 
 ### 1. 安装
+
 ```bash
 # macOS/Linux
 curl -L https://github.com/michaelneale/mesh-llm/releases/latest/download/mesh-llm-$(uname -m)-unknown-linux-gnu \
@@ -13,6 +14,7 @@ cargo install mesh-llm
 ```
 
 ### 2. 启动协调器（小龙虾 Cloud 服务器）
+
 ```bash
 mesh-llm coordinator \
   --bind 0.0.0.0:9338 \
@@ -20,6 +22,7 @@ mesh-llm coordinator \
 ```
 
 ### 3. 用户加入网络（可选）
+
 ```bash
 mesh-llm worker \
   --coordinator "ws://mesh.clawsuite.com:9338" \
@@ -27,6 +30,7 @@ mesh-llm worker \
 ```
 
 ### 4. 测试 API
+
 ```bash
 curl http://localhost:9337/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -41,49 +45,51 @@ curl http://localhost:9337/v1/chat/completions \
 ## 🔌 小龙虾 Cloud 配置
 
 ### 修改网关配置
+
 ```typescript
 // src/config/models.ts
 export const MODEL_PROVIDERS = {
-  // 原有商业 API
-  openai: {
-    enabled: true,
-    apiKey: process.env.OPENAI_API_KEY,
-    baseUrl: 'https://api.openai.com/v1',
-  },
-  
-  // 新增 Mesh-LLM
-  mesh: {
-    enabled: true,
-    baseUrl: 'http://localhost:9337/v1',
-    apiKey: 'not-needed',
-    
-    // 作为 fallback
-    fallback: {
-      when: 'primary_failed OR no_api_key',
-      models: ['llama-3.1-70b', 'qwen2.5-72b'],
-    }
-  }
+    // 原有商业 API
+    openai: {
+        enabled: true,
+        apiKey: process.env.OPENAI_API_KEY,
+        baseUrl: 'https://api.openai.com/v1',
+    },
+
+    // 新增 Mesh-LLM
+    mesh: {
+        enabled: true,
+        baseUrl: 'http://localhost:9337/v1',
+        apiKey: 'not-needed',
+
+        // 作为 fallback
+        fallback: {
+            when: 'primary_failed OR no_api_key',
+            models: ['llama-3.1-70b', 'qwen2.5-72b'],
+        },
+    },
 };
 ```
 
 ### 路由逻辑
+
 ```typescript
 // src/routes/chat.ts
 export async function chat(req: Request) {
-  const { model, messages } = req.body;
-  const user = req.user;
-  
-  // 1. 尝试商业 API
-  if (user.hasApiKey('openai')) {
-    try {
-      return await callOpenAI(model, messages);
-    } catch (e) {
-      console.log('OpenAI failed, trying fallback');
+    const { model, messages } = req.body;
+    const user = req.user;
+
+    // 1. 尝试商业 API
+    if (user.hasApiKey('openai')) {
+        try {
+            return await callOpenAI(model, messages);
+        } catch (e) {
+            console.log('OpenAI failed, trying fallback');
+        }
     }
-  }
-  
-  // 2. Fallback 到 Mesh-LLM
-  return await callMeshLLM(model, messages);
+
+    // 2. Fallback 到 Mesh-LLM
+    return await callMeshLLM(model, messages);
 }
 ```
 
@@ -92,6 +98,7 @@ export async function chat(req: Request) {
 ## 📦 模型下载
 
 ### 推荐模型（已测试兼容）
+
 ```bash
 # Llama 3.1 70B (Q4 量化，约 40GB)
 huggingface-cli download \
@@ -109,34 +116,36 @@ huggingface-cli download \
 ## 🚀 生产环境
 
 ### Docker Compose
+
 ```yaml
 version: '3.8'
 services:
-  mesh-coordinator:
-    image: mesh-llm:latest
-    command: coordinator --bind 0.0.0.0:9338 --api-bind 0.0.0.0:9337
-    ports:
-      - "9337:9337"  # API
-      - "9338:9338"  # Coordination
-    volumes:
-      - ./models:/models
-    restart: unless-stopped
-    
-  mesh-worker-1:
-    image: mesh-llm:latest
-    command: worker --coordinator mesh-coordinator:9338 --gpu 0
-    depends_on:
-      - mesh-coordinator
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    mesh-coordinator:
+        image: mesh-llm:latest
+        command: coordinator --bind 0.0.0.0:9338 --api-bind 0.0.0.0:9337
+        ports:
+            - '9337:9337' # API
+            - '9338:9338' # Coordination
+        volumes:
+            - ./models:/models
+        restart: unless-stopped
+
+    mesh-worker-1:
+        image: mesh-llm:latest
+        command: worker --coordinator mesh-coordinator:9338 --gpu 0
+        depends_on:
+            - mesh-coordinator
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
 ```
 
 ### Nginx 反向代理
+
 ```nginx
 upstream mesh_api {
     server localhost:9337;
@@ -145,7 +154,7 @@ upstream mesh_api {
 server {
     listen 443 ssl;
     server_name mesh.clawsuite.com;
-    
+
     location /v1/ {
         proxy_pass http://mesh_api/v1/;
         proxy_http_version 1.1;
@@ -170,18 +179,21 @@ server {
 ## 🐛 常见问题
 
 **端口占用？**
+
 ```bash
 lsof -i :9337  # 检查占用
 kill $(lsof -t -i:9337)  # 释放端口
 ```
 
 **模型加载失败？**
+
 ```bash
 # 检查模型路径
 mesh-llm --model-dir ~/.models list-models
 ```
 
 **GPU 内存不足？**
+
 ```bash
 # 使用更小量化
 mesh-llm --quantization Q4_K_M  # 默认

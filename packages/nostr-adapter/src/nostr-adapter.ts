@@ -70,9 +70,7 @@ export class NostrAdapter implements ProtocolAdapter {
         };
     }
 
-    async subscribe(
-        _handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription> {
+    async subscribe(_handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription> {
         return { protocol: 'nostr', unsubscribe: async () => {} };
     }
 
@@ -83,7 +81,7 @@ export class NostrAdapter implements ProtocolAdapter {
                 minReputation: filter?.minReputation,
                 capabilities: filter?.capabilities,
             },
-            filter?.limit ?? 100
+            filter?.limit ?? 100,
         );
 
         const agents: AgentInfo[] = [];
@@ -91,11 +89,16 @@ export class NostrAdapter implements ProtocolAdapter {
             try {
                 const content: AgentPresenceContent = JSON.parse(event.content);
                 if (filter?.minReputation && content.reputation_score < filter.minReputation) continue;
-                if (filter?.capabilities && !filter.capabilities.some(c => content.capabilities.includes(c))) continue;
+                if (filter?.capabilities && !filter.capabilities.some((c) => content.capabilities.includes(c)))
+                    continue;
 
                 if (content.soul) {
                     if (filter?.soulType && content.soul.type !== filter.soulType) continue;
-                    if (filter?.interestTags?.length && !filter.interestTags.some(t => content.soul!.tags.includes(t))) continue;
+                    if (
+                        filter?.interestTags?.length &&
+                        !filter.interestTags.some((t) => content.soul!.tags.includes(t))
+                    )
+                        continue;
                     if (filter?.soulVisibility && content.soul.visibility !== filter.soulVisibility) continue;
                 } else if (filter?.soulType || filter?.interestTags || filter?.soulVisibility) {
                     continue;

@@ -9,16 +9,16 @@
 
 ## 1. 测试范围
 
-| 合约 | 测试文件 | 优先级 | 说明 |
-|------|---------|--------|------|
-| `AgentArenaEVM.sol` | `test/AgentArenaEVM.t.sol` | P0 | 任务生命周期、费用分配、错误码、重入 |
-| `JudgeRegistry.sol` | `test/JudgeRegistry.t.sol` | P0 | Judge 注册/质押/解押/分配、权限 |
-| `AgentMRegistry.sol` | `test/AgentMRegistry.t.sol` | P0 | 用户注册、Agent 创建、用户名冲突 |
-| `SocialGraph.sol` | `test/SocialGraph.t.sol` | P0 | 关注/取关、事件、重复操作 |
-| `ReputationVerifier.sol` | `test/ReputationVerifier.t.sol` | P0 | Ed25519 签名验证、重放保护 |
-| `GradienceReputationFeed.sol` | `test/GradienceReputationFeed.t.sol` | P0 | Oracle 签名、权限、更新逻辑 |
-| Cross-Chain E2E | `test/CrossChainReputation.e2e.t.sol` | P1 | Solana → Oracle → EVM 声誉桥接（首发 XLayer） |
-| Integration | `test/Integration.t.sol` | P1 | 合约间交互：Arena + Judge + Feed |
+| 合约                          | 测试文件                              | 优先级 | 说明                                          |
+| ----------------------------- | ------------------------------------- | ------ | --------------------------------------------- |
+| `AgentArenaEVM.sol`           | `test/AgentArenaEVM.t.sol`            | P0     | 任务生命周期、费用分配、错误码、重入          |
+| `JudgeRegistry.sol`           | `test/JudgeRegistry.t.sol`            | P0     | Judge 注册/质押/解押/分配、权限               |
+| `AgentMRegistry.sol`          | `test/AgentMRegistry.t.sol`           | P0     | 用户注册、Agent 创建、用户名冲突              |
+| `SocialGraph.sol`             | `test/SocialGraph.t.sol`              | P0     | 关注/取关、事件、重复操作                     |
+| `ReputationVerifier.sol`      | `test/ReputationVerifier.t.sol`       | P0     | Ed25519 签名验证、重放保护                    |
+| `GradienceReputationFeed.sol` | `test/GradienceReputationFeed.t.sol`  | P0     | Oracle 签名、权限、更新逻辑                   |
+| Cross-Chain E2E               | `test/CrossChainReputation.e2e.t.sol` | P1     | Solana → Oracle → EVM 声誉桥接（首发 XLayer） |
+| Integration                   | `test/Integration.t.sol`              | P1     | 合约间交互：Arena + Judge + Feed              |
 
 ---
 
@@ -39,11 +39,11 @@ forge coverage
 
 ### 2.3 测试辅助合约/库
 
-| 辅助项 | 用途 |
-|--------|------|
-| `MockERC20.sol` | ERC20 支付路径测试 |
-| `MockVRFCoordinator.sol` | Phase 2 VRF Judge 分配测试 |
-| `ReentrancyAttacker.sol` | 重入攻击模拟 |
+| 辅助项                    | 用途                                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| `MockERC20.sol`           | ERC20 支付路径测试                                                  |
+| `MockVRFCoordinator.sol`  | Phase 2 VRF Judge 分配测试                                          |
+| `ReentrancyAttacker.sol`  | 重入攻击模拟                                                        |
 | `noble-ed25519` (Node.js) | 生成 ReputationVerifier 测试用的有效/无效签名（Foundry `ffi` 调用） |
 
 ---
@@ -65,12 +65,12 @@ contract AgentArenaEVMHappyPathTest is Test {
     AgentArenaEVM public arena;
     JudgeRegistry public judgeRegistry;
     GradienceReputationFeed public reputationFeed;
-    
+
     address poster = address(0x1);
     address agent = address(0x2);
     address judge = address(0x3);
     address treasury = address(0x4);
-    
+
     function setUp() public {
         vm.startPrank(address(this));
         judgeRegistry = new JudgeRegistry();
@@ -78,13 +78,13 @@ contract AgentArenaEVMHappyPathTest is Test {
         arena = new AgentArenaEVM();
         arena.initialize(treasury, address(judgeRegistry), address(reputationFeed));
         vm.stopPrank();
-        
+
         // Register judge with stake
         vm.deal(judge, 10 ether);
         vm.prank(judge);
         judgeRegistry.register{value: 1 ether}(new uint8[](1));
     }
-    
+
     function test_CreateTaskWithETHReward() public {
         vm.deal(poster, 10 ether);
         vm.prank(poster);
@@ -97,57 +97,57 @@ contract AgentArenaEVMHappyPathTest is Test {
             0.1 ether,
             address(0)
         );
-        
+
         (address taskPoster,,,,,,,,AgentArenaEVM.TaskState state,,) = arena.tasks(taskId);
         assertEq(taskPoster, poster);
         assertEq(uint(state), uint(AgentArenaEVM.TaskState.Open));
     }
-    
+
     function test_ApplyWithETHStake() public {
         uint256 taskId = _createTask();
         vm.deal(agent, 10 ether);
         vm.prank(agent);
         arena.applyForTask{value: 0.1 ether}(taskId);
-        
+
         AgentArenaEVM.ApplicationState appState = arena.applications(taskId, agent);
         assertEq(uint(appState), uint(AgentArenaEVM.ApplicationState.Applied));
     }
-    
+
     function test_JudgeAndPay_Exact95_3_2_Split() public {
         uint256 taskId = _createTaskWithAppliedAgent();
-        
+
         uint256 winnerBefore = agent.balance;
         uint256 judgeBefore = judge.balance;
         uint256 treasuryBefore = treasury.balance;
         uint256 reward = 1 ether;
-        
+
         vm.prank(judge);
         arena.judgeAndPay(taskId, agent, 80);
-        
+
         assertEq(agent.balance - winnerBefore, reward * 9500 / 10000);
         assertEq(judge.balance - judgeBefore, reward * 300 / 10000);
         assertEq(treasury.balance - treasuryBefore, reward * 200 / 10000);
-        
+
         (,,,,,,,,AgentArenaEVM.TaskState state,,) = arena.tasks(taskId);
         assertEq(uint(state), uint(AgentArenaEVM.TaskState.Completed));
     }
-    
+
     function test_ClaimStakeAfterCompletion() public {
         uint256 taskId = _createTaskWithAppliedAgent();
         address loser = address(0x5);
         vm.deal(loser, 10 ether);
         vm.prank(loser);
         arena.applyForTask{value: 0.1 ether}(taskId);
-        
+
         vm.prank(judge);
         arena.judgeAndPay(taskId, agent, 80);
-        
+
         uint256 before = loser.balance;
         vm.prank(loser);
         arena.claimStake(taskId);
         assertEq(loser.balance - before, 0.1 ether);
     }
-    
+
     function _createTask() internal returns (uint256) {
         vm.deal(poster, 10 ether);
         vm.prank(poster);
@@ -161,7 +161,7 @@ contract AgentArenaEVMHappyPathTest is Test {
             address(0)
         );
     }
-    
+
     function _createTaskWithAppliedAgent() internal returns (uint256) {
         uint256 taskId = _createTask();
         vm.deal(agent, 10 ether);
@@ -179,44 +179,44 @@ contract AgentArenaEVMHappyPathTest is Test {
 ```solidity
 contract AgentArenaEVMErrorTest is Test {
     AgentArenaEVM public arena;
-    
+
     function test_Revert_ZeroReward() public {
         vm.expectRevert(AgentArenaEVM.ZeroReward.selector);
         arena.postTask("ref", uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), address(0), 0, 0, address(0));
     }
-    
+
     function test_Revert_InvalidRefLength() public {
         vm.expectRevert(AgentArenaEVM.InvalidRefLength.selector);
         arena.postTask{value: 1 ether}(string(new bytes(257)), uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), address(0), 0, 0, address(0));
     }
-    
+
     function test_Revert_InvalidCategory() public {
         vm.expectRevert(AgentArenaEVM.InvalidCategory.selector);
         arena.postTask{value: 1 ether}("ref", uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), address(0), 8, 0, address(0));
     }
-    
+
     function test_Revert_InvalidDeadline() public {
         vm.expectRevert(AgentArenaEVM.InvalidDeadline.selector);
         arena.postTask{value: 1 ether}("ref", uint64(block.timestamp), uint64(block.timestamp + 1 days), address(0), 0, 0, address(0));
     }
-    
+
     function test_Revert_InvalidJudgeDeadline() public {
         vm.expectRevert(AgentArenaEVM.InvalidJudgeDeadline.selector);
         arena.postTask{value: 1 ether}("ref", uint64(block.timestamp + 2 days), uint64(block.timestamp + 1 days), address(0), 0, 0, address(0));
     }
-    
+
     function test_Revert_TaskNotFound() public {
         vm.expectRevert(AgentArenaEVM.TaskNotFound.selector);
         arena.applyForTask(999);
     }
-    
+
     function test_Revert_DeadlinePassed() public {
         uint256 taskId = _createTaskWithDeadline(block.timestamp + 1 hours);
         vm.warp(block.timestamp + 2 hours);
         vm.expectRevert(AgentArenaEVM.DeadlinePassed.selector);
         arena.applyForTask(taskId);
     }
-    
+
     function test_Revert_AlreadyApplied() public {
         uint256 taskId = _createTask();
         vm.deal(address(0xA), 10 ether);
@@ -226,7 +226,7 @@ contract AgentArenaEVMErrorTest is Test {
         arena.applyForTask{value: 0.1 ether}(taskId);
         vm.stopPrank();
     }
-    
+
     function test_Revert_InvalidStakeAmount() public {
         uint256 taskId = _createTask();
         vm.deal(address(0xA), 10 ether);
@@ -234,21 +234,21 @@ contract AgentArenaEVMErrorTest is Test {
         vm.expectRevert(AgentArenaEVM.InvalidStakeAmount.selector);
         arena.applyForTask{value: 0.01 ether}(taskId);
     }
-    
+
     function test_Revert_NotTaskJudge() public {
         uint256 taskId = _createTaskWithAppliedAgent();
         vm.prank(address(0xBAD));
         vm.expectRevert(AgentArenaEVM.NotTaskJudge.selector);
         arena.judgeAndPay(taskId, address(0xA), 80);
     }
-    
+
     function test_Revert_InvalidScore() public {
         uint256 taskId = _createTaskWithAppliedAgent();
         vm.prank(judge);
         vm.expectRevert(AgentArenaEVM.InvalidScore.selector);
         arena.judgeAndPay(taskId, agent, 50);
     }
-    
+
     // ... additional error tests
 }
 ```
@@ -260,7 +260,7 @@ function test_FeeDistribution_95_3_2() public {
     uint256 taskId = _createTaskWithAppliedAgent();
     vm.prank(judge);
     arena.judgeAndPay(taskId, agent, 80);
-    
+
     (,,,,,,,,,,uint8 score) = arena.tasks(taskId);
     assertEq(score, 80);
 }
@@ -268,10 +268,10 @@ function test_FeeDistribution_95_3_2() public {
 function test_Refund100PercentToPoster_ScoreBelow60() public {
     uint256 taskId = _createTaskWithAppliedAgent();
     uint256 posterBefore = poster.balance;
-    
+
     vm.prank(judge);
     arena.judgeAndPay(taskId, agent, 50);
-    
+
     assertEq(poster.balance - posterBefore, 1 ether);
     (,,,,,,,,AgentArenaEVM.TaskState state,,) = arena.tasks(taskId);
     assertEq(uint(state), uint(AgentArenaEVM.TaskState.Refunded));
@@ -280,10 +280,10 @@ function test_Refund100PercentToPoster_ScoreBelow60() public {
 function test_ClaimExpired_RefundsPosterAndStakes() public {
     uint256 taskId = _createTaskWithAppliedAgent();
     uint256 posterBefore = poster.balance;
-    
+
     vm.warp(block.timestamp + 3 days);
     arena.claimExpired(taskId);
-    
+
     assertEq(poster.balance - posterBefore, 1 ether);
     assertEq(agent.balance, 10 ether); // stake returned
 }
@@ -295,12 +295,12 @@ function test_ClaimExpired_RefundsPosterAndStakes() public {
 function test_CreateTaskWithERC20Reward() public {
     MockERC20 token = new MockERC20("Test", "TST", 18);
     token.mint(poster, 1000 ether);
-    
+
     vm.startPrank(poster);
     token.approve(address(arena), 100 ether);
     uint256 taskId = arena.postTask("ref", uint64(block.timestamp + 1 days), uint64(block.timestamp + 2 days), judge, 1, 0.1 ether, address(token));
     vm.stopPrank();
-    
+
     assertEq(token.balanceOf(address(arena)), 100 ether);
 }
 ```
@@ -311,13 +311,13 @@ function test_CreateTaskWithERC20Reward() public {
 function test_ReentrancyProtectionOnJudgeAndPay() public {
     ReentrancyAttacker attacker = new ReentrancyAttacker(address(arena));
     uint256 taskId = _createTask();
-    
+
     vm.deal(address(attacker), 10 ether);
     vm.prank(address(attacker));
     arena.applyForTask{value: 0.1 ether}(taskId);
     vm.prank(address(attacker));
     arena.submitResult(taskId, "result", "trace");
-    
+
     vm.prank(judge);
     vm.expectRevert("ReentrancyGuard: reentrant call");
     arena.judgeAndPay(taskId, address(attacker), 80);
@@ -331,42 +331,42 @@ function test_ReentrancyProtectionOnJudgeAndPay() public {
 ```solidity
 contract JudgeRegistryTest is Test {
     JudgeRegistry public registry;
-    
+
     function setUp() public {
         registry = new JudgeRegistry();
     }
-    
+
     function test_RegisterWithMinStakeAndCategories() public {
         vm.deal(address(0x1), 10 ether);
         vm.prank(address(0x1));
         uint8[] memory cats = new uint8[](2);
         cats[0] = 1; cats[1] = 2;
         registry.register{value: 1 ether}(cats);
-        
+
         assertTrue(registry.isJudge(address(0x1)));
     }
-    
+
     function test_Revert_InsufficientStake() public {
         vm.deal(address(0x1), 10 ether);
         vm.prank(address(0x1));
         vm.expectRevert(JudgeRegistry.InsufficientStake.selector);
         registry.register{value: 0.1 ether}(new uint8[](0));
     }
-    
+
     function test_RequestUnstake() public {
         test_RegisterWithMinStakeAndCategories();
         vm.prank(address(0x1));
         registry.requestUnstake();
         assertEq(uint(registry.status(address(0x1))), uint(JudgeRegistry.Status.Unstaking));
     }
-    
+
     function test_Revert_CompleteUnstakeBeforeCooldown() public {
         test_RequestUnstake();
         vm.prank(address(0x1));
         vm.expectRevert(JudgeRegistry.CooldownNotMet.selector);
         registry.completeUnstake();
     }
-    
+
     function test_SelectJudgeFilteredByCategory() public {
         // register multiple judges with different categories
         // verify selectJudge(category, randomness) returns valid address
@@ -383,24 +383,24 @@ contract JudgeRegistryTest is Test {
 ```solidity
 contract AgentMRegistryTest is Test {
     AgentMRegistry public registry;
-    
+
     function setUp() public {
         registry = new AgentMRegistry();
     }
-    
+
     function test_RegisterUser() public {
         vm.prank(address(0x1));
         registry.register("alice", "ipfs://metadata");
         assertEq(registry.resolveUsername("alice"), address(0x1));
     }
-    
+
     function test_Revert_DuplicateUsername() public {
         test_RegisterUser();
         vm.prank(address(0x2));
         vm.expectRevert(AgentMRegistry.UsernameTaken.selector);
         registry.register("alice", "ipfs://other");
     }
-    
+
     function test_CreateAgent() public {
         test_RegisterUser();
         vm.prank(address(0x1));
@@ -416,26 +416,26 @@ contract AgentMRegistryTest is Test {
 contract SocialGraphTest is Test {
     AgentMRegistry public registry;
     SocialGraph public graph;
-    
+
     function setUp() public {
         registry = new AgentMRegistry();
         graph = new SocialGraph(address(registry));
     }
-    
+
     function test_Follow() public {
         _registerBoth();
         vm.prank(address(0x1));
         graph.follow(address(0x2));
         assertTrue(graph.isFollowing(address(0x1), address(0x2)));
     }
-    
+
     function test_Revert_SelfFollow() public {
         _registerBoth();
         vm.prank(address(0x1));
         vm.expectRevert(SocialGraph.SelfFollow.selector);
         graph.follow(address(0x1));
     }
-    
+
     function test_Unfollow() public {
         test_Follow();
         vm.prank(address(0x1));
@@ -454,12 +454,12 @@ contract SocialGraphTest is Test {
 ```solidity
 contract ReputationVerifierTest is Test {
     ReputationVerifier public verifier;
-    
+
     function setUp() public {
         verifier = new ReputationVerifier();
         verifier.setEd25519Signer(ed25519Signer);
     }
-    
+
     function test_VerifyValidEd25519Signature() public {
         // Use ffi to generate valid signature via noble-ed25519
         string[] memory inputs = new string[](3);
@@ -468,23 +468,23 @@ contract ReputationVerifierTest is Test {
         inputs[2] = vm.toString(payloadHash);
         bytes memory result = vm.ffi(inputs);
         (bytes memory sig, bytes32 pubkey) = abi.decode(result, (bytes, bytes32));
-        
+
         assertTrue(verifier.verifyReputation(payload, sig, pubkey));
     }
-    
+
     function test_Revert_InvalidSignature() public {
         bytes memory fakeSig = new bytes(64);
         vm.expectRevert(ReputationVerifier.INVALID_SIGNATURE.selector);
         verifier.submitReputation(payload, fakeSig, pubkey);
     }
-    
+
     function test_Revert_NonMonotonicTimestamp() public {
         // submit t=100, then submit t=90
         verifier.submitReputation(payload100, sig100, pubkey);
         vm.expectRevert(ReputationVerifier.NON_MONOTONIC_TIMESTAMP.selector);
         verifier.submitReputation(payload90, sig90, pubkey);
     }
-    
+
     function test_Revert_FutureTimestampBeyondSkew() public {
         vm.warp(1000);
         vm.expectRevert(ReputationVerifier.TOO_FAR_IN_FUTURE.selector);
@@ -499,28 +499,28 @@ contract ReputationVerifierTest is Test {
 contract GradienceReputationFeedTest is Test {
     GradienceReputationFeed public feed;
     address oracle = address(0xORACLE);
-    
+
     function setUp() public {
         feed = new GradienceReputationFeed();
         feed.setOracle(oracle);
     }
-    
+
     function test_UpdateReputationWithValidOracleSignature() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(oraclePrivateKey, digest);
-        
+
         vm.prank(oracle);
         feed.updateReputation(evmAddr, solanaPubkey, 8000, catScores, timestamp, abi.encodePacked(r, s, v));
-        
+
         (uint16 globalScore,,) = feed.reputationOf(evmAddr);
         assertEq(globalScore, 8000);
     }
-    
+
     function test_Revert_InvalidOracleSignature() public {
         vm.prank(address(0xBAD));
         vm.expectRevert(GradienceReputationFeed.InvalidSignature.selector);
         feed.updateReputation(evmAddr, solanaPubkey, 8000, catScores, timestamp, new bytes(65));
     }
-    
+
     function test_Revert_NonOracleCaller() public {
         vm.prank(address(0xBAD));
         vm.expectRevert(GradienceReputationFeed.NotOracle.selector);
@@ -536,13 +536,13 @@ contract ReputationIntegrationTest is Test {
     AgentArenaEVM public arena;
     GradienceReputationFeed public feed;
     ReputationVerifier public verifier;
-    
+
     function test_ArenaReadsFeedWhenAvailable() public {
         feed.updateReputation(agent, solanaPubkey, 9000, catScores, timestamp, oracleSig);
         uint256 discounted = arena.getMinStakeForAgent(agent);
         assertLt(discounted, arena.baseMinStake());
     }
-    
+
     function test_ArenaFallsBackToVerifier() public {
         // No feed data, but verifier has snapshot
         verifier.submitReputation(payload, sig, pubkey);
@@ -550,7 +550,7 @@ contract ReputationIntegrationTest is Test {
         assertLt(stake, arena.baseMinStake());
         assertGt(stake, 0);
     }
-    
+
     function test_ArenaUsesFullMinStakeWhenNeitherExists() public {
         uint256 stake = arena.getMinStakeForAgent(address(0xNEW));
         assertEq(stake, arena.baseMinStake());
@@ -571,18 +571,18 @@ contract CrossChainReputationE2ETest is Test {
         // 4. Submit to GradienceReputationFeed
         // 5. AgentArenaEVM reads and applies stake discount
         // 6. Agent applies for task with reduced stake
-        
+
         // Steps 1-3 mocked via ffi script
         string[] memory inputs = new string[](2);
         inputs[0] = "node";
         inputs[1] = "scripts/mock-oracle-aggregation.js";
         bytes memory result = vm.ffi(inputs);
-        
+
         (address evmAddr, bytes32 solanaPubkey, uint16 globalScore, uint16[8] memory cats, uint64 ts, bytes memory oracleSig) =
             abi.decode(result, (address, bytes32, uint16, uint16[8], uint64, bytes));
-        
+
         feed.updateReputation(evmAddr, solanaPubkey, globalScore, cats, ts, oracleSig);
-        
+
         uint256 discountedStake = arena.getMinStakeForAgent(evmAddr);
         assertLt(discountedStake, arena.baseMinStake());
     }
@@ -593,14 +593,14 @@ contract CrossChainReputationE2ETest is Test {
 
 ## 8. 覆盖率目标
 
-| 合约 | 语句覆盖率 | 分支覆盖率 | 备注 |
-|------|-----------|-----------|------|
-| AgentArenaEVM | ≥ 95% | ≥ 90% | 所有 error path 必须覆盖 |
-| JudgeRegistry | ≥ 90% | ≥ 85% | Judge 分配边界需覆盖 |
-| AgentMRegistry | ≥ 90% | ≥ 85% | |
-| SocialGraph | ≥ 90% | ≥ 80% | |
-| ReputationVerifier | ≥ 90% | ≥ 85% | 签名有效/无效/过期/重放 |
-| GradienceReputationFeed | ≥ 90% | ≥ 85% | |
+| 合约                    | 语句覆盖率 | 分支覆盖率 | 备注                     |
+| ----------------------- | ---------- | ---------- | ------------------------ |
+| AgentArenaEVM           | ≥ 95%      | ≥ 90%      | 所有 error path 必须覆盖 |
+| JudgeRegistry           | ≥ 90%      | ≥ 85%      | Judge 分配边界需覆盖     |
+| AgentMRegistry          | ≥ 90%      | ≥ 85%      |                          |
+| SocialGraph             | ≥ 90%      | ≥ 80%      |                          |
+| ReputationVerifier      | ≥ 90%      | ≥ 85%      | 签名有效/无效/过期/重放  |
+| GradienceReputationFeed | ≥ 90%      | ≥ 85%      |                          |
 
 > Foundry 使用 `forge coverage` 自动生成覆盖率报告，内建 LCOV 输出，可直接接入 CI。
 
@@ -653,4 +653,4 @@ FOUNDRY_ETH_RPC_URL=http://localhost:8545 forge test --match-test test_Fork*
 
 ---
 
-*状态: Phase 5 Test Spec — Ready for Phase 6 Implementation*
+_状态: Phase 5 Test Spec — Ready for Phase 6 Implementation_

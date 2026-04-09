@@ -2,9 +2,9 @@ import TaskDetailClient from './TaskDetailClient';
 
 // Generate static params for export
 export function generateStaticParams() {
-  return [];
+    return [];
 }
 
 export default function TaskDetailPage() {
-  return <TaskDetailClient />;
+    return <TaskDetailClient />;
 }

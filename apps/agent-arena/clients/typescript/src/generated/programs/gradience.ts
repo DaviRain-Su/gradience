@@ -7,230 +7,226 @@
  */
 
 import {
-  assertIsInstructionWithAccounts,
-  containsBytes,
-  getU8Encoder,
-  type Address,
-  type Instruction,
-  type InstructionWithData,
-  type ReadonlyUint8Array,
-} from "@solana/kit";
+    assertIsInstructionWithAccounts,
+    containsBytes,
+    getU8Encoder,
+    type Address,
+    type Instruction,
+    type InstructionWithData,
+    type ReadonlyUint8Array,
+} from '@solana/kit';
 import {
-  parseApplyForTaskInstruction,
-  parseCancelTaskInstruction,
-  parseForceRefundInstruction,
-  parseInitializeInstruction,
-  parseJudgeAndPayInstruction,
-  parsePostTaskInstruction,
-  parseRefundExpiredInstruction,
-  parseRegisterJudgeInstruction,
-  parseSubmitResultInstruction,
-  parseUnstakeJudgeInstruction,
-  parseUpgradeConfigInstruction,
-  type ParsedApplyForTaskInstruction,
-  type ParsedCancelTaskInstruction,
-  type ParsedForceRefundInstruction,
-  type ParsedInitializeInstruction,
-  type ParsedJudgeAndPayInstruction,
-  type ParsedPostTaskInstruction,
-  type ParsedRefundExpiredInstruction,
-  type ParsedRegisterJudgeInstruction,
-  type ParsedSubmitResultInstruction,
-  type ParsedUnstakeJudgeInstruction,
-  type ParsedUpgradeConfigInstruction,
-} from "../instructions";
+    parseApplyForTaskInstruction,
+    parseCancelTaskInstruction,
+    parseForceRefundInstruction,
+    parseInitializeInstruction,
+    parseJudgeAndPayInstruction,
+    parsePostTaskInstruction,
+    parseRefundExpiredInstruction,
+    parseRegisterJudgeInstruction,
+    parseSubmitResultInstruction,
+    parseUnstakeJudgeInstruction,
+    parseUpgradeConfigInstruction,
+    type ParsedApplyForTaskInstruction,
+    type ParsedCancelTaskInstruction,
+    type ParsedForceRefundInstruction,
+    type ParsedInitializeInstruction,
+    type ParsedJudgeAndPayInstruction,
+    type ParsedPostTaskInstruction,
+    type ParsedRefundExpiredInstruction,
+    type ParsedRegisterJudgeInstruction,
+    type ParsedSubmitResultInstruction,
+    type ParsedUnstakeJudgeInstruction,
+    type ParsedUpgradeConfigInstruction,
+} from '../instructions';
 
 export const GRADIENCE_PROGRAM_ADDRESS =
-  "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs" as Address<"5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs">;
+    '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs' as Address<'5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs'>;
 
 export enum GradienceAccount {
-  Task,
-  Escrow,
-  Application,
-  Submission,
-  Reputation,
-  Stake,
-  JudgePool,
-  Treasury,
-  ProgramConfig,
+    Task,
+    Escrow,
+    Application,
+    Submission,
+    Reputation,
+    Stake,
+    JudgePool,
+    Treasury,
+    ProgramConfig,
 }
 
 export enum GradienceInstruction {
-  Initialize,
-  PostTask,
-  ApplyForTask,
-  SubmitResult,
-  JudgeAndPay,
-  CancelTask,
-  RefundExpired,
-  ForceRefund,
-  RegisterJudge,
-  UnstakeJudge,
-  UpgradeConfig,
+    Initialize,
+    PostTask,
+    ApplyForTask,
+    SubmitResult,
+    JudgeAndPay,
+    CancelTask,
+    RefundExpired,
+    ForceRefund,
+    RegisterJudge,
+    UnstakeJudge,
+    UpgradeConfig,
 }
 
 export function identifyGradienceInstruction(
-  instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
+    instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): GradienceInstruction {
-  const data = "data" in instruction ? instruction.data : instruction;
-  if (containsBytes(data, getU8Encoder().encode(0), 0)) {
-    return GradienceInstruction.Initialize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(1), 0)) {
-    return GradienceInstruction.PostTask;
-  }
-  if (containsBytes(data, getU8Encoder().encode(2), 0)) {
-    return GradienceInstruction.ApplyForTask;
-  }
-  if (containsBytes(data, getU8Encoder().encode(3), 0)) {
-    return GradienceInstruction.SubmitResult;
-  }
-  if (containsBytes(data, getU8Encoder().encode(4), 0)) {
-    return GradienceInstruction.JudgeAndPay;
-  }
-  if (containsBytes(data, getU8Encoder().encode(5), 0)) {
-    return GradienceInstruction.CancelTask;
-  }
-  if (containsBytes(data, getU8Encoder().encode(6), 0)) {
-    return GradienceInstruction.RefundExpired;
-  }
-  if (containsBytes(data, getU8Encoder().encode(7), 0)) {
-    return GradienceInstruction.ForceRefund;
-  }
-  if (containsBytes(data, getU8Encoder().encode(8), 0)) {
-    return GradienceInstruction.RegisterJudge;
-  }
-  if (containsBytes(data, getU8Encoder().encode(9), 0)) {
-    return GradienceInstruction.UnstakeJudge;
-  }
-  if (containsBytes(data, getU8Encoder().encode(10), 0)) {
-    return GradienceInstruction.UpgradeConfig;
-  }
-  throw new Error(
-    "The provided instruction could not be identified as a gradience instruction.",
-  );
+    const data = 'data' in instruction ? instruction.data : instruction;
+    if (containsBytes(data, getU8Encoder().encode(0), 0)) {
+        return GradienceInstruction.Initialize;
+    }
+    if (containsBytes(data, getU8Encoder().encode(1), 0)) {
+        return GradienceInstruction.PostTask;
+    }
+    if (containsBytes(data, getU8Encoder().encode(2), 0)) {
+        return GradienceInstruction.ApplyForTask;
+    }
+    if (containsBytes(data, getU8Encoder().encode(3), 0)) {
+        return GradienceInstruction.SubmitResult;
+    }
+    if (containsBytes(data, getU8Encoder().encode(4), 0)) {
+        return GradienceInstruction.JudgeAndPay;
+    }
+    if (containsBytes(data, getU8Encoder().encode(5), 0)) {
+        return GradienceInstruction.CancelTask;
+    }
+    if (containsBytes(data, getU8Encoder().encode(6), 0)) {
+        return GradienceInstruction.RefundExpired;
+    }
+    if (containsBytes(data, getU8Encoder().encode(7), 0)) {
+        return GradienceInstruction.ForceRefund;
+    }
+    if (containsBytes(data, getU8Encoder().encode(8), 0)) {
+        return GradienceInstruction.RegisterJudge;
+    }
+    if (containsBytes(data, getU8Encoder().encode(9), 0)) {
+        return GradienceInstruction.UnstakeJudge;
+    }
+    if (containsBytes(data, getU8Encoder().encode(10), 0)) {
+        return GradienceInstruction.UpgradeConfig;
+    }
+    throw new Error('The provided instruction could not be identified as a gradience instruction.');
 }
 
-export type ParsedGradienceInstruction<
-  TProgram extends string = "5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs",
-> =
-  | ({
-      instructionType: GradienceInstruction.Initialize;
-    } & ParsedInitializeInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.PostTask;
-    } & ParsedPostTaskInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.ApplyForTask;
-    } & ParsedApplyForTaskInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.SubmitResult;
-    } & ParsedSubmitResultInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.JudgeAndPay;
-    } & ParsedJudgeAndPayInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.CancelTask;
-    } & ParsedCancelTaskInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.RefundExpired;
-    } & ParsedRefundExpiredInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.ForceRefund;
-    } & ParsedForceRefundInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.RegisterJudge;
-    } & ParsedRegisterJudgeInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.UnstakeJudge;
-    } & ParsedUnstakeJudgeInstruction<TProgram>)
-  | ({
-      instructionType: GradienceInstruction.UpgradeConfig;
-    } & ParsedUpgradeConfigInstruction<TProgram>);
+export type ParsedGradienceInstruction<TProgram extends string = '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs'> =
+    | ({
+          instructionType: GradienceInstruction.Initialize;
+      } & ParsedInitializeInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.PostTask;
+      } & ParsedPostTaskInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.ApplyForTask;
+      } & ParsedApplyForTaskInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.SubmitResult;
+      } & ParsedSubmitResultInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.JudgeAndPay;
+      } & ParsedJudgeAndPayInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.CancelTask;
+      } & ParsedCancelTaskInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.RefundExpired;
+      } & ParsedRefundExpiredInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.ForceRefund;
+      } & ParsedForceRefundInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.RegisterJudge;
+      } & ParsedRegisterJudgeInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.UnstakeJudge;
+      } & ParsedUnstakeJudgeInstruction<TProgram>)
+    | ({
+          instructionType: GradienceInstruction.UpgradeConfig;
+      } & ParsedUpgradeConfigInstruction<TProgram>);
 
 export function parseGradienceInstruction<TProgram extends string>(
-  instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
+    instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedGradienceInstruction<TProgram> {
-  const instructionType = identifyGradienceInstruction(instruction);
-  switch (instructionType) {
-    case GradienceInstruction.Initialize: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.Initialize,
-        ...parseInitializeInstruction(instruction),
-      };
+    const instructionType = identifyGradienceInstruction(instruction);
+    switch (instructionType) {
+        case GradienceInstruction.Initialize: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.Initialize,
+                ...parseInitializeInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.PostTask: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.PostTask,
+                ...parsePostTaskInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.ApplyForTask: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.ApplyForTask,
+                ...parseApplyForTaskInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.SubmitResult: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.SubmitResult,
+                ...parseSubmitResultInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.JudgeAndPay: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.JudgeAndPay,
+                ...parseJudgeAndPayInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.CancelTask: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.CancelTask,
+                ...parseCancelTaskInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.RefundExpired: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.RefundExpired,
+                ...parseRefundExpiredInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.ForceRefund: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.ForceRefund,
+                ...parseForceRefundInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.RegisterJudge: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.RegisterJudge,
+                ...parseRegisterJudgeInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.UnstakeJudge: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.UnstakeJudge,
+                ...parseUnstakeJudgeInstruction(instruction),
+            };
+        }
+        case GradienceInstruction.UpgradeConfig: {
+            assertIsInstructionWithAccounts(instruction);
+            return {
+                instructionType: GradienceInstruction.UpgradeConfig,
+                ...parseUpgradeConfigInstruction(instruction),
+            };
+        }
+        default:
+            throw new Error('Unrecognized instruction type: ' + instructionType);
     }
-    case GradienceInstruction.PostTask: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.PostTask,
-        ...parsePostTaskInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.ApplyForTask: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.ApplyForTask,
-        ...parseApplyForTaskInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.SubmitResult: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.SubmitResult,
-        ...parseSubmitResultInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.JudgeAndPay: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.JudgeAndPay,
-        ...parseJudgeAndPayInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.CancelTask: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.CancelTask,
-        ...parseCancelTaskInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.RefundExpired: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.RefundExpired,
-        ...parseRefundExpiredInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.ForceRefund: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.ForceRefund,
-        ...parseForceRefundInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.RegisterJudge: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.RegisterJudge,
-        ...parseRegisterJudgeInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.UnstakeJudge: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.UnstakeJudge,
-        ...parseUnstakeJudgeInstruction(instruction),
-      };
-    }
-    case GradienceInstruction.UpgradeConfig: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: GradienceInstruction.UpgradeConfig,
-        ...parseUpgradeConfigInstruction(instruction),
-      };
-    }
-    default:
-      throw new Error("Unrecognized instruction type: " + instructionType);
-  }
 }

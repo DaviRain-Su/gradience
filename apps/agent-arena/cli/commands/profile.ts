@@ -61,7 +61,7 @@ function resolveAgentmApiBaseUrl(env: NodeJS.ProcessEnv): string {
 async function loadConfig(env: NodeJS.ProcessEnv): Promise<{ rpc?: string; keypair?: string }> {
     const home = env.HOME || homedir();
     const configPath = path.join(home, '.gradience', 'config.json');
-    
+
     try {
         const raw = await readFile(configPath, 'utf8');
         return JSON.parse(raw) as { rpc?: string; keypair?: string };
@@ -161,29 +161,20 @@ async function getRemoteProfile(
     return response.profile ?? null;
 }
 
-async function ensureAgentmDemoSession(
-    apiBaseUrl: string,
-    agent: string,
-    env: NodeJS.ProcessEnv,
-): Promise<void> {
+async function ensureAgentmDemoSession(apiBaseUrl: string, agent: string, env: NodeJS.ProcessEnv): Promise<void> {
     if (env.GRADIENCE_AGENTM_DEMO_LOGIN === '0') {
         return;
     }
     const privyUserId = env.GRADIENCE_AGENTM_PRIVY_USER_ID ?? `cli-${agent.slice(0, 16)}`;
-    await requestAgentmApiJson(
-        apiBaseUrl,
-        '/auth/demo-login',
-        env,
-        {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                publicKey: agent,
-                email: `${agent.slice(0, 8)}@agentm.local`,
-                privyUserId,
-            }),
-        },
-    );
+    await requestAgentmApiJson(apiBaseUrl, '/auth/demo-login', env, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+            publicKey: agent,
+            email: `${agent.slice(0, 8)}@agentm.local`,
+            privyUserId,
+        }),
+    });
 }
 
 function emitProfileShowResult(agent: string, profile: AgentProfileApiResponse | null, noDna: boolean): void {
@@ -337,19 +328,14 @@ export async function handleProfileCommand(
         ok: boolean;
         onchain_tx: string;
         profile: AgentProfileApiResponse;
-    }>(
-        apiBaseUrl,
-        `/api/agents/${encodeURIComponent(localAgent)}/profile/publish`,
-        env,
-        {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                publish_mode: mode,
-                content_ref: contentRef,
-            }),
-        },
-    );
+    }>(apiBaseUrl, `/api/agents/${encodeURIComponent(localAgent)}/profile/publish`, env, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+            publish_mode: mode,
+            content_ref: contentRef,
+        }),
+    });
     if (noDna) {
         printJson(published);
     } else {

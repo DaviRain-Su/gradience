@@ -1,27 +1,28 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { createKeyPairSignerFromBytes, createSolanaRpc, getBase64EncodedWireTransaction, type Instruction } from '@solana/kit';
-
 import {
-    GRADIENCE_PROGRAM_ADDRESS,
-    GradienceSDK,
-    KeypairAdapter,
-} from './clients/typescript/src/index.js';
+    createKeyPairSignerFromBytes,
+    createSolanaRpc,
+    getBase64EncodedWireTransaction,
+    type Instruction,
+} from '@solana/kit';
+
+import { GRADIENCE_PROGRAM_ADDRESS, GradienceSDK, KeypairAdapter } from './clients/typescript/src/index.js';
 
 async function main() {
     const rpcUrl = 'https://api.devnet.solana.com';
     const rpc = createSolanaRpc(rpcUrl);
     const sdk = new GradienceSDK({ rpc, rpcEndpoint: rpcUrl, programAddress: GRADIENCE_PROGRAM_ADDRESS });
-    
+
     const keypairPath = path.join(homedir(), '.config/solana/id.json');
     const raw = JSON.parse(await readFile(keypairPath, 'utf8'));
     const signer = await createKeyPairSignerFromBytes(new Uint8Array(raw));
     const wallet = new KeypairAdapter({ signer, rpc });
-    
+
     console.log('Program:', GRADIENCE_PROGRAM_ADDRESS);
     console.log('Wallet:', signer.address);
-    
+
     // First check the current task_count from config
     const config = await sdk.config.get();
     console.log('Config:', config);
@@ -38,8 +39,8 @@ async function main() {
             minStake: 0n,
             judgeMode: 0,
             judge: signer.address,
-            deadline: BigInt(Math.floor(Date.now()/1000) + 86400),
-            judgeDeadline: BigInt(Math.floor(Date.now()/1000) + 172800),
+            deadline: BigInt(Math.floor(Date.now() / 1000) + 86400),
+            judgeDeadline: BigInt(Math.floor(Date.now() / 1000) + 172800),
         });
         console.log('✅ Post task', nextTaskId, ':', sig);
     } catch (e: any) {

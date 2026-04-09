@@ -7,7 +7,9 @@ export function DashboardView() {
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-gray-400">Profile Studio MVP is active. You can create, edit, publish, and deprecate profiles.</p>
+            <p className="text-gray-400">
+                Profile Studio MVP is active. You can create, edit, publish, and deprecate profiles.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card title="Profiles" value={String(profiles.length)} note="Your total managed profiles" />
                 <Card title="Published" value={String(publishedCount)} note="Live profiles in marketplace" />

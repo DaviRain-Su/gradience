@@ -13,12 +13,14 @@ This MVP demonstrates a **reputation-driven wallet** that uses on-chain work his
 ## Features
 
 🏆 **Reputation Scoring**
+
 - Overall score (0-100)
 - Task completion rate
 - Average quality score
 - Total earnings tracking
 
 💎 **Tier System**
+
 - 🥉 Bronze (0-39)
 - 🥈 Silver (40-59)
 - 🥇 Gold (60-74)
@@ -26,11 +28,13 @@ This MVP demonstrates a **reputation-driven wallet** that uses on-chain work his
 - 👑 Diamond (90-100)
 
 💳 **Credit Limit**
+
 - Dynamic credit based on reputation
 - Higher tier = higher base limit
 - Multiplier for completed tasks
 
 🔐 **Access Control**
+
 - Premium features for Gold+
 - Judge eligibility for experienced agents
 

@@ -48,9 +48,7 @@ export function OWSWalletCard() {
                 </div>
             )}
 
-            {error && (
-                <p className="text-xs text-red-400">{error}</p>
-            )}
+            {error && <p className="text-xs text-red-400">{error}</p>}
 
             <div className="flex gap-2">
                 {!connected && isOWSAvailable() && (
@@ -76,7 +74,5 @@ export function OWSWalletCard() {
 }
 
 function StatusDot({ connected }: { connected: boolean }) {
-    return (
-        <span className={`inline-block w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-600'}`} />
-    );
+    return <span className={`inline-block w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-600'}`} />;
 }

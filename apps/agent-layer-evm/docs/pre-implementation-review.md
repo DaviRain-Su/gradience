@@ -30,6 +30,7 @@
 ### 4. UUPS 代理安全细节缺失（🟠 P1）
 
 **问题**: 技术规范提到 UUPS，但未明确：
+
 - 实现合约 `constructor` 必须调用 `_disableInitializers()`
 - `initialize` 必须使用 `initializer` / `reinitializer`
 - 升级权限最终移交给 Timelock + Multisig 的方案
@@ -38,7 +39,8 @@
 
 **问题**: XLayer、Base、Arbitrum 上的合约地址可能不同，SDK 维护成本高，容易出错。
 
-**候选方案**: 
+**候选方案**:
+
 - A. 手动映射表
 - B. Deterministic CREATE2 部署（推荐）
 - C. 链上 ContractRegistry
@@ -46,6 +48,7 @@
 ### 6. ERC20 异常行为测试覆盖不足（🟠 P1）
 
 **遗漏场景**:
+
 - USDT 风格（`transfer` 不返回 bool）
 - Fee-on-transfer（实际到账 < 输入）
 - Rebase tokens（余额动态变化）
@@ -80,6 +83,7 @@
 ### 修改 1：修正 Solana 定位表述（已完成 ✅）
 
 **涉及文档**:
+
 - `01-prd.md`
 - `02-architecture.md`
 - `03-technical-spec.md`
@@ -87,9 +91,10 @@
 **修改内容**:
 将所有 "Solana 逐步归档 / 共存维护 / 默认核心" 的表述统一修正为：
 
-> **Solana 与 EVM 为同级核心链，长期并行支持。**  
-> - 新功能在 Solana 和 EVM 同步规划，优先在 EVM 实现不代表 Solana 被降级。  
-> - 声誉 Oracle 同时为 Solana → EVM 和 EVM → Solana 双向提供服务。  
+> **Solana 与 EVM 为同级核心链，长期并行支持。**
+>
+> - 新功能在 Solana 和 EVM 同步规划，优先在 EVM 实现不代表 Solana 被降级。
+> - 声誉 Oracle 同时为 Solana → EVM 和 EVM → Solana 双向提供服务。
 > - SDK 的 `ChainRouter` 平等路由 `solana` 和 `xlayer/base/arbitrum/ethereum`。
 
 ### 修改 2：增加 `IReputationVerifier.sol` 接口（P0）
@@ -98,6 +103,7 @@
 
 **操作**:
 在 `src/interfaces/IReputationVerifier.sol` 中定义 0.8.24 兼容的 interface：
+
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
@@ -109,7 +115,7 @@ interface IReputationVerifier {
         uint32 completed;
         uint32 disputed;
     }
-    
+
     function snapshots(address account) external view returns (Snapshot memory);
     function verifyReputation(bytes calldata payload, bytes calldata signature, bytes32 pubkey) external view returns (bool);
 }
@@ -118,6 +124,7 @@ interface IReputationVerifier {
 ### 修改 3：重构 `Task` 结构体存储布局（P0）
 
 **旧设计**:
+
 ```solidity
 struct Task {
     address poster;
@@ -136,6 +143,7 @@ struct Task {
 ```
 
 **新设计**:
+
 ```solidity
 struct Task {
     address poster;
@@ -159,17 +167,19 @@ mapping(uint256 => string) public taskTraceRef;
 ### 修改 4：初始化 Foundry 工程结构（P0）
 
 **操作**:
+
 1. 初始化 `foundry.toml`（多链 RPC、optimizer、remappings）
 2. 安装依赖：`forge install foundry-rs/forge-std`、OpenZeppelin Contracts / Upgradeable
 3. 迁移目录：
-   - `contracts/` → `src/` + `src/legacy/`
-   - `test/*.test.js` → 保留为参考，新增 `test/*.t.sol`
-   - `scripts/` → `script/`（Foundry 标准）
+    - `contracts/` → `src/` + `src/legacy/`
+    - `test/*.test.js` → 保留为参考，新增 `test/*.t.sol`
+    - `scripts/` → `script/`（Foundry 标准）
 4. 更新 `package.json` 脚本为 `forge` 命令
 
 ### 修改 5：UUPS 安全清单模板化（P1）
 
 **所有 UUPS 合约必须包含**:
+
 ```solidity
 constructor() {
     _disableInitializers();
@@ -185,6 +195,7 @@ function _authorizeUpgrade(address newImplementation) internal override onlyOwne
 ```
 
 **部署后治理升级路径**:
+
 - 部署阶段：Owner = Deployer EOA
 - 验证阶段：Owner → 3/5 Multisig
 - 生产阶段：Multisig → Timelock (48h)
@@ -194,11 +205,13 @@ function _authorizeUpgrade(address newImplementation) internal override onlyOwne
 **推荐方案 B：Deterministic CREATE2 部署**
 
 理由:
+
 - 同一份 bytecode + 同 salt = 跨链同地址
 - 大幅降低 SDK 地址表维护成本
 - 用户和开发者体验更好（"Gradience 合约在每条链都是 `0xabc...`"）
 
 **实施方案**:
+
 - 使用 `Create2Deployer`（如 Arachnid 的 `0x4e59b44847b379578588920ca78fbf26c0b4956c`）
 - 或自研 `DeterministicDeployer` 合约
 - 部署脚本中统一 salt 生成规则：`keccak256("GRADIENCE_V1_<CONTRACT_NAME>")`
@@ -206,6 +219,7 @@ function _authorizeUpgrade(address newImplementation) internal override onlyOwne
 ### 修改 7：增强 ERC20 异常处理（P1）
 
 **在 `AgentArenaEVM` 中增加**:
+
 ```solidity
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -223,6 +237,7 @@ function _safeTransferFromWithAmount(address token, address from, uint256 amount
 ### 修改 8：Oracle 多链同步策略文档化（P1）
 
 **决策**:
+
 - **接受最终一致性**（最大延迟 10 分钟）
 - 每条链的 `GradienceReputationFeed` 记录 `lastUpdatedAt`
 - SDK 在读取声誉时暴露 `freshness` 字段，供 UI 提示用户
@@ -239,6 +254,7 @@ struct AggregatedReputation {
 ### 修改 9：`JudgeRegistry` 风险分级规则（P2）
 
 **新增规则**:
+
 ```solidity
 uint256 public constant PREVRANDAO_MAX_REWARD = 1 ether;
 
@@ -255,13 +271,14 @@ function assignJudge(uint256 taskId, uint256 randomness) external view returns (
 ### 修改 10：Subgraph 多链路由表（P2）
 
 **SDK 侧新增**:
+
 ```typescript
 const SUBGRAPH_ENDPOINTS: Record<string, string> = {
-  solana:     process.env.SUBGRAPH_SOLANA     || '', // Solana 使用自定义 indexer
-  xlayer:     process.env.SUBGRAPH_XLAYER     || '',
-  base:       process.env.SUBGRAPH_BASE       || '',
-  arbitrum:   process.env.SUBGRAPH_ARBITRUM   || '',
-  ethereum:   process.env.SUBGRAPH_ETHEREUM   || '',
+    solana: process.env.SUBGRAPH_SOLANA || '', // Solana 使用自定义 indexer
+    xlayer: process.env.SUBGRAPH_XLAYER || '',
+    base: process.env.SUBGRAPH_BASE || '',
+    arbitrum: process.env.SUBGRAPH_ARBITRUM || '',
+    ethereum: process.env.SUBGRAPH_ETHEREUM || '',
 };
 ```
 
@@ -272,21 +289,23 @@ const SUBGRAPH_ENDPOINTS: Record<string, string> = {
 ### 1. Solana 与 EVM 的同级支持策略
 
 **核心原则**:
+
 > Solana 不是"Legacy"或"Secondary"链。它是 Gradience 协议的双核心之一（Solana + EVM Multi-Chain）。
 
 **具体完善点**:
 
-| 维度 | Solana | EVM | 策略 |
-|------|--------|-----|------|
-| **功能发布** | 同步规划 | 优先实现 | 不因 EVM 进度牺牲 Solana 维护 |
-| **新用户引导** | 保留入口 | 新增入口 | Wallet-driven routing（Phantom → Solana，MetaMask → EVM） |
-| **声誉系统** | 源头 + 目标 | 源头 + 目标 | Oracle 双向桥接（Solana ↔ EVM） |
-| **SDK 抽象** | `SolanaAdapter` | `EVMAdapter` | `ChainRouter` 无偏好路由 |
-| **Agent Daemon** | `SolanaTaskBuilder` | `EVMTaskBuilder` | 任务按来源链路由到对应 Builder |
-| **索引器** | Rust Indexer | The Graph Subgraph | 并行运行，数据格式对齐 |
-| **文档优先级** | 继续维护 | 重点建设 | 两套文档同步更新 |
+| 维度             | Solana              | EVM                | 策略                                                      |
+| ---------------- | ------------------- | ------------------ | --------------------------------------------------------- |
+| **功能发布**     | 同步规划            | 优先实现           | 不因 EVM 进度牺牲 Solana 维护                             |
+| **新用户引导**   | 保留入口            | 新增入口           | Wallet-driven routing（Phantom → Solana，MetaMask → EVM） |
+| **声誉系统**     | 源头 + 目标         | 源头 + 目标        | Oracle 双向桥接（Solana ↔ EVM）                           |
+| **SDK 抽象**     | `SolanaAdapter`     | `EVMAdapter`       | `ChainRouter` 无偏好路由                                  |
+| **Agent Daemon** | `SolanaTaskBuilder` | `EVMTaskBuilder`   | 任务按来源链路由到对应 Builder                            |
+| **索引器**       | Rust Indexer        | The Graph Subgraph | 并行运行，数据格式对齐                                    |
+| **文档优先级**   | 继续维护            | 重点建设           | 两套文档同步更新                                          |
 
 **需要新增/完善的内容**:
+
 - [ ] `packages/sdk/src/router/chain-router.ts` 必须无差别支持 `solana` 和 `xlayer/base/arbitrum/ethereum`
 - [ ] `docs/solana/` 目录下的文档保持与 EVM 侧对齐（每有 EVM 新设计，检查 Solana 是否需要同步）
 - [ ] Reputation Oracle 必须支持 **EVM → Solana** 的声誉回写（如果 EVM 上产生了本地声誉数据）
@@ -296,15 +315,15 @@ const SUBGRAPH_ENDPOINTS: Record<string, string> = {
 
 从当前 Hardhat 工程迁移到 Foundry 时，以下文件需要特别关注：
 
-| 现有文件 | 处理方式 | 原因 |
-|---------|---------|------|
+| 现有文件                           | 处理方式                                                                 | 原因                                |
+| ---------------------------------- | ------------------------------------------------------------------------ | ----------------------------------- |
 | `contracts/AgentLayerRaceTask.sol` | 迁移到 `src/legacy/AgentLayerRaceTask.sol`，参考重写 `AgentArenaEVM.sol` | 缺少 JudgeRegistry、ERC20、声誉集成 |
-| `contracts/ReputationVerifier.sol` | 保留在 `src/legacy/ReputationVerifier.sol`，不再修改 | Ed25519 库限制 ^0.6.8 |
-| `contracts/libraries/Ed25519.sol` | 保留在 `src/legacy/libraries/` | 被 ReputationVerifier 独占使用 |
-| `test/AgentLayerRaceTask.test.js` | 保留参考，不删除 | 历史测试逻辑可借鉴 |
-| `test/ReputationVerifier.test.js` | 保留参考 | Ed25519 测试用例重要 |
-| `scripts/deploy-base-sepolia.js` | 重写为 `script/Deploy.s.sol` | Foundry 部署脚本 |
-| `scripts/sign-reputation.js` | 迁移到 `script/helpers/sign-reputation.js` | Foundry `ffi` 测试仍需调用 |
+| `contracts/ReputationVerifier.sol` | 保留在 `src/legacy/ReputationVerifier.sol`，不再修改                     | Ed25519 库限制 ^0.6.8               |
+| `contracts/libraries/Ed25519.sol`  | 保留在 `src/legacy/libraries/`                                           | 被 ReputationVerifier 独占使用      |
+| `test/AgentLayerRaceTask.test.js`  | 保留参考，不删除                                                         | 历史测试逻辑可借鉴                  |
+| `test/ReputationVerifier.test.js`  | 保留参考                                                                 | Ed25519 测试用例重要                |
+| `scripts/deploy-base-sepolia.js`   | 重写为 `script/Deploy.s.sol`                                             | Foundry 部署脚本                    |
+| `scripts/sign-reputation.js`       | 迁移到 `script/helpers/sign-reputation.js`                               | Foundry `ffi` 测试仍需调用          |
 
 ### 3. 需要新增的文档
 
@@ -318,12 +337,14 @@ const SUBGRAPH_ENDPOINTS: Record<string, string> = {
 ## 四、Phase 6 启动建议
 
 **阻塞项（必须解决）**:
+
 1. ✅ Solana 定位表述已修正
 2. 🔄 初始化 Foundry 工程结构（GRA-251）
 3. 🔄 定义 `IReputationVerifier` 接口
 4. 🔄 冻结 `AgentArenaEVM.Task` 结构体最终布局
 
 **推荐启动顺序**:
+
 ```
 Step 1: GRA-251 → 搭建 Foundry 环境
 Step 2: 定义所有 interfaces（IReputationVerifier, IJudgeRegistry, IReputationFeed）
@@ -346,6 +367,7 @@ Step 6: 并行启动 GRA-246/247/248（Reputation 相关）
 **问题**：EVM 每笔交易都有 gas 成本。Poster 发 10 个任务、Judge 批量评判 10 个任务，当前设计需要 10 笔独立交易，成本不可接受。
 
 **建议方案**：
+
 - **方案 A**：合约原生支持 `batchPostTask` + `batchJudgeAndPay`
 - **方案 B**：依赖 `Multicall3`（`0xcA11bde05977b3631167028862bE2a173976CA11`），SDK 封装 `aggregate3` 调用
 
@@ -356,6 +378,7 @@ Step 6: 并行启动 GRA-246/247/248（Reputation 相关）
 **问题**：现有 `AgentLayerRaceTask.cancel_task()` 允许 Poster **随时取消**，即使已有 Agent 申请并付出了时间成本。这会被恶意利用（白嫖劳动力）。
 
 **建议规则**：
+
 - **0 申请者**：Poster 可免费取消
 - **有申请者但无提交者**：Cancel 需扣除 **5% reward** 平分给所有申请者作为补偿
 - **有提交者后**：**禁止 cancel**，只能等过期退款或正常评判
@@ -363,10 +386,12 @@ Step 6: 并行启动 GRA-246/247/248（Reputation 相关）
 #### 遗漏 13：Judge 缺勤惩罚 & 重新分配机制
 
 **问题**：`JudgeRegistry` 写了注册/质押/解押，但未定义：
+
 - Judge 在 `judgeDeadline` 前未评判，是否 slash 质押？
 - 谁来触发 reassign？（Poster / 任何人 / Keeper bot？）
 
 **建议设计**：
+
 ```solidity
 uint64 public constant REASSIGN_WINDOW = 6 hours;
 
@@ -374,10 +399,10 @@ function reassignJudge(uint256 taskId) external {
     Task storage task = tasks[taskId];
     require(block.timestamp > task.judgeDeadline - REASSIGN_WINDOW);
     require(!hasJudged[taskId]);
-    
+
     // slash 原 Judge 10% 质押
     judgeRegistry.slash(task.judge, task.minStake / 10);
-    
+
     // 分配新 Judge
     address newJudge = judgeRegistry.selectJudge(task.category, block.prevrandao);
     task.judge = newJudge;
@@ -389,11 +414,12 @@ function reassignJudge(uint256 taskId) external {
 **问题**：现有代码中 2% protocol fee 在 `judgeAndPay` 时直接 `transfer` 到 `treasury`。如果 treasury 是 Safe 多签，频繁小额转账 gas 浪费严重。
 
 **建议**：
+
 - 在 `AgentArenaEVM` 中累积 fee：
-  ```solidity
-  mapping(address => uint256) public protocolFees;
-  function withdrawProtocolFees(address token) external onlyTreasury;
-  ```
+    ```solidity
+    mapping(address => uint256) public protocolFees;
+    function withdrawProtocolFees(address token) external onlyTreasury;
+    ```
 - 按 token 维度累积，treasury 按需提取
 
 ---
@@ -405,6 +431,7 @@ function reassignJudge(uint256 taskId) external {
 **问题**：`AgentMRegistry` 设计了自建用户名系统，但在 EVM 生态中用户更希望用 ENS（`vitalik.eth`）或 SNS。
 
 **建议**：
+
 - `AgentMRegistry` 增加可选字段：`string ensName`（只记录，不验证所有权）
 - 前端 SDK 自动尝试读取钱包地址的 ENS/SNS 反向记录作为 display name fallback
 - 不强制绑定，但提升用户体验
@@ -414,6 +441,7 @@ function reassignJudge(uint256 taskId) external {
 **问题**：`metadataURI` 指向 IPFS/Arweave，但用户更新 profile 后，旧缓存节点可能返回旧数据，indexer 难以识别最新版本。
 
 **建议**：
+
 ```solidity
 struct UserProfile {
     string metadataURI;
@@ -421,6 +449,7 @@ struct UserProfile {
     uint64 updatedAt;
 }
 ```
+
 - 每次更新 `version++`
 - 事件 `ProfileUpdated` 带上 `version`
 
@@ -429,6 +458,7 @@ struct UserProfile {
 **问题**：Test Spec 里全是手写测试，但 Foundry 的核心优势是 **fuzz** 和 **invariant testing**。任务状态机和费用分配是 fuzz 的最佳场景。
 
 **建议增加**：
+
 ```solidity
 function invariant_TotalBalanceEqualsEscrowPlusFees() public view {
     assertEq(address(arena).balance, totalEscrowed + totalProtocolFees);
@@ -445,6 +475,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 **问题**：同一个 Oracle 可能同时服务 XLayer Testnet 和 Mainnet，测试网垃圾数据可能污染主网声誉。
 
 **必须做的设计**：
+
 - Oracle 签名 payload 中必须包含 `uint256 chainId`
 - `GradienceReputationFeed.updateReputation()` 验证 `chainId == block.chainid()`
 - 测试网和主网使用不同的 Oracle 私钥或不同的 `domain separator`
@@ -454,6 +485,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 **问题**：Daemon 的 evaluator 评分后，链上无法证明这个 `score=80` 确实来自认证的 GPT-4/Claude 模型，而非 Judge 自己瞎编。
 
 **建议**：
+
 - Evaluator 输出 `evaluationHash = keccak256(prompt + result + modelVersion + score + reasoning)`
 - Oracle 对 `evaluationHash` 做 ECDSA 签名
 - `AgentArenaEVM` 支持 `judgeWithProof(taskId, winner, score, evaluationHash, oracleSignature)`
@@ -463,6 +495,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 **问题**：`AgentArenaEVM` 集成 JudgeRegistry 交互、ReputationFeed、ERC20、Batch（如果用原生 batch）、Pausable、UUPS 后，字节码可能接近 **24KB**。
 
 **建议**：
+
 - 将**声誉读取逻辑**拆分为 `AgentArenaLib`（library，不计入合约 size）
 - 或批量操作放到 `AgentArenaBatchHelper`
 - Foundry 编译时监控 `forge build --sizes`
@@ -472,6 +505,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 **问题**：同一份 `ReputationVerifier` proof 可以被提交到 XLayer、Base、Arbitrum 三条链上。如果用户期望"一次证明只能用一次"，这会有歧义。
 
 **建议明确文档**：
+
 - Reputation proof **不是一次性凭证**，而是**可验证的声明**
 - 允许在多条 EVM 链上分别提交同一份 proof（这是 feature）
 - 如需"一次性"，需引入跨链状态 oracle（不在 P0 范围）
@@ -483,6 +517,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 #### 遗漏 22：CI/CD 中缺少 Foundry 工作流
 
 现有 `.github/workflows/` 有 `test-solana.yml`，但没有 EVM Foundry 的 CI 流程。需要新增：
+
 ```yaml
 # .github/workflows/test-evm-foundry.yml
 - uses: foundry-rs/foundry-toolchain@v1
@@ -498,11 +533,13 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 #### 遗漏 24：GDPR / 数据删除声明
 
 链上数据不可删除。如果用户要求"删除个人数据"，只能将 `metadataURI` 和 `username` 覆盖为空字符串。需在文档和隐私政策中声明：
+
 > 区块链上的历史记录无法物理删除，但用户可以通过更新为空值来停止展示。
 
 #### 遗漏 25：A2A 消息格式的链下规范
 
 虽然 A2A 是 P1，但如果以后要支持，需要提前定义：
+
 - 消息 envelope 格式（JSON Schema）
 - 消息内容的加密标准（MLS / Signal Protocol）
 - 链上 `A2AChannelRegistry` 只存储 channel ID、参与者列表、最后同步的 message hash
@@ -512,6 +549,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 ## 六、Phase 6 启动建议（更新后）
 
 **阻塞项（必须解决）**：
+
 1. ✅ Solana 定位表述已修正
 2. 🔄 初始化 Foundry 工程结构（GRA-251）
 3. 🔄 定义 `IReputationVerifier` 接口
@@ -521,6 +559,7 @@ function testFuzz_FeeDistribution(uint96 reward, uint8 score) public {
 7. 🔄 确认 **Protocol Fee 累积模式**（实时 vs 按需提取）
 
 **推荐启动顺序**：
+
 ```
 Step 1: GRA-251 → 搭建 Foundry 环境
 Step 2: 定义所有 interfaces（IReputationVerifier, IJudgeRegistry, IReputationFeed）
@@ -532,4 +571,4 @@ Step 6: 并行启动 Reputation 相关合约
 
 ---
 
-*本 Review 作为 Phase 5 → Phase 6 的过渡文档，任何新增设计变更须先更新本文件，再进入代码实现。*
+_本 Review 作为 Phase 5 → Phase 6 的过渡文档，任何新增设计变更须先更新本文件，再进入代码实现。_

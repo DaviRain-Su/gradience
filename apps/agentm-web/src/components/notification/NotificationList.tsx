@@ -53,9 +53,7 @@ const FILTER_OPTIONS: { value: FilterOption; label: string }[] = [
 /**
  * Group notifications by date
  */
-function groupNotificationsByDate(
-    notifications: AppNotification[],
-): Map<string, AppNotification[]> {
+function groupNotificationsByDate(notifications: AppNotification[]): Map<string, AppNotification[]> {
     const groups = new Map<string, AppNotification[]>();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -136,32 +134,33 @@ export function NotificationList({
     if (loading) {
         return (
             <div className={className} style={{ display: 'flex', flexDirection: 'column' }}>
-                <NotificationListHeader
-                    unreadCount={0}
-                    onMarkAllAsRead={onMarkAllAsRead}
-                    onClearAll={onClearAll}
-                />
+                <NotificationListHeader unreadCount={0} onMarkAllAsRead={onMarkAllAsRead} onClearAll={onClearAll} />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 0' }}>
-                    <div style={{
-                        width: '24px',
-                        height: '24px',
-                        border: '2px solid #3B82F6',
-                        borderTopColor: 'transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite',
-                    }} />
+                    <div
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            border: '2px solid #3B82F6',
+                            borderTopColor: 'transparent',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite',
+                        }}
+                    />
                 </div>
             </div>
         );
     }
 
     return (
-        <div className={className} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#111827',
-            borderRadius: '8px',
-        }}>
+        <div
+            className={className}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: '#111827',
+                borderRadius: '8px',
+            }}
+        >
             {/* Header */}
             <NotificationListHeader
                 unreadCount={unreadCount}
@@ -217,28 +216,36 @@ function NotificationListHeader({
     onClearAll?: () => void;
 }) {
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderBottom: '1px solid #1F2937',
-        }}>
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderBottom: '1px solid #1F2937',
+            }}
+        >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: '#F3F4F6',
-                    margin: 0,
-                }}>Notifications</h2>
+                <h2
+                    style={{
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: '#F3F4F6',
+                        margin: 0,
+                    }}
+                >
+                    Notifications
+                </h2>
                 {unreadCount > 0 && (
-                    <span style={{
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        backgroundColor: '#2563EB',
-                        color: '#FFFFFF',
-                        borderRadius: '9999px',
-                    }}>
+                    <span
+                        style={{
+                            padding: '2px 8px',
+                            fontSize: '12px',
+                            backgroundColor: '#2563EB',
+                            color: '#FFFFFF',
+                            borderRadius: '9999px',
+                        }}
+                    >
                         {unreadCount} new
                     </span>
                 )}
@@ -315,14 +322,16 @@ function NotificationFilters({
     }, [notifications]);
 
     return (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '8px',
-            borderBottom: '1px solid #1F2937',
-            overflowX: 'auto',
-        }}>
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px',
+                borderBottom: '1px solid #1F2937',
+                overflowX: 'auto',
+            }}
+        >
             {FILTER_OPTIONS.map((option) => {
                 const count = counts[option.value] || 0;
                 const isActive = activeFilter === option.value;
@@ -359,10 +368,12 @@ function NotificationFilters({
                     >
                         {option.label}
                         {count > 0 && (
-                            <span style={{
-                                fontSize: '10px',
-                                color: isActive ? '#BFDBFE' : '#6B7280',
-                            }}>
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    color: isActive ? '#BFDBFE' : '#6B7280',
+                                }}
+                            >
                                 {count}
                             </span>
                         )}
@@ -401,17 +412,21 @@ function GroupedNotificationList({
 
                 return (
                     <div key={groupKey}>
-                        <div style={{
-                            padding: '8px 16px',
-                            backgroundColor: 'rgba(31, 41, 55, 0.5)',
-                        }}>
-                            <span style={{
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                color: '#9CA3AF',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                            }}>
+                        <div
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: 'rgba(31, 41, 55, 0.5)',
+                            }}
+                        >
+                            <span
+                                style={{
+                                    fontSize: '12px',
+                                    fontWeight: 500,
+                                    color: '#9CA3AF',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                }}
+                            >
                                 {groupKey}
                             </span>
                         </div>
@@ -473,13 +488,15 @@ function FlatNotificationList({
  */
 function EmptyNotifications({ message }: { message: string }) {
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '48px 16px',
-        }}>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 16px',
+            }}
+        >
             <svg
                 style={{ width: '48px', height: '48px', color: '#4B5563', marginBottom: '12px' }}
                 fill="none"
@@ -522,13 +539,16 @@ export function NotificationDropdown({
     const recentNotifications = notifications.slice(0, 5);
 
     return (
-        <div className={className} style={{
-            width: '320px',
-            backgroundColor: '#111827',
-            borderRadius: '8px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            border: '1px solid #1F2937',
-        }}>
+        <div
+            className={className}
+            style={{
+                width: '320px',
+                backgroundColor: '#111827',
+                borderRadius: '8px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                border: '1px solid #1F2937',
+            }}
+        >
             <NotificationList
                 notifications={recentNotifications}
                 onNotificationClick={onNotificationClick}

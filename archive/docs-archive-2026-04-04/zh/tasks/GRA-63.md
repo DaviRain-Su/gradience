@@ -1,18 +1,19 @@
 ---
 linear-id: GRA-63
-title: "[OWS] Confirm Miami travel arrangements"
+title: '[OWS] Confirm Miami travel arrangements'
 status: todo
 priority: P2
-project: "🏆 OWS Hackathon (Miami)"
+project: '🏆 OWS Hackathon (Miami)'
 created: 2026-04-03
-migrated-from: "Linear"
-assignee: "Code Agent"
+migrated-from: 'Linear'
+assignee: 'Code Agent'
 tags: [task, p2, -ows-hackathon-miami]
 ---
 
 # GRA-63: [OWS] Confirm Miami travel arrangements
 
 ## Description
+
 确认 Miami 行程和参会安排
 
 ## 行程确认
@@ -30,16 +31,19 @@ tags: [task, p2, -ows-hackathon-miami]
 - [ ] Networking 目标清单
 
 ## Original Linear Info
+
 - **State**: Backlog
 - **Project**: 🏆 OWS Hackathon (Miami)
 - **Priority**: P2
 
 ## Acceptance Criteria
-- [ ] 
+
+- [ ]
 
 ## Related
 
 ## Notes
 
 ## Log
+
 - 2026-04-03: Migrated from Linear

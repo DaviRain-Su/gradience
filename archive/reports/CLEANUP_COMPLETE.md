@@ -2,46 +2,53 @@
 
 ## 清理结果对比
 
-| 指标 | 清理前 | 清理后 | 减少 |
-|------|--------|--------|------|
-| **总大小** | 18 GB | 188 MB | **99%** |
-| `.git/` 目录 | 858 MB | 117 MB | 86% |
-| 物理文件 | 17 GB+ | ~70 MB | 99%+ |
+| 指标         | 清理前 | 清理后 | 减少    |
+| ------------ | ------ | ------ | ------- |
+| **总大小**   | 18 GB  | 188 MB | **99%** |
+| `.git/` 目录 | 858 MB | 117 MB | 86%     |
+| 物理文件     | 17 GB+ | ~70 MB | 99%+    |
 
 ## 执行的操作
 
 ### 1. 重写 Git 历史
+
 ```bash
 git filter-repo --force --path-glob '**/node_modules' --invert-paths
 git filter-repo --force --path-glob '**/target' --invert-paths
 ```
 
 **结果:**
+
 - 从所有历史提交中移除了 5999+ 个 node_modules 文件
 - 从所有历史提交中移除了 target/ 目录
 - 重写了 497 个提交
 
 ### 2. 垃圾回收
+
 ```bash
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 ```
 
 **结果:**
+
 - pack 文件大小: 105 MB
 - 完全清理了旧对象
 
 ### 3. 物理文件清理
+
 ```bash
 # 清理 target/, node_modules/, .next/, dist/
 ```
 
 **结果:**
+
 - 移除了所有构建输出目录
 
 ## 备份
 
 创建了备份分支以防万一：
+
 ```
 backup-before-history-rewrite  (清理前的完整历史)
 ```
@@ -80,6 +87,7 @@ npm install  # 在各 apps 目录下运行
 ## 预防措施（已配置）
 
 ### .gitignore
+
 ```
 target/
 node_modules/
@@ -113,5 +121,5 @@ Best regards
 
 ---
 
-*清理完成时间: 2026-04-03*
-*工具: git-filter-repo + git gc*
+_清理完成时间: 2026-04-03_
+_工具: git-filter-repo + git gc_

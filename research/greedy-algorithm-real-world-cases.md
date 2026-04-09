@@ -1,13 +1,14 @@
 # 贪心算法实战案例：现实与区块链中的应用
 
 > **核心观点：贪心算法无处不在，简单高效解决实际问题**
+>
 > > 日期：2026-03-29
 
 ---
 
 ## 一、现实世界的贪心算法
 
-### 1.1  everyday 例子
+### 1.1 everyday 例子
 
 ```
 1. 找零钱
@@ -39,24 +40,24 @@
 
 ```yaml
 推荐系统:
-  贪心策略: 给用户看当前最可能点击的内容
-  例子: TikTok 下一条视频、淘宝推荐商品
-  优势: 即时反馈，快速迭代
-  
+    贪心策略: 给用户看当前最可能点击的内容
+    例子: TikTok 下一条视频、淘宝推荐商品
+    优势: 即时反馈，快速迭代
+
 广告投放:
-  贪心策略: 每次展示当前出价最高的广告
-  例子: Google Ads、百度竞价
-  优势: 收益最大化，实时竞价
+    贪心策略: 每次展示当前出价最高的广告
+    例子: Google Ads、百度竞价
+    优势: 收益最大化，实时竞价
 
 CDN 调度:
-  贪心策略: 选择当前延迟最低的节点
-  例子: Cloudflare、阿里云 CDN
-  优势: 用户体验好，自动故障转移
+    贪心策略: 选择当前延迟最低的节点
+    例子: Cloudflare、阿里云 CDN
+    优势: 用户体验好，自动故障转移
 
 网约车分配:
-  贪心策略: 给最近的司机派单
-  例子: Uber、滴滴
-  优势: 等待时间短，效率高
+    贪心策略: 给最近的司机派单
+    例子: Uber、滴滴
+    优势: 等待时间短，效率高
 ```
 
 ---
@@ -94,7 +95,7 @@ CDN 调度:
 // Uniswap V2 核心公式：x * y = k
 // 贪心定价：根据当前池子比例立即报价
 
-function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) 
+function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut)
     pure returns (uint amountOut) {
     // 贪心计算：基于当前储备金比例
     uint amountInWithFee = amountIn * 997;  // 0.3% 手续费
@@ -184,26 +185,26 @@ Gitcoin 贪心：
 适用条件:
   1. 局部最优就是全局最优
      例子: 找零钱（货币面额合理时）
-     
+
   2. 决策可逆，可以迭代优化
      例子: 推荐系统（错了下次改进）
-     
+
   3. 不需要完美，足够好就行
      例子: CDN 调度（99% 最优即可）
-     
+
   4. 实时性要求高
      例子: 交易撮合（不能等）
 
 不适用条件:
   1. 有复杂约束需要全局优化
      例子: 旅行商问题（TSP）
-     
+
   2. 多方博弈，需要纳什均衡
      例子: 拍卖机制设计
-     
+
   3. 结果不可逆，容错性低
      例子: 大额资金托管
-     
+
   4. 需要长期规划
      例子: 国家战略规划
 ```
@@ -268,11 +269,11 @@ function processTask(task: Task) {
     case TaskType.STANDARD:
       // 贪心：立即分配，立即评判
       return greedyProcess(task);
-      
+
     case TaskType.HIGH_VALUE:
       // 半贪心：多评判员验证
       return multiJudgeProcess(task);
-      
+
     case TaskType.CRITICAL:
       // 博弈：乐观验证 + 挑战期
       return optimisticProcess(task);
@@ -413,4 +414,4 @@ optimisticProcess(task): {
 
 ---
 
-*"大自然是贪心的：光合作用最大化能量捕获，进化选择当前最优适应。区块链设计也应该学习自然的智慧。"*
+_"大自然是贪心的：光合作用最大化能量捕获，进化选择当前最优适应。区块链设计也应该学习自然的智慧。"_

@@ -82,14 +82,14 @@ curl https://your-site.com/api/subscribe?action=list \
 
 ```json
 {
-  "count": 42,
-  "users": [
-    {
-      "email": "user@example.com",
-      "userType": "developer",
-      "timestamp": "2025-01-15T08:30:00.000Z"
-    }
-  ]
+    "count": 42,
+    "users": [
+        {
+            "email": "user@example.com",
+            "userType": "developer",
+            "timestamp": "2025-01-15T08:30:00.000Z"
+        }
+    ]
 }
 ```
 
@@ -139,6 +139,7 @@ cd website && pnpm add @vercel/kv
 ### Vercel KV 已弃用说明
 
 Vercel KV 已标记为弃用，但仍可正常使用。新项目建议使用：
+
 - [Upstash Redis](https://vercel.com/marketplace/upstash) (Vercel Marketplace)
 - [Redis Cloud](https://vercel.com/marketplace/redis)
 

@@ -1,4 +1,11 @@
-import { createSolanaRpc, signTransactionMessageWithSigners, type Address, type Commitment, type Instruction, type TransactionSigner } from '@solana/kit';
+import {
+    createSolanaRpc,
+    signTransactionMessageWithSigners,
+    type Address,
+    type Commitment,
+    type Instruction,
+    type TransactionSigner,
+} from '@solana/kit';
 import type { SendTransactionOptions, WalletAdapter } from './sdk.js';
 type SignedTransaction = Awaited<ReturnType<typeof signTransactionMessageWithSigners>>;
 type RpcClient = ReturnType<typeof createSolanaRpc>;

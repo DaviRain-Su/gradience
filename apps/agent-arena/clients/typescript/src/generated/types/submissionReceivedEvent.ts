@@ -7,68 +7,62 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  type Codec,
-  type Decoder,
-  type Encoder,
-} from "@solana/kit";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    type Codec,
+    type Decoder,
+    type Encoder,
+} from '@solana/kit';
 
 export type SubmissionReceivedEvent = {
-  taskId: bigint;
-  agent: Array<number>;
-  resultRef: string;
-  traceRef: string;
-  submissionSlot: bigint;
+    taskId: bigint;
+    agent: Array<number>;
+    resultRef: string;
+    traceRef: string;
+    submissionSlot: bigint;
 };
 
 export type SubmissionReceivedEventArgs = {
-  taskId: number | bigint;
-  agent: Array<number>;
-  resultRef: string;
-  traceRef: string;
-  submissionSlot: number | bigint;
+    taskId: number | bigint;
+    agent: Array<number>;
+    resultRef: string;
+    traceRef: string;
+    submissionSlot: number | bigint;
 };
 
 export function getSubmissionReceivedEventEncoder(): Encoder<SubmissionReceivedEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["agent", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["resultRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["traceRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["submissionSlot", getU64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['agent', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['resultRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['traceRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['submissionSlot', getU64Encoder()],
+    ]);
 }
 
 export function getSubmissionReceivedEventDecoder(): Decoder<SubmissionReceivedEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["agent", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["resultRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["traceRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["submissionSlot", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['agent', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['resultRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['traceRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['submissionSlot', getU64Decoder()],
+    ]);
 }
 
-export function getSubmissionReceivedEventCodec(): Codec<
-  SubmissionReceivedEventArgs,
-  SubmissionReceivedEvent
-> {
-  return combineCodec(
-    getSubmissionReceivedEventEncoder(),
-    getSubmissionReceivedEventDecoder(),
-  );
+export function getSubmissionReceivedEventCodec(): Codec<SubmissionReceivedEventArgs, SubmissionReceivedEvent> {
+    return combineCodec(getSubmissionReceivedEventEncoder(), getSubmissionReceivedEventDecoder());
 }

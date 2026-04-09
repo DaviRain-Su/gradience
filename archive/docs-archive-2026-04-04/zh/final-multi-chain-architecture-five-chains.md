@@ -10,6 +10,7 @@
 ## 执行摘要
 
 **核心架构**:
+
 ```
 Solana (核心) + Chain Hub SDK (扩展层) = 多链 Agent Trust Protocol
 ```
@@ -24,6 +25,7 @@ Solana (核心) + Chain Hub SDK (扩展层) = 多链 Agent Trust Protocol
 | P3 | Kite / 0G | 观察等待 | 待定 |
 
 **关键原则**:
+
 - ✅ Kernel 永远只在 Solana (~300 行，不可变)
 - ✅ 所有扩展通过 SDK provider 实现
 - ✅ Reputation 主链在 Solana，跨链同步
@@ -35,17 +37,17 @@ Solana (核心) + Chain Hub SDK (扩展层) = 多链 Agent Trust Protocol
 
 ### 1.1 五链对比矩阵
 
-| 维度 | Tempo | X Layer | Sui | NEAR | Kite/0G |
-|------|-------|---------|-----|------|---------|
-| **定位** | 支付 L1 | ZK Rollup L2 | Agentic Commerce | AI Agent 链 | 观察中 |
-| **核心技术** | Simplex | Polygon CDK | 对象中心 | Nightshade 分片 | - |
-| **Agent 支付** | ⭐⭐⭐⭐⭐ MPP | ⭐⭐⭐⭐⭐ 零 Gas | ⭐⭐⭐⭐⭐ x402 | ⭐⭐⭐⭐ Crypto pay | ⭐⭐⭐ |
-| **性能** | >100k TPS | 5000+ TPS | 800+ TPS | 1M+ TPS | 待定 |
-| **EVM 兼容** | ✅ | ✅ | ❌ (Move) | ❌ (Rust) | ✅ |
-| **Solana 互通** | 需桥接 | 原生支持 | 需桥接 | 需桥接 | 需桥接 |
-| **成熟度** | 主网 3 月 | 主网运行 | 主网成熟 | 主网成熟 | Testnet |
-| **背书** | Stripe | OKX | Mysten Labs | NEAR 基金会 | - |
-| **集成难度** | ⭐⭐⭐ | ⭐⭐ (最简单) | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| 维度            | Tempo          | X Layer           | Sui              | NEAR                | Kite/0G    |
+| --------------- | -------------- | ----------------- | ---------------- | ------------------- | ---------- |
+| **定位**        | 支付 L1        | ZK Rollup L2      | Agentic Commerce | AI Agent 链         | 观察中     |
+| **核心技术**    | Simplex        | Polygon CDK       | 对象中心         | Nightshade 分片     | -          |
+| **Agent 支付**  | ⭐⭐⭐⭐⭐ MPP | ⭐⭐⭐⭐⭐ 零 Gas | ⭐⭐⭐⭐⭐ x402  | ⭐⭐⭐⭐ Crypto pay | ⭐⭐⭐     |
+| **性能**        | >100k TPS      | 5000+ TPS         | 800+ TPS         | 1M+ TPS             | 待定       |
+| **EVM 兼容**    | ✅             | ✅                | ❌ (Move)        | ❌ (Rust)           | ✅         |
+| **Solana 互通** | 需桥接         | 原生支持          | 需桥接           | 需桥接              | 需桥接     |
+| **成熟度**      | 主网 3 月      | 主网运行          | 主网成熟         | 主网成熟            | Testnet    |
+| **背书**        | Stripe         | OKX               | Mysten Labs      | NEAR 基金会         | -          |
+| **集成难度**    | ⭐⭐⭐         | ⭐⭐ (最简单)     | ⭐⭐⭐⭐         | ⭐⭐⭐⭐            | ⭐⭐⭐⭐⭐ |
 
 ### 1.2 各链核心价值
 
@@ -68,15 +70,15 @@ Solana = 核心协议 (极简 kernel)
 
 ### 1.3 场景分工
 
-| 场景 | 推荐链 | 原因 |
-|------|--------|------|
-| 高频小额 ($0.01-$10) | **X Layer** | 零 Gas |
-| 流式支付 ($100+/持续) | **Tempo** | MPP sessions |
-| Agent 自主购物 | **Sui** | Agentic Commerce |
-| AI 意图执行 | **NEAR** | Intents 机制 |
-| 核心竞争/声誉 | **Solana** | Kernel 主场 |
-| 企业合规支付 | **Tempo** | Stripe 背书 |
-| 跨链 Reputation | **X Layer** | Solana 原生桥 |
+| 场景                  | 推荐链      | 原因             |
+| --------------------- | ----------- | ---------------- |
+| 高频小额 ($0.01-$10)  | **X Layer** | 零 Gas           |
+| 流式支付 ($100+/持续) | **Tempo**   | MPP sessions     |
+| Agent 自主购物        | **Sui**     | Agentic Commerce |
+| AI 意图执行           | **NEAR**    | Intents 机制     |
+| 核心竞争/声誉         | **Solana**  | Kernel 主场      |
+| 企业合规支付          | **Tempo**   | Stripe 背书      |
+| 跨链 Reputation       | **X Layer** | Solana 原生桥    |
 
 ---
 
@@ -87,20 +89,20 @@ Solana = 核心协议 (极简 kernel)
 ```typescript
 // 设计原则
 const designPrinciples = {
-  // 1. Kernel 永不变
-  kernelImmutable: true,      // ~300 行，Solana -only
-  
-  // 2. 扩展即插即用
-  pluginArchitecture: true,   // provider 可动态添加
-  
-  // 3. 统一接口
-  unifiedInterface: true,     // 所有 provider 实现相同接口
-  
-  // 4. 智能路由
-  intelligentRouting: true,   // 自动选择最优链
-  
-  // 5. Reputation 归一
-  reputationUnified: true     // Solana 为主，跨链同步
+    // 1. Kernel 永不变
+    kernelImmutable: true, // ~300 行，Solana -only
+
+    // 2. 扩展即插即用
+    pluginArchitecture: true, // provider 可动态添加
+
+    // 3. 统一接口
+    unifiedInterface: true, // 所有 provider 实现相同接口
+
+    // 4. 智能路由
+    intelligentRouting: true, // 自动选择最优链
+
+    // 5. Reputation 归一
+    reputationUnified: true, // Solana 为主，跨链同步
 };
 ```
 
@@ -147,74 +149,74 @@ Chain Hub SDK Architecture:
 // 核心接口
 
 interface ChainCapabilities {
-  chainId: string;
-  name: string;
-  type: 'core' | 'extension';
-  
-  // 功能支持
-  supports: {
-    escrow: boolean;
-    judge: boolean;
-    streaming: boolean;
-    zeroGas: boolean;
-    confidential: boolean;
-    aiIntents: boolean;
-    crossChain: boolean;
-  };
-  
-  // 性能指标
-  performance: {
-    blockTime: number;      // 秒
-    tps: number;
-    avgFee: number;         // USD
-    finality: 'probabilistic' | 'deterministic';
-  };
+    chainId: string;
+    name: string;
+    type: 'core' | 'extension';
+
+    // 功能支持
+    supports: {
+        escrow: boolean;
+        judge: boolean;
+        streaming: boolean;
+        zeroGas: boolean;
+        confidential: boolean;
+        aiIntents: boolean;
+        crossChain: boolean;
+    };
+
+    // 性能指标
+    performance: {
+        blockTime: number; // 秒
+        tps: number;
+        avgFee: number; // USD
+        finality: 'probabilistic' | 'deterministic';
+    };
 }
 
 interface Intent {
-  type: 'createTask' | 'bid' | 'submit' | 'judge' | 'settle' | 'pay';
-  payload: any;
-  preferences?: {
-    preferZeroGas?: boolean;
-    preferStreaming?: boolean;
-    preferFast?: boolean;
-    preferConfidential?: boolean;
-  };
+    type: 'createTask' | 'bid' | 'submit' | 'judge' | 'settle' | 'pay';
+    payload: any;
+    preferences?: {
+        preferZeroGas?: boolean;
+        preferStreaming?: boolean;
+        preferFast?: boolean;
+        preferConfidential?: boolean;
+    };
 }
 
 interface ChainProvider {
-  readonly capabilities: ChainCapabilities;
-  
-  // 生命周期
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  
-  // 核心功能
-  execute(intent: Intent): Promise<ExecutionResult>;
-  
-  // 查询
-  getStatus(): Promise<ChainStatus>;
-  estimateFee(intent: Intent): Promise<FeeEstimate>;
-  
-  // 跨链 (扩展链实现)
-  bridgeToSolana?(data: BridgeData): Promise<BridgeResult>;
-  syncFromSolana?(data: SyncData): Promise<SyncResult>;
+    readonly capabilities: ChainCapabilities;
+
+    // 生命周期
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+
+    // 核心功能
+    execute(intent: Intent): Promise<ExecutionResult>;
+
+    // 查询
+    getStatus(): Promise<ChainStatus>;
+    estimateFee(intent: Intent): Promise<FeeEstimate>;
+
+    // 跨链 (扩展链实现)
+    bridgeToSolana?(data: BridgeData): Promise<BridgeResult>;
+    syncFromSolana?(data: SyncData): Promise<SyncResult>;
 }
 
 // 执行结果
 interface ExecutionResult {
-  success: boolean;
-  txHash?: string;
-  chain: string;
-  fee: number;
-  timestamp: number;
-  // 扩展数据
-  metadata?: {
-    sessionId?: string;      // Tempo MPP
-    zeroGas?: boolean;       // X Layer
-    intentId?: string;       // NEAR
-    objectId?: string;       // Sui
-  };
+    success: boolean;
+    txHash?: string;
+    chain: string;
+    fee: number;
+    timestamp: number;
+    // 扩展数据
+    metadata?: {
+        sessionId?: string; // Tempo MPP
+        zeroGas?: boolean; // X Layer
+        intentId?: string; // NEAR
+        objectId?: string; // Sui
+    };
 }
 ```
 
@@ -246,9 +248,9 @@ class SolanaProvider implements ChainProvider {
       finality: 'probabilistic'
     }
   };
-  
+
   private program: Program<AgentLayer>;
-  
+
   // 实现 ChainProvider 接口
   async execute(intent: Intent): Promise<ExecutionResult> {
     switch(intent.type) {
@@ -264,13 +266,13 @@ class SolanaProvider implements ChainProvider {
         throw new Error(`Unsupported intent: ${intent.type}`);
     }
   }
-  
+
   private async createTask(payload: TaskPayload): Promise<ExecutionResult> {
     const tx = await this.program.methods
       .createTask(payload)
       .accounts({...})
       .rpc();
-    
+
     return {
       success: true,
       txHash: tx,
@@ -279,7 +281,7 @@ class SolanaProvider implements ChainProvider {
       timestamp: Date.now()
     };
   }
-  
+
   // ... 其他方法
 }
 ```
@@ -288,72 +290,68 @@ class SolanaProvider implements ChainProvider {
 
 ```typescript
 class TempoProvider implements ChainProvider {
-  readonly capabilities: ChainCapabilities = {
-    chainId: 'tempo',
-    name: 'Tempo',
-    type: 'extension',
-    supports: {
-      escrow: false,           // 代理到 Solana
-      judge: false,            // 代理到 Solana
-      streaming: true,         // ✅ MPP
-      zeroGas: false,
-      confidential: true,      // (coming soon)
-      aiIntents: false,
-      crossChain: true
-    },
-    performance: {
-      blockTime: 0.5,
-      tps: 100000,
-      avgFee: 0.001,
-      finality: 'deterministic'
-    }
-  };
-  
-  private mppContract: Contract;
-  
-  async execute(intent: Intent): Promise<ExecutionResult> {
-    switch(intent.type) {
-      case 'settle':
-        if (intent.preferences?.preferStreaming) {
-          return this.streamingSettle(intent.payload);
-        }
-        return this.bridgeToSolana(intent.payload);
-      case 'pay':
-        return this.mppPayment(intent.payload);
-      default:
-        // 其他意图代理到 Solana
-        return this.bridgeToSolana(intent);
-    }
-  }
-  
-  private async streamingSettle(payload: SettlePayload): Promise<ExecutionResult> {
-    // 创建 MPP session
-    const session = await this.mppContract.createSession(
-      payload.winner,
-      payload.amount,
-      payload.duration
-    );
-    
-    // 启动流式支付
-    await this.startStreaming(session.id, payload.schedule);
-    
-    return {
-      success: true,
-      chain: 'tempo',
-      fee: 0.001,
-      timestamp: Date.now(),
-      metadata: { sessionId: session.id }
+    readonly capabilities: ChainCapabilities = {
+        chainId: 'tempo',
+        name: 'Tempo',
+        type: 'extension',
+        supports: {
+            escrow: false, // 代理到 Solana
+            judge: false, // 代理到 Solana
+            streaming: true, // ✅ MPP
+            zeroGas: false,
+            confidential: true, // (coming soon)
+            aiIntents: false,
+            crossChain: true,
+        },
+        performance: {
+            blockTime: 0.5,
+            tps: 100000,
+            avgFee: 0.001,
+            finality: 'deterministic',
+        },
     };
-  }
-  
-  async bridgeToSolana(data: BridgeData): Promise<BridgeResult> {
-    // 通过 Wormhole 桥接
-    return await wormholeBridge.transfer({
-      from: 'tempo',
-      to: 'solana',
-      data
-    });
-  }
+
+    private mppContract: Contract;
+
+    async execute(intent: Intent): Promise<ExecutionResult> {
+        switch (intent.type) {
+            case 'settle':
+                if (intent.preferences?.preferStreaming) {
+                    return this.streamingSettle(intent.payload);
+                }
+                return this.bridgeToSolana(intent.payload);
+            case 'pay':
+                return this.mppPayment(intent.payload);
+            default:
+                // 其他意图代理到 Solana
+                return this.bridgeToSolana(intent);
+        }
+    }
+
+    private async streamingSettle(payload: SettlePayload): Promise<ExecutionResult> {
+        // 创建 MPP session
+        const session = await this.mppContract.createSession(payload.winner, payload.amount, payload.duration);
+
+        // 启动流式支付
+        await this.startStreaming(session.id, payload.schedule);
+
+        return {
+            success: true,
+            chain: 'tempo',
+            fee: 0.001,
+            timestamp: Date.now(),
+            metadata: { sessionId: session.id },
+        };
+    }
+
+    async bridgeToSolana(data: BridgeData): Promise<BridgeResult> {
+        // 通过 Wormhole 桥接
+        return await wormholeBridge.transfer({
+            from: 'tempo',
+            to: 'solana',
+            data,
+        });
+    }
 }
 ```
 
@@ -361,66 +359,66 @@ class TempoProvider implements ChainProvider {
 
 ```typescript
 class XLayerProvider implements ChainProvider {
-  readonly capabilities: ChainCapabilities = {
-    chainId: 'xlayer',
-    name: 'X Layer',
-    type: 'extension',
-    supports: {
-      escrow: false,
-      judge: false,
-      streaming: false,
-      zeroGas: true,           // ✅ 零 Gas
-      confidential: true,      // ZKP
-      aiIntents: false,
-      crossChain: true         // ✅ 原生 Solana
-    },
-    performance: {
-      blockTime: 1,
-      tps: 5000,
-      avgFee: 0,               // ✅ 零 Gas
-      finality: 'deterministic'
-    }
-  };
-  
-  private agenticWallet: AgenticWalletClient;
-  
-  async execute(intent: Intent): Promise<ExecutionResult> {
-    switch(intent.type) {
-      case 'settle':
-        return this.zeroGasSettle(intent.payload);
-      case 'pay':
-        return this.x402Payment(intent.payload);
-      case 'createTask':
-      case 'bid':
-      case 'judge':
-        // 跨链到 Solana
-        return this.executeOnSolana(intent);
-      default:
-        throw new Error(`Unsupported intent: ${intent.type}`);
-    }
-  }
-  
-  private async zeroGasSettle(payload: SettlePayload): Promise<ExecutionResult> {
-    // 使用 Agentic Wallet 自然语言执行
-    const result = await this.agenticWallet.execute({
-      intent: `Settle task ${payload.taskId} by sending ${payload.amount} USDC to ${payload.winner}`,
-      chain: 'xlayer'
-    });
-    
-    return {
-      success: true,
-      txHash: result.txHash,
-      chain: 'xlayer',
-      fee: 0,                   // ✅ 零 Gas
-      timestamp: Date.now(),
-      metadata: { zeroGas: true }
+    readonly capabilities: ChainCapabilities = {
+        chainId: 'xlayer',
+        name: 'X Layer',
+        type: 'extension',
+        supports: {
+            escrow: false,
+            judge: false,
+            streaming: false,
+            zeroGas: true, // ✅ 零 Gas
+            confidential: true, // ZKP
+            aiIntents: false,
+            crossChain: true, // ✅ 原生 Solana
+        },
+        performance: {
+            blockTime: 1,
+            tps: 5000,
+            avgFee: 0, // ✅ 零 Gas
+            finality: 'deterministic',
+        },
     };
-  }
-  
-  private async executeOnSolana(intent: Intent): Promise<ExecutionResult> {
-    // X Layer 原生支持 Solana，直接调用
-    return await solanaProvider.execute(intent);
-  }
+
+    private agenticWallet: AgenticWalletClient;
+
+    async execute(intent: Intent): Promise<ExecutionResult> {
+        switch (intent.type) {
+            case 'settle':
+                return this.zeroGasSettle(intent.payload);
+            case 'pay':
+                return this.x402Payment(intent.payload);
+            case 'createTask':
+            case 'bid':
+            case 'judge':
+                // 跨链到 Solana
+                return this.executeOnSolana(intent);
+            default:
+                throw new Error(`Unsupported intent: ${intent.type}`);
+        }
+    }
+
+    private async zeroGasSettle(payload: SettlePayload): Promise<ExecutionResult> {
+        // 使用 Agentic Wallet 自然语言执行
+        const result = await this.agenticWallet.execute({
+            intent: `Settle task ${payload.taskId} by sending ${payload.amount} USDC to ${payload.winner}`,
+            chain: 'xlayer',
+        });
+
+        return {
+            success: true,
+            txHash: result.txHash,
+            chain: 'xlayer',
+            fee: 0, // ✅ 零 Gas
+            timestamp: Date.now(),
+            metadata: { zeroGas: true },
+        };
+    }
+
+    private async executeOnSolana(intent: Intent): Promise<ExecutionResult> {
+        // X Layer 原生支持 Solana，直接调用
+        return await solanaProvider.execute(intent);
+    }
 }
 ```
 
@@ -428,70 +426,70 @@ class XLayerProvider implements ChainProvider {
 
 ```typescript
 class SuiProvider implements ChainProvider {
-  readonly capabilities: ChainCapabilities = {
-    chainId: 'sui',
-    name: 'Sui',
-    type: 'extension',
-    supports: {
-      escrow: false,
-      judge: false,
-      streaming: true,         // ✅ Sui Payment Kit
-      zeroGas: false,
-      confidential: true,      // 加密消息
-      aiIntents: false,
-      crossChain: true
-    },
-    performance: {
-      blockTime: 0.5,
-      tps: 800,
-      avgFee: 0.001,
-      finality: 'deterministic'
-    }
-  };
-  
-  private suiClient: SuiClient;
-  private paymentKit: SuiPaymentKit;
-  
-  async execute(intent: Intent): Promise<ExecutionResult> {
-    switch(intent.type) {
-      case 'pay':
-        return this.agenticPayment(intent.payload);
-      case 'settle':
-        return this.commerceSettle(intent.payload);
-      default:
-        return this.bridgeToSolana(intent);
-    }
-  }
-  
-  private async agenticPayment(payload: PaymentPayload): Promise<ExecutionResult> {
-    // 使用 Sui Payment Kit + x402
-    const result = await this.paymentKit.execute({
-      type: 'x402',
-      recipient: payload.recipient,
-      amount: payload.amount,
-      // Sui 特有：对象中心化支付
-      objectId: payload.objectId
-    });
-    
-    return {
-      success: true,
-      txHash: result.digest,
-      chain: 'sui',
-      fee: 0.001,
-      timestamp: Date.now(),
-      metadata: { objectId: result.objectId }
+    readonly capabilities: ChainCapabilities = {
+        chainId: 'sui',
+        name: 'Sui',
+        type: 'extension',
+        supports: {
+            escrow: false,
+            judge: false,
+            streaming: true, // ✅ Sui Payment Kit
+            zeroGas: false,
+            confidential: true, // 加密消息
+            aiIntents: false,
+            crossChain: true,
+        },
+        performance: {
+            blockTime: 0.5,
+            tps: 800,
+            avgFee: 0.001,
+            finality: 'deterministic',
+        },
     };
-  }
-  
-  async bridgeToSolana(intent: Intent): Promise<ExecutionResult> {
-    // 通过 Wormhole 桥接
-    // Sui 到 Solana 需要额外步骤
-    return await wormholeBridge.transfer({
-      from: 'sui',
-      to: 'solana',
-      intent
-    });
-  }
+
+    private suiClient: SuiClient;
+    private paymentKit: SuiPaymentKit;
+
+    async execute(intent: Intent): Promise<ExecutionResult> {
+        switch (intent.type) {
+            case 'pay':
+                return this.agenticPayment(intent.payload);
+            case 'settle':
+                return this.commerceSettle(intent.payload);
+            default:
+                return this.bridgeToSolana(intent);
+        }
+    }
+
+    private async agenticPayment(payload: PaymentPayload): Promise<ExecutionResult> {
+        // 使用 Sui Payment Kit + x402
+        const result = await this.paymentKit.execute({
+            type: 'x402',
+            recipient: payload.recipient,
+            amount: payload.amount,
+            // Sui 特有：对象中心化支付
+            objectId: payload.objectId,
+        });
+
+        return {
+            success: true,
+            txHash: result.digest,
+            chain: 'sui',
+            fee: 0.001,
+            timestamp: Date.now(),
+            metadata: { objectId: result.objectId },
+        };
+    }
+
+    async bridgeToSolana(intent: Intent): Promise<ExecutionResult> {
+        // 通过 Wormhole 桥接
+        // Sui 到 Solana 需要额外步骤
+        return await wormholeBridge.transfer({
+            from: 'sui',
+            to: 'solana',
+            intent,
+        });
+    }
 }
 ```
 
@@ -499,82 +497,82 @@ class SuiProvider implements ChainProvider {
 
 ```typescript
 class NearProvider implements ChainProvider {
-  readonly capabilities: ChainCapabilities = {
-    chainId: 'near',
-    name: 'NEAR',
-    type: 'extension',
-    supports: {
-      escrow: false,
-      judge: false,
-      streaming: false,
-      zeroGas: false,
-      confidential: false,
-      aiIntents: true,         // ✅ NEAR Intents
-      crossChain: true
-    },
-    performance: {
-      blockTime: 1,
-      tps: 1000000,
-      avgFee: 0.0001,
-      finality: 'deterministic'
-    }
-  };
-  
-  private near: Near;
-  private intentsClient: IntentsClient;
-  
-  async execute(intent: Intent): Promise<ExecutionResult> {
-    switch(intent.type) {
-      case 'bid':
-        return this.intentBasedBid(intent.payload);
-      case 'judge':
-        return this.aiAssistedJudge(intent.payload);
-      case 'pay':
-        return this.cryptoPayment(intent.payload);
-      default:
-        return this.bridgeToSolana(intent);
-    }
-  }
-  
-  private async intentBasedBid(payload: BidPayload): Promise<ExecutionResult> {
-    // 使用 NEAR Intents
-    // Agent 表达意图，链上执行
-    const intent = await this.intentsClient.create({
-      type: 'bid',
-      task: payload.taskId,
-      proposal: payload.proposal,
-      // NEAR AI 辅助优化
-      aiOptimize: true
-    });
-    
-    return {
-      success: true,
-      txHash: intent.id,
-      chain: 'near',
-      fee: 0.0001,
-      timestamp: Date.now(),
-      metadata: { intentId: intent.id }
+    readonly capabilities: ChainCapabilities = {
+        chainId: 'near',
+        name: 'NEAR',
+        type: 'extension',
+        supports: {
+            escrow: false,
+            judge: false,
+            streaming: false,
+            zeroGas: false,
+            confidential: false,
+            aiIntents: true, // ✅ NEAR Intents
+            crossChain: true,
+        },
+        performance: {
+            blockTime: 1,
+            tps: 1000000,
+            avgFee: 0.0001,
+            finality: 'deterministic',
+        },
     };
-  }
-  
-  private async aiAssistedJudge(payload: JudgePayload): Promise<ExecutionResult> {
-    // NEAR AI Cloud 辅助评分
-    const aiScore = await this.near.ai.analyze({
-      submission: payload.submission,
-      criteria: payload.criteria
-    });
-    
-    // 结合人工/算法 Judge
-    const finalScore = this.combineScores(aiScore, payload.humanScore);
-    
-    return {
-      success: true,
-      chain: 'near',
-      fee: 0.0001,
-      timestamp: Date.now(),
-      metadata: { aiAssisted: true }
-    };
-  }
+
+    private near: Near;
+    private intentsClient: IntentsClient;
+
+    async execute(intent: Intent): Promise<ExecutionResult> {
+        switch (intent.type) {
+            case 'bid':
+                return this.intentBasedBid(intent.payload);
+            case 'judge':
+                return this.aiAssistedJudge(intent.payload);
+            case 'pay':
+                return this.cryptoPayment(intent.payload);
+            default:
+                return this.bridgeToSolana(intent);
+        }
+    }
+
+    private async intentBasedBid(payload: BidPayload): Promise<ExecutionResult> {
+        // 使用 NEAR Intents
+        // Agent 表达意图，链上执行
+        const intent = await this.intentsClient.create({
+            type: 'bid',
+            task: payload.taskId,
+            proposal: payload.proposal,
+            // NEAR AI 辅助优化
+            aiOptimize: true,
+        });
+
+        return {
+            success: true,
+            txHash: intent.id,
+            chain: 'near',
+            fee: 0.0001,
+            timestamp: Date.now(),
+            metadata: { intentId: intent.id },
+        };
+    }
+
+    private async aiAssistedJudge(payload: JudgePayload): Promise<ExecutionResult> {
+        // NEAR AI Cloud 辅助评分
+        const aiScore = await this.near.ai.analyze({
+            submission: payload.submission,
+            criteria: payload.criteria,
+        });
+
+        // 结合人工/算法 Judge
+        const finalScore = this.combineScores(aiScore, payload.humanScore);
+
+        return {
+            success: true,
+            chain: 'near',
+            fee: 0.0001,
+            timestamp: Date.now(),
+            metadata: { aiAssisted: true },
+        };
+    }
 }
 ```
 
@@ -586,98 +584,98 @@ class NearProvider implements ChainProvider {
 
 ```typescript
 class GradienceChainHub {
-  readonly solana: SolanaProvider;
-  readonly tempo?: TempoProvider;
-  readonly xLayer?: XLayerProvider;
-  readonly sui?: SuiProvider;
-  readonly near?: NearProvider;
-  
-  private providers: Map<string, ChainProvider>;
-  private router: IntentRouter;
-  
-  constructor(config: HubConfig) {
-    // 核心链必须
-    this.solana = new SolanaProvider(config.solana);
-    this.providers.set('solana', this.solana);
-    
-    // 扩展链可选
-    if (config.tempo) {
-      this.tempo = new TempoProvider(config.tempo);
-      this.providers.set('tempo', this.tempo);
+    readonly solana: SolanaProvider;
+    readonly tempo?: TempoProvider;
+    readonly xLayer?: XLayerProvider;
+    readonly sui?: SuiProvider;
+    readonly near?: NearProvider;
+
+    private providers: Map<string, ChainProvider>;
+    private router: IntentRouter;
+
+    constructor(config: HubConfig) {
+        // 核心链必须
+        this.solana = new SolanaProvider(config.solana);
+        this.providers.set('solana', this.solana);
+
+        // 扩展链可选
+        if (config.tempo) {
+            this.tempo = new TempoProvider(config.tempo);
+            this.providers.set('tempo', this.tempo);
+        }
+
+        if (config.xLayer) {
+            this.xLayer = new XLayerProvider(config.xLayer);
+            this.providers.set('xlayer', this.xLayer);
+        }
+
+        if (config.sui) {
+            this.sui = new SuiProvider(config.sui);
+            this.providers.set('sui', this.sui);
+        }
+
+        if (config.near) {
+            this.near = new NearProvider(config.near);
+            this.providers.set('near', this.near);
+        }
+
+        // 初始化路由
+        this.router = new IntentRouter(this.providers);
     }
-    
-    if (config.xLayer) {
-      this.xLayer = new XLayerProvider(config.xLayer);
-      this.providers.set('xlayer', this.xLayer);
+
+    /**
+     * 智能执行：自动选择最优链
+     */
+    async execute(intent: Intent): Promise<ExecutionResult> {
+        // 核心功能必须走 Solana
+        if (['createTask', 'escrow'].includes(intent.type)) {
+            return this.solana.execute(intent);
+        }
+
+        // 其他功能智能路由
+        const optimalChain = this.router.selectOptimalChain(intent);
+        const provider = this.providers.get(optimalChain);
+
+        if (!provider) {
+            throw new Error(`No provider for chain: ${optimalChain}`);
+        }
+
+        const result = await provider.execute(intent);
+
+        // 如果执行在扩展链，同步 Reputation 回 Solana
+        if (optimalChain !== 'solana' && intent.type === 'settle') {
+            await this.syncReputationToSolana(result);
+        }
+
+        return result;
     }
-    
-    if (config.sui) {
-      this.sui = new SuiProvider(config.sui);
-      this.providers.set('sui', this.sui);
+
+    /**
+     * 跨链 Reputation 同步
+     */
+    private async syncReputationToSolana(result: ExecutionResult): Promise<void> {
+        await this.solana.execute({
+            type: 'syncReputation',
+            payload: {
+                sourceChain: result.chain,
+                txHash: result.txHash,
+                reputationDelta: result.reputationDelta,
+            },
+        });
     }
-    
-    if (config.near) {
-      this.near = new NearProvider(config.near);
-      this.providers.set('near', this.near);
+
+    /**
+     * 批量执行（利用 X Layer 零 Gas 优势）
+     */
+    async batchExecute(intents: Intent[]): Promise<ExecutionResult[]> {
+        // 如果配置了 X Layer，优先使用
+        if (this.xLayer) {
+            return this.xLayer.batchExecute(intents);
+        }
+
+        // 否则逐个执行
+        return Promise.all(intents.map((i) => this.execute(i)));
     }
-    
-    // 初始化路由
-    this.router = new IntentRouter(this.providers);
-  }
-  
-  /**
-   * 智能执行：自动选择最优链
-   */
-  async execute(intent: Intent): Promise<ExecutionResult> {
-    // 核心功能必须走 Solana
-    if (['createTask', 'escrow'].includes(intent.type)) {
-      return this.solana.execute(intent);
-    }
-    
-    // 其他功能智能路由
-    const optimalChain = this.router.selectOptimalChain(intent);
-    const provider = this.providers.get(optimalChain);
-    
-    if (!provider) {
-      throw new Error(`No provider for chain: ${optimalChain}`);
-    }
-    
-    const result = await provider.execute(intent);
-    
-    // 如果执行在扩展链，同步 Reputation 回 Solana
-    if (optimalChain !== 'solana' && intent.type === 'settle') {
-      await this.syncReputationToSolana(result);
-    }
-    
-    return result;
-  }
-  
-  /**
-   * 跨链 Reputation 同步
-   */
-  private async syncReputationToSolana(result: ExecutionResult): Promise<void> {
-    await this.solana.execute({
-      type: 'syncReputation',
-      payload: {
-        sourceChain: result.chain,
-        txHash: result.txHash,
-        reputationDelta: result.reputationDelta
-      }
-    });
-  }
-  
-  /**
-   * 批量执行（利用 X Layer 零 Gas 优势）
-   */
-  async batchExecute(intents: Intent[]): Promise<ExecutionResult[]> {
-    // 如果配置了 X Layer，优先使用
-    if (this.xLayer) {
-      return this.xLayer.batchExecute(intents);
-    }
-    
-    // 否则逐个执行
-    return Promise.all(intents.map(i => this.execute(i)));
-  }
 }
 ```
 
@@ -685,55 +683,55 @@ class GradienceChainHub {
 
 ```typescript
 class IntentRouter {
-  constructor(private providers: Map<string, ChainProvider>) {}
-  
-  selectOptimalChain(intent: Intent): string {
-    const prefs = intent.preferences || {};
-    
-    // 1. 用户明确偏好
-    if (prefs.preferZeroGas && this.has('xlayer')) {
-      return 'xlayer';
+    constructor(private providers: Map<string, ChainProvider>) {}
+
+    selectOptimalChain(intent: Intent): string {
+        const prefs = intent.preferences || {};
+
+        // 1. 用户明确偏好
+        if (prefs.preferZeroGas && this.has('xlayer')) {
+            return 'xlayer';
+        }
+
+        if (prefs.preferStreaming && this.has('tempo')) {
+            return 'tempo';
+        }
+
+        if (prefs.preferAI && this.has('near')) {
+            return 'near';
+        }
+
+        // 2. 金额判断
+        if (intent.payload?.amount) {
+            const amount = Number(intent.payload.amount);
+
+            // 小额 → X Layer (零 Gas)
+            if (amount < 10 && this.has('xlayer')) {
+                return 'xlayer';
+            }
+
+            // 大额流式 → Tempo
+            if (amount > 1000 && this.has('tempo')) {
+                return 'tempo';
+            }
+        }
+
+        // 3. 功能需求
+        if (intent.type === 'commerce' && this.has('sui')) {
+            return 'sui';
+        }
+
+        if (intent.type === 'intent' && this.has('near')) {
+            return 'near';
+        }
+
+        // 4. 默认 Solana
+        return 'solana';
     }
-    
-    if (prefs.preferStreaming && this.has('tempo')) {
-      return 'tempo';
+
+    private has(chain: string): boolean {
+        return this.providers.has(chain);
     }
-    
-    if (prefs.preferAI && this.has('near')) {
-      return 'near';
-    }
-    
-    // 2. 金额判断
-    if (intent.payload?.amount) {
-      const amount = Number(intent.payload.amount);
-      
-      // 小额 → X Layer (零 Gas)
-      if (amount < 10 && this.has('xlayer')) {
-        return 'xlayer';
-      }
-      
-      // 大额流式 → Tempo
-      if (amount > 1000 && this.has('tempo')) {
-        return 'tempo';
-      }
-    }
-    
-    // 3. 功能需求
-    if (intent.type === 'commerce' && this.has('sui')) {
-      return 'sui';
-    }
-    
-    if (intent.type === 'intent' && this.has('near')) {
-      return 'near';
-    }
-    
-    // 4. 默认 Solana
-    return 'solana';
-  }
-  
-  private has(chain: string): boolean {
-    return this.providers.has(chain);
-  }
 }
 ```
 
@@ -744,11 +742,13 @@ class IntentRouter {
 ### Phase 1: 双链启动（4 周）
 
 **Week 1-2: Tempo + X Layer**
+
 - Tempo MPP 集成
 - X Layer 零 Gas 集成
 - 双链测试网验证
 
 **Week 3-4: 主网部署**
+
 - Tempo mainnet
 - X Layer mainnet
 - 文档 + 示例
@@ -756,16 +756,19 @@ class IntentRouter {
 ### Phase 2: 四链扩展（6 周）
 
 **Week 5-7: Sui**
+
 - Sui Payment Kit 集成
 - x402 + OWS 适配
 - Agentic Commerce 场景
 
 **Week 8-10: NEAR**
+
 - NEAR Intents 集成
 - AI Cloud 辅助
 - Agent Market 对接
 
 **Week 11-12: 统一优化**
+
 - 跨链桥接优化
 - Reputation 同步完善
 - 性能调优
@@ -799,7 +802,7 @@ One SDK. Optimal chain for every task.
 
 ### Thread
 
-```
+````
 1/ Why multi-chain?
 
 Different tasks need different chains:
@@ -827,7 +830,7 @@ const hub = new GradienceChainHub({
 
 // Auto-routed to optimal chain
 await hub.settle(taskId);
-```
+````
 
 User: Zero friction. Best experience.
 
@@ -845,6 +848,7 @@ Chain pragmatism.
 
 Use the best tool for each job.
 Keep trust centralized.
+
 ```
 
 ---
@@ -875,5 +879,6 @@ Keep trust centralized.
 
 ---
 
-*最后更新: 2026-04-03*  
+*最后更新: 2026-04-03*
 *架构确认: ✅ 已冻结，开始执行*
+```

@@ -3,14 +3,14 @@
  */
 
 export class GatewayError extends Error {
-  constructor(
-    public readonly code: string,
-    message: string,
-    public readonly cause?: unknown
-  ) {
-    super(message);
-    this.name = 'GatewayError';
-  }
+    constructor(
+        public readonly code: string,
+        message: string,
+        public readonly cause?: unknown,
+    ) {
+        super(message);
+        this.name = 'GatewayError';
+    }
 }
 
 export const GW_PURCHASE_EXISTS = 'GW_0001';

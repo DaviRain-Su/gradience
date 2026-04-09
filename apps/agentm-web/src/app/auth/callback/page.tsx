@@ -24,26 +24,28 @@ export default function AuthCallbackPage() {
     }, [router]);
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: '#F3F3F8',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-        }}>
-            <div style={{
-                width: '48px',
-                height: '48px',
-                border: '3px solid #C6BBFF',
-                borderTopColor: '#16161A',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-            }} />
-            <p style={{ color: '#16161A', fontSize: '16px', fontWeight: 500 }}>
-                Login successful!
-            </p>
+        <div
+            style={{
+                minHeight: '100vh',
+                background: '#F3F3F8',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px',
+            }}
+        >
+            <div
+                style={{
+                    width: '48px',
+                    height: '48px',
+                    border: '3px solid #C6BBFF',
+                    borderTopColor: '#16161A',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                }}
+            />
+            <p style={{ color: '#16161A', fontSize: '16px', fontWeight: 500 }}>Login successful!</p>
             <p style={{ color: '#16161A', fontSize: '14px', opacity: 0.6 }}>
                 Redirecting to app in {countdown} seconds...
             </p>

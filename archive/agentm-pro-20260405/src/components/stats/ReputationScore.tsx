@@ -1,17 +1,21 @@
 import type { ReputationData } from '@/types';
 
 export function ReputationScore({ reputation }: { reputation: ReputationData }) {
-    const reliability = reputation.total_applied > 0
-        ? Math.round((reputation.completed / reputation.total_applied) * 100)
-        : 0;
+    const reliability =
+        reputation.total_applied > 0 ? Math.round((reputation.completed / reputation.total_applied) * 100) : 0;
     const quality = Math.round(reputation.avg_score);
     const responsiveness = Math.round((reliability + quality) / 2);
 
     return (
-        <div data-testid="reputation-score-card" className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div
+            data-testid="reputation-score-card"
+            className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4"
+        >
             <div>
                 <p className="text-sm text-gray-400">Overall Reputation</p>
-                <p data-testid="reputation-score-value" className="text-4xl font-bold mt-1">{quality}</p>
+                <p data-testid="reputation-score-value" className="text-4xl font-bold mt-1">
+                    {quality}
+                </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Metric label="Reliability" value={reliability} />

@@ -69,44 +69,47 @@ This document describes the mid-term integration implementation for Gradience, c
 ### 1. XMTP Communication Layer
 
 #### Files
+
 - `apps/agentm/src/main/a2a-router/adapters/xmtp-adapter.ts`
 - `apps/agentm/src/shared/a2a-payment-types.ts`
 - `apps/agent-daemon/src/services/payment-service.ts`
 
 #### Features
+
 - **XMTP Adapter**: ProtocolAdapter implementation for XMTP
-  - MLS E2E encryption
-  - Wallet address as identity
-  - Message streaming and polling
-  - Conversation caching
+    - MLS E2E encryption
+    - Wallet address as identity
+    - Message streaming and polling
+    - Conversation caching
 
 - **Payment Types**: Complete payment message schema
-  - PaymentRequest
-  - PaymentConfirmation
-  - PaymentReceipt
-  - PaymentDispute
+    - PaymentRequest
+    - PaymentConfirmation
+    - PaymentReceipt
+    - PaymentDispute
 
 - **Payment Service**: End-to-end payment flow
-  - Request/Accept/Complete states
-  - XMTP message handling
-  - OWS wallet integration
+    - Request/Accept/Complete states
+    - XMTP message handling
+    - OWS wallet integration
 
 #### Usage
+
 ```typescript
 // Initialize XMTP Adapter
 const xmtpAdapter = new XMTPAdapter({
-  env: 'dev',
-  privateKey: '...',
-  enableStreaming: true,
+    env: 'dev',
+    privateKey: '...',
+    enableStreaming: true,
 });
 
 // Send payment request
 await paymentService.requestPayment({
-  payerAgentId: 'agent-a',
-  payeeAgentId: 'agent-b',
-  amount: '1000000',
-  token: 'USDC',
-  // ...
+    payerAgentId: 'agent-a',
+    payeeAgentId: 'agent-b',
+    amount: '1000000',
+    token: 'USDC',
+    // ...
 });
 ```
 
@@ -115,49 +118,53 @@ await paymentService.requestPayment({
 ### 2. OWS Wallet Integration
 
 #### Files
+
 - `apps/agent-daemon/src/wallet/ows-wallet-manager.ts`
 - `apps/agent-daemon/src/wallet/authorization.ts`
 
 #### Features
+
 - **Wallet-per-Agent**: Each Agent gets dedicated OWS sub-wallet
 - **Reputation-Driven Policies**: Automatic policy calculation based on score
-  - Bronze (0-30): $300 daily, approval required
-  - Silver (31-50): $500 daily, approval required
-  - Gold (51-80): $800 daily, no approval
-  - Platinum (81-100): $1000 daily, no approval, all tokens
+    - Bronze (0-30): $300 daily, approval required
+    - Silver (31-50): $500 daily, approval required
+    - Gold (51-80): $800 daily, no approval
+    - Platinum (81-100): $1000 daily, no approval, all tokens
 
 - **Policy Formula**:
-  ```
-  dailyLimit = reputationScore * 10
-  maxTransaction = reputationScore * 2
-  requireApproval = reputationScore < 80
-  ```
+
+    ```
+    dailyLimit = reputationScore * 10
+    maxTransaction = reputationScore * 2
+    requireApproval = reputationScore < 80
+    ```
 
 - **Transaction Tracking**: Daily spend tracking, transaction history
 
 #### Usage
+
 ```typescript
 // Create wallet
 const wallet = await walletManager.createWallet({
-  agentId: 'agent-123',
-  parentWallet: 'parent-address',
-  name: 'agent-wallet',
-  initialReputation: 75,
+    agentId: 'agent-123',
+    parentWallet: 'parent-address',
+    name: 'agent-wallet',
+    initialReputation: 75,
 });
 
 // Update reputation (auto-recalculates policy)
 await walletManager.updateReputation('agent-123', {
-  score: 85,
-  completed: 10,
-  // ...
+    score: 85,
+    completed: 10,
+    // ...
 });
 
 // Check transaction limits
 const check = walletManager.checkTransactionLimits(
-  wallet,
-  500, // $5.00 in cents
-  'solana',
-  'USDC'
+    wallet,
+    500, // $5.00 in cents
+    'solana',
+    'USDC',
 );
 ```
 
@@ -166,22 +173,25 @@ const check = walletManager.checkTransactionLimits(
 ### 3. Evaluator Runtime
 
 #### Files
+
 - `apps/agent-daemon/src/evaluator/runtime.ts`
 - `apps/agent-daemon/src/evaluator/playwright-harness.ts`
 
 #### Features
+
 - **Independent Evaluation**: Evaluator has no shared state with Generator
 - **Sandbox Isolation**: Docker/git-worktree isolation
 - **Multiple Evaluation Types**:
-  - Code: Build, test, lint, coverage
-  - UI: Playwright screenshots, accessibility
-  - API: Endpoint testing, contract validation
-  - Content: LLM-as-judge
+    - Code: Build, test, lint, coverage
+    - UI: Playwright screenshots, accessibility
+    - API: Endpoint testing, contract validation
+    - Content: LLM-as-judge
 
 - **Drift Detection**: Context window monitoring with reset strategies
 - **Cost Control**: Budget tracking for time, memory, API costs
 
 #### Usage
+
 ```typescript
 // Submit evaluation
 const evaluationId = await evaluatorRuntime.submit({
@@ -215,16 +225,19 @@ evaluatorRuntime.on('completed', (result) => {
 ### 4. Settlement Bridge
 
 #### Files
+
 - `apps/agent-daemon/src/bridge/settlement-bridge.ts`
 - `apps/agent-daemon/src/bridge/external-evaluation-stub.ts`
 
 #### Features
+
 - **Proof Generation**: Cryptographic proof of evaluation
 - **Chain Hub Integration**: Submit to Solana program
 - **Retry Logic**: Exponential backoff for failed submissions
 - **Fund Distribution**: 95% Agent / 3% Judge / 2% Protocol
 
 #### Usage
+
 ```typescript
 // Create bridge
 const bridge = await createSettlementBridge({
@@ -317,6 +330,7 @@ SETTLEMENT_RETRY_DELAY_MS=1000
 ## Testing
 
 ### Unit Tests
+
 ```bash
 # XMTP Adapter
 cd apps/agentm && npm test src/main/a2a-router/adapters/xmtp-adapter.test.ts
@@ -332,6 +346,7 @@ cd apps/agent-daemon && npm test src/bridge/settlement-bridge.test.ts
 ```
 
 ### E2E Tests
+
 ```bash
 cd apps/agent-daemon && npm test src/tests/e2e-payment-flow.test.ts
 ```
@@ -341,6 +356,7 @@ cd apps/agent-daemon && npm test src/tests/e2e-payment-flow.test.ts
 ## Deployment Checklist
 
 ### Pre-deployment
+
 - [ ] All unit tests passing
 - [ ] E2E tests passing
 - [ ] Chain Hub program deployed to devnet
@@ -348,12 +364,14 @@ cd apps/agent-daemon && npm test src/tests/e2e-payment-flow.test.ts
 - [ ] OWS SDK integrated
 
 ### Deployment
+
 - [ ] Deploy Agent Daemon with new wallet manager
 - [ ] Deploy AgentM with XMTP adapter
 - [ ] Configure authorized evaluators
 - [ ] Set reputation thresholds
 
 ### Post-deployment
+
 - [ ] Monitor settlement success rate
 - [ ] Track evaluation costs
 - [ ] Verify fund distribution accuracy
@@ -363,16 +381,19 @@ cd apps/agent-daemon && npm test src/tests/e2e-payment-flow.test.ts
 ## Future Enhancements
 
 ### GRA-M9: Chain Hub External Evaluation (Optional)
+
 - Add `submit_external_evaluation` instruction to Solana program
 - Implement authorized evaluator whitelist
 - Enable auto-completion based on evaluation score
 
 ### Performance Optimizations
+
 - Batch multiple settlements
 - Cache evaluation results
 - Optimize sandbox reuse
 
 ### Security Hardening
+
 - Multi-sig for evaluator authorization
 - Rate limiting on settlements
 - Formal verification of proof validation

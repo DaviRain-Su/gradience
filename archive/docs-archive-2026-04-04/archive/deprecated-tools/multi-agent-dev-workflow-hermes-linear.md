@@ -10,6 +10,7 @@
 ## 执行摘要
 
 **核心架构**:
+
 ```
 Hermes (Coordinator) ←→ Linear (项目管理)
        ↓
@@ -23,6 +24,7 @@ Hermes (Review 协调) → Phase 7 完成
 ```
 
 **关键原则**:
+
 - ✅ Hermes 只管理 Linear，不写代码（避免上下文污染）
 - ✅ Coding Agents 只实现 Phase 6，不碰管理
 - ✅ dev-lifecycle 7 个 Phase 作为强制流程
@@ -48,22 +50,22 @@ dev-lifecycle 核心:
 
 ### 1.2 你的方案如何落地
 
-| dev-lifecycle 角色 | 你的实现 | 优势 |
-|-------------------|---------|------|
-| **Coordinator** | Hermes Agent | 自进化 + Linear Skill |
-| **Specialist** | Claude Code / Codex / Pi | 上下文干净、幻觉少 |
-| **流程把控** | Hermes 读 dev-lifecycle 模板 | 强制 Phase 顺序 |
-| **可视化** | Linear Issues | 人类可跟踪进度 |
+| dev-lifecycle 角色 | 你的实现                     | 优势                  |
+| ------------------ | ---------------------------- | --------------------- |
+| **Coordinator**    | Hermes Agent                 | 自进化 + Linear Skill |
+| **Specialist**     | Claude Code / Codex / Pi     | 上下文干净、幻觉少    |
+| **流程把控**       | Hermes 读 dev-lifecycle 模板 | 强制 Phase 顺序       |
+| **可视化**         | Linear Issues                | 人类可跟踪进度        |
 
 ### 1.3 与单一 Agent 对比
 
-| 维度 | 单一 Agent | 多 Agent 架构 |
-|------|-----------|--------------|
-| **上下文管理** | 管理+代码混在一起，易污染 | 分离，各自专注 |
-| **效率** | 频繁切换角色，效率低 | 并行执行，效率高 |
-| **可维护** | 知识混在对话历史中 | Hermes Skill 可复用 |
-| **24/7 运行** | 需人工重启会话 | Hermes 常驻 VPS/Docker |
-| **学习进化** | 无 | Hermes 自进化 Skill |
+| 维度           | 单一 Agent                | 多 Agent 架构          |
+| -------------- | ------------------------- | ---------------------- |
+| **上下文管理** | 管理+代码混在一起，易污染 | 分离，各自专注         |
+| **效率**       | 频繁切换角色，效率低      | 并行执行，效率高       |
+| **可维护**     | 知识混在对话历史中        | Hermes Skill 可复用    |
+| **24/7 运行**  | 需人工重启会话            | Hermes 常驻 VPS/Docker |
+| **学习进化**   | 无                        | Hermes 自进化 Skill    |
 
 ---
 
@@ -99,19 +101,19 @@ Hermes (Nous Research 开源):
 ```typescript
 // Hermes Linear Skill 能力
 interface HermesLinearSkill {
-  // Issue 管理
-  createIssue(title: string, description: string, phase: Phase): Promise<Issue>;
-  updateIssue(issueId: string, updates: Partial<Issue>): Promise<void>;
-  changeStatus(issueId: string, status: Status): Promise<void>;
-  addLabel(issueId: string, label: string): Promise<void>;
-  
-  // 流程推进
-  moveToNextPhase(issueId: string): Promise<void>;
-  blockUntilApproved(issueId: string): Promise<void>;
-  
-  // 通知
-  notifyAgent(agent: string, message: string): Promise<void>;
-  postToSlack(channel: string, message: string): Promise<void>;
+    // Issue 管理
+    createIssue(title: string, description: string, phase: Phase): Promise<Issue>;
+    updateIssue(issueId: string, updates: Partial<Issue>): Promise<void>;
+    changeStatus(issueId: string, status: Status): Promise<void>;
+    addLabel(issueId: string, label: string): Promise<void>;
+
+    // 流程推进
+    moveToNextPhase(issueId: string): Promise<void>;
+    blockUntilApproved(issueId: string): Promise<void>;
+
+    // 通知
+    notifyAgent(agent: string, message: string): Promise<void>;
+    postToSlack(channel: string, message: string): Promise<void>;
 }
 ```
 
@@ -168,33 +170,33 @@ description: Manage dev-lifecycle 7 phases via Linear
 version: 1.0.0
 
 triggers:
-  - type: webhook
-    source: linear
-    event: issue.created
-  - type: schedule
-    cron: "0 */4 * * *"  # 每4小时检查一次
+    - type: webhook
+      source: linear
+      event: issue.created
+    - type: schedule
+      cron: '0 */4 * * *' # 每4小时检查一次
 
 actions:
-  - name: parse_phase
-    description: Parse which phase an issue belongs to
-    
-  - name: enforce_phase_order
-    description: Block if previous phase not approved
-    
-  - name: delegate_coding
-    description: Assign to coding agent for Phase 6
-    
-  - name: coordinate_review
-    description: Trigger Phase 7 review when PR submitted
+    - name: parse_phase
+      description: Parse which phase an issue belongs to
+
+    - name: enforce_phase_order
+      description: Block if previous phase not approved
+
+    - name: delegate_coding
+      description: Assign to coding agent for Phase 6
+
+    - name: coordinate_review
+      description: Trigger Phase 7 review when PR submitted
 
 knowledge:
-  - path: docs/methodology/01-prd.md
-  - path: docs/methodology/02-architecture.md
-  - path: docs/methodology/03-tech-spec.md
-  - path: docs/methodology/04-task-breakdown.md
-  - path: docs/methodology/05-test-spec.md
-  - path: docs/methodology/06-implementation.md
-  - path: docs/methodology/07-review.md
+    - path: docs/methodology/01-prd.md
+    - path: docs/methodology/02-architecture.md
+    - path: docs/methodology/03-tech-spec.md
+    - path: docs/methodology/04-task-breakdown.md
+    - path: docs/methodology/05-test-spec.md
+    - path: docs/methodology/06-implementation.md
+    - path: docs/methodology/07-review.md
 ```
 
 ### 3.4 Hermes Prompt 模板
@@ -205,12 +207,14 @@ knowledge:
 You are Hermes, the coordinator for Gradience project development.
 
 ## Your Role
+
 - Manage Linear issues through dev-lifecycle 7 phases
 - NEVER write code yourself
 - Delegate all implementation to Coding Agents
 - Enforce strict phase ordering
 
 ## dev-lifecycle Phases
+
 1. PRD (Product Requirements) - Must be approved before Architecture
 2. Architecture (System Design) - Must be approved before Tech Spec
 3. Tech Spec (Technical Specification) - Must be approved before Task Breakdown
@@ -220,25 +224,31 @@ You are Hermes, the coordinator for Gradience project development.
 7. Review (Code Review) - Coordinate review agents
 
 ## Linear Operations
+
 When you see a new Initiative:
+
 1. Create Phase 1: PRD issue
 2. Wait for "Phase-1-Approved" label
 3. Then create Phase 2: Architecture issue
 4. Continue sequentially...
 
 ## Delegation Rules
+
 - Phase 6 Implementation tasks → @claude-code or @codex
 - Include only: Issue link + Phase 3 Tech Spec + Phase 5 Test Spec
 - Do NOT include: Full PRD, other phases, or management context
 
 ## Review Coordination
+
 When Coding Agent submits PR:
+
 1. Create Phase 7: Review issue
 2. Assign to review agent (@claude-review or @hermes-review)
 3. Collect feedback
 4. If approved, merge and close
 
 ## Labels to Watch
+
 - "Phase-X-Approved" → Move to Phase X+1
 - "Needs-Revision" → Send back to previous phase
 - "Ready-For-Implementation" → Delegate to coding agent
@@ -323,17 +333,20 @@ esac
 You are a specialist coding agent. Your ONLY job is Phase 6: Implementation.
 
 ## What You Receive
+
 - Linear Issue link
 - Phase 3: Tech Spec (technical requirements)
 - Phase 5: Test Spec (what to test)
 
 ## What You Do
+
 1. Read the Tech Spec
 2. Implement the code
 3. Run tests from Test Spec
 4. Submit PR
 
 ## What You DON'T Do
+
 ❌ Read PRD (Product Requirements)
 ❌ Read Architecture docs
 ❌ Modify project management files
@@ -341,7 +354,9 @@ You are a specialist coding agent. Your ONLY job is Phase 6: Implementation.
 ❌ Talk to users
 
 ## Context Isolation
+
 You are given MINIMAL context intentionally to:
+
 - Reduce hallucination
 - Improve focus
 - Lower token cost
@@ -404,27 +419,27 @@ Priority Labels:
 ```yaml
 # Linear Automation (via Hermes)
 rules:
-  - name: Auto-create-next-phase
-    trigger: label added "phase-X-approved"
-    action: create issue for phase X+1
-    
-  - name: Delegate-implementation
-    trigger: label added "ready-for-implementation"
-    action: 
-      - notify hermes
-      - hermes delegates to coding agent
-      - add label "delegated-to-{agent}"
-      
-  - name: Start-review
-    trigger: label added "pr-submitted"
-    action:
-      - create Phase 7 issue
-      - assign to review agent
-      
-  - name: Block-phase-skip
-    trigger: attempt to create phase X issue
-    condition: phase X-1 not approved
-    action: reject with message "Phase X-1 must be approved first"
+    - name: Auto-create-next-phase
+      trigger: label added "phase-X-approved"
+      action: create issue for phase X+1
+
+    - name: Delegate-implementation
+      trigger: label added "ready-for-implementation"
+      action:
+          - notify hermes
+          - hermes delegates to coding agent
+          - add label "delegated-to-{agent}"
+
+    - name: Start-review
+      trigger: label added "pr-submitted"
+      action:
+          - create Phase 7 issue
+          - assign to review agent
+
+    - name: Block-phase-skip
+      trigger: attempt to create phase X issue
+      condition: phase X-1 not approved
+      action: reject with message "Phase X-1 must be approved first"
 ```
 
 ---
@@ -481,14 +496,14 @@ Day 7: Review
 
 ## 7. 风险与缓解
 
-| 风险 | 概率 | 影响 | 缓解措施 |
-|------|------|------|----------|
-| **Hermes 写代码** | 中 | 高 | 严格 System Prompt 约束 |
-| **上下文泄漏** | 中 | 中 | Coding Agent 只收最小上下文 |
-| **Phase 跳过** | 低 | 高 | Hermes 强制检查前一 Phase |
-| **Coding Agent 卡住** | 中 | 中 | 超时机制，Hermes 重新委派 |
-| **Token 成本** | 低 | 低 | Skill 压缩 + 最小上下文 |
-| **Hermes 宕机** | 低 | 高 | Docker 自动重启 + 健康检查 |
+| 风险                  | 概率 | 影响 | 缓解措施                    |
+| --------------------- | ---- | ---- | --------------------------- |
+| **Hermes 写代码**     | 中   | 高   | 严格 System Prompt 约束     |
+| **上下文泄漏**        | 中   | 中   | Coding Agent 只收最小上下文 |
+| **Phase 跳过**        | 低   | 高   | Hermes 强制检查前一 Phase   |
+| **Coding Agent 卡住** | 中   | 中   | 超时机制，Hermes 重新委派   |
+| **Token 成本**        | 低   | 低   | Skill 压缩 + 最小上下文     |
+| **Hermes 宕机**       | 低   | 高   | Docker 自动重启 + 健康检查  |
 
 ---
 
@@ -522,13 +537,13 @@ emdash start
 
 ### 立即行动
 
-| 优先级 | 行动 | 时间 |
-|--------|------|------|
-| P0 | 安装 Hermes 并配置 Linear Skill | 今天 |
-| P0 | 创建 dev-lifecycle-manager Skill | 今天 |
-| P1 | 配置 Linear Workflow 和 Labels | 本周 |
-| P1 | 测试第一个 Initiative 全流程 | 本周 |
-| P2 | 优化 Coding Agent 上下文模板 | 下周 |
+| 优先级 | 行动                             | 时间 |
+| ------ | -------------------------------- | ---- |
+| P0     | 安装 Hermes 并配置 Linear Skill  | 今天 |
+| P0     | 创建 dev-lifecycle-manager Skill | 今天 |
+| P1     | 配置 Linear Workflow 和 Labels   | 本周 |
+| P1     | 测试第一个 Initiative 全流程     | 本周 |
+| P2     | 优化 Coding Agent 上下文模板     | 下周 |
 
 ### 一句话总结
 
@@ -536,5 +551,5 @@ emdash start
 
 ---
 
-*最后更新: 2026-04-03*  
-*状态: 推荐立即实施*
+_最后更新: 2026-04-03_  
+_状态: 推荐立即实施_

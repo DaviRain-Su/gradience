@@ -6,7 +6,7 @@
 
 The original blocker (missing `@magicblock-labs/vrf-sdk` on npm) has been
 resolved by consuming MagicBlock's open-source Rust definitions directly and
-manually implementing the TypeScript side.  Proof verification is performed
+manually implementing the TypeScript side. Proof verification is performed
 by the MagicBlock `ephemeral-vrf` program itself during `ProvideRandomness`;
 Gradience only needs to trust the signed CPI callback.
 
@@ -14,14 +14,14 @@ Gradience only needs to trust the signed CPI callback.
 
 ## Resolution Summary
 
-| Item | Status | Details |
-|------|--------|---------|
-| RequestRandomness instruction builder | ✅ Done | `MagicBlockVRFClient` in `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts` |
-| Queue polling + result PDA reading | ✅ Done | `VRFJudgeSelector` + `MagicBlockVRFClient` |
-| On-chain callback handler | ✅ Done | `ReceiveVrfRandomness` instruction in `programs/agent-arena` |
-| Proof verification | ✅ Delegated | MagicBlock `ephemeral-vrf` program verifies proofs before CPI callback |
-| Judge selection from randomness | ✅ Done | `select_judge_index()` in `programs/agent-arena/src/vrf.rs` |
-| Daemon API route | ✅ Done | `POST /api/v1/magicblock/request-vrf` |
+| Item                                  | Status       | Details                                                                              |
+| ------------------------------------- | ------------ | ------------------------------------------------------------------------------------ |
+| RequestRandomness instruction builder | ✅ Done      | `MagicBlockVRFClient` in `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts` |
+| Queue polling + result PDA reading    | ✅ Done      | `VRFJudgeSelector` + `MagicBlockVRFClient`                                           |
+| On-chain callback handler             | ✅ Done      | `ReceiveVrfRandomness` instruction in `programs/agent-arena`                         |
+| Proof verification                    | ✅ Delegated | MagicBlock `ephemeral-vrf` program verifies proofs before CPI callback               |
+| Judge selection from randomness       | ✅ Done      | `select_judge_index()` in `programs/agent-arena/src/vrf.rs`                          |
+| Daemon API route                      | ✅ Done      | `POST /api/v1/magicblock/request-vrf`                                                |
 
 ---
 
@@ -30,7 +30,7 @@ Gradience only needs to trust the signed CPI callback.
 ### 1. We Do Not Need an NPM SDK
 
 MagicBlock's ephemeral-vrf repo (`magicblock-labs/ephemeral-vrf`) contains
-all the necessary layout definitions in `api/src/instruction.rs`.  We built
+all the necessary layout definitions in `api/src/instruction.rs`. We built
 our own minimal TypeScript client (`magicblock-vrf-client.ts`) that:
 
 - Serializes `RequestRandomness` arguments using the exact Borsh layout.
@@ -40,8 +40,8 @@ our own minimal TypeScript client (`magicblock-vrf-client.ts`) that:
 ### 2. Proof Verification Happens Upstream
 
 MagicBlock's `ProvideRandomness` instruction performs full Curve25519/Ed25519
-VRF proof verification on-chain.  Only after the proof is valid does it invoke
-the callback program (`agent-arena`) via a signed CPI.  Therefore Gradience's
+VRF proof verification on-chain. Only after the proof is valid does it invoke
+the callback program (`agent-arena`) via a signed CPI. Therefore Gradience's
 `ReceiveVrfRandomness` handler can safely trust the randomness value without
 re-verifying the proof.
 
@@ -73,13 +73,13 @@ Reference: [`program/src/provide_randomness.rs`](https://github.com/magicblock-l
 
 ## Files of Interest
 
-| File | Purpose |
-|------|---------|
-| `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts` | Manual VRF instruction builder + queue parser |
-| `apps/agent-daemon/src/settlement/vrf-judge-selector.ts` | Judge selection with fallback + rotation |
-| `apps/agent-daemon/src/api/routes/magicblock.ts` | API surface (`request-vrf`) |
-| `programs/agent-arena/src/vrf.rs` | `select_judge_index` |
-| `programs/agent-arena/src/instructions/receive_vrf_randomness/` | Callback handler that persists randomness |
+| File                                                            | Purpose                                       |
+| --------------------------------------------------------------- | --------------------------------------------- |
+| `apps/agent-daemon/src/settlement/magicblock-vrf-client.ts`     | Manual VRF instruction builder + queue parser |
+| `apps/agent-daemon/src/settlement/vrf-judge-selector.ts`        | Judge selection with fallback + rotation      |
+| `apps/agent-daemon/src/api/routes/magicblock.ts`                | API surface (`request-vrf`)                   |
+| `programs/agent-arena/src/vrf.rs`                               | `select_judge_index`                          |
+| `programs/agent-arena/src/instructions/receive_vrf_randomness/` | Callback handler that persists randomness     |
 
 ---
 

@@ -6,30 +6,32 @@ import { outputResult, outputError, isNoJsonMode } from '../utils.js';
 
 export async function createAgentCommand(name: string, options: { template: string }): Promise<void> {
     const spinner = ora(`Creating agent project: ${name}`).start();
-    
+
     try {
         if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) {
-            throw new Error('Agent name must start with a letter and contain only letters, numbers, hyphens, and underscores');
+            throw new Error(
+                'Agent name must start with a letter and contain only letters, numbers, hyphens, and underscores',
+            );
         }
 
         const targetDir = path.resolve(process.cwd(), name);
-        
+
         spinner.text = 'Creating project directory...';
         await mkdir(targetDir, { recursive: true });
 
         const template = options.template || 'basic';
-        
+
         spinner.text = 'Generating project files...';
         await generateProjectFiles(targetDir, name, template);
-        
+
         spinner.succeed(`Agent project created: ${name}/`);
-        
+
         if (isNoJsonMode()) {
-            outputResult({ 
-                ok: true, 
-                name, 
-                template, 
-                path: targetDir 
+            outputResult({
+                ok: true,
+                name,
+                template,
+                path: targetDir,
             });
         } else {
             console.log('');
@@ -68,19 +70,19 @@ async function generateProjectFiles(targetDir: string, name: string, template: s
         dependencies: {
             '@gradiences/sdk': '^0.1.0',
             '@solana/kit': '^5.5.0',
-            'tsx': '^4.20.0',
-            'typescript': '^5.9.0',
-            'chalk': '^5.3.0',
-            'ora': '^8.0.1',
+            tsx: '^4.20.0',
+            typescript: '^5.9.0',
+            chalk: '^5.3.0',
+            ora: '^8.0.1',
         },
         devDependencies: {
             '@types/node': '^20.0.0',
-            'vitest': '^1.6.0',
+            vitest: '^1.6.0',
         },
     };
 
     const agentTsContent = generateAgentTemplate(name, template);
-    
+
     const tsconfigJsonContent = {
         compilerOptions: {
             target: 'ESNext',
@@ -96,7 +98,7 @@ async function generateProjectFiles(targetDir: string, name: string, template: s
     };
 
     const readmeContent = generateReadmeTemplate(name);
-    
+
     const envExampleContent = `# Gradience Agent Configuration
 GRADIENCE_RPC=https://api.devnet.solana.com
 GRADIENCE_INDEXER=http://127.0.0.1:3001
@@ -111,26 +113,11 @@ GRADIENCE_KEYPAIR=~/.config/solana/id.json
 
     // Write all files
     await Promise.all([
-        writeFile(
-            path.join(targetDir, 'package.json'), 
-            JSON.stringify(packageJsonContent, null, 2)
-        ),
-        writeFile(
-            path.join(targetDir, 'agent.ts'), 
-            agentTsContent
-        ),
-        writeFile(
-            path.join(targetDir, 'tsconfig.json'), 
-            JSON.stringify(tsconfigJsonContent, null, 2)
-        ),
-        writeFile(
-            path.join(targetDir, 'README.md'), 
-            readmeContent
-        ),
-        writeFile(
-            path.join(targetDir, '.env.example'), 
-            envExampleContent
-        ),
+        writeFile(path.join(targetDir, 'package.json'), JSON.stringify(packageJsonContent, null, 2)),
+        writeFile(path.join(targetDir, 'agent.ts'), agentTsContent),
+        writeFile(path.join(targetDir, 'tsconfig.json'), JSON.stringify(tsconfigJsonContent, null, 2)),
+        writeFile(path.join(targetDir, 'README.md'), readmeContent),
+        writeFile(path.join(targetDir, '.env.example'), envExampleContent),
     ]);
 }
 
@@ -245,7 +232,7 @@ main().catch(console.error);
     if (template === 'basic') {
         return baseTemplate;
     }
-    
+
     // Could add other templates here (trading, research, etc.)
     return baseTemplate;
 }

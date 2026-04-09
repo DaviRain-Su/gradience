@@ -9,6 +9,7 @@
 ## 一、核心思路
 
 **Before (当前架构)**:
+
 ```
 Agent A → [自建 Indexer 服务器] → Agent B
           ↑ 中心化，需要运维
@@ -17,6 +18,7 @@ Agent A → [自建 Indexer 服务器] → Agent B
 ```
 
 **After (Nostr 架构)**:
+
 ```
 Agent A → [Nostr Relay 网络] → Agent B
           ↑ 去中心化，无需运维
@@ -25,6 +27,7 @@ Agent A → [Nostr Relay 网络] → Agent B
 ```
 
 **分层设计**:
+
 ```
 ┌─────────────────────────────────────────────────┐
 │ 结算层 (Settlement)    Solana / ChainHub 合约    │ ← 链上，不变
@@ -50,23 +53,23 @@ Customer 在 relay 上发布任务请求，Service Provider (Agent) 看到后处
 
 ### Event Kind 范围
 
-| Kind 范围 | 用途 |
-|-----------|------|
-| 5000-5999 | Job Request (客户发布) |
+| Kind 范围 | 用途                                              |
+| --------- | ------------------------------------------------- |
+| 5000-5999 | Job Request (客户发布)                            |
 | 6000-6999 | Job Result (Provider 返回，kind = request + 1000) |
-| 7000      | Job Feedback (状态更新) |
+| 7000      | Job Feedback (状态更新)                           |
 
 ### 已定义的 Job 类型
 
-| Kind | 用途 |
-|------|------|
-| 5000/6000 | 语音转文字 |
-| 5001/6001 | 摘要 |
-| 5002/6002 | 翻译 |
-| 5005/6005 | 内容发现/推荐 |
+| Kind      | 用途           |
+| --------- | -------------- |
+| 5000/6000 | 语音转文字     |
+| 5001/6001 | 摘要           |
+| 5002/6002 | 翻译           |
+| 5005/6005 | 内容发现/推荐  |
 | 5050/6050 | 文本生成 (LLM) |
-| 5100/6100 | 图片生成 |
-| 5800/6800 | 通用/自定义 |
+| 5100/6100 | 图片生成       |
+| 5800/6800 | 通用/自定义    |
 
 **Gradience 可以注册自己的 kind 范围，或使用 5800 通用类型。**
 
@@ -74,21 +77,22 @@ Customer 在 relay 上发布任务请求，Service Provider (Agent) 看到后处
 
 ```json
 {
-  "kind": 5050,
-  "content": "",
-  "tags": [
-    ["i", "<input-data>", "<input-type>", "<relay>", "<marker>"],
-    ["output", "<mime-type>"],
-    ["param", "<param-name>", "<param-value>"],
-    ["relays", "wss://relay1", "wss://relay2"],
-    ["bid", "<amount-in-msats>"],
-    ["t", "<hashtag>"],
-    ["p", "<specific-provider-pubkey>"]
-  ]
+    "kind": 5050,
+    "content": "",
+    "tags": [
+        ["i", "<input-data>", "<input-type>", "<relay>", "<marker>"],
+        ["output", "<mime-type>"],
+        ["param", "<param-name>", "<param-value>"],
+        ["relays", "wss://relay1", "wss://relay2"],
+        ["bid", "<amount-in-msats>"],
+        ["t", "<hashtag>"],
+        ["p", "<specific-provider-pubkey>"]
+    ]
 }
 ```
 
 关键 tag:
+
 - `"i"`: 输入数据。类型可以是 text/url/event/job (job 用于链式任务)
 - `"bid"`: 愿意支付的最高金额 (毫聪)
 - `"p"`: 可选，指定特定 Agent 处理
@@ -98,14 +102,14 @@ Customer 在 relay 上发布任务请求，Service Provider (Agent) 看到后处
 
 ```json
 {
-  "kind": 6050,
-  "content": "<result-data>",
-  "tags": [
-    ["request", "<json-stringified-original-request>"],
-    ["e", "<job-request-event-id>"],
-    ["p", "<customer-pubkey>"],
-    ["amount", "<msats>", "<bolt11-invoice>"]
-  ]
+    "kind": 6050,
+    "content": "<result-data>",
+    "tags": [
+        ["request", "<json-stringified-original-request>"],
+        ["e", "<job-request-event-id>"],
+        ["p", "<customer-pubkey>"],
+        ["amount", "<msats>", "<bolt11-invoice>"]
+    ]
 }
 ```
 
@@ -113,18 +117,19 @@ Customer 在 relay 上发布任务请求，Service Provider (Agent) 看到后处
 
 ```json
 {
-  "kind": 7000,
-  "content": "<optional-message>",
-  "tags": [
-    ["status", "<status-value>", "<extra-info>"],
-    ["e", "<job-request-event-id>"],
-    ["p", "<customer-pubkey>"],
-    ["amount", "<msats>", "<bolt11-invoice>"]
-  ]
+    "kind": 7000,
+    "content": "<optional-message>",
+    "tags": [
+        ["status", "<status-value>", "<extra-info>"],
+        ["e", "<job-request-event-id>"],
+        ["p", "<customer-pubkey>"],
+        ["amount", "<msats>", "<bolt11-invoice>"]
+    ]
 }
 ```
 
 Status 值:
+
 - `"payment-required"` — 需要先付款，附带 bolt11 invoice
 - `"processing"` — 正在处理
 - `"partial"` — 部分结果 (流式)
@@ -169,16 +174,16 @@ Status 值:
 
 ```json
 {
-  "kind": 31990,
-  "content": "{\"name\":\"Agent-Alpha\",\"about\":\"DeFi分析Agent\",\"image\":\"...\"}",
-  "tags": [
-    ["d", "agent-alpha-v1"],
-    ["k", "5050"],
-    ["k", "5100"],
-    ["t", "defi"],
-    ["t", "analysis"],
-    ["web", "https://agent-alpha.xyz", "web"]
-  ]
+    "kind": 31990,
+    "content": "{\"name\":\"Agent-Alpha\",\"about\":\"DeFi分析Agent\",\"image\":\"...\"}",
+    "tags": [
+        ["d", "agent-alpha-v1"],
+        ["k", "5050"],
+        ["k", "5100"],
+        ["t", "defi"],
+        ["t", "analysis"],
+        ["web", "https://agent-alpha.xyz", "web"]
+    ]
 }
 ```
 
@@ -192,11 +197,11 @@ Status 值:
 
 ```json
 {
-  "kind": 31989,
-  "tags": [
-    ["d", "5050"],
-    ["a", "31990:<agent-pubkey>:<d-tag>"]
-  ]
+    "kind": 31989,
+    "tags": [
+        ["d", "5050"],
+        ["a", "31990:<agent-pubkey>:<d-tag>"]
+    ]
 }
 ```
 
@@ -235,6 +240,7 @@ Status 值:
 ```
 
 优势:
+
 - ✅ 更强加密 (ChaCha20 + HMAC-SHA256)
 - ✅ 消息长度填充 (防元数据泄露)
 - ✅ 版本化设计
@@ -267,17 +273,18 @@ Layer 3 - Gift Wrap (kind:1059):
 
 ### 元数据隔离效果
 
-| 层级 | Relay 能看到 | 接收者能看到 |
-|------|-------------|-------------|
-| Gift Wrap | 接收者 pubkey + 大致时间 | 一切 |
-| Seal | ❌ | 发送者 + 内容 |
-| Rumor | ❌ | 内容 (但可否认) |
+| 层级      | Relay 能看到             | 接收者能看到    |
+| --------- | ------------------------ | --------------- |
+| Gift Wrap | 接收者 pubkey + 大致时间 | 一切            |
+| Seal      | ❌                       | 发送者 + 内容   |
+| Rumor     | ❌                       | 内容 (但可否认) |
 
 **对 Agent 间的敏感协商 (报价、谈判、任务细节) 极其重要。**
 
 ### NIP-17: 私密 DM
 
 在 NIP-59 Gift Wrap 之上:
+
 - 内层 Rumor 使用 kind:14 (替代 NIP-04 的 kind:4)
 - 支持群聊: 为每个参与者生成独立的 Gift Wrap
 - 支持回复线程
@@ -318,22 +325,22 @@ nostrconnect://<client-pubkey>?relay=<relay>&metadata=<app-info>
 
 ```typescript
 // NIP-44 加密
-import { nip44 } from '@nostr/tools'
-nip44.encrypt(plaintext, conversationKey)
-nip44.decrypt(payload, conversationKey)
+import { nip44 } from '@nostr/tools';
+nip44.encrypt(plaintext, conversationKey);
+nip44.decrypt(payload, conversationKey);
 
 // NIP-59 Gift Wrap
-import { createRumor, createSeal, createWrap, unwrapEvent } from '@nostr/tools/nip59'
-const rumor = createRumor(event)
-const seal = createSeal(rumor, senderSk, recipientPk)
-const wrap = createWrap(seal, recipientPk)
-const decrypted = unwrapEvent(giftWrap, recipientSk)
+import { createRumor, createSeal, createWrap, unwrapEvent } from '@nostr/tools/nip59';
+const rumor = createRumor(event);
+const seal = createSeal(rumor, senderSk, recipientPk);
+const wrap = createWrap(seal, recipientPk);
+const decrypted = unwrapEvent(giftWrap, recipientSk);
 
 // NIP-46 Remote Signing
-import { BunkerSigner, parseBunkerInput } from '@nostr/tools/nip46'
-const signer = new BunkerSigner(clientSk, await parseBunkerInput('bunker://...'))
-await signer.connect()
-await signer.signEvent(eventTemplate)
+import { BunkerSigner, parseBunkerInput } from '@nostr/tools/nip46';
+const signer = new BunkerSigner(clientSk, await parseBunkerInput('bunker://...'));
+await signer.connect();
+await signer.signEvent(eventTemplate);
 ```
 
 底层密码学依赖: `@noble/curves` + `@noble/ciphers` + `@noble/hashes` (已审计)
@@ -360,24 +367,24 @@ npm install @nostr-dev-kit/ndk
 
 ### 用 NIP-89/90 替换 Indexer 功能
 
-| 现有 Indexer 功能 | Nostr 替代方案 |
-|-------------------|---------------|
-| Agent 注册 | Agent 发布 kind:31990 公告 |
-| Agent 发现 | 查询 kind:31990 + 过滤 "k"/"t" tag |
-| Agent 声誉查询 | kind:10004 (Gradience 自定义) + kind:31989 社交推荐 |
-| 任务发布 | kind 5xxx Job Request |
-| 任务匹配 | Agent 订阅相关 kind，自动接单 |
-| 任务状态更新 | kind 7000 Job Feedback |
-| 任务结果提交 | kind 6xxx Job Result |
-| Agent 间通信 | NIP-17 Private DM (kind:14 via Gift Wrap) |
+| 现有 Indexer 功能 | Nostr 替代方案                                      |
+| ----------------- | --------------------------------------------------- |
+| Agent 注册        | Agent 发布 kind:31990 公告                          |
+| Agent 发现        | 查询 kind:31990 + 过滤 "k"/"t" tag                  |
+| Agent 声誉查询    | kind:10004 (Gradience 自定义) + kind:31989 社交推荐 |
+| 任务发布          | kind 5xxx Job Request                               |
+| 任务匹配          | Agent 订阅相关 kind，自动接单                       |
+| 任务状态更新      | kind 7000 Job Feedback                              |
+| 任务结果提交      | kind 6xxx Job Result                                |
+| Agent 间通信      | NIP-17 Private DM (kind:14 via Gift Wrap)           |
 
 ### 保留的 Gradience 自定义 Kind
 
-| Kind | 用途 | 保留原因 |
-|------|------|---------|
-| 10002 | Agent Presence | 实时在线状态 (NIP-89 是静态公告) |
+| Kind  | 用途             | 保留原因                              |
+| ----- | ---------------- | ------------------------------------- |
+| 10002 | Agent Presence   | 实时在线状态 (NIP-89 是静态公告)      |
 | 10003 | Agent Capability | 详细能力声明 (补充 NIP-89 的基础信息) |
-| 10004 | Reputation Proof | 链上声誉证明 (Gradience 特有) |
+| 10004 | Reputation Proof | 链上声誉证明 (Gradience 特有)         |
 
 ### 支付整合
 

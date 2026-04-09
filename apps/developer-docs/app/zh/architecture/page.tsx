@@ -5,8 +5,8 @@ import mermaid from 'mermaid';
 
 // Mermaid 图表定义（中文版本）
 const diagrams = {
-  // 1. 完整架构图
-  fullStack: `
+    // 1. 完整架构图
+    fullStack: `
 flowchart TB
     subgraph Users["👤 用户与开发者"]
         Human["人类用户"]
@@ -82,8 +82,8 @@ flowchart TB
     style Solana fill:#9945ff,color:#fff,stroke:#7c3aed,stroke-width:2px
   `,
 
-  // 2. 协议内核
-  kernel: `
+    // 2. 协议内核
+    kernel: `
 flowchart TB
     subgraph Protocol["Gradience 协议"]
         subgraph Kernel["⚡ Agent Layer 内核"]
@@ -105,8 +105,8 @@ flowchart TB
     style A2A fill:#f59e0b,color:#000,stroke:#d97706,stroke-width:2px
   `,
 
-  // 3. 任务状态机
-  stateMachine: `
+    // 3. 任务状态机
+    stateMachine: `
 stateDiagram-v2
     [*] --> Open : postTask() + 锁定资金
     Open --> Completed : judgeAndPay()<br/>分数 ≥ 60
@@ -120,8 +120,8 @@ stateDiagram-v2
     style Refunded fill:#ef4444,color:#fff,stroke:#dc2626,stroke-width:2px
   `,
 
-  // 4. 经济模型
-  economicModel: `
+    // 4. 经济模型
+    economicModel: `
 flowchart TB
     Escrow["任务托管<br/>100%"]
     
@@ -135,8 +135,8 @@ flowchart TB
     style Protocol fill:#8b5cf6,color:#fff,stroke:#6d28d9,stroke-width:3px
   `,
 
-  // 5. A2A 协议分层
-  a2aLayers: `
+    // 5. A2A 协议分层
+    a2aLayers: `
 flowchart LR
     subgraph L1["⛓️ L1: Solana + Agent Layer"]
         S["任务结算<br/>信誉更新<br/>通道开/关"]
@@ -160,8 +160,8 @@ flowchart LR
     style B fill:#3b82f6,color:#fff,stroke:#2563eb,stroke-width:2px
   `,
 
-  // 6. MagicBlock 弹性汇总
-  magicBlock: `
+    // 6. MagicBlock 弹性汇总
+    magicBlock: `
 flowchart TB
     subgraph Solana["⛓️ Solana L1"]
         Agent["Agent Layer 程序<br/>任务生命周期 · 信誉 · 结算<br/>~400ms · ~$0.001/tx"]
@@ -181,8 +181,8 @@ flowchart TB
     style PER fill:#10b981,color:#fff,stroke:#059669,stroke-width:2px
   `,
 
-  // 7. 跨链声誉
-  crossChain: `
+    // 7. 跨链声誉
+    crossChain: `
 flowchart TB
     subgraph Agent["👤 同一个 Agent"]
         Sol["Solana 钱包"]
@@ -214,8 +214,8 @@ flowchart TB
     style A fill:#28a0f0,color:#fff,stroke:#1a7fc4,stroke-width:2px
   `,
 
-  // 8. GAN 对抗动态
-  ganDynamics: `
+    // 8. GAN 对抗动态
+    ganDynamics: `
 flowchart LR
     Agent["🟣 Agent（生成器）<br/>优化质量<br/>以最大化分数"] 
     Judge["🟡 评判者（判别器）<br/>优化准确性<br/>以维护信誉"]
@@ -227,8 +227,8 @@ flowchart LR
     style Judge fill:#f59e0b,color:#000,stroke:#d97706,stroke-width:3px
   `,
 
-  // 9. 三层价值堆栈
-  valueStack: `
+    // 9. 三层价值堆栈
+    valueStack: `
 flowchart TB
     L3["第三层: gUSD<br/>信用背书稳定币<br/>由 Agent 集体工作能力铸造<br/>无需超额抵押"]
     
@@ -244,8 +244,8 @@ flowchart TB
     style L3 fill:#10b981,color:#fff,stroke:#059669,stroke-width:3px
   `,
 
-  // 10. 竞赛任务生命周期
-  taskLifecycle: `
+    // 10. 竞赛任务生命周期
+    taskLifecycle: `
 sequenceDiagram
     participant P as 👤 发布者
     participant A as 🤖 Agent
@@ -290,209 +290,229 @@ sequenceDiagram
 };
 
 function MermaidDiagram({ chart, title }: { chart: string; title: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [svg, setSvg] = useState<string>('');
-  const [error, setError] = useState<string>('');
+    const ref = useRef<HTMLDivElement>(null);
+    const [svg, setSvg] = useState<string>('');
+    const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'dark',
-      securityLevel: 'loose',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      flowchart: {
-        curve: 'basis',
-        padding: 20,
-        nodeSpacing: 50,
-        rankSpacing: 50,
-      },
-      sequence: {
-        diagramMarginX: 50,
-        diagramMarginY: 10,
-        actorMargin: 50,
-        width: 150,
-        height: 65,
-        boxMargin: 10,
-        boxTextMargin: 5,
-        noteMargin: 10,
-        messageMargin: 35,
-        mirrorActors: true,
-        bottomMarginAdj: 1,
-        useMaxWidth: true,
-        rightAngles: false,
-        showSequenceNumbers: false,
-      },
-    });
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            flowchart: {
+                curve: 'basis',
+                padding: 20,
+                nodeSpacing: 50,
+                rankSpacing: 50,
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false,
+            },
+        });
 
-    const render = async () => {
-      try {
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        const { svg } = await mermaid.render(id, chart);
-        setSvg(svg);
-        setError('');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '图表渲染失败');
-      }
-    };
+        const render = async () => {
+            try {
+                const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+                const { svg } = await mermaid.render(id, chart);
+                setSvg(svg);
+                setError('');
+            } catch (err) {
+                setError(err instanceof Error ? err.message : '图表渲染失败');
+            }
+        };
 
-    render();
-  }, [chart]);
+        render();
+    }, [chart]);
 
-  return (
-    <div className="mb-12">
-      <h3 className="text-xl font-semibold text-gray-100 mb-4">{title}</h3>
-      {error ? (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
-          图表渲染错误: {error}
+    return (
+        <div className="mb-12">
+            <h3 className="text-xl font-semibold text-gray-100 mb-4">{title}</h3>
+            {error ? (
+                <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
+                    图表渲染错误: {error}
+                </div>
+            ) : (
+                <div
+                    className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 overflow-x-auto"
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                />
+            )}
         </div>
-      ) : (
-        <div 
-          className="bg-gray-900/50 border border-gray-700 rounded-xl p-6 overflow-x-auto"
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
-      )}
-    </div>
-  );
+    );
 }
 
 export default function ArchitecturePage() {
-  return (
-    <div className="prose max-w-none">
-      <h1 className="text-3xl font-bold text-white mb-6">Gradience 架构</h1>
-      
-      <p className="text-gray-300 mb-8">
-        Gradience 协议是一个模块化系统，基于比特币极简哲学构建：
-        三个原语（托管 + 评判 + 信誉），四个状态转换，每个程序约 300 行代码。
-      </p>
+    return (
+        <div className="prose max-w-none">
+            <h1 className="text-3xl font-bold text-white mb-6">Gradience 架构</h1>
 
-      <div className="grid grid-cols-1 gap-8">
-        {/* 核心架构图 */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            🎯 核心架构
-          </h2>
-          <MermaidDiagram chart={diagrams.kernel} title="协议内核（比特币哲学）" />
-          <MermaidDiagram chart={diagrams.valueStack} title="三层价值堆栈" />
-        </section>
+            <p className="text-gray-300 mb-8">
+                Gradience 协议是一个模块化系统，基于比特币极简哲学构建： 三个原语（托管 + 评判 +
+                信誉），四个状态转换，每个程序约 300 行代码。
+            </p>
 
-        {/* 完整架构 */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            🏗️ 完整架构
-          </h2>
-          <MermaidDiagram chart={diagrams.fullStack} title="系统完整架构图" />
-        </section>
+            <div className="grid grid-cols-1 gap-8">
+                {/* 核心架构图 */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">🎯 核心架构</h2>
+                    <MermaidDiagram chart={diagrams.kernel} title="协议内核（比特币哲学）" />
+                    <MermaidDiagram chart={diagrams.valueStack} title="三层价值堆栈" />
+                </section>
 
-        {/* 任务生命周期 */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            📋 任务生命周期
-          </h2>
-          <MermaidDiagram chart={diagrams.stateMachine} title="任务状态机" />
-          <MermaidDiagram chart={diagrams.taskLifecycle} title="竞赛任务序列图" />
-        </section>
+                {/* 完整架构 */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">🏗️ 完整架构</h2>
+                    <MermaidDiagram chart={diagrams.fullStack} title="系统完整架构图" />
+                </section>
 
-        {/* 经济模型 */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            💰 经济模型
-          </h2>
-          <MermaidDiagram chart={diagrams.economicModel} title="费用分配（95/3/2 模型）" />
-          <MermaidDiagram chart={diagrams.ganDynamics} title="GAN 对抗动态" />
-        </section>
+                {/* 任务生命周期 */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                        📋 任务生命周期
+                    </h2>
+                    <MermaidDiagram chart={diagrams.stateMachine} title="任务状态机" />
+                    <MermaidDiagram chart={diagrams.taskLifecycle} title="竞赛任务序列图" />
+                </section>
 
-        {/* A2A 与扩展 */}
-        <section>
-          <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-            ⚡ A2A 协议与扩展
-          </h2>
-          <MermaidDiagram chart={diagrams.a2aLayers} title="A2A 协议分层（闪电网络类比）" />
-          <MermaidDiagram chart={diagrams.magicBlock} title="MagicBlock 弹性汇总" />
-          <MermaidDiagram chart={diagrams.crossChain} title="跨链声誉验证" />
-        </section>
-      </div>
+                {/* 经济模型 */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">💰 经济模型</h2>
+                    <MermaidDiagram chart={diagrams.economicModel} title="费用分配（95/3/2 模型）" />
+                    <MermaidDiagram chart={diagrams.ganDynamics} title="GAN 对抗动态" />
+                </section>
 
-      {/* 核心设计原则 */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-          🎨 核心设计原则
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">比特币极简哲学</h3>
-            <p className="text-gray-300 text-sm">3 个状态，4 个转换，每个程序约 300 行代码。内核不依赖任何模块。</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-purple-400 mb-2">Pinocchio 零依赖</h3>
-            <p className="text-gray-300 text-sm">所有 Solana 程序使用 pinocchio，实现最小的链上占用。</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-green-400 mb-2">CPI 可组合性</h3>
-            <p className="text-gray-300 text-sm">程序通过跨程序调用通信。模块化设计。</p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-yellow-400 mb-2">链下索引</h3>
-            <p className="text-gray-300 text-sm">PostgreSQL 副本用于快速查询，WebSocket 用于实时更新。</p>
-          </div>
+                {/* A2A 与扩展 */}
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                        ⚡ A2A 协议与扩展
+                    </h2>
+                    <MermaidDiagram chart={diagrams.a2aLayers} title="A2A 协议分层（闪电网络类比）" />
+                    <MermaidDiagram chart={diagrams.magicBlock} title="MagicBlock 弹性汇总" />
+                    <MermaidDiagram chart={diagrams.crossChain} title="跨链声誉验证" />
+                </section>
+            </div>
+
+            {/* 核心设计原则 */}
+            <section className="mt-12">
+                <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">🎨 核心设计原则</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-blue-400 mb-2">比特币极简哲学</h3>
+                        <p className="text-gray-300 text-sm">
+                            3 个状态，4 个转换，每个程序约 300 行代码。内核不依赖任何模块。
+                        </p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-purple-400 mb-2">Pinocchio 零依赖</h3>
+                        <p className="text-gray-300 text-sm">所有 Solana 程序使用 pinocchio，实现最小的链上占用。</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-green-400 mb-2">CPI 可组合性</h3>
+                        <p className="text-gray-300 text-sm">程序通过跨程序调用通信。模块化设计。</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-yellow-400 mb-2">链下索引</h3>
+                        <p className="text-gray-300 text-sm">PostgreSQL 副本用于快速查询，WebSocket 用于实时更新。</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* 测试覆盖 */}
+            <section className="mt-12">
+                <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">✅ 测试覆盖</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-gray-700">
+                                <th className="pb-2 text-gray-400">模块</th>
+                                <th className="pb-2 text-gray-400">测试数</th>
+                                <th className="pb-2 text-gray-400">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">Agent Arena</td>
+                                <td className="py-3 text-gray-200">56</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">Chain Hub</td>
+                                <td className="py-3 text-gray-200">10</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">A2A 协议</td>
+                                <td className="py-3 text-gray-200">35+</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">EVM 桥接</td>
+                                <td className="py-3 text-gray-200">17</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-800">
+                                <td className="py-3 text-gray-200">AgentM Pro (E2E)</td>
+                                <td className="py-3 text-gray-200">11</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 text-gray-200 font-semibold">总计</td>
+                                <td className="py-3 text-gray-200 font-semibold">371+</td>
+                                <td className="py-3">
+                                    <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm font-semibold">
+                                        全部通过
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            {/* 语言切换 */}
+            <section className="mt-12 pt-6 border-t border-gray-700">
+                <p className="text-gray-400">
+                    🌐 语言:{' '}
+                    <a href="/architecture" className="text-indigo-400 hover:text-indigo-300">
+                        English
+                    </a>{' '}
+                    | <span className="text-white">中文</span>
+                </p>
+            </section>
         </div>
-      </section>
-
-      {/* 测试覆盖 */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-          ✅ 测试覆盖
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="pb-2 text-gray-400">模块</th>
-                <th className="pb-2 text-gray-400">测试数</th>
-                <th className="pb-2 text-gray-400">状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">Agent Arena</td>
-                <td className="py-3 text-gray-200">56</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">全部通过</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">Chain Hub</td>
-                <td className="py-3 text-gray-200">10</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">全部通过</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">A2A 协议</td>
-                <td className="py-3 text-gray-200">35+</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">全部通过</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">EVM 桥接</td>
-                <td className="py-3 text-gray-200">17</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">全部通过</span></td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="py-3 text-gray-200">AgentM Pro (E2E)</td>
-                <td className="py-3 text-gray-200">11</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm">全部通过</span></td>
-              </tr>
-              <tr>
-                <td className="py-3 text-gray-200 font-semibold">总计</td>
-                <td className="py-3 text-gray-200 font-semibold">371+</td>
-                <td className="py-3"><span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-sm font-semibold">全部通过</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* 语言切换 */}
-      <section className="mt-12 pt-6 border-t border-gray-700">
-        <p className="text-gray-400">
-          🌐 语言: <a href="/architecture" className="text-indigo-400 hover:text-indigo-300">English</a> | <span className="text-white">中文</span>
-        </p>
-      </section>
-    </div>
-  );
+    );
 }

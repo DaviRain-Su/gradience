@@ -1,22 +1,24 @@
 ---
 linear-id: GRA-M10
-title: "[Integration] End-to-End Testing & Documentation"
+title: '[Integration] End-to-End Testing & Documentation'
 status: done
 priority: P1
-project: "Mid-Term Integration"
+project: 'Mid-Term Integration'
 created: 2026-04-04
-assignee: "Code Agent"
+assignee: 'Code Agent'
 tags: [task, p1, mid-term, integration, testing]
 ---
 
 # GRA-M10: [Integration] End-to-End Testing & Documentation
 
 ## Description
+
 Complete end-to-end integration testing and documentation for mid-term goals.
 
 ## Test Scenarios
 
 ### Scenario 1: Full Payment Flow
+
 ```
 Agent A (reputation 85) hires Agent B for task
 ├── Agent A creates OWS sub-wallet (limit: $850)
@@ -28,6 +30,7 @@ Agent A (reputation 85) hires Agent B for task
 ```
 
 ### Scenario 2: Reputation Policy Update
+
 ```
 Agent completes task, reputation increases
 ├── Old policy: dailyLimit $600, requireApproval: true
@@ -38,6 +41,7 @@ Agent completes task, reputation increases
 ```
 
 ### Scenario 3: Failed Evaluation
+
 ```
 Agent submits poor result
 ├── Evaluator runs Playwright tests
@@ -50,22 +54,26 @@ Agent submits poor result
 ## Documentation
 
 ### Technical Specs
+
 - XMTP Adapter specification
 - OWS Wallet integration guide
 - Evaluator runtime documentation
 - Bridge architecture
 
 ### API Documentation
+
 - Agent Daemon wallet API
 - Chain Hub settlement API
 - XMTP message types
 
 ### Runbooks
+
 - Deploying Evaluator
 - Adding authorized evaluators
 - Troubleshooting payment failures
 
 ## Acceptance Criteria
+
 - [ ] All test scenarios passing
 - [ ] Integration test suite
 - [ ] Load testing (10+ concurrent evaluations)
@@ -75,10 +83,13 @@ Agent submits poor result
 - [ ] Demo video recorded
 
 ## Dependencies
+
 - All GRA-M1 through GRA-M9
 
 ## Related
+
 - strategic-integration-analysis.md updates
 
 ## Log
+
 - 2026-04-04: Created as part of mid-term integration planning

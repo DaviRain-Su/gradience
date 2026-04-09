@@ -7,344 +7,269 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  transformEncoder,
-  type AccountMeta,
-  type AccountSignerMeta,
-  type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
-  type Instruction,
-  type InstructionWithAccounts,
-  type InstructionWithData,
-  type ReadonlyAccount,
-  type ReadonlyUint8Array,
-  type TransactionSigner,
-  type WritableAccount,
-  type WritableSignerAccount,
-} from "@solana/kit";
-import { findEventAuthorityPda } from "../pdas";
-import { GRADIENCE_PROGRAM_ADDRESS } from "../programs";
-import { getAccountMetaFactory, type ResolvedAccount } from "../shared";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    transformEncoder,
+    type AccountMeta,
+    type AccountSignerMeta,
+    type Address,
+    type Codec,
+    type Decoder,
+    type Encoder,
+    type Instruction,
+    type InstructionWithAccounts,
+    type InstructionWithData,
+    type ReadonlyAccount,
+    type ReadonlyUint8Array,
+    type TransactionSigner,
+    type WritableAccount,
+    type WritableSignerAccount,
+} from '@solana/kit';
+import { findEventAuthorityPda } from '../pdas';
+import { GRADIENCE_PROGRAM_ADDRESS } from '../programs';
+import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 import {
-  getRuntimeEnvInputDecoder,
-  getRuntimeEnvInputEncoder,
-  type RuntimeEnvInput,
-  type RuntimeEnvInputArgs,
-} from "../types";
+    getRuntimeEnvInputDecoder,
+    getRuntimeEnvInputEncoder,
+    type RuntimeEnvInput,
+    type RuntimeEnvInputArgs,
+} from '../types';
 
 export const SUBMIT_RESULT_DISCRIMINATOR = 3;
 
 export function getSubmitResultDiscriminatorBytes() {
-  return getU8Encoder().encode(SUBMIT_RESULT_DISCRIMINATOR);
+    return getU8Encoder().encode(SUBMIT_RESULT_DISCRIMINATOR);
 }
 
 export type SubmitResultInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountAgent extends string | AccountMeta<string> = string,
-  TAccountTask extends string | AccountMeta<string> = string,
-  TAccountApplication extends string | AccountMeta<string> = string,
-  TAccountSubmission extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    "11111111111111111111111111111111",
-  TAccountEventAuthority extends string | AccountMeta<string> = string,
-  TAccountGradienceProgram extends string | AccountMeta<string> = string,
-  TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string | AccountMeta<string> = string,
+    TAccountTask extends string | AccountMeta<string> = string,
+    TAccountApplication extends string | AccountMeta<string> = string,
+    TAccountSubmission extends string | AccountMeta<string> = string,
+    TAccountSystemProgram extends string | AccountMeta<string> = '11111111111111111111111111111111',
+    TAccountEventAuthority extends string | AccountMeta<string> = string,
+    TAccountGradienceProgram extends string | AccountMeta<string> = string,
+    TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
-  InstructionWithData<ReadonlyUint8Array> &
-  InstructionWithAccounts<
-    [
-      TAccountAgent extends string
-        ? WritableSignerAccount<TAccountAgent> &
-            AccountSignerMeta<TAccountAgent>
-        : TAccountAgent,
-      TAccountTask extends string
-        ? WritableAccount<TAccountTask>
-        : TAccountTask,
-      TAccountApplication extends string
-        ? ReadonlyAccount<TAccountApplication>
-        : TAccountApplication,
-      TAccountSubmission extends string
-        ? WritableAccount<TAccountSubmission>
-        : TAccountSubmission,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountEventAuthority extends string
-        ? ReadonlyAccount<TAccountEventAuthority>
-        : TAccountEventAuthority,
-      TAccountGradienceProgram extends string
-        ? ReadonlyAccount<TAccountGradienceProgram>
-        : TAccountGradienceProgram,
-      ...TRemainingAccounts,
-    ]
-  >;
+    InstructionWithData<ReadonlyUint8Array> &
+    InstructionWithAccounts<
+        [
+            TAccountAgent extends string
+                ? WritableSignerAccount<TAccountAgent> & AccountSignerMeta<TAccountAgent>
+                : TAccountAgent,
+            TAccountTask extends string ? WritableAccount<TAccountTask> : TAccountTask,
+            TAccountApplication extends string ? ReadonlyAccount<TAccountApplication> : TAccountApplication,
+            TAccountSubmission extends string ? WritableAccount<TAccountSubmission> : TAccountSubmission,
+            TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram,
+            TAccountEventAuthority extends string ? ReadonlyAccount<TAccountEventAuthority> : TAccountEventAuthority,
+            TAccountGradienceProgram extends string
+                ? ReadonlyAccount<TAccountGradienceProgram>
+                : TAccountGradienceProgram,
+            ...TRemainingAccounts,
+        ]
+    >;
 
 export type SubmitResultInstructionData = {
-  discriminator: number;
-  resultRef: string;
-  traceRef: string;
-  runtimeEnv: RuntimeEnvInput;
+    discriminator: number;
+    resultRef: string;
+    traceRef: string;
+    runtimeEnv: RuntimeEnvInput;
 };
 
 export type SubmitResultInstructionDataArgs = {
-  resultRef: string;
-  traceRef: string;
-  runtimeEnv: RuntimeEnvInputArgs;
+    resultRef: string;
+    traceRef: string;
+    runtimeEnv: RuntimeEnvInputArgs;
 };
 
 export function getSubmitResultInstructionDataEncoder(): Encoder<SubmitResultInstructionDataArgs> {
-  return transformEncoder(
-    getStructEncoder([
-      ["discriminator", getU8Encoder()],
-      ["resultRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ["traceRef", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ["runtimeEnv", getRuntimeEnvInputEncoder()],
-    ]),
-    (value) => ({ ...value, discriminator: SUBMIT_RESULT_DISCRIMINATOR }),
-  );
+    return transformEncoder(
+        getStructEncoder([
+            ['discriminator', getU8Encoder()],
+            ['resultRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+            ['traceRef', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+            ['runtimeEnv', getRuntimeEnvInputEncoder()],
+        ]),
+        value => ({ ...value, discriminator: SUBMIT_RESULT_DISCRIMINATOR }),
+    );
 }
 
 export function getSubmitResultInstructionDataDecoder(): Decoder<SubmitResultInstructionData> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["resultRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["traceRef", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["runtimeEnv", getRuntimeEnvInputDecoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['resultRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['traceRef', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['runtimeEnv', getRuntimeEnvInputDecoder()],
+    ]);
 }
 
 export function getSubmitResultInstructionDataCodec(): Codec<
-  SubmitResultInstructionDataArgs,
-  SubmitResultInstructionData
+    SubmitResultInstructionDataArgs,
+    SubmitResultInstructionData
 > {
-  return combineCodec(
-    getSubmitResultInstructionDataEncoder(),
-    getSubmitResultInstructionDataDecoder(),
-  );
+    return combineCodec(getSubmitResultInstructionDataEncoder(), getSubmitResultInstructionDataDecoder());
 }
 
 export type SubmitResultAsyncInput<
-  TAccountAgent extends string = string,
-  TAccountTask extends string = string,
-  TAccountApplication extends string = string,
-  TAccountSubmission extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
+    TAccountAgent extends string = string,
+    TAccountTask extends string = string,
+    TAccountApplication extends string = string,
+    TAccountSubmission extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
 > = {
-  agent: TransactionSigner<TAccountAgent>;
-  task: Address<TAccountTask>;
-  application: Address<TAccountApplication>;
-  submission: Address<TAccountSubmission>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority?: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  resultRef: SubmitResultInstructionDataArgs["resultRef"];
-  traceRef: SubmitResultInstructionDataArgs["traceRef"];
-  runtimeEnv: SubmitResultInstructionDataArgs["runtimeEnv"];
+    agent: TransactionSigner<TAccountAgent>;
+    task: Address<TAccountTask>;
+    application: Address<TAccountApplication>;
+    submission: Address<TAccountSubmission>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority?: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    resultRef: SubmitResultInstructionDataArgs['resultRef'];
+    traceRef: SubmitResultInstructionDataArgs['traceRef'];
+    runtimeEnv: SubmitResultInstructionDataArgs['runtimeEnv'];
 };
 
 export async function getSubmitResultInstructionAsync<
-  TAccountAgent extends string,
-  TAccountTask extends string,
-  TAccountApplication extends string,
-  TAccountSubmission extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string,
+    TAccountTask extends string,
+    TAccountApplication extends string,
+    TAccountSubmission extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: SubmitResultAsyncInput<
-    TAccountAgent,
-    TAccountTask,
-    TAccountApplication,
-    TAccountSubmission,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: SubmitResultAsyncInput<
+        TAccountAgent,
+        TAccountTask,
+        TAccountApplication,
+        TAccountSubmission,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): Promise<
-  SubmitResultInstruction<
-    TProgramAddress,
-    TAccountAgent,
-    TAccountTask,
-    TAccountApplication,
-    TAccountSubmission,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >
+    SubmitResultInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountApplication,
+        TAccountSubmission,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >
 > {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
 
-  // Original accounts.
-  const originalAccounts = {
-    agent: { value: input.agent ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    application: { value: input.application ?? null, isWritable: false },
-    submission: { value: input.submission ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
+    // Original accounts.
+    const originalAccounts = {
+        agent: { value: input.agent ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        application: { value: input.application ?? null, isWritable: false },
+        submission: { value: input.submission ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
 
-  // Original args.
-  const args = { ...input };
+    // Original args.
+    const args = { ...input };
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-  if (!accounts.eventAuthority.value) {
-    accounts.eventAuthority.value = await findEventAuthorityPda();
-  }
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+    if (!accounts.eventAuthority.value) {
+        accounts.eventAuthority.value = await findEventAuthorityPda();
+    }
 
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.agent),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.application),
-      getAccountMeta(accounts.submission),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-    ],
-    data: getSubmitResultInstructionDataEncoder().encode(
-      args as SubmitResultInstructionDataArgs,
-    ),
-    programAddress,
-  } as SubmitResultInstruction<
-    TProgramAddress,
-    TAccountAgent,
-    TAccountTask,
-    TAccountApplication,
-    TAccountSubmission,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >);
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.agent),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.application),
+            getAccountMeta(accounts.submission),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+        ],
+        data: getSubmitResultInstructionDataEncoder().encode(args as SubmitResultInstructionDataArgs),
+        programAddress,
+    } as SubmitResultInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountApplication,
+        TAccountSubmission,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >);
 }
 
 export type SubmitResultInput<
-  TAccountAgent extends string = string,
-  TAccountTask extends string = string,
-  TAccountApplication extends string = string,
-  TAccountSubmission extends string = string,
-  TAccountSystemProgram extends string = string,
-  TAccountEventAuthority extends string = string,
-  TAccountGradienceProgram extends string = string,
+    TAccountAgent extends string = string,
+    TAccountTask extends string = string,
+    TAccountApplication extends string = string,
+    TAccountSubmission extends string = string,
+    TAccountSystemProgram extends string = string,
+    TAccountEventAuthority extends string = string,
+    TAccountGradienceProgram extends string = string,
 > = {
-  agent: TransactionSigner<TAccountAgent>;
-  task: Address<TAccountTask>;
-  application: Address<TAccountApplication>;
-  submission: Address<TAccountSubmission>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  eventAuthority: Address<TAccountEventAuthority>;
-  gradienceProgram: Address<TAccountGradienceProgram>;
-  resultRef: SubmitResultInstructionDataArgs["resultRef"];
-  traceRef: SubmitResultInstructionDataArgs["traceRef"];
-  runtimeEnv: SubmitResultInstructionDataArgs["runtimeEnv"];
+    agent: TransactionSigner<TAccountAgent>;
+    task: Address<TAccountTask>;
+    application: Address<TAccountApplication>;
+    submission: Address<TAccountSubmission>;
+    systemProgram?: Address<TAccountSystemProgram>;
+    eventAuthority: Address<TAccountEventAuthority>;
+    gradienceProgram: Address<TAccountGradienceProgram>;
+    resultRef: SubmitResultInstructionDataArgs['resultRef'];
+    traceRef: SubmitResultInstructionDataArgs['traceRef'];
+    runtimeEnv: SubmitResultInstructionDataArgs['runtimeEnv'];
 };
 
 export function getSubmitResultInstruction<
-  TAccountAgent extends string,
-  TAccountTask extends string,
-  TAccountApplication extends string,
-  TAccountSubmission extends string,
-  TAccountSystemProgram extends string,
-  TAccountEventAuthority extends string,
-  TAccountGradienceProgram extends string,
-  TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountAgent extends string,
+    TAccountTask extends string,
+    TAccountApplication extends string,
+    TAccountSubmission extends string,
+    TAccountSystemProgram extends string,
+    TAccountEventAuthority extends string,
+    TAccountGradienceProgram extends string,
+    TProgramAddress extends Address = typeof GRADIENCE_PROGRAM_ADDRESS,
 >(
-  input: SubmitResultInput<
-    TAccountAgent,
-    TAccountTask,
-    TAccountApplication,
-    TAccountSubmission,
-    TAccountSystemProgram,
-    TAccountEventAuthority,
-    TAccountGradienceProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
+    input: SubmitResultInput<
+        TAccountAgent,
+        TAccountTask,
+        TAccountApplication,
+        TAccountSubmission,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >,
+    config?: { programAddress?: TProgramAddress },
 ): SubmitResultInstruction<
-  TProgramAddress,
-  TAccountAgent,
-  TAccountTask,
-  TAccountApplication,
-  TAccountSubmission,
-  TAccountSystemProgram,
-  TAccountEventAuthority,
-  TAccountGradienceProgram
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
-
-  // Original accounts.
-  const originalAccounts = {
-    agent: { value: input.agent ?? null, isWritable: true },
-    task: { value: input.task ?? null, isWritable: true },
-    application: { value: input.application ?? null, isWritable: false },
-    submission: { value: input.submission ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
-    gradienceProgram: {
-      value: input.gradienceProgram ?? null,
-      isWritable: false,
-    },
-  };
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedAccount
-  >;
-
-  // Original args.
-  const args = { ...input };
-
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      "11111111111111111111111111111111" as Address<"11111111111111111111111111111111">;
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
-  return Object.freeze({
-    accounts: [
-      getAccountMeta(accounts.agent),
-      getAccountMeta(accounts.task),
-      getAccountMeta(accounts.application),
-      getAccountMeta(accounts.submission),
-      getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.eventAuthority),
-      getAccountMeta(accounts.gradienceProgram),
-    ],
-    data: getSubmitResultInstructionDataEncoder().encode(
-      args as SubmitResultInstructionDataArgs,
-    ),
-    programAddress,
-  } as SubmitResultInstruction<
     TProgramAddress,
     TAccountAgent,
     TAccountTask,
@@ -353,55 +278,102 @@ export function getSubmitResultInstruction<
     TAccountSystemProgram,
     TAccountEventAuthority,
     TAccountGradienceProgram
-  >);
+> {
+    // Program address.
+    const programAddress = config?.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
+
+    // Original accounts.
+    const originalAccounts = {
+        agent: { value: input.agent ?? null, isWritable: true },
+        task: { value: input.task ?? null, isWritable: true },
+        application: { value: input.application ?? null, isWritable: false },
+        submission: { value: input.submission ?? null, isWritable: true },
+        systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+        eventAuthority: { value: input.eventAuthority ?? null, isWritable: false },
+        gradienceProgram: {
+            value: input.gradienceProgram ?? null,
+            isWritable: false,
+        },
+    };
+    const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedAccount>;
+
+    // Original args.
+    const args = { ...input };
+
+    // Resolve default values.
+    if (!accounts.systemProgram.value) {
+        accounts.systemProgram.value =
+            '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+    }
+
+    const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+    return Object.freeze({
+        accounts: [
+            getAccountMeta(accounts.agent),
+            getAccountMeta(accounts.task),
+            getAccountMeta(accounts.application),
+            getAccountMeta(accounts.submission),
+            getAccountMeta(accounts.systemProgram),
+            getAccountMeta(accounts.eventAuthority),
+            getAccountMeta(accounts.gradienceProgram),
+        ],
+        data: getSubmitResultInstructionDataEncoder().encode(args as SubmitResultInstructionDataArgs),
+        programAddress,
+    } as SubmitResultInstruction<
+        TProgramAddress,
+        TAccountAgent,
+        TAccountTask,
+        TAccountApplication,
+        TAccountSubmission,
+        TAccountSystemProgram,
+        TAccountEventAuthority,
+        TAccountGradienceProgram
+    >);
 }
 
 export type ParsedSubmitResultInstruction<
-  TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
-  TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
+    TProgram extends string = typeof GRADIENCE_PROGRAM_ADDRESS,
+    TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
-  programAddress: Address<TProgram>;
-  accounts: {
-    agent: TAccountMetas[0];
-    task: TAccountMetas[1];
-    application: TAccountMetas[2];
-    submission: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
-    eventAuthority: TAccountMetas[5];
-    gradienceProgram: TAccountMetas[6];
-  };
-  data: SubmitResultInstructionData;
+    programAddress: Address<TProgram>;
+    accounts: {
+        agent: TAccountMetas[0];
+        task: TAccountMetas[1];
+        application: TAccountMetas[2];
+        submission: TAccountMetas[3];
+        systemProgram: TAccountMetas[4];
+        eventAuthority: TAccountMetas[5];
+        gradienceProgram: TAccountMetas[6];
+    };
+    data: SubmitResultInstructionData;
 };
 
-export function parseSubmitResultInstruction<
-  TProgram extends string,
-  TAccountMetas extends readonly AccountMeta[],
->(
-  instruction: Instruction<TProgram> &
-    InstructionWithAccounts<TAccountMetas> &
-    InstructionWithData<ReadonlyUint8Array>,
+export function parseSubmitResultInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(
+    instruction: Instruction<TProgram> &
+        InstructionWithAccounts<TAccountMetas> &
+        InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSubmitResultInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
-    // TODO: Coded error.
-    throw new Error("Not enough accounts");
-  }
-  let accountIndex = 0;
-  const getNextAccount = () => {
-    const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
-    accountIndex += 1;
-    return accountMeta;
-  };
-  return {
-    programAddress: instruction.programAddress,
-    accounts: {
-      agent: getNextAccount(),
-      task: getNextAccount(),
-      application: getNextAccount(),
-      submission: getNextAccount(),
-      systemProgram: getNextAccount(),
-      eventAuthority: getNextAccount(),
-      gradienceProgram: getNextAccount(),
-    },
-    data: getSubmitResultInstructionDataDecoder().decode(instruction.data),
-  };
+    if (instruction.accounts.length < 7) {
+        // TODO: Coded error.
+        throw new Error('Not enough accounts');
+    }
+    let accountIndex = 0;
+    const getNextAccount = () => {
+        const accountMeta = (instruction.accounts as TAccountMetas)[accountIndex]!;
+        accountIndex += 1;
+        return accountMeta;
+    };
+    return {
+        programAddress: instruction.programAddress,
+        accounts: {
+            agent: getNextAccount(),
+            task: getNextAccount(),
+            application: getNextAccount(),
+            submission: getNextAccount(),
+            systemProgram: getNextAccount(),
+            eventAuthority: getNextAccount(),
+            gradienceProgram: getNextAccount(),
+        },
+        data: getSubmitResultInstructionDataDecoder().decode(instruction.data),
+    };
 }

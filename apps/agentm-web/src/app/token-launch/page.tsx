@@ -299,11 +299,7 @@ export default function TokenLaunchPage() {
     };
 
     // Calculator results
-    const stakingWeight = calculateStakingReputationWeight(
-        Number(stakedAmount),
-        Number(totalStaked),
-        3000
-    );
+    const stakingWeight = calculateStakingReputationWeight(Number(stakedAmount), Number(totalStaked), 3000);
     const estimatedFee = estimateServiceFeeWithToken(Number(baseFee), 500);
     const votingPower = calculateGovernanceVotingPower(Number(walletBalance), Number(stakedAmount), 1);
 
@@ -312,27 +308,25 @@ export default function TokenLaunchPage() {
             <div style={styles.container}>
                 <div style={styles.header}>
                     <h1 style={styles.title}>Token Launch</h1>
-                    <p style={styles.subtitle}>
-                        Launch your agent token with Metaplex Token Metadata
-                    </p>
+                    <p style={styles.subtitle}>Launch your agent token with Metaplex Token Metadata</p>
                 </div>
                 <div style={styles.walletPrompt}>
-                    <div style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '20px',
-                        background: c.lavender,
-                        border: `1.5px solid ${c.ink}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '20px',
-                    }}>
+                    <div
+                        style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '20px',
+                            background: c.lavender,
+                            border: `1.5px solid ${c.ink}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '20px',
+                        }}
+                    >
                         <span style={{ fontSize: '28px' }}>🚀</span>
                     </div>
-                    <h3 style={{ ...styles.title, fontSize: '20px', marginBottom: '8px' }}>
-                        Connect Your Wallet
-                    </h3>
+                    <h3 style={{ ...styles.title, fontSize: '20px', marginBottom: '8px' }}>Connect Your Wallet</h3>
                     <p style={{ fontSize: '14px', color: c.ink, opacity: 0.6, maxWidth: '400px' }}>
                         Connect your wallet to launch agent tokens and configure tokenomics
                     </p>
@@ -345,9 +339,7 @@ export default function TokenLaunchPage() {
         <div style={styles.container}>
             <div style={styles.header}>
                 <h1 style={styles.title}>Token Launch</h1>
-                <p style={styles.subtitle}>
-                    Launch your agent token with Metaplex Token Metadata
-                </p>
+                <p style={styles.subtitle}>Launch your agent token with Metaplex Token Metadata</p>
             </div>
 
             <div style={styles.grid}>
@@ -357,11 +349,7 @@ export default function TokenLaunchPage() {
 
                     <div style={styles.formGroup}>
                         <label style={styles.label}>Token Name</label>
-                        <input
-                            value={tokenName}
-                            onChange={(e) => setTokenName(e.target.value)}
-                            style={styles.input}
-                        />
+                        <input value={tokenName} onChange={(e) => setTokenName(e.target.value)} style={styles.input} />
                     </div>
 
                     <div style={styles.inputRow}>
@@ -438,7 +426,11 @@ export default function TokenLaunchPage() {
                             <span style={validation.valid ? styles.validationText : styles.validationError}>
                                 Total: {validation.total}%
                             </span>
-                            <span style={validation.valid ? { fontSize: '13px', color: '#059669' } : styles.validationError}>
+                            <span
+                                style={
+                                    validation.valid ? { fontSize: '13px', color: '#059669' } : styles.validationError
+                                }
+                            >
                                 {validation.valid ? '✓ Valid' : 'Must equal 100%'}
                             </span>
                         </div>
@@ -533,15 +525,15 @@ export default function TokenLaunchPage() {
                                     style={styles.input}
                                 />
                             </div>
-                            <div style={{
-                                marginTop: '12px',
-                                padding: '16px',
-                                background: c.lavender,
-                                borderRadius: '12px',
-                            }}>
-                                <p style={{ fontSize: '12px', color: c.ink, opacity: 0.7 }}>
-                                    Estimated Fee with Token
-                                </p>
+                            <div
+                                style={{
+                                    marginTop: '12px',
+                                    padding: '16px',
+                                    background: c.lavender,
+                                    borderRadius: '12px',
+                                }}
+                            >
+                                <p style={{ fontSize: '12px', color: c.ink, opacity: 0.7 }}>Estimated Fee with Token</p>
                                 <p style={{ fontSize: '24px', fontWeight: 700, color: c.ink, marginTop: '4px' }}>
                                     {estimatedFee.toLocaleString()} lamports
                                 </p>
@@ -553,8 +545,8 @@ export default function TokenLaunchPage() {
                     </div>
 
                     <p style={styles.infoText}>
-                        Token holders receive staking boosts on reputation, discounts on service fees,
-                        and governance voting power proportional to their holdings.
+                        Token holders receive staking boosts on reputation, discounts on service fees, and governance
+                        voting power proportional to their holdings.
                     </p>
                 </div>
             </div>

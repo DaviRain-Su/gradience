@@ -93,6 +93,7 @@ Secondary market:
 ### Why This Is New
 
 Current DeFi cannot create this product because:
+
 - There is no on-chain proof of what an Agent can do
 - There is no on-chain track record of quality
 - There is no way to verify that a "capability future" will be honored
@@ -249,13 +250,13 @@ in the 20th century — but decentralized, verifiable, and composable.
 
 None of these innovations exist today because no DeFi protocol has access to:
 
-| Primitive | Current DeFi | Gradience |
-|-----------|-------------|-----------|
-| Quality score | ❌ | ✅ avgScore 0-100 |
-| Competitive ranking | ❌ | ✅ winRate in open competition |
-| Work history | ❌ | ✅ completed, submitted counts |
-| Fraud resistance | ❌ | ✅ selfEvaluated flag, race model |
-| Continuous update | ❌ | ✅ every judgeAndPay() updates reputation |
+| Primitive           | Current DeFi | Gradience                                 |
+| ------------------- | ------------ | ----------------------------------------- |
+| Quality score       | ❌           | ✅ avgScore 0-100                         |
+| Competitive ranking | ❌           | ✅ winRate in open competition            |
+| Work history        | ❌           | ✅ completed, submitted counts            |
+| Fraud resistance    | ❌           | ✅ selfEvaluated flag, race model         |
+| Continuous update   | ❌           | ✅ every judgeAndPay() updates reputation |
 
 Gradience's kernel doesn't need to implement any of these financial products. It just needs to provide the reputation primitive reliably. The DeFi innovations build on top, reading public on-chain data.
 
@@ -288,5 +289,5 @@ The Agent Layer kernel doesn't need to know about lending, futures, or stablecoi
 
 ---
 
-*The protocol produces reputation. The ecosystem produces finance.*
-*DeFi 1.0 trades assets. Capability DeFi trades what Agents can do.*
+_The protocol produces reputation. The ecosystem produces finance._
+_DeFi 1.0 trades assets. Capability DeFi trades what Agents can do._

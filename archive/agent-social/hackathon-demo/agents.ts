@@ -9,12 +9,7 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, createV1 } from '@metaplex-foundation/mpl-core';
 import { mplAgentIdentity } from '@metaplex-foundation/mpl-agent-registry';
-import {
-    generateSigner,
-    publicKey,
-    type Umi,
-    type KeypairSigner,
-} from '@metaplex-foundation/umi';
+import { generateSigner, publicKey, type Umi, type KeypairSigner } from '@metaplex-foundation/umi';
 
 export interface GradienceAgent {
     umi: Umi;
@@ -32,9 +27,7 @@ export interface GradienceAgent {
  * Create a UMI instance with Gradience-required plugins.
  */
 export function makeUmi(rpcUrl: string): Umi {
-    return createUmi(rpcUrl)
-        .use(mplCore())
-        .use(mplAgentIdentity());
+    return createUmi(rpcUrl).use(mplCore()).use(mplAgentIdentity());
 }
 
 /**

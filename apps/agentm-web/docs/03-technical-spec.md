@@ -19,73 +19,73 @@ export type ProfileStatus = 'draft' | 'published' | 'deprecated';
 export type PricingModel = 'fixed' | 'per_call' | 'per_token';
 
 export interface Capability {
-  id: string;
-  name: string;
-  description: string;
+    id: string;
+    name: string;
+    description: string;
 }
 
 export interface Pricing {
-  model: PricingModel;
-  amount: number;
-  currency: 'SOL';
+    model: PricingModel;
+    amount: number;
+    currency: 'SOL';
 }
 
 export interface AgentProfile {
-  id: string;
-  did: string;
-  owner: string;
-  name: string;
-  description: string;
-  version: string;
-  capabilities: Capability[];
-  pricing: Pricing;
-  tags: string[];
-  website?: string;
-  createdAt: number;
-  updatedAt: number;
-  status: ProfileStatus;
+    id: string;
+    did: string;
+    owner: string;
+    name: string;
+    description: string;
+    version: string;
+    capabilities: Capability[];
+    pricing: Pricing;
+    tags: string[];
+    website?: string;
+    createdAt: number;
+    updatedAt: number;
+    status: ProfileStatus;
 }
 
 // types/soul.ts
 export interface SoulProfile {
-  soulType?: string;
-  identity?: { displayName?: string; bio?: string };
-  values?: { core?: string[]; priorities?: string[]; dealBreakers?: string[] };
+    soulType?: string;
+    identity?: { displayName?: string; bio?: string };
+    values?: { core?: string[]; priorities?: string[]; dealBreakers?: string[] };
 }
 ```
 
 ### 3.1.2 组件数据结构
 
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| address | string | 非空，Solana 地址 | Agent 唯一标识 |
-| displayName | string | 非空，长度 1-50 | 显示名称 |
-| bio | string | 可选，长度 0-500 | 个人简介 |
-| avatar | string | 可选，URL | 头像地址 |
-| reputation | number | 0-100 | 声誉分数 |
-| followers | number | >= 0 | 粉丝数 |
-| following | number | >= 0 | 关注数 |
-| createdAt | string | ISO 8601 | 创建时间 |
+| 字段        | 类型   | 约束              | 说明           |
+| ----------- | ------ | ----------------- | -------------- |
+| address     | string | 非空，Solana 地址 | Agent 唯一标识 |
+| displayName | string | 非空，长度 1-50   | 显示名称       |
+| bio         | string | 可选，长度 0-500  | 个人简介       |
+| avatar      | string | 可选，URL         | 头像地址       |
+| reputation  | number | 0-100             | 声誉分数       |
+| followers   | number | >= 0              | 粉丝数         |
+| following   | number | >= 0              | 关注数         |
+| createdAt   | string | ISO 8601          | 创建时间       |
 
 ### 3.1.3 配置与常量
 
-| 常量名 | 值 | 类型 | 说明 | 可变性 |
-|--------|----|----|------|--------|
-| DEFAULT_DAEMON_URL | 'https://api.gradiences.xyz' | string | Daemon API 地址 | configurable |
-| LOCAL_API_URL | 'http://localhost:7420' | string | 本地 Daemon 地址 | immutable |
-| SESSION_KEY | 'gradience_session' | string | localStorage key | immutable |
-| PROFILE_STORAGE_KEY | 'agentm-web:profiles:v1' | string | Profile localStorage key | immutable |
-| INDEXER_BASE | process.env.NEXT_PUBLIC_INDEXER_URL | string | Indexer API 地址 | configurable |
+| 常量名              | 值                                  | 类型   | 说明                     | 可变性       |
+| ------------------- | ----------------------------------- | ------ | ------------------------ | ------------ |
+| DEFAULT_DAEMON_URL  | 'https://api.gradiences.xyz'        | string | Daemon API 地址          | configurable |
+| LOCAL_API_URL       | 'http://localhost:7420'             | string | 本地 Daemon 地址         | immutable    |
+| SESSION_KEY         | 'gradience_session'                 | string | localStorage key         | immutable    |
+| PROFILE_STORAGE_KEY | 'agentm-web:profiles:v1'            | string | Profile localStorage key | immutable    |
+| INDEXER_BASE        | process.env.NEXT_PUBLIC_INDEXER_URL | string | Indexer API 地址         | configurable |
 
 ### 3.1.4 颜色方案
 
 ```typescript
 const colors = {
-  bg: '#F3F3F8',        // 背景色
-  surface: '#FFFFFF',   // 表面色
-  ink: '#16161A',       // 文字主色
-  lavender: '#C6BBFF',  // 强调色
-  lime: '#CDFF4D',      // 成功/活跃色
+    bg: '#F3F3F8', // 背景色
+    surface: '#FFFFFF', // 表面色
+    ink: '#16161A', // 文字主色
+    lavender: '#C6BBFF', // 强调色
+    lime: '#CDFF4D', // 成功/活跃色
 };
 ```
 
@@ -124,7 +124,7 @@ Response 4xx/5xx:
 
 ```
 Request:
-  Headers: { 
+  Headers: {
     "Authorization": "Bearer <token>",
     "Content-Type": "application/json"
   }
@@ -223,10 +223,10 @@ Response 200: SocialPost
 
 ```typescript
 interface UseProfileResult {
-  profile: AgentProfile | null;
-  loading: boolean;
-  error: string | null;
-  updateProfile: (updates: Partial<AgentProfile>) => Promise<void>;
+    profile: AgentProfile | null;
+    loading: boolean;
+    error: string | null;
+    updateProfile: (updates: Partial<AgentProfile>) => Promise<void>;
 }
 ```
 
@@ -234,14 +234,14 @@ interface UseProfileResult {
 
 ```typescript
 interface UseFollowingResult {
-  following: Following[];
-  followers: Follower[];
-  loading: boolean;
-  error: string | null;
-  follow: (address: string) => Promise<void>;
-  unfollow: (address: string) => Promise<void>;
-  isFollowing: (address: string) => boolean;
-  refresh: () => void;
+    following: Following[];
+    followers: Follower[];
+    loading: boolean;
+    error: string | null;
+    follow: (address: string) => Promise<void>;
+    unfollow: (address: string) => Promise<void>;
+    isFollowing: (address: string) => boolean;
+    refresh: () => void;
 }
 ```
 
@@ -249,16 +249,16 @@ interface UseFollowingResult {
 
 ```typescript
 interface UseSocialResult {
-  follow: (targetAddress: string) => Promise<void>;
-  unfollow: (targetAddress: string) => Promise<void>;
-  checkFollowing: (targetAddress: string) => Promise<boolean>;
-  createPost: (content: string, tags?: string[]) => Promise<SocialPost | null>;
-  deletePost: (postId: string) => Promise<void>;
-  getFeed: (limit?: number, offset?: number) => Promise<SocialPost[]>;
-  getGlobalFeed: (limit?: number, offset?: number) => Promise<SocialPost[]>;
-  likePost: (postId: string) => Promise<void>;
-  getFollowers: (address?: string) => Promise<FollowRelation[]>;
-  getFollowing: (address?: string) => Promise<FollowRelation[]>;
+    follow: (targetAddress: string) => Promise<void>;
+    unfollow: (targetAddress: string) => Promise<void>;
+    checkFollowing: (targetAddress: string) => Promise<boolean>;
+    createPost: (content: string, tags?: string[]) => Promise<SocialPost | null>;
+    deletePost: (postId: string) => Promise<void>;
+    getFeed: (limit?: number, offset?: number) => Promise<SocialPost[]>;
+    getGlobalFeed: (limit?: number, offset?: number) => Promise<SocialPost[]>;
+    likePost: (postId: string) => Promise<void>;
+    getFollowers: (address?: string) => Promise<FollowRelation[]>;
+    getFollowing: (address?: string) => Promise<FollowRelation[]>;
 }
 ```
 
@@ -266,10 +266,10 @@ interface UseSocialResult {
 
 ```typescript
 interface UseDashboardResult {
-  stats: DashboardStats;
-  loading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
+    stats: DashboardStats;
+    loading: boolean;
+    error: string | null;
+    refresh: () => Promise<void>;
 }
 ```
 
@@ -277,24 +277,24 @@ interface UseDashboardResult {
 
 ```typescript
 interface DaemonConnection {
-  daemonUrl: string;
-  isConnected: boolean;
-  sessionToken: string | null;
-  walletAddress: string | null;
+    daemonUrl: string;
+    isConnected: boolean;
+    sessionToken: string | null;
+    walletAddress: string | null;
 }
 ```
 
 ## 3.3 错误码定义（必填）
 
-| 错误码 | 名称 | 触发条件 | 用户提示 |
-|--------|------|---------|---------|
-| 400 | BAD_REQUEST | 请求参数错误 | 请检查输入 |
-| 401 | UNAUTHORIZED | Token 无效或过期 | 请重新登录 |
-| 404 | NOT_FOUND | 资源不存在 | 未找到该内容 |
-| 409 | CONFLICT | 重复操作（如重复 Follow） | 操作已执行 |
-| 500 | SERVER_ERROR | 服务器内部错误 | 服务暂时不可用 |
-| TIMEOUT | REQUEST_TIMEOUT | 请求超时 | 网络连接超时 |
-| NETWORK | NETWORK_ERROR | 网络错误 | 请检查网络连接 |
+| 错误码  | 名称            | 触发条件                  | 用户提示       |
+| ------- | --------------- | ------------------------- | -------------- |
+| 400     | BAD_REQUEST     | 请求参数错误              | 请检查输入     |
+| 401     | UNAUTHORIZED    | Token 无效或过期          | 请重新登录     |
+| 404     | NOT_FOUND       | 资源不存在                | 未找到该内容   |
+| 409     | CONFLICT        | 重复操作（如重复 Follow） | 操作已执行     |
+| 500     | SERVER_ERROR    | 服务器内部错误            | 服务暂时不可用 |
+| TIMEOUT | REQUEST_TIMEOUT | 请求超时                  | 网络连接超时   |
+| NETWORK | NETWORK_ERROR   | 网络错误                  | 请检查网络连接 |
 
 ## 3.4 组件规范（必填）
 
@@ -305,16 +305,16 @@ interface DaemonConnection {
 ```typescript
 // 正确
 const styles = {
-  container: {
-    backgroundColor: '#F3F3F8',
-    padding: '24px',
-    borderRadius: '12px',
-  },
-  title: {
-    color: '#16161A',
-    fontSize: '18px',
-    fontWeight: 600,
-  },
+    container: {
+        backgroundColor: '#F3F3F8',
+        padding: '24px',
+        borderRadius: '12px',
+    },
+    title: {
+        color: '#16161A',
+        fontSize: '18px',
+        fontWeight: 600,
+    },
 };
 
 // 错误（不使用）
@@ -335,13 +335,13 @@ interface ComponentProps {
 export function ComponentName({ prop1, prop2 }: ComponentProps) {
   // 1. Hooks 调用
   const { data, loading } = useXXX();
-  
+
   // 2. State 定义
   const [state, setState] = useState();
-  
+
   // 3. 事件处理
   const handleAction = () => { };
-  
+
   // 4. Render
   return (
     <div style={styles.container}>
@@ -416,42 +416,42 @@ apps/agentm-web/
 
 ## 3.6 路由设计（必填）
 
-| 路由 | 页面组件 | 功能 |
-|------|---------|------|
-| / | page.tsx | 首页/登录页 |
-| /app | app/page.tsx | 主应用（含 views） |
-| /dashboard | dashboard/page.tsx | Dashboard 统计 |
-| /following | following/page.tsx | Following 列表 |
-| /profiles | profiles/page.tsx | Profile 浏览 |
-| /profile/[id] | profile/[id]/page.tsx | 公开 Profile |
-| /profile/edit | profile/edit/page.tsx | 编辑 Profile |
-| /agents/create | agents/create/page.tsx | 创建 Agent |
-| /ai-playground | ai-playground/page.tsx | AI 测试环境 |
-| /auth/callback | auth/callback/page.tsx | 认证回调 |
+| 路由           | 页面组件               | 功能               |
+| -------------- | ---------------------- | ------------------ |
+| /              | page.tsx               | 首页/登录页        |
+| /app           | app/page.tsx           | 主应用（含 views） |
+| /dashboard     | dashboard/page.tsx     | Dashboard 统计     |
+| /following     | following/page.tsx     | Following 列表     |
+| /profiles      | profiles/page.tsx      | Profile 浏览       |
+| /profile/[id]  | profile/[id]/page.tsx  | 公开 Profile       |
+| /profile/edit  | profile/edit/page.tsx  | 编辑 Profile       |
+| /agents/create | agents/create/page.tsx | 创建 Agent         |
+| /ai-playground | ai-playground/page.tsx | AI 测试环境        |
+| /auth/callback | auth/callback/page.tsx | 认证回调           |
 
 ## 3.7 安全规则（必填）
 
-| 规则 | 实现方式 | 验证方法 |
-|------|---------|---------|
-| 认证校验 | JWT Token 在 Header | 每个 API 请求检查 |
-| XSS 防护 | React 自动转义 | 代码审查 |
-| 请求超时 | AbortSignal.timeout() | 单元测试 |
-| 输入验证 | Zod schema | 运行时检查 |
+| 规则     | 实现方式              | 验证方法          |
+| -------- | --------------------- | ----------------- |
+| 认证校验 | JWT Token 在 Header   | 每个 API 请求检查 |
+| XSS 防护 | React 自动转义        | 代码审查          |
+| 请求超时 | AbortSignal.timeout() | 单元测试          |
+| 输入验证 | Zod schema            | 运行时检查        |
 
 ## 3.8 边界条件清单（必填）
 
-| # | 边界条件 | 预期行为 | 备注 |
-|---|---------|---------|------|
-| 1 | 无网络连接 | 显示错误提示，允许重试 | 全局处理 |
-| 2 | Token 过期 | 重定向到登录页 | 401 处理 |
-| 3 | 空 Feed | 显示空状态提示 | UI 处理 |
-| 4 | 重复 Follow | 返回 409，显示已关注 | API 处理 |
-| 5 | 超长 Bio (>500) | 截断或禁止提交 | 前端验证 |
-| 6 | 特殊字符输入 | 转义处理 | 防止 XSS |
-| 7 | 并发请求 | 取消旧请求 | AbortController |
-| 8 | 图片加载失败 | 显示默认头像 | onError 处理 |
-| 9 | API 降级 | 使用本地缓存 | 优雅降级 |
-| 10 | 大列表渲染 | 虚拟滚动 | 性能优化 |
+| #   | 边界条件        | 预期行为               | 备注            |
+| --- | --------------- | ---------------------- | --------------- |
+| 1   | 无网络连接      | 显示错误提示，允许重试 | 全局处理        |
+| 2   | Token 过期      | 重定向到登录页         | 401 处理        |
+| 3   | 空 Feed         | 显示空状态提示         | UI 处理         |
+| 4   | 重复 Follow     | 返回 409，显示已关注   | API 处理        |
+| 5   | 超长 Bio (>500) | 截断或禁止提交         | 前端验证        |
+| 6   | 特殊字符输入    | 转义处理               | 防止 XSS        |
+| 7   | 并发请求        | 取消旧请求             | AbortController |
+| 8   | 图片加载失败    | 显示默认头像           | onError 处理    |
+| 9   | API 降级        | 使用本地缓存           | 优雅降级        |
+| 10  | 大列表渲染      | 虚拟滚动               | 性能优化        |
 
 ---
 
@@ -473,45 +473,52 @@ apps/agentm-web/
 ## 3.9 Settlement Module (GRA-200 JudgeAndPay)
 
 ### 3.9.1 Types
+
 ```typescript
 interface JudgeTask {
-  taskId: number;
-  title?: string;
-  submissions: SubmissionApi[];
+    taskId: number;
+    title?: string;
+    submissions: SubmissionApi[];
 }
 ```
 
 ### 3.9.2 Hooks
+
 **`useJudgeAndPay(wallet: WalletAdapter | null)`**
+
 ```typescript
 interface UseJudgeAndPayResult {
-  tasksToJudge: TaskApi[];
-  loading: boolean;
-  error: string | null;
-  judgeTask: (params: {
-    taskId: number | bigint;
-    winner: Address;
-    poster: Address;
-    score: number;
-    reasonRef: string;
-  }) => Promise<string | null>;
-  txHash: string | null;
+    tasksToJudge: TaskApi[];
+    loading: boolean;
+    error: string | null;
+    judgeTask: (params: {
+        taskId: number | bigint;
+        winner: Address;
+        poster: Address;
+        score: number;
+        reasonRef: string;
+    }) => Promise<string | null>;
+    txHash: string | null;
 }
 ```
 
 ### 3.9.3 Components
+
 - **`JudgeDashboard`** — 展示待评判任务列表，支持点击进入评判。
 - **`JudgeSubmissionView`** — 展示指定任务的所有 submissions，供 Judge 对比并选择 winner。
 
 ### 3.9.4 SDK
+
 使用 `lib/solana/arena-client.ts` 中的 `judgeAndPay`、`fetchTasks`、`fetchSubmissions`。
 
 ### 3.9.5 Route
-| 路由 | 页面组件 | 功能 |
-|------|---------|------|
+
+| 路由     | 页面组件         | 功能           |
+| -------- | ---------------- | -------------- |
 | `/judge` | `judge/page.tsx` | JudgeDashboard |
 
 ### 3.9.6 样式规范
+
 沿用 3.4.1 Inline styles，卡片背景 `#FFFFFF`，边框圆角 `12px`，按钮主色 `#CDFF4D`。
 
 ---
@@ -519,58 +526,62 @@ interface UseJudgeAndPayResult {
 ## 3.10 Payment Channels Module (GRA-201 A2A)
 
 ### 3.10.1 Types
+
 ```typescript
 interface Channel {
-  channelId: string;
-  payee: string;
-  depositAmount: number;
-  spentAmount: number;
-  status: 'open' | 'closing' | 'closed' | 'disputed';
-  expiresAt: number;
+    channelId: string;
+    payee: string;
+    depositAmount: number;
+    spentAmount: number;
+    status: 'open' | 'closing' | 'closed' | 'disputed';
+    expiresAt: number;
 }
 ```
 
 ### 3.10.2 Hooks
+
 **`useChannelState(wallet: WalletAdapter | null)`**
+
 ```typescript
 interface UseChannelStateResult {
-  channels: Channel[];
-  loading: boolean;
-  error: string | null;
-  refresh: () => void;
+    channels: Channel[];
+    loading: boolean;
+    error: string | null;
+    refresh: () => void;
 }
 ```
 
 **`useOpenChannel(wallet: WalletAdapter | null)`**
+
 ```typescript
 interface UseOpenChannelResult {
-  openChannel: (params: {
-    payee: Address;
-    depositAmount: number;
-    expiresAt: number;
-  }) => Promise<string | null>;
-  loading: boolean;
-  error: string | null;
+    openChannel: (params: { payee: Address; depositAmount: number; expiresAt: number }) => Promise<string | null>;
+    loading: boolean;
+    error: string | null;
 }
 ```
 
 **`useCloseChannel(wallet: WalletAdapter | null)`**
+
 ```typescript
 interface UseCloseChannelResult {
-  closeChannel: (channelId: string, spentAmount: number) => Promise<string | null>;
-  loading: boolean;
-  error: string | null;
+    closeChannel: (channelId: string, spentAmount: number) => Promise<string | null>;
+    loading: boolean;
+    error: string | null;
 }
 ```
 
 ### 3.10.3 Components
+
 - **`PaymentChannelsView`** — 展示所有通道，支持创建新通道。
 - **`ChannelCard`** — 单条通道卡片，显示余额、状态和操作按钮（关闭/争议）。
 
 ### 3.10.4 Route
-| 路由 | 页面组件 | 功能 |
-|------|---------|------|
+
+| 路由                | 页面组件                    | 功能                |
+| ------------------- | --------------------------- | ------------------- |
 | `/payment-channels` | `payment-channels/page.tsx` | PaymentChannelsView |
 
 ### 3.10.5 样式规范
+
 沿用 3.4.1 Inline styles，状态标签颜色：`open=#CDFF4D`，`closing=#C6BBFF`，`disputed=#FF6B6B`。

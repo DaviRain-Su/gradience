@@ -7,63 +7,60 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type TaskJudgedEvent = {
-  taskId: bigint;
-  winner: Array<number>;
-  score: number;
-  agentPayout: bigint;
-  judgeFee: bigint;
-  protocolFee: bigint;
+    taskId: bigint;
+    winner: Array<number>;
+    score: number;
+    agentPayout: bigint;
+    judgeFee: bigint;
+    protocolFee: bigint;
 };
 
 export type TaskJudgedEventArgs = {
-  taskId: number | bigint;
-  winner: Array<number>;
-  score: number;
-  agentPayout: number | bigint;
-  judgeFee: number | bigint;
-  protocolFee: number | bigint;
+    taskId: number | bigint;
+    winner: Array<number>;
+    score: number;
+    agentPayout: number | bigint;
+    judgeFee: number | bigint;
+    protocolFee: number | bigint;
 };
 
 export function getTaskJudgedEventEncoder(): FixedSizeEncoder<TaskJudgedEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["winner", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["score", getU8Encoder()],
-    ["agentPayout", getU64Encoder()],
-    ["judgeFee", getU64Encoder()],
-    ["protocolFee", getU64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['winner', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['score', getU8Encoder()],
+        ['agentPayout', getU64Encoder()],
+        ['judgeFee', getU64Encoder()],
+        ['protocolFee', getU64Encoder()],
+    ]);
 }
 
 export function getTaskJudgedEventDecoder(): FixedSizeDecoder<TaskJudgedEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["winner", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["score", getU8Decoder()],
-    ["agentPayout", getU64Decoder()],
-    ["judgeFee", getU64Decoder()],
-    ["protocolFee", getU64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['winner', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['score', getU8Decoder()],
+        ['agentPayout', getU64Decoder()],
+        ['judgeFee', getU64Decoder()],
+        ['protocolFee', getU64Decoder()],
+    ]);
 }
 
-export function getTaskJudgedEventCodec(): FixedSizeCodec<
-  TaskJudgedEventArgs,
-  TaskJudgedEvent
-> {
-  return combineCodec(getTaskJudgedEventEncoder(), getTaskJudgedEventDecoder());
+export function getTaskJudgedEventCodec(): FixedSizeCodec<TaskJudgedEventArgs, TaskJudgedEvent> {
+    return combineCodec(getTaskJudgedEventEncoder(), getTaskJudgedEventDecoder());
 }

@@ -25,15 +25,13 @@ interface MessageRow {
     created_at: number;
 }
 
-const TASK_MESSAGE_TYPES = new Set<string>([
-    'task_proposal',
-    'task_accept',
-    'task_reject',
-    'task_counter',
-]);
+const TASK_MESSAGE_TYPES = new Set<string>(['task_proposal', 'task_accept', 'task_reject', 'task_counter']);
 
 export class MessageRouter extends EventEmitter {
-    private readonly stmtInsert: TypedStatement<[string, string, string, string, string, string, string | null, number], RunResult>;
+    private readonly stmtInsert: TypedStatement<
+        [string, string, string, string, string, string, string | null, number],
+        RunResult
+    >;
 
     constructor(
         private readonly db: DatabaseInstance,
@@ -51,7 +49,7 @@ export class MessageRouter extends EventEmitter {
         this.connectionManager.on('message', (data: unknown) => {
             this.handleInbound(data);
         });
-        
+
         this.connectionManager.on('message-event', (messageEvent: any) => {
             this.handleStructuredMessage(messageEvent);
         });

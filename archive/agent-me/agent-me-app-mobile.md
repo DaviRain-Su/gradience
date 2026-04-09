@@ -1,7 +1,7 @@
 # Agent Me App：手机端语音助手架构设计
 
 > **用户愿景**：手机端运行语音模型，通过语音长连接与 OpenClaw 实时交互，替代 Telegram 文字
-> 
+>
 > **分析日期**: 2026-03-28
 
 ---
@@ -10,13 +10,13 @@
 
 ### 现实评估
 
-| 模型 | 参数 | 手机端 | 体验 |
-|------|------|--------|------|
-| **Cohere Transcribe** | 2B | ❌ 不行 | 需要 8GB+ RAM |
-| **Whisper Large** | 1.5B | ❌ 不行 | 太慢 |
-| **Whisper Base** | 74M | ⚠️ 勉强 | 3-5秒延迟 |
-| **Whisper Tiny** | 39M | ✅ 可以 | 1-2秒延迟 |
-| **SenseVoice Small** | 200M | ✅ 可以 | 中文优化好 |
+| 模型                  | 参数 | 手机端  | 体验          |
+| --------------------- | ---- | ------- | ------------- |
+| **Cohere Transcribe** | 2B   | ❌ 不行 | 需要 8GB+ RAM |
+| **Whisper Large**     | 1.5B | ❌ 不行 | 太慢          |
+| **Whisper Base**      | 74M  | ⚠️ 勉强 | 3-5秒延迟     |
+| **Whisper Tiny**      | 39M  | ✅ 可以 | 1-2秒延迟     |
+| **SenseVoice Small**  | 200M | ✅ 可以 | 中文优化好    |
 
 ### 结论
 
@@ -106,6 +106,7 @@ whisper_ctx_init_nnapi(ctx);
 ```
 
 **性能** (iPhone 15 Pro):
+
 - Tiny 模型: **实时转录** (RTF < 0.3)
 - Base 模型: **1-2秒延迟** (RTF < 1.0)
 
@@ -145,10 +146,10 @@ export default function AgentMeApp() {
   useEffect(() => {
     // 1. 初始化本地 Whisper (Tiny 模型)
     initLocalWhisper();
-    
+
     // 2. 连接 OpenClaw Gateway
     connectToCloud();
-    
+
     return () => {
       ws.current?.close();
     };
@@ -159,7 +160,7 @@ export default function AgentMeApp() {
     await RNWhisper.downloadModel('tiny', {
       onProgress: (p) => console.log(`下载: ${p}%`),
     });
-    
+
     whisper.current = await RNWhisper.initContext({
       model: 'tiny',
       useCoreML: true,  // iOS 加速
@@ -170,11 +171,11 @@ export default function AgentMeApp() {
   const connectToCloud = () => {
     // WebSocket 长连接
     ws.current = new WebSocket('wss://openclaw.your-domain.com/voice');
-    
+
     ws.current.onopen = () => {
       console.log('✅ 连接到 OpenClaw');
     };
-    
+
     ws.current.onmessage = (event) => {
       const response = JSON.parse(event.data);
       handleCloudResponse(response);
@@ -183,14 +184,14 @@ export default function AgentMeApp() {
 
   const startListening = async () => {
     isListening.current = true;
-    
+
     // 开始录音
     await whisper.current?.startRealtimeTranscribe({
       language: 'zh',
       onResult: (result) => {
         // 本地识别结果
         console.log('本地:', result.text);
-        
+
         // 判断意图复杂度
         if (isSimpleCommand(result.text)) {
           // 简单指令本地处理
@@ -224,12 +225,12 @@ export default function AgentMeApp() {
     if (response.voiceUrl) {
       playAudio(response.voiceUrl);
     }
-    
+
     // 显示文字
     if (response.text) {
       showBubble(response.text, 'agent');
     }
-    
+
     // 更新 UI 组件
     if (response.uiUpdate) {
       updateComponent(response.uiUpdate);
@@ -239,17 +240,17 @@ export default function AgentMeApp() {
   return (
     <View style={styles.container}>
       {/* 语音按钮 */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.voiceButton}
         onPressIn={startListening}
         onPressOut={() => isListening.current = false}
       >
         <Text>🎤 按住说话</Text>
       </TouchableOpacity>
-      
+
       {/* 聊天记录 */}
       <ChatHistory />
-      
+
       {/* 链上状态组件 */}
       <WalletCard />
       <TaskList />
@@ -267,40 +268,40 @@ export default function AgentMeApp() {
 ```typescript
 // 协议定义
 interface VoiceProtocol {
-  // 客户端 → 服务端
-  'voice.upload': {
-    type: 'voice.upload';
-    sessionId: string;
-    audio: string;        // base64 encoded
-    localText?: string;   // 本地识别结果（参考）
-    timestamp: number;
-  };
-  
-  'voice.interrupt': {
-    type: 'voice.interrupt';
-    sessionId: string;
-    // 用户打断，停止生成
-  };
-  
-  // 服务端 → 客户端
-  'voice.transcript': {
-    type: 'voice.transcript';
-    text: string;         // Cohere 识别的最终文本
-    confidence: number;
-  };
-  
-  'voice.response': {
-    type: 'voice.response';
-    text: string;         // AI 回复文字
-    voiceUrl?: string;    // TTS 语音 URL
-    actions?: AgentAction[];  // 链上操作
-  };
-  
-  'voice.uiUpdate': {
-    type: 'voice.uiUpdate';
-    component: string;    // 'wallet' | 'tasks' | 'market'
-    data: any;
-  };
+    // 客户端 → 服务端
+    'voice.upload': {
+        type: 'voice.upload';
+        sessionId: string;
+        audio: string; // base64 encoded
+        localText?: string; // 本地识别结果（参考）
+        timestamp: number;
+    };
+
+    'voice.interrupt': {
+        type: 'voice.interrupt';
+        sessionId: string;
+        // 用户打断，停止生成
+    };
+
+    // 服务端 → 客户端
+    'voice.transcript': {
+        type: 'voice.transcript';
+        text: string; // Cohere 识别的最终文本
+        confidence: number;
+    };
+
+    'voice.response': {
+        type: 'voice.response';
+        text: string; // AI 回复文字
+        voiceUrl?: string; // TTS 语音 URL
+        actions?: AgentAction[]; // 链上操作
+    };
+
+    'voice.uiUpdate': {
+        type: 'voice.uiUpdate';
+        component: string; // 'wallet' | 'tasks' | 'market'
+        data: any;
+    };
 }
 ```
 
@@ -309,63 +310,63 @@ interface VoiceProtocol {
 ```typescript
 // server/voice-handler.ts
 export class VoiceSession {
-  private ws: WebSocket;
-  private cohere: CohereTranscribe;
-  private kimi: KimiClient;
-  
-  async handleVoiceUpload(data: VoiceUpload) {
-    // 1. Cohere 2B 精确识别
-    const audioBuffer = Buffer.from(data.audio, 'base64');
-    const transcript = await this.cohere.transcribe(audioBuffer, 'zh');
-    
-    // 2. 发送识别结果给客户端
-    this.send({
-      type: 'voice.transcript',
-      text: transcript,
-      confidence: 0.95,
-    });
-    
-    // 3. Kimi 理解意图
-    const context = await this.getUserContext();
-    const response = await this.kimi.chat({
-      messages: [
-        { role: 'system', content: getAgentMePrompt(context) },
-        { role: 'user', content: transcript },
-      ],
-    });
-    
-    // 4. 解析回复
-    const parsed = this.parseResponse(response);
-    
-    // 5. 执行链上操作 (如果有)
-    if (parsed.actions) {
-      for (const action of parsed.actions) {
-        await this.executeAction(action);
-      }
+    private ws: WebSocket;
+    private cohere: CohereTranscribe;
+    private kimi: KimiClient;
+
+    async handleVoiceUpload(data: VoiceUpload) {
+        // 1. Cohere 2B 精确识别
+        const audioBuffer = Buffer.from(data.audio, 'base64');
+        const transcript = await this.cohere.transcribe(audioBuffer, 'zh');
+
+        // 2. 发送识别结果给客户端
+        this.send({
+            type: 'voice.transcript',
+            text: transcript,
+            confidence: 0.95,
+        });
+
+        // 3. Kimi 理解意图
+        const context = await this.getUserContext();
+        const response = await this.kimi.chat({
+            messages: [
+                { role: 'system', content: getAgentMePrompt(context) },
+                { role: 'user', content: transcript },
+            ],
+        });
+
+        // 4. 解析回复
+        const parsed = this.parseResponse(response);
+
+        // 5. 执行链上操作 (如果有)
+        if (parsed.actions) {
+            for (const action of parsed.actions) {
+                await this.executeAction(action);
+            }
+        }
+
+        // 6. TTS 合成语音 (可选)
+        let voiceUrl: string | undefined;
+        if (parsed.shouldSpeak) {
+            voiceUrl = await this.synthesizeVoice(parsed.reply);
+        }
+
+        // 7. 发送完整回复
+        this.send({
+            type: 'voice.response',
+            text: parsed.reply,
+            voiceUrl,
+            actions: parsed.actions,
+        });
+
+        // 8. 更新 UI
+        if (parsed.uiUpdate) {
+            this.send({
+                type: 'voice.uiUpdate',
+                ...parsed.uiUpdate,
+            });
+        }
     }
-    
-    // 6. TTS 合成语音 (可选)
-    let voiceUrl: string | undefined;
-    if (parsed.shouldSpeak) {
-      voiceUrl = await this.synthesizeVoice(parsed.reply);
-    }
-    
-    // 7. 发送完整回复
-    this.send({
-      type: 'voice.response',
-      text: parsed.reply,
-      voiceUrl,
-      actions: parsed.actions,
-    });
-    
-    // 8. 更新 UI
-    if (parsed.uiUpdate) {
-      this.send({
-        type: 'voice.uiUpdate',
-        ...parsed.uiUpdate,
-      });
-    }
-  }
 }
 ```
 
@@ -433,15 +434,15 @@ export class VoiceSession {
 
 ## 6. 技术栈总结
 
-| 层级 | 技术 | 说明 |
-|------|------|------|
-| **手机端** | React Native / Flutter | 跨平台 |
-| **端侧 ASR** | Whisper.cpp (Tiny) | 40MB，本地运行 |
-| **连接** | WebSocket | 长连接，低延迟 |
-| **云端 ASR** | Cohere 2B / Whisper Large | 精确识别 |
-| **AI 大脑** | Kimi / Claude | 理解 + 规划 |
-| **TTS** | Edge TTS / ElevenLabs | 语音合成 |
-| **区块链** | Solana Agent Kit | 链上操作 |
+| 层级         | 技术                      | 说明           |
+| ------------ | ------------------------- | -------------- |
+| **手机端**   | React Native / Flutter    | 跨平台         |
+| **端侧 ASR** | Whisper.cpp (Tiny)        | 40MB，本地运行 |
+| **连接**     | WebSocket                 | 长连接，低延迟 |
+| **云端 ASR** | Cohere 2B / Whisper Large | 精确识别       |
+| **AI 大脑**  | Kimi / Claude             | 理解 + 规划    |
+| **TTS**      | Edge TTS / ElevenLabs     | 语音合成       |
+| **区块链**   | Solana Agent Kit          | 链上操作       |
 
 ---
 
@@ -500,23 +501,25 @@ export class VoiceSession {
 > **端云协同：小模型本地预处理 + 大模型云端精确处理**
 
 **手机上跑什么**:
+
 - Whisper Tiny (39M) — 本地识别，秒回简单指令
 - 意图判断逻辑 — 决定本地上传云端
 
 **云端跑什么**:
+
 - Cohere 2B — 精确识别
 - Kimi — 理解 + 规划
 - 区块链交互
 
 ### 对比 Telegram
 
-| 特性 | Telegram 文字 | Agent Me App |
-|------|--------------|--------------|
-| **交互方式** | 打字 | 语音 (自然) |
-| **响应速度** | 取决于打字 | 秒回 |
-| **24小时陪伴** | 被动等待 | 主动推送 |
-| **链上操作** | 复杂 | 语音一句话 |
-| **体验** | 聊天工具 | 数字分身 |
+| 特性           | Telegram 文字 | Agent Me App |
+| -------------- | ------------- | ------------ |
+| **交互方式**   | 打字          | 语音 (自然)  |
+| **响应速度**   | 取决于打字    | 秒回         |
+| **24小时陪伴** | 被动等待      | 主动推送     |
+| **链上操作**   | 复杂          | 语音一句话   |
+| **体验**       | 聊天工具      | 数字分身     |
 
 ### 下一步
 
@@ -525,6 +528,7 @@ export class VoiceSession {
 3. **测试端到端流程**
 
 要我：
+
 - 搭建云端语音服务？
 - 提供 React Native 启动模板？
 - 设计更详细的 UI 原型？

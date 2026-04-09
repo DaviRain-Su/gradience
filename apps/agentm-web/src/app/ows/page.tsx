@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { evaluateWalletSecurity } from '../../lib/goldrush/security-monitor';
-import {
-    getWhaleTrackingFeed,
-    summarizeWhaleFeed,
-    type WhaleTransferEvent,
-} from '../../lib/goldrush/whale-tracker';
+import { getWhaleTrackingFeed, summarizeWhaleFeed, type WhaleTransferEvent } from '../../lib/goldrush/whale-tracker';
 import {
     createGridlessAgentIdentity,
     deriveMarketSnapshotFromWhaleFeed,
@@ -15,10 +11,7 @@ import {
     generateDexTradingSignal,
     type DexTradingSignal,
 } from '../../lib/goldrush/trading-bot';
-import {
-    probeGoldRushCapabilities,
-    type GoldRushCapabilityProbeResult,
-} from '../../lib/goldrush/capability-probe';
+import { probeGoldRushCapabilities, type GoldRushCapabilityProbeResult } from '../../lib/goldrush/capability-probe';
 import { scoreWalletRisk, type WalletRiskReport } from '../../lib/goldrush/risk-scoring';
 
 const colors = {
@@ -55,7 +48,7 @@ async function fetchReputationByAddress(address: string): Promise<ReputationData
 export default function OWSPage() {
     const { primaryWallet } = useDynamicContext();
     const address = primaryWallet?.address ?? null;
-    
+
     const [reputation, setReputation] = useState<ReputationData | null>(null);
     const [loading, setLoading] = useState(false);
     const [scanAddress, setScanAddress] = useState('');
@@ -101,10 +94,7 @@ export default function OWSPage() {
         }
     }, [address, whaleWatchlist]);
 
-    const securityAlerts = useMemo(
-        () => (riskReport ? evaluateWalletSecurity(riskReport) : []),
-        [riskReport]
-    );
+    const securityAlerts = useMemo(() => (riskReport ? evaluateWalletSecurity(riskReport) : []), [riskReport]);
     const whaleSummary = useMemo(() => summarizeWhaleFeed(whaleEvents), [whaleEvents]);
 
     async function handleRunRiskScan() {
@@ -187,125 +177,153 @@ export default function OWSPage() {
     }
 
     return (
-        <div style={{ 
-            padding: '24px', 
-            background: colors.bg, 
-            minHeight: '100vh',
-            color: colors.ink,
-        }}>
-            <h1 style={{ 
-                fontFamily: "'Oswald', sans-serif", 
-                fontSize: '32px', 
-                fontWeight: 700, 
-                margin: '0 0 8px 0',
-                textTransform: 'uppercase',
-            }}>
+        <div
+            style={{
+                padding: '24px',
+                background: colors.bg,
+                minHeight: '100vh',
+                color: colors.ink,
+            }}
+        >
+            <h1
+                style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: '32px',
+                    fontWeight: 700,
+                    margin: '0 0 8px 0',
+                    textTransform: 'uppercase',
+                }}
+            >
                 OWS Wallet
             </h1>
-            <p style={{ 
-                fontSize: '14px', 
-                opacity: 0.6, 
-                margin: '0 0 24px 0',
-                maxWidth: '600px',
-            }}>
+            <p
+                style={{
+                    fontSize: '14px',
+                    opacity: 0.6,
+                    margin: '0 0 24px 0',
+                    maxWidth: '600px',
+                }}
+            >
                 Connect your Open Wallet Standard wallet to view reputation credentials and sign task agreements.
             </p>
 
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-                gap: '24px',
-                marginBottom: '24px',
-            }}>
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: '24px',
+                    marginBottom: '24px',
+                }}
+            >
                 {/* Wallet Card */}
-                <div style={{
-                    background: colors.surface,
-                    border: `1.5px solid ${colors.ink}`,
-                    borderRadius: '16px',
-                    padding: '20px',
-                }}>
-                    <h2 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        margin: '0 0 16px 0',
-                    }}>
+                <div
+                    style={{
+                        background: colors.surface,
+                        border: `1.5px solid ${colors.ink}`,
+                        borderRadius: '16px',
+                        padding: '20px',
+                    }}
+                >
+                    <h2
+                        style={{
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            margin: '0 0 16px 0',
+                        }}
+                    >
                         Wallet
                     </h2>
                     {address ? (
                         <div>
-                            <p style={{ 
-                                fontSize: '12px', 
-                                opacity: 0.6, 
-                                margin: '0 0 4px 0',
-                            }}>
+                            <p
+                                style={{
+                                    fontSize: '12px',
+                                    opacity: 0.6,
+                                    margin: '0 0 4px 0',
+                                }}
+                            >
                                 Address
                             </p>
-                            <p style={{ 
-                                fontFamily: 'monospace', 
-                                fontSize: '13px', 
-                                wordBreak: 'break-all',
-                                margin: 0,
-                            }}>
+                            <p
+                                style={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '13px',
+                                    wordBreak: 'break-all',
+                                    margin: 0,
+                                }}
+                            >
                                 {address}
                             </p>
                         </div>
                     ) : (
-                        <p style={{ fontSize: '14px', opacity: 0.6 }}>
-                            Connect a wallet to view details.
-                        </p>
+                        <p style={{ fontSize: '14px', opacity: 0.6 }}>Connect a wallet to view details.</p>
                     )}
                 </div>
 
                 {/* Reputation Card */}
-                <div style={{
-                    background: colors.surface,
-                    border: `1.5px solid ${colors.ink}`,
-                    borderRadius: '16px',
-                    padding: '20px',
-                }}>
-                    <h2 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        margin: '0 0 16px 0',
-                    }}>
+                <div
+                    style={{
+                        background: colors.surface,
+                        border: `1.5px solid ${colors.ink}`,
+                        borderRadius: '16px',
+                        padding: '20px',
+                    }}
+                >
+                    <h2
+                        style={{
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            margin: '0 0 16px 0',
+                        }}
+                    >
                         Reputation
                     </h2>
-                    {loading && (
-                        <p style={{ fontSize: '14px', opacity: 0.6 }}>Loading reputation...</p>
-                    )}
+                    {loading && <p style={{ fontSize: '14px', opacity: 0.6 }}>Loading reputation...</p>}
                     {reputation && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div style={{
-                                background: colors.bg,
-                                borderRadius: '8px',
-                                padding: '12px',
-                            }}>
+                            <div
+                                style={{
+                                    background: colors.bg,
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                }}
+                            >
                                 <p style={{ fontSize: '11px', opacity: 0.6, margin: '0 0 4px 0' }}>Avg Score</p>
                                 <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{reputation.avg_score}</p>
                             </div>
-                            <div style={{
-                                background: colors.bg,
-                                borderRadius: '8px',
-                                padding: '12px',
-                            }}>
+                            <div
+                                style={{
+                                    background: colors.bg,
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                }}
+                            >
                                 <p style={{ fontSize: '11px', opacity: 0.6, margin: '0 0 4px 0' }}>Completed</p>
                                 <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{reputation.completed}</p>
                             </div>
-                            <div style={{
-                                background: colors.bg,
-                                borderRadius: '8px',
-                                padding: '12px',
-                            }}>
+                            <div
+                                style={{
+                                    background: colors.bg,
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                }}
+                            >
                                 <p style={{ fontSize: '11px', opacity: 0.6, margin: '0 0 4px 0' }}>Win Rate</p>
-                                <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{(reputation.win_rate * 100).toFixed(0)}%</p>
+                                <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>
+                                    {(reputation.win_rate * 100).toFixed(0)}%
+                                </p>
                             </div>
-                            <div style={{
-                                background: colors.bg,
-                                borderRadius: '8px',
-                                padding: '12px',
-                            }}>
+                            <div
+                                style={{
+                                    background: colors.bg,
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                }}
+                            >
                                 <p style={{ fontSize: '11px', opacity: 0.6, margin: '0 0 4px 0' }}>Earned</p>
-                                <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{reputation.total_earned}</p>
+                                <p style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>
+                                    {reputation.total_earned}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -319,45 +337,49 @@ export default function OWSPage() {
                             </p>
                         </div>
                     )}
-                    {!address && (
-                        <p style={{ fontSize: '14px', opacity: 0.6 }}>
-                            Connect a wallet to view reputation.
-                        </p>
-                    )}
+                    {!address && <p style={{ fontSize: '14px', opacity: 0.6 }}>Connect a wallet to view reputation.</p>}
                 </div>
             </div>
 
             {/* Wallet Risk Panel */}
-            <div style={{
-                background: colors.surface,
-                border: `1.5px solid ${colors.ink}`,
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-            }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    border: `1.5px solid ${colors.ink}`,
+                    borderRadius: '16px',
+                    padding: '20px',
+                    marginBottom: '24px',
+                }}
+            >
                 <div style={{ marginBottom: '16px' }}>
-                    <h2 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        margin: '0 0 4px 0',
-                    }}>
+                    <h2
+                        style={{
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            margin: '0 0 4px 0',
+                        }}
+                    >
                         Wallet Risk Scoring Agent
                     </h2>
-                    <p style={{ 
-                        fontSize: '12px', 
-                        opacity: 0.6, 
-                        margin: 0,
-                    }}>
+                    <p
+                        style={{
+                            fontSize: '12px',
+                            opacity: 0.6,
+                            margin: 0,
+                        }}
+                    >
                         Analyzes SPL balance concentration, approval hygiene, and transaction history.
                     </p>
                 </div>
 
-                <div style={{ 
-                    display: 'flex', 
-                    gap: '8px', 
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                    }}
+                >
                     <input
                         value={scanAddress}
                         onChange={(e) => setScanAddress(e.target.value)}
@@ -394,17 +416,21 @@ export default function OWSPage() {
                 {riskError && <p style={{ fontSize: '14px', color: '#dc2626', marginBottom: '12px' }}>{riskError}</p>}
 
                 {riskReport && (
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-                        gap: '16px',
-                        marginBottom: '16px',
-                    }}>
-                        <div style={{
-                            background: colors.bg,
-                            borderRadius: '12px',
-                            padding: '16px',
-                        }}>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                            gap: '16px',
+                            marginBottom: '16px',
+                        }}
+                    >
+                        <div
+                            style={{
+                                background: colors.bg,
+                                borderRadius: '12px',
+                                padding: '16px',
+                            }}
+                        >
                             <p style={{ fontSize: '14px', margin: '0 0 8px 0' }}>
                                 Risk Score: <strong>{riskReport.riskScore}</strong>
                             </p>
@@ -418,11 +444,13 @@ export default function OWSPage() {
                                 Generated at: {new Date(riskReport.generatedAt).toLocaleString()}
                             </p>
                         </div>
-                        <div style={{
-                            background: colors.bg,
-                            borderRadius: '12px',
-                            padding: '16px',
-                        }}>
+                        <div
+                            style={{
+                                background: colors.bg,
+                                borderRadius: '12px',
+                                padding: '16px',
+                            }}
+                        >
                             {riskReport.factors.map((factor) => (
                                 <div key={factor.key} style={{ marginBottom: '12px' }}>
                                     <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
@@ -436,11 +464,13 @@ export default function OWSPage() {
                 )}
 
                 {riskReport && (
-                    <div style={{
-                        background: colors.bg,
-                        borderRadius: '12px',
-                        padding: '16px',
-                    }}>
+                    <div
+                        style={{
+                            background: colors.bg,
+                            borderRadius: '12px',
+                            padding: '16px',
+                        }}
+                    >
                         <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 12px 0' }}>
                             Security Monitor Alerts
                         </p>
@@ -460,12 +490,14 @@ export default function OWSPage() {
                                             background: alert.severity === 'critical' ? '#fef2f2' : '#fefce8',
                                         }}
                                     >
-                                        <p style={{
-                                            fontSize: '14px',
-                                            fontWeight: 600,
-                                            margin: '0 0 4px 0',
-                                            color: alert.severity === 'critical' ? '#dc2626' : '#ca8a04',
-                                        }}>
+                                        <p
+                                            style={{
+                                                fontSize: '14px',
+                                                fontWeight: 600,
+                                                margin: '0 0 4px 0',
+                                                color: alert.severity === 'critical' ? '#dc2626' : '#ca8a04',
+                                            }}
+                                        >
                                             [{alert.severity}] {alert.message}
                                         </p>
                                         <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
@@ -480,36 +512,44 @@ export default function OWSPage() {
             </div>
 
             {/* Whale Feed Panel */}
-            <div style={{
-                background: colors.surface,
-                border: `1.5px solid ${colors.ink}`,
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-            }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    border: `1.5px solid ${colors.ink}`,
+                    borderRadius: '16px',
+                    padding: '20px',
+                    marginBottom: '24px',
+                }}
+            >
                 <div style={{ marginBottom: '16px' }}>
-                    <h2 style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 600, 
-                        margin: '0 0 4px 0',
-                    }}>
+                    <h2
+                        style={{
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            margin: '0 0 4px 0',
+                        }}
+                    >
                         Whale Tracking Feed
                     </h2>
-                    <p style={{ 
-                        fontSize: '12px', 
-                        opacity: 0.6, 
-                        margin: 0,
-                    }}>
+                    <p
+                        style={{
+                            fontSize: '12px',
+                            opacity: 0.6,
+                            margin: 0,
+                        }}
+                    >
                         Monitor whale wallets and generate copy-trade/risk alerts from large transfers.
                     </p>
                 </div>
 
-                <div style={{ 
-                    display: 'flex', 
-                    gap: '8px', 
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                    }}
+                >
                     <input
                         value={whaleWatchlist}
                         onChange={(e) => setWhaleWatchlist(e.target.value)}
@@ -546,12 +586,14 @@ export default function OWSPage() {
                 {whaleError && <p style={{ fontSize: '14px', color: '#dc2626', marginBottom: '12px' }}>{whaleError}</p>}
 
                 {whaleEvents.length > 0 && (
-                    <div style={{
-                        background: colors.bg,
-                        borderRadius: '12px',
-                        padding: '16px',
-                        marginBottom: '16px',
-                    }}>
+                    <div
+                        style={{
+                            background: colors.bg,
+                            borderRadius: '12px',
+                            padding: '16px',
+                            marginBottom: '16px',
+                        }}
+                    >
                         <p style={{ fontSize: '14px', margin: '0 0 4px 0' }}>
                             Buy Signals: <strong>{whaleSummary.buySignals}</strong>
                         </p>
@@ -576,7 +618,8 @@ export default function OWSPage() {
                             }}
                         >
                             <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0' }}>
-                                [{event.signal.toUpperCase()}] {event.wallet.slice(0, 8)}... {event.direction} ${event.amountUsd.toLocaleString()} {event.token}
+                                [{event.signal.toUpperCase()}] {event.wallet.slice(0, 8)}... {event.direction} $
+                                {event.amountUsd.toLocaleString()} {event.token}
                             </p>
                             <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
                                 {new Date(event.timestamp).toLocaleString()}
@@ -584,63 +627,73 @@ export default function OWSPage() {
                         </div>
                     ))}
                     {!whaleLoading && whaleEvents.length === 0 && (
-                        <p style={{ fontSize: '14px', opacity: 0.6 }}>
-                            No whale events loaded yet.
-                        </p>
+                        <p style={{ fontSize: '14px', opacity: 0.6 }}>No whale events loaded yet.</p>
                     )}
                 </div>
             </div>
 
             {/* DEX Trading Bot Panel */}
-            <div style={{
-                background: colors.surface,
-                border: `1.5px solid ${colors.ink}`,
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-            }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'flex-start',
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    border: `1.5px solid ${colors.ink}`,
+                    borderRadius: '16px',
+                    padding: '20px',
+                    marginBottom: '24px',
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                    }}
+                >
                     <div>
-                        <h2 style={{ 
-                            fontSize: '18px', 
-                            fontWeight: 600, 
-                            margin: '0 0 4px 0',
-                        }}>
+                        <h2
+                            style={{
+                                fontSize: '18px',
+                                fontWeight: 600,
+                                margin: '0 0 4px 0',
+                            }}
+                        >
                             Gridless DEX Trading Bot
                         </h2>
-                        <p style={{ 
-                            fontSize: '12px', 
-                            opacity: 0.6, 
-                            margin: 0,
-                        }}>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                opacity: 0.6,
+                                margin: 0,
+                            }}
+                        >
                             CodeRush Agent runs on top of ChainHub reputation and Gridless network trust.
                         </p>
                     </div>
-                    <span style={{
-                        fontSize: '11px',
-                        padding: '4px 10px',
-                        borderRadius: '9999px',
-                        background: colors.lime,
-                        border: `1.5px solid ${colors.ink}`,
-                        fontWeight: 600,
-                    }}>
+                    <span
+                        style={{
+                            fontSize: '11px',
+                            padding: '4px 10px',
+                            borderRadius: '9999px',
+                            background: colors.lime,
+                            border: `1.5px solid ${colors.ink}`,
+                            fontWeight: 600,
+                        }}
+                    >
                         Gridless Reputation Enabled
                     </span>
                 </div>
 
-                <div style={{ 
-                    display: 'flex', 
-                    gap: '8px', 
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                    }}
+                >
                     <input
                         value={tradingPair}
                         onChange={(e) => setTradingPair(e.target.value)}
@@ -673,14 +726,18 @@ export default function OWSPage() {
                     </button>
                 </div>
 
-                {tradingError && <p style={{ fontSize: '14px', color: '#dc2626', marginBottom: '12px' }}>{tradingError}</p>}
+                {tradingError && (
+                    <p style={{ fontSize: '14px', color: '#dc2626', marginBottom: '12px' }}>{tradingError}</p>
+                )}
 
                 {tradingSignal && (
-                    <div style={{
-                        background: colors.bg,
-                        borderRadius: '12px',
-                        padding: '16px',
-                    }}>
+                    <div
+                        style={{
+                            background: colors.bg,
+                            borderRadius: '12px',
+                            padding: '16px',
+                        }}
+                    >
                         <p style={{ fontSize: '14px', margin: '0 0 8px 0' }}>
                             Action: <strong>{tradingSignal.action.toUpperCase()}</strong>
                         </p>
@@ -690,41 +747,47 @@ export default function OWSPage() {
                         <p style={{ fontSize: '14px', margin: '0 0 8px 0' }}>
                             Risk Guard: <strong>{tradingSignal.riskGuard}</strong>
                         </p>
-                        <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>
-                            {tradingSignal.reason}
-                        </p>
+                        <p style={{ fontSize: '12px', opacity: 0.6, margin: 0 }}>{tradingSignal.reason}</p>
                     </div>
                 )}
             </div>
 
             {/* GoldRush API Capability Probe */}
-            <div style={{
-                background: colors.surface,
-                border: `1.5px solid ${colors.ink}`,
-                borderRadius: '16px',
-                padding: '20px',
-            }}>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'flex-start',
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                }}>
+            <div
+                style={{
+                    background: colors.surface,
+                    border: `1.5px solid ${colors.ink}`,
+                    borderRadius: '16px',
+                    padding: '20px',
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                    }}
+                >
                     <div>
-                        <h2 style={{ 
-                            fontSize: '18px', 
-                            fontWeight: 600, 
-                            margin: '0 0 4px 0',
-                        }}>
+                        <h2
+                            style={{
+                                fontSize: '18px',
+                                fontWeight: 600,
+                                margin: '0 0 4px 0',
+                            }}
+                        >
                             GoldRush API Capability Probe
                         </h2>
-                        <p style={{ 
-                            fontSize: '12px', 
-                            opacity: 0.6, 
-                            margin: 0,
-                        }}>
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                opacity: 0.6,
+                                margin: 0,
+                            }}
+                        >
                             Validate balances / transactions / approval-signal coverage for this wallet.
                         </p>
                     </div>
@@ -747,11 +810,13 @@ export default function OWSPage() {
                 </div>
 
                 {probeResult && (
-                    <div style={{
-                        background: colors.bg,
-                        borderRadius: '12px',
-                        padding: '16px',
-                    }}>
+                    <div
+                        style={{
+                            background: colors.bg,
+                            borderRadius: '12px',
+                            padding: '16px',
+                        }}
+                    >
                         <p style={{ fontSize: '14px', margin: '0 0 8px 0' }}>
                             Source: <strong>{probeResult.source}</strong>
                         </p>
@@ -764,12 +829,14 @@ export default function OWSPage() {
                         <p style={{ fontSize: '14px', margin: '0 0 8px 0' }}>
                             Approval Signals: {probeResult.supportsApprovalSignals ? '✓' : '✗'}
                         </p>
-                        <ul style={{ 
-                            fontSize: '12px', 
-                            opacity: 0.6, 
-                            margin: '8px 0 0 0',
-                            paddingLeft: '20px',
-                        }}>
+                        <ul
+                            style={{
+                                fontSize: '12px',
+                                opacity: 0.6,
+                                margin: '8px 0 0 0',
+                                paddingLeft: '20px',
+                            }}
+                        >
                             {probeResult.notes.map((note) => (
                                 <li key={note}>{note}</li>
                             ))}

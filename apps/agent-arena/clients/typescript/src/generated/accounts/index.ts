@@ -6,12 +6,12 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./application";
-export * from "./escrow";
-export * from "./judgePool";
-export * from "./programConfig";
-export * from "./reputation";
-export * from "./stake";
-export * from "./submission";
-export * from "./task";
-export * from "./treasury";
+export * from './application';
+export * from './escrow';
+export * from './judgePool';
+export * from './programConfig';
+export * from './reputation';
+export * from './stake';
+export * from './submission';
+export * from './task';
+export * from './treasury';

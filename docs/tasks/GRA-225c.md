@@ -1,11 +1,11 @@
 ---
 linear-id: GRA-225c
-title: "[Daemon] Aggregate Reputation API Endpoints"
+title: '[Daemon] Aggregate Reputation API Endpoints'
 status: todo
 priority: P1
-project: "Agent Daemon"
+project: 'Agent Daemon'
 created: 2026-04-05
-assignee: ""
+assignee: ''
 tags: [task, p1, daemon, reputation, api]
 ---
 
@@ -24,18 +24,18 @@ tags: [task, p1, daemon, reputation, api]
 ```typescript
 // GET /api/v1/ows/wallets/:id/reputation
 interface WalletReputationResponse {
-  walletId: string;
-  agentAddress: string;
-  reputationScore: number;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
-  completedTasks: number;
-  avgRating: number;
-  policy: {
-    dailyLimitUsd: number;
-    allowedChains: string[];
-    autoApprove: boolean;
-  };
-  updatedAt: string;
+    walletId: string;
+    agentAddress: string;
+    reputationScore: number;
+    tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+    completedTasks: number;
+    avgRating: number;
+    policy: {
+        dailyLimitUsd: number;
+        allowedChains: string[];
+        autoApprove: boolean;
+    };
+    updatedAt: string;
 }
 ```
 
@@ -44,20 +44,20 @@ interface WalletReputationResponse {
 ```typescript
 // GET /api/v1/ows/wallets/master/:address/aggregate-reputation
 interface AggregateReputationResponse {
-  masterWallet: string;
-  aggregateScore: number; // 加权平均
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
-  agentCount: number;
-  totalCompletedTasks: number;
-  agents: Array<{
-    walletId: string;
-    address: string;
-    handle: string;
-    reputationScore: number;
-    tier: string;
-    completedTasks: number;
-    weight: number; // 用于聚合计算
-  }>;
+    masterWallet: string;
+    aggregateScore: number; // 加权平均
+    tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+    agentCount: number;
+    totalCompletedTasks: number;
+    agents: Array<{
+        walletId: string;
+        address: string;
+        handle: string;
+        reputationScore: number;
+        tier: string;
+        completedTasks: number;
+        weight: number; // 用于聚合计算
+    }>;
 }
 ```
 
@@ -65,14 +65,14 @@ interface AggregateReputationResponse {
 
 ```typescript
 function calculateAggregateScore(agents: AgentReputation[]): number {
-  const totalWeight = agents.reduce((sum, a) => sum + a.completedTasks, 0);
-  
-  const weightedScore = agents.reduce((sum, a) => {
-    const weight = a.completedTasks / totalWeight;
-    return sum + a.reputationScore * weight;
-  }, 0);
-  
-  return Math.round(weightedScore);
+    const totalWeight = agents.reduce((sum, a) => sum + a.completedTasks, 0);
+
+    const weightedScore = agents.reduce((sum, a) => {
+        const weight = a.completedTasks / totalWeight;
+        return sum + a.reputationScore * weight;
+    }, 0);
+
+    return Math.round(weightedScore);
 }
 ```
 

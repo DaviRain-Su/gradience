@@ -19,7 +19,9 @@ export function ProfileCard({
         <div data-testid="profile-card" className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h3 data-testid="profile-card-name" className="text-lg font-semibold">{profile.name}</h3>
+                    <h3 data-testid="profile-card-name" className="text-lg font-semibold">
+                        {profile.name}
+                    </h3>
                     <p className="text-sm text-gray-400">{profile.description}</p>
                 </div>
                 <span
@@ -28,8 +30,8 @@ export function ProfileCard({
                         profile.status === 'published'
                             ? 'border-emerald-700 text-emerald-400'
                             : profile.status === 'deprecated'
-                            ? 'border-amber-700 text-amber-400'
-                            : 'border-gray-700 text-gray-400'
+                              ? 'border-amber-700 text-amber-400'
+                              : 'border-gray-700 text-gray-400'
                     }`}
                 >
                     {profile.status}
@@ -47,9 +49,7 @@ export function ProfileCard({
                 ))}
             </div>
 
-            <div className="text-xs text-gray-500">
-                Last updated {new Date(profile.updatedAt).toLocaleString()}
-            </div>
+            <div className="text-xs text-gray-500">Last updated {new Date(profile.updatedAt).toLocaleString()}</div>
 
             <div className="flex flex-wrap gap-2">
                 <button

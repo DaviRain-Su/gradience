@@ -1,11 +1,11 @@
 /**
  * OWS Adapter for AgentM Desktop
- * 
+ *
  * This module provides integration with the Open Wallet Standard (OWS) via
  * the @gradiences/ows-adapter package. It re-exports types and provides a
  * wrapper that gracefully falls back to stub implementations when OWS is not
  * configured or available.
- * 
+ *
  * STUBBED vs REAL:
  * - If @gradiences/ows-adapter is available and properly configured, all
  *   operations use the real OWS SDK for wallet connection, identity, and signing.
@@ -109,7 +109,7 @@ class RealOWSAdapterWrapper {
         }
         const wallet = await this.adapter.connect();
         const identity = await this.adapter.getIdentity();
-        
+
         return {
             did: identity.did,
             address: wallet.address,
@@ -132,7 +132,7 @@ class RealOWSAdapterWrapper {
         }
         const identity = await this.adapter.getIdentity();
         const wallet = this.adapter.getWallet();
-        
+
         return {
             did: identity.did,
             address: wallet.address,
@@ -182,7 +182,7 @@ class StubOWSAdapter {
         this._connected = true;
         // Generate a deterministic placeholder address based on timestamp
         const placeholderId = this.generatePlaceholderId();
-        
+
         return {
             did: `did:ows:${this.config.defaultChain}:${placeholderId}`,
             address: this.generatePlaceholderAddress(),
@@ -241,7 +241,13 @@ class StubOWSAdapter {
             return result;
         }
         // Ethereum-style address
-        return '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+        return (
+            '0x' +
+            Array(40)
+                .fill(0)
+                .map(() => Math.floor(Math.random() * 16).toString(16))
+                .join('')
+        );
     }
 }
 
@@ -256,7 +262,7 @@ export class OWSWalletAdapter {
 
     constructor(config: OWSAgentConfig = { network: 'devnet', defaultChain: 'solana' }) {
         this.useReal = RealOWSAdapter !== null;
-        
+
         if (this.useReal) {
             console.log('[OWS Adapter] Using real OWS SDK');
             this.impl = new RealOWSAdapterWrapper(config);

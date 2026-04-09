@@ -18,8 +18,7 @@ function makeFakeProcessManager(agentRunning = true) {
     };
 
     emitter.sentMessages = [];
-    emitter.list = () =>
-        agentRunning ? [{ config: { id: AGENT_ID }, state: 'running' }] : [];
+    emitter.list = () => (agentRunning ? [{ config: { id: AGENT_ID }, state: 'running' }] : []);
     emitter.sendToAgent = (id: string, data: unknown) => {
         emitter.sentMessages.push({ id, data });
     };
@@ -60,12 +59,7 @@ describe('TaskExecutor IPC protocol', () => {
         db = makeDb();
         queue = new TaskQueue(db);
         fakepm = makeFakeProcessManager();
-        executor = new TaskExecutor(
-            queue,
-            fakepm as unknown as ProcessManager,
-            POLL_MS,
-            TIMEOUT_MS,
-        );
+        executor = new TaskExecutor(queue, fakepm as unknown as ProcessManager, POLL_MS, TIMEOUT_MS);
     });
 
     afterEach(() => {
@@ -263,12 +257,7 @@ describe('TaskExecutor IPC protocol', () => {
 
     it('re-queues task when no agents are running', async () => {
         const noAgentPm = makeFakeProcessManager(false);
-        const ex2 = new TaskExecutor(
-            queue,
-            noAgentPm as unknown as ProcessManager,
-            POLL_MS,
-            TIMEOUT_MS,
-        );
+        const ex2 = new TaskExecutor(queue, noAgentPm as unknown as ProcessManager, POLL_MS, TIMEOUT_MS);
 
         const taskId = 'task-noagent-1';
         queue.enqueue(taskId, 'test', {});

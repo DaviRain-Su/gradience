@@ -8,17 +8,8 @@
  */
 
 import { useMemo } from 'react';
-import type {
-    ReputationGuardProps,
-    WalletInfo,
-    PendingTransaction,
-    TransactionCheckResult,
-} from './types.ts';
-import {
-    getReputationTier,
-    getTierConfig,
-    formatUsdCents,
-} from './types.ts';
+import type { ReputationGuardProps, WalletInfo, PendingTransaction, TransactionCheckResult } from './types.ts';
+import { getReputationTier, getTierConfig, formatUsdCents } from './types.ts';
 
 // ============================================================================
 // Transaction Check Logic
@@ -81,11 +72,7 @@ function checkTransactionLimits(
 /**
  * Status indicator with icon
  */
-function StatusIndicator({
-    status,
-}: {
-    status: 'allowed' | 'blocked' | 'approval' | 'checking';
-}) {
+function StatusIndicator({ status }: { status: 'allowed' | 'blocked' | 'approval' | 'checking' }) {
     const config = {
         allowed: {
             icon: '✓',
@@ -136,15 +123,11 @@ function StatusIndicator({
 function TransactionSummary({ transaction }: { transaction: PendingTransaction }) {
     return (
         <div className="bg-gray-800/50 rounded-lg p-4">
-            <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wide">
-                Transaction Details
-            </h4>
+            <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wide">Transaction Details</h4>
             <div className="grid grid-cols-2 gap-3">
                 <div>
                     <p className="text-xs text-gray-500">Amount</p>
-                    <p className="text-lg font-semibold text-white">
-                        {formatUsdCents(transaction.amountUsdCents)}
-                    </p>
+                    <p className="text-lg font-semibold text-white">{formatUsdCents(transaction.amountUsdCents)}</p>
                 </div>
                 <div>
                     <p className="text-xs text-gray-500">Token</p>
@@ -159,9 +142,7 @@ function TransactionSummary({ transaction }: { transaction: PendingTransaction }
                 {transaction.recipient && (
                     <div>
                         <p className="text-xs text-gray-500">Recipient</p>
-                        <p className="text-sm text-gray-300 font-mono truncate">
-                            {transaction.recipient}
-                        </p>
+                        <p className="text-sm text-gray-300 font-mono truncate">{transaction.recipient}</p>
                     </div>
                 )}
             </div>
@@ -207,8 +188,7 @@ function PolicyComparison({
     ];
 
     const chainAllowed = policy.allowedChains.includes(transaction.chain);
-    const tokenAllowed =
-        policy.allowedTokens === null || policy.allowedTokens.includes(transaction.token);
+    const tokenAllowed = policy.allowedTokens === null || policy.allowedTokens.includes(transaction.token);
 
     return (
         <div className="space-y-3">
@@ -220,9 +200,7 @@ function PolicyComparison({
                         {check.note && <p className="text-xs text-gray-500">{check.note}</p>}
                     </div>
                     <div className="text-right">
-                        <span
-                            className={check.passed ? 'text-emerald-400' : 'text-red-400'}
-                        >
+                        <span className={check.passed ? 'text-emerald-400' : 'text-red-400'}>
                             {formatUsdCents(check.current)}
                         </span>
                         <span className="text-gray-500 mx-1">/</span>
@@ -238,9 +216,7 @@ function PolicyComparison({
                 <div className="flex items-center gap-2">
                     <span
                         className={`px-2 py-0.5 rounded text-sm ${
-                            chainAllowed
-                                ? 'bg-emerald-600/20 text-emerald-400'
-                                : 'bg-red-600/20 text-red-400'
+                            chainAllowed ? 'bg-emerald-600/20 text-emerald-400' : 'bg-red-600/20 text-red-400'
                         }`}
                     >
                         {transaction.chain}
@@ -255,9 +231,7 @@ function PolicyComparison({
                 <div className="flex items-center gap-2">
                     <span
                         className={`px-2 py-0.5 rounded text-sm ${
-                            tokenAllowed
-                                ? 'bg-emerald-600/20 text-emerald-400'
-                                : 'bg-red-600/20 text-red-400'
+                            tokenAllowed ? 'bg-emerald-600/20 text-emerald-400' : 'bg-red-600/20 text-red-400'
                         }`}
                     >
                         {transaction.token}
@@ -389,9 +363,7 @@ export function ReputationGuard({
     // Checking state
     if (checking) {
         return (
-            <div
-                className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${className}`}
-            >
+            <div className={`bg-gray-900 border border-gray-800 rounded-xl p-6 ${className}`}>
                 <div className="flex flex-col items-center gap-4">
                     <StatusIndicator status="checking" />
                     <p className="text-gray-400">Validating transaction...</p>
@@ -411,9 +383,7 @@ export function ReputationGuard({
     const tierConfig = getTierConfig(tier);
 
     return (
-        <div
-            className={`bg-gray-900 border border-gray-800 rounded-xl p-4 ${className}`}
-        >
+        <div className={`bg-gray-900 border border-gray-800 rounded-xl p-4 ${className}`}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white">Transaction Check</h3>
@@ -438,14 +408,8 @@ export function ReputationGuard({
 
             {/* Policy comparison */}
             <div className="mt-4">
-                <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wide">
-                    Policy Checks
-                </h4>
-                <PolicyComparison
-                    wallet={wallet}
-                    transaction={transaction}
-                    currentDailySpend={currentDailySpend}
-                />
+                <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wide">Policy Checks</h4>
+                <PolicyComparison wallet={wallet} transaction={transaction} currentDailySpend={currentDailySpend} />
             </div>
 
             {/* Error message */}
@@ -459,9 +423,8 @@ export function ReputationGuard({
             {checkResult?.allowed && checkResult.requiresApproval && (
                 <div className="mt-4 p-3 bg-yellow-600/10 border border-yellow-600/20 rounded-lg">
                     <p className="text-sm text-yellow-300">
-                        Your reputation tier requires manual approval for transactions.
-                        Increase your reputation score to {tier === 'bronze' ? 31 : 51}+ to
-                        enable automatic transactions.
+                        Your reputation tier requires manual approval for transactions. Increase your reputation score
+                        to {tier === 'bronze' ? 31 : 51}+ to enable automatic transactions.
                     </p>
                 </div>
             )}
@@ -530,9 +493,7 @@ export function ReputationGuardBadge({
             title={checkResult?.reason ?? (status === 'approval' ? 'Approval required' : 'Transaction allowed')}
         >
             <span>{config.icon}</span>
-            <span className="text-xs font-medium">
-                {formatUsdCents(transaction.amountUsdCents)}
-            </span>
+            <span className="text-xs font-medium">{formatUsdCents(transaction.amountUsdCents)}</span>
         </button>
     );
 }

@@ -24,10 +24,10 @@ Daemon (Host)
 
 ### Current Provider Matrix
 
-| Provider | Status | Use Case |
-|----------|--------|----------|
-| `gramine-local` | ✅ Working (mock mode) | Local development & CI |
-| `nitro-local` | 🚧 Stub | Reserved for AWS Nitro Enclave future integration |
+| Provider        | Status                 | Use Case                                          |
+| --------------- | ---------------------- | ------------------------------------------------- |
+| `gramine-local` | ✅ Working (mock mode) | Local development & CI                            |
+| `nitro-local`   | 🚧 Stub                | Reserved for AWS Nitro Enclave future integration |
 
 ---
 
@@ -47,27 +47,32 @@ Expected: **25 passed** in ~2 seconds.
 ### 3.2 Run a standalone mock enclave execution
 
 ```typescript
-import { TeeProviderFactory, DefaultTeeExecutionEngine, AttestationVerifier, DefaultVelOrchestrator } from './src/vel/index.js';
+import {
+    TeeProviderFactory,
+    DefaultTeeExecutionEngine,
+    AttestationVerifier,
+    DefaultVelOrchestrator,
+} from './src/vel/index.js';
 
 const provider = TeeProviderFactory.create('gramine-local');
 await provider.initialize({
-  providerName: 'gramine-local',
-  socketPath: '/tmp/mock.sock',
-  allowedPcrValues: ['mock-pcr-allowed'],
+    providerName: 'gramine-local',
+    socketPath: '/tmp/mock.sock',
+    allowedPcrValues: ['mock-pcr-allowed'],
 });
 
 const engine = new DefaultTeeExecutionEngine(provider);
 const result = await engine.execute({
-  workflowId: 'demo',
-  workflowDefinition: {
-    version: '1.0',
-    name: 'demo-workflow',
-    steps: [{ type: 'swap', params: { inputMint: 'A', outputMint: 'B', amount: 100n } }],
-  },
-  inputs: {},
-  taskId: 1,
-  executorAddress: 'So11111111111111111111111111111111111111112',
-  timeoutMs: 10_000,
+    workflowId: 'demo',
+    workflowDefinition: {
+        version: '1.0',
+        name: 'demo-workflow',
+        steps: [{ type: 'swap', params: { inputMint: 'A', outputMint: 'B', amount: 100n } }],
+    },
+    inputs: {},
+    taskId: 1,
+    executorAddress: 'So11111111111111111111111111111111111111112',
+    timeoutMs: 10_000,
 });
 
 console.log('Attestation (base64):', result.attestationReport);
@@ -81,10 +86,10 @@ await provider.terminate();
 ```typescript
 const verifier = new AttestationVerifier(provider);
 const orchestrator = new DefaultVelOrchestrator(engine, verifier, {
-  bridge: { judgeAndPay: async ({ taskId, winner, score, reasonRef }) => 'mock-tx-sig' },
-  keyManager: { getSeedForTask: async () => new Uint8Array(32) },
-  storage: { upload: async () => 'file:///tmp/vel/demo.json' },
-  defaultProvider: 'gramine-local',
+    bridge: { judgeAndPay: async ({ taskId, winner, score, reasonRef }) => 'mock-tx-sig' },
+    keyManager: { getSeedForTask: async () => new Uint8Array(32) },
+    storage: { upload: async () => 'file:///tmp/vel/demo.json' },
+    defaultProvider: 'gramine-local',
 });
 
 const txSig = await orchestrator.runAndSettle(request);
@@ -103,13 +108,14 @@ const txSig = await orchestrator.runAndSettle(request);
 - Simulates each workflow step with deterministic fake outputs.
 - Computes `resultHash` and `logHash` via SHA256.
 - Returns an **attestation report** (JSON base64) containing:
-  - `pcr0` — hardcoded measurement string
-  - `userDataHash` — concatenation of `resultHash + logHash`
-  - `signerIdentity` — `'mock-gramine-enclave'`
+    - `pcr0` — hardcoded measurement string
+    - `userDataHash` — concatenation of `resultHash + logHash`
+    - `signerIdentity` — `'mock-gramine-enclave'`
 
 ### Why a mock?
 
 The mock lets us validate the full **VEL → Bridge → Arena** architecture without requiring:
+
 - Intel SGX hardware
 - Gramine/Phala/Nitro SDK installation
 - Complex CI setup
@@ -124,18 +130,18 @@ It is **not** a security boundary. In production, the mock will be replaced by a
 
 1. Install Gramine (`gramine-sgx` or `gramine-direct`).
 2. Write a `vel.manifest` that:
-   - mounts a minimal filesystem
-   - exposes a Unix socket for host communication
-   - restricts network egress to required APIs only
+    - mounts a minimal filesystem
+    - exposes a Unix socket for host communication
+    - restricts network egress to required APIs only
 3. Build the enclave application (Rust or C) that:
-   - receives `EnclavePayload` over the socket
-   - derives an Ed25519 keypair from `seed` using `ed25519-dalek` (or similar)
-   - executes workflow handlers
-   - requests an SGX quote via Gramine's `sgx_get_quote` / RA-TLS
-   - returns `EnclaveResponse`
+    - receives `EnclavePayload` over the socket
+    - derives an Ed25519 keypair from `seed` using `ed25519-dalek` (or similar)
+    - executes workflow handlers
+    - requests an SGX quote via Gramine's `sgx_get_quote` / RA-TLS
+    - returns `EnclaveResponse`
 4. Update `GramineLocalProvider` (or create `GramineSgxProvider`) to:
-   - launch `gramine-sgx ./vel.manifest` instead of the mock script
-   - verify the SGX quote signature against Intel PCS
+    - launch `gramine-sgx ./vel.manifest` instead of the mock script
+    - verify the SGX quote signature against Intel PCS
 
 ### AWS Nitro Enclaves
 
@@ -149,13 +155,13 @@ It is **not** a security boundary. In production, the mock will be replaced by a
 
 ## 6. Security Checklist
 
-| Item | Mock | Production Gramine | Production Nitro |
-|------|------|-------------------|------------------|
-| Private key derivation inside enclave | ❌ (mock) | ✅ | ✅ |
-| Attestation signature verifiable by third party | ❌ (self-signed JSON) | ✅ (Intel PCS) | ✅ (AWS PCA) |
-| Host OS cannot read enclave memory | ❌ | ✅ (SGX EPC) | ✅ (isolated VM) |
-| Network egress restricted | ❌ | ✅ (manifest policy) | ✅ (CID filtering) |
-| PCR / measurement allowlist enforcement | ✅ (mock string) | ✅ (MRENCLAVE / MRSIGNER) | ✅ (PCR0) |
+| Item                                            | Mock                  | Production Gramine        | Production Nitro   |
+| ----------------------------------------------- | --------------------- | ------------------------- | ------------------ |
+| Private key derivation inside enclave           | ❌ (mock)             | ✅                        | ✅                 |
+| Attestation signature verifiable by third party | ❌ (self-signed JSON) | ✅ (Intel PCS)            | ✅ (AWS PCA)       |
+| Host OS cannot read enclave memory              | ❌                    | ✅ (SGX EPC)              | ✅ (isolated VM)   |
+| Network egress restricted                       | ❌                    | ✅ (manifest policy)      | ✅ (CID filtering) |
+| PCR / measurement allowlist enforcement         | ✅ (mock string)      | ✅ (MRENCLAVE / MRSIGNER) | ✅ (PCR0)          |
 
 ---
 

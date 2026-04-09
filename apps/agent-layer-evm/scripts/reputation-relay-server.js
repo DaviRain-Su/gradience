@@ -1,57 +1,57 @@
-const http = require("node:http");
-const path = require("node:path");
-const { createHmac, timingSafeEqual } = require("node:crypto");
-const { mkdir, readFile, rename, writeFile } = require("node:fs/promises");
+const http = require('node:http');
+const path = require('node:path');
+const { createHmac, timingSafeEqual } = require('node:crypto');
+const { mkdir, readFile, rename, writeFile } = require('node:fs/promises');
 
-const bs58Module = require("bs58");
-const nacl = require("tweetnacl");
-const { ethers } = require("ethers");
+const bs58Module = require('bs58');
+const nacl = require('tweetnacl');
+const { ethers } = require('ethers');
 
 const bs58 = bs58Module.default ?? bs58Module;
 
 const verifierAbi = [
-    "function submitReputation((bytes32 agentPubkey,uint16 globalScore,uint16[8] categoryScores,bytes32 sourceChain,uint64 timestamp) payload, bytes32 signatureR, bytes32 signatureS) returns (bool)",
+    'function submitReputation((bytes32 agentPubkey,uint16 globalScore,uint16[8] categoryScores,bytes32 sourceChain,uint64 timestamp) payload, bytes32 signatureR, bytes32 signatureS) returns (bool)',
 ];
 
 const identityRegistryAbi = [
-    "function register(string agentURI,(string metadataKey,bytes metadataValue)[] metadata) returns (uint256)",
-    "event Registered(uint256 indexed agentId, string agentURI, address indexed owner)",
+    'function register(string agentURI,(string metadataKey,bytes metadataValue)[] metadata) returns (uint256)',
+    'event Registered(uint256 indexed agentId, string agentURI, address indexed owner)',
 ];
 
 const reputationRegistryAbi = [
-    "function giveFeedback(uint256 agentId,int128 value,uint8 valueDecimals,string tag1,string tag2,string endpoint,string feedbackURI,bytes32 feedbackHash)",
+    'function giveFeedback(uint256 agentId,int128 value,uint8 valueDecimals,string tag1,string tag2,string endpoint,string feedbackURI,bytes32 feedbackHash)',
 ];
 
 const DEFAULT_ERC8004_TESTNET_ADDRESSES = {
-    identityRegistry: "0x8004A818BFB912233c491871b3d84c89A494BD9e",
-    reputationRegistry: "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    identityRegistry: '0x8004A818BFB912233c491871b3d84c89A494BD9e',
+    reputationRegistry: '0x8004B663056A597Dffe9eCcC1965A193B7388713',
 };
 
 const DEFAULT_ERC8004_MAINNET_ADDRESSES = {
-    identityRegistry: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
-    reputationRegistry: "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63",
+    identityRegistry: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+    reputationRegistry: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
 };
 
 const INT128_MIN = -(1n << 127n);
 const INT128_MAX = (1n << 127n) - 1n;
 
 function toHex32(bytes) {
-    return `0x${Buffer.from(bytes).toString("hex")}`;
+    return `0x${Buffer.from(bytes).toString('hex')}`;
 }
 
 function parseSecretKey(hex) {
-    const raw = hex?.startsWith("0x") ? hex.slice(2) : hex;
+    const raw = hex?.startsWith('0x') ? hex.slice(2) : hex;
     if (!raw || !/^[0-9a-fA-F]+$/.test(raw)) {
-        throw new Error("ED25519_SECRET_KEY_HEX must be hex");
+        throw new Error('ED25519_SECRET_KEY_HEX must be hex');
     }
-    const bytes = Uint8Array.from(Buffer.from(raw, "hex"));
+    const bytes = Uint8Array.from(Buffer.from(raw, 'hex'));
     if (bytes.length === 32) {
         return nacl.sign.keyPair.fromSeed(bytes);
     }
     if (bytes.length === 64) {
         return nacl.sign.keyPair.fromSecretKey(bytes);
     }
-    throw new Error("ED25519_SECRET_KEY_HEX must be 32-byte seed or 64-byte secret key");
+    throw new Error('ED25519_SECRET_KEY_HEX must be 32-byte seed or 64-byte secret key');
 }
 
 function parseAgentPubkey(agentPubkey) {
@@ -82,16 +82,16 @@ function normalizeCategoryScores(scores) {
 }
 
 function normalizeSourceChain(sourceChain) {
-    const chain = sourceChain || "solana";
-    if (typeof chain !== "string") {
-        throw new Error("sourceChain must be a string");
+    const chain = sourceChain || 'solana';
+    if (typeof chain !== 'string') {
+        throw new Error('sourceChain must be a string');
     }
     return ethers.keccak256(ethers.toUtf8Bytes(chain));
 }
 
 function toVerifierPayload(input) {
-    if (!input || typeof input !== "object") {
-        throw new Error("invalid relay payload");
+    if (!input || typeof input !== 'object') {
+        throw new Error('invalid relay payload');
     }
     return {
         agentPubkey: parseAgentPubkey(input.agentPubkey),
@@ -105,14 +105,8 @@ function toVerifierPayload(input) {
 function encodePayload(payload) {
     const coder = ethers.AbiCoder.defaultAbiCoder();
     return coder.encode(
-        ["bytes32", "uint16", "uint16[8]", "bytes32", "uint64"],
-        [
-            payload.agentPubkey,
-            payload.globalScore,
-            payload.categoryScores,
-            payload.sourceChain,
-            payload.timestamp,
-        ],
+        ['bytes32', 'uint16', 'uint16[8]', 'bytes32', 'uint64'],
+        [payload.agentPubkey, payload.globalScore, payload.categoryScores, payload.sourceChain, payload.timestamp],
     );
 }
 
@@ -126,17 +120,15 @@ function signVerifierPayload(payload, keypair) {
 }
 
 function signHttpPayload(secret, timestamp, body) {
-    return createHmac("sha256", secret)
-        .update(`${timestamp}.${body}`)
-        .digest("hex");
+    return createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
 }
 
 function verifyHttpSignature(headers, body, secret) {
     if (!secret) {
         return true;
     }
-    const timestamp = headers["x-gradience-signature-ts"];
-    const signature = headers["x-gradience-signature"];
+    const timestamp = headers['x-gradience-signature-ts'];
+    const signature = headers['x-gradience-signature'];
     if (!timestamp || !signature || Array.isArray(timestamp) || Array.isArray(signature)) {
         return false;
     }
@@ -149,22 +141,20 @@ function verifyHttpSignature(headers, body, secret) {
 }
 
 function normalizeRegistryNetwork(value) {
-    if (value === "mainnet" || value === "testnet") {
+    if (value === 'mainnet' || value === 'testnet') {
         return value;
     }
-    return "testnet";
+    return 'testnet';
 }
 
 function resolveRegistryAddresses(env) {
     const defaults =
-        normalizeRegistryNetwork(env.ERC8004_NETWORK) === "mainnet"
+        normalizeRegistryNetwork(env.ERC8004_NETWORK) === 'mainnet'
             ? DEFAULT_ERC8004_MAINNET_ADDRESSES
             : DEFAULT_ERC8004_TESTNET_ADDRESSES;
     return {
-        identityRegistry:
-            env.ERC8004_IDENTITY_REGISTRY_ADDRESS ?? defaults.identityRegistry,
-        reputationRegistry:
-            env.ERC8004_REPUTATION_REGISTRY_ADDRESS ?? defaults.reputationRegistry,
+        identityRegistry: env.ERC8004_IDENTITY_REGISTRY_ADDRESS ?? defaults.identityRegistry,
+        reputationRegistry: env.ERC8004_REPUTATION_REGISTRY_ADDRESS ?? defaults.reputationRegistry,
     };
 }
 
@@ -184,16 +174,16 @@ class AgentIdStore {
             return;
         }
         try {
-            const raw = await readFile(this.filePath, "utf8");
+            const raw = await readFile(this.filePath, 'utf8');
             if (!raw.trim()) {
                 return;
             }
             const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                 return;
             }
             for (const [agentPubkey, record] of Object.entries(parsed)) {
-                if (!record || typeof record !== "object") {
+                if (!record || typeof record !== 'object') {
                     continue;
                 }
                 const agentId = asNonEmptyString(record.agentId);
@@ -239,30 +229,30 @@ class AgentIdStore {
         }
         await mkdir(path.dirname(this.filePath), { recursive: true });
         const tmpPath = `${this.filePath}.tmp`;
-        await writeFile(tmpPath, JSON.stringify(this.records, null, 2), "utf8");
+        await writeFile(tmpPath, JSON.stringify(this.records, null, 2), 'utf8');
         await rename(tmpPath, this.filePath);
     }
 }
 
 function toDataUri(payload) {
-    const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+    const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
     return `data:application/json;base64,${body}`;
 }
 
 function parseOptionalBigInt(value, fieldName) {
-    if (value === null || value === undefined || value === "") {
+    if (value === null || value === undefined || value === '') {
         return null;
     }
-    if (typeof value === "bigint") {
+    if (typeof value === 'bigint') {
         return value;
     }
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
         if (!Number.isInteger(value) || value < 0) {
             throw new Error(`${fieldName} must be a non-negative integer`);
         }
         return BigInt(value);
     }
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
         if (!/^\d+$/.test(value)) {
             throw new Error(`${fieldName} must be a decimal uint string`);
         }
@@ -272,7 +262,7 @@ function parseOptionalBigInt(value, fieldName) {
 }
 
 function toInt128(value, fieldName) {
-    if (typeof value === "bigint") {
+    if (typeof value === 'bigint') {
         if (value < INT128_MIN || value > INT128_MAX) {
             throw new Error(`${fieldName} is outside int128 range`);
         }
@@ -292,18 +282,18 @@ function toInt128(value, fieldName) {
 function parseValueDecimals(value) {
     const parsed = Number(value ?? 0);
     if (!Number.isInteger(parsed) || parsed < 0 || parsed > 18) {
-        throw new Error("valueDecimals must be an integer between 0 and 18");
+        throw new Error('valueDecimals must be an integer between 0 and 18');
     }
     return parsed;
 }
 
 function asNonEmptyString(value) {
-    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
 function parseIdentityRegistrationInput(payload) {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        throw new Error("invalid identity registration payload");
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new Error('invalid identity registration payload');
     }
     const registration = Array.isArray(payload.registrations) ? payload.registrations[0] : null;
     const solanaAgent =
@@ -311,37 +301,34 @@ function parseIdentityRegistrationInput(payload) {
         asNonEmptyString(registration?.agentId) ||
         asNonEmptyString(payload.name);
     if (!solanaAgent) {
-        throw new Error("missing agent pubkey (agentPubkey or registrations[0].agentId)");
+        throw new Error('missing agent pubkey (agentPubkey or registrations[0].agentId)');
     }
     return { solanaAgent, payload };
 }
 
 function parseFeedbackInput(payload) {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        throw new Error("invalid feedback payload");
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new Error('invalid feedback payload');
     }
     const gradience =
-        payload.gradience && typeof payload.gradience === "object" && !Array.isArray(payload.gradience)
+        payload.gradience && typeof payload.gradience === 'object' && !Array.isArray(payload.gradience)
             ? payload.gradience
             : {};
     const solanaAgent =
-        asNonEmptyString(payload.agentPubkey) ||
-        asNonEmptyString(gradience.winner) ||
-        asNonEmptyString(payload.winner);
+        asNonEmptyString(payload.agentPubkey) || asNonEmptyString(gradience.winner) || asNonEmptyString(payload.winner);
     const agentId =
-        parseOptionalBigInt(payload.agentId, "agentId") ??
-        parseOptionalBigInt(gradience.agentId, "gradience.agentId");
+        parseOptionalBigInt(payload.agentId, 'agentId') ?? parseOptionalBigInt(gradience.agentId, 'gradience.agentId');
     const rawValue = payload.value ?? payload.score ?? gradience.score;
     if (rawValue === undefined || rawValue === null) {
-        throw new Error("missing feedback score/value");
+        throw new Error('missing feedback score/value');
     }
-    const value = toInt128(rawValue, "value");
+    const value = toInt128(rawValue, 'value');
     const valueDecimals = parseValueDecimals(payload.valueDecimals);
-    const tag1 = asNonEmptyString(payload.tag1) ?? "taskScore";
+    const tag1 = asNonEmptyString(payload.tag1) ?? 'taskScore';
     const tag2 =
         asNonEmptyString(payload.tag2) ??
-        (typeof gradience.category === "number" ? `category-${gradience.category}` : "category-unknown");
-    const endpoint = asNonEmptyString(payload.endpoint) ?? "solana:gradience";
+        (typeof gradience.category === 'number' ? `category-${gradience.category}` : 'category-unknown');
+    const endpoint = asNonEmptyString(payload.endpoint) ?? 'solana:gradience';
     const feedbackURI =
         asNonEmptyString(payload.feedbackURI) ??
         asNonEmptyString(payload.feedbackUri) ??
@@ -368,47 +355,41 @@ function parseFeedbackInput(payload) {
 }
 
 function buildRegistrationMetadata(input) {
-    const registrations = Array.isArray(input.payload.registrations)
-        ? input.payload.registrations
-        : [];
+    const registrations = Array.isArray(input.payload.registrations) ? input.payload.registrations : [];
     const firstRegistration =
-        registrations.length > 0 && registrations[0] && typeof registrations[0] === "object"
-            ? registrations[0]
-            : {};
+        registrations.length > 0 && registrations[0] && typeof registrations[0] === 'object' ? registrations[0] : {};
     return [
         {
-            metadataKey: "solanaPubkey",
+            metadataKey: 'solanaPubkey',
             metadataValue: ethers.toUtf8Bytes(input.solanaAgent),
         },
         {
-            metadataKey: "agentRegistry",
+            metadataKey: 'agentRegistry',
             metadataValue: ethers.toUtf8Bytes(
-                asNonEmptyString(firstRegistration.agentRegistry) ?? "solana:101:metaplex",
+                asNonEmptyString(firstRegistration.agentRegistry) ?? 'solana:101:metaplex',
             ),
         },
         {
-            metadataKey: "sourceProtocol",
-            metadataValue: ethers.toUtf8Bytes("gradience"),
+            metadataKey: 'sourceProtocol',
+            metadataValue: ethers.toUtf8Bytes('gradience'),
         },
     ];
 }
 
 function buildRegistrationUri(input) {
     return (
-        asNonEmptyString(input.payload.agentURI) ??
-        asNonEmptyString(input.payload.agentUri) ??
-        toDataUri(input.payload)
+        asNonEmptyString(input.payload.agentURI) ?? asNonEmptyString(input.payload.agentUri) ?? toDataUri(input.payload)
     );
 }
 
 function parseRegisteredAgentId(receipt, iface) {
     if (!receipt || !Array.isArray(receipt.logs)) {
-        throw new Error("identity registration receipt is missing logs");
+        throw new Error('identity registration receipt is missing logs');
     }
     for (const log of receipt.logs) {
         try {
             const parsed = iface.parseLog(log);
-            if (!parsed || parsed.name !== "Registered") {
+            if (!parsed || parsed.name !== 'Registered') {
                 continue;
             }
             const agentId = parsed.args?.agentId ?? parsed.args?.[0];
@@ -417,22 +398,18 @@ function parseRegisteredAgentId(receipt, iface) {
             continue;
         }
     }
-    throw new Error("identity registration did not emit Registered event");
+    throw new Error('identity registration did not emit Registered event');
 }
 
 async function callIdentityRegister(identityRegistry, agentURI, metadata) {
-    const overloaded = identityRegistry["register(string,(string,bytes)[])"];
-    if (typeof overloaded === "function") {
+    const overloaded = identityRegistry['register(string,(string,bytes)[])'];
+    if (typeof overloaded === 'function') {
         return overloaded(agentURI, metadata);
     }
     return identityRegistry.register(agentURI, metadata);
 }
 
-async function ensureAgentRegistration({
-    input,
-    registryClient,
-    agentIdStore,
-}) {
+async function ensureAgentRegistration({ input, registryClient, agentIdStore }) {
     const existing = await agentIdStore.get(input.solanaAgent);
     if (existing) {
         return {
@@ -442,20 +419,13 @@ async function ensureAgentRegistration({
         };
     }
     if (!registryClient?.identityRegistry) {
-        throw new Error("ERC-8004 identity registry relay is not configured");
+        throw new Error('ERC-8004 identity registry relay is not configured');
     }
     const metadata = buildRegistrationMetadata(input);
     const agentURI = buildRegistrationUri(input);
-    const tx = await callIdentityRegister(
-        registryClient.identityRegistry,
-        agentURI,
-        metadata,
-    );
+    const tx = await callIdentityRegister(registryClient.identityRegistry, agentURI, metadata);
     const receipt = await tx.wait();
-    const agentId = parseRegisteredAgentId(
-        receipt,
-        registryClient.identityRegistry.interface,
-    );
+    const agentId = parseRegisteredAgentId(receipt, registryClient.identityRegistry.interface);
     await agentIdStore.set(input.solanaAgent, {
         agentId: agentId.toString(),
         registrationTxHash: tx.hash,
@@ -466,18 +436,18 @@ async function ensureAgentRegistration({
 
 function buildAutoRegistrationPayload(feedbackInput) {
     return {
-        type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+        type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
         name: feedbackInput.solanaAgent,
         agentPubkey: feedbackInput.solanaAgent,
         services: [
-            { name: "gradience", endpoint: "solana:gradience", version: "0.3" },
-            { name: "a2a", endpoint: "a2a:gradience", version: "0.1" },
+            { name: 'gradience', endpoint: 'solana:gradience', version: '0.3' },
+            { name: 'a2a', endpoint: 'a2a:gradience', version: '0.1' },
         ],
-        supportedTrust: ["reputation", "crypto-economic"],
+        supportedTrust: ['reputation', 'crypto-economic'],
         registrations: [
             {
                 agentId: feedbackInput.solanaAgent,
-                agentRegistry: "solana:101:metaplex",
+                agentRegistry: 'solana:101:metaplex',
             },
         ],
         gradience: {
@@ -488,7 +458,7 @@ function buildAutoRegistrationPayload(feedbackInput) {
 }
 
 function createRelayClient(env) {
-    if (env.RELAY_DRY_RUN === "1") {
+    if (env.RELAY_DRY_RUN === '1') {
         return {
             verifier: {
                 submitReputation: async () => ({
@@ -499,9 +469,7 @@ function createRelayClient(env) {
         };
     }
     if (!env.EVM_RPC_URL || !env.VERIFIER_ADDRESS || !env.EVM_PRIVATE_KEY) {
-        throw new Error(
-            "EVM_RPC_URL, VERIFIER_ADDRESS and EVM_PRIVATE_KEY are required unless RELAY_DRY_RUN=1",
-        );
+        throw new Error('EVM_RPC_URL, VERIFIER_ADDRESS and EVM_PRIVATE_KEY are required unless RELAY_DRY_RUN=1');
     }
     const provider = new ethers.JsonRpcProvider(env.EVM_RPC_URL);
     const signer = new ethers.Wallet(env.EVM_PRIVATE_KEY, provider);
@@ -510,7 +478,7 @@ function createRelayClient(env) {
 }
 
 function createRegistryClient(env) {
-    if (env.ERC8004_RELAY_DRY_RUN === "1" || env.RELAY_DRY_RUN === "1") {
+    if (env.ERC8004_RELAY_DRY_RUN === '1' || env.RELAY_DRY_RUN === '1') {
         let nextAgentId = 1n;
         const identityInterface = new ethers.Interface(identityRegistryAbi);
         return {
@@ -519,12 +487,13 @@ function createRegistryClient(env) {
                 register: async () => {
                     const agentId = nextAgentId;
                     nextAgentId += 1n;
-                    const encoded = identityInterface.encodeEventLog(
-                        identityInterface.getEvent("Registered"),
-                        [agentId, "", "0x0000000000000000000000000000000000000001"],
-                    );
+                    const encoded = identityInterface.encodeEventLog(identityInterface.getEvent('Registered'), [
+                        agentId,
+                        '',
+                        '0x0000000000000000000000000000000000000001',
+                    ]);
                     return {
-                        hash: `0xdryrunidentity${agentId.toString(16).padStart(4, "0")}`,
+                        hash: `0xdryrunidentity${agentId.toString(16).padStart(4, '0')}`,
                         wait: async () => ({ logs: [{ ...encoded }] }),
                     };
                 },
@@ -539,10 +508,8 @@ function createRegistryClient(env) {
     }
 
     const rpcUrl = env.ERC8004_RPC_URL ?? env.EVM_RPC_URL;
-    const identityPrivateKey =
-        env.ERC8004_IDENTITY_PRIVATE_KEY ?? env.EVM_PRIVATE_KEY;
-    const feedbackPrivateKey =
-        env.ERC8004_FEEDBACK_PRIVATE_KEY ?? env.EVM_PRIVATE_KEY;
+    const identityPrivateKey = env.ERC8004_IDENTITY_PRIVATE_KEY ?? env.EVM_PRIVATE_KEY;
+    const feedbackPrivateKey = env.ERC8004_FEEDBACK_PRIVATE_KEY ?? env.EVM_PRIVATE_KEY;
 
     if (!rpcUrl || !identityPrivateKey || !feedbackPrivateKey) {
         return null;
@@ -554,16 +521,8 @@ function createRegistryClient(env) {
     const feedbackSigner = new ethers.Wallet(feedbackPrivateKey, provider);
 
     return {
-        identityRegistry: new ethers.Contract(
-            identityRegistry,
-            identityRegistryAbi,
-            identitySigner,
-        ),
-        reputationRegistry: new ethers.Contract(
-            reputationRegistry,
-            reputationRegistryAbi,
-            feedbackSigner,
-        ),
+        identityRegistry: new ethers.Contract(identityRegistry, identityRegistryAbi, identitySigner),
+        reputationRegistry: new ethers.Contract(reputationRegistry, reputationRegistryAbi, feedbackSigner),
         identitySignerAddress: identitySigner.address,
         feedbackSignerAddress: feedbackSigner.address,
     };
@@ -572,19 +531,19 @@ function createRegistryClient(env) {
 function readBody(req) {
     return new Promise((resolve, reject) => {
         const chunks = [];
-        req.on("data", (chunk) => chunks.push(chunk));
-        req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-        req.on("error", reject);
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        req.on('error', reject);
     });
 }
 
 function json(res, status, body) {
-    res.writeHead(status, { "content-type": "application/json" });
+    res.writeHead(status, { 'content-type': 'application/json' });
     res.end(JSON.stringify(body));
 }
 
 function parseRelayInput(payload) {
-    if (payload && payload.event === "submit_reputation" && payload.payload) {
+    if (payload && payload.event === 'submit_reputation' && payload.payload) {
         return payload.payload;
     }
     return payload;
@@ -593,11 +552,7 @@ function parseRelayInput(payload) {
 async function relayReputation({ payload, relayClient, keypair }) {
     const verifierPayload = toVerifierPayload(payload);
     const signature = signVerifierPayload(verifierPayload, keypair);
-    const tx = await relayClient.verifier.submitReputation(
-        verifierPayload,
-        signature.r,
-        signature.s,
-    );
+    const tx = await relayClient.verifier.submitReputation(verifierPayload, signature.r, signature.s);
     const receipt = await tx.wait();
     return {
         txHash: tx.hash,
@@ -610,21 +565,13 @@ async function relayReputation({ payload, relayClient, keypair }) {
     };
 }
 
-function createRelayServer({
-    env = process.env,
-    relayClient,
-    registryClient,
-    logger = console,
-} = {}) {
+function createRelayServer({ env = process.env, relayClient, registryClient, logger = console } = {}) {
     const relayToken = env.RELAY_AUTH_TOKEN;
     const signingSecret = env.RELAY_SIGNING_SECRET;
-    const keypair = env.ED25519_SECRET_KEY_HEX
-        ? parseSecretKey(env.ED25519_SECRET_KEY_HEX)
-        : null;
-    const autoRegisterOnFeedback = env.ERC8004_AUTO_REGISTER_ON_FEEDBACK !== "false";
+    const keypair = env.ED25519_SECRET_KEY_HEX ? parseSecretKey(env.ED25519_SECRET_KEY_HEX) : null;
+    const autoRegisterOnFeedback = env.ERC8004_AUTO_REGISTER_ON_FEEDBACK !== 'false';
     const agentIdStore = new AgentIdStore(
-        env.ERC8004_AGENT_MAP_FILE ??
-            path.resolve(process.cwd(), ".tmp", "erc8004-agent-map.json"),
+        env.ERC8004_AGENT_MAP_FILE ?? path.resolve(process.cwd(), '.tmp', 'erc8004-agent-map.json'),
     );
 
     let activeRelayClient = relayClient ?? null;
@@ -674,11 +621,11 @@ function createRelayServer({
     }
 
     const server = http.createServer(async (req, res) => {
-        const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
-        if (url.pathname === "/healthz") {
+        const url = new URL(req.url || '/', `http://${req.headers.host || '127.0.0.1'}`);
+        if (url.pathname === '/healthz') {
             return json(res, 200, { ok: true });
         }
-        if (url.pathname === "/status") {
+        if (url.pathname === '/status') {
             const knownAgents = await agentIdStore.count();
             return json(res, 200, {
                 ...state,
@@ -690,36 +637,34 @@ function createRelayServer({
         }
 
         const isKnownRoute =
-            req.method === "POST" &&
-            (url.pathname === "/relay/submit-reputation" ||
-                url.pathname === "/relay/erc8004/register-identity" ||
-                url.pathname === "/relay/erc8004/give-feedback");
+            req.method === 'POST' &&
+            (url.pathname === '/relay/submit-reputation' ||
+                url.pathname === '/relay/erc8004/register-identity' ||
+                url.pathname === '/relay/erc8004/give-feedback');
         if (!isKnownRoute) {
-            return json(res, 404, { error: "Not found" });
+            return json(res, 404, { error: 'Not found' });
         }
 
         if (relayToken && req.headers.authorization !== `Bearer ${relayToken}`) {
-            return json(res, 401, { error: "Unauthorized" });
+            return json(res, 401, { error: 'Unauthorized' });
         }
 
         const bodyText = await readBody(req);
         if (!verifyHttpSignature(req.headers, bodyText, signingSecret)) {
-            return json(res, 401, { error: "Invalid signature" });
+            return json(res, 401, { error: 'Invalid signature' });
         }
 
         let parsed;
         try {
             parsed = JSON.parse(bodyText);
         } catch {
-            return json(res, 400, { error: "Invalid JSON body" });
+            return json(res, 400, { error: 'Invalid JSON body' });
         }
 
-        if (url.pathname === "/relay/submit-reputation") {
+        if (url.pathname === '/relay/submit-reputation') {
             try {
                 if (!keypair) {
-                    throw new Error(
-                        "ED25519_SECRET_KEY_HEX is required for /relay/submit-reputation",
-                    );
+                    throw new Error('ED25519_SECRET_KEY_HEX is required for /relay/submit-reputation');
                 }
                 const relayPayload = parseRelayInput(parsed);
                 state.total += 1;
@@ -743,13 +688,13 @@ function createRelayServer({
             }
         }
 
-        if (url.pathname === "/relay/erc8004/register-identity") {
+        if (url.pathname === '/relay/erc8004/register-identity') {
             state.erc8004.identity.total += 1;
             try {
                 const input = parseIdentityRegistrationInput(parsed);
                 const registry = getRegistryClient();
                 if (!registry) {
-                    throw new Error("ERC-8004 registry relay is not configured");
+                    throw new Error('ERC-8004 registry relay is not configured');
                 }
                 const registration = await ensureAgentRegistration({
                     input,
@@ -782,7 +727,7 @@ function createRelayServer({
             const input = parseFeedbackInput(parsed);
             const registry = getRegistryClient();
             if (!registry?.reputationRegistry) {
-                throw new Error("ERC-8004 reputation relay is not configured");
+                throw new Error('ERC-8004 reputation relay is not configured');
             }
 
             let agentId = input.agentId;
@@ -790,16 +735,14 @@ function createRelayServer({
 
             if (agentId === null) {
                 if (!input.solanaAgent) {
-                    throw new Error("feedback payload is missing agentPubkey/gradience.winner");
+                    throw new Error('feedback payload is missing agentPubkey/gradience.winner');
                 }
                 const existing = await agentIdStore.get(input.solanaAgent);
                 if (existing) {
                     agentId = BigInt(existing.agentId);
                 } else if (autoRegisterOnFeedback) {
                     registrationResult = await ensureAgentRegistration({
-                        input: parseIdentityRegistrationInput(
-                            buildAutoRegistrationPayload(input),
-                        ),
+                        input: parseIdentityRegistrationInput(buildAutoRegistrationPayload(input)),
                         registryClient: registry,
                         agentIdStore,
                     });
@@ -850,7 +793,7 @@ function createRelayServer({
 
 async function main() {
     const server = createRelayServer();
-    const host = process.env.RELAY_HOST || "127.0.0.1";
+    const host = process.env.RELAY_HOST || '127.0.0.1';
     const port = Number(process.env.RELAY_PORT || 8799);
     await new Promise((resolve) => server.listen(port, host, resolve));
     console.log(`[evm-relay] listening on http://${host}:${port}`);
@@ -858,7 +801,7 @@ async function main() {
 
 if (require.main === module) {
     main().catch((error) => {
-        console.error("[evm-relay] failed to start", error);
+        console.error('[evm-relay] failed to start', error);
         process.exit(1);
     });
 }

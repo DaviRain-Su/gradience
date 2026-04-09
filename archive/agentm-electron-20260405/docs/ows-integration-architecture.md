@@ -51,15 +51,17 @@ OWS (Open Wallet Standard) 作为 AgentM 的核心钱包和身份管理层，替
 ### 1. OWS Auth Provider (`auth-ows.ts`)
 
 **职责**:
+
 - 使用 OWS Wallet 进行身份验证
 - 管理多链地址
 - 处理凭证和声誉数据
 
 **API**:
+
 ```typescript
 const auth = createOWSAuthProvider({
-  network: 'devnet',
-  defaultChain: 'solana'
+    network: 'devnet',
+    defaultChain: 'solana',
 });
 
 // Login with OWS
@@ -73,6 +75,7 @@ const state = await auth.login();
 ### 2. Wallet View (New)
 
 **功能**:
+
 - 显示多链余额
 - 管理钱包连接
 - 查看交易历史
@@ -81,11 +84,13 @@ const state = await auth.login();
 ### 3. Identity Integration
 
 **DID (Decentralized Identifier)**:
+
 ```
 did:ows:<wallet-address>
 ```
 
 **凭证类型**:
+
 - `reputation`: Gradience 协议声誉证明
 - `skill`: 技能认证
 - `verification`: KYC/身份验证
@@ -157,8 +162,8 @@ apps/agentm/src/renderer/lib/
 
 ```json
 {
-  "@gradiences/ows-adapter": "file:../ows-adapter",
-  "@gradiences/sdk": "file:../agent-arena/clients/typescript"
+    "@gradiences/ows-adapter": "file:../ows-adapter",
+    "@gradiences/sdk": "file:../agent-arena/clients/typescript"
 }
 ```
 
@@ -168,12 +173,12 @@ apps/agentm/src/renderer/lib/
 
 ### vs Privy
 
-| 特性 | OWS | Privy |
-|------|-----|-------|
-| 多链支持 | ✅ 原生 | ⚠️ 有限 |
-| 凭证管理 | ✅ 内置 | ❌ 无 |
+| 特性     | OWS       | Privy   |
+| -------- | --------- | ------- |
+| 多链支持 | ✅ 原生   | ⚠️ 有限 |
+| 凭证管理 | ✅ 内置   | ❌ 无   |
 | 声誉互通 | ✅ 跨应用 | ❌ 孤立 |
-| 去中心化 | ✅ 完全 | ⚠️ 托管 |
+| 去中心化 | ✅ 完全   | ⚠️ 托管 |
 
 ### 与 Gradience 协同
 

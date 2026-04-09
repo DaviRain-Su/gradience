@@ -86,7 +86,14 @@ export interface GoogleA2ACapability {
 }
 
 /** Google A2A Task states */
-export type GoogleA2ATaskState = 'submitted' | 'working' | 'input-required' | 'completed' | 'canceled' | 'failed' | 'unknown';
+export type GoogleA2ATaskState =
+    | 'submitted'
+    | 'working'
+    | 'input-required'
+    | 'completed'
+    | 'canceled'
+    | 'failed'
+    | 'unknown';
 
 /** Google A2A Task */
 export interface GoogleA2ATask {
@@ -270,9 +277,10 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
                         parts: [
                             {
                                 type: 'text',
-                                text: typeof message.payload === 'string'
-                                    ? message.payload
-                                    : JSON.stringify(message.payload),
+                                text:
+                                    typeof message.payload === 'string'
+                                        ? message.payload
+                                        : JSON.stringify(message.payload),
                             },
                         ],
                     },
@@ -287,17 +295,14 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
 
             // Send JSON-RPC request
             const controller = new AbortController();
-            const timeout = setTimeout(
-                () => controller.abort(),
-                this.options.requestTimeout ?? 10000
-            );
+            const timeout = setTimeout(() => controller.abort(), this.options.requestTimeout ?? 10000);
 
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                     },
                     body: JSON.stringify(rpcRequest),
                     signal: controller.signal,
@@ -353,9 +358,7 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
         }
     }
 
-    async subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription> {
+    async subscribe(handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription> {
         this.messageHandler = handler;
 
         // Poll known peers for task updates (simple polling strategy)
@@ -390,9 +393,7 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
 
         // Apply filters
         if (filter?.capabilities) {
-            agents = agents.filter((a) =>
-                filter.capabilities!.some((c) => a.capabilities.includes(c))
-            );
+            agents = agents.filter((a) => filter.capabilities!.some((c) => a.capabilities.includes(c)));
         }
         if (filter?.minReputation) {
             agents = agents.filter((a) => a.reputationScore >= filter.minReputation!);
@@ -571,9 +572,7 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
     private async discoverFromKnownPeers(): Promise<void> {
         const peers = this.options.knownPeers ?? [];
 
-        const results = await Promise.allSettled(
-            peers.map((peerUrl) => this.fetchAgentCard(peerUrl))
-        );
+        const results = await Promise.allSettled(peers.map((peerUrl) => this.fetchAgentCard(peerUrl)));
 
         for (const result of results) {
             if (result.status === 'fulfilled' && result.value) {
@@ -588,7 +587,7 @@ export class GoogleA2AAdapter implements ProtocolAdapter {
             const timeout = setTimeout(() => controller.abort(), 5000);
 
             const response = await fetch(url, {
-                headers: { 'Accept': 'application/json' },
+                headers: { Accept: 'application/json' },
                 signal: controller.signal,
             });
             clearTimeout(timeout);

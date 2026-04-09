@@ -25,10 +25,10 @@ AI Agents face three critical challenges:
 
 ### Current Solutions Are Broken
 
-| Approach | Problem |
-|----------|---------|
-| Manual research | Too slow for AI Agents |
-| Basic APIs | Limited data, no context |
+| Approach             | Problem                   |
+| -------------------- | ------------------------- |
+| Manual research      | Too slow for AI Agents    |
+| Basic APIs           | Limited data, no context  |
 | Platform black boxes | No transparency, no trust |
 
 ---
@@ -74,67 +74,58 @@ import { GoldRushClient } from '@covalenthq/goldrush-client';
 import { GradienceSDK } from '@gradiences/sdk';
 
 class GoldRushAgent {
-  private goldrush: GoldRushClient;
-  private gradience: GradienceSDK;
+    private goldrush: GoldRushClient;
+    private gradience: GradienceSDK;
 
-  constructor(apiKey: string) {
-    this.goldrush = new GoldRushClient(apiKey);
-    this.gradience = new GradienceSDK();
-  }
-
-  // Analyze NFT collection before trading
-  async analyzeCollection(contractAddress: string) {
-    // Get collection data from GoldRush
-    const collection = await this.goldrush.nft.getCollection(
-      'solana-mainnet',
-      contractAddress
-    );
-
-    // Analyze floor price history
-    const floorHistory = await this.goldrush.nft.getFloorHistory(
-      'solana-mainnet',
-      contractAddress
-    );
-
-    // Get holder distribution
-    const holders = await this.goldrush.nft.getHolders(
-      'solana-mainnet',
-      contractAddress
-    );
-
-    // AI Analysis
-    const analysis = {
-      floorTrend: this.calculateTrend(floorHistory),
-      holderConcentration: this.analyzeHolders(holders),
-      volume24h: collection.volume_24h,
-      riskScore: this.calculateRisk(collection, holders),
-    };
-
-    return analysis;
-  }
-
-  // Execute trade based on analysis
-  async executeTrade(analysis: any, tradeParams: any) {
-    // Verify risk threshold
-    if (analysis.riskScore > 0.7) {
-      throw new Error('Risk too high');
+    constructor(apiKey: string) {
+        this.goldrush = new GoldRushClient(apiKey);
+        this.gradience = new GradienceSDK();
     }
 
-    // Submit task to Gradience
-    const task = await this.gradience.createTask({
-      type: 'nft_trade',
-      params: tradeParams,
-      reward: 5000,
-    });
+    // Analyze NFT collection before trading
+    async analyzeCollection(contractAddress: string) {
+        // Get collection data from GoldRush
+        const collection = await this.goldrush.nft.getCollection('solana-mainnet', contractAddress);
 
-    // Execute via OWS Wallet
-    const result = await this.executeViaWallet(task);
+        // Analyze floor price history
+        const floorHistory = await this.goldrush.nft.getFloorHistory('solana-mainnet', contractAddress);
 
-    // Record reputation
-    await this.gradience.recordCompletion(task.id, result);
+        // Get holder distribution
+        const holders = await this.goldrush.nft.getHolders('solana-mainnet', contractAddress);
 
-    return result;
-  }
+        // AI Analysis
+        const analysis = {
+            floorTrend: this.calculateTrend(floorHistory),
+            holderConcentration: this.analyzeHolders(holders),
+            volume24h: collection.volume_24h,
+            riskScore: this.calculateRisk(collection, holders),
+        };
+
+        return analysis;
+    }
+
+    // Execute trade based on analysis
+    async executeTrade(analysis: any, tradeParams: any) {
+        // Verify risk threshold
+        if (analysis.riskScore > 0.7) {
+            throw new Error('Risk too high');
+        }
+
+        // Submit task to Gradience
+        const task = await this.gradience.createTask({
+            type: 'nft_trade',
+            params: tradeParams,
+            reward: 5000,
+        });
+
+        // Execute via OWS Wallet
+        const result = await this.executeViaWallet(task);
+
+        // Record reputation
+        await this.gradience.recordCompletion(task.id, result);
+
+        return result;
+    }
 }
 ```
 
@@ -220,13 +211,13 @@ Save: 2-5% on slippage
 
 ## Why GoldRush?
 
-| Feature | Benefit |
-|---------|---------|
-| Real-time Data | Agents act instantly |
-| Historical Analysis | Pattern recognition |
-| Multi-chain | Solana, Ethereum, etc. |
-| NFT Focus | Perfect for agent trading |
-| Reliable APIs | 99.9% uptime |
+| Feature             | Benefit                   |
+| ------------------- | ------------------------- |
+| Real-time Data      | Agents act instantly      |
+| Historical Analysis | Pattern recognition       |
+| Multi-chain         | Solana, Ethereum, etc.    |
+| NFT Focus           | Perfect for agent trading |
+| Reliable APIs       | 99.9% uptime              |
 
 ---
 
@@ -275,4 +266,4 @@ Save: 2-5% on slippage
 
 ---
 
-*Submission for GoldRush Agentic Track*
+_Submission for GoldRush Agentic Track_

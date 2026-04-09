@@ -1,9 +1,4 @@
-import {
-    type EventEnvelope,
-    type ProgramEvent,
-    type WebhookTransaction,
-    type Env,
-} from '../types';
+import { type EventEnvelope, type ProgramEvent, type WebhookTransaction, type Env } from '../types';
 
 const EVENT_IX_TAG_LE = new Uint8Array([0x1d, 0x9a, 0xcb, 0x51, 0x2e, 0xa5, 0x45, 0xe4]);
 
@@ -191,7 +186,7 @@ function bigintToSafeNumber(value: bigint): number {
 export async function handleWebhook(
     request: Request,
     env: Env,
-    applyEvent: (db: Env['DB'], envelope: EventEnvelope) => Promise<void>
+    applyEvent: (db: Env['DB'], envelope: EventEnvelope) => Promise<void>,
 ): Promise<Response> {
     let payload: unknown;
     try {

@@ -1,6 +1,7 @@
 # 🚀 Gradience OWS 部署状态
 
 ## ✅ 部署完成时间
+
 **2025年4月3日 13:45**
 
 ---
@@ -12,6 +13,7 @@
 **位置**: `./dist/cli/index.js`
 
 **可用命令**:
+
 ```bash
 # Agent 管理
 node ./dist/cli/index.js agent register --name "agent-name"
@@ -30,6 +32,7 @@ node ./dist/cli/index.js wallet simulate-tx agent-name.ows.eth --amount 50
 ```
 
 **演示脚本**:
+
 ```bash
 ./scripts/demo.sh  # 完整演示流程
 ```
@@ -41,10 +44,12 @@ node ./dist/cli/index.js wallet simulate-tx agent-name.ows.eth --amount 50
 **地址**: http://localhost:3002
 
 **功能**:
+
 - Overview 页面: 项目介绍和功能展示
 - Live Demo 页面: 交互式终端演示
 
 **启动命令**:
+
 ```bash
 cd demo/web && npm run dev
 ```
@@ -179,5 +184,6 @@ npm publish
 **状态**: ✅ 可以开始黑客松演示！
 
 **访问地址**:
+
 - CLI: `node ./dist/cli/index.js --help`
 - Web: http://localhost:3002

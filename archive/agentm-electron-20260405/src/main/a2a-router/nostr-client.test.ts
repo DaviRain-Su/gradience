@@ -1,6 +1,6 @@
 /**
  * NostrClient unit tests
- * 
+ *
  * @module a2a-router/nostr-client.test
  */
 
@@ -89,10 +89,7 @@ describe('NostrClient', () => {
                 available: true,
             };
 
-            await assert.rejects(
-                client.publishPresence(content),
-                /Not connected/
-            );
+            await assert.rejects(client.publishPresence(content), /Not connected/);
         });
     });
 

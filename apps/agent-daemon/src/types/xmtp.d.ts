@@ -3,12 +3,9 @@
 // XMTP is an optional peer dependency
 
 declare module '@xmtp/xmtp-js' {
-  export class Client {
-    static create(
-      privateKey: Uint8Array,
-      options: { env: 'production' | 'dev' }
-    ): Promise<Client>;
-    address: string;
-    // Add other methods as needed
-  }
+    export class Client {
+        static create(privateKey: Uint8Array, options: { env: 'production' | 'dev' }): Promise<Client>;
+        address: string;
+        // Add other methods as needed
+    }
 }

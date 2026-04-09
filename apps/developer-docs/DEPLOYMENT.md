@@ -2,12 +2,12 @@
 
 ## 部署信息
 
-| 项目 | 详情 |
-|------|------|
-| **部署平台** | Vercel |
+| 项目         | 详情                        |
+| ------------ | --------------------------- |
+| **部署平台** | Vercel                      |
 | **生产环境** | https://docs.gradiences.xyz |
-| **项目路径** | `apps/developer-docs/` |
-| **框架** | Next.js 14.2.0 |
+| **项目路径** | `apps/developer-docs/`      |
+| **框架**     | Next.js 14.2.0              |
 
 ## 本地开发
 
@@ -51,15 +51,16 @@ vercel --prod
 
 在 GitHub Secrets 中配置:
 
-| Secret | 说明 |
-|--------|------|
-| `VERCEL_TOKEN` | Vercel API Token |
-| `VERCEL_ORG_ID` | Vercel Organization ID |
+| Secret                             | 说明                   |
+| ---------------------------------- | ---------------------- |
+| `VERCEL_TOKEN`                     | Vercel API Token       |
+| `VERCEL_ORG_ID`                    | Vercel Organization ID |
 | `VERCEL_PROJECT_ID_DEVELOPER_DOCS` | Developer Docs 项目 ID |
 
 ## 自定义域名配置
 
 在 Vercel Dashboard 中:
+
 1. 进入项目 Settings → Domains
 2. 添加域名: `docs.gradiences.xyz`
 3. 按照 Vercel 提示配置 DNS 记录

@@ -1,5 +1,33 @@
-import { GRADIENCE_PROGRAM_ADDRESS, getApplyForTaskInstructionAsync, getApplyForTaskInstruction, getCancelTaskInstructionAsync, getCancelTaskInstruction, getForceRefundInstructionAsync, getForceRefundInstruction, getInitializeInstruction, getJudgeAndPayInstructionAsync, getJudgeAndPayInstruction, getPostTaskInstructionAsync, getPostTaskInstruction, getRefundExpiredInstructionAsync, getRefundExpiredInstruction, getRegisterJudgeInstruction, fetchMaybeJudgePool, getSubmitResultInstructionAsync, getSubmitResultInstruction, getUnstakeJudgeInstruction, getUpgradeConfigInstruction, } from './generated/index.js';
-import { AccountRole, createSolanaRpc, fetchEncodedAccount, getAddressDecoder, getAddressEncoder, getProgramDerivedAddress, } from '@solana/kit';
+import {
+    GRADIENCE_PROGRAM_ADDRESS,
+    getApplyForTaskInstructionAsync,
+    getApplyForTaskInstruction,
+    getCancelTaskInstructionAsync,
+    getCancelTaskInstruction,
+    getForceRefundInstructionAsync,
+    getForceRefundInstruction,
+    getInitializeInstruction,
+    getJudgeAndPayInstructionAsync,
+    getJudgeAndPayInstruction,
+    getPostTaskInstructionAsync,
+    getPostTaskInstruction,
+    getRefundExpiredInstructionAsync,
+    getRefundExpiredInstruction,
+    getRegisterJudgeInstruction,
+    fetchMaybeJudgePool,
+    getSubmitResultInstructionAsync,
+    getSubmitResultInstruction,
+    getUnstakeJudgeInstruction,
+    getUpgradeConfigInstruction,
+} from './generated/index.js';
+import {
+    AccountRole,
+    createSolanaRpc,
+    fetchEncodedAccount,
+    getAddressDecoder,
+    getAddressEncoder,
+    getProgramDerivedAddress,
+} from '@solana/kit';
 export class GradienceSDK {
     indexerEndpoint;
     attestationEndpoint;
@@ -7,7 +35,9 @@ export class GradienceSDK {
     rpc;
     constructor(options = {}) {
         this.indexerEndpoint = sanitizeBaseUrl(options.indexerEndpoint ?? 'http://127.0.0.1:3001');
-        this.attestationEndpoint = sanitizeBaseUrl(options.attestationEndpoint ?? options.indexerEndpoint ?? 'http://127.0.0.1:3001');
+        this.attestationEndpoint = sanitizeBaseUrl(
+            options.attestationEndpoint ?? options.indexerEndpoint ?? 'http://127.0.0.1:3001',
+        );
         this.programAddress = options.programAddress ?? GRADIENCE_PROGRAM_ADDRESS;
         const rpcEndpoint = options.rpcEndpoint ?? 'http://127.0.0.1:8899';
         this.rpc = options.rpc ?? createSolanaRpc(rpcEndpoint);
@@ -65,14 +95,14 @@ export class GradienceSDK {
          * Fetch on-chain reputation PDA.
          * Returns `null` when the account does not exist.
          */
-        get: (agent) => this.getReputationOnChain(agent),
+        get: agent => this.getReputationOnChain(agent),
     };
     judgePool = {
         /**
          * Fetch on-chain judge pool PDA members for a category.
          * Returns `null` when the pool account does not exist.
          */
-        list: (category) => this.getJudgePoolOnChain(category),
+        list: category => this.getJudgePoolOnChain(category),
     };
     config = {
         /**
@@ -83,7 +113,7 @@ export class GradienceSDK {
     };
     profile = {
         /** Fetch agent profile from Indexer. Returns `null` when not found. */
-        get: (agent) => this.getAgentProfile(agent),
+        get: agent => this.getAgentProfile(agent),
         /** Update agent profile via Indexer. */
         update: (agent, data) => this.updateAgentProfile(agent, data),
     };
@@ -92,12 +122,12 @@ export class GradienceSDK {
          * Fetch TaskCompletion attestations for a given agent.
          * Returns `null` when the attestation endpoint or agent record is not found.
          */
-        list: (agent) => this.getAgentAttestations(agent),
+        list: agent => this.getAgentAttestations(agent),
         /**
          * Fetch and normalize TaskCompletion attestations to strongly-typed bigint fields.
          * Returns `null` when the attestation endpoint or agent record is not found.
          */
-        listDecoded: (agent) => this.getDecodedAgentAttestations(agent),
+        listDecoded: agent => this.getDecodedAgentAttestations(agent),
         /**
          * Decode on-chain TaskCompletion attestation payload bytes
          * ordered as [U64, U8, U8, U8, U64, I64].
@@ -297,10 +327,18 @@ export class GradienceSDK {
             ownerTokenAccount: request.posterTokenAccount,
             escrowAta: request.escrowAta,
         });
-        const treasuryAta = tokenCtx.isSpl && tokenCtx.mint && tokenCtx.tokenProgram
-            ? (request.treasuryAta ??
-                (await findAssociatedTokenAddress(treasury, tokenCtx.mint, tokenCtx.tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0])
-            : undefined;
+        const treasuryAta =
+            tokenCtx.isSpl && tokenCtx.mint && tokenCtx.tokenProgram
+                ? (request.treasuryAta ??
+                  (
+                      await findAssociatedTokenAddress(
+                          treasury,
+                          tokenCtx.mint,
+                          tokenCtx.tokenProgram,
+                          ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                      )
+                  )[0])
+                : undefined;
         const remaining = await this.resolveRefundPairs(taskId, request.refunds, {
             mint: request.mint,
             tokenProgram: tokenCtx.tokenProgram,
@@ -379,7 +417,9 @@ export class GradienceSDK {
             treasuryAta: request.treasuryAta,
             treasury,
         });
-        const judgePools = await Promise.all(request.judgeCategories.map(category => findJudgePoolPda(this.programAddress, category)));
+        const judgePools = await Promise.all(
+            request.judgeCategories.map(category => findJudgePoolPda(this.programAddress, category)),
+        );
         const judgePoolMetas = judgePools.map(([pool]) => ({
             address: pool,
             role: AccountRole.WRITABLE,
@@ -509,7 +549,7 @@ export class GradienceSDK {
             const text = await response.text();
             throw new Error(`Indexer request failed (${response.status}): ${text}`);
         }
-        return (await response.json());
+        return await response.json();
     }
     async getJsonOrNull(path, query = {}, baseUrl) {
         try {
@@ -517,8 +557,7 @@ export class GradienceSDK {
                 return await this.getJsonWithBase(path, query, baseUrl);
             }
             return await this.getJson(path, query);
-        }
-        catch (error) {
+        } catch (error) {
             if (isNotFoundError(error)) {
                 return null;
             }
@@ -533,10 +572,26 @@ export class GradienceSDK {
             };
         }
         const tokenProgram = params.tokenProgram ?? SPL_TOKEN_PROGRAM_ADDRESS;
-        const ownerTokenAccount = params.ownerTokenAccount ??
-            (await findAssociatedTokenAddress(params.owner, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const escrowAta = params.escrowAta ??
-            (await findAssociatedTokenAddress(params.escrow, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
+        const ownerTokenAccount =
+            params.ownerTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.owner,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const escrowAta =
+            params.escrowAta ??
+            (
+                await findAssociatedTokenAddress(
+                    params.escrow,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
         return {
             isSpl: true,
             mint: params.mint,
@@ -553,16 +608,51 @@ export class GradienceSDK {
         }
         const [treasury] = await findTreasuryPda(this.programAddress);
         const tokenProgram = params.tokenProgram ?? SPL_TOKEN_PROGRAM_ADDRESS;
-        const judgeTokenAccount = params.judgeTokenAccount ??
-            (await findAssociatedTokenAddress(params.judge, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const winnerTokenAccount = params.winnerTokenAccount ??
-            (await findAssociatedTokenAddress(params.winner, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const posterTokenAccount = params.posterTokenAccount ??
-            (await findAssociatedTokenAddress(params.poster, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const treasuryAta = params.treasuryAta ??
-            (await findAssociatedTokenAddress(treasury, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const escrowAta = params.escrowAta ??
-            (await findAssociatedTokenAddress(params.escrow, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
+        const judgeTokenAccount =
+            params.judgeTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.judge,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const winnerTokenAccount =
+            params.winnerTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.winner,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const posterTokenAccount =
+            params.posterTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.poster,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const treasuryAta =
+            params.treasuryAta ??
+            (
+                await findAssociatedTokenAddress(treasury, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS)
+            )[0];
+        const escrowAta =
+            params.escrowAta ??
+            (
+                await findAssociatedTokenAddress(
+                    params.escrow,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
         return {
             isSpl: true,
             mint: params.mint,
@@ -580,14 +670,46 @@ export class GradienceSDK {
             return { isSpl: false };
         }
         const tokenProgram = params.tokenProgram ?? SPL_TOKEN_PROGRAM_ADDRESS;
-        const posterTokenAccount = params.posterTokenAccount ??
-            (await findAssociatedTokenAddress(params.poster, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const mostActiveAgentTokenAccount = params.mostActiveAgentTokenAccount ??
-            (await findAssociatedTokenAddress(params.mostActiveAgent, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const treasuryAta = params.treasuryAta ??
-            (await findAssociatedTokenAddress(params.treasury, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
-        const escrowAta = params.escrowAta ??
-            (await findAssociatedTokenAddress(params.escrow, params.mint, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0];
+        const posterTokenAccount =
+            params.posterTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.poster,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const mostActiveAgentTokenAccount =
+            params.mostActiveAgentTokenAccount ??
+            (
+                await findAssociatedTokenAddress(
+                    params.mostActiveAgent,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const treasuryAta =
+            params.treasuryAta ??
+            (
+                await findAssociatedTokenAddress(
+                    params.treasury,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
+        const escrowAta =
+            params.escrowAta ??
+            (
+                await findAssociatedTokenAddress(
+                    params.escrow,
+                    params.mint,
+                    tokenProgram,
+                    ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                )
+            )[0];
         return {
             isSpl: true,
             mint: params.mint,
@@ -607,9 +729,17 @@ export class GradienceSDK {
         const addresses = [];
         for (const recipient of recipients) {
             const [application] = await findApplicationPda(this.programAddress, taskId, recipient.agent);
-            const destination = recipient.account ??
+            const destination =
+                recipient.account ??
                 (options.mint && options.tokenProgram
-                    ? (await findAssociatedTokenAddress(recipient.agent, options.mint, options.tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ADDRESS))[0]
+                    ? (
+                          await findAssociatedTokenAddress(
+                              recipient.agent,
+                              options.mint,
+                              options.tokenProgram,
+                              ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+                          )
+                      )[0]
                     : recipient.agent);
             metas.push({
                 address: application,
@@ -628,7 +758,9 @@ export class GradienceSDK {
             return undefined;
         }
         if (!wallet.ensureAddressLookupTable) {
-            throw new Error('remaining_accounts > 20 requires wallet adapter ensureAddressLookupTable support for v0 + ALT');
+            throw new Error(
+                'remaining_accounts > 20 requires wallet adapter ensureAddressLookupTable support for v0 + ALT',
+            );
         }
         const lookupTableAddress = await wallet.ensureAddressLookupTable({
             taskId,
@@ -852,8 +984,10 @@ export function decodeTaskCompletionAttestation(raw) {
     };
 }
 function isNotFoundError(error) {
-    return (error instanceof Error &&
-        (error.message.includes('Indexer request failed (404)') || error.message.includes('404')));
+    return (
+        error instanceof Error &&
+        (error.message.includes('Indexer request failed (404)') || error.message.includes('404'))
+    );
 }
 const MAX_CATEGORIES = 8;
 class ByteReader {

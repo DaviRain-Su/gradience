@@ -1,6 +1,6 @@
 /**
  * SOUL.md Parser
- * 
+ *
  * Parses and stringifies SOUL.md files (Markdown <-> SoulProfile)
  */
 
@@ -65,13 +65,15 @@ const SoulProfileSchema = z.object({
         storageType: z.enum(['ipfs', 'arweave']),
         cid: z.string(),
     }),
-    onChain: z.object({
-        solanaAddress: z.string(),
-        reputationPDA: z.string(),
-        socialScore: z.number().int().min(0).max(100),
-        completedProbes: z.number().int().nonnegative().optional(),
-        lastActivityAt: z.number().positive().optional(),
-    }).optional(),
+    onChain: z
+        .object({
+            solanaAddress: z.string(),
+            reputationPDA: z.string(),
+            socialScore: z.number().int().min(0).max(100),
+            completedProbes: z.number().int().nonnegative().optional(),
+            lastActivityAt: z.number().positive().optional(),
+        })
+        .optional(),
 });
 
 // ============ Helper Functions ============
@@ -98,14 +100,14 @@ function extractHeadingContent(markdown: string, heading: string): string {
 function parseListItems(text: string): string[] {
     const lines = text.split('\n');
     const items: string[] = [];
-    
+
     for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.startsWith('- ')) {
             items.push(trimmed.substring(2).trim());
         }
     }
-    
+
     return items;
 }
 
@@ -115,7 +117,7 @@ function parseListItems(text: string): string[] {
 function parseKeyValue(text: string): Record<string, string> {
     const lines = text.split('\n');
     const result: Record<string, string> = {};
-    
+
     for (const line of lines) {
         const match = line.match(/^([^:]+):\s*(.+)$/);
         if (match) {
@@ -124,7 +126,7 @@ function parseKeyValue(text: string): Record<string, string> {
             result[key] = value;
         }
     }
-    
+
     return result;
 }
 
@@ -138,33 +140,27 @@ export class SoulParser {
         try {
             // Parse frontmatter
             const { data: frontmatter, content } = matter(markdown);
-            
+
             if (!frontmatter.soul_version) {
-                throw new SoulError(
-                    SoulErrorCode.MISSING_REQUIRED_FIELD,
-                    'Missing required field: soul_version'
-                );
+                throw new SoulError(SoulErrorCode.MISSING_REQUIRED_FIELD, 'Missing required field: soul_version');
             }
-            
+
             if (!frontmatter.soul_type) {
-                throw new SoulError(
-                    SoulErrorCode.MISSING_REQUIRED_FIELD,
-                    'Missing required field: soul_type'
-                );
+                throw new SoulError(SoulErrorCode.MISSING_REQUIRED_FIELD, 'Missing required field: soul_type');
             }
-            
+
             // Parse sections
             const identitySection = extractHeadingContent(content, 'Identity');
             const valuesSection = extractHeadingContent(content, 'Core Values');
             const interestsSection = extractHeadingContent(content, 'Interests');
             const commSection = extractHeadingContent(content, 'Communication Style');
             const boundariesSection = extractHeadingContent(content, 'Boundaries');
-            
+
             // Parse Identity
             const identityKV = parseKeyValue(identitySection);
             const linksMatch = identitySection.match(/###\s+Links[^\n]*\n([\s\S]*?)(?=\n##|$)/i);
             const links: Record<string, string> = {};
-            
+
             if (linksMatch) {
                 const linkLines = linksMatch[1].split('\n');
                 for (const line of linkLines) {
@@ -175,36 +171,36 @@ export class SoulParser {
                     }
                 }
             }
-            
+
             const identity = {
                 displayName: identityKV.name || '',
                 bio: identityKV.bio || '',
                 avatarCID: identityKV.avatar,
                 links: Object.keys(links).length > 0 ? links : undefined,
             };
-            
+
             // Parse Core Values - use simpler regex
             const coreMatch = valuesSection.match(/###\s+Core Principles([\s\S]*?)(?=###|$)/i);
             const prioritiesMatch = valuesSection.match(/###\s+Priorities([\s\S]*?)(?=###|$)/i);
             const dealBreakersMatch = valuesSection.match(/###\s+Deal Breakers([\s\S]*?)(?=###|$)/i);
-            
+
             const values = {
                 core: coreMatch ? parseListItems(coreMatch[1]) : [],
                 priorities: prioritiesMatch ? parseListItems(prioritiesMatch[1]) : [],
                 dealBreakers: dealBreakersMatch ? parseListItems(dealBreakersMatch[1]) : [],
             };
-            
+
             // Parse Interests - use simpler regex
             const topicsMatch = interestsSection.match(/###\s+Topics([\s\S]*?)(?=###|$)/i);
             const skillsMatch = interestsSection.match(/###\s+Skills([\s\S]*?)(?=###|$)/i);
             const goalsMatch = interestsSection.match(/###\s+Goals([\s\S]*?)(?=###|$)/i);
-            
+
             const interests = {
                 topics: topicsMatch ? parseListItems(topicsMatch[1]) : [],
                 skills: skillsMatch ? parseListItems(skillsMatch[1]) : [],
                 goals: goalsMatch ? parseListItems(goalsMatch[1]) : [],
             };
-            
+
             // Parse Communication Style
             const commKV = parseKeyValue(commSection);
             const communication = {
@@ -212,27 +208,23 @@ export class SoulParser {
                 pace: (commKV.pace || SOUL_DEFAULTS.communication.pace) as any,
                 depth: (commKV.depth || SOUL_DEFAULTS.communication.depth) as any,
             };
-            
+
             // Parse Boundaries
             const forbiddenMatch = boundariesSection.match(/###\s+Forbidden Topics[^\n]*\n([\s\S]*?)(?=\n[A-Z]|$)/i);
             const autoEndMatch = boundariesSection.match(/###\s+Auto-End Triggers[^\n]*\n([\s\S]*?)(?=\n##|$)/i);
             const boundariesKV = parseKeyValue(boundariesSection);
-            
+
             const boundaries = {
                 forbiddenTopics: forbiddenMatch ? parseListItems(forbiddenMatch[1]) : [],
                 maxConversationLength: parseInt(boundariesKV.max_conversation_length || '20'),
                 privacyLevel: (boundariesKV.privacy_level || 'public') as any,
                 autoEndTriggers: autoEndMatch ? parseListItems(autoEndMatch[1]) : undefined,
             };
-            
+
             // Create profile
-            const createdAt = frontmatter.created_at
-                ? new Date(frontmatter.created_at).getTime()
-                : Date.now();
-            const updatedAt = frontmatter.updated_at
-                ? new Date(frontmatter.updated_at).getTime()
-                : createdAt;  // Default to createdAt if not specified
-            
+            const createdAt = frontmatter.created_at ? new Date(frontmatter.created_at).getTime() : Date.now();
+            const updatedAt = frontmatter.updated_at ? new Date(frontmatter.updated_at).getTime() : createdAt; // Default to createdAt if not specified
+
             const profile: SoulProfile = {
                 id: frontmatter.id || generateUUID(),
                 version: frontmatter.soul_version,
@@ -251,20 +243,16 @@ export class SoulParser {
                     cid: '',
                 },
             };
-            
+
             return profile;
         } catch (error) {
             if (error instanceof SoulError) {
                 throw error;
             }
-            throw new SoulError(
-                SoulErrorCode.INVALID_FORMAT,
-                'Failed to parse SOUL.md',
-                error
-            );
+            throw new SoulError(SoulErrorCode.INVALID_FORMAT, 'Failed to parse SOUL.md', error);
         }
     }
-    
+
     /**
      * Stringify SoulProfile to SOUL.md markdown
      */
@@ -276,10 +264,10 @@ export class SoulParser {
             created_at: new Date(profile.createdAt).toISOString(),
             updated_at: new Date(profile.updatedAt).toISOString(),
         };
-        
+
         // Build markdown sections
         const sections: string[] = [];
-        
+
         // Identity
         sections.push('## Identity\n');
         sections.push(`Name: ${profile.identity.displayName}`);
@@ -294,85 +282,85 @@ export class SoulParser {
                 sections.push(`- ${capitalizedKey}: ${value}`);
             }
         }
-        
+
         // Core Values
         sections.push('\n## Core Values\n');
         sections.push('### Core Principles');
-        profile.values.core.forEach(v => sections.push(`- ${v}`));
+        profile.values.core.forEach((v) => sections.push(`- ${v}`));
         sections.push('\n### Priorities');
-        profile.values.priorities.forEach(p => sections.push(`- ${p}`));
+        profile.values.priorities.forEach((p) => sections.push(`- ${p}`));
         if (profile.values.dealBreakers.length > 0) {
             sections.push('\n### Deal Breakers');
-            profile.values.dealBreakers.forEach(d => sections.push(`- ${d}`));
+            profile.values.dealBreakers.forEach((d) => sections.push(`- ${d}`));
         }
-        
+
         // Interests
         sections.push('\n## Interests\n');
         sections.push('### Topics');
-        profile.interests.topics.forEach(t => sections.push(`- ${t}`));
+        profile.interests.topics.forEach((t) => sections.push(`- ${t}`));
         sections.push('\n### Skills');
-        profile.interests.skills.forEach(s => sections.push(`- ${s}`));
+        profile.interests.skills.forEach((s) => sections.push(`- ${s}`));
         if (profile.interests.goals.length > 0) {
             sections.push('\n### Goals');
-            profile.interests.goals.forEach(g => sections.push(`- ${g}`));
+            profile.interests.goals.forEach((g) => sections.push(`- ${g}`));
         }
-        
+
         // Communication Style
         sections.push('\n## Communication Style\n');
         sections.push(`Tone: ${profile.communication.tone}`);
         sections.push(`Pace: ${profile.communication.pace}`);
         sections.push(`Depth: ${profile.communication.depth}`);
-        
+
         // Boundaries
         sections.push('\n## Boundaries\n');
         if (profile.boundaries.forbiddenTopics.length > 0) {
             sections.push('### Forbidden Topics');
-            profile.boundaries.forbiddenTopics.forEach(t => sections.push(`- ${t}`));
+            profile.boundaries.forbiddenTopics.forEach((t) => sections.push(`- ${t}`));
             sections.push('');
         }
         sections.push(`Max Conversation Length: ${profile.boundaries.maxConversationLength} turns`);
         sections.push(`Privacy Level: ${profile.boundaries.privacyLevel}`);
         if (profile.boundaries.autoEndTriggers && profile.boundaries.autoEndTriggers.length > 0) {
             sections.push('\n### Auto-End Triggers');
-            profile.boundaries.autoEndTriggers.forEach(t => sections.push(`- ${t}`));
+            profile.boundaries.autoEndTriggers.forEach((t) => sections.push(`- ${t}`));
         }
-        
+
         const content = `# SOUL Profile\n\n${sections.join('\n')}`;
-        
+
         return matter.stringify(content, frontmatter);
     }
-    
+
     /**
      * Validate SoulProfile
      */
     static validate(profile: SoulProfile): ValidationResult {
         const errors: string[] = [];
         const warnings: string[] = [];
-        
+
         try {
             SoulProfileSchema.parse(profile);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                error.errors.forEach(err => {
+                error.errors.forEach((err) => {
                     errors.push(`${err.path.join('.')}: ${err.message}`);
                 });
             }
         }
-        
+
         // Additional validation
         if (profile.updatedAt < profile.createdAt) {
             errors.push('updatedAt must be >= createdAt');
         }
-        
+
         // Warnings
         if (profile.values.core.length > 10) {
             warnings.push('Consider reducing core values to top 5-10 most important ones');
         }
-        
+
         if (profile.identity.bio.length < 50) {
             warnings.push('Bio is quite short, consider adding more details');
         }
-        
+
         return {
             valid: errors.length === 0,
             errors,

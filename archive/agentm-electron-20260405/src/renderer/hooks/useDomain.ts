@@ -7,13 +7,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import {
-    resolve,
-    reverse,
-    isValidDomain,
-    getDefaultResolver,
-    type ResolverConfig,
-} from '@gradiences/domain-resolver';
+import { resolve, reverse, isValidDomain, getDefaultResolver, type ResolverConfig } from '@gradiences/domain-resolver';
 
 interface UseDomainOptions {
     /** Auto-resolve on mount if domain/address provided */
@@ -98,7 +92,7 @@ export function useDomain(options: UseDomainOptions = {}): UseDomainReturn {
                 setLoading(false);
             }
         },
-        [config]
+        [config],
     );
 
     const reverseResolve = useCallback(
@@ -137,7 +131,7 @@ export function useDomain(options: UseDomainOptions = {}): UseDomainReturn {
                 setLoading(false);
             }
         },
-        [config]
+        [config],
     );
 
     const validateDomain = useCallback((domain: string): boolean => {
@@ -199,9 +193,7 @@ interface UseDomainProfileReturn {
 /**
  * Hook for managing a domain profile (bidirectional resolution)
  */
-export function useDomainProfile(
-    options: UseDomainProfileOptions = {}
-): UseDomainProfileReturn {
+export function useDomainProfile(options: UseDomainProfileOptions = {}): UseDomainProfileReturn {
     const { domain: initialDomain, address: initialAddress, autoResolve = true } = options;
 
     const [domain, setDomainState] = useState<string | null>(initialDomain || null);
@@ -248,7 +240,7 @@ export function useDomainProfile(
                 setAddressState(addr);
             }
         },
-        [resolveDomain]
+        [resolveDomain],
     );
 
     const setAddress = useCallback(
@@ -259,7 +251,7 @@ export function useDomainProfile(
                 setDomainState(dom);
             }
         },
-        [reverseResolve]
+        [reverseResolve],
     );
 
     const refresh = useCallback(async () => {

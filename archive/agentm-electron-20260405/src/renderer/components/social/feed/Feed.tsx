@@ -76,45 +76,51 @@ export function Feed({
         setHasMore(true);
         pageRef.current = 0;
         void loadPosts(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.type, filters.sort, filters.agentAddress, filters.searchQuery]);
 
-    const loadPosts = useCallback(async (reset = false) => {
-        if (!fetchPosts) return;
-        if (loading) return;
+    const loadPosts = useCallback(
+        async (reset = false) => {
+            if (!fetchPosts) return;
+            if (loading) return;
 
-        setLoading(true);
-        setError(null);
+            setLoading(true);
+            setError(null);
 
-        try {
-            const page = reset ? 0 : pageRef.current;
-            const newPosts = await fetchPosts(page, pageSize, filters);
-            
-            if (reset) {
-                setPosts(newPosts);
-                pageRef.current = 1;
-            } else {
-                setPosts((prev) => [...prev, ...newPosts]);
-                pageRef.current += 1;
+            try {
+                const page = reset ? 0 : pageRef.current;
+                const newPosts = await fetchPosts(page, pageSize, filters);
+
+                if (reset) {
+                    setPosts(newPosts);
+                    pageRef.current = 1;
+                } else {
+                    setPosts((prev) => [...prev, ...newPosts]);
+                    pageRef.current += 1;
+                }
+
+                // Assume no more posts if we got fewer than pageSize
+                setHasMore(newPosts.length === pageSize);
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to load posts'));
+            } finally {
+                setLoading(false);
             }
-            
-            // Assume no more posts if we got fewer than pageSize
-            setHasMore(newPosts.length === pageSize);
-        } catch (err) {
-            setError(err instanceof Error ? err : new Error('Failed to load posts'));
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchPosts, filters, loading, pageSize]);
+        },
+        [fetchPosts, filters, loading, pageSize],
+    );
 
     const handleLoadMore = useCallback(async () => {
         await loadPosts(false);
     }, [loadPosts]);
 
-    const handleFilterChange = useCallback((newFilters: FeedFilters) => {
-        setFilters(newFilters);
-        onFilterChange?.(newFilters);
-    }, [onFilterChange]);
+    const handleFilterChange = useCallback(
+        (newFilters: FeedFilters) => {
+            setFilters(newFilters);
+            onFilterChange?.(newFilters);
+        },
+        [onFilterChange],
+    );
 
     // Real-time updates simulation (would connect to WebSocket in production)
     useEffect(() => {
@@ -122,30 +128,26 @@ export function Feed({
 
         // This would be replaced with actual WebSocket/SSE connection
         // Example: const ws = new WebSocket('wss://api.example.com/feed');
-        
+
         return () => {
             // Cleanup WebSocket connection
         };
     }, [enableRealtime]);
 
-    const handleRealtimePost = useCallback((post: Post) => {
-        setPosts((prev) => [post, ...prev]);
-        onRealtimePost?.(post);
-    }, [onRealtimePost]);
+    const handleRealtimePost = useCallback(
+        (post: Post) => {
+            setPosts((prev) => [post, ...prev]);
+            onRealtimePost?.(post);
+        },
+        [onRealtimePost],
+    );
 
     // Filter posts locally if no fetchPosts provided
-    const filteredPosts = fetchPosts 
-        ? posts 
-        : filterPostsLocally(posts, filters);
+    const filteredPosts = fetchPosts ? posts : filterPostsLocally(posts, filters);
 
     return (
         <div className={`flex flex-col h-full ${className}`}>
-            <FilterBar
-                filters={filters}
-                onChange={handleFilterChange}
-                agentOptions={agentOptions}
-                disabled={loading}
-            />
+            <FilterBar filters={filters} onChange={handleFilterChange} agentOptions={agentOptions} disabled={loading} />
 
             <div className="flex-1 overflow-y-auto">
                 {error && !loading && posts.length === 0 && (
@@ -200,47 +202,48 @@ export function Feed({
 
 // Local filtering for when fetchPosts is not provided
 function filterPostsLocally(posts: Post[], filters: FeedFilters): Post[] {
-    return posts.filter((post) => {
-        // Type filter
-        if (filters.type !== 'all' && post.type !== filters.type) {
-            return false;
-        }
-
-        // Agent filter
-        if (filters.agentAddress && post.author.address !== filters.agentAddress) {
-            return false;
-        }
-
-        // Search filter
-        if (filters.searchQuery) {
-            const query = filters.searchQuery.toLowerCase();
-            const matchesContent = post.content.toLowerCase().includes(query);
-            const matchesAuthor = post.author.displayName.toLowerCase().includes(query);
-            if (!matchesContent && !matchesAuthor) {
+    return posts
+        .filter((post) => {
+            // Type filter
+            if (filters.type !== 'all' && post.type !== filters.type) {
                 return false;
             }
-        }
 
-        return true;
-    }).sort((a, b) => {
-        // Sort logic
-        switch (filters.sort) {
-            case 'latest':
-                return b.timestamp - a.timestamp;
-            case 'popular':
-                return (b.engagement.likes + b.engagement.comments) - 
-                       (a.engagement.likes + a.engagement.comments);
-            case 'trending':
-                // Simple trending: likes per hour since posted
-                const aHours = (Date.now() - a.timestamp) / 3600000;
-                const bHours = (Date.now() - b.timestamp) / 3600000;
-                const aTrending = aHours > 0 ? a.engagement.likes / aHours : a.engagement.likes;
-                const bTrending = bHours > 0 ? b.engagement.likes / bHours : b.engagement.likes;
-                return bTrending - aTrending;
-            default:
-                return 0;
-        }
-    });
+            // Agent filter
+            if (filters.agentAddress && post.author.address !== filters.agentAddress) {
+                return false;
+            }
+
+            // Search filter
+            if (filters.searchQuery) {
+                const query = filters.searchQuery.toLowerCase();
+                const matchesContent = post.content.toLowerCase().includes(query);
+                const matchesAuthor = post.author.displayName.toLowerCase().includes(query);
+                if (!matchesContent && !matchesAuthor) {
+                    return false;
+                }
+            }
+
+            return true;
+        })
+        .sort((a, b) => {
+            // Sort logic
+            switch (filters.sort) {
+                case 'latest':
+                    return b.timestamp - a.timestamp;
+                case 'popular':
+                    return b.engagement.likes + b.engagement.comments - (a.engagement.likes + a.engagement.comments);
+                case 'trending':
+                    // Simple trending: likes per hour since posted
+                    const aHours = (Date.now() - a.timestamp) / 3600000;
+                    const bHours = (Date.now() - b.timestamp) / 3600000;
+                    const aTrending = aHours > 0 ? a.engagement.likes / aHours : a.engagement.likes;
+                    const bTrending = bHours > 0 ? b.engagement.likes / bHours : b.engagement.likes;
+                    return bTrending - aTrending;
+                default:
+                    return 0;
+            }
+        });
 }
 
 // Utility hook for feed operations
@@ -258,31 +261,34 @@ export function useFeed({
     const [hasMore, setHasMore] = useState(true);
     const pageRef = useRef(0);
 
-    const loadPosts = useCallback(async (reset = false) => {
-        if (loading) return;
+    const loadPosts = useCallback(
+        async (reset = false) => {
+            if (loading) return;
 
-        setLoading(true);
-        setError(null);
+            setLoading(true);
+            setError(null);
 
-        try {
-            const page = reset ? 0 : pageRef.current;
-            const newPosts = await fetchPosts(page, pageSize, filters);
-            
-            if (reset) {
-                setPosts(newPosts);
-                pageRef.current = 1;
-            } else {
-                setPosts((prev) => [...prev, ...newPosts]);
-                pageRef.current += 1;
+            try {
+                const page = reset ? 0 : pageRef.current;
+                const newPosts = await fetchPosts(page, pageSize, filters);
+
+                if (reset) {
+                    setPosts(newPosts);
+                    pageRef.current = 1;
+                } else {
+                    setPosts((prev) => [...prev, ...newPosts]);
+                    pageRef.current += 1;
+                }
+
+                setHasMore(newPosts.length === pageSize);
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to load posts'));
+            } finally {
+                setLoading(false);
             }
-            
-            setHasMore(newPosts.length === pageSize);
-        } catch (err) {
-            setError(err instanceof Error ? err : new Error('Failed to load posts'));
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchPosts, filters, loading, pageSize]);
+        },
+        [fetchPosts, filters, loading, pageSize],
+    );
 
     const refresh = useCallback(() => {
         pageRef.current = 0;
@@ -303,16 +309,14 @@ export function useFeed({
     }, []);
 
     const updatePost = useCallback((postId: string, updates: Partial<Post>) => {
-        setPosts((prev) => prev.map((p) => 
-            p.id === postId ? { ...p, ...updates } : p
-        ));
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, ...updates } : p)));
     }, []);
 
     useEffect(() => {
         pageRef.current = 0;
         setHasMore(true);
         void loadPosts(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.type, filters.sort, filters.agentAddress, filters.searchQuery]);
 
     return {

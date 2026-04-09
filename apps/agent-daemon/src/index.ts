@@ -46,11 +46,7 @@ function getDaemonPort(): number {
     return typeof cfg.port === 'number' ? cfg.port : 7420;
 }
 
-async function apiRequest<T = unknown>(
-    method: string,
-    path: string,
-    body?: unknown,
-): Promise<T> {
+async function apiRequest<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
     const token = readAuthToken();
     if (!token) {
         console.error(chalk.red('Daemon is not running (no auth token found).'));
@@ -66,7 +62,7 @@ async function apiRequest<T = unknown>(
         res = await fetch(url, {
             method,
             headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 ...(body ? { 'Content-Type': 'application/json' } : {}),
             },
             body: body ? JSON.stringify(body) : undefined,
@@ -81,7 +77,11 @@ async function apiRequest<T = unknown>(
 
     const text = await res.text();
     let json: unknown;
-    try { json = JSON.parse(text); } catch { json = text; }
+    try {
+        json = JSON.parse(text);
+    } catch {
+        json = text;
+    }
 
     if (!res.ok) {
         const err = json as Record<string, unknown>;
@@ -112,10 +112,7 @@ function formatTs(epochMs: number | null): string {
 
 const program = new Command();
 
-program
-    .name('agentd')
-    .description('Gradience Agent Daemon CLI')
-    .version('0.1.0');
+program.name('agentd').description('Gradience Agent Daemon CLI').version('0.1.0');
 
 // ── start ────────────────────────────────────────────────────────────────────
 
@@ -210,7 +207,9 @@ program
         console.log(`  Status      ${statusColor(data.status)}`);
         console.log(`  Uptime      ${chalk.cyan(formatUptime(data.uptime))}`);
         console.log(`  Version     ${chalk.dim(data.version)}`);
-        console.log(`  Connection  ${data.connection.state === 'connected' ? chalk.green(data.connection.state) : chalk.yellow(data.connection.state)}`);
+        console.log(
+            `  Connection  ${data.connection.state === 'connected' ? chalk.green(data.connection.state) : chalk.yellow(data.connection.state)}`,
+        );
         console.log();
         console.log(chalk.bold('Agents'));
         console.log('─'.repeat(40));
@@ -237,7 +236,14 @@ agentsCmd
     .action(async () => {
         const data = await apiRequest<{
             agents: Array<{
-                config: { id: string; name: string; command: string; args: string[]; autoStart: boolean; maxRestarts: number };
+                config: {
+                    id: string;
+                    name: string;
+                    command: string;
+                    args: string[];
+                    autoStart: boolean;
+                    maxRestarts: number;
+                };
                 state: string;
                 pid: number | null;
                 restartCount: number;
@@ -253,16 +259,21 @@ agentsCmd
         }
 
         console.log();
-        console.log(chalk.bold(`${'ID'.padEnd(24)} ${'NAME'.padEnd(20)} ${'STATE'.padEnd(12)} ${'PID'.padEnd(8)} RESTARTS`));
+        console.log(
+            chalk.bold(`${'ID'.padEnd(24)} ${'NAME'.padEnd(20)} ${'STATE'.padEnd(12)} ${'PID'.padEnd(8)} RESTARTS`),
+        );
         console.log('─'.repeat(80));
         for (const a of data.agents) {
             const stateColor =
-                a.state === 'running' ? chalk.green :
-                a.state === 'crashed' || a.state === 'failed' ? chalk.red :
-                a.state === 'starting' ? chalk.cyan :
-                chalk.dim;
+                a.state === 'running'
+                    ? chalk.green
+                    : a.state === 'crashed' || a.state === 'failed'
+                      ? chalk.red
+                      : a.state === 'starting'
+                        ? chalk.cyan
+                        : chalk.dim;
             console.log(
-                `${a.config.id.padEnd(24)} ${a.config.name.padEnd(20)} ${stateColor(a.state.padEnd(12))} ${String(a.pid ?? '—').padEnd(8)} ${a.restartCount}`
+                `${a.config.id.padEnd(24)} ${a.config.name.padEnd(20)} ${stateColor(a.state.padEnd(12))} ${String(a.pid ?? '—').padEnd(8)} ${a.restartCount}`,
             );
             if (a.lastError) {
                 console.log(chalk.dim(`  └ error: ${a.lastError}`));
@@ -339,17 +350,23 @@ tasksCmd
         }
 
         console.log();
-        console.log(chalk.bold(`${'ID'.padEnd(24)} ${'TYPE'.padEnd(20)} ${'STATE'.padEnd(12)} ${'PRI'.padEnd(5)} CREATED`));
+        console.log(
+            chalk.bold(`${'ID'.padEnd(24)} ${'TYPE'.padEnd(20)} ${'STATE'.padEnd(12)} ${'PRI'.padEnd(5)} CREATED`),
+        );
         console.log('─'.repeat(85));
         for (const t of data.tasks) {
             const stateColor =
-                t.state === 'completed' ? chalk.green :
-                t.state === 'running' ? chalk.cyan :
-                t.state === 'queued' ? chalk.yellow :
-                t.state === 'failed' || t.state === 'dead' ? chalk.red :
-                chalk.dim;
+                t.state === 'completed'
+                    ? chalk.green
+                    : t.state === 'running'
+                      ? chalk.cyan
+                      : t.state === 'queued'
+                        ? chalk.yellow
+                        : t.state === 'failed' || t.state === 'dead'
+                          ? chalk.red
+                          : chalk.dim;
             console.log(
-                `${t.id.padEnd(24)} ${t.type.padEnd(20)} ${stateColor(t.state.padEnd(12))} ${String(t.priority).padEnd(5)} ${formatTs(t.createdAt)}`
+                `${t.id.padEnd(24)} ${t.type.padEnd(20)} ${stateColor(t.state.padEnd(12))} ${String(t.priority).padEnd(5)} ${formatTs(t.createdAt)}`,
             );
         }
         console.log();

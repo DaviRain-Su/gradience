@@ -42,12 +42,7 @@ export function ReputationPanel({ walletAddress }: ReputationPanelProps) {
         <section className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2>Reputation PDA</h2>
-                <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void refresh()}
-                    disabled={!walletAddress}
-                >
+                <button type="button" className="secondary" onClick={() => void refresh()} disabled={!walletAddress}>
                     Refresh
                 </button>
             </div>

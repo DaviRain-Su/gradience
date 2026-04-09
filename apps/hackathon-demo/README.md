@@ -1,7 +1,7 @@
 # Gradience OWS + Privy Demo
 
 > Open Wallet Standard adapter with Privy authentication
-> 
+>
 > 🏆 OWS Hackathon Miami 2026 Submission
 
 ## 🚀 Quick Start
@@ -38,12 +38,14 @@ npm run build
 ## 📦 What's Included
 
 ### Privy Integration
+
 - ✅ Social login (Google, Email, Twitter, Discord)
 - ✅ Embedded wallet auto-generation
 - ✅ External wallet connection
 - ✅ MPC key management
 
 ### OWS (Open Wallet Standard)
+
 - ✅ Universal wallet discovery
 - ✅ MetaMask provider
 - ✅ Phantom provider (Solana)
@@ -73,19 +75,19 @@ src/
 This project demonstrates:
 
 1. **OWS Standard Implementation**
-   - Universal wallet adapter interface
-   - Multi-provider support
-   - Chain-agnostic design
+    - Universal wallet adapter interface
+    - Multi-provider support
+    - Chain-agnostic design
 
 2. **Privy Integration**
-   - Seamless social login
-   - Embedded wallet generation
-   - Security best practices
+    - Seamless social login
+    - Embedded wallet generation
+    - Security best practices
 
 3. **Real-world Use Case**
-   - Agent wallet management
-   - Multi-wallet support
-   - Production-ready architecture
+    - Agent wallet management
+    - Multi-wallet support
+    - Production-ready architecture
 
 ## 📄 License
 

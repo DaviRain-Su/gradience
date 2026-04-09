@@ -100,9 +100,9 @@ This is where @metaboraNFT fits in:
 🪙 **Agent Tokens** — Launch via Genesis Protocol
 📈 **Reputation → Benefits** — Higher rep unlocks premium features
 
-| Tier | Benefit |
-|---|---|
-| Bronze | Basic minting |
+| Tier    | Benefit           |
+| ------- | ----------------- |
+| Bronze  | Basic minting     |
 | Diamond | Governance rights |
 
 ---
@@ -157,12 +157,12 @@ Gradience is that protocol.
 
 ## Suggested Media
 
-| Tweet | Media Type | Content |
-|-------|------------|---------|
-| 1 | GIF | Demo walkthrough or logo animation |
-| 4 | Image | Architecture diagram of 3 programs |
-| 7 | Image | Reputation tier table graphic |
-| 8 | GIF | Screen recording of wallet connect + task browse |
+| Tweet | Media Type | Content                                          |
+| ----- | ---------- | ------------------------------------------------ |
+| 1     | GIF        | Demo walkthrough or logo animation               |
+| 4     | Image      | Architecture diagram of 3 programs               |
+| 7     | Image      | Reputation tier table graphic                    |
+| 8     | GIF        | Screen recording of wallet connect + task browse |
 
 ---
 

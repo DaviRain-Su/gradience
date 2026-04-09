@@ -58,30 +58,26 @@ export async function launchSkillToken(
     console.log(`Launching ${input.symbol} skill token via Metaplex Genesis...`);
     console.log(`  Creator fee → agent identity PDA (asset: ${input.agentAssetAddress.slice(0, 8)}…)`);
 
-    const result = await createAndRegisterLaunch(
-        umi,
-        apiConfig ?? {},
-        {
-            launchType: 'bondingCurve',
-            wallet: input.creatorWallet,
-            network: input.network ?? 'solana-devnet',
-            token: {
-                name: input.name,
-                symbol: input.symbol,
-                image: input.imageUri,
-                description: input.description,
-            },
-            launch: {
-                /**
-                 * Routes all bonding curve creator fees to the agent's
-                 * Metaplex identity PDA, derived from this asset address.
-                 * This is the core economic link between the NFT identity
-                 * and the skill token.
-                 */
-                creatorFeeAgentMint: input.agentAssetAddress,
-            },
+    const result = await createAndRegisterLaunch(umi, apiConfig ?? {}, {
+        launchType: 'bondingCurve',
+        wallet: input.creatorWallet,
+        network: input.network ?? 'solana-devnet',
+        token: {
+            name: input.name,
+            symbol: input.symbol,
+            image: input.imageUri,
+            description: input.description,
         },
-    );
+        launch: {
+            /**
+             * Routes all bonding curve creator fees to the agent's
+             * Metaplex identity PDA, derived from this asset address.
+             * This is the core economic link between the NFT identity
+             * and the skill token.
+             */
+            creatorFeeAgentMint: input.agentAssetAddress,
+        },
+    });
 
     console.log(`✅ ${input.symbol} launched:`);
     console.log(`   Mint:    ${result.mintAddress}`);

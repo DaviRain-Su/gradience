@@ -10,10 +10,10 @@ export { FollowButton, type FollowButtonProps } from './FollowButton';
 export { FollowersList, type FollowersListProps, type Follower } from './FollowersList';
 export { FollowingList, type FollowingListProps, type Following } from './FollowingList';
 export {
-  FollowerCount,
-  CompactFollowerCount,
-  type FollowerCountProps,
-  type CompactFollowerCountProps,
+    FollowerCount,
+    CompactFollowerCount,
+    type FollowerCountProps,
+    type CompactFollowerCountProps,
 } from './FollowerCount';
 export { DomainBadge, DomainBadgeLink, type DomainBadgeProps } from './DomainBadge';
 

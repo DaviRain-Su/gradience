@@ -7,50 +7,47 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
-  combineCodec,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
-  type Codec,
-  type Decoder,
-  type Encoder,
-} from "@solana/kit";
+    addDecoderSizePrefix,
+    addEncoderSizePrefix,
+    combineCodec,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getUtf8Decoder,
+    getUtf8Encoder,
+    type Codec,
+    type Decoder,
+    type Encoder,
+} from '@solana/kit';
 
 export type RuntimeEnvInput = {
-  provider: string;
-  model: string;
-  runtime: string;
-  version: string;
+    provider: string;
+    model: string;
+    runtime: string;
+    version: string;
 };
 
 export type RuntimeEnvInputArgs = RuntimeEnvInput;
 
 export function getRuntimeEnvInputEncoder(): Encoder<RuntimeEnvInputArgs> {
-  return getStructEncoder([
-    ["provider", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["model", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["runtime", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ["version", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-  ]);
+    return getStructEncoder([
+        ['provider', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['model', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['runtime', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+        ['version', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+    ]);
 }
 
 export function getRuntimeEnvInputDecoder(): Decoder<RuntimeEnvInput> {
-  return getStructDecoder([
-    ["provider", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["model", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["runtime", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ["version", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-  ]);
+    return getStructDecoder([
+        ['provider', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['model', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['runtime', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+        ['version', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ]);
 }
 
-export function getRuntimeEnvInputCodec(): Codec<
-  RuntimeEnvInputArgs,
-  RuntimeEnvInput
-> {
-  return combineCodec(getRuntimeEnvInputEncoder(), getRuntimeEnvInputDecoder());
+export function getRuntimeEnvInputCodec(): Codec<RuntimeEnvInputArgs, RuntimeEnvInput> {
+    return combineCodec(getRuntimeEnvInputEncoder(), getRuntimeEnvInputDecoder());
 }

@@ -1,4 +1,5 @@
 # Beam Foundation Grant Application
+
 ## Gradience: Trustless Agent Economy Infrastructure for Beam Gaming
 
 ---
@@ -9,7 +10,7 @@
 **Application Category:** AI & Gaming Infrastructure  
 **Requested Amount:** $XXX,XXX ( milestone-based )  
 **Project Duration:** 3-4 months  
-**Team Size:** 4-5 core contributors  
+**Team Size:** 4-5 core contributors
 
 **One-sentence Description:**  
 Gradience is a permissionless AI Agent credit protocol that enables Beam games to discover, verify, and settle AI services through open competition—like Bitcoin mining for AI Agents.
@@ -27,6 +28,7 @@ Current gaming AI faces a trilemma:
 3. **No autonomous commerce** — AI Agents cannot directly transact or compete
 
 **Existing solutions fail:**
+
 - **Platform models** (OpenAI, Virtuals) extract 20-30% fees and control matching
 - **Closed AI systems** cannot be audited or improved by the community
 - **Manual integration** doesn't scale to thousands of games
@@ -34,6 +36,7 @@ Current gaming AI faces a trilemma:
 ### The Beam Opportunity
 
 Beam is building the future of gaming infrastructure. But games need AI that is:
+
 - **Trustless** — No intermediary controls the AI
 - **Competitive** — Market discovers the best through open competition
 - **Ownable** — Players and developers truly own the AI Agents
@@ -51,6 +54,7 @@ Escrow + Judge + Reputation = Trustless Capability Settlement
 ```
 
 **The Bitcoin Parallel:**
+
 - Bitcoin solved trustless value transfer (2009) → $1T+ cryptocurrency market
 - Gradience solves trustless AI service exchange (2026) → Agent service economy
 
@@ -82,6 +86,7 @@ Beam Game Developer
 ```
 
 **Key Features:**
+
 - ✅ **Permissionless** — Anyone can run an Agent; no registration required
 - ✅ **Competition-based** — Race model discovers best AI through market forces
 - ✅ **Immutable rules** — Fee rates (95/3/2) are hardcoded constants
@@ -118,16 +123,17 @@ Beam Game Developer
 
 ### Why Beam Needs Gradience
 
-| Beam's Vision | Gradience Delivers |
-|--------------|-------------------|
-| Gaming infrastructure for the future | AI service infrastructure layer |
-| Player-owned economies | Player-owned AI Agents |
-| Community-driven content | Community-developed AI through open competition |
-| Low-cost, high-throughput | 5% fees vs 20-30% on platforms |
+| Beam's Vision                        | Gradience Delivers                              |
+| ------------------------------------ | ----------------------------------------------- |
+| Gaming infrastructure for the future | AI service infrastructure layer                 |
+| Player-owned economies               | Player-owned AI Agents                          |
+| Community-driven content             | Community-developed AI through open competition |
+| Low-cost, high-throughput            | 5% fees vs 20-30% on platforms                  |
 
 ### Concrete Use Cases for Beam Games
 
 #### Use Case 1: Dynamic NPC AI
+
 ```
 Game: "Eternal Realms" (MMORPG on Beam)
 Challenge: Create believable merchant NPCs with dynamic pricing
@@ -141,6 +147,7 @@ With Gradience:
 ```
 
 #### Use Case 2: Player-Created Companions
+
 ```
 Game: "Space Frontier" (Strategy on Beam)
 Feature: Players design AI companions
@@ -154,6 +161,7 @@ With Gradience:
 ```
 
 #### Use Case 3: Automated Game Balance
+
 ```
 Game: "Arena X" (PvP Combat on Beam)
 Challenge: Continuous balance of 100+ characters
@@ -190,34 +198,38 @@ Phase 3: Ecosystem Growth (Weeks 9-12)
 
 ### Comparison with Alternatives
 
-| Dimension | Virtuals Protocol | Traditional Game AI | Gradience |
-|-----------|------------------|---------------------|-----------|
-| **Permissionless** | ❌ Platform approval required | ❌ Closed source | ✅ Anyone can participate |
-| **Competition** | ❌ Assigned by platform | ❌ Single vendor | ✅ Open race model |
-| **Fees** | 20-30% | N/A (internal cost) | **5% total** |
-| **Reputation** | Platform-controlled | None | On-chain, immutable |
-| **Interoperability** | Within Virtuals only | Game-specific | Cross-game portable |
-| **Verification** | Black box | Black box | Transparent scoring |
+| Dimension            | Virtuals Protocol             | Traditional Game AI | Gradience                 |
+| -------------------- | ----------------------------- | ------------------- | ------------------------- |
+| **Permissionless**   | ❌ Platform approval required | ❌ Closed source    | ✅ Anyone can participate |
+| **Competition**      | ❌ Assigned by platform       | ❌ Single vendor    | ✅ Open race model        |
+| **Fees**             | 20-30%                        | N/A (internal cost) | **5% total**              |
+| **Reputation**       | Platform-controlled           | None                | On-chain, immutable       |
+| **Interoperability** | Within Virtuals only          | Game-specific       | Cross-game portable       |
+| **Verification**     | Black box                     | Black box           | Transparent scoring       |
 
 ### Technical Highlights
 
 **1. Bitcoin-Inspired Minimalism**
+
 - Only 3 states (Open, Completed, Refunded)
 - Only 4 transitions (post, submit, judge, refund)
 - Immutable fee rates — no governance can change them
 
 **2. GAN Adversarial Quality**
+
 - Agents (Generators) compete to produce best results
 - Judges (Discriminators) evaluate independently
 - Zero self-evaluation (proven biased by Anthropic research)
 - Quality ratchets upward through adversarial pressure
 
 **3. Role Fluidity**
+
 - Same address can be Poster, Agent, Judge across tasks
 - No fixed identity categories
 - Economic incentives align behavior, not registration
 
 **4. Skill Composability**
+
 - AI capabilities packaged as tradable Skills
 - Skills can be bought, rented, inherited
 - Cross-game Skill marketplace
@@ -229,19 +241,23 @@ Phase 3: Ecosystem Growth (Weeks 9-12)
 ### Core Team
 
 **Lead Developer** — @DaviRain-Su
+
 - Ex-[previous relevant experience]
 - Built [relevant project]
 - [Number] years blockchain/Solana development
 
 **Protocol Architect** — [Name]
+
 - Background in mechanism design
 - Previously at [relevant company]
 
 **Game Integration Lead** — [Name]
+
 - [Number] years game development (Unity/Unreal)
 - Shipped [X] titles
 
 **Full-stack Engineer** — [Name]
+
 - Frontend + infrastructure specialist
 
 ### Existing Progress
@@ -262,37 +278,40 @@ Phase 3: Ecosystem Growth (Weeks 9-12)
 
 ### Milestone-Based Funding Plan
 
-| Milestone | Duration | Deliverables | Funding |
-|-----------|----------|--------------|---------|
-| **M1: Beam Integration** | Weeks 1-4 | Agent Layer Program deployed on Beam; BEAM token integration; basic SDK | $XX,XXX |
-| **M2: Chain Hub + Gaming** | Weeks 5-8 | Chain Hub with Beam game services; 2 pilot games integrated; testnet live | $XX,XXX |
-| **M3: Mainnet + Launch** | Weeks 9-12 | Mainnet deployment; "Beam Agent Arena" launch; 5+ games onboarded | $XX,XXX |
-| **M4: Growth + Mobile** | Weeks 13-16 | AgentM mobile app; 10+ games; hackathon; marketing | $XX,XXX |
+| Milestone                  | Duration    | Deliverables                                                              | Funding |
+| -------------------------- | ----------- | ------------------------------------------------------------------------- | ------- |
+| **M1: Beam Integration**   | Weeks 1-4   | Agent Layer Program deployed on Beam; BEAM token integration; basic SDK   | $XX,XXX |
+| **M2: Chain Hub + Gaming** | Weeks 5-8   | Chain Hub with Beam game services; 2 pilot games integrated; testnet live | $XX,XXX |
+| **M3: Mainnet + Launch**   | Weeks 9-12  | Mainnet deployment; "Beam Agent Arena" launch; 5+ games onboarded         | $XX,XXX |
+| **M4: Growth + Mobile**    | Weeks 13-16 | AgentM mobile app; 10+ games; hackathon; marketing                        | $XX,XXX |
 
 **Total Requested:** $XXX,XXX
 
 ### Budget Breakdown
 
-| Category | Amount | Purpose |
-|----------|--------|---------|
-| Development | 60% | Core team salaries, contractor fees |
-| Security | 15% | Audits (OtterSec or Neodyme), bug bounties |
-| Ecosystem | 15% | Game onboarding incentives, hackathon prizes |
-| Operations | 10% | Infrastructure, legal, marketing |
+| Category    | Amount | Purpose                                      |
+| ----------- | ------ | -------------------------------------------- |
+| Development | 60%    | Core team salaries, contractor fees          |
+| Security    | 15%    | Audits (OtterSec or Neodyme), bug bounties   |
+| Ecosystem   | 15%    | Game onboarding incentives, hackathon prizes |
+| Operations  | 10%    | Infrastructure, legal, marketing             |
 
 ### Success Metrics (KPIs)
 
 **Month 3:**
+
 - [ ] Agent Layer live on Beam mainnet
 - [ ] 3+ games integrated
 - [ ] 50+ Agents registered
 
 **Month 6:**
+
 - [ ] 10+ games using Gradience
 - [ ] 500+ total tasks completed
 - [ ] $100K+ total value settled
 
 **Month 12:**
+
 - [ ] 50+ Beam games
 - [ ] 10,000+ Agents
 - [ ] Leading AI infrastructure on Beam
@@ -335,10 +354,10 @@ Year 3: Autonomous Ecosystem
 
 ### Risks & Mitigations
 
-| Risk | Mitigation |
-|------|-----------|
-| Low initial adoption | Partner with 2-3 Beam games from day 1; incentive programs |
-| Smart contract bugs | Multiple audits; formal verification for kernel; bug bounty |
+| Risk                           | Mitigation                                                      |
+| ------------------------------ | --------------------------------------------------------------- |
+| Low initial adoption           | Partner with 2-3 Beam games from day 1; incentive programs      |
+| Smart contract bugs            | Multiple audits; formal verification for kernel; bug bounty     |
 | Competition from big platforms | Focus on permissionlessness and lower fees; community ownership |
 
 ### Community & Support
@@ -358,11 +377,12 @@ Year 3: Autonomous Ecosystem
 
 ## 10. Conclusion
 
-Bitcoin proved that trustless value transfer requires only three primitives (UTXO + Script + PoW). 
+Bitcoin proved that trustless value transfer requires only three primitives (UTXO + Script + PoW).
 
 Gradience proves that trustless AI service exchange requires only three primitives (Escrow + Judge + Reputation).
 
 **For Beam, this means:**
+
 - Games get the best AI through open competition, not platform gatekeepers
 - Players own AI Agents that work across games
 - Developers pay 5% fees instead of 20-30%
@@ -377,9 +397,10 @@ Gradience proves that trustless AI service exchange requires only three primitiv
 **Primary Contact:** [Your Name]  
 **Email:** [email]  
 **Telegram:** [@handle]  
-**Twitter:** [@DaviRain_Su]  
+**Twitter:** [@DaviRain_Su]
 
 **Project Links:**
+
 - Website: https://www.gradiences.xyz
 - Github: https://github.com/gradiences
 - Whitepaper: [link]
@@ -387,4 +408,4 @@ Gradience proves that trustless AI service exchange requires only three primitiv
 
 ---
 
-*Thank you for considering Gradience. We look forward to building the future of gaming AI together on Beam.*
+_Thank you for considering Gradience. We look forward to building the future of gaming AI together on Beam._

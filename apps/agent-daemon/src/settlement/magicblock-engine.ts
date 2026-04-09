@@ -35,16 +35,12 @@ export class MagicBlockExecutionEngine {
     /**
      * Build a delegate instruction to move account state into the ER.
      */
-    buildDelegateIx(
-        accounts: DelegateAccounts,
-        args?: Partial<DelegateInstructionArgs>
-    ): TransactionInstruction {
+    buildDelegateIx(accounts: DelegateAccounts, args?: Partial<DelegateInstructionArgs>): TransactionInstruction {
         const delegateArgs: DelegateInstructionArgs = {
             commitFrequencyMs: this.config.commitFrequencyMs,
-            validator: accounts.validator ??
-                (this.config.validatorPubkey
-                    ? new PublicKey(this.config.validatorPubkey)
-                    : undefined),
+            validator:
+                accounts.validator ??
+                (this.config.validatorPubkey ? new PublicKey(this.config.validatorPubkey) : undefined),
             ...args,
         };
 
@@ -55,7 +51,7 @@ export class MagicBlockExecutionEngine {
                 ownerProgram: accounts.ownerProgram,
                 validator: delegateArgs.validator ?? undefined,
             },
-            delegateArgs
+            delegateArgs,
         );
     }
 
@@ -64,20 +60,14 @@ export class MagicBlockExecutionEngine {
      * while keeping the account delegated in the ER.
      */
     buildCommitIx(accounts: PermissionAccounts): TransactionInstruction {
-        return createCommitInstruction(
-            accounts.payer,
-            [accounts.delegatedAccount],
-        );
+        return createCommitInstruction(accounts.payer, [accounts.delegatedAccount]);
     }
 
     /**
      * Build a commit-and-undelegate instruction to finalize state back to L1.
      */
     buildCommitAndUndelegateIx(accounts: PermissionAccounts): TransactionInstruction {
-        return createCommitAndUndelegateInstruction(
-            accounts.payer,
-            [accounts.delegatedAccount],
-        );
+        return createCommitAndUndelegateInstruction(accounts.payer, [accounts.delegatedAccount]);
     }
 
     /**
@@ -106,16 +96,14 @@ export class MagicBlockExecutionEngine {
                 payer: params.payer,
                 delegatedAccount: acc,
                 ownerProgram,
-            })
+            }),
         );
         return [...delegateIxs, ...params.userInstructions];
     }
 
     private getOwnerProgram(): PublicKey {
         if (!this.config.ownerProgramId) {
-            throw new Error(
-                '[MagicBlock] ownerProgramId is required. Set MAGICBLOCK_OWNER_PROGRAM_ID.'
-            );
+            throw new Error('[MagicBlock] ownerProgramId is required. Set MAGICBLOCK_OWNER_PROGRAM_ID.');
         }
         return new PublicKey(this.config.ownerProgramId);
     }

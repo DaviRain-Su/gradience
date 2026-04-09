@@ -7,35 +7,35 @@
  */
 
 import {
-  combineCodec,
-  getEnumDecoder,
-  getEnumEncoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getEnumDecoder,
+    getEnumEncoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export enum Category {
-  General,
-  Defi,
-  Code,
-  Research,
-  Creative,
-  Data,
-  Compute,
-  Gov,
+    General,
+    Defi,
+    Code,
+    Research,
+    Creative,
+    Data,
+    Compute,
+    Gov,
 }
 
 export type CategoryArgs = Category;
 
 export function getCategoryEncoder(): FixedSizeEncoder<CategoryArgs> {
-  return getEnumEncoder(Category);
+    return getEnumEncoder(Category);
 }
 
 export function getCategoryDecoder(): FixedSizeDecoder<Category> {
-  return getEnumDecoder(Category);
+    return getEnumDecoder(Category);
 }
 
 export function getCategoryCodec(): FixedSizeCodec<CategoryArgs, Category> {
-  return combineCodec(getCategoryEncoder(), getCategoryDecoder());
+    return combineCodec(getCategoryEncoder(), getCategoryDecoder());
 }

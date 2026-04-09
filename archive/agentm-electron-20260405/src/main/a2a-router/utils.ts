@@ -1,6 +1,6 @@
 /**
  * Error handling utilities
- * 
+ *
  * @module a2a-router/utils
  */
 

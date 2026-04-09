@@ -20,7 +20,7 @@ postCommand
     .option('--mint <address>', 'Token mint address (defaults to SOL)')
     .action(async (options) => {
         const spinner = ora('Creating task...').start();
-        
+
         try {
             if (isMockMode()) {
                 const signature = process.env.GRADIENCE_CLI_MOCK_SIGNATURE ?? `mock-post-signature`;
@@ -52,20 +52,25 @@ postCommand
             const category = Number(parseU64(options.category ?? '0', 'category'));
             const minStake = parseU64(options.minStake ?? '0', 'min-stake');
             const reward = parseU64(options.reward, 'reward');
-            
+
             const judgeModeStr = (options.judgeMode ?? 'pool').toLowerCase();
             if (judgeModeStr !== 'pool' && judgeModeStr !== 'designated') {
                 throw new Error('--judge-mode must be "pool" or "designated"');
             }
-            
+
             const judgeMode = judgeModeStr === 'designated' ? 0 : 1;
-            const judge = judgeModeStr === 'designated' 
-                ? parseAddress(options.judge, 'judge')
-                : options.judge ? parseAddress(options.judge, 'judge') : undefined;
+            const judge =
+                judgeModeStr === 'designated'
+                    ? parseAddress(options.judge, 'judge')
+                    : options.judge
+                      ? parseAddress(options.judge, 'judge')
+                      : undefined;
 
             const now = BigInt(Math.floor(Date.now() / 1000));
             const deadline = options.deadline ? parseU64(options.deadline, 'deadline') : now + SECONDS_PER_DAY;
-            const judgeDeadline = options.judgeDeadline ? parseU64(options.judgeDeadline, 'judge-deadline') : deadline + SECONDS_PER_DAY;
+            const judgeDeadline = options.judgeDeadline
+                ? parseU64(options.judgeDeadline, 'judge-deadline')
+                : deadline + SECONDS_PER_DAY;
             const mint = options.mint ? parseAddress(options.mint, 'mint') : undefined;
 
             spinner.text = 'Submitting transaction...';

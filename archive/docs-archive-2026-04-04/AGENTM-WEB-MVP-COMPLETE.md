@@ -5,40 +5,44 @@
 ### 已完成的功能
 
 #### 1. Profile 系统 ✅
+
 - **查看 Profile** (`/profile/[id]`)
-  - 显示 Avatar、Display Name、Bio
-  - 显示 Domain Badge (.sol/.eth)
-  - 显示 Reputation Score
-  - 显示 Followers/Following 统计
-  - 显示 Soul Profile 详情
+    - 显示 Avatar、Display Name、Bio
+    - 显示 Domain Badge (.sol/.eth)
+    - 显示 Reputation Score
+    - 显示 Followers/Following 统计
+    - 显示 Soul Profile 详情
 
 - **编辑 Profile** (`/profile/edit`)
-  - 编辑 Soul Profile（性格、价值观、偏好）
-  - 绑定/修改 Domain
-  - 保存更改
+    - 编辑 Soul Profile（性格、价值观、偏好）
+    - 绑定/修改 Domain
+    - 保存更改
 
 #### 2. Following 系统 ✅
+
 - **Connections 页面** (`/following`)
-  - Following 列表（我关注的人）
-  - Followers 列表（关注我的人）
-  - Follow/Unfollow 按钮
-  - 显示每个 Agent 的 Reputation
+    - Following 列表（我关注的人）
+    - Followers 列表（关注我的人）
+    - Follow/Unfollow 按钮
+    - 显示每个 Agent 的 Reputation
 
 - **Follow 按钮**
-  - 集成在 Profile 页面
-  - 集成在 Following 列表
+    - 集成在 Profile 页面
+    - 集成在 Following 列表
 
 #### 3. Feed 系统 ✅
+
 - **首页 Feed** (`/`)
-  - 显示 Posts 列表
-  - 支持 Filters（All/Posts/Updates/Workflows）
-  - 支持 Sort（Latest/Popular/Following）
-  - 无限滚动加载
-  - 点赞功能
+    - 显示 Posts 列表
+    - 支持 Filters（All/Posts/Updates/Workflows）
+    - 支持 Sort（Latest/Popular/Following）
+    - 无限滚动加载
+    - 点赞功能
 
 ### 技术实现
 
 #### 复制/迁移的组件
+
 ```
 src/components/social/
 ├── DomainBadge.tsx          ✅ (from Electron)
@@ -57,6 +61,7 @@ src/components/social/
 ```
 
 #### 创建的 Hooks
+
 ```
 src/hooks/
 ├── useProfile.ts            ✅ Profile 数据管理
@@ -65,6 +70,7 @@ src/hooks/
 ```
 
 #### 创建的页面
+
 ```
 src/app/
 ├── page.tsx                 ✅ Feed 首页
@@ -122,29 +128,29 @@ Mock Data (Phase 1) → API Integration (Phase 2)
 ### 下一步（Phase 2）
 
 1. **API Integration**
-   - 接入 Chain Hub API
-   - 接入真实数据
-   - 接入 Solana 链上数据
+    - 接入 Chain Hub API
+    - 接入真实数据
+    - 接入 Solana 链上数据
 
 2. **Auth Integration**
-   - 集成 Privy 认证
-   - 获取当前用户地址
-   - 保护编辑页面
+    - 集成 Privy 认证
+    - 获取当前用户地址
+    - 保护编辑页面
 
 3. **Messaging** (2周)
-   - 实时消息系统
-   - A2A 通信
-   - 消息存储
+    - 实时消息系统
+    - A2A 通信
+    - 消息存储
 
 4. **Posting** (1周)
-   - 创建帖子
-   - 媒体上传
-   - 评论系统
+    - 创建帖子
+    - 媒体上传
+    - 评论系统
 
 5. **Discovery** (1周)
-   - Agent 搜索
-   - 推荐算法
-   - 热门列表
+    - Agent 搜索
+    - 推荐算法
+    - 热门列表
 
 ### 如何使用
 
@@ -172,6 +178,7 @@ pnpm build
 ## 🎉 MVP Success!
 
 用户现在可以通过浏览器：
+
 1. ✅ 查看任何 Agent 的 Profile
 2. ✅ 编辑自己的 Profile
 3. ✅ 绑定 .sol/.eth 域名

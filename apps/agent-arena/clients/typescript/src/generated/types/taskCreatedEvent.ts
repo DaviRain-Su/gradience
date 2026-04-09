@@ -7,68 +7,62 @@
  */
 
 import {
-  combineCodec,
-  getArrayDecoder,
-  getArrayEncoder,
-  getI64Decoder,
-  getI64Encoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
-} from "@solana/kit";
+    combineCodec,
+    getArrayDecoder,
+    getArrayEncoder,
+    getI64Decoder,
+    getI64Encoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU64Decoder,
+    getU64Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type FixedSizeCodec,
+    type FixedSizeDecoder,
+    type FixedSizeEncoder,
+} from '@solana/kit';
 
 export type TaskCreatedEvent = {
-  taskId: bigint;
-  poster: Array<number>;
-  judge: Array<number>;
-  reward: bigint;
-  category: number;
-  deadline: bigint;
+    taskId: bigint;
+    poster: Array<number>;
+    judge: Array<number>;
+    reward: bigint;
+    category: number;
+    deadline: bigint;
 };
 
 export type TaskCreatedEventArgs = {
-  taskId: number | bigint;
-  poster: Array<number>;
-  judge: Array<number>;
-  reward: number | bigint;
-  category: number;
-  deadline: number | bigint;
+    taskId: number | bigint;
+    poster: Array<number>;
+    judge: Array<number>;
+    reward: number | bigint;
+    category: number;
+    deadline: number | bigint;
 };
 
 export function getTaskCreatedEventEncoder(): FixedSizeEncoder<TaskCreatedEventArgs> {
-  return getStructEncoder([
-    ["taskId", getU64Encoder()],
-    ["poster", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["judge", getArrayEncoder(getU8Encoder(), { size: 32 })],
-    ["reward", getU64Encoder()],
-    ["category", getU8Encoder()],
-    ["deadline", getI64Encoder()],
-  ]);
+    return getStructEncoder([
+        ['taskId', getU64Encoder()],
+        ['poster', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['judge', getArrayEncoder(getU8Encoder(), { size: 32 })],
+        ['reward', getU64Encoder()],
+        ['category', getU8Encoder()],
+        ['deadline', getI64Encoder()],
+    ]);
 }
 
 export function getTaskCreatedEventDecoder(): FixedSizeDecoder<TaskCreatedEvent> {
-  return getStructDecoder([
-    ["taskId", getU64Decoder()],
-    ["poster", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["judge", getArrayDecoder(getU8Decoder(), { size: 32 })],
-    ["reward", getU64Decoder()],
-    ["category", getU8Decoder()],
-    ["deadline", getI64Decoder()],
-  ]);
+    return getStructDecoder([
+        ['taskId', getU64Decoder()],
+        ['poster', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['judge', getArrayDecoder(getU8Decoder(), { size: 32 })],
+        ['reward', getU64Decoder()],
+        ['category', getU8Decoder()],
+        ['deadline', getI64Decoder()],
+    ]);
 }
 
-export function getTaskCreatedEventCodec(): FixedSizeCodec<
-  TaskCreatedEventArgs,
-  TaskCreatedEvent
-> {
-  return combineCodec(
-    getTaskCreatedEventEncoder(),
-    getTaskCreatedEventDecoder(),
-  );
+export function getTaskCreatedEventCodec(): FixedSizeCodec<TaskCreatedEventArgs, TaskCreatedEvent> {
+    return combineCodec(getTaskCreatedEventEncoder(), getTaskCreatedEventDecoder());
 }

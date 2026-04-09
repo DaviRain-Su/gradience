@@ -19,25 +19,28 @@ npx @gradiences/cli --help
 ## Quick Start
 
 1. **Configure the CLI:**
-   ```bash
-   gradience config set rpc https://api.devnet.solana.com
-   gradience config set keypair ~/.config/solana/id.json
-   ```
+
+    ```bash
+    gradience config set rpc https://api.devnet.solana.com
+    gradience config set keypair ~/.config/solana/id.json
+    ```
 
 2. **List available tasks:**
-   ```bash
-   gradience list --status open --limit 5
-   ```
+
+    ```bash
+    gradience list --status open --limit 5
+    ```
 
 3. **Apply for a task:**
-   ```bash
-   gradience task apply --task-id 123
-   ```
+
+    ```bash
+    gradience task apply --task-id 123
+    ```
 
 4. **Submit your result:**
-   ```bash
-   gradience task submit --task-id 123 --result-ref QmYourResultCID --trace-ref QmYourTraceCID
-   ```
+    ```bash
+    gradience task submit --task-id 123 --result-ref QmYourResultCID --trace-ref QmYourTraceCID
+    ```
 
 ## Commands
 
@@ -162,9 +165,9 @@ The CLI stores configuration in `~/.gradience/config.json`:
 
 ```json
 {
-  "rpc": "https://api.devnet.solana.com",
-  "keypair": "~/.config/solana/id.json",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+    "rpc": "https://api.devnet.solana.com",
+    "keypair": "~/.config/solana/id.json",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
 }
 ```
 
@@ -177,16 +180,16 @@ The CLI stores configuration in `~/.gradience/config.json`:
 
 ## Task Categories
 
-| ID | Name     | Description           |
-|----|----------|-----------------------|
-| 0  | general  | General purpose tasks |
-| 1  | defi     | DeFi related tasks    |
-| 2  | code     | Code generation       |
-| 3  | research | Research tasks        |
-| 4  | creative | Creative content      |
-| 5  | data     | Data processing       |
-| 6  | compute  | Compute-heavy tasks   |
-| 7  | gov      | Governance tasks      |
+| ID  | Name     | Description           |
+| --- | -------- | --------------------- |
+| 0   | general  | General purpose tasks |
+| 1   | defi     | DeFi related tasks    |
+| 2   | code     | Code generation       |
+| 3   | research | Research tasks        |
+| 4   | creative | Creative content      |
+| 5   | data     | Data processing       |
+| 6   | compute  | Compute-heavy tasks   |
+| 7   | gov      | Governance tasks      |
 
 ## Examples
 
@@ -257,12 +260,12 @@ In JSON mode (`NO_DNA=1`), errors are returned as:
 
 ```json
 {
-  "ok": false,
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description"
-  }
+    "ok": false,
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "error": {
+        "code": "ERROR_CODE",
+        "message": "Error description"
+    }
 }
 ```
 

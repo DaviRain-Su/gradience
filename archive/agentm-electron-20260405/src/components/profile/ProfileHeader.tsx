@@ -101,9 +101,7 @@ export function ProfileHeader({
     };
 
     const primaryDomain = profile.primaryDomain;
-    const otherDomains = profile.domains.filter(
-        (d) => d.name !== primaryDomain?.name,
-    );
+    const otherDomains = profile.domains.filter((d) => d.name !== primaryDomain?.name);
     const hasDomains = profile.domains.length > 0;
 
     return (
@@ -152,10 +150,7 @@ export function ProfileHeader({
                     </div>
 
                     {/* Agent address */}
-                    <p
-                        className={`${config.agent} text-gray-500 font-mono mt-1`}
-                        title={profile.agent}
-                    >
+                    <p className={`${config.agent} text-gray-500 font-mono mt-1`} title={profile.agent}>
                         {truncateAgent(profile.agent)}
                     </p>
 
@@ -174,9 +169,7 @@ export function ProfileHeader({
                                     onClick={() => setShowAllDomains(!showAllDomains)}
                                     className="text-xs text-gray-500 hover:text-gray-400 mt-2 transition"
                                 >
-                                    {showAllDomains
-                                        ? 'Show less'
-                                        : `Show all ${otherDomains.length} domains`}
+                                    {showAllDomains ? 'Show less' : `Show all ${otherDomains.length} domains`}
                                 </button>
                             )}
                         </div>
@@ -184,9 +177,7 @@ export function ProfileHeader({
 
                     {/* No domains message */}
                     {!hasDomains && !canEdit && (
-                        <p className="text-xs text-gray-500 mt-3">
-                            No domains linked to this profile
-                        </p>
+                        <p className="text-xs text-gray-500 mt-3">No domains linked to this profile</p>
                     )}
 
                     {/* Add domain section */}
@@ -194,12 +185,8 @@ export function ProfileHeader({
                         <div className="mt-4">
                             {isAddingDomain ? (
                                 <div className="bg-gray-950 rounded-lg p-3 space-y-2">
-                                    <p className="text-xs text-gray-400">
-                                        Link a blockchain domain
-                                    </p>
-                                    <DomainInputCompact
-                                        onSubmit={handleAddDomain}
-                                    />
+                                    <p className="text-xs text-gray-400">Link a blockchain domain</p>
+                                    <DomainInputCompact onSubmit={handleAddDomain} />
                                     <button
                                         type="button"
                                         onClick={() => setIsAddingDomain(false)}
@@ -226,9 +213,7 @@ export function ProfileHeader({
             {/* Domain management actions */}
             {canEdit && hasDomains && onSetPrimary && (
                 <div className="mt-4 pt-4 border-t border-gray-800">
-                    <p className="text-xs text-gray-500 mb-2">
-                        Set primary domain:
-                    </p>
+                    <p className="text-xs text-gray-500 mb-2">Set primary domain:</p>
                     <div className="flex flex-wrap gap-2">
                         {profile.domains.map((domain) => (
                             <button
@@ -237,16 +222,15 @@ export function ProfileHeader({
                                 onClick={() => onSetPrimary(domain)}
                                 className={`
                                     inline-flex items-center gap-1 px-2 py-1 rounded text-xs transition
-                                    ${primaryDomain?.name === domain.name
-                                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
-                                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    ${
+                                        primaryDomain?.name === domain.name
+                                            ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
+                                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }
                                 `}
                             >
                                 <DomainBadge domain={domain} size="sm" />
-                                {primaryDomain?.name === domain.name && (
-                                    <span>(primary)</span>
-                                )}
+                                {primaryDomain?.name === domain.name && <span>(primary)</span>}
                             </button>
                         ))}
                     </div>
@@ -266,12 +250,7 @@ export interface ProfileHeaderCompactProps {
     className?: string;
 }
 
-export function ProfileHeaderCompact({
-    profile,
-    size = 'md',
-    onClick,
-    className = '',
-}: ProfileHeaderCompactProps) {
+export function ProfileHeaderCompact({ profile, size = 'md', onClick, className = '' }: ProfileHeaderCompactProps) {
     const config = {
         sm: { avatar: 'w-8 h-8 text-sm', name: 'text-sm', agent: 'text-xs' },
         md: { avatar: 'w-10 h-10 text-base', name: 'text-base', agent: 'text-xs' },
@@ -315,13 +294,9 @@ export function ProfileHeaderCompact({
                     <span className={`${config.name} font-medium text-white truncate`}>
                         {profile.displayName || 'Unnamed Agent'}
                     </span>
-                    {profile.primaryDomain && (
-                        <DomainBadge domain={profile.primaryDomain} size="sm" />
-                    )}
+                    {profile.primaryDomain && <DomainBadge domain={profile.primaryDomain} size="sm" />}
                 </div>
-                <p className={`${config.agent} text-gray-500 font-mono`}>
-                    {truncateAgent(profile.agent)}
-                </p>
+                <p className={`${config.agent} text-gray-500 font-mono`}>{truncateAgent(profile.agent)}</p>
             </div>
         </div>
     );

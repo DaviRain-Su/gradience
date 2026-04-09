@@ -7,134 +7,131 @@
  */
 
 import {
-  assertAccountExists,
-  assertAccountsExist,
-  combineCodec,
-  decodeAccount,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getArrayDecoder,
-  getArrayEncoder,
-  getStructDecoder,
-  getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU8Decoder,
-  getU8Encoder,
-  type Account,
-  type Address,
-  type Codec,
-  type Decoder,
-  type EncodedAccount,
-  type Encoder,
-  type FetchAccountConfig,
-  type FetchAccountsConfig,
-  type MaybeAccount,
-  type MaybeEncodedAccount,
-} from "@solana/kit";
+    assertAccountExists,
+    assertAccountsExist,
+    combineCodec,
+    decodeAccount,
+    fetchEncodedAccount,
+    fetchEncodedAccounts,
+    getArrayDecoder,
+    getArrayEncoder,
+    getStructDecoder,
+    getStructEncoder,
+    getU32Decoder,
+    getU32Encoder,
+    getU8Decoder,
+    getU8Encoder,
+    type Account,
+    type Address,
+    type Codec,
+    type Decoder,
+    type EncodedAccount,
+    type Encoder,
+    type FetchAccountConfig,
+    type FetchAccountsConfig,
+    type MaybeAccount,
+    type MaybeEncodedAccount,
+} from '@solana/kit';
 import {
-  getJudgePoolEntryDecoder,
-  getJudgePoolEntryEncoder,
-  type JudgePoolEntry,
-  type JudgePoolEntryArgs,
-} from "../types";
+    getJudgePoolEntryDecoder,
+    getJudgePoolEntryEncoder,
+    type JudgePoolEntry,
+    type JudgePoolEntryArgs,
+} from '../types';
 
 export type JudgePool = {
-  discriminator: number;
-  version: number;
-  category: number;
-  totalWeight: number;
-  entries: Array<JudgePoolEntry>;
-  bump: number;
+    discriminator: number;
+    version: number;
+    category: number;
+    totalWeight: number;
+    entries: Array<JudgePoolEntry>;
+    bump: number;
 };
 
 export type JudgePoolArgs = {
-  discriminator: number;
-  version: number;
-  category: number;
-  totalWeight: number;
-  entries: Array<JudgePoolEntryArgs>;
-  bump: number;
+    discriminator: number;
+    version: number;
+    category: number;
+    totalWeight: number;
+    entries: Array<JudgePoolEntryArgs>;
+    bump: number;
 };
 
 /** Gets the encoder for {@link JudgePoolArgs} account data. */
 export function getJudgePoolEncoder(): Encoder<JudgePoolArgs> {
-  return getStructEncoder([
-    ["discriminator", getU8Encoder()],
-    ["version", getU8Encoder()],
-    ["category", getU8Encoder()],
-    ["totalWeight", getU32Encoder()],
-    ["entries", getArrayEncoder(getJudgePoolEntryEncoder())],
-    ["bump", getU8Encoder()],
-  ]);
+    return getStructEncoder([
+        ['discriminator', getU8Encoder()],
+        ['version', getU8Encoder()],
+        ['category', getU8Encoder()],
+        ['totalWeight', getU32Encoder()],
+        ['entries', getArrayEncoder(getJudgePoolEntryEncoder())],
+        ['bump', getU8Encoder()],
+    ]);
 }
 
 /** Gets the decoder for {@link JudgePool} account data. */
 export function getJudgePoolDecoder(): Decoder<JudgePool> {
-  return getStructDecoder([
-    ["discriminator", getU8Decoder()],
-    ["version", getU8Decoder()],
-    ["category", getU8Decoder()],
-    ["totalWeight", getU32Decoder()],
-    ["entries", getArrayDecoder(getJudgePoolEntryDecoder())],
-    ["bump", getU8Decoder()],
-  ]);
+    return getStructDecoder([
+        ['discriminator', getU8Decoder()],
+        ['version', getU8Decoder()],
+        ['category', getU8Decoder()],
+        ['totalWeight', getU32Decoder()],
+        ['entries', getArrayDecoder(getJudgePoolEntryDecoder())],
+        ['bump', getU8Decoder()],
+    ]);
 }
 
 /** Gets the codec for {@link JudgePool} account data. */
 export function getJudgePoolCodec(): Codec<JudgePoolArgs, JudgePool> {
-  return combineCodec(getJudgePoolEncoder(), getJudgePoolDecoder());
+    return combineCodec(getJudgePoolEncoder(), getJudgePoolDecoder());
 }
 
 export function decodeJudgePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress>,
 ): Account<JudgePool, TAddress>;
 export function decodeJudgePool<TAddress extends string = string>(
-  encodedAccount: MaybeEncodedAccount<TAddress>,
+    encodedAccount: MaybeEncodedAccount<TAddress>,
 ): MaybeAccount<JudgePool, TAddress>;
 export function decodeJudgePool<TAddress extends string = string>(
-  encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
+    encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
 ): Account<JudgePool, TAddress> | MaybeAccount<JudgePool, TAddress> {
-  return decodeAccount(
-    encodedAccount as MaybeEncodedAccount<TAddress>,
-    getJudgePoolDecoder(),
-  );
+    return decodeAccount(encodedAccount as MaybeEncodedAccount<TAddress>, getJudgePoolDecoder());
 }
 
 export async function fetchJudgePool<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<Account<JudgePool, TAddress>> {
-  const maybeAccount = await fetchMaybeJudgePool(rpc, address, config);
-  assertAccountExists(maybeAccount);
-  return maybeAccount;
+    const maybeAccount = await fetchMaybeJudgePool(rpc, address, config);
+    assertAccountExists(maybeAccount);
+    return maybeAccount;
 }
 
 export async function fetchMaybeJudgePool<TAddress extends string = string>(
-  rpc: Parameters<typeof fetchEncodedAccount>[0],
-  address: Address<TAddress>,
-  config?: FetchAccountConfig,
+    rpc: Parameters<typeof fetchEncodedAccount>[0],
+    address: Address<TAddress>,
+    config?: FetchAccountConfig,
 ): Promise<MaybeAccount<JudgePool, TAddress>> {
-  const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeJudgePool(maybeAccount);
+    const maybeAccount = await fetchEncodedAccount(rpc, address, config);
+    return decodeJudgePool(maybeAccount);
 }
 
 export async function fetchAllJudgePool(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<Account<JudgePool>[]> {
-  const maybeAccounts = await fetchAllMaybeJudgePool(rpc, addresses, config);
-  assertAccountsExist(maybeAccounts);
-  return maybeAccounts;
+    const maybeAccounts = await fetchAllMaybeJudgePool(rpc, addresses, config);
+    assertAccountsExist(maybeAccounts);
+    return maybeAccounts;
 }
 
 export async function fetchAllMaybeJudgePool(
-  rpc: Parameters<typeof fetchEncodedAccounts>[0],
-  addresses: Array<Address>,
-  config?: FetchAccountsConfig,
+    rpc: Parameters<typeof fetchEncodedAccounts>[0],
+    addresses: Array<Address>,
+    config?: FetchAccountsConfig,
 ): Promise<MaybeAccount<JudgePool>[]> {
-  const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeJudgePool(maybeAccount));
+    const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
+    return maybeAccounts.map(maybeAccount => decodeJudgePool(maybeAccount));
 }

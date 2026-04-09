@@ -10,7 +10,7 @@
 ## 0. Overview
 
 GRA-207 integrates MagicBlock's ephemeral VRF network for verifiable judge
-selection.  The integration is **fully functional** end-to-end:
+selection. The integration is **fully functional** end-to-end:
 
 1. **Daemon** builds a `RequestRandomness` instruction manually (no npm SDK
    required).
@@ -54,9 +54,9 @@ selection.  The integration is **fully functional** end-to-end:
 ### 1.2 Proof Verification Model
 
 MagicBlock's `ephemeral-vrf` program performs **on-chain proof verification**
-inside `ProvideRandomness`.  The proof is cryptographically validated using
+inside `ProvideRandomness`. The proof is cryptographically validated using
 Curve25519/Ed25519 (RFC 9381) before the CPI to our callback handler is ever
-executed.  Gradience therefore **does not re-verify** the proof inside the
+executed. Gradience therefore **does not re-verify** the proof inside the
 callback handler — the signed CPI itself is the guarantee of validity.
 
 Reference: [`program/src/provide_randomness.rs`](https://github.com/magicblock-labs/ephemeral-vrf/blob/main/program/src/provide_randomness.rs)
@@ -67,19 +67,19 @@ Reference: [`program/src/provide_randomness.rs`](https://github.com/magicblock-l
 
 ### 2.1 Off-Chain TypeScript
 
-| Component | Path | Responsibility |
-|-----------|------|----------------|
-| `MagicBlockVRFClient` | `settlement/magicblock-vrf-client.ts` | Build `RequestRandomness` ix, parse oracle queue, read `VrfResult` PDA |
-| `VRFJudgeSelector` | `settlement/vrf-judge-selector.ts` | Generate seed, request VRF, read result, select judge |
-| `JudgeRotationManager` | `settlement/vrf-judge-selector.ts` | Exclude recent judges before selection |
+| Component              | Path                                  | Responsibility                                                         |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------------------------- |
+| `MagicBlockVRFClient`  | `settlement/magicblock-vrf-client.ts` | Build `RequestRandomness` ix, parse oracle queue, read `VrfResult` PDA |
+| `VRFJudgeSelector`     | `settlement/vrf-judge-selector.ts`    | Generate seed, request VRF, read result, select judge                  |
+| `JudgeRotationManager` | `settlement/vrf-judge-selector.ts`    | Exclude recent judges before selection                                 |
 
 ### 2.2 On-Chain Rust
 
-| Type | Path | Responsibility |
-|------|------|----------------|
-| `VrfResult` | `state/agent_layer.rs` | PDA schema: `task_id`, `randomness[32]`, `fulfilled`, `bump` |
-| `select_judge_index` | `vrf.rs` | `randomness % candidate_count` |
-| `ReceiveVrfRandomness` | `instructions/receive_vrf_randomness/` | Callback handler that writes `VrfResult` |
+| Type                   | Path                                   | Responsibility                                               |
+| ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `VrfResult`            | `state/agent_layer.rs`                 | PDA schema: `task_id`, `randomness[32]`, `fulfilled`, `bump` |
+| `select_judge_index`   | `vrf.rs`                               | `randomness % candidate_count`                               |
+| `ReceiveVrfRandomness` | `instructions/receive_vrf_randomness/` | Callback handler that writes `VrfResult`                     |
 
 ---
 
@@ -87,19 +87,19 @@ Reference: [`program/src/provide_randomness.rs`](https://github.com/magicblock-l
 
 ### 3.1 Daemon Routes
 
-| Method | Path | Purpose | Status |
-|--------|------|---------|--------|
-| `POST` | `/api/v1/magicblock/session` | Create ER/PER session | Implemented |
-| `POST` | `/api/v1/magicblock/judge-per` | Settle via PER pipeline | Implemented |
+| Method | Path                             | Purpose                                 | Status      |
+| ------ | -------------------------------- | --------------------------------------- | ----------- |
+| `POST` | `/api/v1/magicblock/session`     | Create ER/PER session                   | Implemented |
+| `POST` | `/api/v1/magicblock/judge-per`   | Settle via PER pipeline                 | Implemented |
 | `POST` | `/api/v1/magicblock/request-vrf` | Build `RequestRandomness` ix for caller | Implemented |
 
 ### 3.2 On-Chain Instructions
 
-| Instruction | Description | Status |
-|-------------|-------------|--------|
-| `PostTask` | Uses `SlotHashes` fallback (`select_pool_judge`) when VRF not requested | Implemented |
-| `ReceiveVrfRandomness` | Callback handler, writes randomness to `vrf_result` PDA | Implemented |
-| `JudgeAndPay` | Settles task after daemon reads `vrf_result` and selects winner | Implemented |
+| Instruction            | Description                                                             | Status      |
+| ---------------------- | ----------------------------------------------------------------------- | ----------- |
+| `PostTask`             | Uses `SlotHashes` fallback (`select_pool_judge`) when VRF not requested | Implemented |
+| `ReceiveVrfRandomness` | Callback handler, writes randomness to `vrf_result` PDA                 | Implemented |
+| `JudgeAndPay`          | Settles task after daemon reads `vrf_result` and selects winner         | Implemented |
 
 ---
 

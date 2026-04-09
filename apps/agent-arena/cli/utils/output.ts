@@ -96,7 +96,8 @@ export function printHelp(noDna: boolean): void {
                     description: 'Update agent profile via AgentM API',
                 },
                 {
-                    command: 'profile publish [--agent <address>] [--mode <manual|git-sync>] [--content-ref <cid-or-hash>]',
+                    command:
+                        'profile publish [--agent <address>] [--mode <manual|git-sync>] [--content-ref <cid-or-hash>]',
                     description: 'Publish profile on-chain reference via AgentM API',
                 },
             ],
@@ -163,12 +164,7 @@ export function emitTaskSignature(
 /**
  * Emit task status output
  */
-export function emitStatus(
-    taskId: number,
-    state: string,
-    submissionCount: bigint,
-    noDna: boolean,
-): void {
+export function emitStatus(taskId: number, state: string, submissionCount: bigint, noDna: boolean): void {
     if (noDna) {
         printJson({
             taskId,
@@ -200,11 +196,7 @@ export function emitJudgeSignature(
 /**
  * Emit profile show result output
  */
-export function emitProfileShowResult(
-    agent: string,
-    profile: AgentProfileApiResponse | null,
-    noDna: boolean,
-): void {
+export function emitProfileShowResult(agent: string, profile: AgentProfileApiResponse | null, noDna: boolean): void {
     if (noDna) {
         printJson({ agent, profile });
         return;

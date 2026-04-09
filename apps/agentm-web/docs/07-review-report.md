@@ -19,24 +19,24 @@
 
 ### 7.1.2 安全审查
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 权限校验完整 | ✅ | JWT Token 验证 |
-| XSS 防护 | ✅ | React 自动转义 |
-| 输入验证 | ✅ | 长度和类型检查 |
-| 请求超时 | ✅ | AbortSignal.timeout() |
-| API 降级 | ✅ | 错误静默处理 |
-| 敏感信息保护 | ✅ | 无密钥硬编码 |
+| 检查项       | 状态 | 备注                  |
+| ------------ | ---- | --------------------- |
+| 权限校验完整 | ✅   | JWT Token 验证        |
+| XSS 防护     | ✅   | React 自动转义        |
+| 输入验证     | ✅   | 长度和类型检查        |
+| 请求超时     | ✅   | AbortSignal.timeout() |
+| API 降级     | ✅   | 错误静默处理          |
+| 敏感信息保护 | ✅   | 无密钥硬编码          |
 
 ### 7.1.3 代码质量检查
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| TypeScript 严格模式 | ✅ | strict: true |
-| ESLint 无错误 | ✅ | 配置合规 |
-| Prettier 格式化 | ✅ | 已格式化 |
-| 无 console.log | ⚠️ | 部分调试日志待清理 |
-| 无 unused imports | ✅ | 已清理 |
+| 检查项              | 状态 | 备注               |
+| ------------------- | ---- | ------------------ |
+| TypeScript 严格模式 | ✅   | strict: true       |
+| ESLint 无错误       | ✅   | 配置合规           |
+| Prettier 格式化     | ✅   | 已格式化           |
+| 无 console.log      | ⚠️   | 部分调试日志待清理 |
+| 无 unused imports   | ✅   | 已清理             |
 
 ## 7.2 部署清单（必填）
 
@@ -66,12 +66,12 @@ NEXT_PUBLIC_DAEMON_WS_URL=wss://api.gradiences.xyz
 ```typescript
 // next.config.ts
 const nextConfig = {
-  output: 'export',
-  distDir: 'dist',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/agentm-web' : undefined,
-  images: {
-    unoptimized: true,
-  },
+    output: 'export',
+    distDir: 'dist',
+    assetPrefix: process.env.NODE_ENV === 'production' ? '/agentm-web' : undefined,
+    images: {
+        unoptimized: true,
+    },
 };
 ```
 
@@ -91,60 +91,60 @@ const nextConfig = {
 
 ## 7.3 版本发布（必填）
 
-| 属性 | 值 |
-|------|------|
-| 版本号 | v0.1.0 |
-| 发布日期 | 2026-04-05 |
+| 属性     | 值                                                                  |
+| -------- | ------------------------------------------------------------------- |
+| 版本号   | v0.1.0                                                              |
+| 发布日期 | 2026-04-05                                                          |
 | 变更摘要 | Initial release: Profile, Following, Feed, Dashboard, AI Playground |
-| 部署环境 | Vercel Production |
-| Git Tag | v0.1.0 |
+| 部署环境 | Vercel Production                                                   |
+| Git Tag  | v0.1.0                                                              |
 
 ## 7.4 已知问题（必填）
 
-| # | 问题 | 严重度 | 计划修复版本 |
-|---|------|--------|-------------|
-| 1 | 部分调试 console.log 未清理 | P3 | v0.1.1 |
-| 2 | E2E 测试覆盖率待提升 | P2 | v0.1.1 |
-| 3 | Feed 分页加载动画可优化 | P3 | v0.2.0 |
-| 4 | 移动端响应式待完善 | P2 | v0.2.0 |
+| #   | 问题                        | 严重度 | 计划修复版本 |
+| --- | --------------------------- | ------ | ------------ |
+| 1   | 部分调试 console.log 未清理 | P3     | v0.1.1       |
+| 2   | E2E 测试覆盖率待提升        | P2     | v0.1.1       |
+| 3   | Feed 分页加载动画可优化     | P3     | v0.2.0       |
+| 4   | 移动端响应式待完善          | P2     | v0.2.0       |
 
 ## 7.5 后续任务（可选）
 
-| # | 描述 | 优先级 |
-|---|------|--------|
-| 1 | 添加更多 E2E 测试场景 | P1 |
-| 2 | 实现实时通知（WebSocket）| P1 |
-| 3 | 添加搜索功能 | P2 |
-| 4 | 优化移动端体验 | P2 |
-| 5 | 添加更多 AI Playground 模板 | P3 |
+| #   | 描述                        | 优先级 |
+| --- | --------------------------- | ------ |
+| 1   | 添加更多 E2E 测试场景       | P1     |
+| 2   | 实现实时通知（WebSocket）   | P1     |
+| 3   | 添加搜索功能                | P2     |
+| 4   | 优化移动端体验              | P2     |
+| 5   | 添加更多 AI Playground 模板 | P3     |
 
 ## 7.6 性能评估
 
 ### 7.6.1 首屏加载性能
 
-| 指标 | 实测值 | 目标值 | 状态 |
-|------|--------|--------|------|
-| First Contentful Paint | ~1.2s | < 1.5s | ✅ |
-| Largest Contentful Paint | ~2.1s | < 2.5s | ✅ |
-| Time to Interactive | ~2.5s | < 3s | ✅ |
+| 指标                     | 实测值 | 目标值 | 状态 |
+| ------------------------ | ------ | ------ | ---- |
+| First Contentful Paint   | ~1.2s  | < 1.5s | ✅   |
+| Largest Contentful Paint | ~2.1s  | < 2.5s | ✅   |
+| Time to Interactive      | ~2.5s  | < 3s   | ✅   |
 
 ### 7.6.2 运行时性能
 
-| 指标 | 实测值 | 目标值 | 状态 |
-|------|--------|--------|------|
-| 交互响应 | < 50ms | < 100ms | ✅ |
-| API 响应 | ~300ms | < 500ms | ✅ |
-| 内存占用 | ~80MB | < 150MB | ✅ |
+| 指标     | 实测值 | 目标值  | 状态 |
+| -------- | ------ | ------- | ---- |
+| 交互响应 | < 50ms | < 100ms | ✅   |
+| API 响应 | ~300ms | < 500ms | ✅   |
+| 内存占用 | ~80MB  | < 150MB | ✅   |
 
 ## 7.7 部署状态
 
-| 检查项 | 状态 | 备注 |
-|--------|------|------|
-| 构建成功 | ✅ | 无错误 |
-| 静态导出 | ✅ | dist 目录生成 |
-| Vercel 部署 | ✅ | 自动部署 |
-| 域名配置 | ✅ | Vercel 默认域名 |
-| HTTPS | ✅ | 自动 SSL |
+| 检查项      | 状态 | 备注            |
+| ----------- | ---- | --------------- |
+| 构建成功    | ✅   | 无错误          |
+| 静态导出    | ✅   | dist 目录生成   |
+| Vercel 部署 | ✅   | 自动部署        |
+| 域名配置    | ✅   | Vercel 默认域名 |
+| HTTPS       | ✅   | 自动 SSL        |
 
 ---
 
@@ -181,6 +181,7 @@ apps/agentm-web/docs/
 AgentM Web 是一个基于 Next.js 15 的 Web 应用，提供完整的 Agent Profile 管理、社交系统和 Dashboard 功能。项目遵循 7 阶段开发方法论，文档完整，代码质量达标，已成功部署到 Vercel。
 
 ### 核心功能
+
 - ✅ Profile 创建、编辑、查看
 - ✅ Following/Followers 系统
 - ✅ Feed 流（发帖、点赞、浏览）
@@ -189,6 +190,7 @@ AgentM Web 是一个基于 Next.js 15 的 Web 应用，提供完整的 Agent Pro
 - ✅ Privy 认证集成
 
 ### 技术亮点
+
 - TypeScript 严格模式
 - Inline styles（精确控制）
 - 智能 API 降级

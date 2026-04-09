@@ -13,14 +13,10 @@ import { configCommand } from './commands/config.js';
 
 const program = new Command();
 
-program
-    .name('gradience')
-    .description('CLI for Gradience protocol - decentralized task marketplace')
-    .version('0.1.0');
+program.name('gradience').description('CLI for Gradience protocol - decentralized task marketplace').version('0.1.0');
 
 // Configuration commands
-program
-    .addCommand(configCommand);
+program.addCommand(configCommand);
 
 // Task commands group
 const taskCommand = new Command('task');
@@ -35,7 +31,7 @@ taskCommand.addCommand(judgeTaskCommand);
 
 program.addCommand(taskCommand);
 
-// Judge commands group  
+// Judge commands group
 const judgeCmd = new Command('judge');
 judgeCmd.description('Judge management commands');
 

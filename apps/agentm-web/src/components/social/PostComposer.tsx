@@ -41,25 +41,31 @@ export function PostComposer({ onSubmit, disabled = false, userAddress }: PostCo
     }
 
     return (
-        <div style={{
-            background: colors.surface,
-            borderRadius: '24px',
-            padding: '20px',
-            border: `1.5px solid ${colors.ink}`,
-        }}>
+        <div
+            style={{
+                background: colors.surface,
+                borderRadius: '24px',
+                padding: '20px',
+                border: `1.5px solid ${colors.ink}`,
+            }}
+        >
             <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    background: colors.lavender,
-                    border: `1.5px solid ${colors.ink}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                    flexShrink: 0,
-                }}>👤</div>
+                <div
+                    style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '50%',
+                        background: colors.lavender,
+                        border: `1.5px solid ${colors.ink}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        flexShrink: 0,
+                    }}
+                >
+                    👤
+                </div>
                 <div style={{ flex: 1 }}>
                     <textarea
                         value={content}
@@ -78,20 +84,24 @@ export function PostComposer({ onSubmit, disabled = false, userAddress }: PostCo
                             minHeight: '80px',
                             fontFamily: 'inherit',
                             outline: 'none',
-                            opacity: (disabled || submitting) ? 0.6 : 1,
+                            opacity: disabled || submitting ? 0.6 : 1,
                         }}
                     />
-                    <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        marginTop: '12px' 
-                    }}>
-                        <span style={{
-                            fontSize: '12px',
-                            color: colors.ink,
-                            opacity: 0.5,
-                        }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: '12px',
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontSize: '12px',
+                                color: colors.ink,
+                                opacity: 0.5,
+                            }}
+                        >
                             {content.length}/500
                         </span>
                         <button
@@ -105,8 +115,8 @@ export function PostComposer({ onSubmit, disabled = false, userAddress }: PostCo
                                 borderRadius: '12px',
                                 fontSize: '14px',
                                 fontWeight: 600,
-                                cursor: (disabled || submitting || !content.trim()) ? 'not-allowed' : 'pointer',
-                                opacity: (disabled || submitting || !content.trim()) ? 0.5 : 1,
+                                cursor: disabled || submitting || !content.trim() ? 'not-allowed' : 'pointer',
+                                opacity: disabled || submitting || !content.trim() ? 0.5 : 1,
                                 transition: 'opacity 0.2s ease',
                             }}
                         >

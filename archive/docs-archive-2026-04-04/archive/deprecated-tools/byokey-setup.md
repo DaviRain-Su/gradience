@@ -22,16 +22,19 @@ Copilot     ──┘                         ├──  Windsurf
 ### 1. 安装
 
 **选项 A: Homebrew (推荐)**
+
 ```bash
 brew install AprilNEA/tap/byokey
 ```
 
 **选项 B: Cargo**
+
 ```bash
 cargo install byokey
 ```
 
 **选项 C: 从源码编译**
+
 ```bash
 git clone https://github.com/AprilNEA/BYOKEY
 cd BYOKEY
@@ -84,6 +87,7 @@ byokey status
 ### 4. 配置工具使用
 
 #### 对于 Amp Code
+
 ```bash
 # 自动注入配置
 byokey amp inject
@@ -95,6 +99,7 @@ byokey amp inject
 ```
 
 #### 对于 Cursor
+
 ```bash
 # 设置环境变量
 export OPENAI_BASE_URL=http://localhost:8018/v1
@@ -102,12 +107,14 @@ export OPENAI_API_KEY=***  # 任意值，byokey 会忽略
 ```
 
 #### 对于 Factory CLI (Droid)
+
 ```bash
 export OPENAI_BASE_URL=http://localhost:8018/v1
 export ANTHROPIC_BASE_URL=http://localhost:8018/v1
 ```
 
 #### 通用 OpenAI 客户端
+
 ```python
 import openai
 
@@ -133,17 +140,17 @@ port: 8018
 host: 127.0.0.1
 
 providers:
-  # 使用 API Key 而不是 OAuth
-  claude:
-    api_key: "sk-ant-api03-..."
-  
-  # 禁用某个 provider
-  gemini:
-    enabled: false
-  
-  # 只使用 OAuth（需要提前 byokey login）
-  codex:
-    enabled: true
+    # 使用 API Key 而不是 OAuth
+    claude:
+        api_key: 'sk-ant-api03-...'
+
+    # 禁用某个 provider
+    gemini:
+        enabled: false
+
+    # 只使用 OAuth（需要提前 byokey login）
+    codex:
+        enabled: true
 ```
 
 ---
@@ -201,12 +208,14 @@ curl http://localhost:8018/v1/chat/completions \
 ## 🐛 常见问题
 
 ### 1. 端口被占用
+
 ```bash
 # 使用其他端口
 byokey serve --port 8080
 ```
 
 ### 2. Token 过期
+
 ```bash
 # 重新登录
 byokey logout claude
@@ -214,12 +223,14 @@ byokey login claude
 ```
 
 ### 3. 后台服务日志
+
 ```bash
 # 查看日志
 tail -f ~/.byokey/server.log
 ```
 
 ### 4. 数据库位置
+
 ```bash
 # Token 存储在
 ~/.byokey/tokens.db
@@ -232,13 +243,13 @@ tail -f ~/.byokey/server.log
 
 ## 📝 支持的模型
 
-| Provider | 认证方式 | 模型 |
-|---------|---------|------|
-| **Claude** | PKCE | opus-4-6, sonnet-4-5, haiku-4-5 |
-| **Codex** | PKCE | o4-mini, o3 |
+| Provider    | 认证方式    | 模型                                   |
+| ----------- | ----------- | -------------------------------------- |
+| **Claude**  | PKCE        | opus-4-6, sonnet-4-5, haiku-4-5        |
+| **Codex**   | PKCE        | o4-mini, o3                            |
 | **Copilot** | Device code | gpt-5.x, claude-sonnet-4.x, gemini-3.x |
-| **Gemini** | PKCE | 2.0-flash, 1.5-pro, 1.5-flash |
-| **Kiro** | Device code | kiro-default |
+| **Gemini**  | PKCE        | 2.0-flash, 1.5-pro, 1.5-flash          |
+| **Kiro**    | Device code | kiro-default                           |
 
 ---
 

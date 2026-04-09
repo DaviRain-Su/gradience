@@ -64,6 +64,7 @@ git submodule add https://github.com/YOUR_ORG/dev-lifecycle.git docs/methodology
 
 ```markdown
 ## Mandatory Development Lifecycle
+
 → Read: docs/methodology/README.md
 ```
 
@@ -81,33 +82,38 @@ Templates: https://github.com/YOUR_ORG/dev-lifecycle/tree/main/templates
 
 ## 模板清单
 
-| Phase | 模板 | 说明 |
-|-------|------|------|
-| 1 | [templates/01-prd.md](templates/01-prd.md) | 需求定义：问题、用户故事、范围、成功标准 |
-| 2 | [templates/02-architecture.md](templates/02-architecture.md) | 架构设计：组件、数据流、依赖、状态管理 |
-| 3 | [templates/03-technical-spec.md](templates/03-technical-spec.md) | **技术规格：数据结构(字节级)、接口、错误码、状态机** |
-| 4 | [templates/04-task-breakdown.md](templates/04-task-breakdown.md) | 任务拆解：≤4h 任务列表、依赖图、里程碑 |
-| 5 | [templates/05-test-spec.md](templates/05-test-spec.md) | 测试规格：Happy/Boundary/Error 用例、TDD 骨架 |
-| 6 | [templates/06-implementation.md](templates/06-implementation.md) | 实现检查清单：编码前/中/后检查、偏差记录 |
-| 7 | [templates/07-review-deploy.md](templates/07-review-deploy.md) | 审查部署：安全审查、部署清单、版本记录 |
+| Phase | 模板                                                             | 说明                                                 |
+| ----- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| 1     | [templates/01-prd.md](templates/01-prd.md)                       | 需求定义：问题、用户故事、范围、成功标准             |
+| 2     | [templates/02-architecture.md](templates/02-architecture.md)     | 架构设计：组件、数据流、依赖、状态管理               |
+| 3     | [templates/03-technical-spec.md](templates/03-technical-spec.md) | **技术规格：数据结构(字节级)、接口、错误码、状态机** |
+| 4     | [templates/04-task-breakdown.md](templates/04-task-breakdown.md) | 任务拆解：≤4h 任务列表、依赖图、里程碑               |
+| 5     | [templates/05-test-spec.md](templates/05-test-spec.md)           | 测试规格：Happy/Boundary/Error 用例、TDD 骨架        |
+| 6     | [templates/06-implementation.md](templates/06-implementation.md) | 实现检查清单：编码前/中/后检查、偏差记录             |
+| 7     | [templates/07-review-deploy.md](templates/07-review-deploy.md)   | 审查部署：安全审查、部署清单、版本记录               |
 
 ---
 
 ## 5 条强制规则
 
 ### 1. 不可跳过阶段
+
 即使某个阶段看似"显而易见"，也必须产出对应文档。
 
 ### 2. 技术规格是代码的契约
+
 代码必须与技术规格（Phase 3）100% 一致。规格有误时，**先改规格，再改代码**。
 
 ### 3. TDD 不可商量
+
 测试先于实现。Phase 5 的测试骨架必须在 Phase 6 实现代码之前完成。
 
 ### 4. 输入完整才能开始
+
 每个阶段的输入是上一阶段的输出。输入不完整时，不得开始当前阶段。
 
 ### 5. 模板必填项不可省略
+
 模板中「必填」部分不可省略。「可选」部分根据项目规模决定。
 
 ---
@@ -128,17 +134,17 @@ bash docs/methodology/install.sh
 
 `install.sh` 会自动生成以下所有入口文件：
 
-| Agent | 入口文件 | 备注 |
-|-------|---------|------|
-| **Codex / OpenCode / Amp** | `AGENTS.md` | OpenAI 标准 |
-| **Claude Code** | `CLAUDE.md` | Anthropic |
-| **Gemini CLI / Droid** | `GEMINI.md` | Google |
-| **Cursor** | `.cursor/rules` | Cursor |
-| **Cline** | `.clinerules` | VS Code 插件 |
-| **Windsurf** | `.windsurfrules` | Codeium |
-| **GitHub Copilot** | `.github/copilot-instructions.md` | GitHub |
-| **Aider** | `CONVENTIONS.md` | 通用约定 |
-| **pi** | `~/.pi/agent/skills/dev-lifecycle/` | 用户级 skill，`/skill:dev-lifecycle` |
+| Agent                      | 入口文件                            | 备注                                 |
+| -------------------------- | ----------------------------------- | ------------------------------------ |
+| **Codex / OpenCode / Amp** | `AGENTS.md`                         | OpenAI 标准                          |
+| **Claude Code**            | `CLAUDE.md`                         | Anthropic                            |
+| **Gemini CLI / Droid**     | `GEMINI.md`                         | Google                               |
+| **Cursor**                 | `.cursor/rules`                     | Cursor                               |
+| **Cline**                  | `.clinerules`                       | VS Code 插件                         |
+| **Windsurf**               | `.windsurfrules`                    | Codeium                              |
+| **GitHub Copilot**         | `.github/copilot-instructions.md`   | GitHub                               |
+| **Aider**                  | `CONVENTIONS.md`                    | 通用约定                             |
+| **pi**                     | `~/.pi/agent/skills/dev-lifecycle/` | 用户级 skill，`/skill:dev-lifecycle` |
 
 所有入口指向同一份 `docs/methodology/README.md`。**一处更新，处处生效。**
 
@@ -174,4 +180,4 @@ MIT
 
 ---
 
-*规格即代码的蓝图。测试即代码的验收标准。两者都先于代码存在。*
+_规格即代码的蓝图。测试即代码的验收标准。两者都先于代码存在。_

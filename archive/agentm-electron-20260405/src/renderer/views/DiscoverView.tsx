@@ -20,14 +20,7 @@ export function DiscoverView() {
     const [resultRefDrafts, setResultRefDrafts] = useState<Record<number, string>>({});
     const [traceRefDrafts, setTraceRefDrafts] = useState<Record<number, string>>({});
     const { loading, error, refresh, categories } = useDiscover(category);
-    const {
-        tasks,
-        loading: tasksLoading,
-        error: tasksError,
-        refresh: refreshTasks,
-        apply,
-        submit,
-    } = useArenaTasks();
+    const { tasks, loading: tasksLoading, error: tasksError, refresh: refreshTasks, apply, submit } = useArenaTasks();
 
     // A2A multi-protocol discovery
     const {
@@ -60,9 +53,21 @@ export function DiscoverView() {
     // Fallback: load demo data if Indexer is offline
     const loadDemoData = () => {
         setDiscoveryRows([
-            { agent: 'Alice_DeFi_Oracle', weight: 1500, reputation: { global_avg_score: 92.5, global_completed: 47, global_total_applied: 50, win_rate: 0.94 } },
-            { agent: 'Bob_Code_Auditor', weight: 800, reputation: { global_avg_score: 85.0, global_completed: 23, global_total_applied: 28, win_rate: 0.82 } },
-            { agent: 'Charlie_DataSci', weight: 600, reputation: { global_avg_score: 78.0, global_completed: 12, global_total_applied: 15, win_rate: 0.80 } },
+            {
+                agent: 'Alice_DeFi_Oracle',
+                weight: 1500,
+                reputation: { global_avg_score: 92.5, global_completed: 47, global_total_applied: 50, win_rate: 0.94 },
+            },
+            {
+                agent: 'Bob_Code_Auditor',
+                weight: 800,
+                reputation: { global_avg_score: 85.0, global_completed: 23, global_total_applied: 28, win_rate: 0.82 },
+            },
+            {
+                agent: 'Charlie_DataSci',
+                weight: 600,
+                reputation: { global_avg_score: 78.0, global_completed: 12, global_total_applied: 15, win_rate: 0.8 },
+            },
             { agent: 'Dave_NewAgent', weight: 100, reputation: null },
         ]);
     };
@@ -102,11 +107,11 @@ export function DiscoverView() {
                 </div>
             </div>
 
-            {error && (
-                <p className="text-yellow-400 text-sm">Indexer offline. Showing cached/demo data.</p>
-            )}
+            {error && <p className="text-yellow-400 text-sm">Indexer offline. Showing cached/demo data.</p>}
             {tasksError && (
-                <p className="text-yellow-400 text-sm">Task feed unavailable. Please verify AgentM API /me/tasks or Indexer /api/tasks.</p>
+                <p className="text-yellow-400 text-sm">
+                    Task feed unavailable. Please verify AgentM API /me/tasks or Indexer /api/tasks.
+                </p>
             )}
 
             {/* A2A Protocol Status */}
@@ -128,9 +133,7 @@ export function DiscoverView() {
                     </div>
                 </div>
                 {a2aInitialized && a2aAgents.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-2">
-                        Discovered {a2aAgents.length} agents via P2P network
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Discovered {a2aAgents.length} agents via P2P network</p>
                 )}
             </section>
 
@@ -147,7 +150,8 @@ export function DiscoverView() {
                                 <div>
                                     <p className="font-medium">Task #{task.taskId}</p>
                                     <p className="text-xs text-gray-500">
-                                        role: {role} · poster: {task.poster} · reward: {task.reward} · state: {task.state}
+                                        role: {role} · poster: {task.poster} · reward: {task.reward} · state:{' '}
+                                        {task.state}
                                     </p>
                                 </div>
                                 <div className="text-xs">
@@ -209,7 +213,7 @@ export function DiscoverView() {
                                     Updated:{' '}
                                     {flow
                                         ? new Date(flow.updatedAt).toLocaleString()
-                                        : latestSubmission?.submitted_at ?? 'N/A'}
+                                        : (latestSubmission?.submitted_at ?? 'N/A')}
                                     {flow?.resultRef ? ` · result_ref: ${flow.resultRef}` : ''}
                                     {!flow?.resultRef && latestSubmission?.result_ref
                                         ? ` · latest_submission: ${latestSubmission.result_ref}`
@@ -231,9 +235,7 @@ export function DiscoverView() {
                         key={cat}
                         onClick={() => setCategory(i)}
                         className={`px-3 py-1 rounded text-xs transition ${
-                            category === i
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            category === i ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                         }`}
                     >
                         {cat}
@@ -267,7 +269,12 @@ export function DiscoverView() {
                                 <div className="flex gap-3 text-xs text-gray-500">
                                     <span>Score: {row.reputation?.global_avg_score?.toFixed(1) ?? 'N/A'}</span>
                                     <span>Completed: {row.reputation?.global_completed ?? 0}</span>
-                                    <span>Win: {row.reputation?.win_rate ? `${(row.reputation.win_rate * 100).toFixed(0)}%` : 'N/A'}</span>
+                                    <span>
+                                        Win:{' '}
+                                        {row.reputation?.win_rate
+                                            ? `${(row.reputation.win_rate * 100).toFixed(0)}%`
+                                            : 'N/A'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -284,7 +291,9 @@ export function DiscoverView() {
                 ))}
                 {ranked.length === 0 && !loading && (
                     <p className="text-gray-500 text-sm text-center py-8">
-                        {discoveryRows.length > 0 ? 'No agents match your search.' : 'No agents found. Try loading demo data or start the Indexer.'}
+                        {discoveryRows.length > 0
+                            ? 'No agents match your search.'
+                            : 'No agents found. Try loading demo data or start the Indexer.'}
                     </p>
                 )}
             </div>
@@ -355,9 +364,7 @@ function AgentDetailModal({
                     </div>
                     <div>
                         <h3 className="text-lg font-bold">{profile?.displayName ?? agent.agent}</h3>
-                        {profile?.displayName && (
-                            <p className="text-xs text-gray-500 font-mono">{agent.agent}</p>
-                        )}
+                        {profile?.displayName && <p className="text-xs text-gray-500 font-mono">{agent.agent}</p>}
                         <p className="text-xs text-gray-500">weight: {agent.weight}</p>
                     </div>
                 </div>
@@ -453,27 +460,25 @@ function AgentDetailModal({
 }
 
 function StatusBadge({ status }: { status: string }) {
-    const style = status === 'won'
-        ? 'bg-emerald-700/30 text-emerald-300'
-        : status === 'lost'
-            ? 'bg-red-700/30 text-red-300'
-            : status === 'submitted'
+    const style =
+        status === 'won'
+            ? 'bg-emerald-700/30 text-emerald-300'
+            : status === 'lost'
+              ? 'bg-red-700/30 text-red-300'
+              : status === 'submitted'
                 ? 'bg-blue-700/30 text-blue-300'
                 : status === 'applied'
-                    ? 'bg-amber-700/30 text-amber-300'
-                    : status === 'refunded'
-                        ? 'bg-violet-700/30 text-violet-300'
-                        : 'bg-gray-700/30 text-gray-300';
+                  ? 'bg-amber-700/30 text-amber-300'
+                  : status === 'refunded'
+                    ? 'bg-violet-700/30 text-violet-300'
+                    : 'bg-gray-700/30 text-gray-300';
     return <span className={`px-2 py-1 rounded ${style}`}>{status}</span>;
 }
 
 /**
  * Combine Indexer and A2A discovered agents
  */
-function combineAgents(
-    indexerRows: AgentDiscoveryRow[],
-    a2aAgents: AgentInfo[]
-): AgentDiscoveryRow[] {
+function combineAgents(indexerRows: AgentDiscoveryRow[], a2aAgents: AgentInfo[]): AgentDiscoveryRow[] {
     const combined = new Map<string, AgentDiscoveryRow>();
 
     // Add Indexer agents

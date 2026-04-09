@@ -7,5 +7,3 @@ declare module '@gradiences/domain-resolver' {
         owner: string;
     }
 }
-
-

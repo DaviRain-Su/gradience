@@ -182,11 +182,7 @@ export function MessageInput({
                     }`}
                 >
                     {isSending ? (
-                        <svg
-                            className="w-5 h-5 animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle
                                 className="opacity-25"
                                 cx="12"
@@ -202,12 +198,7 @@ export function MessageInput({
                             />
                         </svg>
                     ) : (
-                        <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -220,9 +211,7 @@ export function MessageInput({
             </div>
 
             {/* Hint */}
-            <p className="text-xs text-gray-600 mt-1.5 ml-1">
-                Press Enter to send, Shift+Enter for new line
-            </p>
+            <p className="text-xs text-gray-600 mt-1.5 ml-1">Press Enter to send, Shift+Enter for new line</p>
         </div>
     );
 }

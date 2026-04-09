@@ -1,151 +1,119 @@
 export type Address = string;
 
 export interface RelayAgentDescriptor {
-  agent: Address;
-  capabilityMask: bigint;
-  transportFlags: number;
-  endpoint: string;
-  heartbeatAt: number;
+    agent: Address;
+    capabilityMask: bigint;
+    transportFlags: number;
+    endpoint: string;
+    heartbeatAt: number;
 }
 
 export interface SignedEnvelope {
-  id: string;
-  threadId: bigint;
-  sequence: number;
-  from: Address;
-  to: Address;
-  messageType: string;
-  nonce: bigint;
-  createdAt: number;
-  bodyHash: string;
-  signature: {
-    r: string;
-    s: string;
-  };
-  paymentMicrolamports: bigint;
+    id: string;
+    threadId: bigint;
+    sequence: number;
+    from: Address;
+    to: Address;
+    messageType: string;
+    nonce: bigint;
+    createdAt: number;
+    bodyHash: string;
+    signature: {
+        r: string;
+        s: string;
+    };
+    paymentMicrolamports: bigint;
 }
 
 export interface TransportEncryptedPayload {
-  __transportEncrypted: true;
-  alg: "aes-256-gcm";
-  iv: string;
-  tag: string;
-  ciphertext: string;
+    __transportEncrypted: true;
+    alg: 'aes-256-gcm';
+    iv: string;
+    tag: string;
+    ciphertext: string;
 }
 
 export interface RelayEnvelopeRecord {
-  envelope: SignedEnvelope;
-  body: Record<string, unknown>;
-  deliveredTo: Set<Address>;
+    envelope: SignedEnvelope;
+    body: Record<string, unknown>;
+    deliveredTo: Set<Address>;
 }
 
 export interface RelayRequest {
-  method: "GET" | "POST";
-  path: string;
-  query?: Record<string, string | undefined>;
-  headers?: Record<string, string | undefined>;
-  body?: unknown;
+    method: 'GET' | 'POST';
+    path: string;
+    query?: Record<string, string | undefined>;
+    headers?: Record<string, string | undefined>;
+    body?: unknown;
 }
 
 export interface RelayResponse {
-  status: number;
-  body: unknown;
+    status: number;
+    body: unknown;
 }
 
 export interface RelayPullResult {
-  items: RelayEnvelopeRecord[];
-  nextCursor: string | null;
+    items: RelayEnvelopeRecord[];
+    nextCursor: string | null;
 }
 
 export interface RelayMetrics {
-  agentsUpserted: number;
-  envelopesPublished: number;
-  envelopesDeduplicated: number;
-  envelopesDelivered: number;
-  pullRequests: number;
-  rejectedPayloads: number;
-  dbQueryCount: number;
-  dbQueryFailures: number;
-  dbAvgQueryLatencyMs: number;
+    agentsUpserted: number;
+    envelopesPublished: number;
+    envelopesDeduplicated: number;
+    envelopesDelivered: number;
+    pullRequests: number;
+    rejectedPayloads: number;
+    dbQueryCount: number;
+    dbQueryFailures: number;
+    dbAvgQueryLatencyMs: number;
 }
 
 export interface RelayDbAlertState {
-  unhealthyStreak: number;
-  healthyStreak: number;
-  incidentActive: boolean;
-  incidentRepeatCounter: number;
-  lastIncidentSignature: string | null;
+    unhealthyStreak: number;
+    healthyStreak: number;
+    incidentActive: boolean;
+    incidentRepeatCounter: number;
+    lastIncidentSignature: string | null;
 }
 
 export type Awaitable<T> = T | Promise<T>;
 
 export interface RelayStore {
-  upsertAgent(
-    descriptor: Omit<RelayAgentDescriptor, "heartbeatAt">,
-  ): Awaitable<RelayAgentDescriptor>;
-  listAgents(capabilityMask?: bigint): Awaitable<RelayAgentDescriptor[]>;
-  publishEnvelope(
-    envelope: SignedEnvelope,
-    body: Record<string, unknown>,
-  ): Awaitable<RelayEnvelopeRecord>;
-  pullEnvelopes(agent: Address, afterId?: string, limit?: number): Awaitable<RelayPullResult>;
-  markPayloadRejected(): Awaitable<void>;
-  getMetrics(): Awaitable<RelayMetrics>;
-  getDbAlertState(): Awaitable<RelayDbAlertState>;
-  setDbAlertState(state: RelayDbAlertState): Awaitable<void>;
+    upsertAgent(descriptor: Omit<RelayAgentDescriptor, 'heartbeatAt'>): Awaitable<RelayAgentDescriptor>;
+    listAgents(capabilityMask?: bigint): Awaitable<RelayAgentDescriptor[]>;
+    publishEnvelope(envelope: SignedEnvelope, body: Record<string, unknown>): Awaitable<RelayEnvelopeRecord>;
+    pullEnvelopes(agent: Address, afterId?: string, limit?: number): Awaitable<RelayPullResult>;
+    markPayloadRejected(): Awaitable<void>;
+    getMetrics(): Awaitable<RelayMetrics>;
+    getDbAlertState(): Awaitable<RelayDbAlertState>;
+    setDbAlertState(state: RelayDbAlertState): Awaitable<void>;
 }
 
 export interface SubtaskBroadcastInput {
-  requester: Address;
-  parentTaskId: bigint;
-  subtaskId: number;
-  budget: bigint;
-  bidDeadline: bigint;
-  executeDeadline: bigint;
-  requirementHash: string;
-  escrowChannelId: bigint;
-  threadId: bigint;
-  policyHash: string;
-}
-
-export interface SubtaskBidInput {
-  bidder: Address;
-  parentTaskId: bigint;
-  subtaskId: number;
-  quoteAmount: bigint;
-  stakeAmount: bigint;
-  etaSeconds: number;
-  commitmentHash: string;
-}
-
-export interface SubtaskSettlementInput {
-  actor: Address;
-  requester: Address;
-  selectedAgent: Address;
-  parentTaskId: bigint;
-  subtaskId: number;
-  settleAmount: bigint;
-  channelId: bigint;
-  deliveryHash: string;
-  policyHash: string;
-}
-
-export interface A2AProgramClient {
-  createSubtaskOrder(input: SubtaskBroadcastInput): Promise<string>;
-  submitSubtaskBid(input: SubtaskBidInput): Promise<string>;
-  assignSubtaskBid(input: {
     requester: Address;
     parentTaskId: bigint;
     subtaskId: number;
-    winner: Address;
-  }): Promise<string>;
-  submitSubtaskDelivery(input: {
-    selectedAgent: Address;
+    budget: bigint;
+    bidDeadline: bigint;
+    executeDeadline: bigint;
+    requirementHash: string;
+    escrowChannelId: bigint;
+    threadId: bigint;
+    policyHash: string;
+}
+
+export interface SubtaskBidInput {
+    bidder: Address;
     parentTaskId: bigint;
     subtaskId: number;
-    deliveryHash: string;
-  }): Promise<string>;
-  settleSubtask(input: {
+    quoteAmount: bigint;
+    stakeAmount: bigint;
+    etaSeconds: number;
+    commitmentHash: string;
+}
+
+export interface SubtaskSettlementInput {
     actor: Address;
     requester: Address;
     selectedAgent: Address;
@@ -153,5 +121,32 @@ export interface A2AProgramClient {
     subtaskId: number;
     settleAmount: bigint;
     channelId: bigint;
-  }): Promise<string>;
+    deliveryHash: string;
+    policyHash: string;
+}
+
+export interface A2AProgramClient {
+    createSubtaskOrder(input: SubtaskBroadcastInput): Promise<string>;
+    submitSubtaskBid(input: SubtaskBidInput): Promise<string>;
+    assignSubtaskBid(input: {
+        requester: Address;
+        parentTaskId: bigint;
+        subtaskId: number;
+        winner: Address;
+    }): Promise<string>;
+    submitSubtaskDelivery(input: {
+        selectedAgent: Address;
+        parentTaskId: bigint;
+        subtaskId: number;
+        deliveryHash: string;
+    }): Promise<string>;
+    settleSubtask(input: {
+        actor: Address;
+        requester: Address;
+        selectedAgent: Address;
+        parentTaskId: bigint;
+        subtaskId: number;
+        settleAmount: bigint;
+        channelId: bigint;
+    }): Promise<string>;
 }

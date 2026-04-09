@@ -65,9 +65,9 @@ export class XMTPAdapter implements ProtocolAdapter {
         }
 
         try {
-            this.client = new XMTPClient({ 
+            this.client = new XMTPClient({
                 env: this.options.env,
-                maxRetries: this.options.maxRetries 
+                maxRetries: this.options.maxRetries,
             });
             await this.client.connect(this.options.walletSigner);
 
@@ -122,7 +122,7 @@ export class XMTPAdapter implements ProtocolAdapter {
         try {
             // Map A2A message type to XMTP message type
             const msgType = this.mapA2ATypeToGradienceType(message.type);
-            const payload = message.payload as Record<string, unknown> ?? {};
+            const payload = (message.payload as Record<string, unknown>) ?? {};
 
             await this.client.sendMessage(message.to, msgType, payload as unknown as TaskOfferPayload);
 
@@ -145,9 +145,7 @@ export class XMTPAdapter implements ProtocolAdapter {
         }
     }
 
-    async subscribe(
-        handler: (message: A2AMessage) => void | Promise<void>
-    ): Promise<ProtocolSubscription> {
+    async subscribe(handler: (message: A2AMessage) => void | Promise<void>): Promise<ProtocolSubscription> {
         this.subscriptions.add(handler);
 
         return {

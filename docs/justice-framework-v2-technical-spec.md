@@ -18,12 +18,12 @@ Justice Framework v2 是对 Gradience 协议信任层的三层防御升级，解
 
 ### 1.1 设计原则
 
-| 原则 | 说明 |
-|------|------|
-| **Defense in Depth** | 不依赖单一机制，链上行为 + 身份绑定 + 合约博弈三层叠加 |
-| **Privacy-Preserving** | 身份验证结果用 ZK 或哈希上链，不暴露原始 PII |
-| **Economically Rational** | 攻击成本必须显著高于攻击收益 |
-| **Gradual Trust** | 新用户可低门槛进入，但高价值任务逐步解锁 |
+| 原则                      | 说明                                                   |
+| ------------------------- | ------------------------------------------------------ |
+| **Defense in Depth**      | 不依赖单一机制，链上行为 + 身份绑定 + 合约博弈三层叠加 |
+| **Privacy-Preserving**    | 身份验证结果用 ZK 或哈希上链，不暴露原始 PII           |
+| **Economically Rational** | 攻击成本必须显著高于攻击收益                           |
+| **Gradual Trust**         | 新用户可低门槛进入，但高价值任务逐步解锁               |
 
 ---
 
@@ -62,64 +62,65 @@ Justice Framework v2 是对 Gradience 协议信任层的三层防御升级，解
 // apps/agent-daemon/src/risk/onchain-risk-scorer.ts
 
 export interface RiskSignal {
-  source: 'goldrush' | 'nansen' | 'arkham' | 'chainalysis' | 'internal';
-  category: 'mixer' | 'hack' | 'phish' | 'sanctions' | 'bot' | 'new_wallet';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  evidence: string; // tx hash, label, or API reference
+    source: 'goldrush' | 'nansen' | 'arkham' | 'chainalysis' | 'internal';
+    category: 'mixer' | 'hack' | 'phish' | 'sanctions' | 'bot' | 'new_wallet';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    evidence: string; // tx hash, label, or API reference
 }
 
 export interface RiskScore {
-  wallet: string;
-  overallRisk: 'low' | 'medium' | 'high' | 'critical';
-  score: number; // 0-100, higher = riskier
-  signals: RiskSignal[];
-  checkedAt: number;
+    wallet: string;
+    overallRisk: 'low' | 'medium' | 'high' | 'critical';
+    score: number; // 0-100, higher = riskier
+    signals: RiskSignal[];
+    checkedAt: number;
 }
 
 export interface RiskPolicy {
-  maxScoreForApplication: number;
-  blockedCategories: RiskSignal['category'][];
-  minWalletAgeDays: number;
-  minTransactionCount: number;
+    maxScoreForApplication: number;
+    blockedCategories: RiskSignal['category'][];
+    minWalletAgeDays: number;
+    minTransactionCount: number;
 }
 ```
 
 ### 3.3 检查维度与权重（MVP）
 
-| 检查项 | 权重 | 数据来源 | 红灯行为 |
-|--------|------|---------|---------|
-| 混币器关联 | 30 | GoldRush `tornado_cash` tag | 任何 direct inflow |
-| 被盗资金 | 30 | GoldRush / Arkham alert | 与已知 exploit tx 关联 |
-| 制裁名单 | 40 | Chainalysis / OFAC | 地址命中 sanctions list |
-| 钱包年龄 | 15 | First tx timestamp | < 14 days |
-| 交易活跃度 | 10 | Tx count | < 5 tx |
-| 合约交互红旗 | 15 | Known phishing contract | 任何授权或交互 |
+| 检查项       | 权重 | 数据来源                    | 红灯行为                |
+| ------------ | ---- | --------------------------- | ----------------------- |
+| 混币器关联   | 30   | GoldRush `tornado_cash` tag | 任何 direct inflow      |
+| 被盗资金     | 30   | GoldRush / Arkham alert     | 与已知 exploit tx 关联  |
+| 制裁名单     | 40   | Chainalysis / OFAC          | 地址命中 sanctions list |
+| 钱包年龄     | 15   | First tx timestamp          | < 14 days               |
+| 交易活跃度   | 10   | Tx count                    | < 5 tx                  |
+| 合约交互红旗 | 15   | Known phishing contract     | 任何授权或交互          |
 
 ### 3.4 模块设计
 
 ```typescript
 export class OnChainRiskScorer {
-  constructor(
-    private goldrushApiKey: string,
-    private policy: RiskPolicy
-  ) {}
+    constructor(
+        private goldrushApiKey: string,
+        private policy: RiskPolicy,
+    ) {}
 
-  async assess(wallet: string, chain: 'solana' | 'ethereum'): Promise<RiskScore>;
-  
-  // 内部方法
-  private async fetchGoldrushLabels(wallet: string, chain: string): Promise<RiskSignal[]>;
-  private async fetchTransactionHistory(wallet: string, chain: string): Promise<{ ageDays: number; txCount: number }>;
-  private calculateScore(signals: RiskSignal[], ageDays: number, txCount: number): number;
+    async assess(wallet: string, chain: 'solana' | 'ethereum'): Promise<RiskScore>;
+
+    // 内部方法
+    private async fetchGoldrushLabels(wallet: string, chain: string): Promise<RiskSignal[]>;
+    private async fetchTransactionHistory(wallet: string, chain: string): Promise<{ ageDays: number; txCount: number }>;
+    private calculateScore(signals: RiskSignal[], ageDays: number, txCount: number): number;
 }
 ```
 
 ### 3.5 接入点
 
 **AgentM Web**: 在 `useTaskApply.ts` 中，调用前检查：
+
 ```typescript
 const risk = await riskScorer.assess(agentWallet, chain);
 if (risk.score > policy.maxScoreForApplication) {
-  throw new TaskApplyRejectedError(`Risk score ${risk.score} exceeds threshold`);
+    throw new TaskApplyRejectedError(`Risk score ${risk.score} exceeds threshold`);
 }
 ```
 
@@ -156,66 +157,66 @@ Gradience Account (1)
 // apps/agent-daemon/src/identity/account-binding.ts
 
 export interface AccountBindingRecord {
-  accountId: string; // Gradience internal UUID
-  primaryWallet: string;
-  linkedWallets: string[];
-  oauthHash?: string; // SHA256(email) — 可验证但不暴露邮箱
-  zkNullifier?: string; // WorldID / Holonym nullifier
-  createdAt: number;
-  lastWalletChangeAt: number;
+    accountId: string; // Gradience internal UUID
+    primaryWallet: string;
+    linkedWallets: string[];
+    oauthHash?: string; // SHA256(email) — 可验证但不暴露邮箱
+    zkNullifier?: string; // WorldID / Holonym nullifier
+    createdAt: number;
+    lastWalletChangeAt: number;
 }
 ```
 
 ### 4.4 关键规则
 
-| 规则 | 实现 |
-|------|------|
-| **主钱包唯一性** | `primaryWallet` 全局唯一索引 |
-| **换绑冷却期** | 更换 primary wallet 需等待 30 天 |
-| **OAuth 唯一性** | 同一个 `oauthHash` 只能绑定一个 account |
+| 规则                    | 实现                                      |
+| ----------------------- | ----------------------------------------- |
+| **主钱包唯一性**        | `primaryWallet` 全局唯一索引              |
+| **换绑冷却期**          | 更换 primary wallet 需等待 30 天          |
+| **OAuth 唯一性**        | 同一个 `oauthHash` 只能绑定一个 account   |
 | **ZK Nullifier 唯一性** | 同一个 `zkNullifier` 只能绑定一个 account |
-| **设备指纹风控** | 同设备/IP 短时间内大量注册触发 rate limit |
+| **设备指纹风控**        | 同设备/IP 短时间内大量注册触发 rate limit |
 
 ### 4.5 分阶段验证策略
 
 ```typescript
 export interface VerificationTier {
-  tier: 'guest' | 'verified' | 'trusted' | 'pro';
-  requirements: {
-    walletAgeDays: number;
-    oauth: boolean;
-    zkKyc: boolean;
-    minCompletedTasks: number;
-    minReputationScore: number;
-  };
-  permissions: {
-    maxTaskValue: bigint;
-    canBeJudge: boolean;
-    canPostHighValueTask: boolean;
-  };
+    tier: 'guest' | 'verified' | 'trusted' | 'pro';
+    requirements: {
+        walletAgeDays: number;
+        oauth: boolean;
+        zkKyc: boolean;
+        minCompletedTasks: number;
+        minReputationScore: number;
+    };
+    permissions: {
+        maxTaskValue: bigint;
+        canBeJudge: boolean;
+        canPostHighValueTask: boolean;
+    };
 }
 
 const DEFAULT_TIERS: VerificationTier[] = [
-  {
-    tier: 'guest',
-    requirements: { walletAgeDays: 0, oauth: false, zkKyc: false, minCompletedTasks: 0, minReputationScore: 0 },
-    permissions: { maxTaskValue: 0.1e18, canBeJudge: false, canPostHighValueTask: false },
-  },
-  {
-    tier: 'verified',
-    requirements: { walletAgeDays: 7, oauth: true, zkKyc: false, minCompletedTasks: 0, minReputationScore: 0 },
-    permissions: { maxTaskValue: 1e18, canBeJudge: false, canPostHighValueTask: true },
-  },
-  {
-    tier: 'trusted',
-    requirements: { walletAgeDays: 14, oauth: true, zkKyc: false, minCompletedTasks: 3, minReputationScore: 60 },
-    permissions: { maxTaskValue: 10e18, canBeJudge: true, canPostHighValueTask: true },
-  },
-  {
-    tier: 'pro',
-    requirements: { walletAgeDays: 30, oauth: true, zkKyc: true, minCompletedTasks: 10, minReputationScore: 75 },
-    permissions: { maxTaskValue: 100e18, canBeJudge: true, canPostHighValueTask: true },
-  },
+    {
+        tier: 'guest',
+        requirements: { walletAgeDays: 0, oauth: false, zkKyc: false, minCompletedTasks: 0, minReputationScore: 0 },
+        permissions: { maxTaskValue: 0.1e18, canBeJudge: false, canPostHighValueTask: false },
+    },
+    {
+        tier: 'verified',
+        requirements: { walletAgeDays: 7, oauth: true, zkKyc: false, minCompletedTasks: 0, minReputationScore: 0 },
+        permissions: { maxTaskValue: 1e18, canBeJudge: false, canPostHighValueTask: true },
+    },
+    {
+        tier: 'trusted',
+        requirements: { walletAgeDays: 14, oauth: true, zkKyc: false, minCompletedTasks: 3, minReputationScore: 60 },
+        permissions: { maxTaskValue: 10e18, canBeJudge: true, canPostHighValueTask: true },
+    },
+    {
+        tier: 'pro',
+        requirements: { walletAgeDays: 30, oauth: true, zkKyc: true, minCompletedTasks: 10, minReputationScore: 75 },
+        permissions: { maxTaskValue: 100e18, canBeJudge: true, canPostHighValueTask: true },
+    },
 ];
 ```
 
@@ -255,12 +256,12 @@ mapping(address => PosterProfile) public posterProfiles;
 
 #### Poster Reputation Tier 规则
 
-| Tier | 条件 | 后果 |
-|------|------|------|
-| 0 (New) | tasksPosted < 3 | 必须 escrow 110% reward |
-| 1 (Regular) | 3+ tasks, < 5% disputed | 正常 escrow 100% |
-| 2 (Trusted) | 10+ tasks, < 2% disputed | 可降低 escrow 到 95% |
-| 3 (Elite) | 50+ tasks, < 1% disputed | 优先曝光 + 降低 minStake 要求 |
+| Tier        | 条件                     | 后果                          |
+| ----------- | ------------------------ | ----------------------------- |
+| 0 (New)     | tasksPosted < 3          | 必须 escrow 110% reward       |
+| 1 (Regular) | 3+ tasks, < 5% disputed  | 正常 escrow 100%              |
+| 2 (Trusted) | 10+ tasks, < 2% disputed | 可降低 escrow 到 95%          |
+| 3 (Elite)   | 50+ tasks, < 1% disputed | 优先曝光 + 降低 minStake 要求 |
 
 ### 5.3 Dispute & Appeal 机制
 
@@ -300,10 +301,10 @@ function resolveDispute(uint256 taskId, address winner, uint8 finalScore) extern
 
 #### Staking 要求
 
-| 角色 | Dispute Stake | 结果 |
-|------|--------------|------|
-| Appellant (Agent) | 0.05 ether / 0.5 SOL | 胜诉退还 + 50% Poster slash 奖励；败诉没收 |
-| Poster | 自动锁定 task reward 的 10% | 败诉时 10% 补偿 Agent + 5% 补偿 Committee |
+| 角色              | Dispute Stake                             | 结果                                       |
+| ----------------- | ----------------------------------------- | ------------------------------------------ |
+| Appellant (Agent) | 0.05 ether / 0.5 SOL                      | 胜诉退还 + 50% Poster slash 奖励；败诉没收 |
+| Poster            | 自动锁定 task reward 的 10%               | 败诉时 10% 补偿 Agent + 5% 补偿 Committee  |
 | Dispute Committee | 无（获得协议发放的 dispute fee 作为激励） |
 
 ### 5.4 Dispute Committee 选择
@@ -356,17 +357,17 @@ Poster
 ```typescript
 // POST /api/v1/risk/assess
 interface RiskAssessRequest {
-  wallet: string;
-  chain: 'solana' | 'ethereum';
+    wallet: string;
+    chain: 'solana' | 'ethereum';
 }
 
 interface RiskAssessResponse {
-  wallet: string;
-  overallRisk: 'low' | 'medium' | 'high' | 'critical';
-  score: number;
-  signals: RiskSignal[];
-  cacheHit: boolean;
-  checkedAt: number;
+    wallet: string;
+    overallRisk: 'low' | 'medium' | 'high' | 'critical';
+    score: number;
+    signals: RiskSignal[];
+    cacheHit: boolean;
+    checkedAt: number;
 }
 ```
 
@@ -375,16 +376,16 @@ interface RiskAssessResponse {
 ```typescript
 // POST /api/v1/identity/bind
 interface BindRequest {
-  primaryWallet: string;
-  oauthToken: string; // server exchanges for hash
-  signature: string; // wallet signs nonce
+    primaryWallet: string;
+    oauthToken: string; // server exchanges for hash
+    signature: string; // wallet signs nonce
 }
 
 // POST /api/v1/identity/zk-verify
 interface ZKVerifyRequest {
-  wallet: string;
-  nullifierHash: string;
-  proof: string;
+    wallet: string;
+    nullifierHash: string;
+    proof: string;
 }
 ```
 
@@ -393,19 +394,19 @@ interface ZKVerifyRequest {
 ```typescript
 // POST /api/v1/disputes
 interface CreateDisputeRequest {
-  taskId: string;
-  reason: string;
-  evidenceCid: string;
+    taskId: string;
+    reason: string;
+    evidenceCid: string;
 }
 
 // GET /api/v1/disputes/:taskId
 interface DisputeResponse {
-  taskId: string;
-  state: 'pending' | 'resolved';
-  committee: string[];
-  originalScore: number;
-  finalScore?: number;
-  overturned?: boolean;
+    taskId: string;
+    state: 'pending' | 'resolved';
+    committee: string[];
+    originalScore: number;
+    finalScore?: number;
+    overturned?: boolean;
 }
 ```
 
@@ -413,37 +414,41 @@ interface DisputeResponse {
 
 ## 8. 安全与隐私考量
 
-| 威胁 | 缓解措施 |
-|------|---------|
-| **API key 泄露** (GoldRush/Nansen) | 服务端代理，Web 不直接调用 |
-| **隐私泄露** (OAuth 邮箱) | 只存 SHA256 hash，原始 token 不落地 DB |
-| **ZK 证明重放** | nullifier 全局唯一，合约记录已使用 |
-| **Dispute Committee 串通** | VRF 随机选 + 与原 Judge 隔离 + 2/3 多数 |
-| **Poster 刷好评** | 只有自己接自己任务的 score 不计入 reputation（用 graph analysis 检测自交易） |
-| **Agent 故意接高价值任务失败** | tier 逐步解锁，新 Agent 无法接 >$100 任务 |
+| 威胁                               | 缓解措施                                                                     |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| **API key 泄露** (GoldRush/Nansen) | 服务端代理，Web 不直接调用                                                   |
+| **隐私泄露** (OAuth 邮箱)          | 只存 SHA256 hash，原始 token 不落地 DB                                       |
+| **ZK 证明重放**                    | nullifier 全局唯一，合约记录已使用                                           |
+| **Dispute Committee 串通**         | VRF 随机选 + 与原 Judge 隔离 + 2/3 多数                                      |
+| **Poster 刷好评**                  | 只有自己接自己任务的 score 不计入 reputation（用 graph analysis 检测自交易） |
+| **Agent 故意接高价值任务失败**     | tier 逐步解锁，新 Agent 无法接 >$100 任务                                    |
 
 ---
 
 ## 9. 实现顺序与里程碑
 
 ### Milestone 1: Layer 1 MVP (GRA-261) — Week 1
+
 - [ ] 集成 GoldRush SDK，实现 `OnChainRiskScorer`
 - [ ] `/api/v1/risk/assess` 端点
 - [ ] 接入 `useTaskApply` 前端流程
 
 ### Milestone 2: Layer 2 Binding + Tier (GRA-262) — Week 1-2
+
 - [ ] `AccountBinding` SQLite 表 + API
 - [ ] Wallet 换绑冷却期
 - [ ] `VerificationTierResolver`
 - [ ] 接入 `postTask` / `applyForTask` 权限检查
 
 ### Milestone 3: Layer 3 Contract Extension (GRA-263) — Week 2-3
+
 - [ ] `AgentArenaEVM.PosterProfile` + tier logic
 - [ ] `raiseDispute` / `resolveDispute` 合约函数
 - [ ] Dispute Committee VRF 选择集成
 - [ ] Foundry test coverage
 
 ### Milestone 4: ZK-KYC Gate (GRA-265) — Week 3-4
+
 - [ ] WorldID / Holonym SDK 集成
 - [ ] 前端 KYC 提示弹窗
 - [ ] 合约 `zkNullifier` 记录与校验

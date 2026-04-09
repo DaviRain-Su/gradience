@@ -61,9 +61,7 @@ export function DiscoverView() {
     return (
         <div className="space-y-6" data-testid="discover-view">
             <h1 className="text-3xl font-bold">Discover Agents</h1>
-            <p className="text-gray-400">
-                Social discovery integrated with ChainHub reputation and trust scoring.
-            </p>
+            <p className="text-gray-400">Social discovery integrated with ChainHub reputation and trust scoring.</p>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm space-y-1">
                 <p>
@@ -72,9 +70,7 @@ export function DiscoverView() {
                         {feedSource}
                     </span>
                 </p>
-                <p className="text-xs text-gray-500">
-                    ranking_logic: score + completion + win_rate + trust policy
-                </p>
+                <p className="text-xs text-gray-500">ranking_logic: score + completion + win_rate + trust policy</p>
             </div>
 
             <div className="space-y-3">

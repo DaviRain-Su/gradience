@@ -11,15 +11,15 @@ pnpm add @gradiences/ui
 ## Usage
 
 ```tsx
-import { Button, Card, Input } from "@gradiences/ui";
+import { Button, Card, Input } from '@gradiences/ui';
 
 export default function MyComponent() {
-  return (
-    <Card>
-      <Input placeholder="Enter your name" />
-      <Button>Submit</Button>
-    </Card>
-  );
+    return (
+        <Card>
+            <Input placeholder="Enter your name" />
+            <Button>Submit</Button>
+        </Card>
+    );
 }
 ```
 

@@ -6,3 +6,11 @@ target
 *.lock
 pnpm-lock.yaml
 package-lock.json
+lib/
+broadcast/
+cache/
+out/
+artifacts/
+coverage/
+typechain-types/
+subgraph/generated/

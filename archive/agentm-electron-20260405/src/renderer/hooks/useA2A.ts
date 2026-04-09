@@ -176,32 +176,35 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
     }, [isInitialized]);
 
     // Send message
-    const send = useCallback(async (intent: A2AIntent): Promise<A2AResult> => {
-        if (!routerRef.current || !isInitialized) {
-            return {
-                success: false,
-                messageId: '',
-                protocol: 'nostr',
-                error: 'Router not initialized',
-                errorCode: 'ROUTER_001',
-                timestamp: Date.now(),
-            };
-        }
+    const send = useCallback(
+        async (intent: A2AIntent): Promise<A2AResult> => {
+            if (!routerRef.current || !isInitialized) {
+                return {
+                    success: false,
+                    messageId: '',
+                    protocol: 'nostr',
+                    error: 'Router not initialized',
+                    errorCode: 'ROUTER_001',
+                    timestamp: Date.now(),
+                };
+            }
 
-        try {
-            return await routerRef.current.send(intent);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err));
-            return {
-                success: false,
-                messageId: '',
-                protocol: 'nostr',
-                error: error.message,
-                errorCode: 'ROUTER_004',
-                timestamp: Date.now(),
-            };
-        }
-    }, [isInitialized]);
+            try {
+                return await routerRef.current.send(intent);
+            } catch (err) {
+                const error = err instanceof Error ? err : new Error(String(err));
+                return {
+                    success: false,
+                    messageId: '',
+                    protocol: 'nostr',
+                    error: error.message,
+                    errorCode: 'ROUTER_004',
+                    timestamp: Date.now(),
+                };
+            }
+        },
+        [isInitialized],
+    );
 
     // Subscribe to messages
     const subscribe = useCallback(
@@ -212,7 +215,7 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
 
             return await routerRef.current.subscribe(handler);
         },
-        [isInitialized]
+        [isInitialized],
     );
 
     // Discover agents
@@ -229,7 +232,7 @@ export function useA2A(options: UseA2AOptions = {}): UseA2AReturn {
                 return [];
             }
         },
-        [isInitialized]
+        [isInitialized],
     );
 
     // Broadcast capabilities

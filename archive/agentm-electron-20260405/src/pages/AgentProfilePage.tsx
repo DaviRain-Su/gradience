@@ -7,11 +7,7 @@
  */
 
 import { useState } from 'react';
-import {
-    DomainBadge,
-    DomainBadgeLink,
-    DomainLinkForm,
-} from '../components/social/profile';
+import { DomainBadge, DomainBadgeLink, DomainLinkForm } from '../components/social/profile';
 import { useDomainProfile } from '../renderer/hooks/useDomain';
 
 interface AgentProfilePageProps {
@@ -28,12 +24,7 @@ interface AgentProfilePageProps {
 /**
  * Agent Profile Page with Domain Support
  */
-export function AgentProfilePage({
-    address,
-    displayName,
-    bio,
-    capabilities = [],
-}: AgentProfilePageProps) {
+export function AgentProfilePage({ address, displayName, bio, capabilities = [] }: AgentProfilePageProps) {
     const [linkedDomain, setLinkedDomain] = useState<string | undefined>();
     const [isLinking, setIsLinking] = useState(false);
 
@@ -73,16 +64,9 @@ export function AgentProfilePage({
                             {domainLoading ? (
                                 <span className="text-sm text-gray-500">Loading domain...</span>
                             ) : effectiveDomain ? (
-                                <DomainBadgeLink
-                                    domain={effectiveDomain}
-                                    size="lg"
-                                />
+                                <DomainBadgeLink domain={effectiveDomain} size="lg" />
                             ) : (
-                                <DomainBadge
-                                    address={address}
-                                    size="lg"
-                                    showCopy
-                                />
+                                <DomainBadge address={address} size="lg" showCopy />
                             )}
                         </div>
 
@@ -106,9 +90,7 @@ export function AgentProfilePage({
                 </div>
 
                 {/* Bio */}
-                {bio && (
-                    <p className="mt-4 text-gray-300">{bio}</p>
-                )}
+                {bio && <p className="mt-4 text-gray-300">{bio}</p>}
 
                 {/* Capabilities */}
                 {capabilities.length > 0 && (
@@ -116,10 +98,7 @@ export function AgentProfilePage({
                         <p className="text-sm text-gray-400 mb-2">Capabilities</p>
                         <div className="flex flex-wrap gap-2">
                             {capabilities.map((cap, i) => (
-                                <span
-                                    key={i}
-                                    className="px-2 py-1 bg-purple-600/20 text-purple-300 rounded text-sm"
-                                >
+                                <span key={i} className="px-2 py-1 bg-purple-600/20 text-purple-300 rounded text-sm">
                                     {cap}
                                 </span>
                             ))}

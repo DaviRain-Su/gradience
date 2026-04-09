@@ -45,9 +45,9 @@ Solana Chain
 
 ## 技术选型
 
-| 组件 | 选择 | 原因 |
-|------|------|------|
-| 语言 | Rust + Tokio | 高性能异步，与 Program 共享类型 |
-| HTTP | Axum | 轻量、类型安全、WebSocket 原生支持 |
-| 数据库 | PostgreSQL (tokio-postgres) | 无 ORM，直接 SQL，最大控制力 |
-| Edge | Cloudflare Worker | 可选的 webhook 代理层 |
+| 组件   | 选择                        | 原因                               |
+| ------ | --------------------------- | ---------------------------------- |
+| 语言   | Rust + Tokio                | 高性能异步，与 Program 共享类型    |
+| HTTP   | Axum                        | 轻量、类型安全、WebSocket 原生支持 |
+| 数据库 | PostgreSQL (tokio-postgres) | 无 ORM，直接 SQL，最大控制力       |
+| Edge   | Cloudflare Worker           | 可选的 webhook 代理层              |

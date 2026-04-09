@@ -37,41 +37,41 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full component map, deployment de
 
 ### On-Chain Programs (Solana)
 
-| Program | Purpose |
-|---------|---------|
-| **agent-arena** | Core protocol: postTask, submitResult, judgeAndPay, cancel, refund |
-| **chain-hub** | Tool layer: protocol/skill registration, delegation tasks |
-| **a2a-protocol** | Agent-to-Agent: profiles, messaging, payment channels |
-| **agentm-core** | User layer: register, follow, reputation |
-| **workflow-marketplace** | Skill marketplace: publish, purchase, execute workflows |
+| Program                  | Purpose                                                            |
+| ------------------------ | ------------------------------------------------------------------ |
+| **agent-arena**          | Core protocol: postTask, submitResult, judgeAndPay, cancel, refund |
+| **chain-hub**            | Tool layer: protocol/skill registration, delegation tasks          |
+| **a2a-protocol**         | Agent-to-Agent: profiles, messaging, payment channels              |
+| **agentm-core**          | User layer: register, follow, reputation                           |
+| **workflow-marketplace** | Skill marketplace: publish, purchase, execute workflows            |
 
 ### Backend
 
-| Component | Purpose |
-|-----------|---------|
-| **agent-daemon** | Fastify server -- local-first daemon bridging UI to network |
-| **indexer** | Rust service indexing on-chain events into queryable REST API |
+| Component        | Purpose                                                       |
+| ---------------- | ------------------------------------------------------------- |
+| **agent-daemon** | Fastify server -- local-first daemon bridging UI to network   |
+| **indexer**      | Rust service indexing on-chain events into queryable REST API |
 
 ### Frontend
 
-| App | Deploy | Purpose |
-|-----|--------|---------|
-| **agentm-web** | Vercel | **Unified App**: User features + Developer tools (Profile, Social, Token Launch, A2A Messaging, Analytics) |
-| **developer-docs** | Vercel | Documentation site |
+| App                | Deploy | Purpose                                                                                                    |
+| ------------------ | ------ | ---------------------------------------------------------------------------------------------------------- |
+| **agentm-web**     | Vercel | **Unified App**: User features + Developer tools (Profile, Social, Token Launch, A2A Messaging, Analytics) |
+| **developer-docs** | Vercel | Documentation site                                                                                         |
 
 > **Note**: `agentm-pro` has been merged into `agentm-web`. All developer features (GoldRush analytics, token launch, A2A messaging) are now accessible in the unified web app.
 
 ### SDK Packages
 
-| Package | Purpose |
-|---------|---------|
-| `@gradiences/sdk` | Unified TypeScript SDK for Agent Arena + Chain Hub |
-| `@gradiences/cli` | CLI for protocol interaction |
-| `@gradiences/soul-engine` | Soul Profile matching engine |
-| `@gradiences/workflow-engine` | Composable agent workflows |
-| `@gradiences/nostr-adapter` | Nostr relay adapter for A2A discovery |
-| `@gradiences/xmtp-adapter` | XMTP messaging adapter |
-| `@gradiences/domain-resolver` | SNS (.sol) + ENS (.eth) resolution |
+| Package                       | Purpose                                            |
+| ----------------------------- | -------------------------------------------------- |
+| `@gradiences/sdk`             | Unified TypeScript SDK for Agent Arena + Chain Hub |
+| `@gradiences/cli`             | CLI for protocol interaction                       |
+| `@gradiences/soul-engine`     | Soul Profile matching engine                       |
+| `@gradiences/workflow-engine` | Composable agent workflows                         |
+| `@gradiences/nostr-adapter`   | Nostr relay adapter for A2A discovery              |
+| `@gradiences/xmtp-adapter`    | XMTP messaging adapter                             |
+| `@gradiences/domain-resolver` | SNS (.sol) + ENS (.eth) resolution                 |
 
 ---
 
@@ -155,6 +155,7 @@ deploy/                        # Deployment configs
 ```
 
 > **Archived** (2026-04-05):
+>
 > - `agentm-pro/` → merged into `agentm-web` → `archive/agentm-pro-20260405/`
 > - `agentm/` (Electron) → archived → `archive/agentm-electron-20260405/`
 > - `agentm-core/` → migrated to `programs/agentm-core/` + `packages/agentm-sdk/`
@@ -185,10 +186,10 @@ cargo check --manifest-path apps/agent-arena/indexer/Cargo.toml
 
 自动部署到 Vercel:
 
-| 环境 | 分支 | URL | 状态 |
-|-----|------|-----|------|
+| 环境       | 分支   | URL                                      | 状态                                                                                                                                                                                                      |
+| ---------- | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Production | `main` | [gradiences.xyz](https://gradiences.xyz) | [![Deploy Website](https://github.com/gradiences/gradience/workflows/Deploy%20Website%20to%20Vercel/badge.svg?branch=main)](https://github.com/gradiences/gradience/actions/workflows/deploy-website.yml) |
-| Preview | PR | - | 自动创建 |
+| Preview    | PR     | -                                        | 自动创建                                                                                                                                                                                                  |
 
 ```bash
 # 快速部署指南
@@ -217,7 +218,7 @@ pnpm dev
 - **Website**: [gradiences.xyz](https://www.gradiences.xyz)
 - **App**: [agentm.gradiences.xyz](https://agentm.gradiences.xyz)
 - **API**: [api.gradiences.xyz](https://api.gradiences.xyz)
-- **X**: [@gradience_](https://x.com/gradience_)
+- **X**: [@gradience\_](https://x.com/gradience_)
 
 ---
 

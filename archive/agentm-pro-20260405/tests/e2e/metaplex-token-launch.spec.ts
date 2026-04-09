@@ -15,14 +15,10 @@ test.describe('AgentM Pro Metaplex token launch', () => {
 
         await page.getByTestId('token-launch-name-input').fill('Gridless Agent Token');
         await page.getByTestId('token-launch-symbol-input').fill('GLAT');
-        await page
-            .getByTestId('token-launch-uri-input')
-            .fill('https://gradience.xyz/gridless-token.json');
+        await page.getByTestId('token-launch-uri-input').fill('https://gradience.xyz/gridless-token.json');
 
         await page.getByTestId('token-launch-plan-button').click();
-        await expect(page.getByTestId('token-launch-plan-result')).toContainText(
-            'Gridless Agent Token'
-        );
+        await expect(page.getByTestId('token-launch-plan-result')).toContainText('Gridless Agent Token');
 
         await page.getByTestId('token-launch-execute-button').click();
         await expect(page.getByTestId('token-launch-result')).toBeVisible();

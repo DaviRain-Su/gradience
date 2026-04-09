@@ -22,6 +22,7 @@ gradience/
 ```
 
 **问题**:
+
 1. 合约发布与应用开发耦合
 2. CI/CD 时间长，影响所有模块
 3. 权限管理困难
@@ -98,6 +99,7 @@ gradience-protocol/
 ```
 
 **发布物**:
+
 - Crate 包 (crates.io)
 - IDL 文件 (GitHub Releases)
 - 已部署合约地址文档
@@ -128,6 +130,7 @@ agent-arena/
 ```
 
 **依赖**:
+
 - `gradience-protocol` (IDL/Types)
 - `@solana/web3.js`
 - Internal: `frontend -> sdk/ts`, `indexer -> sdk/rust`
@@ -156,6 +159,7 @@ agentm/
 ```
 
 **依赖**:
+
 - `@gradience/protocol`
 - `agent-arena/sdk` (用于竞技场功能)
 
@@ -181,6 +185,7 @@ chain-hub/
 ```
 
 **依赖**:
+
 - `gradience-protocol`
 - PostgreSQL, Redis
 
@@ -239,79 +244,83 @@ dev-docs (独立，仅引用)
 ### Phase 1: 准备工作 (Week 1)
 
 1. **创建新仓库**
-   ```bash
-   # GitHub 上创建 5 个空仓库
-   gh repo create gradience-protocol --public
-   gh repo create agent-arena --public
-   gh repo create agentm --public
-   gh repo create chain-hub --public
-   gh repo create dev-docs --public
-   ```
+
+    ```bash
+    # GitHub 上创建 5 个空仓库
+    gh repo create gradience-protocol --public
+    gh repo create agent-arena --public
+    gh repo create agentm --public
+    gh repo create chain-hub --public
+    gh repo create dev-docs --public
+    ```
 
 2. **保留 Git 历史**
-   ```bash
-   # 使用 git filter-repo 提取子目录历史
-   git clone --bare gradience gradience-protocol-tmp
-   cd gradience-protocol-tmp
-   git filter-repo --path programs/ --path-rename programs/:./
-   git push https://github.com/yourorg/gradience-protocol.git
-   ```
+
+    ```bash
+    # 使用 git filter-repo 提取子目录历史
+    git clone --bare gradience gradience-protocol-tmp
+    cd gradience-protocol-tmp
+    git filter-repo --path programs/ --path-rename programs/:./
+    git push https://github.com/yourorg/gradience-protocol.git
+    ```
 
 3. **更新依赖引用**
-   - 将 workspace 依赖改为 crates.io/npm 依赖
-   - 创建发布流水线
+    - 将 workspace 依赖改为 crates.io/npm 依赖
+    - 创建发布流水线
 
 ### Phase 2: 合约仓库独立 (Week 2)
 
 1. **迁移 programs/**
-   ```bash
-   # 已经迁移到 programs/，只需推送到新仓库
-   cd gradience-protocol
-   git init
-   git add .
-   git commit -m "Initial: protocol contracts v0.1.0"
-   git remote add origin git@github.com:yourorg/gradience-protocol.git
-   git push -u origin main
-   ```
+
+    ```bash
+    # 已经迁移到 programs/，只需推送到新仓库
+    cd gradience-protocol
+    git init
+    git add .
+    git commit -m "Initial: protocol contracts v0.1.0"
+    git remote add origin git@github.com:yourorg/gradience-protocol.git
+    git push -u origin main
+    ```
 
 2. **设置发布流程**
-   - GitHub Actions: 合并到 main 自动发布 IDL
-   - crates.io 自动发布 (可选)
+    - GitHub Actions: 合并到 main 自动发布 IDL
+    - crates.io 自动发布 (可选)
 
 ### Phase 3: 应用仓库拆分 (Week 3-4)
 
 1. **agent-arena**
-   - 迁移 apps/agent-arena (不包括 program-backup)
-   - 更新依赖: 从本地路径改为 @gradience/protocol
-   - 设置 CI/CD
+    - 迁移 apps/agent-arena (不包括 program-backup)
+    - 更新依赖: 从本地路径改为 @gradience/protocol
+    - 设置 CI/CD
 
 2. **chain-hub**
-   - 迁移 apps/chain-hub
-   - 设置 Docker Compose 部署
+    - 迁移 apps/chain-hub
+    - 设置 Docker Compose 部署
 
 3. **agentm**
-   - 迁移 apps/agentm, agentm-web, agentm-pro
-   - 设置为 Turborepo 结构
+    - 迁移 apps/agentm, agentm-web, agentm-pro
+    - 设置为 Turborepo 结构
 
 ### Phase 4: 文档仓库 (Week 5)
 
 1. **dev-docs**
-   - 迁移 docs/ 到独立仓库
-   - 设置 Docusaurus 自动部署
+    - 迁移 docs/ 到独立仓库
+    - 设置 Docusaurus 自动部署
 
 ### Phase 5: 清理与归档 (Week 6)
 
 1. **更新原仓库**
-   ```bash
-   # 在 gradience 原仓库
-   git checkout -b archive/monorepo
-   # 添加 README 说明已迁移
-   # 保留 6 个月后归档
-   ```
+
+    ```bash
+    # 在 gradience 原仓库
+    git checkout -b archive/monorepo
+    # 添加 README 说明已迁移
+    # 保留 6 个月后归档
+    ```
 
 2. **更新文档链接**
-   - 所有 README 指向新仓库
-   - 更新 CI badge
+    - 所有 README 指向新仓库
+    - 更新 CI badge
 
 ---
 
@@ -334,21 +343,21 @@ version = "0.5.0"  # 跟随 pinocchio-token 版本
 ```json
 // package.json
 {
-  "name": "@gradience/protocol",
-  "version": "0.5.0",  // 与合约版本对齐
-  "dependencies": {
-    "@solana/web3.js": "^1.87.0"
-  }
+    "name": "@gradience/protocol",
+    "version": "0.5.0", // 与合约版本对齐
+    "dependencies": {
+        "@solana/web3.js": "^1.87.0"
+    }
 }
 ```
 
 ### 版本对齐规则
 
-| 合约版本 | SDK 版本 | 说明 |
-|---------|---------|------|
-| 0.5.0   | 0.5.0   | 初始版本 |
-| 0.5.1   | 0.5.1   | Bugfix |
-| 0.6.0   | 0.6.0   | 新功能 |
+| 合约版本 | SDK 版本 | 说明     |
+| -------- | -------- | -------- |
+| 0.5.0    | 0.5.0    | 初始版本 |
+| 0.5.1    | 0.5.1    | Bugfix   |
+| 0.6.0    | 0.6.0    | 新功能   |
 
 ---
 
@@ -359,14 +368,14 @@ version = "0.5.0"  # 跟随 pinocchio-token 版本
 ```yaml
 # .github/settings.yml
 branches:
-  - name: main
-    protection:
-      required_pull_request_reviews:
-        required_approving_review_count: 2  # 合约需要2人审核
-      required_status_checks:
-        - test
-        - build
-        - clippy
+    - name: main
+      protection:
+          required_pull_request_reviews:
+              required_approving_review_count: 2 # 合约需要2人审核
+          required_status_checks:
+              - test
+              - build
+              - clippy
 ```
 
 ### CI/CD 流水线
@@ -375,22 +384,22 @@ branches:
 # gradience-protocol/.github/workflows/release.yml
 name: Release
 on:
-  push:
-    tags: ['v*']
+    push:
+        tags: ['v*']
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --release
-      - name: Generate IDL
-        run: ./scripts/generate-idl.sh
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            target/idl/*.json
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build
+              run: cargo build --release
+            - name: Generate IDL
+              run: ./scripts/generate-idl.sh
+            - name: Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: |
+                      target/idl/*.json
 ```
 
 ---
@@ -418,26 +427,26 @@ jobs:
 
 ## ⚠️ 风险与缓解
 
-| 风险 | 影响 | 缓解措施 |
-|------|------|---------|
-| 代码历史丢失 | 高 | 使用 git filter-repo 保留历史 |
-| 依赖更新滞后 | 中 | 设置自动化发布 + Dependabot |
-| 文档分散 | 中 | 集中文档到 dev-docs，其他仓库只保留 README |
-| CI 配置重复 | 低 | 创建 gradience-actions 共享 workflow |
-| 版本不一致 | 高 | 版本号强制对齐，CI 检查 |
+| 风险         | 影响 | 缓解措施                                   |
+| ------------ | ---- | ------------------------------------------ |
+| 代码历史丢失 | 高   | 使用 git filter-repo 保留历史              |
+| 依赖更新滞后 | 中   | 设置自动化发布 + Dependabot                |
+| 文档分散     | 中   | 集中文档到 dev-docs，其他仓库只保留 README |
+| CI 配置重复  | 低   | 创建 gradience-actions 共享 workflow       |
+| 版本不一致   | 高   | 版本号强制对齐，CI 检查                    |
 
 ---
 
 ## 📅 时间线
 
-| Week | 任务 | 负责人 |
-|------|------|--------|
-| 1 | 创建仓库、工具准备 | DevOps |
-| 2 | gradience-protocol 独立 | Contract Team |
-| 3 | agent-arena 拆分 | Arena Team |
-| 4 | agentm + chain-hub 拆分 | Client Team |
-| 5 | dev-docs + 文档迁移 | Docs Team |
-| 6 | 清理、归档、监控 | All |
+| Week | 任务                    | 负责人        |
+| ---- | ----------------------- | ------------- |
+| 1    | 创建仓库、工具准备      | DevOps        |
+| 2    | gradience-protocol 独立 | Contract Team |
+| 3    | agent-arena 拆分        | Arena Team    |
+| 4    | agentm + chain-hub 拆分 | Client Team   |
+| 5    | dev-docs + 文档迁移     | Docs Team     |
+| 6    | 清理、归档、监控        | All           |
 
 ---
 
