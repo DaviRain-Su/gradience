@@ -44,6 +44,10 @@ jobs:
               working-directory: apps/agent-layer-evm
               run: forge test -vvv
 
+            - name: Run X402 Settlement tests
+              working-directory: apps/agent-layer-evm
+              run: forge test --match-contract X402SettlementTest -vvv
+
             # Coverage is informational only; do not fail CI on low coverage
             - name: Run forge coverage
               working-directory: apps/agent-layer-evm
