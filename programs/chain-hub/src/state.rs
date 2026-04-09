@@ -211,7 +211,7 @@ mod tests {
         assert_eq!(PROTOCOL_ENTRY_LEN, 511);
         assert_eq!(DELEGATION_TASK_DATA_LEN, 251);
         assert_eq!(DELEGATION_TASK_LEN, 253);
-        assert_eq!(EXTERNAL_EVALUATION_DATA_LEN, 114);
-        assert_eq!(EXTERNAL_EVALUATION_LEN, 116);
+        assert_eq!(EXTERNAL_EVALUATION_DATA_LEN, 118);
+        assert_eq!(EXTERNAL_EVALUATION_LEN, 120);
     }
 }

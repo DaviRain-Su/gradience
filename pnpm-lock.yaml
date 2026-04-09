@@ -546,6 +546,9 @@ importers:
 
   packages/chain-hub-sdk:
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.15
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
@@ -591,7 +594,7 @@ importers:
         version: 2.0.0-rc.0(ethers@6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))
       '@debridge-finance/dln-client':
         specifier: ^17.0.0
-        version: 17.6.2(@debridge-finance/solana-utils@5.5.1(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/spl-token@0.4.14(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bs58@6.0.0)(buffer@6.0.3)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10)
+        version: 17.6.2(@debridge-finance/solana-utils@5.5.1(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/spl-token@0.4.14(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bs58@6.0.0)(buffer@6.0.3)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@gradiences/a2a-types':
         specifier: workspace:*
         version: link:../a2a-types
@@ -603,7 +606,7 @@ importers:
         version: 3.0.167
       '@wormhole-foundation/sdk':
         specifier: ^1.0.0
-        version: 1.24.1(bufferutil@4.1.0)(encoding@0.1.13)(google-protobuf@3.21.4)(got@12.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
+        version: 1.24.1(bufferutil@4.1.0)(encoding@0.1.13)(google-protobuf@3.21.4)(got@12.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-evm':
         specifier: ^1.0.0
         version: 1.24.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -13843,7 +13846,7 @@ snapshots:
     dependencies:
       ethers: 6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
-  ? '@debridge-finance/dln-client@17.6.2(@debridge-finance/solana-utils@5.5.1(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/spl-token@0.4.14(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bs58@6.0.0)(buffer@6.0.3)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10)'
+  ? '@debridge-finance/dln-client@17.6.2(@debridge-finance/solana-utils@5.5.1(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/spl-token@0.4.14(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bs58@6.0.0)(buffer@6.0.3)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout-utils@0.2.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(@solana/buffer-layout@4.0.1)(@solana/web3.js@1.98.4(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)'
   : dependencies:
       '@coral-xyz/anchor': 0.29.0(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@debridge-finance/debridge-external-call': 1.0.7
@@ -13857,7 +13860,7 @@ snapshots:
       buffer: 6.0.3
       js-sha3: 0.8.0
       node-cache: 5.1.2
-      viem: 2.47.10(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.22.4)
+      viem: 2.47.10(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       web3: 1.8.0(bufferutil@4.1.0)(encoding@0.1.13)(utf-8-validate@5.0.10)
       web3-utils: 1.8.0
     transitivePeerDependencies:
@@ -15869,7 +15872,7 @@ snapshots:
       '@protobuf-ts/runtime': 2.11.1
       '@protobuf-ts/runtime-rpc': 2.11.1
 
-  '@injectivelabs/sdk-ts@1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@injectivelabs/sdk-ts@1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cosmjs/amino': 0.33.0
       '@cosmjs/proto-signing': 0.33.0
@@ -15901,7 +15904,7 @@ snapshots:
       http-status-codes: 2.3.0
       rxjs: 7.8.2
       snakecase-keys: 5.5.0
-      viem: 2.47.10(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.22.4)
+      viem: 2.47.10(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -19705,7 +19708,7 @@ snapshots:
 
   '@types/bn.js@5.2.0':
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
 
   '@types/body-parser@1.19.6':
     dependencies:
@@ -19734,7 +19737,7 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
 
   '@types/d3-array@3.2.2': {}
 
@@ -19966,7 +19969,7 @@ snapshots:
 
   '@types/pbkdf2@3.1.2':
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
 
   '@types/pixelmatch@5.2.6':
     dependencies:
@@ -20007,7 +20010,7 @@ snapshots:
 
   '@types/secp256k1@4.0.7':
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
 
   '@types/semver@7.7.1': {}
 
@@ -20035,7 +20038,7 @@ snapshots:
 
   '@types/ws@7.4.7':
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
 
   '@types/ws@8.18.1':
     dependencies:
@@ -21146,13 +21149,13 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@wormhole-foundation/sdk-cosmwasm-core@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@wormhole-foundation/sdk-cosmwasm-core@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cosmjs/cosmwasm-stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@cosmjs/stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-connect': 1.24.1
-      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -21161,14 +21164,14 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@wormhole-foundation/sdk-cosmwasm-ibc@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@wormhole-foundation/sdk-cosmwasm-ibc@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cosmjs/cosmwasm-stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@cosmjs/stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-connect': 1.24.1
-      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@wormhole-foundation/sdk-cosmwasm-core': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@wormhole-foundation/sdk-cosmwasm-core': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       cosmjs-types: 0.9.0
     transitivePeerDependencies:
       - bufferutil
@@ -21178,12 +21181,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@wormhole-foundation/sdk-cosmwasm-tokenbridge@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@wormhole-foundation/sdk-cosmwasm-tokenbridge@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cosmjs/cosmwasm-stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-connect': 1.24.1
-      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -21192,12 +21195,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@wormhole-foundation/sdk-cosmwasm@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@wormhole-foundation/sdk-cosmwasm@1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@cosmjs/cosmwasm-stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@cosmjs/proto-signing': 0.32.4
       '@cosmjs/stargate': 0.32.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@injectivelabs/sdk-ts': 1.18.16(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-connect': 1.24.1
       cosmjs-types: 0.9.0
     transitivePeerDependencies:
@@ -21396,7 +21399,7 @@ snapshots:
       - debug
       - typescript
 
-  '@wormhole-foundation/sdk@1.24.1(bufferutil@4.1.0)(encoding@0.1.13)(google-protobuf@3.21.4)(got@12.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)':
+  '@wormhole-foundation/sdk@1.24.1(bufferutil@4.1.0)(encoding@0.1.13)(google-protobuf@3.21.4)(got@12.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@wormhole-foundation/sdk-algorand': 1.24.1
       '@wormhole-foundation/sdk-algorand-core': 1.24.1
@@ -21407,10 +21410,10 @@ snapshots:
       '@wormhole-foundation/sdk-aptos-tokenbridge': 1.24.1(got@12.1.0)
       '@wormhole-foundation/sdk-base': 1.24.1
       '@wormhole-foundation/sdk-connect': 1.24.1
-      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@wormhole-foundation/sdk-cosmwasm-core': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@wormhole-foundation/sdk-cosmwasm-ibc': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@wormhole-foundation/sdk-cosmwasm-tokenbridge': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      '@wormhole-foundation/sdk-cosmwasm': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@wormhole-foundation/sdk-cosmwasm-core': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@wormhole-foundation/sdk-cosmwasm-ibc': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@wormhole-foundation/sdk-cosmwasm-tokenbridge': 1.24.1(bufferutil@4.1.0)(google-protobuf@3.21.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wormhole-foundation/sdk-definitions': 1.24.1
       '@wormhole-foundation/sdk-evm': 1.24.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@wormhole-foundation/sdk-evm-cctp': 1.24.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -27362,7 +27365,7 @@ snapshots:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/long': 4.0.2
-      '@types/node': 25.5.0
+      '@types/node': 20.19.37
       long: 4.0.0
 
   protobufjs@7.5.4:
