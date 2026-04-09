@@ -44,6 +44,7 @@ import {
     type GatewayDomainServices,
 } from './daemon/gateway-domain.js';
 import { ArenaAutoJudgeService } from './services/arena-auto-judge.js';
+import { runPaymentsHealthCheck } from './health/payments-health.js';
 
 const VERSION = '0.1.0';
 
@@ -107,6 +108,9 @@ export class Daemon {
             this.transactionManager = new SolanaTransactionManager(this.config.solanaRpcUrl, this.identity.keyManager);
             logger.info('Using Solana transaction manager');
         }
+
+        // 4.5 Lightweight Payments Health Check (no gas)
+        await runPaymentsHealthCheck(this.config);
 
         // 5. Evaluation Domain
         this.evaluation = initEvaluationDomain(unifiedLLMConfig);
