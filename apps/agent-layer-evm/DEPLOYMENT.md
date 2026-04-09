@@ -11,6 +11,7 @@
 | `GradienceReputationFeed` (proxy) | `0x13fed43909e99a2caeae9cd8d4bb37d1b47cbf86` |
 | `SocialGraph` (proxy) | `0xeed4f9da0bca5fee9df72510e5f6f58d04b7f16d` |
 | `JudgeRegistry` | `0xbb78f0d62491853e7eb0e722bf0ee957c1b60508` |
+| `X402Settlement` | `0x1Af0E217d434323f428609a42Df36B3D93c2452a` |
 
 *Deployer:* `0x067abc270c4638869cd347530be34cbdd93d0ea1`  
 *Subgraph manifests already updated:* `subgraph/subgraph.yaml`

@@ -258,9 +258,27 @@ AGENTD_X402_EVM_USDC=0x...
 
 ## 8. Deployment
 
-1. Deploy `X402Settlement.sol` to Base Sepolia via Foundry script.
+### X Layer Testnet (chainId 195)
+
+| Contract | Address |
+|----------|---------|
+| `X402Settlement` | `0x1Af0E217d434323f428609a42Df36B3D93c2452a` |
+
+*Deployer:* `0x067aBc270C4638869Cd347530Be34cBdD93D0EA1`  
+*Deployed at:* 2026-04-09
+
+### Deployment Steps
+
+1. Deploy `X402Settlement.sol` to X Layer Testnet via Foundry script:
+   ```bash
+   cd apps/agent-layer-evm
+   PRIVATE_KEY=0x... forge script script/DeployX402Settlement.s.sol --rpc-url xlayer-testnet --broadcast
+   ```
 2. Record address in `apps/agent-layer-evm/DEPLOYMENT.md`.
-3. Update daemon config with the deployed address.
+3. Update daemon `.env` with the deployed address:
+   ```bash
+   AGENTD_X402_EVM_SETTLEMENT_ADDRESS=0x1Af0E217d434323f428609a42Df36B3D93c2452a
+   ```
 
 ---
 
