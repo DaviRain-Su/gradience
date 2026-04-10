@@ -8,7 +8,7 @@
 
 import { createPublicClient, http, hexToString, defineChain } from 'viem';
 import type { PurchaseEvent } from './types.js';
-import type { MarketplaceEventListener } from './event-listener.js';
+import type { MarketplaceEventListener, EventCursorStore } from './event-listener.js';
 import { logger } from '../utils/logger.js';
 
 const AGENT_ARENA_EVM_ABI = [
@@ -40,13 +40,15 @@ export interface EvmEventListenerConfig {
 export class PollingEvmMarketplaceEventListener implements MarketplaceEventListener {
     private publicClient: ReturnType<typeof createPublicClient>;
     private config: EvmEventListenerConfig;
+    private cursorStore?: EventCursorStore;
     private pollingInterval?: ReturnType<typeof setInterval>;
     private running = false;
     private lastPolledBlock = 0n;
     private processedTxHashes = new Set<string>();
 
-    constructor(config: EvmEventListenerConfig) {
+    constructor(config: EvmEventListenerConfig, cursorStore?: EventCursorStore) {
         this.config = config;
+        this.cursorStore = cursorStore;
         const customChain = defineChain({
             id: config.chainId,
             name: `EVM-${config.chainId}`,
@@ -63,10 +65,24 @@ export class PollingEvmMarketplaceEventListener implements MarketplaceEventListe
         if (this.running) return;
         this.running = true;
 
+        // Restore cursor from persistent store
+        if (this.cursorStore) {
+            const cursor = this.cursorStore.getCursor();
+            const restoredBlock = cursor.lastBlockTime; // we store blockNumber as lastBlockTime for EVM
+            if (restoredBlock > 0) {
+                this.lastPolledBlock = BigInt(restoredBlock);
+            }
+            if (cursor.lastSignature) {
+                this.processedTxHashes.add(cursor.lastSignature);
+            }
+        }
+
         this.publicClient
             .getBlockNumber()
             .then((blockNumber) => {
-                this.lastPolledBlock = blockNumber;
+                if (this.lastPolledBlock === 0n) {
+                    this.lastPolledBlock = blockNumber;
+                }
                 logger.info({ blockNumber: blockNumber.toString() }, 'EVM event listener starting');
             })
             .catch((err) => {
@@ -104,6 +120,8 @@ export class PollingEvmMarketplaceEventListener implements MarketplaceEventListe
                 toBlock: currentBlock,
             });
 
+            let lastTxHash: string | null = null;
+
             for (const log of logs) {
                 if (!this.running) break;
                 if (this.processedTxHashes.has(log.transactionHash)) continue;
@@ -113,6 +131,7 @@ export class PollingEvmMarketplaceEventListener implements MarketplaceEventListe
                     await onEvent(event);
                 }
                 this.processedTxHashes.add(log.transactionHash);
+                lastTxHash = log.transactionHash;
                 if (this.processedTxHashes.size > 1000) {
                     const first = this.processedTxHashes.values().next().value;
                     if (first) this.processedTxHashes.delete(first);
@@ -120,6 +139,10 @@ export class PollingEvmMarketplaceEventListener implements MarketplaceEventListe
             }
 
             this.lastPolledBlock = currentBlock;
+
+            if (this.cursorStore) {
+                this.cursorStore.setCursor(lastTxHash ?? '', Number(currentBlock));
+            }
         } catch (err) {
             logger.error({ err }, 'EVM event listener poll failed');
         }

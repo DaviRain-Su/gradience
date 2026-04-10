@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { TaskQueue, Task } from './task-queue.js';
 import type { ProcessManager } from '../agents/process-manager.js';
+import type { TaskMemoryService } from '../memory/task-memory.js';
 import { logger } from '../utils/logger.js';
 
 export class TaskExecutor extends EventEmitter {
@@ -12,6 +13,7 @@ export class TaskExecutor extends EventEmitter {
         private readonly processManager: ProcessManager,
         private readonly pollInterval = 1_000,
         private readonly taskTimeoutMs = 60_000,
+        private readonly memoryService?: TaskMemoryService,
     ) {
         super();
     }
@@ -61,10 +63,19 @@ export class TaskExecutor extends EventEmitter {
             this.taskQueue.updateState(task.id, 'completed', { result });
             this.emit('task.completed', this.taskQueue.get(task.id));
             logger.info({ taskId: task.id }, 'Task completed');
+
+            if (this.memoryService) {
+                const summary = typeof result === 'object' && result !== null && 'summary' in result ? String(result.summary) : `Task completed successfully`;
+                this.memoryService.record(task.id, agent.config.id, summary, 3);
+            }
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : String(err);
             const currentTask = this.taskQueue.get(task.id);
             if (!currentTask) return;
+
+            if (this.memoryService) {
+                this.memoryService.record(task.id, agent.config.id, `Task failed: ${errorMsg}`, 4);
+            }
 
             if (currentTask.retries < currentTask.maxRetries) {
                 this.taskQueue.updateState(task.id, 'queued', { error: errorMsg });

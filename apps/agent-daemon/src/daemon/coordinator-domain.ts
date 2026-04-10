@@ -4,6 +4,7 @@ import { TaskQueue } from '../tasks/task-queue.js';
 import { TaskExecutor } from '../tasks/task-executor.js';
 import { TaskService } from '../tasks/task-service.js';
 import { ProcessManager } from '../agents/process-manager.js';
+import { SQLiteTaskMemoryService } from '../memory/task-memory.js';
 import { logger } from '../utils/logger.js';
 
 export interface CoordinatorDomainServices {
@@ -29,7 +30,8 @@ export function initCoordinatorDomain(
     });
 
     const processManager = new ProcessManager(db, config.maxAgentProcesses);
-    const taskExecutor = new TaskExecutor(taskQueue, processManager);
+    const memoryService = new SQLiteTaskMemoryService(db);
+    const taskExecutor = new TaskExecutor(taskQueue, processManager, undefined, undefined, memoryService);
 
     return { taskQueue, processManager, taskExecutor };
 }

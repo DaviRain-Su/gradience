@@ -31,10 +31,23 @@ export interface TaskMemoryService {
 
 export class SQLiteTaskMemoryService implements TaskMemoryService {
     private db: Database.Database;
+    private shouldClose: boolean;
 
-    constructor(dbPath: string) {
-        this.db = new Database(dbPath);
+    constructor(dbOrPath: string | Database.Database) {
+        if (typeof dbOrPath === 'string') {
+            this.db = new Database(dbOrPath);
+            this.shouldClose = true;
+        } else {
+            this.db = dbOrPath;
+            this.shouldClose = false;
+        }
         this.db.exec(CREATE_MEMORY_TABLE_SQL);
+    }
+
+    close(): void {
+        if (this.shouldClose) {
+            this.db.close();
+        }
     }
 
     record(taskId: string, agentId: string | null, observation: string, importance = 3): void {
