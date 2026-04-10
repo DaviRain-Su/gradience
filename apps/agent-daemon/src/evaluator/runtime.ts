@@ -980,7 +980,7 @@ class DockerSandbox implements Sandbox {
             '--network',
             this.config.networkAccess ? 'host' : 'none',
             '-v',
-            `${this.tmpDir}:/workspace:ro`,
+            `${this.tmpDir}:/workspace:rw`,
             '-w',
             '/workspace',
             '-m',

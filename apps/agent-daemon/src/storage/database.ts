@@ -156,3 +156,15 @@ export function initDatabase(dbPath: string): DatabaseInstance {
     logger.info({ dbPath }, 'Database initialized');
     return db;
 }
+
+CREATE TABLE IF NOT EXISTS task_memory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT NOT NULL,
+    agent_id TEXT,
+    observation TEXT NOT NULL,
+    importance INTEGER NOT NULL DEFAULT 3,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_memory_task_id ON task_memory(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_memory_importance ON task_memory(importance);

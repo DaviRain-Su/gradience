@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS gateway_purchases (
 CREATE INDEX IF NOT EXISTS idx_status ON gateway_purchases(status);
 CREATE INDEX IF NOT EXISTS idx_tx_signature ON gateway_purchases(tx_signature);
 CREATE INDEX IF NOT EXISTS idx_task_id ON gateway_purchases(task_id);
+
+CREATE TABLE IF NOT EXISTS gateway_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 `;
 
 export class GatewayStore {
@@ -150,6 +155,21 @@ export class GatewayStore {
             .prepare('SELECT * FROM gateway_purchases WHERE status = ? LIMIT ?')
             .all(status, limit) as RawRow[];
         return rows.map(toRecord);
+    }
+
+    // ------------------------------------------------------------------
+    // Meta / Cursor persistence
+    // ------------------------------------------------------------------
+
+    getMeta(key: string): string | null {
+        const row = this.db.prepare('SELECT value FROM gateway_meta WHERE key = ?').get(key) as
+            | { value: string }
+            | undefined;
+        return row?.value ?? null;
+    }
+
+    setMeta(key: string, value: string): void {
+        this.db.prepare('INSERT INTO gateway_meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value);
     }
 
     close(): void {

@@ -10,6 +10,7 @@ export {
     PollingMarketplaceEventListener,
     type EventListenerConfig,
     type MarketplaceEventListener,
+    type EventCursorStore,
 } from './event-listener.js';
 export { PollingEvmMarketplaceEventListener, type EvmEventListenerConfig } from './event-listener-evm.js';
 export { createEvmArenaTaskClient } from './arena-client-evm.js';

@@ -428,4 +428,56 @@ apps/agent-daemon/scripts/e2e-gateway-devnet.mjs  # Devnet E2E 脚本
 - [x] 目录结构已定义
 - [x] 边界条件已列出（≥10 个）
 
+---
+
+## 3.9 Gateway Handler Refactor (GRA-252 Addendum)
+
+### `StateHandler` Interface
+```typescript
+export interface StateHandler {
+    handle(record: GatewayPurchaseRecord): Promise<StateTransitionResult>;
+}
+
+export interface StateTransitionResult {
+    nextState: PurchaseStatus;
+    patch?: Partial<GatewayPurchaseRecord>;
+    delayMs?: number;
+}
+```
+
+### Handler List
+- `PendingHandler` → transitions to `TASK_CREATING`
+- `TaskCreatingHandler` → calls `arenaClient.post()`, retries up to 2 times internally with jitter
+- `TaskCreatedHandler` → calls `arenaClient.apply()`
+- `ApplyingHandler` → calls `arenaClient.submit()`
+- `ExecutingHandler` → calls `executionClient.runAndSettle()`
+- `SettlingHandler` → transitions to `SETTLED` (settlement bridge invoked by execution client in current architecture)
+
+### Router `drive()`
+```typescript
+private async drive(record: GatewayPurchaseRecord): Promise<void> {
+    if (!this.running) return;
+    const handlers: Record<PurchaseStatus, StateHandler> = { ... };
+    while (this.running) {
+        const handler = handlers[current.status];
+        if (!handler) break;
+        const result = await handler.handle(current);
+        this.store.update(current.purchaseId, { ...result.patch, status: result.nextState, updatedAt: new Date().toISOString() });
+        if (result.delayMs) await sleep(result.delayMs);
+        if (result.nextState === 'SETTLED' || result.nextState === 'FAILED') break;
+        current = this.store.getByPurchaseId(current.purchaseId)!;
+    }
+}
+```
+
+### Persistent Event Cursor
+```sql
+CREATE TABLE IF NOT EXISTS gateway_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+```
+Keys: `last_block_time` (INTEGER), `last_signature` (TEXT).
+`PollingMarketplaceEventListener` reads on start, writes after each processed event.
+
 **验收通过后，进入 Phase 4: Task Breakdown →**

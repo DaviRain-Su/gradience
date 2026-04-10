@@ -17,6 +17,11 @@ export interface EventListenerConfig {
     pollIntervalMs: number;
 }
 
+export interface EventCursorStore {
+    getCursor(): { lastSignature: string | null; lastBlockTime: number };
+    setCursor(lastSignature: string, lastBlockTime: number): void;
+}
+
 export interface MarketplaceEventListener {
     start(onEvent: (event: PurchaseEvent) => void | Promise<void>): void;
     stop(): Promise<void>;
@@ -27,19 +32,29 @@ export class PollingMarketplaceEventListener implements MarketplaceEventListener
     private connection: Connection;
     private programId: PublicKey;
     private config: EventListenerConfig;
+    private cursorStore?: EventCursorStore;
     private pollingInterval?: ReturnType<typeof setInterval>;
     private running = false;
     private processedSignatures = new Set<string>();
 
-    constructor(config: EventListenerConfig) {
+    constructor(config: EventListenerConfig, cursorStore?: EventCursorStore) {
         this.connection = new Connection(config.rpcEndpoint, 'confirmed');
         this.programId = new PublicKey(config.marketplaceProgramId);
         this.config = config;
+        this.cursorStore = cursorStore;
     }
 
     start(onEvent: (event: PurchaseEvent) => void | Promise<void>): void {
         if (this.running) return;
         this.running = true;
+
+        // Restore cursor from persistent store
+        if (this.cursorStore) {
+            const cursor = this.cursorStore.getCursor();
+            if (cursor.lastSignature) {
+                this.processedSignatures.add(cursor.lastSignature);
+            }
+        }
 
         // Immediate first poll
         this.poll(onEvent).catch((err) => console.error('Initial poll failed:', err));
@@ -71,6 +86,9 @@ export class PollingMarketplaceEventListener implements MarketplaceEventListener
         // Process oldest-first to maintain order
         const toProcess = signatures.filter((sig) => !this.processedSignatures.has(sig.signature)).reverse();
 
+        let lastProcessedSig: string | null = null;
+        let lastBlockTime = 0;
+
         for (const sigInfo of toProcess) {
             if (!this.running) break;
             if (sigInfo.err) continue; // skip failed transactions
@@ -91,11 +109,19 @@ export class PollingMarketplaceEventListener implements MarketplaceEventListener
             }
 
             this.processedSignatures.add(sigInfo.signature);
+            lastProcessedSig = sigInfo.signature;
+            lastBlockTime = sigInfo.blockTime ?? 0;
+
             // Prevent unbounded growth
             if (this.processedSignatures.size > 1000) {
                 const first = this.processedSignatures.values().next().value;
                 if (first) this.processedSignatures.delete(first);
             }
+        }
+
+        // Persist cursor after batch
+        if (this.cursorStore && lastProcessedSig) {
+            this.cursorStore.setCursor(lastProcessedSig, lastBlockTime);
         }
     }
 
