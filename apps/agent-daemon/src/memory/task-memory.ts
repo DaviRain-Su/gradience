@@ -27,6 +27,7 @@ export interface TaskMemoryService {
     record(taskId: string, agentId: string | null, observation: string, importance?: number): void;
     retrieve(taskId: string, limit?: number): string[];
     retrieveTop(taskId: string, limit?: number): string[];
+    formatForPrompt(taskId: string, limit?: number): string;
 }
 
 export class SQLiteTaskMemoryService implements TaskMemoryService {

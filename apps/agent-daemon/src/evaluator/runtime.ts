@@ -262,9 +262,14 @@ export class EvaluatorRuntime extends EventEmitter {
     private activeEvaluations: Map<string, EvaluationTask> = new Map();
     private activeSandboxes: Map<string, Sandbox> = new Map();
     private config: EvaluatorConfig;
+    private memoryService?: import('../memory/task-memory.js').TaskMemoryService;
 
-    constructor(config: Partial<EvaluatorConfig> = {}) {
+    constructor(
+        config: Partial<EvaluatorConfig> = {},
+        memoryService?: import('../memory/task-memory.js').TaskMemoryService,
+    ) {
         super();
+        this.memoryService = memoryService;
         this.config = {
             defaultBudget: {
                 maxCostUsd: 10,
@@ -725,10 +730,12 @@ export class EvaluatorRuntime extends EventEmitter {
 
         const llmClient = getLLMClient()!;
         const submissionContent = typeof task.submission.source === 'string' ? task.submission.source : '';
-        const requirements =
+        const baseRequirements =
             task.criteria.rubric?.categories?.map((r) => r.name).join(', ') || task.criteria.requiredChecks.join(', ');
+        const memoryContext = this.memoryService?.formatForPrompt(task.taskId) ?? '';
+        const requirements = memoryContext ? `${memoryContext}\n\n${baseRequirements}` : baseRequirements;
 
-        logger.info({ evaluationId: task.id }, 'Running LLM content evaluation');
+        logger.info({ evaluationId: task.id, hasMemory: !!memoryContext }, 'Running LLM content evaluation');
 
         const startTime = Date.now();
         const scores = await llmClient.evaluateContent(submissionContent, requirements);

@@ -26,6 +26,7 @@ import {
 } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { RevenueSharingEngine, type TaskSettlementInfo } from '../revenue/revenue-engine.js';
+import type { TaskMemoryService } from '../memory/task-memory.js';
 
 // ============================================================================
 // Types
@@ -61,6 +62,7 @@ export class TaskService extends TaskQueue {
     private evaluatorRuntime?: EvaluatorRuntime;
     private activeEvaluations: Map<string, string> = new Map(); // taskId -> evaluationId
     private revenueEngine?: RevenueSharingEngine;
+    private memoryService?: TaskMemoryService;
 
     constructor(
         db: Database.Database,
@@ -72,9 +74,11 @@ export class TaskService extends TaskQueue {
             revenueSharingEnabled: true,
             revenueAutoSettle: false,
         },
+        memoryService?: TaskMemoryService,
     ) {
         super(db);
         this.config = config;
+        this.memoryService = memoryService;
 
         // Initialize evaluator runtime if auto-judge is enabled
         if (config.autoJudge) {
@@ -107,35 +111,38 @@ export class TaskService extends TaskQueue {
             const model = unifiedConfig?.model ?? this.config.judgeModel;
             const scoringProvider = provider === 'claude' ? 'anthropic' : provider === 'moonshot' ? 'openai' : provider;
 
-            this.evaluatorRuntime = new EvaluatorRuntime({
-                defaultBudget: {
-                    maxCostUsd: 1.0,
-                    maxTimeSeconds: 300,
-                    maxMemoryMb: 512,
-                    contextWindowSize: 10,
-                },
-                sandbox: {
-                    type: 'git_worktree',
-                    resources: {
-                        cpu: '1',
-                        memory: '512m',
-                        timeout: 300,
+            this.evaluatorRuntime = new EvaluatorRuntime(
+                {
+                    defaultBudget: {
+                        maxCostUsd: 1.0,
+                        maxTimeSeconds: 300,
+                        maxMemoryMb: 512,
+                        contextWindowSize: 10,
                     },
-                    networkAccess: false,
+                    sandbox: {
+                        type: 'git_worktree',
+                        resources: {
+                            cpu: '1',
+                            memory: '512m',
+                            timeout: 300,
+                        },
+                        networkAccess: false,
+                    },
+                    scoringModel: {
+                        provider: scoringProvider as 'openai' | 'anthropic' | 'local',
+                        model: model,
+                        temperature: unifiedConfig?.temperature ?? 0.3,
+                        maxTokens: unifiedConfig?.maxTokens ?? 2048,
+                    },
+                    driftDetection: {
+                        enabled: true,
+                        threshold: 0.8,
+                        resetStrategy: 'sprint_boundary',
+                        checkpointIntervalMs: 60000,
+                    },
                 },
-                scoringModel: {
-                    provider: scoringProvider as 'openai' | 'anthropic' | 'local',
-                    model: model,
-                    temperature: unifiedConfig?.temperature ?? 0.3,
-                    maxTokens: unifiedConfig?.maxTokens ?? 2048,
-                },
-                driftDetection: {
-                    enabled: true,
-                    threshold: 0.8,
-                    resetStrategy: 'sprint_boundary',
-                    checkpointIntervalMs: 60000,
-                },
-            });
+                this.memoryService,
+            );
 
             logger.info({ provider, model, unified: !!unifiedConfig }, 'Evaluator runtime initialized');
         } catch (error) {

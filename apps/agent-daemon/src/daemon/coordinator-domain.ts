@@ -19,18 +19,22 @@ export function initCoordinatorDomain(
     unifiedLLMConfig: UnifiedLLMConfig,
     evaluatorLLMConfig: { provider: string; model: string },
 ): CoordinatorDomainServices {
-    const taskQueue = new TaskService(db, {
-        autoJudge: config.autoJudge,
-        judgeProvider: evaluatorLLMConfig.provider as any,
-        judgeModel: evaluatorLLMConfig.model,
-        judgeConfidenceThreshold: config.judgeConfidenceThreshold,
-        llmConfig: unifiedLLMConfig,
-        revenueSharingEnabled: config.revenueSharingEnabled,
-        revenueAutoSettle: config.revenueAutoSettle,
-    });
+    const memoryService = new SQLiteTaskMemoryService(db);
+    const taskQueue = new TaskService(
+        db,
+        {
+            autoJudge: config.autoJudge,
+            judgeProvider: evaluatorLLMConfig.provider as any,
+            judgeModel: evaluatorLLMConfig.model,
+            judgeConfidenceThreshold: config.judgeConfidenceThreshold,
+            llmConfig: unifiedLLMConfig,
+            revenueSharingEnabled: config.revenueSharingEnabled,
+            revenueAutoSettle: config.revenueAutoSettle,
+        },
+        memoryService,
+    );
 
     const processManager = new ProcessManager(db, config.maxAgentProcesses);
-    const memoryService = new SQLiteTaskMemoryService(db);
     const taskExecutor = new TaskExecutor(taskQueue, processManager, undefined, undefined, memoryService);
 
     return { taskQueue, processManager, taskExecutor };
