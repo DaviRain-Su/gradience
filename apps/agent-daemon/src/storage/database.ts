@@ -130,6 +130,18 @@ CREATE INDEX IF NOT EXISTS idx_revenue_task_id ON revenue_distributions(task_id)
 CREATE INDEX IF NOT EXISTS idx_revenue_status ON revenue_distributions(status);
 CREATE INDEX IF NOT EXISTS idx_revenue_created_at ON revenue_distributions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_revenue_tx_signature ON revenue_distributions(tx_signature);
+
+CREATE TABLE IF NOT EXISTS task_memory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT NOT NULL,
+    agent_id TEXT,
+    observation TEXT NOT NULL,
+    importance INTEGER NOT NULL DEFAULT 3,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_memory_task_id ON task_memory(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_memory_importance ON task_memory(importance);
 `;
 
 export function initDatabase(dbPath: string): DatabaseInstance {
@@ -156,15 +168,3 @@ export function initDatabase(dbPath: string): DatabaseInstance {
     logger.info({ dbPath }, 'Database initialized');
     return db;
 }
-
-CREATE TABLE IF NOT EXISTS task_memory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id TEXT NOT NULL,
-    agent_id TEXT,
-    observation TEXT NOT NULL,
-    importance INTEGER NOT NULL DEFAULT 3,
-    created_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_task_memory_task_id ON task_memory(task_id);
-CREATE INDEX IF NOT EXISTS idx_task_memory_importance ON task_memory(importance);
