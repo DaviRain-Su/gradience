@@ -22,17 +22,19 @@ import { DefaultTeeExecutionEngine } from '../vel/tee-execution-engine.js';
 import { AttestationVerifier } from '../vel/attestation-verifier.js';
 import { TeeProviderFactory } from '../vel/tee-execution-engine.js';
 import { createSettlementBridge } from '../bridge/settlement-bridge.js';
+import { KeyManager } from '../bridge/key-manager.js';
+import { join } from 'node:path';
 
 export interface GatewayDomainServices {
     gateway: DefaultWorkflowExecutionGateway | null;
     listener: PollingMarketplaceEventListener | null;
 }
 
-export function initGatewayDomain(
+export async function initGatewayDomain(
     config: DaemonConfig,
     dbPath: string,
     transactionManager: ITransactionManager,
-): GatewayDomainServices {
+): Promise<GatewayDomainServices> {
     logger.info('Initializing Solana gateway domain');
 
     // Gateway only runs on Solana; cast to concrete Solana TransactionManager
@@ -51,20 +53,23 @@ export function initGatewayDomain(
 
     // Build real VEL-backed execution client
     const workflowResolver = createLocalWorkflowResolver();
-    const provider = TeeProviderFactory.create(config.teeProvider ?? 'gramine-local');
+    const provider = TeeProviderFactory.create(config.teeProvider);
     const engine = new DefaultTeeExecutionEngine(provider);
     const verifier = new AttestationVerifier(provider);
 
     // Settlement bridge for on-chain judge_and_pay
-    const bridge = createSettlementBridge({
+    const bridgeKeyManager = new KeyManager({ keyDir: join(dbPath, '..', 'bridge-keys'), keyName: 'evaluator' });
+    await bridgeKeyManager.loadOrCreate();
+    const bridge = await createSettlementBridge({
         chainHubProgramId: config.chainHubProgramId ?? ARENA_PROGRAM_ADDRESS,
         rpcEndpoint: config.solanaRpcUrl ?? 'https://api.devnet.solana.com',
+        keyManager: bridgeKeyManager,
     });
 
     const velConfig = {
         bridge: {
             judgeAndPay: async (args: { taskId: number; winner: string; score: number; reasonRef: string }) => {
-                const result = await (await bridge).settleWithReasonRef(
+                const result = await bridge.settleWithReasonRef(
                     {
                         evaluationId: `vel-${args.taskId}`,
                         taskId: String(args.taskId),
@@ -98,7 +103,7 @@ export function initGatewayDomain(
                 return `file://${path}`;
             },
         },
-        defaultProvider: config.teeProvider ?? 'gramine-local',
+        defaultProvider: config.teeProvider,
     };
 
     const orchestrator = new DefaultVelOrchestrator(engine, verifier, velConfig);

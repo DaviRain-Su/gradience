@@ -78,6 +78,7 @@ fn init_reputation(agent: [u8; 32], bump: u8) -> Reputation {
         global: ReputationStats::default(),
         by_category,
         bump,
+        evm_sync_nonce: 0,
     }
 }
 

@@ -1,5 +1,6 @@
 use alloc::vec;
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshDeserialize;
+use ed25519_dalek::Verifier;
 use pinocchio::{account::AccountView, error::ProgramError, Address, ProgramResult};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     instructions::UpdateReputationFromEvm,
     state::{
         EVM_AUTHORITY_SEED, EVM_AUTHORITY_DISCRIMINATOR, REPUTATION_DISCRIMINATOR,
-        EvmAuthority, Reputation, CategoryStats,
+        EvmAuthority, Reputation,
     },
     utils::verify_owned_by,
 };
@@ -95,7 +96,7 @@ pub fn process_update_reputation_from_evm(
 
     // 8. Update nonce and write back
     reputation.evm_sync_nonce = ix.data.nonce;
-    let mut serialized = reputation.try_to_vec().map_err(|_| ProgramError::InvalidAccountData)?;
+    let mut serialized = borsh::to_vec(&reputation).map_err(|_| ProgramError::InvalidAccountData)?;
     let mut out = vec![crate::state::ACCOUNT_VERSION_V1, REPUTATION_DISCRIMINATOR];
     out.append(&mut serialized);
 
@@ -117,23 +118,23 @@ fn build_relayer_message(ix: &crate::instructions::update_reputation_from_evm::d
     let category_le = ix.category.to_le_bytes();
     let source_bytes = ix.source.as_bytes();
 
-    Sha256::hashv(&[
-        &ix.agent,
-        &chain_id_le,
-        &nonce_le,
-        &completed_le,
-        &total_applied_le,
-        &score_sum_le,
-        &category_le,
-        source_bytes,
-    ])
+    Sha256::new()
+        .update(&ix.agent)
+        .update(&chain_id_le)
+        .update(&nonce_le)
+        .update(&completed_le)
+        .update(&total_applied_le)
+        .update(&score_sum_le)
+        .update(&category_le)
+        .update(source_bytes)
+        .finalize()
 }
 
 fn verify_ed25519(public_key: &[u8; 32], message: &[u8; 32], signature: &[u8]) -> bool {
     if signature.len() != 64 {
         return false;
     }
-    let sig_bytes: [u8; 64] = signature.try_into().unwrap_or_default();
+    let sig_bytes: [u8; 64] = signature.try_into().unwrap_or([0u8; 64]);
     let Ok(verifying_key) = ed25519_dalek::VerifyingKey::from_bytes(public_key) else {
         return false;
     };

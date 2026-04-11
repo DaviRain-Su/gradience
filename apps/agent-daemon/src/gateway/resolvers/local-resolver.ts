@@ -6,7 +6,34 @@
  */
 
 import { GatewayError, GW_WORKFLOW_NOT_FOUND } from '../errors.js';
-import type { GradienceWorkflow, WorkflowStep } from '@gradiences/workflow-engine';
+
+// Local workflow type aliases to avoid external package dependency
+interface WorkflowStep {
+    id: string;
+    name: string;
+    chain: string;
+    action: string;
+    params: Record<string, unknown>;
+}
+
+interface GradienceWorkflow {
+    id: string;
+    name: string;
+    description: string;
+    author: string;
+    version: string;
+    steps: WorkflowStep[];
+    pricing: { model: string };
+    revenueShare: Record<string, number>;
+    requirements: Record<string, unknown>;
+    isPublic: boolean;
+    isTemplate: boolean;
+    tags: string[];
+    createdAt: number;
+    updatedAt: number;
+    contentHash: string;
+    signature: string;
+}
 
 export interface ResolvedWorkflow {
     workflowId: string;

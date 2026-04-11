@@ -38,6 +38,7 @@ export interface GatewayPurchaseRecord {
     resultHash?: string;
     settlementTx?: string;
     score?: number;
+    error?: string;
     attempts: number;
     createdAt: string;
     updatedAt: string;

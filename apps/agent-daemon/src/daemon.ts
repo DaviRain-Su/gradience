@@ -130,8 +130,8 @@ export class Daemon {
         );
         this.arenaAutoJudge.start();
 
-        // 9. Gateway Domain (placeholder — Solana gateway integration pending)
-        this.gateway = initGatewayDomain(this.config, this.config.dbPath, this.transactionManager);
+        // 9. Gateway Domain (Solana-native workflow execution gateway)
+        this.gateway = await initGatewayDomain(this.config, this.config.dbPath, this.transactionManager);
 
         // 10. Wire cross-domain events on ConnectionManager
         this.wireConnectionEvents();

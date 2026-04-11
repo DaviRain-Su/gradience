@@ -77,6 +77,10 @@ const DaemonConfigSchema = z.object({
     bridgeDistributionAgentBps: z.number().int().min(0).max(10000).default(9500),
     bridgeDistributionJudgeBps: z.number().int().min(0).max(10000).default(300),
     bridgeDistributionProtocolBps: z.number().int().min(0).max(10000).default(200),
+    // TEE configuration
+    teeProvider: z.enum(['gramine-local', 'nitro', 'sgx']).default('gramine-local'),
+    // Chain Hub configuration
+    chainHubProgramId: z.string().optional(),
     // MagicBlock PER configuration
     magicblockPerEnabled: z.boolean().default(false),
     magicblockTeeValidator: z.string().default('FnE6VJT5QNZdedZPnCoLsARgBwoE6DeJNjBs2H1gySXA'),

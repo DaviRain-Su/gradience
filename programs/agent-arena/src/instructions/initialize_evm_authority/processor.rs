@@ -1,12 +1,10 @@
 use alloc::vec;
-use borsh::BorshSerialize;
-use pinocchio::{account::AccountView, error::ProgramError, Address, ProgramResult};
+use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
 
 use crate::{
-    errors::GradienceProgramError,
     instructions::InitializeEvmAuthority,
     state::{
-        ACCOUNT_VERSION_V1, EVM_AUTHORITY_DISCRIMINATOR, EVM_AUTHORITY_LEN, EVM_AUTHORITY_SEED,
+        ACCOUNT_VERSION_V1, EVM_AUTHORITY_DISCRIMINATOR, EVM_AUTHORITY_SEED,
         EvmAuthority,
     },
     utils::{create_pda_account, verify_system_account},
@@ -37,17 +35,17 @@ pub fn process_initialize_evm_authority(
         bump,
     };
 
-    let mut serialized = authority.try_to_vec()?;
+    let mut serialized = borsh::to_vec(&authority).map_err(|_| ProgramError::InvalidAccountData)?;
     let mut data = vec![ACCOUNT_VERSION_V1, EVM_AUTHORITY_DISCRIMINATOR];
     data.append(&mut serialized);
 
+    let bump_seed = [bump];
     create_pda_account(
         ix.accounts.owner,
-        ix.accounts.evm_authority,
-        ix.accounts.system_program,
-        program_id,
         data.len(),
-        &[EVM_AUTHORITY_SEED, &[bump]],
+        program_id,
+        ix.accounts.evm_authority,
+        [Seed::from(EVM_AUTHORITY_SEED), Seed::from(&bump_seed)],
     )?;
 
     ix.accounts.evm_authority.try_borrow_mut()?.copy_from_slice(&data);
