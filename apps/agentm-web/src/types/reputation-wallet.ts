@@ -300,7 +300,7 @@ export function calculatePolicy(reputationScore: number): WalletPolicy {
             dailyLimit: score * 10,
             maxTransaction: score * 2,
             requireApproval: false,
-            allowedChains: ['solana', 'ethereum', 'base', 'arbitrum'],
+            allowedChains: ['solana'],
             allowedTokens: null,
         };
     } else if (score >= 51) {
@@ -308,16 +308,16 @@ export function calculatePolicy(reputationScore: number): WalletPolicy {
             dailyLimit: score * 10,
             maxTransaction: score * 2,
             requireApproval: false,
-            allowedChains: ['solana', 'ethereum', 'base'],
-            allowedTokens: ['USDC', 'USDT', 'ETH', 'SOL'],
+            allowedChains: ['solana'],
+            allowedTokens: ['USDC', 'USDT', 'SOL'],
         };
     } else if (score >= 31) {
         return {
             dailyLimit: score * 10,
             maxTransaction: score * 2,
             requireApproval: true,
-            allowedChains: ['solana', 'ethereum'],
-            allowedTokens: ['USDC', 'USDT', 'ETH'],
+            allowedChains: ['solana'],
+            allowedTokens: ['USDC', 'USDT', 'SOL'],
         };
     } else {
         return {

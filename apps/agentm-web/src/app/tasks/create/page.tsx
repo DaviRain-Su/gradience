@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useArenaTask } from '@/hooks/useArenaTask';
-import { useWalletChain } from '@/hooks/useWalletChain';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import { useMagicBlock } from '@/hooks/useMagicBlock';
 import { getExplorerUrl } from '@/hooks/useArenaTask';
@@ -35,7 +34,6 @@ export default function CreateArenaTaskPage() {
     const router = useRouter();
     const { walletAddress } = useDaemonConnection();
     const arena = useArenaTask(walletAddress);
-    const { chain, chainId } = useWalletChain();
 
     const [evalRef, setEvalRef] = useState('');
     const [category, setCategory] = useState<number>(7);
@@ -54,7 +52,7 @@ export default function CreateArenaTaskPage() {
         signature: string;
     } | null>(null);
 
-    const tokenSymbol = chain === 'evm' ? 'ETH' : 'SOL';
+    const tokenSymbol = 'SOL';
     const magicBlock = useMagicBlock();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -77,13 +75,8 @@ export default function CreateArenaTaskPage() {
 
         const deadlineOffsetSeconds = Math.floor((deadlineMs - now) / 1000);
 
-        let rewardValue: string | number | bigint = reward;
-        let minStakeValue: string | number | bigint | undefined = minStake || undefined;
-
-        if (chain !== 'evm') {
-            rewardValue = BigInt(Math.round(parseFloat(reward) * 1e9));
-            minStakeValue = minStake ? BigInt(Math.round(parseFloat(minStake) * 1e9)) : undefined;
-        }
+        const rewardValue = BigInt(Math.round(parseFloat(reward) * 1e9));
+        const minStakeValue = minStake ? BigInt(Math.round(parseFloat(minStake) * 1e9)) : undefined;
 
         setLoading(true);
         setError(null);
@@ -91,7 +84,7 @@ export default function CreateArenaTaskPage() {
 
         try {
             let sessionId: string | undefined;
-            if (chain !== 'evm' && magicBlock.isAvailable && executionMode !== 'l1') {
+            if (magicBlock.isAvailable && executionMode !== 'l1') {
                 sessionId = await magicBlock.createSession(executionMode, [walletAddress]);
             }
 
@@ -208,7 +201,7 @@ export default function CreateArenaTaskPage() {
                             Task #{result.taskId.toString()} created successfully!
                         </p>
                         <a
-                            href={getExplorerUrl(result.signature, chain ?? 'solana', chainId)}
+                            href={getExplorerUrl(result.signature)}
                             target="_blank"
                             rel="noreferrer"
                             style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'underline' }}
@@ -419,7 +412,7 @@ export default function CreateArenaTaskPage() {
                                 type="text"
                                 value={judgeAddress}
                                 onChange={(e) => setJudgeAddress(e.target.value)}
-                                placeholder={chain === 'evm' ? '0x...' : 'Solana address'}
+                                placeholder="Solana address"
                                 required={judgeMode === 0}
                                 style={{
                                     width: '100%',
@@ -432,70 +425,66 @@ export default function CreateArenaTaskPage() {
                         </div>
                     )}
 
-                    {chain !== 'evm' && (
-                        <>
-                            <div>
-                                <label
-                                    style={{
-                                        display: 'block',
-                                        fontWeight: 600,
-                                        marginBottom: '8px',
-                                        fontSize: '14px',
-                                    }}
-                                >
-                                    Task Visibility
-                                </label>
-                                <select
-                                    value={visibility}
-                                    onChange={(e) => setVisibility(e.target.value as 'public' | 'sealed')}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        borderRadius: '10px',
-                                        border: '1.5px solid #e5e5e5',
-                                        fontSize: '14px',
-                                    }}
-                                >
-                                    <option value="public">Public (all submissions visible)</option>
-                                    <option value="sealed">Sealed (encrypted until judged)</option>
-                                </select>
-                            </div>
+                    <div>
+                        <label
+                            style={{
+                                display: 'block',
+                                fontWeight: 600,
+                                marginBottom: '8px',
+                                fontSize: '14px',
+                            }}
+                        >
+                            Task Visibility
+                        </label>
+                        <select
+                            value={visibility}
+                            onChange={(e) => setVisibility(e.target.value as 'public' | 'sealed')}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                borderRadius: '10px',
+                                border: '1.5px solid #e5e5e5',
+                                fontSize: '14px',
+                            }}
+                        >
+                            <option value="public">Public (all submissions visible)</option>
+                            <option value="sealed">Sealed (encrypted until judged)</option>
+                        </select>
+                    </div>
 
-                            <div>
-                                <label
-                                    style={{
-                                        display: 'block',
-                                        fontWeight: 600,
-                                        marginBottom: '8px',
-                                        fontSize: '14px',
-                                    }}
-                                >
-                                    Execution Mode
-                                </label>
-                                <ExecutionModeSelector
-                                    value={executionMode}
-                                    onChange={setExecutionMode}
-                                    taskVisibility={visibility}
-                                />
-                            </div>
+                    <div>
+                        <label
+                            style={{
+                                display: 'block',
+                                fontWeight: 600,
+                                marginBottom: '8px',
+                                fontSize: '14px',
+                            }}
+                        >
+                            Execution Mode
+                        </label>
+                        <ExecutionModeSelector
+                            value={executionMode}
+                            onChange={setExecutionMode}
+                            taskVisibility={visibility}
+                        />
+                    </div>
 
-                            {magicBlock.sessions.length > 0 && (
-                                <MagicBlockStatus
-                                    sessions={[
-                                        ...magicBlock.sessions.map((s) => ({
-                                            id: s.id,
-                                            mode: s.mode,
-                                            status: (s.state === 'active'
-                                                ? 'active'
-                                                : 'connecting') as import('@/components/settlement/MagicBlockStatus').SessionStatus,
-                                            latencyMs: s.mode === 'er' ? 8 : s.mode === 'per' ? 12 : 400,
-                                            tps: s.mode === 'er' ? 5000 : s.mode === 'per' ? 3000 : 400,
-                                        })),
-                                    ]}
-                                    preferredSessionId={magicBlock.preferredSessionId ?? undefined}
-                                />
-                            )}
-                        </>
+                    {magicBlock.sessions.length > 0 && (
+                        <MagicBlockStatus
+                            sessions={[
+                                ...magicBlock.sessions.map((s) => ({
+                                    id: s.id,
+                                    mode: s.mode,
+                                    status: (s.state === 'active'
+                                        ? 'active'
+                                        : 'connecting') as import('@/components/settlement/MagicBlockStatus').SessionStatus,
+                                    latencyMs: s.mode === 'er' ? 8 : s.mode === 'per' ? 12 : 400,
+                                    tps: s.mode === 'er' ? 5000 : s.mode === 'per' ? 3000 : 400,
+                                })),
+                            ]}
+                            preferredSessionId={magicBlock.preferredSessionId ?? undefined}
+                        />
                     )}
 
                     <div

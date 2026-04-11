@@ -12,7 +12,7 @@ packages:
     - 'apps/developer-docs'
     - 'apps/ows-adapter'
     - 'apps/ows-reputation-wallet'
-    - 'apps/agent-layer-evm'
+    # - 'apps/agent-layer-evm'  # removed: Solana-only core protocol
     - 'apps/a2a-protocol/sdk'
     - 'apps/a2a-protocol/runtime'
     # Hackathon demos (excluded from core workspace build)

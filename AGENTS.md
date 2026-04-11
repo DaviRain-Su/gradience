@@ -178,7 +178,7 @@ Design Indexer Profile API specification
 | ------------------------ | ----------------------- | ---------------------------- | ----------------------------------- |
 | **AgentM Web** (Unified) | `apps/agentm-web/`      | `apps/agentm-web/docs/`      | docs/tasks/GRA-30\*.md, GRA-125-128 |
 | Agent Arena              | `apps/agent-arena/`     | `apps/agent-arena/docs/`     | docs/tasks/GRA-33\*.md              |
-| Agent Layer EVM          | `apps/agent-layer-evm/` | `apps/agent-layer-evm/docs/` | docs/tasks/GRA-39\*.md              |
+| ~~Agent Layer EVM~~      | *removed*               | *Solana-only core protocol*  | docs/tasks/archive/GRA-39\*.md      |
 | Chain Hub                | `apps/chain-hub/`       | `apps/chain-hub/docs/`       | docs/tasks/GRA-4*.md, GRA-8*.md     |
 | A2A Protocol             | `apps/a2a-protocol/`    | `apps/a2a-protocol/docs/`    | docs/tasks/GRA-47\*.md              |
 | OWS Hackathon            | -                       | `docs/hackathon/`            | docs/tasks/GRA-56\*.md              |

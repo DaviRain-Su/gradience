@@ -13,8 +13,6 @@
 import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { createSolanaRpc } from '@solana/kit';
 import { createHash, randomBytes } from 'crypto';
-import type { X402EvmClient } from './x402-evm.js';
-
 export interface PaymentChannel {
     id: string;
     payer: string;
@@ -38,16 +36,14 @@ export class X402PaymentManager {
     private rpc: ReturnType<typeof createSolanaRpc>;
     private channels: Map<string, PaymentChannel> = new Map();
     private config: X402Config;
-    private evmClient?: X402EvmClient;
 
-    constructor(config: Partial<X402Config> = {}, evmClient?: X402EvmClient) {
+    constructor(config: Partial<X402Config> = {}) {
         this.config = {
             rpcUrl: config.rpcUrl || 'https://api.devnet.solana.com',
             minAmount: config.minAmount ?? 100000n, // 0.0001 SOL
             maxLockTime: config.maxLockTime || 3600, // 1 hour
             defaultValidFor: config.defaultValidFor || 300, // 5 minutes
         };
-        this.evmClient = evmClient;
         this.rpc = createSolanaRpc(this.config.rpcUrl);
     }
 
@@ -120,12 +116,7 @@ export class X402PaymentManager {
         }
 
         // Execute settlement transaction
-        let txSignature: string;
-        if (this.evmClient && channel.id.startsWith('x402_evm_')) {
-            txSignature = await this.evmClient.settle(channel.id as `0x${string}`, actualAmount);
-        } else {
-            txSignature = await this.executeTransfer(channel.payer, channel.recipient, actualAmount);
-        }
+        const txSignature = await this.executeTransfer(channel.payer, channel.recipient, actualAmount);
 
         // Update channel
         channel.status = 'settled';
@@ -158,10 +149,6 @@ export class X402PaymentManager {
         }
 
         // Execute rollback (unlock funds)
-        if (this.evmClient && channel.id.startsWith('x402_evm_')) {
-            await this.evmClient.rollback(channel.id as `0x${string}`);
-        }
-
         channel.status = 'rolled_back';
         this.channels.set(channelId, channel);
 

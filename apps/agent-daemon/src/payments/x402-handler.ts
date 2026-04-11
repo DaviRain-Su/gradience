@@ -120,18 +120,13 @@ export interface X402Session {
 // x402 Handler
 // ============================================================================
 
-import type { X402EvmClient } from './x402-evm.js';
-
 export class X402Handler extends EventEmitter {
     private sessions: Map<string, X402Session> = new Map();
     private connection: Connection;
     private config: X402Config;
-    private evmClient?: X402EvmClient;
 
-    constructor(config: Partial<X402Config> = {}, evmClient?: X402EvmClient) {
+    constructor(config: Partial<X402Config> = {}) {
         super();
-
-        this.evmClient = evmClient;
         this.config = {
             rpcEndpoint: config.rpcEndpoint || 'https://api.devnet.solana.com',
             acceptedTokens: config.acceptedTokens || [
@@ -343,23 +338,6 @@ export class X402Handler extends EventEmitter {
                 if (confirmation.value.err) {
                     throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
                 }
-            } else if (authorization.type === 'evm_permit') {
-                if (!this.evmClient) {
-                    throw new DaemonError(ErrorCodes.PAYMENT_TYPE_NOT_SUPPORTED, 'EVM client not configured', 400);
-                }
-                const permitPayload = JSON.parse(authorization.authorization);
-                txSignature = await this.evmClient.lockWithPermit({
-                    channelId: permitPayload.channelId,
-                    payer: authorization.payer as `0x${string}`,
-                    recipient: session.requirements.recipient as `0x${string}`,
-                    token: permitPayload.token,
-                    maxAmount: BigInt(permitPayload.maxAmount),
-                    deadline: BigInt(permitPayload.deadline),
-                    nonce: permitPayload.nonce,
-                    v: permitPayload.v,
-                    r: permitPayload.r,
-                    s: permitPayload.s,
-                });
             } else {
                 throw new DaemonError(
                     ErrorCodes.PAYMENT_TYPE_NOT_SUPPORTED,
@@ -369,18 +347,11 @@ export class X402Handler extends EventEmitter {
             }
 
             // Get transaction details
-            let blockTime: number;
-            let slot: number;
-            if (authorization.type === 'solana_transaction') {
-                const tx = await this.connection.getTransaction(txSignature, {
-                    commitment: 'confirmed',
-                });
-                blockTime = tx?.blockTime || Date.now();
-                slot = tx?.slot || 0;
-            } else {
-                blockTime = Date.now();
-                slot = 0;
-            }
+            const tx = await this.connection.getTransaction(txSignature, {
+                commitment: 'confirmed',
+            });
+            const blockTime = tx?.blockTime || Date.now();
+            const slot = tx?.slot || 0;
 
             const result: X402PaymentResult = {
                 paymentId: authorization.paymentId,

@@ -3,8 +3,6 @@
 import { useState, useCallback } from 'react';
 import { applyForTask, type WalletAdapter } from '@/lib/solana/arena-client';
 import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
-import { applyForTaskEVM } from '@/lib/evm/arena-client';
-import { useWalletChain } from './useWalletChain';
 import { useConnection } from '@/lib/connection/ConnectionContext';
 import { useIdentity } from './useIdentity';
 
@@ -19,20 +17,11 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastSignature, setLastSignature] = useState<string | null>(null);
-    const { chain, chainId, primaryWallet } = useWalletChain();
     const { fetchApi } = useConnection();
     const { getTier } = useIdentity();
 
-    const getEthereumProvider = useCallback((): unknown => {
-        const provider = (primaryWallet?.connector as any)?.getProvider?.();
-        if (provider) return provider;
-        const walletClient = (primaryWallet?.connector as any)?.getWalletClient?.();
-        if (walletClient) return walletClient;
-        throw new Error('No EVM provider available from Dynamic wallet');
-    }, [primaryWallet]);
-
     const apply = useCallback(
-        async (taskId: number | bigint, stake?: string): Promise<string | null> => {
+        async (taskId: number | bigint, _stake?: string): Promise<string | null> => {
             if (!walletAddress) {
                 setError('Wallet not connected');
                 return null;
@@ -40,8 +29,8 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
             setLoading(true);
             setError(null);
             try {
-                // Pre-check 1: On-chain risk assessment (non-blocking for EVM in MVP)
-                if (chain !== 'evm' && fetchApi) {
+                // Pre-check 1: On-chain risk assessment
+                if (fetchApi) {
                     const riskResult = await fetchApi<{
                         allowed: boolean;
                         score: number;
@@ -59,30 +48,17 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
                     }
                 }
 
-                // Pre-check 2: Verification tier (Solana only for now; binding not yet on EVM)
-                if (chain !== 'evm') {
-                    const tier = await getTier(walletAddress);
-                    if (tier && !tier.permissions.canPostHighValueTask && !tier.permissions.canBeJudge) {
-                        // Guests cannot apply for any task on Solana until they bind OAuth
-                        if (tier.tier === 'guest') {
-                            throw new Error(
-                                'Account verification required. Please link a social account in Settings to apply for tasks.',
-                            );
-                        }
+                // Pre-check 2: Verification tier
+                const tier = await getTier(walletAddress);
+                if (tier && !tier.permissions.canPostHighValueTask && !tier.permissions.canBeJudge) {
+                    // Guests cannot apply for any task on Solana until they bind OAuth
+                    if (tier.tier === 'guest') {
+                        throw new Error(
+                            'Account verification required. Please link a social account in Settings to apply for tasks.',
+                        );
                     }
                 }
 
-                if (chain === 'evm') {
-                    const txHash = await applyForTaskEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account: walletAddress as `0x${string}`,
-                        chainId,
-                        taskId: BigInt(taskId),
-                        stake,
-                    });
-                    setLastSignature(txHash);
-                    return txHash;
-                }
                 const wallet: WalletAdapter = createDynamicAdapter(walletAddress);
                 const sig = await applyForTask({ wallet, taskId });
                 setLastSignature(sig);
@@ -94,7 +70,7 @@ export function useTaskApply(walletAddress: string | null): UseTaskApplyResult {
                 setLoading(false);
             }
         },
-        [walletAddress, chain, chainId, getEthereumProvider, fetchApi, getTier],
+        [walletAddress, fetchApi, getTier],
     );
 
     return { apply, loading, error, lastSignature };

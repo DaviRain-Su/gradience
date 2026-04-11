@@ -20,7 +20,7 @@
 
 - 链外数据存储（交给 Indexer）
 - 任务内容评判（交给 Judge Daemon）
-- 跨链逻辑（交给 agent-layer-evm）
+- 跨链逻辑（通过 cross-chain-adapters 桥接声誉到 Solana）
 
 ---
 

@@ -20,28 +20,12 @@ import type { ReputationData } from '@gradiences/sdk';
 import { createDynamicAdapter } from '@/lib/solana/dynamic-wallet-adapter';
 import { useDaemonConnection } from '@/lib/connection/useDaemonConnection';
 import type { Address } from '@solana/kit';
-import {
-    postTaskEVM,
-    applyForTaskEVM,
-    submitResultEVM,
-    judgeAndPayEVM,
-    cancelTaskEVM,
-    fetchTaskEVM,
-} from '@/lib/evm/arena-client';
-import { getExplorerUrl as getEVMExplorerUrl } from '@/lib/evm/explorer';
-import {
-    fetchTasksFromSubgraph,
-    fetchTaskFromSubgraph,
-    fetchSubmissionsFromSubgraph,
-    fetchReputationFromSubgraph,
-} from '@/lib/evm/subgraph-client';
 import { useWalletChain } from './useWalletChain';
 import { useIdentity } from './useIdentity';
 
 export type { TaskApi, SubmissionApi };
 
-export function getExplorerUrl(signature: string, chain: 'solana' | 'evm' = 'solana', chainId?: number): string {
-    if (chain === 'evm') return getEVMExplorerUrl(signature, chainId);
+export function getExplorerUrl(signature: string): string {
     return getSolanaExplorerUrl(signature);
 }
 
@@ -69,7 +53,6 @@ export function useArenaTask(walletAddress: string | null) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
-    const { chain, chainId, primaryWallet } = useWalletChain();
     const { getTier } = useIdentity();
     const { daemonUrl, sessionToken } = useDaemonConnection();
 
@@ -78,23 +61,15 @@ export function useArenaTask(walletAddress: string | null) {
         return createDynamicAdapter(walletAddress);
     }, [walletAddress]);
 
-    const getEthereumProvider = useCallback((): unknown => {
-        const provider = (primaryWallet?.connector as any)?.getProvider?.();
-        if (provider) return provider;
-        const walletClient = (primaryWallet?.connector as any)?.getWalletClient?.();
-        if (walletClient) return walletClient;
-        throw new Error('No EVM provider available from Dynamic wallet');
-    }, [primaryWallet]);
-
     const doPostTask = useCallback(
         async (params: {
             evalRef: string;
             category: number;
-            reward: number | bigint | string;
-            minStake?: number | bigint | string;
+            reward: number | bigint;
+            minStake?: number | bigint;
             deadlineOffsetSeconds?: number;
             judgeMode?: number;
-            judge?: Address | `0x${string}`;
+            judge?: Address;
             executionMode?: 'l1' | 'er' | 'per';
             sessionId?: string;
         }): Promise<{ taskId: bigint; signature: string } | null> => {
@@ -102,7 +77,7 @@ export function useArenaTask(walletAddress: string | null) {
             setLoading(true);
             try {
                 // Tier check for Solana: guests cannot post tasks
-                if (chain !== 'evm' && walletAddress) {
+                if (walletAddress) {
                     const tier = await getTier(walletAddress);
                     if (tier && tier.tier === 'guest') {
                         throw new Error(
@@ -111,33 +86,15 @@ export function useArenaTask(walletAddress: string | null) {
                     }
                 }
 
-                if (chain === 'evm' && walletAddress) {
-                    const account = walletAddress as `0x${string}`;
-                    const result = await postTaskEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account,
-                        chainId,
-                        evalRef: params.evalRef,
-                        category: params.category,
-                        reward: params.reward as string,
-                        minStake: params.minStake as string | undefined,
-                        deadlineOffsetSeconds: params.deadlineOffsetSeconds,
-                        judgeDeadlineOffsetSeconds: params.deadlineOffsetSeconds,
-                        judge: params.judge as `0x${string}` | undefined,
-                        requireZkKyc: params.executionMode === 'per',
-                    });
-                    setLastTxSignature(result.txHash);
-                    return { taskId: result.taskId, signature: result.txHash };
-                }
                 const result = await postTask({
                     wallet: getWallet(),
                     evalRef: params.evalRef,
                     category: params.category,
-                    reward: params.reward as number | bigint,
-                    minStake: params.minStake as number | bigint | undefined,
+                    reward: params.reward,
+                    minStake: params.minStake,
                     deadlineOffsetSeconds: params.deadlineOffsetSeconds,
                     judgeMode: params.judgeMode,
-                    judge: params.judge as Address | undefined,
+                    judge: params.judge,
                 });
                 setLastTxSignature(result.signature);
                 return result;
@@ -148,7 +105,7 @@ export function useArenaTask(walletAddress: string | null) {
                 setLoading(false);
             }
         },
-        [chain, getWallet, getEthereumProvider, walletAddress, getTier],
+        [getWallet, walletAddress, getTier],
     );
 
     const doApplyForTask = useCallback(
@@ -156,16 +113,6 @@ export function useArenaTask(walletAddress: string | null) {
             setError(null);
             setLoading(true);
             try {
-                if (chain === 'evm' && walletAddress) {
-                    const txHash = await applyForTaskEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account: walletAddress as `0x${string}`,
-                        chainId,
-                        taskId: BigInt(taskId),
-                    });
-                    setLastTxSignature(txHash);
-                    return txHash;
-                }
                 const sig = await applyForTask({ wallet: getWallet(), taskId });
                 setLastTxSignature(sig);
                 return sig;
@@ -176,7 +123,7 @@ export function useArenaTask(walletAddress: string | null) {
                 setLoading(false);
             }
         },
-        [chain, getWallet, getEthereumProvider, walletAddress],
+        [getWallet],
     );
 
     const doSubmitResult = useCallback(
@@ -190,18 +137,6 @@ export function useArenaTask(walletAddress: string | null) {
             setError(null);
             setLoading(true);
             try {
-                if (chain === 'evm' && walletAddress) {
-                    const txHash = await submitResultEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account: walletAddress as `0x${string}`,
-                        chainId,
-                        taskId: BigInt(params.taskId),
-                        resultRef: params.resultRef,
-                        traceRef: params.traceRef,
-                    });
-                    setLastTxSignature(txHash);
-                    return txHash;
-                }
                 const sig = await submitResult({ wallet: getWallet(), ...params });
                 setLastTxSignature(sig);
                 return sig;
@@ -212,14 +147,14 @@ export function useArenaTask(walletAddress: string | null) {
                 setLoading(false);
             }
         },
-        [chain, getWallet, getEthereumProvider, walletAddress],
+        [getWallet],
     );
 
     const doJudgeAndPay = useCallback(
         async (params: {
             taskId: number | bigint;
-            winner: Address | `0x${string}`;
-            poster: Address | `0x${string}`;
+            winner: Address;
+            poster: Address;
             score: number;
             reasonRef: string;
             usePER?: boolean;
@@ -227,18 +162,6 @@ export function useArenaTask(walletAddress: string | null) {
             setError(null);
             setLoading(true);
             try {
-                if (chain === 'evm' && walletAddress) {
-                    const txHash = await judgeAndPayEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account: walletAddress as `0x${string}`,
-                        chainId,
-                        taskId: BigInt(params.taskId),
-                        winner: params.winner as `0x${string}`,
-                        score: params.score,
-                    });
-                    setLastTxSignature(txHash);
-                    return txHash;
-                }
                 if (params.usePER) {
                     const data = await postDaemonJudgePER(daemonUrl, sessionToken, {
                         taskId: String(params.taskId),
@@ -258,8 +181,8 @@ export function useArenaTask(walletAddress: string | null) {
                 const sig = await judgeAndPay({
                     wallet: getWallet(),
                     taskId: params.taskId,
-                    winner: params.winner as Address,
-                    poster: params.poster as Address,
+                    winner: params.winner,
+                    poster: params.poster,
                     score: params.score,
                     reasonRef: params.reasonRef,
                 });
@@ -272,7 +195,7 @@ export function useArenaTask(walletAddress: string | null) {
                 setLoading(false);
             }
         },
-        [chain, getWallet, getEthereumProvider, walletAddress, daemonUrl, sessionToken],
+        [getWallet, daemonUrl, sessionToken],
     );
 
     const doCancelTask = useCallback(
@@ -280,16 +203,6 @@ export function useArenaTask(walletAddress: string | null) {
             setError(null);
             setLoading(true);
             try {
-                if (chain === 'evm' && walletAddress) {
-                    const txHash = await cancelTaskEVM({
-                        ethereumProvider: getEthereumProvider(),
-                        account: walletAddress as `0x${string}`,
-                        chainId,
-                        taskId: BigInt(taskId),
-                    });
-                    setLastTxSignature(txHash);
-                    return txHash;
-                }
                 const sig = await cancelTask({ wallet: getWallet(), taskId });
                 setLastTxSignature(sig);
                 return sig;
@@ -300,7 +213,7 @@ export function useArenaTask(walletAddress: string | null) {
                 setLoading(false);
             }
         },
-        [chain, getWallet, getEthereumProvider, walletAddress],
+        [getWallet],
     );
 
     const doFetchTasks = useCallback(
@@ -311,53 +224,36 @@ export function useArenaTask(walletAddress: string | null) {
             limit?: number;
             offset?: number;
         }): Promise<TaskApi[]> => {
-            if (chain === 'evm') {
-                return fetchTasksFromSubgraph({
-                    state: params?.status,
-                    poster: params?.poster,
-                    limit: params?.limit,
-                });
-            }
             return fetchTasks(params);
         },
-        [chain],
+        [],
     );
 
     const doFetchTask = useCallback(
         async (taskId: number): Promise<TaskApi | null> => {
-            if (chain === 'evm') {
-                return fetchTaskFromSubgraph(taskId, chainId);
-            }
             return fetchTask(taskId);
         },
-        [chain, chainId],
+        [],
     );
 
     const doFetchSubmissions = useCallback(
         async (taskId: number): Promise<SubmissionApi[] | null> => {
-            if (chain === 'evm') {
-                return fetchSubmissionsFromSubgraph(taskId, chainId);
-            }
             return fetchSubmissions(taskId);
         },
-        [chain, chainId],
+        [],
     );
 
     const doFetchReputation = useCallback(
         async (agent: string): Promise<ReputationData | null> => {
-            if (chain === 'evm') {
-                return fetchReputationFromSubgraph(agent, chainId);
-            }
             return fetchReputation(agent);
         },
-        [chain, chainId],
+        [],
     );
 
     return {
         loading,
         error,
         lastTxSignature,
-        chain,
         postTask: doPostTask,
         applyForTask: doApplyForTask,
         submitResult: doSubmitResult,
@@ -367,6 +263,6 @@ export function useArenaTask(walletAddress: string | null) {
         fetchTask: doFetchTask,
         fetchSubmissions: doFetchSubmissions,
         fetchReputation: doFetchReputation,
-        getExplorerUrl: (sig: string) => getExplorerUrl(sig, chain ?? 'solana', chainId),
+        getExplorerUrl,
     } as const;
 }

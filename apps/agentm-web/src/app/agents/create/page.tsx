@@ -24,7 +24,6 @@ import { ArrowLeft, Sparkles, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useDaemonApi } from '@/lib/connection/ConnectionContext';
-import { isUserRegisteredEVM, createAgentEVM } from '@/lib/evm/agent-registry';
 
 export default function CreateAgentPage() {
     const router = useRouter();
@@ -42,57 +41,20 @@ export default function CreateAgentPage() {
         enabled: true,
     });
 
-    const isEvmWalletConnected =
-        (primaryWallet?.chain as string | undefined)?.toLowerCase?.() === 'evm' ||
-        (primaryWallet?.connector as any)?.name?.toLowerCase?.().includes('evm') ||
-        false;
-
     const createAgent = async (
         agentData: Record<string, unknown>,
     ): Promise<{
         success: boolean;
         agent: { id: string };
         local?: boolean;
-        onChain?: { agentId: string; txHash: string; chain: string };
     }> => {
         setError(null);
-
-        const chain = (agentData.chain as string) || 'solana';
-        let onChainResult: { agentId: string; txHash: string; chain: string } | undefined;
-
-        // EVM on-chain registration path
-        if (chain === 'ethereum' && isEvmWalletConnected && primaryWallet?.address) {
-            const account = primaryWallet.address as `0x${string}`;
-            const provider = (primaryWallet as any).connector;
-            try {
-                const registered = await isUserRegisteredEVM(account);
-                if (!registered) {
-                    throw new Error(
-                        'You must register a Gradience profile on EVM before creating an agent. Go to Profile → Register.',
-                    );
-                }
-                const metadataURI =
-                    typeof agentData.description === 'string' && (agentData.description as string).startsWith('http')
-                        ? (agentData.description as string)
-                        : `ipfs://gradience-agent/${encodeURIComponent(agentData.name as string)}`;
-                const { agentId, txHash } = await createAgentEVM({
-                    ethereumProvider: provider,
-                    account,
-                    metadataURI,
-                });
-                onChainResult = { agentId: agentId.toString(), txHash, chain: 'ethereum' };
-            } catch (evmErr) {
-                console.error('EVM on-chain registration failed:', evmErr);
-                // Surface error but still fallback to daemon/local below
-            }
-        }
 
         if (!isConnected) {
             const localAgents = JSON.parse(localStorage.getItem('local_agents') || '[]');
             const newAgent = {
-                id: onChainResult?.agentId ?? `local_${Date.now()}`,
+                id: `local_${Date.now()}`,
                 ...agentData,
-                onChain: onChainResult,
                 createdAt: new Date().toISOString(),
             };
             localAgents.push(newAgent);
@@ -103,10 +65,7 @@ export default function CreateAgentPage() {
         const result = await apiCall<{ success: boolean; agent: { id: string } }>('/api/v1/agents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...agentData,
-                onChain: onChainResult,
-            }),
+            body: JSON.stringify(agentData),
         });
 
         if (!result?.success) {
@@ -126,11 +85,7 @@ export default function CreateAgentPage() {
         setIsSubmitting(true);
         try {
             const result = await createAgent(formData);
-            const notice = result.onChain
-                ? 'agent_created_onchain'
-                : result.local
-                  ? 'agent_created_locally'
-                  : 'agent_created';
+            const notice = result.local ? 'agent_created_locally' : 'agent_created';
             router.push(`/app?view=me&notice=${notice}`);
         } catch (err) {
             console.error('Failed to create agent:', err);
@@ -146,14 +101,10 @@ export default function CreateAgentPage() {
             const result = await createAgent({
                 ...config,
                 type: (config.type as string) || 'custom',
-                chain: (config.chain as string) || 'solana',
+                chain: 'solana',
                 enabled: true,
             });
-            const notice = result.onChain
-                ? 'agent_created_onchain'
-                : result.local
-                  ? 'agent_created_locally'
-                  : 'agent_created';
+            const notice = result.local ? 'agent_created_locally' : 'agent_created';
             router.push(`/app?view=me&notice=${notice}`);
         } catch (err) {
             console.error('Failed to create agent:', err);
@@ -281,14 +232,13 @@ export default function CreateAgentPage() {
                                             onValueChange={(value) =>
                                                 value && setFormData({ ...formData, chain: value })
                                             }
+                                            disabled
                                         >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="solana">Solana</SelectItem>
-                                                <SelectItem value="ethereum">Ethereum</SelectItem>
-                                                <SelectItem value="bitcoin">Bitcoin</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

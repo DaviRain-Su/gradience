@@ -32,12 +32,7 @@ export interface AgentProfile {
     createdAt: number;
     updatedAt: number;
     status: ProfileStatus;
-    /** Optional on-chain EVM registration metadata */
-    onChain?: {
-        agentId: string;
-        txHash: string;
-        chain: string;
-    };
+
 }
 
 export interface ProfileDraft {

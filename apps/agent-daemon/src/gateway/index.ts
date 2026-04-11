@@ -12,8 +12,6 @@ export {
     type MarketplaceEventListener,
     type EventCursorStore,
 } from './event-listener.js';
-export { PollingEvmMarketplaceEventListener, type EvmEventListenerConfig } from './event-listener-evm.js';
-export { createEvmArenaTaskClient } from './arena-client-evm.js';
 export { DefaultArenaTaskFactory, buildEvalRef } from './arena-factory.js';
 export { DefaultAgentAutoApplicant, type AgentAutoApplicant } from './auto-applicant.js';
 export { DefaultWorkflowExecutionGateway, type ArenaTaskClient, type ExecutionClient } from './gateway.js';

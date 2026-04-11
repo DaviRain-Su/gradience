@@ -76,7 +76,7 @@ flowchart TB
 
 - ❌ 不存储任务内容（链下 Indexer）
 - ❌ 不执行评判逻辑（Judge Daemon）
-- ❌ 不处理跨链逻辑（agent-layer-evm）
+- ❌ 不处理跨链逻辑（通过 cross-chain-adapters 桥接声誉到 Solana）
 
 ---
 

@@ -228,11 +228,12 @@ In `reputation-oracle.ts`:
     evmWeight  = max(1, evmCompletedTasks)
     ```
 
-### 4.6 Step 6 — EVM Mirror Contract (optional for v1)
+### 4.6 Step 6 — Cross-chain Bridge (future work)
 
-The EVM `AgentIdentityRegistry` can be deployed as a minimal add-on to
-`AgentLayerEVM`. It is **not** a blocker for the core unified identity flow
-because the Oracle can read the Solana PDA directly.
+EVM identity mirroring will be handled via `packages/cross-chain-adapters/`
+(Wormhole / LayerZero) rather than a dedicated EVM core protocol. This is
+**not** a blocker for the core unified identity flow because the Oracle can
+read the Solana PDA directly.
 
 ---
 
@@ -254,7 +255,7 @@ because the Oracle can read the Solana PDA directly.
 - [ ] `BindIdentity` instruction + processor implemented in Solana program
 - [ ] SBF build passes
 - [ ] Daemon `POST /api/v1/identity/bind` verifies both signatures and writes to Solana
-- [ ] Reputation Oracle query aggregates scores across bound chains
+- [ ] Reputation Oracle query aggregates scores across bound chains (cross-chain adapters)
 - [ ] Unit tests for signature verification and binding logic
 - [ ] agent-daemon full test suite passes
 
@@ -265,4 +266,4 @@ because the Oracle can read the Solana PDA directly.
 - Solana program state: `programs/agent-arena/src/state/agent_layer.rs`
 - Reputation Oracle routes: `apps/agent-daemon/src/api/routes/reputation-oracle.ts`
 - TransactionManager: `apps/agent-daemon/src/solana/transaction-manager.ts`
-- EVM contracts: `apps/agent-layer-evm/src/AgentMRegistry.sol`
+

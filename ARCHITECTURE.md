@@ -201,7 +201,7 @@ WS   /ws                  ← WebSocket 实时推送
 | hackathon-ows         | `apps/hackathon-ows/`         | 🔵 Archived   | OWS 黑客松集成                                                            |
 | ows-adapter           | `apps/ows-adapter/`           | 🔵 Archived   | OWS 适配器（黑客松）                                                      |
 | ows-reputation-wallet | `apps/ows-reputation-wallet/` | 🔵 Archived   | 声誉钱包 MVP（黑客松）                                                    |
-| agent-layer-evm       | `apps/agent-layer-evm/`       | 🟠 WIP        | EVM 跨链合约（未来功能）                                                  |
+| ~~agent-layer-evm~~   | *removed*                     | —             | Solana-only core protocol; EVM bridge code deleted                        |
 | archive/              | `archive/`                    | 🔵 Archived   | agent-me, agent-social 等历史项目                                         |
 
 **未来桌面版方案**（规划中）：Tauri 2.0 包装 agentm-web（Rust shell + agentd 内嵌，bundle < 10MB）
@@ -270,7 +270,7 @@ authenticate(walletAddress, signMessage)
 | 密封提交（可见性）                    | ⚪ Not Started | —                                                              | 需加密层                                                          |
 | ZK-KYC（Tier 0/1/2）                  | ⚪ Not Started | —                                                              | 需 ZK prover                                                      |
 | gUSD / Token economics                | ⚪ Not Started | —                                                              | 需 token program                                                  |
-| Cross-chain（Base, Arbitrum）         | ⚪ Not Started | `apps/agent-layer-evm/` 有合约                                 | 未部署                                                            |
+| Cross-chain reputation bridge         | 🟠 Planned     | via `packages/cross-chain-adapters/` (Wormhole/LayerZero)      | EVM reputation relay to Solana core                               |
 
 **总体完成度**：~88%。核心功能全部完成，主要 gap：Workflow Marketplace 完善、Token 经济、高级隐私（ZK/密封提交）。
 

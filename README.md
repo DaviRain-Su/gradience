@@ -141,7 +141,7 @@ programs/                      # Solana programs (Rust/Pinocchio)
   chain-hub/                   # Chain Hub program
   a2a-protocol/                # A2A program
   agentm-core/                 # AgentM core program (migrated from apps/)
-  agent-layer-evm/             # EVM agent layer
+  # agent-layer-evm/           # REMOVED: Solana-only core protocol
   workflow-marketplace/        # Workflow marketplace program
 
 protocol/                      # Protocol specs

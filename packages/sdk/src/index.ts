@@ -49,16 +49,6 @@ export { GradienceSDK, GRADIENCE_PROGRAM_ADDRESS } from '@gradiences/arena-sdk';
 export { ChainHubClient, ChainHubError } from '@gradiences/chain-hub-sdk';
 export type { ChainHubClientConfig, ReputationData, AgentInfo, SqlQueryResult } from '@gradiences/chain-hub-sdk';
 
-// EVM Multicall3 — batch operations without native contract batch functions
-export { MULTICALL3_ADDRESS, MULTICALL3_ABI, encodeAggregate3Value } from './evm/multicall';
-export type { Call3Value, Aggregate3ValuePayload } from './evm/multicall';
-
-// EVM Adapter & Task Client (GRA-256)
-export { EVMTaskClient } from './evm/task-client';
-export type { EVMAdapter } from './evm/adapter';
-export type { EVMChainConfig, PostTaskEVMOptions } from './evm/task-client';
-export { AGENT_ARENA_EVM_ABI } from './evm/abi';
-
 // ── Gradience unified client ──────────────────────────────────────────────────
 
 /**

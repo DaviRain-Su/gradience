@@ -371,7 +371,7 @@ Carol 是 DeFi 协议方，需要选一个 Agent 管理 LP 仓位。
 
 - 链外数据存储（交给 Indexer）
 - 任务内容评判逻辑（交给 Judge Daemon）
-- 跨链逻辑（交给 agent-layer-evm）
+- 跨链逻辑（通过 cross-chain-adapters 桥接声誉到 Solana）
 - A2A Agent 间通信（交给 a2a-protocol）
 - 前端 UI（交给 agentm 和 agentm-web）
 - SDK 完整实现（有基础客户端生成）
