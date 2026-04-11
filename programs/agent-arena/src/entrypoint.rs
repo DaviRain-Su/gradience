@@ -4,9 +4,10 @@ use crate::{
     instructions::{
         process_apply_for_task, process_bind_identity, process_cancel_task,
         process_create_task_permission, process_emit_event, process_force_refund,
-        process_initialize, process_judge_and_pay, process_post_task,
-        process_receive_vrf_randomness, process_refund_expired, process_register_judge,
-        process_submit_result, process_unstake_judge, process_upgrade_config,
+        process_initialize, process_initialize_evm_authority, process_judge_and_pay,
+        process_post_task, process_receive_vrf_randomness, process_refund_expired,
+        process_register_judge, process_submit_result, process_unstake_judge,
+        process_update_reputation_from_evm, process_upgrade_config,
     },
     traits::GradienceInstructionDiscriminators,
 };
@@ -64,14 +65,14 @@ pub fn process_instruction(
         GradienceInstructionDiscriminators::CreateTaskPermission => {
             process_create_task_permission(program_id, accounts, instruction_data)
         }
-        GradienceInstructionDiscriminators::ReceiveVrfRandomness => {
-            process_receive_vrf_randomness(program_id, accounts, instruction_data)
-        }
-        GradienceInstructionDiscriminators::CreateTaskPermission => {
-            process_create_task_permission(program_id, accounts, instruction_data)
-        }
         GradienceInstructionDiscriminators::BindIdentity => {
             process_bind_identity(program_id, accounts, instruction_data)
+        }
+        GradienceInstructionDiscriminators::UpdateReputationFromEvm => {
+            process_update_reputation_from_evm(program_id, accounts, instruction_data)
+        }
+        GradienceInstructionDiscriminators::InitializeEvmAuthority => {
+            process_initialize_evm_authority(program_id, accounts, instruction_data)
         }
         GradienceInstructionDiscriminators::EmitEvent => {
             process_emit_event(program_id, accounts)

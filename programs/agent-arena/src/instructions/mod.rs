@@ -6,6 +6,7 @@ pub mod definition;
 pub mod emit_event;
 pub mod force_refund;
 pub mod initialize;
+pub mod initialize_evm_authority;
 pub mod judge_and_pay;
 pub mod post_task;
 pub mod receive_vrf_randomness;
@@ -14,6 +15,7 @@ pub mod refund_expired;
 pub mod submit_result;
 pub mod unstake_judge;
 pub mod upgrade_config;
+pub mod update_reputation_from_evm;
 #[cfg(feature = "idl")]
 pub use definition::*;
 pub use apply_for_task::{
@@ -46,4 +48,12 @@ pub use submit_result::{SubmitResult, SubmitResultAccounts, SubmitResultData, pr
 pub use unstake_judge::{UnstakeJudge, UnstakeJudgeAccounts, UnstakeJudgeData, process_unstake_judge};
 pub use upgrade_config::{
     UpgradeConfig, UpgradeConfigAccounts, UpgradeConfigData, process_upgrade_config,
+};
+pub use initialize_evm_authority::{
+    InitializeEvmAuthority, InitializeEvmAuthorityAccounts, InitializeEvmAuthorityData,
+    process_initialize_evm_authority,
+};
+pub use update_reputation_from_evm::{
+    UpdateReputationFromEvm, UpdateReputationFromEvmAccounts, UpdateReputationFromEvmData,
+    process_update_reputation_from_evm,
 };

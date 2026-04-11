@@ -11,6 +11,8 @@ import type { ReputationAggregationEngine } from '../../reputation/aggregation-e
 import type { ReputationPushService } from '../../reputation/push-service.js';
 import { createChainHubReputationClient } from '../../integrations/chain-hub-reputation.js';
 import { ARENA_PROGRAM_ADDRESS } from '../../solana/program-ids.js';
+import { createReputationProofGenerator, type ReputationPayload } from '../../reputation/proof-generator.js';
+import { createReputationEVMRelayer } from '../../reputation/evm-relayer.js';
 
 interface ReputationQueryParams {
     includeHistory?: boolean;
@@ -29,6 +31,15 @@ export interface ReputationOracleOptions {
     pushService?: ReputationPushService;
     chainHubClient?: import('../../integrations/chain-hub-reputation.js').ChainHubReputationClient;
     solanaConnection?: import('@solana/web3.js').Connection;
+    evmRelayerConfig?: {
+        rpcUrl: string;
+        privateKey: string;
+        contractAddress: string;
+        chainId?: number;
+    };
+    proofGeneratorConfig?: {
+        oracleSignerPrivateKey: string;
+    };
 }
 
 export function registerReputationOracleRoutes(
@@ -390,6 +401,119 @@ export function registerReputationOracleRoutes(
         }
     });
 
+    // -------------------------------------------------------------------------
+    // On-chain Reputation Payload
+    // -------------------------------------------------------------------------
+
+    app.get<{
+        Params: { agentAddress: string };
+    }>('/api/v1/oracle/reputation/:agentAddress/onchain', async (request, reply) => {
+        try {
+            const { agentAddress } = request.params;
+
+            const activity = await fetchAgentActivity(chainHubClient, agentAddress);
+            if (!activity) {
+                return reply.code(404).send({ error: 'Agent not found', agentAddress });
+            }
+
+            if (!options?.proofGeneratorConfig) {
+                return reply.code(503).send({ error: 'Proof generator is not configured' });
+            }
+
+            const score = engine.calculateReputation(activity);
+            const generator = createReputationProofGenerator(options.proofGeneratorConfig);
+
+            const categoryScores = [
+                score.taskScore * 100,
+                score.qualityScore * 100,
+                score.consistencyScore * 100,
+                score.stakingScore * 100,
+                0, 0, 0, 0,
+            ];
+
+            const { payload, signature, payloadHash } = await generator.generateSignedPayload(
+                agentAddress,
+                score.overallScore * 100,
+                categoryScores,
+                Math.floor(Date.now() / 1000),
+                { confidence: Math.round(score.confidence * 100) },
+            );
+
+            return {
+                agentAddress,
+                agentId: payload.agentId,
+                payload: mapPayloadToResponse(payload),
+                signature,
+                payloadHash,
+                calculatedAt: new Date().toISOString(),
+                attestationURI: `gradience://reputation/${payload.agentId.slice(2)}`,
+            };
+        } catch (err: any) {
+            logger.error({ err, agent: request.params.agentAddress }, 'Failed to get onchain reputation payload');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
+    // -------------------------------------------------------------------------
+    // Verify On-chain Reputation
+    // -------------------------------------------------------------------------
+
+    app.get<{
+        Params: { agentAddress: string };
+    }>('/api/v1/oracle/reputation/:agentAddress/verify-onchain', async (request, reply) => {
+        try {
+            const { agentAddress } = request.params;
+
+            if (!options?.evmRelayerConfig) {
+                return reply.code(503).send({ error: 'EVM relayer is not configured' });
+            }
+
+            const activity = await fetchAgentActivity(chainHubClient, agentAddress);
+            if (!activity) {
+                return reply.code(404).send({ error: 'Agent not found', agentAddress });
+            }
+
+            if (!options?.proofGeneratorConfig) {
+                return reply.code(503).send({ error: 'Proof generator is not configured' });
+            }
+
+            const score = engine.calculateReputation(activity);
+            const generator = createReputationProofGenerator(options.proofGeneratorConfig);
+
+            const categoryScores = [
+                score.taskScore * 100,
+                score.qualityScore * 100,
+                score.consistencyScore * 100,
+                score.stakingScore * 100,
+                0, 0, 0, 0,
+            ];
+
+            const { payload, signature } = await generator.generateSignedPayload(
+                agentAddress,
+                score.overallScore * 100,
+                categoryScores,
+                Math.floor(Date.now() / 1000),
+                { confidence: Math.round(score.confidence * 100) },
+            );
+
+            const relayer = createReputationEVMRelayer(options.evmRelayerConfig);
+            const verified = await relayer.verifyOnChain(payload as any, signature);
+
+            return {
+                agentAddress,
+                agentId: payload.agentId,
+                verified,
+                contractAddress: options.evmRelayerConfig.contractAddress,
+                chainId: options.evmRelayerConfig.chainId ?? null,
+                payload: mapPayloadToResponse(payload),
+                signature,
+            };
+        } catch (err: any) {
+            logger.error({ err, agent: request.params.agentAddress }, 'Failed to verify onchain reputation');
+            return reply.code(500).send({ error: err.message });
+        }
+    });
+
     logger.info('Reputation Oracle API routes registered: /api/v1/oracle/*');
 }
 
@@ -482,4 +606,17 @@ async function fetchAgentActivity(
 async function fetchAllAgents(): Promise<any[]> {
     // TODO: implement batch agent discovery from indexer or local DB
     return [];
+}
+
+function mapPayloadToResponse(payload: ReputationPayload): any {
+    return {
+        agentId: payload.agentId,
+        globalScore: payload.globalScore,
+        categoryScores: payload.categoryScores,
+        updatedAt: payload.updatedAt,
+        confidence: payload.confidence,
+        nonce: payload.nonce,
+        merkleRoot: payload.merkleRoot,
+        sourceChain: payload.sourceChain,
+    };
 }

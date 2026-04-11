@@ -150,6 +150,7 @@ export class Daemon {
             transactionManager: this.transactionManager,
             a2aRouter: this.network.a2aRouter,
             bridgeManager: this.settlement.bridgeManager,
+            gateway: this.gateway?.gateway ?? undefined,
             database: db,
             startedAt: this.startedAt,
             version: VERSION,

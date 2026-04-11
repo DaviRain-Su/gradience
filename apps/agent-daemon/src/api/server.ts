@@ -23,6 +23,7 @@ import { registerRiskRoutes } from './routes/risk.js';
 import { registerIdentityRoutes } from './routes/identity.js';
 import { registerCrossChainIdentityRoutes } from './routes/crosschain-identity.js';
 import { registerMagicBlockRoutes } from './routes/magicblock.js';
+import { registerGatewayRoutes } from './routes/gateway.js';
 import { SessionManager } from '../auth/session-manager.js';
 import { IndexerSyncService } from '../storage/indexer-sync.js';
 import indexerRoutes from './routes/indexer-cache.js';
@@ -51,6 +52,7 @@ export interface APIServerDeps {
     transactionManager: ITransactionManager;
     a2aRouter: A2ARouter | null;
     bridgeManager?: BridgeManager;
+    gateway?: import('../gateway/gateway.js').DefaultWorkflowExecutionGateway;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     database: any;
     startedAt: number;
@@ -158,6 +160,11 @@ export async function createAPIServer(deps: APIServerDeps) {
         );
     }
     registerMagicBlockRoutes(app, deps.bridgeManager);
+
+    if (deps.gateway) {
+        registerGatewayRoutes(app, deps.gateway);
+        logger.info('Gateway routes registered');
+    }
 
     // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)
     const reputationEngine = createReputationAggregationEngine();

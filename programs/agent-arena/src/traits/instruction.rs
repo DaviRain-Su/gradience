@@ -20,6 +20,10 @@ pub enum GradienceInstructionDiscriminators {
     CreateTaskPermission = 12,
     /// Bind a Solana owner to an EVM address for cross-chain identity.
     BindIdentity = 13,
+    /// Update Solana reputation from verified EVM reputation data.
+    UpdateReputationFromEvm = 14,
+    /// Initialize the EVM authority PDA.
+    InitializeEvmAuthority = 15,
     /// 228 is the Anchor event instruction discriminator used for CPI-based event emission.
     /// Events are emitted by invoking CPI to this instruction with serialized event data.
     EmitEvent = 228,
@@ -44,6 +48,8 @@ impl TryFrom<u8> for GradienceInstructionDiscriminators {
             11 => Ok(Self::ReceiveVrfRandomness),
             12 => Ok(Self::CreateTaskPermission),
             13 => Ok(Self::BindIdentity),
+            14 => Ok(Self::UpdateReputationFromEvm),
+            15 => Ok(Self::InitializeEvmAuthority),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }

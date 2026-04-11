@@ -16,12 +16,16 @@ import type { SolanaAgentRegistryClient } from '../integrations/solana-agent-reg
 import type { ERC8004Client } from '../integrations/erc8004-client.js';
 import type { ChainHubReputationClient } from '../integrations/chain-hub-reputation.js';
 import type { ReputationAggregationEngine, ReputationScore } from './aggregation-engine.js';
+import type { ReputationProofGenerator } from './proof-generator.js';
+import type { ReputationEVMRelayer, EVMOraclePushResult } from './evm-relayer.js';
 
 export interface PushServiceConfig {
     solanaClient: SolanaAgentRegistryClient;
     erc8004Client: ERC8004Client;
     engine: ReputationAggregationEngine;
     chainHubClient?: ChainHubReputationClient;
+    proofGenerator?: ReputationProofGenerator;
+    evmRelayer?: ReputationEVMRelayer;
     enableRealtime: boolean;
     enableBatch: boolean;
     batchIntervalMs: number;
@@ -41,6 +45,7 @@ export interface PushResult {
         txHash?: string;
         error?: string;
     };
+    evmOracle?: EVMOraclePushResult;
     timestamp: number;
 }
 
@@ -102,11 +107,28 @@ export class ReputationPushService {
             };
         }
 
+        // Push to EVM Oracle (ERC-8004-compatible GradienceReputationOracle)
+        if (this.config.evmRelayer && this.config.proofGenerator) {
+            try {
+                const evmOracleResult = await this.pushToEVMOracle(agentAddress, score);
+                result.evmOracle = evmOracleResult;
+            } catch (error) {
+                result.evmOracle = {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                };
+            }
+        }
+
         // Update sync status
         this.updateSyncStatus(agentAddress, result);
 
-        // Queue for retry if failed
-        if (!result.solana?.success || !result.erc8004?.success) {
+        // Queue for retry if any failed
+        const solanaOk = result.solana?.success ?? true;
+        const ercOk = result.erc8004?.success ?? true;
+        const evmOk = result.evmOracle?.success ?? true;
+
+        if (!solanaOk || !ercOk || !evmOk) {
             this.queueForRetry(agentAddress, score);
         }
 
@@ -115,6 +137,7 @@ export class ReputationPushService {
                 agent: agentAddress,
                 solana: result.solana?.success,
                 erc8004: result.erc8004?.success,
+                evmOracle: result.evmOracle?.success,
             },
             'Reputation push completed',
         );
@@ -239,7 +262,8 @@ export class ReputationPushService {
                 const result = await this.push(address, score);
                 results.push(result);
 
-                if (result.solana?.success && result.erc8004?.success) {
+                const evmOracleSuccess = result.evmOracle?.success ?? true;
+                if (result.solana?.success && result.erc8004?.success && evmOracleSuccess) {
                     success.push(address);
                 } else {
                     failed.push(address);
@@ -339,15 +363,54 @@ export class ReputationPushService {
     }
 
     /**
+     * Push to EVM Oracle (GradienceReputationOracle)
+     */
+    private async pushToEVMOracle(
+        agentAddress: string,
+        score: ReputationScore,
+    ): Promise<EVMOraclePushResult> {
+        const generator = this.config.proofGenerator!;
+        const relayer = this.config.evmRelayer!;
+
+        const categoryScores = [
+            score.taskScore * 100,
+            score.qualityScore * 100,
+            score.consistencyScore * 100,
+            score.stakingScore * 100,
+            0,
+            0,
+            0,
+            0,
+        ];
+
+        const { payload, signature } = await generator.generateSignedPayload(
+            agentAddress,
+            score.overallScore * 100,
+            categoryScores,
+            // Use timestamp as a monotonic proxy for nonce if on-chain nonce unknown
+            Math.floor(Date.now() / 1000),
+            {
+                confidence: Math.round(score.confidence * 100),
+            },
+        );
+
+        return relayer.pushReputation(payload, signature);
+    }
+
+    /**
      * Update sync status
      */
     private updateSyncStatus(agentAddress: string, result: PushResult): void {
+        const evmOracleSuccess = result.evmOracle?.success ?? true;
         const status: SyncStatus = {
             agentAddress,
             solanaSynced: result.solana?.success || false,
             ethereumSynced: result.erc8004?.success || false,
             lastSyncAt: result.timestamp,
-            pendingSync: !result.solana?.success || !result.erc8004?.success,
+            pendingSync:
+                !result.solana?.success ||
+                !result.erc8004?.success ||
+                !evmOracleSuccess,
         };
 
         this.syncStatus.set(agentAddress, status);

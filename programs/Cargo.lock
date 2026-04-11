@@ -1620,6 +1620,7 @@ dependencies = [
  "borsh",
  "codama",
  "const-crypto",
+ "ed25519-dalek",
  "pinocchio",
  "pinocchio-associated-token-account",
  "pinocchio-log",

@@ -186,6 +186,7 @@ pub struct Reputation {
     pub global: ReputationStats,
     pub by_category: [CategoryStats; MAX_CATEGORIES],
     pub bump: u8,
+    pub evm_sync_nonce: u64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, CodamaAccount)]
@@ -195,14 +196,33 @@ pub struct ReputationCodama {
     pub global: ReputationStats,
     pub by_category: Vec<CategoryStats>,
     pub bump: u8,
+    pub evm_sync_nonce: u64,
 }
 
 pub const REPUTATION_DATA_LEN: usize = PUBKEY_BYTES_LEN
     + REPUTATION_STATS_DATA_LEN
     + (CATEGORY_STATS_DATA_LEN * MAX_CATEGORIES)
-    + 1;
+    + 1
+    + 8;
 pub const REPUTATION_DISCRIMINATOR: u8 = 0x05;
 pub const REPUTATION_LEN: usize = ACCOUNT_HEADER_LEN + REPUTATION_DATA_LEN;
+
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+pub struct EvmAuthority {
+    pub owner: PubkeyBytes,
+    pub relayers: Vec<PubkeyBytes>,
+    pub max_relayer_age_slots: u64,
+    pub bump: u8,
+}
+
+pub const EVM_AUTHORITY_SEED: &[u8] = b"evm_authority";
+pub const EVM_AUTHORITY_DATA_LEN: usize = PUBKEY_BYTES_LEN
+    + BORSH_VEC_PREFIX_LEN
+    + (PUBKEY_BYTES_LEN * 8)
+    + 8
+    + 1;
+pub const EVM_AUTHORITY_DISCRIMINATOR: u8 = 0x0d;
+pub const EVM_AUTHORITY_LEN: usize = ACCOUNT_HEADER_LEN + EVM_AUTHORITY_DATA_LEN;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Stake {
@@ -329,8 +349,8 @@ mod tests {
         assert_eq!(SUBMISSION_LEN, 499);
         assert_eq!(REPUTATION_STATS_DATA_LEN, 20);
         assert_eq!(CATEGORY_STATS_DATA_LEN, 7);
-        assert_eq!(REPUTATION_DATA_LEN, 109);
-        assert_eq!(REPUTATION_LEN, 111);
+        assert_eq!(REPUTATION_DATA_LEN, 117);
+        assert_eq!(REPUTATION_LEN, 119);
         assert_eq!(STAKE_DATA_LEN, 66);
         assert_eq!(STAKE_LEN, 68);
         assert_eq!(JUDGE_POOL_ENTRY_DATA_LEN, 36);
@@ -354,5 +374,11 @@ mod tests {
     fn test_identity_binding_length() {
         assert_eq!(IDENTITY_BINDING_DATA_LEN, 199);
         assert_eq!(IDENTITY_BINDING_LEN, 201);
+    }
+
+    #[test]
+    fn test_evm_authority_length() {
+        assert_eq!(EVM_AUTHORITY_DATA_LEN, 293);
+        assert_eq!(EVM_AUTHORITY_LEN, 295);
     }
 }

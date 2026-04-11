@@ -151,6 +151,22 @@ pub enum GradienceProgramError {
     /// (6050) VRF result account has not been initialized by the daemon
     #[error("VRF result account not initialized")]
     VrfResultAccountNotInitialized = 6050,
+
+    /// (6051) EVM sync nonce is too old (replay protection)
+    #[error("EVM sync nonce too old")]
+    EvmNonceTooOld = 6051,
+
+    /// (6052) Relayer is not authorized
+    #[error("Unauthorized relayer")]
+    UnauthorizedRelayer = 6052,
+
+    /// (6053) Invalid relayer signature
+    #[error("Invalid relayer signature")]
+    InvalidRelayerSignature = 6053,
+
+    /// (6054) EvmAuthority account not initialized
+    #[error("EVM authority not initialized")]
+    EvmAuthorityNotInitialized = 6054,
 }
 
 impl From<GradienceProgramError> for ProgramError {
@@ -216,6 +232,14 @@ mod tests {
     #[test]
     fn test_vrf_error_code() {
         assert_eq!(GradienceProgramError::VrfResultAccountNotInitialized as u32, 6050);
+    }
+
+    #[test]
+    fn test_evm_error_codes() {
+        assert_eq!(GradienceProgramError::EvmNonceTooOld as u32, 6051);
+        assert_eq!(GradienceProgramError::UnauthorizedRelayer as u32, 6052);
+        assert_eq!(GradienceProgramError::InvalidRelayerSignature as u32, 6053);
+        assert_eq!(GradienceProgramError::EvmAuthorityNotInitialized as u32, 6054);
     }
 
     #[test]

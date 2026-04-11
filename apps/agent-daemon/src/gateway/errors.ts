@@ -23,3 +23,4 @@ export const GW_SETTLEMENT_FAILED = 'GW_0007';
 export const GW_NOT_RETRYABLE = 'GW_0008';
 export const GW_STORE_ERROR = 'GW_0009';
 export const GW_TASK_ID_UNAVAILABLE = 'GW_0010';
+export const GW_WORKFLOW_NOT_FOUND = 'GW_0011';

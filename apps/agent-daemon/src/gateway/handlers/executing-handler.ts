@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger.js';
 import type { StateHandler, StateTransitionResult } from './types.js';
 import type { GatewayPurchaseRecord } from '../types.js';
 import type { ExecutionClient } from '../gateway.js';
@@ -7,25 +8,30 @@ export class ExecutingHandler implements StateHandler {
 
     async handle(record: GatewayPurchaseRecord): Promise<StateTransitionResult> {
         try {
+            // The real workflow definition will be resolved inside VelWorkflowExecutionClient
+            // via the GatewayWorkflowResolver. We pass the workflowId and any purchase inputs.
             const txSig = await this.executionClient.runAndSettle({
                 workflowId: record.workflowId,
                 workflowDefinition: {
                     version: '1.0',
                     name: `workflow-${record.workflowId}`,
-                    steps: [{ type: 'swap', params: { inputMint: 'A', outputMint: 'B', amount: 100n } }],
+                    steps: [], // will be overridden by resolver
                 },
-                inputs: {},
+                inputs: record.preferredAgent ? { preferredAgent: record.preferredAgent } : {},
                 taskId: Number(record.taskId ?? 0),
                 executorAddress: record.agentId ?? '',
-                timeoutMs: 15_000,
+                timeoutMs: 60_000,
             });
             return {
                 nextState: 'SETTLING',
                 patch: { settlementTx: txSig },
             };
         } catch (err) {
-            console.error('execution/settlement failed:', err);
-            return { nextState: 'FAILED' };
+            logger.error({ err, purchaseId: record.purchaseId }, 'Execution/settlement failed');
+            return {
+                nextState: 'FAILED',
+                patch: { error: err instanceof Error ? err.message : 'Execution failed' },
+            };
         }
     }
 }
