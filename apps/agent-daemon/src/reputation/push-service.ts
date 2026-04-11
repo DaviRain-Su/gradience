@@ -76,6 +76,13 @@ export class ReputationPushService {
         );
     }
 
+    get engine() { return this.config.engine; }
+    get chainHubClient() { return this.config.chainHubClient; }
+    get proofGenerator() { return this.config.proofGenerator; }
+    get evmRelayer() { return this.config.evmRelayer; }
+    get solanaClient() { return this.config.solanaClient; }
+    get erc8004Client() { return this.config.erc8004Client; }
+
     /**
      * Push reputation to all registries (real-time)
      */
@@ -433,7 +440,7 @@ export class ReputationPushService {
     /**
      * Fetch agent activity (placeholder)
      */
-    private async fetchActivity(agentAddress: string): Promise<any> {
+    async fetchActivity(agentAddress: string): Promise<any> {
         const client = this.config.chainHubClient;
         if (client) {
             const record = await client.getReputation(agentAddress);
