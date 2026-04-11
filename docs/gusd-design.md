@@ -2,7 +2,7 @@
 
 > Task: GRA-237  
 > Status: Phase 1 — Design Complete  
-> Target: Solana SPL primary, EVM bridged via Wormhole  
+> Target: Solana SPL primary; EVM chains receive bridged supply via Wormhole  
 > Priority: P3
 
 ---

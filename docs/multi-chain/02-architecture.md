@@ -7,27 +7,27 @@
 
 ## 1. 架构设计决策
 
-### 1.1 核心策略: Multi-Home + Unified SDK + Global Reputation Bridge
+### 1.1 核心策略: Solana Core + Reputation Bridge + Unified SDK
 
-| 决策项           | 选择                              | 理由                                                                |
-| ---------------- | --------------------------------- | ------------------------------------------------------------------- |
-| **部署模式**     | **Multi-Home**（全协议复制）      | 任务 escrow 和结算必须本地化，跨链 escrow 会引入桥风险和高延迟      |
-| **SDK 策略**     | **Unified SDK（链抽象层）**       | 否则前端和开发者需要为每条链写独立逻辑，不可扩展                    |
-| **声誉策略**     | **全局统一 + Oracle 桥接**        | Agent 的核心资产是声誉，必须在链间可验证、可携带                    |
-| **目标链优先级** | **Base > Arbitrum > Ethereum L1** | Base 生态活跃、成本低、机构友好；Arbitrum 技术成熟；L1 作为远期选项 |
-| **Solana 定位**  | **共存维护 → 逐步归档**           | 现有用户和状态不强制迁移，新功能优先在 EVM 实现                     |
+| 决策项           | 选择                                 | 理由                                                                  |
+| ---------------- | ------------------------------------ | --------------------------------------------------------------------- |
+| **部署模式**     | **Solana-Only Core**                 | 任务 escrow、judge、结算统一在 Solana 完成，避免跨链桥风险与 complexity |
+| **SDK 策略**     | **Unified SDK（链抽象层）**          | 否则前端和开发者需要为每条链写独立逻辑，不可扩展                      |
+| **声誉策略**     | **全局统一 + Oracle/Bridge 桥接**    | Agent 的核心资产是声誉，通过 Solana 锚定并桥接至 EVM 链，可验证、可携带 |
+| **目标链优先级** | **Base > Arbitrum > Ethereum L1**    | 作为声誉桥接的目标链；Base 生态活跃、成本低；Arbitrum 技术成熟         |
+| **Solana 定位**  | **唯一核心协议链**                   | 所有核心功能（Arena、Core、Chain Hub）优先且仅在 Solana 部署            |
 
 ### 1.2 什么该 Multi-Home，什么该统一
 
 | 组件                       | 策略                                   | 原因                                         |
 | -------------------------- | -------------------------------------- | -------------------------------------------- |
-| Agent Arena (任务核心)     | **Multi-Home**                         | escrow、judge、结算必须同链完成              |
-| AgentM Core (用户/社交)    | **Multi-Home + IPFS 元数据**           | 用户在哪活跃就在哪注册，profile 元数据链下化 |
-| Chain Hub (Skill/Protocol) | **Multi-Home**                         | 需要与本地 DeFi/AA 生态组合                  |
-| A2A Protocol (通信)        | **链下为主 + 链上通道状态 Multi-Home** | 消息内容不上链，支付通道状态本地化           |
-| Workflow Marketplace       | **Multi-Home**                         | NFT 化 workflow 可在各链独立发行             |
-| **Reputation (声誉)**      | **统一桥接**                           | 唯一应该跨链共享的核心数据层                 |
-| **Identity (DID)**         | **统一**                               | 通过跨链 DID 或域名系统（ENS/SNS）统一       |
+| Agent Arena (任务核心)     | **Solana-Only**                        | escrow、judge、结算统一在 Solana 完成；EVM 不部署原生核心              |
+| AgentM Core (用户/社交)    | **Solana-Only + IPFS 元数据**          | 用户在 Solana 注册并维护 profile，元数据链下化 |
+| Chain Hub (Skill/Protocol) | **Solana-Only**                        | 索引与协议组合逻辑统一以 Solana 为准                  |
+| A2A Protocol (通信)        | **链下为主 + Solana 通道状态**         | 消息内容不上链，支付通道状态锚定在 Solana           |
+| Workflow Marketplace       | **Solana-Only**                        | NFT 化 workflow 在 Solana 发行             |
+| **Reputation (声誉)**      | **Solana 锚定 + 桥接至 EVM**           | 唯一应该跨链共享的核心数据层，由 Solana 产生证明并桥接                 |
+| **Identity (DID)**         | **Solana 锚定 + 跨链绑定**             | 通过 Solana DID 或域名系统（SNS/ENS）统一，支持跨链签名绑定       |
 
 ---
 

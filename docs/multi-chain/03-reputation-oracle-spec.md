@@ -75,9 +75,9 @@ Oracle 在以下任一条件满足时触发更新：
 
 ```
 Step 1: Data Collection
-├── 读取 Solana PDA (agent-arena reputation stats)
-├── 读取 Base EVM Contract (AgentArenaEVM.reputations)
-├── 读取 Arbitrum EVM Contract (AgentArenaEVM.reputations)
+├── 读取 Solana PDA (agent-arena reputation stats) — 核心协议唯一来源
+├── 读取 Base EVM Registry (ERC-8004 接收的声誉证明)
+├── 读取 Arbitrum EVM Registry (ERC-8004 接收的声誉证明)
 └── 读取 Subgraph / Indexer 中的历史事件
 
 Step 2: Normalization

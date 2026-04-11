@@ -111,10 +111,10 @@ pub struct Capability {
 
 ```mermaid
 flowchart TB
-    subgraph Arena["🏟️ Agent Arena (X-Layer)"]
+    subgraph Arena["🏟️ Agent Arena (Solana)"]
         Task["Task Completed"]
         Judge["Judge Scoring"]
-        Contract["AgentArena.sol"]
+        Contract["AgentArena Program"]
     end
 
     subgraph Feedback["🔄 信誉反馈层"]
@@ -124,8 +124,8 @@ flowchart TB
     end
 
     subgraph Identity["🆔 身份与信誉层"]
-        ERC["ERC-8004 Registry<br/>X-Layer/EVM"]
-        Solana["Solana Agent Registry<br/>SVM"]
+        ERC["ERC-8004 Registry<br/>EVM Guest Chains"]
+        Solana["Solana Agent Registry<br/>SVM (Core)"]
     end
 
     subgraph Consumer["👥 消费者"]
@@ -270,8 +270,8 @@ class ArenaAttestationProcessor {
         // 使用跨链桥或消息层
         // 例如：LayerZero, Wormhole, 或专门的 attestation bridge
         await this.crossChainBridge.sendAttestation({
-            sourceChain: 'x-layer',
-            targetChain: 'solana',
+            sourceChain: 'solana',
+            targetChain: 'x-layer',
             agentAddress,
             skillCategory,
             attestation,
@@ -522,43 +522,36 @@ class AgentMReputation {
 
 ## 6. 跨链信誉架构
 
-### 6.1 多链统一的信誉视图
+### 6.1 跨链声誉桥接视图（Solana 锚定）
 
 ```mermaid
 flowchart TB
-    subgraph Chains["多链 Agent Arena 部署"]
-        XL["X-Layer (EVM)")
-        SOL["Solana (SVM)")
-        BASE["Base (EVM)")
+    subgraph Core["协议核心链"]
+        SOL["Solana Agent Arena<br/>唯一任务结算与声誉生成"]
     end
 
-    subgraph Registries["信誉注册表"]
-        ERC["ERC-8004 Registry<br/>主链: X-Layer"]
-        SAR["Solana Agent Registry"]
-        BASE_R["ERC-8004 Registry<br/>Base"]
+    subgraph Bridge["跨链桥接层"]
+        WH["Wormhole / LayerZero<br/>声誉证明传递"]
     end
 
-    subgraph Aggregation["信誉聚合层"]
-        Aggregator["Cross-Chain<br/>Reputation Aggregator"]
-        Resolver["Identity Resolver<br/>同一 Agent 跨链识别"]
+    subgraph Guest["目标客链（只读声誉）"]
+        XL["X-Layer (EVM)"]
+        BASE["Base (EVM)"]
     end
 
-    subgraph Consumers["消费者"]
-        TaskPoster["Task Poster<br/>查看全局信誉"]
-        ChainHub["Chain Hub<br/>验证跨链能力"]
+    subgraph Registries["声誉注册表"]
+        SAR["Solana Agent Registry<br/>主注册表"]
+        ERC_XL["ERC-8004 Registry<br/>X-Layer（接收证明）"]
+        ERC_BASE["ERC-8004 Registry<br/>Base（接收证明）"]
     end
 
-    XL -->|任务结果| ERC
-    SOL -->|任务结果| SAR
-    BASE -->|任务结果| BASE_R
+    SOL -->|生成声誉事件| SAR
+    SAR -->|签名信誉证明| WH
+    WH -->|投递证明| ERC_XL
+    WH -->|投递证明| ERC_BASE
 
-    ERC -->|查询| Aggregator
-    SAR -->|查询| Aggregator
-    BASE_R -->|查询| Aggregator
-
-    Aggregator --> Resolver
-    Resolver -->|统一视图| TaskPoster
-    Resolver -->|统一视图| ChainHub
+    ERC_XL --> XL
+    ERC_BASE --> BASE
 ```
 
 ### 6.2 跨链身份解析
@@ -566,9 +559,9 @@ flowchart TB
 ```typescript
 // 同一 Agent 在不同链上的身份映射
 interface CrossChainIdentity {
-    // 主身份 (X-Layer)
+    // 主身份 (Solana)
     primary: {
-        chain: 'x-layer';
+        chain: 'solana';
         address: string;
     };
 
@@ -579,29 +572,29 @@ interface CrossChainIdentity {
         proof: string; // 所有权证明
     }[];
 
-    // 统一的信誉分数
+    // 统一的信誉分数（以 Solana 为单一来源）
     unifiedReputation: {
         globalScore: number;
         chainSpecific: Record<string, number>;
     };
 }
 
-// 身份绑定示例
+// 身份绑定示例：Solana 为主身份，EVM 为关联身份
 async function linkSolanaIdentity(
-    evmAddress: string,
     solanaAddress: string,
-    evmSignature: string,
+    evmAddress: string,
     solanaSignature: string,
+    evmSignature: string,
 ): Promise<void> {
     // 验证两个地址都由同一实体控制
-    const evmValid = verifyEVMSignature(evmAddress, solanaAddress, evmSignature);
     const solanaValid = verifySolanaSignature(solanaAddress, evmAddress, solanaSignature);
+    const evmValid = verifyEVMSignature(evmAddress, solanaAddress, evmSignature);
 
-    if (evmValid && solanaValid) {
-        // 存储身份绑定
+    if (solanaValid && evmValid) {
+        // 存储身份绑定：Solana 为主身份
         await identityRegistry.linkIdentities({
-            primary: { chain: 'x-layer', address: evmAddress },
-            linked: { chain: 'solana', address: solanaAddress },
+            primary: { chain: 'solana', address: solanaAddress },
+            linked: { chain: 'x-layer', address: evmAddress },
         });
     }
 }
@@ -613,7 +606,7 @@ async function linkSolanaIdentity(
 
 ### Phase 1: 基础 ERC-8004 集成 (1-2 周)
 
-- [ ] 部署 ERC-8004 Registry 合约到 X-Layer
+- [ ] 部署 ERC-8004 Registry 合约到 EVM 客链（Base / Arbitrum）
 - [ ] 实现 Attestation Processor 监听 Agent Arena 事件
 - [ ] 基础信誉分数计算和更新
 - [ ] 前端展示 Agent 信誉卡片
@@ -650,7 +643,7 @@ async function linkSolanaIdentity(
 | **基础数据** | 任务竞争结果                | 注册信息 + 第三方证明 |
 | **可信度**   | 高 (多 Agent 竞争 + Judge)  | 中 (依赖第三方验证者) |
 | **更新频率** | 实时 (任务完成即更新)       | 定期 (验证者提交)     |
-| **跨链**     | 计划支持 (X-Layer → Solana) | Solana 原生           |
+| **跨链**     | Solana 核心 + 声誉桥接至 EVM | Solana 原生           |
 | **隐私**     | 可选择性披露                | 公开                  |
 | **互操作性** | ERC-8004 标准               | ERC-8004 兼容         |
 
@@ -687,7 +680,8 @@ Agent Arena = 高可信度的能力证明
 | ---------- | -------------------------- | --------------------------------------- |
 | 2026-03-28 | 采用 ERC-8004 作为标准     | 与 Solana Agent Registry 兼容，跨链统一 |
 | 2026-03-28 | 设计 Attestation Processor | 独立服务处理 Arena 事件 → 信誉更新      |
-| 2026-03-28 | 规划跨链同步               | 使用 Wormhole 桥接 X-Layer 和 Solana    |
+| 2026-04-11 | 确定 Solana 唯一核心协议链 | EVM 不再部署原生核心，仅通过桥接接收声誉证明 |
+| 2026-03-28 | 规划跨链同步               | 使用 Wormhole / LayerZero 桥接声誉证明至 EVM |
 
 ---
 

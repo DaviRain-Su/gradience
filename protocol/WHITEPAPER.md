@@ -194,7 +194,7 @@ Sequoia's March 2026 analysis coincides with Gradience's roadmap at a pivotal mo
 
 - **Agent Arena MVP**: Live (April 2026) — proving the race model works
 - **AgentM Web**: Unified web application combining user features (identity, discovery, messaging, tasks) and developer tools (analytics, token launch, A2A operations) (Q2 2026)
-- **Cross-chain expansion**: Base, Arbitrum (Q4 2026)
+- **Cross-chain reputation bridge**: Wormhole / LayerZero (Q4 2026)
 
 **The Timing:**
 
@@ -534,7 +534,7 @@ Gradience is not an application—it is **infrastructure** for the Agent economy
 │           CHAIN HUB (TOOL LAYER)              │
 │  ┌─────────────────────────────────────────┐  │
 │  │ • Protocol adapters  • Skill market     │  │
-│  │ • Key vault          • Cross-chain      │  │
+│  │ • Key vault          • Reputation bridge │  │
 │  └─────────────────────────────────────────┘  │
 └───────────────────────────────────────────────┘
 ```
@@ -1128,10 +1128,10 @@ The `feedbackURI` points to a JSON file containing full task details:
 }
 ```
 
-**Who writes the feedback?** Two options, both supported:
+**Who writes the feedback?**
 
-- **On-chain hook (EVM):** If Gradience is deployed on an EVM chain where ERC-8004 is available, `judgeAndPay()` directly calls the Reputation Registry's `giveFeedback()` in the same transaction. Atomic and trustless.
-- **Off-chain relay (Solana → EVM):** On Solana, the Judge daemon or a dedicated relayer watches `judgeAndPay` events and submits corresponding `giveFeedback()` calls to the ERC-8004 registry on an EVM chain. The feedback includes the Solana transaction signature as proof of origin.
+- **Solana core:** `judgeAndPay()` on Solana atomically updates the on-chain reputation PDA. This is the single source of truth.
+- **Cross-chain relay (Solana → EVM):** A dedicated relayer (via `packages/cross-chain-adapters/`) watches Solana `judgeAndPay` events and submits corresponding `giveFeedback()` calls to ERC-8004 registries on EVM chains when interoperability is desired. The feedback includes the Solana transaction signature as proof of origin. EVM chains do **not** host a native Gradience core protocol; they only receive verified reputation proofs from Solana.
 
 #### 7.3.3 Validation Registry
 
@@ -1881,12 +1881,12 @@ Ecosystem expansion and developer adoption. Aligned with Sequoia's "wedge" strat
 
 - Agent Daemon cloud deployment mode (local → cloud migration path)
 - A2A Protocol v1 (state channels, streaming micropayments)
-- Cross-chain reputation proof (Solana → Base Sepolia)
+- Cross-chain reputation bridge (Solana → EVM via Wormhole/LayerZero)
 - GRAD token launch + genesis airdrop to Phase 1 participants
 
 **Developer Adoption**
 
-- SDK v1.0 release for Solana and EVM ecosystems
+- SDK v1.0 release for Solana ecosystem (with cross-chain reputation bridge adapters)
 - Developer documentation, examples, and integration guides
 - Hackathon program; first cohort of Agent-native applications
 - Integration partnerships with major Agent frameworks (LangChain, AutoGen, CrewAI)
@@ -1912,13 +1912,13 @@ Professional service categories. AgentM Web reaches production with full develop
 
 ### 9.4 Phase 4 — Scale (Q4 2026)
 
-Enterprise and complex services. Cross-chain full deployment. Protocol becomes self-sustaining.
+Enterprise and complex services. Cross-chain reputation bridge live. Protocol becomes self-sustaining.
 
 - **Enterprise Verticals**:
     - Supply Chain/Procurement ($200B+ market, high outsourcing maturity)
     - Recruitment/Staffing ($200B+ market — Juicebox, Mercor model)
     - IT Managed Services ($100B+ market, outcome-based purchasing)
-- **Cross-chain expansion**: Base, Arbitrum full deployment; unified reputation layer
+- **Cross-chain reputation bridge**: Base, Arbitrum live; unified reputation layer anchored on Solana
 - **gUSD launch**: Credit-backed stablecoin minted from collective Agent earning capacity
 - **Protocol independence**: Task fee revenue exceeds mining rewards; protocol fully self-sustaining
 - **Key Metrics Target**: 10,000+ active Agents; $10M+ task value settled; top-3 service categories with active competition

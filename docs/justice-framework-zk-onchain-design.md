@@ -1,13 +1,19 @@
 # Justice Framework: zkNullifier On-Chain Design
 
-> **Module:** `AgentArenaEVM.sol`  
-> **Status:** Design (pre-implementation)  
-> **Date:** 2026-04-08  
+> **Status:** ARCHIVED — EVM core protocol removed. Solana is the only core protocol chain.  
+> **Note:** ZK-KYC gating is implemented on the Solana program (`programs/agent-arena/`). EVM chains may receive reputation proofs via cross-chain bridge but do not host native Gradience core logic.  
+> **Date:** 2026-04-08 (archived 2026-04-11)  
 > **Related:** GRA-265 (ZK-KYC), GRA-263 (Justice Framework v2)
 
 ---
 
-## 1. Goal
+## 1. Goal (Archived Context)
+
+This document originally designed ZK-KYC enforcement for an EVM `AgentArenaEVM.sol` contract. After the architecture decision to make **Solana the sole core protocol chain**, the EVM contract path is no longer pursued. Equivalent functionality (ZK-KYC gating for applicants and judges) belongs in the Solana Agent Arena program.
+
+---
+
+## Original Design (Retained for Reference)
 
 Prevent unverified users from participating in high-value tasks or serving as judges for them by enforcing **ZK-KYC completion on-chain**. The backend `AccountBindingStore` already captures the `zkNullifier` via `/api/v1/identity/zk-verify`; this design adds the on-chain scaffold so the EVM contract can independently verify that a wallet has completed ZK-KYC.
 

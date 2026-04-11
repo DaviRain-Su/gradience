@@ -13,10 +13,10 @@
 Layer 4: 互操作层   Google A2A + MCP
 Layer 3: 发现层     Nostr NIP-89/90 (去中心化 Agent/Skill 发现)
 Layer 2: 通信层     XMTP MLS E2E (Agent 间加密消息)
-Layer 1: 结算层     Solana (Home) + EVM Guest Chains
+Layer 1: 结算层     Solana (协议核心锚定链)
          ├── MagicBlock ER/PER/VRF (Solana 可选增强)
          ├── x402/OWS 微支付
-         └── Wormhole / LayerZero (跨链)
+         └── Wormhole / LayerZero (跨链声誉桥)
 Layer 0: 协议内核   Escrow + Judge + Reputation (链无关)
 ```
 

@@ -172,7 +172,7 @@ User (Wallet)
 
 | 差距                               | 影响     | 建议行动                |
 | ---------------------------------- | -------- | ----------------------- |
-| **Cross-chain adapters为Demo模式** | 未来功能 | 等待agent-layer-evm成熟 |
+| **Cross-chain adapters为Demo模式** | 未来功能 | Solana核心已确定，桥接方案待实现 |
 | **Sealed Submission未实现**        | 高级隐私 | 需要加密层设计          |
 | **ZK-KYC未实现**                   | 合规功能 | 需要ZK prover集成       |
 | **Governance Token未实现**         | 治理功能 | 未来路线图              |
