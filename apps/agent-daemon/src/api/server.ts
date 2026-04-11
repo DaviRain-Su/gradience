@@ -38,6 +38,7 @@ import type { AuthorizationManager } from '../wallet/authorization.js';
 import type { ITransactionManager } from '../shared/transaction-manager.js';
 import type { A2ARouter } from '../a2a-router/router.js';
 import type { BridgeManager } from '../bridge/index.js';
+import type { ReputationPushService } from '../reputation/push-service.js';
 
 export interface APIServerDeps {
     host: string;
@@ -53,6 +54,7 @@ export interface APIServerDeps {
     a2aRouter: A2ARouter | null;
     bridgeManager?: BridgeManager;
     gateway?: import('../gateway/gateway.js').DefaultWorkflowExecutionGateway;
+    pushService?: ReputationPushService;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     database: any;
     startedAt: number;
@@ -166,16 +168,19 @@ export async function createAPIServer(deps: APIServerDeps) {
         logger.info('Gateway routes registered');
     }
 
-    // Initialize reputation oracle (query-only; push service disabled until Solana registry program IDs are finalized)
+    // Initialize reputation oracle (query + push service when configured)
     const reputationEngine = createReputationAggregationEngine();
     const txManager =
         'connection' in deps.transactionManager
             ? (deps.transactionManager as unknown as import('../solana/transaction-manager.js').TransactionManager)
             : undefined;
-    registerReputationOracleRoutes(app, reputationEngine, undefined, {
+    registerReputationOracleRoutes(app, reputationEngine, deps.pushService, {
         solanaConnection: txManager?.connection,
     });
-    logger.info('Reputation Oracle routes registered (query-only mode)');
+    logger.info(
+        { pushMode: deps.pushService ? 'enabled' : 'query-only' },
+        'Reputation Oracle routes registered',
+    );
 
     // Initialize indexer sync service for local caching
     const syncService = new IndexerSyncService(deps.database);

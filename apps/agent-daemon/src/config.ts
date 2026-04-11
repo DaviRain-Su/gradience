@@ -261,6 +261,37 @@ export function loadConfig(overrides: Record<string, unknown> = {}): DaemonConfi
     if (process.env.AGENTD_ARENA_AUTO_JUDGE_PER_ENABLED) {
         envConfig.arenaAutoJudgePerEnabled = process.env.AGENTD_ARENA_AUTO_JUDGE_PER_ENABLED === 'true';
     }
+    // EVM Oracle Reputation Push environment variables
+    if (process.env.AGENTD_EVM_ORACLE_RPC_URL) {
+        envConfig.evmOracleRpcUrl = process.env.AGENTD_EVM_ORACLE_RPC_URL;
+    }
+    if (process.env.AGENTD_EVM_ORACLE_CONTRACT_ADDRESS) {
+        envConfig.evmOracleContractAddress = process.env.AGENTD_EVM_ORACLE_CONTRACT_ADDRESS;
+    }
+    if (process.env.AGENTD_EVM_ORACLE_CHAIN_ID) {
+        envConfig.evmOracleChainId = Number(process.env.AGENTD_EVM_ORACLE_CHAIN_ID);
+    }
+    if (process.env.AGENTD_EVM_ORACLE_PRIVATE_KEY) {
+        envConfig.evmOraclePrivateKey = process.env.AGENTD_EVM_ORACLE_PRIVATE_KEY;
+    }
+    if (process.env.AGENTD_EVM_ORACLE_SIGNER_PRIVATE_KEY) {
+        envConfig.evmOracleSignerPrivateKey = process.env.AGENTD_EVM_ORACLE_SIGNER_PRIVATE_KEY;
+    }
+    if (process.env.AGENTD_REPUTATION_PUSH_REALTIME) {
+        envConfig.reputationPushRealtime = process.env.AGENTD_REPUTATION_PUSH_REALTIME === 'true';
+    }
+    if (process.env.AGENTD_REPUTATION_PUSH_BATCH) {
+        envConfig.reputationPushBatch = process.env.AGENTD_REPUTATION_PUSH_BATCH === 'true';
+    }
+    if (process.env.AGENTD_REPUTATION_PUSH_BATCH_INTERVAL_MS) {
+        envConfig.reputationPushBatchIntervalMs = Number(process.env.AGENTD_REPUTATION_PUSH_BATCH_INTERVAL_MS);
+    }
+    if (process.env.AGENTD_REPUTATION_PUSH_RETRY_ATTEMPTS) {
+        envConfig.reputationPushRetryAttempts = Number(process.env.AGENTD_REPUTATION_PUSH_RETRY_ATTEMPTS);
+    }
+    if (process.env.AGENTD_REPUTATION_PUSH_RETRY_DELAY_MS) {
+        envConfig.reputationPushRetryDelayMs = Number(process.env.AGENTD_REPUTATION_PUSH_RETRY_DELAY_MS);
+    }
 
     const merged = { ...fileConfig, ...envConfig, ...overrides };
     return DaemonConfigSchema.parse(merged);

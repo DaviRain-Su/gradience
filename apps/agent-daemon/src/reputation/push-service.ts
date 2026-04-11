@@ -20,8 +20,8 @@ import type { ReputationProofGenerator } from './proof-generator.js';
 import type { ReputationEVMRelayer, EVMOraclePushResult } from './evm-relayer.js';
 
 export interface PushServiceConfig {
-    solanaClient: SolanaAgentRegistryClient;
-    erc8004Client: ERC8004Client;
+    solanaClient?: SolanaAgentRegistryClient;
+    erc8004Client?: ERC8004Client;
     engine: ReputationAggregationEngine;
     chainHubClient?: ChainHubReputationClient;
     proofGenerator?: ReputationProofGenerator;
@@ -86,25 +86,29 @@ export class ReputationPushService {
         };
 
         // Push to Solana Agent Registry
-        try {
-            const solanaResult = await this.pushToSolana(agentAddress, score);
-            result.solana = solanaResult;
-        } catch (error) {
-            result.solana = {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
+        if (this.config.solanaClient) {
+            try {
+                const solanaResult = await this.pushToSolana(agentAddress, score);
+                result.solana = solanaResult;
+            } catch (error) {
+                result.solana = {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                };
+            }
         }
 
         // Push to ERC-8004
-        try {
-            const erc8004Result = await this.pushToERC8004(agentAddress, score);
-            result.erc8004 = erc8004Result;
-        } catch (error) {
-            result.erc8004 = {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
+        if (this.config.erc8004Client) {
+            try {
+                const erc8004Result = await this.pushToERC8004(agentAddress, score);
+                result.erc8004 = erc8004Result;
+            } catch (error) {
+                result.erc8004 = {
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                };
+            }
         }
 
         // Push to EVM Oracle (ERC-8004-compatible GradienceReputationOracle)
@@ -152,6 +156,9 @@ export class ReputationPushService {
         agentAddress: string,
         score: ReputationScore,
     ): Promise<{ success: boolean; signature?: string; error?: string }> {
+        if (!this.config.solanaClient) {
+            return { success: false, error: 'Solana registry client not configured' };
+        }
         try {
             // Check if agent is registered
             const isRegistered = await this.config.solanaClient.isRegistered(agentAddress);
@@ -195,6 +202,9 @@ export class ReputationPushService {
         agentAddress: string,
         score: ReputationScore,
     ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+        if (!this.config.erc8004Client) {
+            return { success: false, error: 'ERC-8004 client not configured' };
+        }
         try {
             const agentURI = `gradience://agent/${agentAddress}`;
 
@@ -402,15 +412,19 @@ export class ReputationPushService {
      */
     private updateSyncStatus(agentAddress: string, result: PushResult): void {
         const evmOracleSuccess = result.evmOracle?.success ?? true;
+        const hasSolana = 'solana' in result;
+        const hasERC8004 = 'erc8004' in result;
+        const hasEvmOracle = 'evmOracle' in result;
+
         const status: SyncStatus = {
             agentAddress,
-            solanaSynced: result.solana?.success || false,
-            ethereumSynced: result.erc8004?.success || false,
+            solanaSynced: hasSolana ? result.solana!.success || false : false,
+            ethereumSynced: hasERC8004 ? result.erc8004!.success || false : false,
             lastSyncAt: result.timestamp,
             pendingSync:
-                !result.solana?.success ||
-                !result.erc8004?.success ||
-                !evmOracleSuccess,
+                (hasSolana && !result.solana!.success) ||
+                (hasERC8004 && !result.erc8004!.success) ||
+                (hasEvmOracle && !evmOracleSuccess),
         };
 
         this.syncStatus.set(agentAddress, status);

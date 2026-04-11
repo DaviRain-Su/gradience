@@ -39,6 +39,31 @@ function createMockChainHubClient(record: any) {
     } as unknown as import('../../src/integrations/chain-hub-reputation.js').ChainHubReputationClient;
 }
 
+function createMockProofGenerator() {
+    return {
+        generateSignedPayload: vi.fn().mockResolvedValue({
+            payload: {
+                agentId: '0x1234',
+                globalScore: 7200,
+                categoryScores: [8000, 7000, 6000, 5000, 0, 0, 0, 0],
+                updatedAt: Math.floor(Date.now() / 1000),
+                confidence: 75,
+                nonce: 1,
+                merkleRoot: '0x0000',
+                sourceChain: 'solana',
+            },
+            signature: '0xsignature',
+            payloadHash: '0xhash',
+        }),
+    } as unknown as import('../../src/reputation/proof-generator.js').ReputationProofGenerator;
+}
+
+function createMockEVMRelayer() {
+    return {
+        pushReputation: vi.fn().mockResolvedValue({ success: true, txHash: '0xabc123' }),
+    } as unknown as import('../../src/reputation/evm-relayer.js').ReputationEVMRelayer;
+}
+
 function createScore(overrides: any = {}) {
     return {
         overallScore: 72,
@@ -195,6 +220,53 @@ describe('ReputationPushService', () => {
         expect(result.results.length).toBe(2);
         expect(result.success.length).toBe(2);
         expect(result.failed.length).toBe(0);
+    });
+
+    it('should push to EVM oracle when proofGenerator and evmRelayer are configured', async () => {
+        const proofGenerator = createMockProofGenerator();
+        const evmRelayer = createMockEVMRelayer();
+        const service = new ReputationPushService({
+            engine,
+            proofGenerator,
+            evmRelayer,
+            enableRealtime: true,
+            enableBatch: false,
+            batchIntervalMs: 60000,
+            retryAttempts: 3,
+            retryDelayMs: 1000,
+        });
+
+        const result = await service.push('agent-evm', createScore());
+
+        expect(result.evmOracle?.success).toBe(true);
+        expect(result.evmOracle?.txHash).toBe('0xabc123');
+        expect(proofGenerator.generateSignedPayload).toHaveBeenCalled();
+        expect(evmRelayer.pushReputation).toHaveBeenCalled();
+
+        const status = service.getSyncStatus('agent-evm');
+        expect(status.pendingSync).toBe(false);
+    });
+
+    it('should mark pendingSync when EVM oracle push fails', async () => {
+        const proofGenerator = createMockProofGenerator();
+        const evmRelayer = createMockEVMRelayer();
+        evmRelayer.pushReputation.mockResolvedValue({ success: false, error: 'revert' });
+        const service = new ReputationPushService({
+            engine,
+            proofGenerator,
+            evmRelayer,
+            enableRealtime: true,
+            enableBatch: false,
+            batchIntervalMs: 60000,
+            retryAttempts: 1,
+            retryDelayMs: 100,
+        });
+
+        const result = await service.push('agent-evm-fail', createScore());
+        expect(result.evmOracle?.success).toBe(false);
+
+        const status = service.getSyncStatus('agent-evm-fail');
+        expect(status.pendingSync).toBe(true);
     });
 
     it('should stop cleanly', () => {

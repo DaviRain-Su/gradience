@@ -36,6 +36,11 @@ import {
 import { initGatewayDomain, stopGatewayDomain, type GatewayDomainServices } from './daemon/gateway-domain.js';
 import { ArenaAutoJudgeService } from './services/arena-auto-judge.js';
 import { runPaymentsHealthCheck } from './health/payments-health.js';
+import { createReputationPushService, type ReputationPushService } from './reputation/push-service.js';
+import { createReputationProofGenerator } from './reputation/proof-generator.js';
+import { createReputationEVMRelayer } from './reputation/evm-relayer.js';
+import { createReputationAggregationEngine } from './reputation/aggregation-engine.js';
+import { createChainHubReputationClient } from './integrations/chain-hub-reputation.js';
 
 const VERSION = '0.1.0';
 
@@ -52,6 +57,7 @@ export class Daemon {
     private evaluation: EvaluationDomainServices | null = null;
     private gateway: GatewayDomainServices | null = null;
     private arenaAutoJudge: ArenaAutoJudgeService | null = null;
+    private pushService: ReputationPushService | null = null;
 
     constructor(config: DaemonConfig) {
         this.config = config;
@@ -133,6 +139,43 @@ export class Daemon {
         // 9. Gateway Domain (Solana-native workflow execution gateway)
         this.gateway = await initGatewayDomain(this.config, this.config.dbPath, this.transactionManager);
 
+        // 9.5 Reputation Push Service (EVM Oracle + optional Solana/ERC-8004)
+        let proofGenerator: ReturnType<typeof createReputationProofGenerator> | undefined;
+        let evmRelayer: ReturnType<typeof createReputationEVMRelayer> | undefined;
+
+        if (
+            this.config.evmOraclePrivateKey &&
+            this.config.evmOracleContractAddress &&
+            this.config.evmOracleRpcUrl
+        ) {
+            proofGenerator = createReputationProofGenerator({
+                oracleSignerPrivateKey:
+                    this.config.evmOracleSignerPrivateKey ?? this.config.evmOraclePrivateKey,
+            });
+            evmRelayer = createReputationEVMRelayer({
+                rpcUrl: this.config.evmOracleRpcUrl,
+                privateKey: this.config.evmOraclePrivateKey,
+                contractAddress: this.config.evmOracleContractAddress,
+                chainId: this.config.evmOracleChainId,
+            });
+            logger.info(
+                { contract: this.config.evmOracleContractAddress, chainId: this.config.evmOracleChainId },
+                'Reputation EVM relayer initialized',
+            );
+        }
+
+        this.pushService = createReputationPushService({
+            engine: createReputationAggregationEngine(),
+            chainHubClient: createChainHubReputationClient({ baseUrl: this.config.chainHubRestUrl }),
+            proofGenerator,
+            evmRelayer,
+            enableRealtime: this.config.reputationPushRealtime,
+            enableBatch: this.config.reputationPushBatch,
+            batchIntervalMs: this.config.reputationPushBatchIntervalMs,
+            retryAttempts: this.config.reputationPushRetryAttempts,
+            retryDelayMs: this.config.reputationPushRetryDelayMs,
+        });
+
         // 10. Wire cross-domain events on ConnectionManager
         this.wireConnectionEvents();
 
@@ -151,6 +194,7 @@ export class Daemon {
             a2aRouter: this.network.a2aRouter,
             bridgeManager: this.settlement.bridgeManager,
             gateway: this.gateway?.gateway ?? undefined,
+            pushService: this.pushService ?? undefined,
             database: db,
             startedAt: this.startedAt,
             version: VERSION,
@@ -187,6 +231,7 @@ export class Daemon {
         logger.info('Stopping Agent Daemon');
 
         if (this.arenaAutoJudge) this.arenaAutoJudge.stop();
+        if (this.pushService) this.pushService.stop();
         if (this.gateway) await stopGatewayDomain(this.gateway);
         if (this.coordinator) await stopCoordinatorDomain(this.coordinator);
         if (this.settlement) await stopSettlementDomain(this.settlement);
