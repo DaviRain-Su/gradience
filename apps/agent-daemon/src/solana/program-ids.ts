@@ -3,6 +3,8 @@ import { address, type Address } from '@solana/kit';
 const ARENA_PROGRAM_ID_STR = process.env.AGENTD_ARENA_PROGRAM_ID ?? '5CUY2V1odYZghA54WH7YQRPzh3JaKhe1S84CRbeKfVYs';
 const AGENTM_CORE_PROGRAM_ID_STR =
     process.env.AGENTD_AGENTM_CORE_PROGRAM_ID ?? '2stkfkFaFLUvSR9yydmfQ7pZReo2M38zcVtL1QffCyDA';
+const WORKFLOW_MARKETPLACE_PROGRAM_ID_STR =
+    process.env.AGENTD_WORKFLOW_MARKETPLACE_PROGRAM_ID ?? '3QRayGY5SHYnD5cb2qegEoNx7dPXJJyHJD3shzAQ75UW';
 
 /**
  * Gradience Arena Program ID (@solana/kit Address)
@@ -15,3 +17,8 @@ export const ARENA_PROGRAM_ADDRESS: Address = address(ARENA_PROGRAM_ID_STR);
  * Devnet deployment: 2025-04-05
  */
 export const AGENTM_CORE_PROGRAM_ADDRESS: Address = address(AGENTM_CORE_PROGRAM_ID_STR);
+
+/**
+ * Workflow Marketplace Program ID (@solana/kit Address)
+ */
+export const WORKFLOW_MARKETPLACE_PROGRAM_ADDRESS: Address = address(WORKFLOW_MARKETPLACE_PROGRAM_ID_STR);
