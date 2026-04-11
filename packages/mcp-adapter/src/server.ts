@@ -35,13 +35,20 @@ export function createGradienceMcpServer(config: McpAdapterConfig): Server {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    if (!args) {
+      return { content: [{ type: 'text', text: 'Missing arguments' }], isError: true };
+    }
     try {
       if (name === 'gradience_list_skills') {
         const skills = await config.gradienceSdk.chainHub?.listSkills?.(args);
         return { content: [{ type: 'text', text: JSON.stringify(skills ?? []) }] };
       }
       if (name === 'gradience_get_task_status') {
-        const task = await config.gradienceSdk.arena?.getTask?.(args.taskId);
+        const taskId = (args as Record<string, unknown>).taskId as string | undefined;
+        if (!taskId) {
+          return { content: [{ type: 'text', text: 'Missing taskId' }], isError: true };
+        }
+        const task = await config.gradienceSdk.arena?.getTask?.(taskId);
         return { content: [{ type: 'text', text: JSON.stringify(task ?? {}) }] };
       }
       if (name === 'gradience_post_arena_task') {

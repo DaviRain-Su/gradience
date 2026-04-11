@@ -90,6 +90,17 @@ const DaemonConfigSchema = z.object({
     arenaAutoJudgeIntervalMs: z.number().int().min(5000).default(60000),
     arenaAutoJudgeMinSubmissions: z.number().int().min(1).default(1),
     arenaAutoJudgePerEnabled: z.boolean().default(false),
+    // EVM Oracle Reputation Push configuration
+    evmOracleRpcUrl: z.string().optional(),
+    evmOracleContractAddress: z.string().optional(),
+    evmOracleChainId: z.number().int().optional(),
+    evmOraclePrivateKey: z.string().optional(),
+    evmOracleSignerPrivateKey: z.string().optional(),
+    reputationPushRealtime: z.boolean().default(true),
+    reputationPushBatch: z.boolean().default(true),
+    reputationPushBatchIntervalMs: z.number().int().min(1000).default(300000),
+    reputationPushRetryAttempts: z.number().int().min(0).default(3),
+    reputationPushRetryDelayMs: z.number().int().min(100).default(5000),
 });
 
 export type DaemonConfig = z.infer<typeof DaemonConfigSchema>;
