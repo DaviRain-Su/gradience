@@ -213,3 +213,356 @@ fn merge_evm_reputation(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        constants::MAX_CATEGORIES,
+        state::{
+            ACCOUNT_VERSION_V1, EVM_AUTHORITY_DISCRIMINATOR, REPUTATION_DISCRIMINATOR,
+            ReputationStats, CategoryStats, PubkeyBytes, EvmAuthority,
+        },
+        instructions::update_reputation_from_evm::data::EvmReputationUpdate,
+    };
+    use core::mem::size_of;
+    use pinocchio::account::{AccountView, RuntimeAccount, NOT_BORROWED};
+    use solana_address::Address;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+    use ed25519_dalek::Signer;
+
+    struct MockAccount {
+        _buf: Vec<u8>,
+        view: AccountView,
+    }
+
+    impl MockAccount {
+        fn new(address: Address, owner: Address, is_signer: bool, initial_data: &[u8], capacity: usize) -> Self {
+            let runtime_size = size_of::<RuntimeAccount>();
+            let total_size = runtime_size + capacity;
+            let mut buf = Vec::with_capacity(total_size);
+            buf.resize(total_size, 0u8);
+            let raw = buf.as_mut_ptr() as *mut RuntimeAccount;
+            unsafe {
+                (*raw).borrow_state = NOT_BORROWED;
+                (*raw).is_signer = if is_signer { 1 } else { 0 };
+                (*raw).is_writable = 1;
+                (*raw).executable = 0;
+                (*raw).resize_delta = 0;
+                (*raw).address = address;
+                (*raw).owner = owner;
+                (*raw).lamports = 1;
+                (*raw).data_len = initial_data.len() as u64;
+                let data_ptr = (raw as *mut u8).add(runtime_size);
+                core::ptr::copy_nonoverlapping(initial_data.as_ptr(), data_ptr, initial_data.len());
+            }
+            let view = unsafe { AccountView::new_unchecked(raw) };
+            Self { _buf: buf, view }
+        }
+    }
+
+    fn make_reputation(agent: PubkeyBytes, nonce: u64) -> Reputation {
+        let mut by_category = [CategoryStats::default(); MAX_CATEGORIES];
+        for (idx, stats) in by_category.iter_mut().enumerate() {
+            stats.category = idx as u8;
+        }
+        Reputation {
+            agent,
+            global: ReputationStats::default(),
+            by_category,
+            bump: 1,
+            evm_sync_nonce: nonce,
+        }
+    }
+
+    fn make_evm_authority(relayers: Vec<PubkeyBytes>) -> EvmAuthority {
+        EvmAuthority {
+            owner: [0u8; 32],
+            relayers,
+            max_relayer_age_slots: 100,
+            bump: 1,
+        }
+    }
+
+    fn reputation_data(rep: &Reputation) -> Vec<u8> {
+        let mut out = vec![ACCOUNT_VERSION_V1, REPUTATION_DISCRIMINATOR];
+        out.append(&mut borsh::to_vec(rep).unwrap());
+        out
+    }
+
+    fn evm_authority_data(auth: &EvmAuthority) -> Vec<u8> {
+        let mut out = vec![ACCOUNT_VERSION_V1, EVM_AUTHORITY_DISCRIMINATOR];
+        out.append(&mut borsh::to_vec(auth).unwrap());
+        out
+    }
+
+    #[test]
+    fn test_process_update_reputation_from_evm_success() {
+        let program_id = Address::new_from_array([99u8; 32]);
+
+        // Relayer keypair
+        let relayer_secret: [u8; 32] = [1u8; 32];
+        let relayer_signing = ed25519_dalek::SigningKey::from_bytes(&relayer_secret);
+        let relayer_pubkey = relayer_signing.verifying_key().to_bytes();
+
+        let agent_bytes: [u8; 32] = [2u8; 32];
+
+        let (reputation_pda, _) = Address::find_program_address(&[REPUTATION_SEED, &agent_bytes], &program_id);
+        let (evm_authority_pda, _) = Address::find_program_address(&[EVM_AUTHORITY_SEED], &program_id);
+
+        let reputation = make_reputation(agent_bytes, 0);
+        let rep_data = reputation_data(&reputation);
+        let evm_auth = make_evm_authority(vec![relayer_pubkey]);
+        let auth_data = evm_authority_data(&evm_auth);
+
+        let reputation_account = MockAccount::new(reputation_pda, program_id, false, &rep_data, 512);
+        let evm_authority_account = MockAccount::new(evm_authority_pda, program_id, false, &auth_data, 512);
+        let relayer_account = MockAccount::new(Address::new_from_array(relayer_pubkey), program_id, true, &[], 0);
+        let agent_account = MockAccount::new(Address::new_from_array(agent_bytes), program_id, false, &[], 0);
+        let system_account = MockAccount::new(pinocchio_system::ID, pinocchio_system::ID, false, &[], 0);
+
+        let accounts: [AccountView; 5] = [
+            relayer_account.view,
+            agent_account.view,
+            reputation_account.view,
+            evm_authority_account.view,
+            system_account.view,
+        ];
+
+        let update = EvmReputationUpdate {
+            agent: agent_bytes,
+            chain_id: 1,
+            nonce: 1,
+            completed: 5,
+            total_applied_delta: 10,
+            score_sum: 350,
+            category: 0,
+            source: String::from("test"),
+            proof: Vec::new(),
+        };
+        let message = build_relayer_message(&update);
+        let signature = relayer_signing.sign(&message);
+
+        let mut ix_data = borsh::to_vec(&EvmReputationUpdate {
+            proof: signature.to_bytes().to_vec(),
+            ..update
+        }).unwrap();
+
+        let result = process_update_reputation_from_evm(&program_id, &accounts, &ix_data);
+        assert!(result.is_ok(), "Expected success: {:?}", result);
+
+        // Verify nonce updated and data written back
+        let rep: Reputation = {
+            let data = accounts[2].try_borrow().unwrap();
+            assert_eq!(data[0], ACCOUNT_VERSION_V1);
+            assert_eq!(data[1], REPUTATION_DISCRIMINATOR);
+            Reputation::deserialize(&mut &data[2..]).unwrap()
+        };
+        assert_eq!(rep.evm_sync_nonce, 1);
+        assert_eq!(rep.global.completed, 5);
+        assert_eq!(rep.global.total_applied, 10);
+        assert_eq!(rep.global.avg_score, 70);
+        assert_eq!(rep.by_category[0].completed, 5);
+    }
+
+    #[test]
+    fn test_process_update_reputation_from_evm_nonce_too_old() {
+        let program_id = Address::new_from_array([99u8; 32]);
+        let relayer_secret: [u8; 32] = [1u8; 32];
+        let relayer_signing = ed25519_dalek::SigningKey::from_bytes(&relayer_secret);
+        let relayer_pubkey = relayer_signing.verifying_key().to_bytes();
+        let agent_bytes: [u8; 32] = [2u8; 32];
+
+        let (reputation_pda, _) = Address::find_program_address(&[REPUTATION_SEED, &agent_bytes], &program_id);
+        let (evm_authority_pda, _) = Address::find_program_address(&[EVM_AUTHORITY_SEED], &program_id);
+
+        let reputation = make_reputation(agent_bytes, 5);
+        let rep_data = reputation_data(&reputation);
+        let evm_auth = make_evm_authority(vec![relayer_pubkey]);
+        let auth_data = evm_authority_data(&evm_auth);
+
+        let reputation_account = MockAccount::new(reputation_pda, program_id, false, &rep_data, 512);
+        let evm_authority_account = MockAccount::new(evm_authority_pda, program_id, false, &auth_data, 512);
+        let relayer_account = MockAccount::new(Address::new_from_array(relayer_pubkey), program_id, true, &[], 0);
+        let agent_account = MockAccount::new(Address::new_from_array(agent_bytes), program_id, false, &[], 0);
+        let system_account = MockAccount::new(pinocchio_system::ID, pinocchio_system::ID, false, &[], 0);
+
+        let accounts = [relayer_account.view, agent_account.view, reputation_account.view, evm_authority_account.view, system_account.view];
+
+        let update = EvmReputationUpdate {
+            agent: agent_bytes,
+            chain_id: 1,
+            nonce: 3, // less than 5
+            completed: 1,
+            total_applied_delta: 1,
+            score_sum: 50,
+            category: 255,
+            source: String::from("test"),
+            proof: Vec::new(),
+        };
+        let message = build_relayer_message(&update);
+        let signature = relayer_signing.sign(&message);
+        let ix_data = borsh::to_vec(&EvmReputationUpdate {
+            proof: signature.to_bytes().to_vec(),
+            ..update
+        }).unwrap();
+
+        let result = process_update_reputation_from_evm(&program_id, &accounts, &ix_data);
+        assert_eq!(result, Err(GradienceProgramError::EvmNonceTooOld.into()));
+    }
+
+    #[test]
+    fn test_process_update_reputation_from_evm_unauthorized_relayer() {
+        let program_id = Address::new_from_array([99u8; 32]);
+        let authorized_secret: [u8; 32] = [7u8; 32];
+        let authorized_pubkey = ed25519_dalek::SigningKey::from_bytes(&authorized_secret).verifying_key().to_bytes();
+
+        let unauthorized_secret: [u8; 32] = [1u8; 32];
+        let unauthorized_signing = ed25519_dalek::SigningKey::from_bytes(&unauthorized_secret);
+        let unauthorized_pubkey = unauthorized_signing.verifying_key().to_bytes();
+
+        let agent_bytes: [u8; 32] = [2u8; 32];
+        let (reputation_pda, _) = Address::find_program_address(&[REPUTATION_SEED, &agent_bytes], &program_id);
+        let (evm_authority_pda, _) = Address::find_program_address(&[EVM_AUTHORITY_SEED], &program_id);
+
+        let reputation = make_reputation(agent_bytes, 0);
+        let rep_data = reputation_data(&reputation);
+        let evm_auth = make_evm_authority(vec![authorized_pubkey]); // only authorized is allowed
+        let auth_data = evm_authority_data(&evm_auth);
+
+        let reputation_account = MockAccount::new(reputation_pda, program_id, false, &rep_data, 512);
+        let evm_authority_account = MockAccount::new(evm_authority_pda, program_id, false, &auth_data, 512);
+        let relayer_account = MockAccount::new(Address::new_from_array(unauthorized_pubkey), program_id, true, &[], 0);
+        let agent_account = MockAccount::new(Address::new_from_array(agent_bytes), program_id, false, &[], 0);
+        let system_account = MockAccount::new(pinocchio_system::ID, pinocchio_system::ID, false, &[], 0);
+
+        let accounts = [relayer_account.view, agent_account.view, reputation_account.view, evm_authority_account.view, system_account.view];
+
+        let update = EvmReputationUpdate {
+            agent: agent_bytes,
+            chain_id: 1,
+            nonce: 1,
+            completed: 1,
+            total_applied_delta: 1,
+            score_sum: 50,
+            category: 255,
+            source: String::from("test"),
+            proof: Vec::new(),
+        };
+        let message = build_relayer_message(&update);
+        let signature = unauthorized_signing.sign(&message);
+        let ix_data = borsh::to_vec(&EvmReputationUpdate {
+            proof: signature.to_bytes().to_vec(),
+            ..update
+        }).unwrap();
+
+        let result = process_update_reputation_from_evm(&program_id, &accounts, &ix_data);
+        assert_eq!(result, Err(GradienceProgramError::UnauthorizedRelayer.into()));
+    }
+
+    #[test]
+    fn test_process_update_reputation_from_evm_invalid_signature() {
+        let program_id = Address::new_from_array([99u8; 32]);
+        let relayer_secret: [u8; 32] = [1u8; 32];
+        let relayer_signing = ed25519_dalek::SigningKey::from_bytes(&relayer_secret);
+        let relayer_pubkey = relayer_signing.verifying_key().to_bytes();
+
+        let wrong_secret: [u8; 32] = [8u8; 32];
+        let wrong_signing = ed25519_dalek::SigningKey::from_bytes(&wrong_secret);
+
+        let agent_bytes: [u8; 32] = [2u8; 32];
+        let (reputation_pda, _) = Address::find_program_address(&[REPUTATION_SEED, &agent_bytes], &program_id);
+        let (evm_authority_pda, _) = Address::find_program_address(&[EVM_AUTHORITY_SEED], &program_id);
+
+        let reputation = make_reputation(agent_bytes, 0);
+        let rep_data = reputation_data(&reputation);
+        let evm_auth = make_evm_authority(vec![relayer_pubkey]);
+        let auth_data = evm_authority_data(&evm_auth);
+
+        let reputation_account = MockAccount::new(reputation_pda, program_id, false, &rep_data, 512);
+        let evm_authority_account = MockAccount::new(evm_authority_pda, program_id, false, &auth_data, 512);
+        let relayer_account = MockAccount::new(Address::new_from_array(relayer_pubkey), program_id, true, &[], 0);
+        let agent_account = MockAccount::new(Address::new_from_array(agent_bytes), program_id, false, &[], 0);
+        let system_account = MockAccount::new(pinocchio_system::ID, pinocchio_system::ID, false, &[], 0);
+
+        let accounts = [relayer_account.view, agent_account.view, reputation_account.view, evm_authority_account.view, system_account.view];
+
+        let update = EvmReputationUpdate {
+            agent: agent_bytes,
+            chain_id: 1,
+            nonce: 1,
+            completed: 1,
+            total_applied_delta: 1,
+            score_sum: 50,
+            category: 255,
+            source: String::from("test"),
+            proof: Vec::new(),
+        };
+        let message = build_relayer_message(&update);
+        let wrong_signature = wrong_signing.sign(&message);
+        let ix_data = borsh::to_vec(&EvmReputationUpdate {
+            proof: wrong_signature.to_bytes().to_vec(),
+            ..update
+        }).unwrap();
+
+        let result = process_update_reputation_from_evm(&program_id, &accounts, &ix_data);
+        assert_eq!(result, Err(GradienceProgramError::InvalidRelayerSignature.into()));
+    }
+
+    #[test]
+    fn test_merge_evm_reputation_updates_correctly() {
+        let mut reputation = make_reputation([0u8; 32], 0);
+        reputation.global.completed = 10;
+        reputation.global.total_applied = 20;
+        reputation.global.avg_score = 50;
+
+        merge_evm_reputation(&mut reputation, 5, 5, 400, 1).unwrap();
+
+        assert_eq!(reputation.global.completed, 15);
+        assert_eq!(reputation.global.total_applied, 25);
+        assert_eq!(reputation.global.avg_score, 60); // (10*50 + 400) / 15 = 60
+        assert_eq!(reputation.by_category[1].completed, 5);
+        assert_eq!(reputation.by_category[1].avg_score, 80); // 400 / 5 = 80
+    }
+
+    #[test]
+    fn test_build_relayer_message_deterministic() {
+        let update1 = EvmReputationUpdate {
+            agent: [1u8; 32],
+            chain_id: 1,
+            nonce: 2,
+            completed: 3,
+            total_applied_delta: 4,
+            score_sum: 5,
+            category: 6,
+            source: String::from("src"),
+            proof: vec![],
+        };
+        let update2 = EvmReputationUpdate {
+            agent: [1u8; 32],
+            chain_id: 1,
+            nonce: 2,
+            completed: 3,
+            total_applied_delta: 4,
+            score_sum: 5,
+            category: 6,
+            source: String::from("src"),
+            proof: vec![9u8; 64], // different proof should not affect message
+        };
+        assert_eq!(build_relayer_message(&update1), build_relayer_message(&update2));
+    }
+
+    #[test]
+    fn test_verify_ed25519_valid_and_invalid() {
+        let signing_key = ed25519_dalek::SigningKey::from_bytes(&[5u8; 32]);
+        let pubkey = signing_key.verifying_key().to_bytes();
+        let message = [10u8; 32];
+        let signature = signing_key.sign(&message);
+
+        assert!(verify_ed25519(&pubkey, &message, &signature.to_bytes()));
+
+        let bad_sig = [0u8; 64];
+        assert!(!verify_ed25519(&pubkey, &message, &bad_sig));
+    }
+}

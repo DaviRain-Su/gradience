@@ -62,7 +62,7 @@ mod tests {
     fn test_evm_authority_serialize() {
         let auth = EvmAuthority {
             owner: [1u8; 32],
-            relayers: vec![[2u8; 32], [3u8; 32]],
+            relayers: vec![[2u8; 32]; 8],
             max_relayer_age_slots: 100,
             bump: 255,
         };

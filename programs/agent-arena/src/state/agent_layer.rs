@@ -351,6 +351,8 @@ mod tests {
         assert_eq!(CATEGORY_STATS_DATA_LEN, 7);
         assert_eq!(REPUTATION_DATA_LEN, 117);
         assert_eq!(REPUTATION_LEN, 119);
+        assert_eq!(EVM_AUTHORITY_DATA_LEN, 301);
+        assert_eq!(EVM_AUTHORITY_LEN, 303);
         assert_eq!(STAKE_DATA_LEN, 66);
         assert_eq!(STAKE_LEN, 68);
         assert_eq!(JUDGE_POOL_ENTRY_DATA_LEN, 36);
@@ -372,13 +374,13 @@ mod tests {
 
     #[test]
     fn test_identity_binding_length() {
-        assert_eq!(IDENTITY_BINDING_DATA_LEN, 199);
-        assert_eq!(IDENTITY_BINDING_LEN, 201);
+        assert_eq!(IDENTITY_BINDING_DATA_LEN, 191);
+        assert_eq!(IDENTITY_BINDING_LEN, 193);
     }
 
     #[test]
     fn test_evm_authority_length() {
-        assert_eq!(EVM_AUTHORITY_DATA_LEN, 293);
-        assert_eq!(EVM_AUTHORITY_LEN, 295);
+        assert_eq!(EVM_AUTHORITY_DATA_LEN, 301);
+        assert_eq!(EVM_AUTHORITY_LEN, 303);
     }
 }
